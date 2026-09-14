@@ -1,152 +1,94 @@
-"""
-Validate the Oireachtas ontology split using rdflib + owlready2.
-Parses all local sub-ontologies, resolves owl:imports from the local
-ontologies/ directory, and reports classes, properties and individuals.
-Also runs the HermiT OWL reasoner (via owlready2) for consistency checking.
+"""Fail-closed validation for the local Oireachtas ontology modules."""
+from __future__ import annotations
 
-Run:  python validate.py
-
-Requires: pip install rdflib owlready2
-Also requires Java on PATH (for the bundled HermiT reasoner).
-"""
-import os
+import argparse
+import sys
 import tempfile
 from pathlib import Path
-from rdflib import Graph, Namespace, RDF, RDFS, OWL, URIRef
-from rdflib.namespace import SKOS
 
 import owlready2
-from owlready2 import get_ontology, sync_reasoner
+from rdflib import Graph, OWL
 
-ONTOLOGIES_DIR = Path(__file__).parent / "ontologies"
 
-# Local ontology files to load
-ONTOLOGY_FILES = [
-    ONTOLOGIES_DIR / "oireachtas.owl.ttl",
-    ONTOLOGIES_DIR / "agents.owl.ttl",
-    ONTOLOGIES_DIR / "events.owl.ttl",
-    ONTOLOGIES_DIR / "legislation.owl.ttl",
-    ONTOLOGIES_DIR / "vocabulary.owl.ttl",
-    ONTOLOGIES_DIR / "debates.owl.ttl",
-    ONTOLOGIES_DIR / "members.owl.ttl",
-]
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+ONTOLOGY_DIR = REPOSITORY_ROOT / "ontology"
 
-def load_all(paths):
-    """Parse all local ontology files into a single merged graph."""
-    g = Graph()
-    for path in paths:
-        print(f"  Parsing {path.name} ...", end=" ")
-        try:
-            g.parse(str(path), format="turtle")
-            print("OK")
-        except Exception as e:
-            print(f"FAILED: {e}")
-    return g
 
-def short(uri):
-    """Return the local name of a URI."""
-    uri = str(uri)
-    return uri.split("#")[-1] if "#" in uri else uri.split("/")[-1]
+class OntologyValidationError(RuntimeError):
+    """Raised when parsing or OWL consistency validation cannot complete."""
 
-print("=== Loading ontologies ===")
-g = load_all(ONTOLOGY_FILES)
-print(f"\nTotal triples loaded: {len(g)}\n")
 
-# --- Classes ---
-classes = sorted(
-    {s for s in g.subjects(RDF.type, OWL.Class) if isinstance(s, URIRef)},
-    key=short
-)
-print(f"=== OWL Classes ({len(classes)}) ===")
-for c in classes:
-    label = short(c)
-    comment = g.value(c, RDFS.comment)
-    print(f"  :{label}" + (f"  — {str(comment)[:80]}" if comment else ""))
+def ontology_files(ontology_dir: Path = ONTOLOGY_DIR) -> list[Path]:
+    """Return the local ontology modules, rejecting an empty directory."""
+    files = sorted(ontology_dir.glob("*.owl.ttl"))
+    if not files:
+        raise OntologyValidationError(f"No ontology files found in {ontology_dir}")
+    return files
 
-# --- Object Properties ---
-obj_props = sorted(
-    {s for s in g.subjects(RDF.type, OWL.ObjectProperty) if isinstance(s, URIRef)},
-    key=short
-)
-print(f"\n=== Object Properties ({len(obj_props)}) ===")
-for p in obj_props:
-    domain = g.value(p, RDFS.domain)
-    range_ = g.value(p, RDFS.range)
-    print(f"  :{short(p)}  domain={short(domain) if domain else '—'}  range={short(range_) if range_ else '—'}")
 
-# --- Data Properties ---
-data_props = sorted(
-    {s for s in g.subjects(RDF.type, OWL.DatatypeProperty) if isinstance(s, URIRef)},
-    key=short
-)
-print(f"\n=== Data Properties ({len(data_props)}) ===")
-for p in data_props:
-    print(f"  :{short(p)}")
+def load_ontology_graph(ontology_dir: Path = ONTOLOGY_DIR) -> Graph:
+    """Parse every local Turtle module, propagating parse failures."""
+    graph = Graph()
+    for path in ontology_files(ontology_dir):
+        graph.parse(path, format="turtle")
+    return graph
 
-# --- Named Individuals ---
-individuals = sorted(
-    {s for s in g.subjects(RDF.type, OWL.NamedIndividual) if isinstance(s, URIRef)},
-    key=short
-)
-print(f"\n=== Named Individuals ({len(individuals)}) ===")
-for ind in individuals:
-    types = [short(t) for t in g.objects(ind, RDF.type) if t != OWL.NamedIndividual]
-    label = g.value(ind, SKOS.prefLabel) or g.value(ind, RDFS.label) or ""
-    print(f"  :{short(ind)}  [{', '.join(types)}]" + (f"  \"{label}\"" if label else ""))
 
-# --- SKOS Concept Schemes ---
-schemes = sorted(
-    {s for s in g.subjects(RDF.type, SKOS.ConceptScheme) if isinstance(s, URIRef)},
-    key=short
-)
-print(f"\n=== SKOS Concept Schemes ({len(schemes)}) ===")
-for s in schemes:
-    label = g.value(s, SKOS.prefLabel) or ""
-    print(f"  :{short(s)}" + (f"  \"{label}\"" if label else ""))
-
-print("\n=== Validation complete (rdflib) ===")
-
-# ---------------------------------------------------------------------------
-# Consistency checking with owlready2 + HermiT reasoner
-# ---------------------------------------------------------------------------
-
-def run_consistency_check():
-    """Load all ontologies via owlready2 and run the HermiT OWL reasoner."""
-    print("\n=== Consistency Check (owlready2 + HermiT) ===")
-
-    g_flat = Graph()
-    for triple in g:
+def run_consistency_check(graph: Graph) -> None:
+    """Run HermiT and reject inconsistent or unsatisfiable ontology classes."""
+    flattened = Graph()
+    for triple in graph:
         if triple[1] != OWL.imports:
-            g_flat.add(triple)
+            flattened.add(triple)
 
-    tmp_fd, tmp_path = tempfile.mkstemp(suffix=".owl")
+    with tempfile.NamedTemporaryFile(suffix=".owl", delete=False) as handle:
+        ontology_path = Path(handle.name)
+        data = flattened.serialize(format="xml")
+        handle.write(data.encode() if isinstance(data, str) else data)
+
+    world = owlready2.World()
     try:
-        with os.fdopen(tmp_fd, "wb") as fh:
-            data = g_flat.serialize(format="xml")
-            fh.write(data.encode() if isinstance(data, str) else data)
-
-        onto = get_ontology(f"file://{tmp_path}").load()
-        print(f"  Loaded merged ontology ({len(list(onto.classes()))} classes) into owlready2.")
-
-        # Run the HermiT DL reasoner (bundled with owlready2; requires Java).
-        print("  Running HermiT reasoner (requires Java) …")
-        with onto:
-            sync_reasoner(infer_property_values=True)
-
-        # sync_reasoner raises OwlReadyInconsistentOntologyError if the
-        # ontology is globally inconsistent; reaching here means it is not.
-        inconsistent = list(owlready2.default_world.inconsistent_classes())
+        ontology = world.get_ontology(ontology_path.as_uri()).load()
+        owlready2.sync_reasoner([ontology], infer_property_values=True)
+        inconsistent = list(world.inconsistent_classes())
         if inconsistent:
-            print(f"  WARNING — unsatisfiable classes ({len(inconsistent)}):")
-            for cls in inconsistent:
-                print(f"    - {cls}")
-        else:
-            print("  RESULT: Ontology is CONSISTENT — no unsatisfiable classes.")
-
-    except owlready2.OwlReadyInconsistentOntologyError:
-        print("  RESULT: Ontology is INCONSISTENT (OwlReadyInconsistentOntologyError).")
+            names = ", ".join(str(item) for item in inconsistent)
+            raise OntologyValidationError(f"Unsatisfiable ontology classes: {names}")
+    except owlready2.OwlReadyInconsistentOntologyError as error:
+        raise OntologyValidationError("Ontology is inconsistent") from error
+    except OntologyValidationError:
+        raise
+    except Exception as error:
+        raise OntologyValidationError("Ontology reasoner failed") from error
     finally:
-        os.unlink(tmp_path)
+        ontology_path.unlink(missing_ok=True)
 
-run_consistency_check()
 
+def validate_ontology(ontology_dir: Path = ONTOLOGY_DIR) -> Graph:
+    """Parse and reason over the ontology, raising on every validation error."""
+    graph = load_ontology_graph(ontology_dir)
+    run_consistency_check(graph)
+    return graph
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--ontology-dir",
+        type=Path,
+        default=ONTOLOGY_DIR,
+        help="directory containing local *.owl.ttl modules",
+    )
+    args = parser.parse_args(argv)
+    try:
+        graph = validate_ontology(args.ontology_dir)
+    except Exception as error:
+        print(f"Ontology validation failed: {error}", file=sys.stderr)
+        return 1
+
+    print(f"Ontology validation passed: {len(graph)} triples from {args.ontology_dir}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
