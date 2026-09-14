@@ -209,6 +209,10 @@ pip-log.txt
 .coverage
 .tox
 
+# Pipeline data
+data/cache/
+data/output/
+
 #Translations
 *.mo
 
