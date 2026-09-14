@@ -1,0 +1,942 @@
+# Oireachtas Open Data ETL — Phase Plan and Backlog
+
+## 1. Objective
+
+Build a deterministic and maintainable ETL pipeline that:
+
+1. extracts JSON data from the Houses of the Oireachtas Open Data API;
+2. preserves source responses for reproducibility;
+3. transforms API records into RDF using the Oireachtas ontology and existing mapping specifications;
+4. validates the resulting RDF;
+5. loads validated RDF into a persistent triple store; and
+6. supports repeatable full and incremental refreshes.
+
+The pipeline should make the existing ontology and mapping work executable without coupling transformation logic to a particular triple-store implementation.
+
+## 2. Target architecture
+
+```text
+api.oireachtas.ie
+        |
+        v
+   Extract API data
+        |
+        v
+ Immutable raw JSON
+        |
+        v
+ Endpoint transformer
+        |
+        v
+      RDF dataset
+        |
+        +------> RDF / SHACL / quality validation
+        |
+        v
+   Staging named graph
+        |
+        v
+      Triple store
+        |
+        v
+ SPARQL query / applications
+```
+
+Operational ETL state should be maintained separately from the semantic RDF dataset.
+
+A normal execution is therefore:
+
+```text
+extract -> persist raw source -> transform -> validate -> publish
+```
+
+Publishing invalid RDF to the production dataset must not be part of the normal execution path.
+
+## 3. Design principles
+
+### 3.1 Deterministic transformation
+
+The same source JSON, ontology version and mapping version should produce the same RDF.
+
+Generated resource identifiers must therefore be deterministic. Where the mapping currently suggests anonymous RDF nodes for derived resources such as date periods, deterministic IRIs should normally be preferred, for example:
+
+```text
+<house-term-uri#term-period>
+```
+
+rather than a newly generated blank node on each run.
+
+### 3.2 Preserve source data
+
+API responses should be retained outside Git as immutable raw inputs. This allows RDF to be regenerated when:
+
+- mappings change;
+- the ontology changes;
+- transformation bugs are corrected; or
+- validation requirements change.
+
+### 3.3 Mapping specifications remain the semantic contract
+
+The mapping CSV files and mapping documentation define the intended relationship between API fields and ontology terms. Python transformation code implements that contract.
+
+The initial implementation should use RDFLib rather than attempting to convert the existing mappings directly into RML or another declarative mapping language.
+
+### 3.4 Explicit RDF ownership
+
+Each endpoint has responsibility for the descriptive triples of particular resource types.
+
+| API source | RDF ownership |
+|---|---|
+| Houses | House and HouseTerm |
+| Parties | Party |
+| Constituencies | Constituency and Seanad panel |
+| Members | Member and memberships |
+| Legislation | Bill, legislative stages, events and related legislative resources |
+
+Transformers may reference resources owned by another endpoint but should not independently recreate their descriptive triples. This avoids multiple sources attempting to maintain the same RDF statements.
+
+### 3.5 Atomic graph replacement
+
+Mutable root resources should normally be published as replaceable named graphs, for example:
+
+```text
+https://data.oireachtas.ie/graph/member/{member-id}
+https://data.oireachtas.ie/graph/bill/{year}/{number}
+```
+
+When a resource changes, the complete validated graph can be replaced rather than attempting to determine individual triples that must be deleted.
+
+### 3.6 Validate before publication
+
+Validation occurs before production graph replacement. At minimum:
+
+1. source-data validation;
+2. RDF syntax and datatype validation;
+3. SHACL validation; and
+4. semantic-quality SPARQL tests.
+
+# 4. Delivery phases
+
+## Phase 0 — Stabilise ontology and mapping baseline
+
+### Outcome
+
+Establish a versioned semantic baseline against which ETL development can proceed.
+
+### Backlog
+
+- [ ] Review current ontology modules used by the API mappings.
+- [ ] Review all existing mapping CSV files.
+- [ ] Review `documentation/mapping_notes.md`.
+- [ ] Identify mappings marked `mapped`, `new`, `implicit`, and `future_work`.
+- [ ] Confirm every `mapped` and `new` ontology term exists in the Oireachtas ontology or an explicitly referenced external vocabulary.
+- [ ] Correct the ontology validation script's ontology path if required.
+- [ ] Add automated mapping-integrity tests.
+- [ ] Establish namespace constants for ETL code.
+- [ ] Record ontology and mapping versions used by ETL runs.
+- [ ] Tag a stable ETL baseline in Git.
+
+Suggested baseline tag:
+
+```text
+v0.1-etl-baseline
+```
+
+### Exit criteria
+
+- Ontology parses successfully.
+- Ontology consistency validation passes.
+- Mapping references are machine-checked.
+- Mapping and ontology versions can be identified unambiguously.
+- ETL development can proceed without unresolved fundamental namespace or term issues.
+
+## Phase 1 — End-to-end ETL foundation and Houses vertical slice
+
+### Outcome
+
+Demonstrate the complete API-to-triplestore pipeline using the Houses endpoint. This phase establishes patterns that later endpoint transformers should reuse.
+
+### Backlog
+
+#### Project structure
+
+- [ ] Create Python package under `src/oireachtas_etl/`.
+- [ ] Add project configuration and dependencies.
+- [ ] Add command-line entry point.
+- [ ] Add shared configuration handling.
+
+Suggested structure:
+
+```text
+src/oireachtas_etl/
+    __init__.py
+    cli.py
+    config.py
+    api.py
+    state.py
+    provenance.py
+    loader.py
+    transforms/
+        __init__.py
+        common.py
+        houses.py
+    validation/
+        __init__.py
+        source.py
+        ontology.py
+        shacl.py
+        quality.py
+```
+
+#### Extraction
+
+- [ ] Implement Oireachtas API client.
+- [ ] Implement pagination using `skip` and `limit`.
+- [ ] Implement retries for transient HTTP failures.
+- [ ] Preserve API request parameters.
+- [ ] Store API responses without modifying their content.
+- [ ] Generate extraction metadata.
+
+Suggested raw-data structure:
+
+```text
+data/raw/
+    houses/
+        YYYY-MM-DD/
+            skip-000000.json
+            skip-000000.meta.json
+```
+
+Metadata should include:
+
+- endpoint;
+- request parameters;
+- retrieval timestamp;
+- HTTP status;
+- SHA-256 source hash;
+- ETL version;
+- ontology version; and
+- mapping version.
+
+Full harvested datasets should not normally be committed to Git.
+
+#### Transformation
+
+- [ ] Implement shared RDF namespace definitions.
+- [ ] Implement URI validation helpers.
+- [ ] Implement datatype-conversion helpers.
+- [ ] Implement language-tagged literal helpers.
+- [ ] Implement deterministic derived-resource identifiers.
+- [ ] Implement Houses transformer.
+- [ ] Implement documented HouseTerm class selection.
+- [ ] Implement `termNo`.
+- [ ] Implement `houseCode`.
+- [ ] Implement `seats`.
+- [ ] Implement `termOf`.
+- [ ] Implement temporal period.
+- [ ] Omit end-date triples when the API end date is null.
+- [ ] Exclude API fields explicitly marked redundant or discarded.
+
+#### Serialisation
+
+- [ ] Support Turtle for developer inspection.
+- [ ] Support N-Quads or TriG for dataset publication.
+- [ ] Ensure deterministic output suitable for golden tests.
+
+#### Validation
+
+- [ ] Validate generated RDF syntax.
+- [ ] Validate RDF datatypes.
+- [ ] Add initial SHACL shapes for House and HouseTerm.
+- [ ] Add SPARQL quality checks.
+
+Initial invariants should include:
+
+- every HouseTerm has a term number;
+- every HouseTerm references its persistent House;
+- every HouseTerm has a start date;
+- known Dáil terms are typed as Dáil terms;
+- known Seanad terms are typed as Seanad terms; and
+- invalid null-valued RDF statements are not emitted.
+
+#### Triple store
+
+- [ ] Add a local Apache Jena Fuseki/TDB2 deployment.
+- [ ] Configure persistent storage.
+- [ ] Implement Graph Store Protocol loading.
+- [ ] Implement graph replacement.
+- [ ] Establish graph URI conventions.
+
+Initial graph:
+
+```text
+https://data.oireachtas.ie/graph/houses
+```
+
+#### Testing
+
+- [ ] Preserve a small Houses JSON fixture.
+- [ ] Produce expected RDF fixture.
+- [ ] Add transformation unit tests.
+- [ ] Add golden RDF comparison tests.
+- [ ] Add idempotency test.
+- [ ] Add load-and-query integration test.
+- [ ] Add competency queries.
+
+Example competency queries:
+
+- current Dáil term;
+- current Seanad term;
+- term number for a specified HouseTerm;
+- start and end dates for a term; and
+- persistent House associated with a term.
+
+#### CLI
+
+Target command:
+
+```text
+oir-etl run houses
+```
+
+Useful supporting commands may include:
+
+```text
+oir-etl extract houses
+oir-etl transform houses
+oir-etl validate houses
+oir-etl load houses
+```
+
+### Exit criteria
+
+Given an official Houses API response, the system can:
+
+1. preserve the response;
+2. transform it deterministically;
+3. validate the RDF;
+4. load it into Fuseki;
+5. repeat the operation without duplicate or stale data; and
+6. answer agreed competency queries correctly.
+
+## Phase 2 — Parliamentary reference data
+
+### Outcome
+
+Extend the established ETL pattern to Parties and Constituencies. These resources provide relatively stable reference data required by Member transformation.
+
+### Backlog
+
+#### Parties
+
+- [ ] Implement Party transformer.
+- [ ] Map PartyGrouping resources.
+- [ ] Distinguish political parties from Independent grouping where required.
+- [ ] Map party code.
+- [ ] Map preferred label.
+- [ ] Map HouseTerm activity relationship.
+- [ ] Add Party SHACL shape.
+- [ ] Add Party golden fixtures.
+- [ ] Add Party competency queries.
+
+#### Constituencies
+
+- [ ] Implement constituency transformer.
+- [ ] Implement Seanad panel transformer.
+- [ ] Select RDF class based on `representType`.
+- [ ] Map preferred label.
+- [ ] Map representation code.
+- [ ] Link resource to HouseTerm.
+- [ ] Add constituency/panel SHACL shapes.
+- [ ] Add golden fixtures.
+- [ ] Add competency queries.
+
+#### Publication
+
+- [ ] Create stable reference graph conventions.
+
+Suggested graphs:
+
+```text
+https://data.oireachtas.ie/graph/parties
+https://data.oireachtas.ie/graph/constituencies
+```
+
+- [ ] Add graph-replacement integration tests.
+
+### Exit criteria
+
+- Houses, Parties and Constituencies can be independently refreshed.
+- Cross-resource IRIs resolve consistently.
+- Member transformation can rely on stable identifiers for its principal referenced resources.
+
+## Phase 3 — Members and parliamentary memberships
+
+### Outcome
+
+Represent Members and their parliamentary history, including membership periods and representation relationships. This is the first substantially nested API transformation.
+
+### Backlog
+
+#### Transformation
+
+- [ ] Implement Member transformer.
+- [ ] Map Member resource.
+- [ ] Map preferred/display name.
+- [ ] Map structured FOAF names where source data supports them.
+- [ ] Transform nested Oireachtas memberships.
+- [ ] Create deterministic membership resource identifiers.
+- [ ] Map membership date periods.
+- [ ] Link memberships to HouseTerm.
+- [ ] Link memberships to persistent House.
+- [ ] Map constituency representation.
+- [ ] Map Seanad panel representation.
+- [ ] Map Party membership.
+- [ ] Map committee memberships currently classified as supported.
+- [ ] Map supported office relationships.
+
+#### Scope control
+
+- [ ] Explicitly exclude mappings currently marked `future_work`.
+- [ ] Produce a report identifying omitted future-work fields.
+- [ ] Ensure unsupported data is not silently represented with speculative predicates.
+
+#### Ownership
+
+- [ ] Ensure Member transformation references Party resources without recreating Party descriptions.
+- [ ] Ensure Member transformation references Constituency/Panel resources without recreating their descriptions.
+- [ ] Ensure Member transformation references HouseTerm resources without recreating House descriptions.
+
+#### Named graphs
+
+Adopt a stable per-Member graph convention:
+
+```text
+https://data.oireachtas.ie/graph/member/{id}
+```
+
+- [ ] Implement complete Member graph replacement.
+- [ ] Test deletion of obsolete membership triples through graph replacement.
+
+#### Change detection
+
+Because the Members endpoint does not expose a general record-modification cursor:
+
+- [ ] Implement complete Member scanning.
+- [ ] Canonicalise source Member records.
+- [ ] Generate per-Member source hashes.
+- [ ] Skip transformation and graph replacement for unchanged Members.
+- [ ] Detect new Members.
+- [ ] Detect changed Members.
+- [ ] Decide policy for Members no longer returned by the API.
+
+#### Validation
+
+- [ ] Add Member SHACL shape.
+- [ ] Add membership SHACL shape.
+- [ ] Add representation constraints.
+- [ ] Add temporal consistency tests.
+- [ ] Add cross-resource quality queries.
+
+Competency queries should include:
+
+- Members of a specified HouseTerm;
+- Member representing a constituency;
+- Member's party at a specified time;
+- parliamentary service history for a Member; and
+- currently serving Members.
+
+### Exit criteria
+
+- Complete Member data can be harvested.
+- Unchanged Member records are not unnecessarily republished.
+- Membership history is represented deterministically.
+- Cross-resource references use the reference data created in previous phases.
+- Member graphs can be replaced without leaving stale membership triples.
+
+## Phase 4 — Legislative lifecycle
+
+### Outcome
+
+Represent Bills and their legislative lifecycle using the existing legislation mappings.
+
+### Backlog
+
+#### Bill transformation
+
+- [ ] Implement Bill transformer.
+- [ ] Map Bill as `eli-dl:DraftLegislationWork`.
+- [ ] Map Bill as appropriate ELI legal resource.
+- [ ] Map process number.
+- [ ] Map legislative year.
+- [ ] Map Bill type.
+- [ ] Map English and Irish titles.
+- [ ] Map process status.
+- [ ] Map submitting source.
+- [ ] Map originating House.
+- [ ] Map legislative method.
+- [ ] Map last-updated timestamp.
+- [ ] Map latest activity.
+
+#### Legislative lifecycle
+
+- [ ] Transform legislative stages.
+- [ ] Transform supported legislative events.
+- [ ] Transform amendment-list relationships.
+- [ ] Transform enacted-Act relationships.
+- [ ] Define deterministic identifiers for nested activities/events.
+- [ ] Preserve event ordering where source data permits it.
+- [ ] Ensure `latest_activity` references a generated activity resource.
+
+#### Scope
+
+- [ ] Keep unsupported debate mappings explicitly deferred where currently documented as future work.
+- [ ] Record API fields intentionally omitted from the first legislation implementation.
+
+#### Named graphs
+
+Use one graph per Bill:
+
+```text
+https://data.oireachtas.ie/graph/bill/{year}/{number}
+```
+
+- [ ] Replace entire Bill graph when the source Bill changes.
+
+#### Validation
+
+- [ ] Add Bill SHACL shapes.
+- [ ] Add legislative activity shapes.
+- [ ] Add enacted-Act consistency checks.
+- [ ] Add latest-stage consistency test.
+- [ ] Add event-date validation.
+
+Competency queries should include:
+
+- latest stage of a Bill;
+- status of a Bill;
+- originating House;
+- chronology of Bill stages;
+- Act resulting from a Bill; and
+- Bills updated within a particular period.
+
+### Exit criteria
+
+A Bill can be represented from introduction through its currently available legislative lifecycle, and updating the source Bill causes its complete RDF graph to be replaced safely.
+
+## Phase 5 — Incremental refresh and ETL state
+
+### Outcome
+
+Move from manually repeatable transformations to reliable routine synchronisation with the Oireachtas API.
+
+### Backlog
+
+#### ETL state store
+
+Introduce a small operational state store, initially SQLite.
+
+Suggested information:
+
+```text
+etl_run
+resource_state
+source_hash
+last_seen
+last_success
+status
+error
+```
+
+- [ ] Record ETL run identifier.
+- [ ] Record start and completion time.
+- [ ] Record endpoint.
+- [ ] Record source hash.
+- [ ] Record RDF graph URI.
+- [ ] Record success/failure status.
+- [ ] Record validation result.
+- [ ] Record error details.
+
+#### Endpoint refresh policies
+
+Implement explicit policies rather than assuming all endpoints support equivalent change tracking.
+
+| Endpoint | Initial refresh strategy |
+|---|---|
+| Houses | full refresh |
+| Parties | full refresh |
+| Constituencies | full refresh |
+| Members | full scan with per-resource hashing |
+| Legislation | `last_updated` incremental fetch plus overlap |
+| Debates | deferred |
+| Votes | deferred |
+| Questions | deferred |
+
+#### Legislation incremental loading
+
+- [ ] Store last successful legislation cursor.
+- [ ] Request records using `last_updated`.
+- [ ] Use an overlap window to protect against boundary errors.
+- [ ] Deduplicate by Bill identifier.
+- [ ] Hash individual Bill source records.
+- [ ] Periodically perform a complete reconciliation.
+
+#### Reconciliation
+
+- [ ] Implement scheduled full comparison.
+- [ ] Identify resources missing from current API results.
+- [ ] Define deletion/tombstone policy.
+- [ ] Detect RDF graph/state mismatches.
+
+### Exit criteria
+
+Routine execution processes only resources requiring publication while periodic reconciliation protects against missed updates.
+
+## Phase 6 — Production hardening
+
+### Outcome
+
+Make the ETL process observable, recoverable and suitable for unattended operation.
+
+### Backlog
+
+#### Error handling
+
+- [ ] Separate record-level failures from run-level failures.
+- [ ] Introduce quarantine storage.
+- [ ] Preserve failing source record.
+- [ ] Record transformation exception.
+- [ ] Record mapping and ontology versions.
+- [ ] Allow unaffected resources to continue processing where safe.
+- [ ] Establish thresholds that cause publication to fail.
+
+#### Schema drift
+
+- [ ] Detect previously unseen JSON properties.
+- [ ] Report additional fields as warnings.
+- [ ] Detect disappearance of fields required by mappings.
+- [ ] Treat required mapped-field disappearance as a higher-severity issue.
+- [ ] Produce schema-drift report.
+
+#### Provenance
+
+Record graph/run-level provenance. Possible information:
+
+- `prov:wasGeneratedBy`;
+- `prov:wasDerivedFrom`;
+- retrieval timestamp;
+- API request;
+- source hash;
+- ETL version;
+- ontology version; and
+- mapping version.
+
+- [ ] Define provenance vocabulary usage.
+- [ ] Create ETL-run resources.
+- [ ] Create provenance/catalog named graph.
+- [ ] Link published graphs to ETL runs.
+
+Per-triple provenance and RDF-star are explicitly outside the initial scope.
+
+#### Observability
+
+- [ ] Structured logging.
+- [ ] Run summary.
+- [ ] Extracted resource count.
+- [ ] Changed resource count.
+- [ ] Unchanged resource count.
+- [ ] Published graph count.
+- [ ] Quarantine count.
+- [ ] Validation-failure count.
+- [ ] API request count and failures.
+- [ ] Duration metrics.
+
+#### Deployment
+
+- [ ] Containerise ETL application.
+- [ ] Add Fuseki/TDB2 container configuration.
+- [ ] Add Docker Compose development deployment.
+- [ ] Configure persistent volumes.
+- [ ] Configure environment-specific settings.
+- [ ] Protect update endpoints where required.
+- [ ] Establish backup procedure.
+
+#### Scheduling
+
+Start with simple orchestration:
+
+- cron;
+- systemd timer; or
+- scheduled container execution.
+
+Do not introduce Airflow, Kafka or equivalent infrastructure until the workload demonstrates a need for it.
+
+#### CI
+
+CI should run:
+
+- [ ] ontology parse test;
+- [ ] ontology consistency test;
+- [ ] mapping-integrity test;
+- [ ] transformation unit tests;
+- [ ] golden RDF tests;
+- [ ] SHACL validation;
+- [ ] competency SPARQL queries; and
+- [ ] integration tests where practical.
+
+### Exit criteria
+
+The ETL process can run unattended, failures are diagnosable, malformed resources are recoverable, and successful graph publication can be traced to its source data and software versions.
+
+## Phase 7 — Extend dataset coverage
+
+### Outcome
+
+Extend the graph beyond the initial core Houses, Member and legislation data once the ETL architecture is proven.
+
+Candidate endpoints:
+
+- debates;
+- votes; and
+- questions.
+
+These should not block completion of the core ETL system.
+
+### Backlog
+
+- [ ] Review ontology coverage for Debates.
+- [ ] Review ontology coverage for Votes.
+- [ ] Review ontology coverage for Questions.
+- [ ] Create or update mapping specifications.
+- [ ] Identify resource ownership.
+- [ ] Define graph granularity.
+- [ ] Define incremental extraction strategy.
+- [ ] Implement transformer.
+- [ ] Add SHACL validation.
+- [ ] Add competency queries.
+- [ ] Add incremental loading.
+
+Each endpoint should proceed as a separate vertical slice rather than being implemented simultaneously.
+
+### Exit criteria
+
+Each additional endpoint follows the same extract, transform, validate, publish and reconcile model as the core datasets.
+
+# 5. Cross-cutting backlog
+
+Some work applies across several delivery phases and should not be artificially assigned to one dataset.
+
+## Mapping infrastructure
+
+- [ ] Decide whether mapping CSVs remain documentation-only or become partly machine executable.
+- [ ] Consider adding structured columns such as:
+
+```text
+subject_rule
+predicate
+object_rule
+datatype
+language
+condition
+null_policy
+transform
+ownership
+```
+
+- [ ] Validate mapping CSV syntax automatically.
+- [ ] Validate referenced ontology terms.
+- [ ] Generate mapping coverage reports.
+
+## RDF identifier policy
+
+- [ ] Document URI-generation rules.
+- [ ] Document deterministic identifiers for derived resources.
+- [ ] Ensure identifiers remain stable between ETL runs.
+- [ ] Avoid identifiers derived from array position where possible.
+- [ ] Add identifier regression tests.
+
+## Temporal modelling
+
+- [ ] Standardise date and date-time conversion.
+- [ ] Standardise open-ended periods.
+- [ ] Define treatment of missing start dates.
+- [ ] Define treatment of malformed dates.
+- [ ] Validate temporal ordering.
+
+## Language handling
+
+- [ ] Standardise English and Irish language tags.
+- [ ] Define policy where only one language is supplied.
+- [ ] Prevent untagged literals where a mapping requires a language.
+
+## Configuration
+
+- [ ] Separate API configuration from transformation code.
+- [ ] Separate triple-store configuration.
+- [ ] Support development/test/production environments.
+- [ ] Avoid credentials in repository files.
+
+## Documentation
+
+- [ ] Document architecture.
+- [ ] Document command-line use.
+- [ ] Document graph naming.
+- [ ] Document RDF ownership.
+- [ ] Document refresh policies.
+- [ ] Document failure/recovery process.
+- [ ] Document how to add a new endpoint transformer.
+
+# 6. Deferred work
+
+The following items should remain outside the critical path until a demonstrated requirement exists:
+
+- conversion of mappings to RML/YARRRML;
+- RDF-star provenance;
+- per-triple provenance;
+- stream-processing architecture;
+- Kafka;
+- Airflow or equivalent workflow platform;
+- distributed ETL processing;
+- inference-heavy production configuration;
+- sophisticated graph version history;
+- automatic ontology evolution;
+- unsupported mapping fields currently marked `future_work`; and
+- complete debates/votes/questions ingestion.
+
+Deferral should be explicit rather than allowing these items to enter individual phases opportunistically.
+
+# 7. Initial technical decisions
+
+Unless later evidence requires a change, development should proceed with the following assumptions.
+
+| Area | Initial choice |
+|---|---|
+| Implementation language | Python |
+| RDF library | RDFLib |
+| Semantic mappings | Existing CSV mappings plus mapping notes |
+| RDF validation | RDFLib checks + SHACL + SPARQL quality tests |
+| Ontology consistency | Existing Owlready2/HermiT approach |
+| Triple store | Apache Jena Fuseki + TDB2 |
+| Publication mechanism | SPARQL Graph Store Protocol |
+| Mutable resource strategy | Stable named graphs and graph replacement |
+| Operational state | SQLite |
+| Initial orchestration | cron/systemd/scheduled container |
+| Deployment | Docker Compose |
+| Provenance | Graph/run level |
+| Source preservation | Immutable raw JSON outside Git |
+
+These are implementation defaults, not ontology commitments.
+
+# 8. Risks and open decisions
+
+## API schema changes
+
+The external API may add, remove or alter fields.
+
+Mitigation:
+
+- preserve raw source;
+- schema-drift checks;
+- mapping validation; and
+- quarantine unexpected failures.
+
+## Incomplete change tracking
+
+Not all API endpoints expose modification timestamps.
+
+Mitigation:
+
+- endpoint-specific refresh strategies;
+- source hashing; and
+- periodic complete reconciliation.
+
+## Duplicate RDF ownership
+
+Nested API structures can encourage several transformers to emit descriptions of the same entity.
+
+Mitigation:
+
+- explicit resource ownership;
+- cross-endpoint references by URI; and
+- graph-boundary tests.
+
+## Unstable generated identifiers
+
+Blank nodes or position-based generated identifiers can produce unnecessary RDF changes.
+
+Mitigation:
+
+- deterministic URI-generation rules; and
+- regression tests.
+
+## Ontology evolution
+
+Changes to ontology terms can make previously generated RDF obsolete.
+
+Mitigation:
+
+- record ontology version for every run;
+- preserve raw JSON; and
+- support complete RDF regeneration.
+
+## Over-engineering
+
+The data volume does not initially justify complex distributed infrastructure.
+
+Mitigation:
+
+- begin with Python, RDFLib, SQLite and Fuseki; and
+- introduce additional infrastructure only in response to measured requirements.
+
+# 9. Milestones
+
+### Milestone A — Semantic baseline
+
+Ontology and mapping integrity are automatically validated.
+
+### Milestone B — First vertical slice
+
+Given a Houses API response, the ETL application can generate deterministic valid RDF and publish it to Fuseki.
+
+### Milestone C — Reference graph
+
+Houses, Parties and Constituencies are maintained as reusable reference data.
+
+### Milestone D — Parliamentary membership graph
+
+Members and their parliamentary service histories can be queried across House terms, parties and constituencies.
+
+### Milestone E — Legislative graph
+
+Bills and their legislative lifecycle can be queried from introduction through the latest known stage and resulting Act where applicable.
+
+### Milestone F — Incremental synchronisation
+
+Routine executions update only changed resources and periodically reconcile the complete source dataset.
+
+### Milestone G — Production ETL
+
+The ETL runs unattended with validation, provenance, quarantine, monitoring and recoverable publication.
+
+# 10. Immediate implementation backlog
+
+The first development iteration should remain deliberately narrow.
+
+1. Stabilise and tag the ontology/mapping baseline.
+2. Create `src/oireachtas_etl`.
+3. Implement API extraction and raw-response persistence.
+4. Implement shared RDF helpers.
+5. Implement Houses transformation.
+6. Introduce deterministic period IRIs.
+7. Create Houses SHACL validation.
+8. Add golden JSON-to-RDF tests.
+9. Deploy local Fuseki/TDB2.
+10. Implement named-graph replacement.
+11. Add Houses competency SPARQL queries.
+12. Run the complete workflow through a single CLI command.
+
+The first concrete acceptance target is:
+
+> Given `data/api_examples/houses.json`, generate deterministic RDF conforming to the current ontology and mappings, validate it, load it into the Houses named graph in Fuseki, and demonstrate correctness with competency SPARQL queries.
+
+Work on Members or Legislation should not precede proving this vertical slice unless required to resolve an ontology or identifier-design issue.
