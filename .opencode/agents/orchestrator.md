@@ -1,7 +1,7 @@
 ---
 description: Orchestrates phased OireachtasOntology ETL implementation.
 mode: primary
-model: gpt-5.6-sol
+model: openai/gpt-5.6-sol
 
 permission:
   edit:

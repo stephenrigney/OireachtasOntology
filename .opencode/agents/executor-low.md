@@ -1,7 +1,7 @@
 ---
 description: Executes mechanical, local, clearly bounded OireachtasOntology work with focused verification.
 mode: all
-model: gpt-5.6-terra
+model: openai/gpt-5.6-luna
 permission:
   edit:
     "*": ask
