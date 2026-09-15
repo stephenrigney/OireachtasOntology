@@ -1,0 +1,24 @@
+@prefix : <https://data.oireachtas.ie/ontology#> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix eli-dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:HouseTermShape a sh:NodeShape ; sh:targetClass :DailTerm, :SeanadTerm ;
+  sh:property [ sh:path :termNo; sh:minCount 1; sh:maxCount 1; sh:datatype xsd:integer ] ;
+  sh:property [ sh:path :houseCode; sh:minCount 1; sh:maxCount 1; sh:datatype xsd:string ] ;
+  sh:property [ sh:path :seats; sh:minCount 1; sh:maxCount 1; sh:datatype xsd:integer ] ;
+  sh:property [ sh:path skos:prefLabel; sh:minCount 1; sh:maxCount 1; sh:languageIn ( "en" ) ] ;
+  sh:property [ sh:path :termOf; sh:minCount 1; sh:maxCount 1; sh:in ( <https://data.oireachtas.ie/house/dail> <https://data.oireachtas.ie/house/seanad> ) ] ;
+  sh:property [ sh:path rdf:type; sh:hasValue eli-dl:ParliamentaryTerm ] ;
+  sh:property [ sh:path dct:temporal; sh:minCount 1; sh:maxCount 1; sh:node :PeriodShape ] .
+:DailTermShape a sh:NodeShape ; sh:targetClass :DailTerm ; sh:property [ sh:path :houseCode; sh:hasValue "dail"^^xsd:string ] ; sh:property [ sh:path :termOf; sh:hasValue <https://data.oireachtas.ie/house/dail> ] .
+:SeanadTermShape a sh:NodeShape ; sh:targetClass :SeanadTerm ; sh:property [ sh:path :houseCode; sh:hasValue "seanad"^^xsd:string ] ; sh:property [ sh:path :termOf; sh:hasValue <https://data.oireachtas.ie/house/seanad> ] .
+:PeriodShape a sh:NodeShape ; sh:property [ sh:path rdf:type; sh:hasValue dct:PeriodOfTime ] ; sh:property [ sh:path dcat:startDate; sh:minCount 1; sh:maxCount 1; sh:datatype xsd:dateTime ] ; sh:property [ sh:path dcat:endDate; sh:maxCount 1; sh:datatype xsd:dateTime ] .
+:HouseShape a sh:NodeShape ; sh:targetNode <https://data.oireachtas.ie/house/dail>, <https://data.oireachtas.ie/house/seanad> ; sh:property [ sh:path rdf:type; sh:hasValue :House ] ; sh:property [ sh:path rdf:type; sh:hasValue owl:NamedIndividual ] ; sh:property [ sh:path dct:title; sh:minCount 1; sh:maxCount 1; sh:languageIn ( "ga" ) ] ; sh:property [ sh:path skos:prefLabel; sh:minCount 1; sh:maxCount 1; sh:languageIn ( "ga" ) ] .
+:DailHouseShape a sh:NodeShape ; sh:targetNode <https://data.oireachtas.ie/house/dail> ; sh:property [ sh:path dct:title; sh:hasValue "Dáil Éireann"@ga ] ; sh:property [ sh:path skos:prefLabel; sh:hasValue "Dáil Éireann"@ga ] .
+:SeanadHouseShape a sh:NodeShape ; sh:targetNode <https://data.oireachtas.ie/house/seanad> ; sh:property [ sh:path dct:title; sh:hasValue "Seanad Éireann"@ga ] ; sh:property [ sh:path skos:prefLabel; sh:hasValue "Seanad Éireann"@ga ] .

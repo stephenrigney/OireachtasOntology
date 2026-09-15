@@ -212,6 +212,7 @@ pip-log.txt
 # Pipeline data
 data/cache/
 data/output/
+data/raw/
 
 #Translations
 *.mo

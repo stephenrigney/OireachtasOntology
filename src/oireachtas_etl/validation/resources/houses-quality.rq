@@ -1,0 +1,6 @@
+PREFIX : <https://data.oireachtas.ie/ontology#>
+PREFIX dcat: <http://www.w3.org/ns/dcat#>
+PREFIX dct: <http://purl.org/dc/terms/>
+SELECT ?term ?problem WHERE {
+  { { ?term a :DailTerm } UNION { ?term a :SeanadTerm } . ?term dct:temporal ?period . ?period dcat:endDate ?end; dcat:startDate ?start . FILTER(?end < ?start) BIND("reverse period" AS ?problem) }
+}

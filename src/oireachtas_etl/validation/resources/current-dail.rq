@@ -1,0 +1,4 @@
+PREFIX : <https://data.oireachtas.ie/ontology#>
+PREFIX dcat: <http://www.w3.org/ns/dcat#>
+PREFIX dct: <http://purl.org/dc/terms/>
+SELECT ?term WHERE { GRAPH <https://data.oireachtas.ie/graph/houses> { ?term a :DailTerm ; dct:temporal ?period . FILTER NOT EXISTS { ?period dcat:endDate ?end } } }

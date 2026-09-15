@@ -1,0 +1,4 @@
+PREFIX : <https://data.oireachtas.ie/ontology#>
+PREFIX dcat: <http://www.w3.org/ns/dcat#>
+PREFIX dct: <http://purl.org/dc/terms/>
+SELECT ?number ?house ?start ?end WHERE { GRAPH <https://data.oireachtas.ie/graph/houses> { <https://data.oireachtas.ie/ie/oireachtas/house/dail/33> :termNo ?number ; :termOf ?house ; dct:temporal ?period . ?period dcat:startDate ?start ; dcat:endDate ?end . } }
