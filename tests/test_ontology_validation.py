@@ -5,6 +5,11 @@ from rdflib import Graph, Namespace, OWL, RDF
 import validate
 
 
+def test_all_ontology_turtle_files_parse() -> None:
+    assert validate.turtle_files()
+    validate.load_ontology_graph()
+
+
 def test_parse_failure_returns_nonzero(tmp_path) -> None:
     (tmp_path / "broken.owl.ttl").write_text(
         "@prefix : <https://example.test/> .\n:subject :predicate ; .",
@@ -15,7 +20,7 @@ def test_parse_failure_returns_nonzero(tmp_path) -> None:
 
 
 def test_reasoner_failure_raises_validation_error(monkeypatch) -> None:
-    def fail_reasoner(**_kwargs) -> None:
+    def fail_reasoner(*_args, **_kwargs) -> None:
         raise RuntimeError("HermiT unavailable")
 
     monkeypatch.setattr(validate.owlready2, "sync_reasoner", fail_reasoner)

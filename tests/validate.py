@@ -1,4 +1,4 @@
-"""Fail-closed validation for the local Oireachtas ontology modules."""
+"""Fail-closed validation for the repository's Oireachtas ontology modules."""
 from __future__ import annotations
 
 import argparse
@@ -18,19 +18,41 @@ class OntologyValidationError(RuntimeError):
     """Raised when parsing or OWL consistency validation cannot complete."""
 
 
+def turtle_files(ontology_dir: Path = ONTOLOGY_DIR) -> list[Path]:
+    """Return every Turtle file under the ontology directory."""
+    files = sorted(ontology_dir.rglob("*.ttl"))
+    if not files:
+        raise OntologyValidationError(f"No Turtle files found in {ontology_dir}")
+    return files
+
+
 def ontology_files(ontology_dir: Path = ONTOLOGY_DIR) -> list[Path]:
-    """Return the local ontology modules, rejecting an empty directory."""
+    """Return local ontology modules used for the HermiT consistency check."""
     files = sorted(ontology_dir.glob("*.owl.ttl"))
     if not files:
-        raise OntologyValidationError(f"No ontology files found in {ontology_dir}")
+        raise OntologyValidationError(f"No local ontology modules found in {ontology_dir}")
     return files
 
 
 def load_ontology_graph(ontology_dir: Path = ONTOLOGY_DIR) -> Graph:
-    """Parse every local Turtle module, propagating parse failures."""
+    """Parse every Turtle file, identifying a file if parsing fails."""
+    graph = Graph()
+    for path in turtle_files(ontology_dir):
+        try:
+            graph.parse(path, format="turtle")
+        except Exception as error:
+            raise OntologyValidationError(f"Failed to parse {path}: {error}") from error
+    return graph
+
+
+def load_local_ontology_graph(ontology_dir: Path = ONTOLOGY_DIR) -> Graph:
+    """Parse local modules only for HermiT, excluding vendored external schemas."""
     graph = Graph()
     for path in ontology_files(ontology_dir):
-        graph.parse(path, format="turtle")
+        try:
+            graph.parse(path, format="turtle")
+        except Exception as error:
+            raise OntologyValidationError(f"Failed to parse {path}: {error}") from error
     return graph
 
 
@@ -67,7 +89,10 @@ def run_consistency_check(graph: Graph) -> None:
 def validate_ontology(ontology_dir: Path = ONTOLOGY_DIR) -> Graph:
     """Parse and reason over the ontology, raising on every validation error."""
     graph = load_ontology_graph(ontology_dir)
-    run_consistency_check(graph)
+    # The vendored ELI-DL Turtle is syntax-checked above. Its xsd:date
+    # restrictions are outside HermiT's OWL 2 datatype support, so preserve
+    # the existing consistency boundary of the repository's own modules.
+    run_consistency_check(load_local_ontology_graph(ontology_dir))
     return graph
 
 

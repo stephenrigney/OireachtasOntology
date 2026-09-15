@@ -136,6 +136,28 @@ Establish a versioned semantic baseline against which ETL development can procee
 - [ ] Record ontology and mapping versions used by ETL runs.
 - [ ] Tag a stable ETL baseline in Git.
 
+### Baseline validation
+
+Run the Phase 0 checks from the repository root:
+
+```text
+.venv/bin/python tests/validate.py
+.venv/bin/python -m tools.validation
+.venv/bin/python -m pytest tests
+```
+
+The ontology validator parses every Turtle file beneath `ontology/` and runs
+the existing Owlready2/HermiT consistency check over the repository's local
+modules. The vendored ELI-DL schema is syntax-checked but excluded from HermiT
+because it declares datatypes unsupported by HermiT.
+
+Mapping-integrity validation examines all CSV rows with status `mapped` or
+`new`. Local terms (`:`, `agents:`, and `members:`) must be declared in the
+repository ontology. Terms from the explicitly approved external vocabulary
+prefixes are accepted without remote retrieval. `implicit` and `future_work`
+rows are intentionally outside this baseline check: the former emits no term,
+and the latter remains deferred work.
+
 Suggested baseline tag:
 
 ```text
