@@ -1,10 +1,11 @@
 # OireachtasOntology OpenCode Harness
 
-This is a minimal project-local coding harness. Its three roles are:
+This is a minimal project-local coding harness. Its four roles are:
 
 - `executor-low`: mechanical, local, clearly bounded implementation or investigation.
 - `executor-high`: diagnosis, design-sensitive implementation, or bounded work with material uncertainty.
 - `architecture-plan-auditor`: independent, read-only review when independence itself adds value.
+- `orchestrator`: manages executors for phased implementation of plans.
 
 Direct bounded implementation is the default. The executor retains the task
 through verification and works from: outcome, boundaries/invariants,
