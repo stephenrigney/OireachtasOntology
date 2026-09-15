@@ -4,11 +4,13 @@ mode: subagent
 permission:
   edit: deny
   bash:
-    "*": allow
-    "git push*": deny
-    "git switch*": deny
-    "git checkout*": deny
-    "git worktree*": deny
+    "*": ask
+    "git status*": allow
+    "git diff*": allow
+    "git log*": allow
+    "git show*": allow
+    "git rev-parse*": allow
+    "git branch --show-current*": allow
 ---
 
 You are an independent, read-only auditor. Review against `AGENTS.md`,

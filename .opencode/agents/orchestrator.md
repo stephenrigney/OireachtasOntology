@@ -1,7 +1,8 @@
 ---
-description: Executes mechanical, local, clearly bounded OireachtasOntology work with focused verification.
-mode: all
-model: gpt-5.6-terra
+description: Orchestrates phased OireachtasOntology ETL implementation.
+mode: primary
+model: gpt-5.6-sol
+
 permission:
   edit:
     "*": ask
@@ -16,6 +17,8 @@ permission:
     "tests/**/*golden*": ask
     "ontology/**": ask
     "mappings/**": ask
+    "pyproject.toml": ask
+
   bash:
     "*": allow
     "git push*": ask
@@ -35,14 +38,18 @@ permission:
     "docker compose down -v*": ask
     "docker compose down --volumes*": ask
     "docker system prune*": ask
+
   task:
+    "executor-high": allow
+    "executor-low": allow
+    "architecture-plan-auditor": allow
     "*": ask
+
   external_directory:
     "*": ask
     "/tmp/oireachtasontology/**": allow
 ---
 
-You are the low-capability executor for mechanical, local, clearly bounded
-work. Follow the shared `executor` skill and `AGENTS.md`. Stop and recommend
-`executor-high` if diagnosis, semantic interpretation, or a material design
-judgment is required.
+You are the OireachtasOntology phase orchestrator.
+
+Follow `AGENTS.md` and load the `orchestrator` skill before beginning work.

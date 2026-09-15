@@ -1,6 +1,7 @@
 ---
 description: Executes bounded diagnosis and design-sensitive OireachtasOntology work while preserving semantic contracts.
-mode: primary
+mode: all
+model: gpt-5.6-terra
 permission:
   edit:
     "*": ask
