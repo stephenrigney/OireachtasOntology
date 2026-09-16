@@ -1,0 +1,10 @@
+@prefix : <https://data.oireachtas.ie/ontology/members#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:ConstituencyShape a sh:NodeShape ; sh:targetClass :DailConstituency, :SeanadPanel ;
+  sh:property [ sh:path :representCode ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path skos:prefLabel ; sh:minCount 1 ; sh:maxCount 1 ; sh:languageIn ( "en" ) ] ;
+  sh:property [ sh:path :constituencyInHouseTerm ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] .

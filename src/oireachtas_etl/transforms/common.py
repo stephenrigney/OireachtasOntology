@@ -4,6 +4,7 @@ from rdflib import Literal, Namespace, URIRef
 from rdflib.namespace import DCAT, DCTERMS, RDF, SKOS, XSD
 
 OIR = Namespace("https://data.oireachtas.ie/ontology#")
+MEMBERS = Namespace("https://data.oireachtas.ie/ontology/members#")
 ELIDL = Namespace("http://data.europa.eu/eli/eli-draft-legislation-ontology#")
 
 def iri(value: str) -> URIRef:

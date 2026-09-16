@@ -1,0 +1,20 @@
+PREFIX members: <https://data.oireachtas.ie/ontology/members#>
+PREFIX agents: <https://data.oireachtas.ie/ontology#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+SELECT ?party ?problem WHERE {
+  { ?party a members:PartyGrouping ; members:partyCode "Independent" . ?party a members:Party . BIND("Independent must not be typed Party" AS ?problem) }
+  UNION
+  { ?party members:activeDuringTerm ?term . ?term ?predicate ?object . FILTER(?predicate IN (rdf:type, agents:termNo, agents:houseCode, skos:prefLabel)) BIND("HouseTerm description emitted outside Houses graph" AS ?problem) }
+  UNION
+  { ?party members:activeDuringTerm ?term . ?term ?predicate ?object . BIND("HouseTerm description emitted outside Houses graph" AS ?problem) }
+  UNION
+  { ?party ?predicate members:Independent . BIND("Party graph must not link to ontology Independent" AS ?problem) }
+  UNION
+  { members:Independent ?predicate ?object . BIND("Party graph must not describe ontology Independent" AS ?problem) }
+  UNION
+  { ?house ?predicate ?object . FILTER(?house IN (<https://data.oireachtas.ie/house/dail>, <https://data.oireachtas.ie/house/seanad>) || REGEX(STR(?house), "^https://data\\.oireachtas\\.ie/ie/oireachtas/house/(dail|seanad)/[1-9][0-9]*$")) BIND("House or HouseTerm description emitted outside Houses graph" AS ?problem) }
+  UNION
+  { ?house rdf:type ?houseType . FILTER(?houseType IN (members:House, agents:HouseTerm, agents:DailTerm, agents:SeanadTerm)) BIND("House or HouseTerm type emitted outside Houses graph" AS ?problem) }
+}

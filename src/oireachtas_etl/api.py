@@ -15,7 +15,7 @@ class ApiPage:
     status: int
     params: dict[str, int]
 
-class HousesApiClient:
+class ApiClient:
     def __init__(self, url: str, *, retries: int = 3, timeout: float = 30):
         self.url, self.retries, self.timeout = url, retries, timeout
 
@@ -43,8 +43,11 @@ class HousesApiClient:
             decoded = json.loads(page.body)
             records = decoded.get("results", decoded) if isinstance(decoded, dict) else decoded
             if not isinstance(records, list):
-                raise ValueError("Houses API page must be an array or an object with results")
+                raise ValueError("API page must be an array or an object with results")
             yield page
             if len(records) < limit:
                 return
             skip += limit
+
+# Kept as a public compatibility alias for the Phase 1 Houses slice.
+HousesApiClient = ApiClient

@@ -185,7 +185,7 @@ Defines the detailed membership, role and party structures of the Houses of the 
 | `:Dail` | `:House`, `agents:DailTerm` | Dáil Éireann as a membership container. Bridge to `agents:DailTerm` enables term-level typing. |
 | `:Seanad` | `:House`, `agents:SeanadTerm` | Seanad Éireann as a membership container. |
 | `:Committee` | `agents:Oireachtas` | A parliamentary committee |
-| `:PartyGrouping` | `foaf:Group` | equivalentClass `Independent ∪ Party` |
+| `:PartyGrouping` | `foaf:Group` | Superclass of `:Party`; `:Independent` is a separate general named individual. Term-scoped API party records retain their source IRIs and are not linked to it. |
 | `:OireachtasMembership` | `:MembersMembership` | Abstract superclass for house and committee membership records |
 | `:DailMembership` | `:OireachtasMembership` | Membership record for a specific Dáil term. Requires `inHouseTerm someValuesFrom agents:DailTerm`. Disjoint with `:SeanadMembership`. |
 | `:SeanadMembership` | `:OireachtasMembership` | Membership record for a specific Seanad term. Requires `inHouseTerm someValuesFrom agents:SeanadTerm`. |

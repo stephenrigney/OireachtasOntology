@@ -1,0 +1,13 @@
+PREFIX members: <https://data.oireachtas.ie/ontology/members#>
+PREFIX agents: <https://data.oireachtas.ie/ontology#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+SELECT ?representation ?problem WHERE {
+  { ?representation a members:DailConstituency, members:SeanadPanel . BIND("representation has incompatible classes" AS ?problem) }
+  UNION
+  { ?representation members:constituencyInHouseTerm ?term . ?term ?predicate ?object . BIND("HouseTerm description emitted outside Houses graph" AS ?problem) }
+  UNION
+  { ?house ?predicate ?object . FILTER(?house IN (<https://data.oireachtas.ie/house/dail>, <https://data.oireachtas.ie/house/seanad>) || REGEX(STR(?house), "^https://data\\.oireachtas\\.ie/ie/oireachtas/house/(dail|seanad)/[1-9][0-9]*$")) BIND("House or HouseTerm description emitted outside Houses graph" AS ?problem) }
+  UNION
+  { ?house rdf:type ?houseType . FILTER(?houseType IN (members:House, agents:HouseTerm, agents:DailTerm, agents:SeanadTerm)) BIND("House or HouseTerm type emitted outside Houses graph" AS ?problem) }
+}

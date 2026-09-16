@@ -44,4 +44,6 @@ For a reproducible local store, run `docker compose up -d fuseki`. Its persisten
 `http://localhost:3030/houses/data` for GSP and
 `http://localhost:3030/houses/query` for SPARQL. Set
 `OIR_TEST_FUSEKI_GSP_URL` and `OIR_TEST_FUSEKI_SPARQL_URL` to run the optional
-real-Fuseki integration test.
+real-Fuseki integration test. For an authenticated Fuseki, optionally set
+`OIR_TEST_FUSEKI_USER` and `OIR_TEST_FUSEKI_PASSWORD`; do not place credentials
+in files.

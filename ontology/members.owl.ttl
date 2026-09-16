@@ -413,7 +413,7 @@ org:Membership rdfs:subClassOf [ a owl:Restriction ;
     rdfs:subClassOf foaf:Group ;
     skos:prefLabel "Party grouping"@en ;
     skos:scopeNote "Use skos:prefLabel for the display name of a party grouping (corresponds to the 'showAs' field in the Oireachtas parties API, e.g. 'Fine Gael', 'Fianna Fáil')."@en ;
-    rdfs:comment "A political party or collective Independent grouping as used in the Oireachtas API. Superclass of :Party. The :Independent named individual (see Individuals section) represents the collective Independent grouping returned by the API."@en .
+    rdfs:comment "A political party or collective Independent grouping as used in the Oireachtas API. Superclass of :Party. API party records retain their term-scoped source IRIs; :Independent is a separate general conceptual grouping."@en .
 
 :Dail a owl:Class ;
     rdfs:subClassOf :House ,
@@ -502,4 +502,4 @@ org:Membership rdfs:subClassOf [ a owl:Restriction ;
         owl:NamedIndividual ;
     skos:prefLabel "Independent"@en ;
     :partyCode "Independent"^^xsd:string ;
-    rdfs:comment "Named individual representing the collective Independent grouping as returned by the Oireachtas parties API (partyCode: 'Independent'). Individual independent members hold :PartyMembership records linking them to this individual via :isPartyMembershipOf. Replaces the former :Independent class."@en .
+    rdfs:comment "Named individual representing a general, term-independent Independent grouping. Term-scoped Oireachtas parties API records with partyCode 'Independent' retain their source IRIs and are not linked to this individual. Replaces the former :Independent class."@en .

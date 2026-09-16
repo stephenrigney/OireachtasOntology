@@ -4,10 +4,15 @@ import os
 from pathlib import Path
 
 HOUSES_GRAPH = "https://data.oireachtas.ie/graph/houses"
+PARTIES_GRAPH = "https://data.oireachtas.ie/graph/parties"
+CONSTITUENCIES_GRAPH = "https://data.oireachtas.ie/graph/constituencies"
+REFERENCE_ONTOLOGY_VERSION = "agents.owl.ttl+members.owl.ttl@phase-2-reference-data-2026"
 
 @dataclass(frozen=True)
 class Settings:
     api_url: str = "https://api.oireachtas.ie/v1/houses"
+    parties_api_url: str = "https://api.oireachtas.ie/v1/parties"
+    constituencies_api_url: str = "https://api.oireachtas.ie/v1/constituencies"
     raw_dir: Path = Path("data/raw")
     fuseki_gsp_url: str | None = None
     fuseki_sparql_url: str | None = None
@@ -23,6 +28,8 @@ class Settings:
     def from_environment(cls) -> "Settings":
         return cls(
             api_url=os.getenv("OIR_API_URL", cls.api_url),
+            parties_api_url=os.getenv("OIR_PARTIES_API_URL", cls.parties_api_url),
+            constituencies_api_url=os.getenv("OIR_CONSTITUENCIES_API_URL", cls.constituencies_api_url),
             raw_dir=Path(os.getenv("OIR_RAW_DIR", "data/raw")),
             fuseki_gsp_url=os.getenv("OIR_FUSEKI_GSP_URL"),
             fuseki_sparql_url=os.getenv("OIR_FUSEKI_SPARQL_URL"),

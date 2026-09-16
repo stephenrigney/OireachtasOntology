@@ -7,11 +7,13 @@ from .provenance import package_version, sha256
 
 def persist_raw(*, root: Path, endpoint: str, params: dict, body: bytes, status: int,
                 retrieved_at: datetime | None = None, ontology_version: str = "agents.owl.ttl@phase-1-houses-2026",
-                mapping_version: str = "houses_mapping.csv@phase-1-houses-2026") -> tuple[Path, Path]:
+                mapping_version: str = "houses_mapping.csv@phase-1-houses-2026", endpoint_name: str = "houses") -> tuple[Path, Path]:
     retrieved_at = retrieved_at or datetime.now(timezone.utc)
     day = retrieved_at.date().isoformat()
     skip = int(params["skip"])
-    destination = root / "houses" / day
+    if endpoint_name not in {"houses", "parties", "constituencies", "members"}:
+        raise ValueError(f"unsupported raw endpoint: {endpoint_name!r}")
+    destination = root / endpoint_name / day
     destination.mkdir(parents=True, exist_ok=True)
     raw_path = destination / f"skip-{skip:06d}.json"
     meta_path = destination / f"skip-{skip:06d}.meta.json"

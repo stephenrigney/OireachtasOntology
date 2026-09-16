@@ -1,0 +1,10 @@
+PREFIX : <https://data.oireachtas.ie/ontology/members#>
+SELECT ?representation ?kind ?term WHERE {
+  GRAPH <https://data.oireachtas.ie/graph/constituencies> {
+    VALUES (?representation ?class ?kind) {
+      (<https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Mid-West> :DailConstituency "DailConstituency")
+      (<https://data.oireachtas.ie/ie/oireachtas/house/seanad/9/panel/Agricultural-Panel> :SeanadPanel "SeanadPanel")
+    }
+    ?representation a ?class ; :constituencyInHouseTerm ?term .
+  }
+} ORDER BY ?representation

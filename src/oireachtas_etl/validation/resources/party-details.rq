@@ -1,0 +1,7 @@
+PREFIX : <https://data.oireachtas.ie/ontology/members#>
+SELECT ?party ?code ?term WHERE {
+  GRAPH <https://data.oireachtas.ie/graph/parties> {
+    VALUES ?party { <https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Fine_Gael> <https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Independent> }
+    ?party :partyCode ?code ; :activeDuringTerm ?term .
+  }
+} ORDER BY ?party

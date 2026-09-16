@@ -124,3 +124,20 @@ def test_cli_never_constructs_loader_without_sparql_endpoint(tmp_path, monkeypat
     args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), output_ttl=None, output_nq=None, fuseki_gsp_url=None, fuseki_sparql_url=None)
     with pytest.raises(ValueError, match="SPARQL endpoint is required"): cli.run_houses(args)
     assert called == []
+
+def test_cli_offline_ignores_configured_fuseki_endpoints(tmp_path, monkeypatch):
+    from argparse import Namespace
+    from oireachtas_etl import cli
+    fixture = tmp_path / "houses.json"; fixture.write_text(json.dumps(RECORDS))
+    called = []
+    class Loader:
+        def __init__(self, *args, **kwargs): called.append("constructed")
+    def competency(client): called.append("competency")
+    monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
+    monkeypatch.setattr(cli, "verify_houses_competency", competency)
+    monkeypatch.setenv("OIR_FUSEKI_GSP_URL", "http://local.test/data")
+    monkeypatch.setenv("OIR_FUSEKI_SPARQL_URL", "http://local.test/query")
+    args = Namespace(fixture=str(fixture), offline=True, raw_dir=str(tmp_path / "raw"), output_ttl=None, output_nq=None,
+                     fuseki_gsp_url=None, fuseki_sparql_url=None)
+    assert cli.run_houses(args) == 0
+    assert called == []

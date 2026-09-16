@@ -1,0 +1,16 @@
+@prefix : <https://data.oireachtas.ie/ontology/members#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/9/constituency/Cork-South-East> a :Constituencies, :DailConstituency ;
+    skos:prefLabel "Cork South East"@en ; :representCode "Cork-South-East"^^xsd:string ;
+    :constituencyInHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/9> .
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Mid-West> a :Constituencies, :DailConstituency ;
+    skos:prefLabel "Dublin Mid-West"@en ; :representCode "Dublin-Mid-West"^^xsd:string ;
+    :constituencyInHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> .
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/9/panel/Nominated-by-the-Taoiseach> a :Constituencies, :SeanadPanel ;
+    skos:prefLabel "Nominated by the Taoiseach"@en ; :representCode "Nominated-by-the-Taoiseach"^^xsd:string ;
+    :constituencyInHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/seanad/9> .
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/9/panel/Agricultural-Panel> a :Constituencies, :SeanadPanel ;
+    skos:prefLabel "Agricultural Panel"@en ; :representCode "Agricultural-Panel"^^xsd:string ;
+    :constituencyInHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/seanad/9> .
