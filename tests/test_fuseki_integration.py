@@ -1,17 +1,20 @@
 """Optional test against the local Compose Fuseki; it never selects production URLs."""
 import json
 import os
+from argparse import Namespace
 from pathlib import Path
 import pytest
-from rdflib import Graph, Literal
+from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import XSD
-from oireachtas_etl.competency import verify_constituencies_competency, verify_houses_competency, verify_parties_competency
+from oireachtas_etl.competency import verify_constituencies_competency, verify_houses_competency, verify_parties_competency, verify_members_competency
+from oireachtas_etl.cli import run_members
 from oireachtas_etl.config import CONSTITUENCIES_GRAPH, HOUSES_GRAPH, PARTIES_GRAPH
 from oireachtas_etl.loader import FusekiGraphStoreLoader, FusekiSparqlClient
-from oireachtas_etl.serialization import turtle
+from oireachtas_etl.serialization import ntriples, turtle
 from oireachtas_etl.transforms.houses import transform_houses
 from oireachtas_etl.transforms.parties import transform_parties
 from oireachtas_etl.transforms.constituencies import transform_constituencies
+from oireachtas_etl.transforms.members import member_graph_iri, source_hash, transform_member
 
 GSP = os.getenv("OIR_TEST_FUSEKI_GSP_URL")
 SPARQL = os.getenv("OIR_TEST_FUSEKI_SPARQL_URL")
@@ -85,3 +88,48 @@ def test_reference_gsp_replacement_is_idempotent_and_removes_stale_content(graph
         smaller.remove(triple)
     loader.replace(graph_iri, turtle(smaller), content_type="text/turtle")
     assert _count(client, graph_iri) == len(smaller)
+
+
+def test_members_workflow_gsp_replacement_removes_stale_content_and_retains_absent_member(tmp_path, capsys):
+    root = Path(__file__).resolve().parents[1]
+    wrapper = json.loads((root / "data/api_examples/member.json").read_text())
+    fixture = tmp_path / "member.json"; fixture.write_text(json.dumps(wrapper))
+    state = tmp_path / "members-state.json"
+    absent = "https://data.oireachtas.ie/ie/oireachtas/member/id/Absent"
+    state.write_text(json.dumps({"version": 1, "members": {absent: {"published_hash": "retained", "graph_iri": "https://data.oireachtas.ie/graph/member/Absent", "contract_version": 1}}}))
+    args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_file=str(state), output_nq=None,
+                     output_ttl=None, fuseki_gsp_url=GSP, fuseki_sparql_url=SPARQL)
+    graph_iri = member_graph_iri(wrapper["member"])
+    loader = FusekiGraphStoreLoader(GSP, user=FUSEKI_USER, password=FUSEKI_PASSWORD)
+    client = FusekiSparqlClient(SPARQL, user=FUSEKI_USER, password=FUSEKI_PASSWORD)
+    assert run_members(args) == 0
+    first = json.loads(capsys.readouterr().out)
+    assert first["new"] == [wrapper["member"]["uri"]] and first["missing_retained"] == [absent]
+    first_state = json.loads(state.read_text())
+    assert first_state["members"][wrapper["member"]["uri"]]["published_hash"] == source_hash(wrapper["member"])
+    verify_members_competency(client)
+
+    published = _graph_from_gsp(GSP, graph_iri)
+    published.add((URIRef("https://example.test/stale"), URIRef("https://example.test/p"), URIRef("https://example.test/o")))
+    loader.replace(graph_iri, ntriples(published), content_type="application/n-triples")
+    assert _count(client, graph_iri) == len(published)
+
+    changed = json.loads(json.dumps(wrapper)); changed["member"]["fullName"] = "Timmy Dooley changed"
+    changed_fixture = tmp_path / "member-changed.json"; changed_fixture.write_text(json.dumps(changed))
+    args.fixture = str(changed_fixture)
+    args.raw_dir = str(tmp_path / "raw-changed")
+    assert run_members(args) == 0
+    second = json.loads(capsys.readouterr().out)
+    assert second["changed"] == [wrapper["member"]["uri"]] and second["new"] == [] and second["skipped_identities"] == []
+    assert not list(_graph_from_gsp(GSP, graph_iri).triples((URIRef("https://example.test/stale"), None, None)))
+    second_state = json.loads(state.read_text())
+    assert second_state["members"][wrapper["member"]["uri"]]["published_hash"] == source_hash(changed["member"])
+    assert second_state["members"][wrapper["member"]["uri"]]["published_hash"] != first_state["members"][wrapper["member"]["uri"]]["published_hash"]
+    assert absent in second_state["members"]
+    verify_members_competency(client)
+
+    assert run_members(args) == 0
+    third = json.loads(capsys.readouterr().out)
+    assert third["new"] == [] and third["changed"] == [] and third["skipped_identities"] == [wrapper["member"]["uri"]]
+    assert _count(client, graph_iri) == len(transform_member(changed))
+    verify_members_competency(client)

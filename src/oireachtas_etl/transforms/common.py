@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 import re
 from rdflib import Literal, Namespace, URIRef
 from rdflib.namespace import DCAT, DCTERMS, RDF, SKOS, XSD
@@ -31,3 +31,22 @@ def midnight(value: object) -> Literal:
     try: date.fromisoformat(value)
     except ValueError as error: raise ValueError(f"invalid date: {value!r}") from error
     return Literal(value + "T00:00:00", datatype=XSD.dateTime)
+
+
+def datetime_literal(value: object) -> Literal:
+    """Return a canonical xsd:dateTime literal for API dates or timestamps."""
+    if not isinstance(value, str):
+        raise ValueError(f"invalid date-time: {value!r}")
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        try:
+            date.fromisoformat(value)
+        except ValueError as error:
+            raise ValueError(f"invalid date-time: {value!r}") from error
+        return Literal(value + "T00:00:00", datatype=XSD.dateTime)
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise ValueError(f"invalid date-time: {value!r}") from error
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+    return Literal(parsed.isoformat(timespec="seconds"), datatype=XSD.dateTime)

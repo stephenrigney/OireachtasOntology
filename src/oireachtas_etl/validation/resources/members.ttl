@@ -1,0 +1,33 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix oir: <https://data.oireachtas.ie/ontology#> .
+@prefix members: <https://data.oireachtas.ie/ontology/members#> .
+
+oir:MemberShape a sh:NodeShape ; sh:targetClass oir:Member ;
+  sh:property [ sh:path oir:memberCode ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path oir:hasImage ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:boolean ] ;
+  sh:property [ sh:path members:hasMembersMembership ; sh:minCount 1 ] .
+
+members:OireachtasMembershipShape a sh:NodeShape ; sh:targetClass members:OireachtasMembership ;
+  sh:property [ sh:path members:inHouseTerm ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+  sh:property [ sh:path members:isOireachtasMembershipOf ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+  sh:property [ sh:path members:hasMembershipDateRange ; sh:minCount 1 ; sh:maxCount 1 ; sh:class members:DateRange ] .
+
+members:PartyMembershipShape a sh:NodeShape ; sh:targetClass members:PartyMembership ;
+  sh:property [ sh:path members:isPartyMembershipOf ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+  sh:property [ sh:path members:hasMembershipDateRange ; sh:minCount 1 ; sh:maxCount 1 ; sh:class members:DateRange ] .
+
+members:CommitteeMembershipShape a sh:NodeShape ; sh:targetClass members:CommitteeMembership ;
+  sh:property [ sh:path members:isCommitteeMembershipOf ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+  sh:property [ sh:path members:hasMembershipDateRange ; sh:minCount 1 ; sh:maxCount 1 ; sh:class members:DateRange ] ;
+  sh:property [ sh:path members:hasCommitteeRole ; sh:or ( [ sh:class members:Chair ] [ sh:class members:DeputyChair ] ) ] .
+
+members:MinisterOfStateMembershipShape a sh:NodeShape ; sh:targetClass members:MinisterOfStateMembership ;
+  sh:property [ sh:path members:hasMinisterOfStateRole ; sh:minCount 1 ; sh:maxCount 1 ; sh:class members:MinisterOfStateRole ] ;
+  sh:property [ sh:path members:hasMembershipDateRange ; sh:minCount 1 ; sh:maxCount 1 ; sh:class members:DateRange ] ;
+  sh:property [ sh:path members:officeNameUri ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] .
+
+members:MembershipDateRangeShape a sh:NodeShape ; sh:targetClass members:DateRange ;
+  sh:property [ sh:path members:StartDate ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:dateTime ] ;
+  sh:property [ sh:path members:EndDate ; sh:maxCount 1 ; sh:datatype xsd:dateTime ] .

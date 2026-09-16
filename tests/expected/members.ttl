@@ -1,0 +1,216 @@
+@prefix : <https://data.oireachtas.ie/ontology#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix ns1: <https://data.oireachtas.ie/ontology/members#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12> a :Member ;
+    foaf:familyName "Dooley" ;
+    foaf:firstName "Timmy" ;
+    foaf:name "Timmy Dooley" ;
+    :gender ""^^xsd:string ;
+    :hasImage false ;
+    :memberCode "Timmy-Dooley.S.2002-09-12"^^xsd:string ;
+    :pId "TimDooley"^^xsd:string ;
+    ns1:hasMembersMembership <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/30>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/30#party-membership-008606c2facbe9731aeeadb35b6ce376733c2fda47a13ba0b2b8d57f48bd447f>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/31>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/31#party-membership-624edaa6ae9333212b16ea75309f7cb13cab3f0037e3f8f66fbfb20b936428ec>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#committee-membership-336101070fed4055521f58c3f52f4dad53fcc5332eb04ce4946c2ccdc8ff45d7>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#committee-membership-3bc7e68888df9da3c382a21e26e9ffbfbdf7d5395c2ca72399392e7e37356ba5>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#committee-membership-b4773a570aa0c0a8d213d24bbbdaf0535b020fe77ffa100f9d2a592281ba7690>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#party-membership-9ed256c3740857a015271939ffb633041730756742bdbd1a5987919977b8a25d>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#minister-of-state-membership-681ed4c802b1acbb81a375404a6e076cd53901371313c501a8f7e77c9422b1a3>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#minister-of-state-membership-ddedd5a739bfe833e90c566439c0efefcdcc2825ff771cacfaa899e7f66d8d17>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#party-membership-a0db44ca23cb7ed5129ed071ca4d545fee362c5137db08325cfebf43b296d273>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/22>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/22#party-membership-c0cd29e142e950812bccaff7cd72f4d4d465967ab472a1df8c04154f38777430>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#committee-membership-7079e352a8a8a03862ced7f4c0c231b9495bbe82e022500d28b0ea9d9c83ae42>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#committee-membership-bb3f8b0897f98fab75568fa23694638cf0084967090b1d52e4e87de82465dddb>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#committee-membership-d2a0864ccb996789b85b52ed0dfc7eb030cfd198e49237d8134144dbb85a7e0c>,
+        <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#party-membership-8cfd80d56bff0f7d6a4209d224dc7807b7b26348b20d84a84a3289550833a9da> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/30> a ns1:DailMembership,
+        ns1:OireachtasMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/30#date-range> ;
+    ns1:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/30> ;
+    ns1:isOireachtasMembershipOf <https://data.oireachtas.ie/house/dail> ;
+    ns1:isRepresentativeFrom <https://data.oireachtas.ie/ie/oireachtas/house/dail/30/constituency/Clare> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/30#date-range> a ns1:DateRange ;
+    ns1:EndDate "2011-02-01T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2007-06-14T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/30#party-membership-008606c2facbe9731aeeadb35b6ce376733c2fda47a13ba0b2b8d57f48bd447f> a ns1:PartyMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/30#party-membership-008606c2facbe9731aeeadb35b6ce376733c2fda47a13ba0b2b8d57f48bd447f#date-range> ;
+    ns1:isPartyMembershipOf <https://data.oireachtas.ie/ie/oireachtas/party/dail/30/Fianna_Fáil> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/30#party-membership-008606c2facbe9731aeeadb35b6ce376733c2fda47a13ba0b2b8d57f48bd447f#date-range> a ns1:DateRange ;
+    ns1:EndDate "2011-02-01T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2007-05-24T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/31> a ns1:DailMembership,
+        ns1:OireachtasMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/31#date-range> ;
+    ns1:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/31> ;
+    ns1:isOireachtasMembershipOf <https://data.oireachtas.ie/house/dail> ;
+    ns1:isRepresentativeFrom <https://data.oireachtas.ie/ie/oireachtas/house/dail/31/constituency/Clare> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/31#date-range> a ns1:DateRange ;
+    ns1:EndDate "2016-03-09T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2011-03-09T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/31#party-membership-624edaa6ae9333212b16ea75309f7cb13cab3f0037e3f8f66fbfb20b936428ec> a ns1:PartyMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/31#party-membership-624edaa6ae9333212b16ea75309f7cb13cab3f0037e3f8f66fbfb20b936428ec#date-range> ;
+    ns1:isPartyMembershipOf <https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Fianna_Fáil> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/31#party-membership-624edaa6ae9333212b16ea75309f7cb13cab3f0037e3f8f66fbfb20b936428ec#date-range> a ns1:DateRange ;
+    ns1:EndDate "2016-03-09T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2011-02-25T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32> a ns1:DailMembership,
+        ns1:OireachtasMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#date-range> ;
+    ns1:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/32> ;
+    ns1:isOireachtasMembershipOf <https://data.oireachtas.ie/house/dail> ;
+    ns1:isRepresentativeFrom <https://data.oireachtas.ie/ie/oireachtas/house/dail/32/constituency/Clare> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#committee-membership-336101070fed4055521f58c3f52f4dad53fcc5332eb04ce4946c2ccdc8ff45d7> a ns1:CommitteeMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#committee-membership-336101070fed4055521f58c3f52f4dad53fcc5332eb04ce4946c2ccdc8ff45d7#member-date-range> ;
+    ns1:isCommitteeMembershipOf <https://data.oireachtas.ie/ie/oireachtas/committee/dail/32/joint_committee_on_climate_action> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#committee-membership-336101070fed4055521f58c3f52f4dad53fcc5332eb04ce4946c2ccdc8ff45d7#member-date-range> a ns1:DateRange ;
+    ns1:EndDate "2020-01-14T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2018-07-04T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#committee-membership-3bc7e68888df9da3c382a21e26e9ffbfbdf7d5395c2ca72399392e7e37356ba5> a ns1:CommitteeMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#committee-membership-3bc7e68888df9da3c382a21e26e9ffbfbdf7d5395c2ca72399392e7e37356ba5#member-date-range> ;
+    ns1:isCommitteeMembershipOf <https://data.oireachtas.ie/ie/oireachtas/committee/dail/32/select_committee_on_communications_climate_action_and_environment> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#committee-membership-3bc7e68888df9da3c382a21e26e9ffbfbdf7d5395c2ca72399392e7e37356ba5#member-date-range> a ns1:DateRange ;
+    ns1:EndDate "2020-01-14T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2016-06-16T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#committee-membership-b4773a570aa0c0a8d213d24bbbdaf0535b020fe77ffa100f9d2a592281ba7690> a ns1:CommitteeMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#committee-membership-b4773a570aa0c0a8d213d24bbbdaf0535b020fe77ffa100f9d2a592281ba7690#member-date-range> ;
+    ns1:isCommitteeMembershipOf <https://data.oireachtas.ie/ie/oireachtas/committee/dail/32/joint_committee_on_communications_climate_action_and_environment> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#committee-membership-b4773a570aa0c0a8d213d24bbbdaf0535b020fe77ffa100f9d2a592281ba7690#member-date-range> a ns1:DateRange ;
+    ns1:EndDate "2020-01-14T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2016-06-16T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#date-range> a ns1:DateRange ;
+    ns1:EndDate "2020-01-14T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2016-03-10T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#party-membership-9ed256c3740857a015271939ffb633041730756742bdbd1a5987919977b8a25d> a ns1:PartyMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#party-membership-9ed256c3740857a015271939ffb633041730756742bdbd1a5987919977b8a25d#date-range> ;
+    ns1:isPartyMembershipOf <https://data.oireachtas.ie/ie/oireachtas/party/dail/32/Fianna_Fáil> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/32#party-membership-9ed256c3740857a015271939ffb633041730756742bdbd1a5987919977b8a25d#date-range> a ns1:DateRange ;
+    ns1:EndDate "2020-01-14T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2016-03-10T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34> a ns1:DailMembership,
+        ns1:OireachtasMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#date-range> ;
+    ns1:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> ;
+    ns1:isOireachtasMembershipOf <https://data.oireachtas.ie/house/dail> ;
+    ns1:isRepresentativeFrom <https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Clare> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#date-range> a ns1:DateRange ;
+    ns1:StartDate "2024-11-29T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#minister-of-state-membership-681ed4c802b1acbb81a375404a6e076cd53901371313c501a8f7e77c9422b1a3> a ns1:MinisterOfStateMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#minister-of-state-membership-681ed4c802b1acbb81a375404a6e076cd53901371313c501a8f7e77c9422b1a3#date-range> ;
+    ns1:hasMinisterOfStateRole <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#minister-of-state-membership-681ed4c802b1acbb81a375404a6e076cd53901371313c501a8f7e77c9422b1a3#role> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#minister-of-state-membership-681ed4c802b1acbb81a375404a6e076cd53901371313c501a8f7e77c9422b1a3#date-range> a ns1:DateRange ;
+    ns1:EndDate "2025-06-01T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2025-02-25T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#minister-of-state-membership-681ed4c802b1acbb81a375404a6e076cd53901371313c501a8f7e77c9422b1a3#role> a ns1:MinisterOfStateRole ;
+    skos:prefLabel "Minister of State at the Department of Agriculture, Food and the Marine and at the Department of the Environment, Climate and Communications" .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#minister-of-state-membership-ddedd5a739bfe833e90c566439c0efefcdcc2825ff771cacfaa899e7f66d8d17> a ns1:MinisterOfStateMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#minister-of-state-membership-ddedd5a739bfe833e90c566439c0efefcdcc2825ff771cacfaa899e7f66d8d17#date-range> ;
+    ns1:hasMinisterOfStateRole <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#minister-of-state-membership-ddedd5a739bfe833e90c566439c0efefcdcc2825ff771cacfaa899e7f66d8d17#role> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#minister-of-state-membership-ddedd5a739bfe833e90c566439c0efefcdcc2825ff771cacfaa899e7f66d8d17#date-range> a ns1:DateRange ;
+    ns1:StartDate "2025-06-02T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#minister-of-state-membership-ddedd5a739bfe833e90c566439c0efefcdcc2825ff771cacfaa899e7f66d8d17#role> a ns1:MinisterOfStateRole ;
+    skos:prefLabel "Minister of State at the Department of Agriculture, Food and the Marine and at the Department of Climate, Energy and the Environment" .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#party-membership-a0db44ca23cb7ed5129ed071ca4d545fee362c5137db08325cfebf43b296d273> a ns1:PartyMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#party-membership-a0db44ca23cb7ed5129ed071ca4d545fee362c5137db08325cfebf43b296d273#date-range> ;
+    ns1:isPartyMembershipOf <https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34#party-membership-a0db44ca23cb7ed5129ed071ca4d545fee362c5137db08325cfebf43b296d273#date-range> a ns1:DateRange ;
+    ns1:StartDate "2024-11-29T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/22> a ns1:OireachtasMembership,
+        ns1:SeanadMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/22#date-range> ;
+    ns1:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/seanad/22> ;
+    ns1:isOireachtasMembershipOf <https://data.oireachtas.ie/house/seanad> ;
+    ns1:isRepresentativeFrom <https://data.oireachtas.ie/ie/oireachtas/house/seanad/22/panel/Administrative-Panel> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/22#date-range> a ns1:DateRange ;
+    ns1:EndDate "2007-07-22T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2002-09-12T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/22#party-membership-c0cd29e142e950812bccaff7cd72f4d4d465967ab472a1df8c04154f38777430> a ns1:PartyMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/22#party-membership-c0cd29e142e950812bccaff7cd72f4d4d465967ab472a1df8c04154f38777430#date-range> ;
+    ns1:isPartyMembershipOf <https://data.oireachtas.ie/ie/oireachtas/party/seanad/22/Fianna_Fáil> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/22#party-membership-c0cd29e142e950812bccaff7cd72f4d4d465967ab472a1df8c04154f38777430#date-range> a ns1:DateRange ;
+    ns1:EndDate "2007-07-22T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2002-09-12T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26> a ns1:OireachtasMembership,
+        ns1:SeanadMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#date-range> ;
+    ns1:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/seanad/26> ;
+    ns1:isOireachtasMembershipOf <https://data.oireachtas.ie/house/seanad> ;
+    ns1:isRepresentativeFrom <https://data.oireachtas.ie/ie/oireachtas/house/seanad/26/panel/Nominated-by-the-Taoiseach> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#committee-membership-7079e352a8a8a03862ced7f4c0c231b9495bbe82e022500d28b0ea9d9c83ae42> a ns1:CommitteeMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#committee-membership-7079e352a8a8a03862ced7f4c0c231b9495bbe82e022500d28b0ea9d9c83ae42#member-date-range> ;
+    ns1:isCommitteeMembershipOf <https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/joint_committee_on_transport_and_communications> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#committee-membership-7079e352a8a8a03862ced7f4c0c231b9495bbe82e022500d28b0ea9d9c83ae42#member-date-range> a ns1:DateRange ;
+    ns1:EndDate "2024-11-08T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2020-09-25T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#committee-membership-bb3f8b0897f98fab75568fa23694638cf0084967090b1d52e4e87de82465dddb> a ns1:CommitteeMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#committee-membership-bb3f8b0897f98fab75568fa23694638cf0084967090b1d52e4e87de82465dddb#member-date-range> ;
+    ns1:isCommitteeMembershipOf <https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/seanad_special_committee_on_the_withdrawal_of_the_united_kingdom_from_the_european_union> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#committee-membership-bb3f8b0897f98fab75568fa23694638cf0084967090b1d52e4e87de82465dddb#member-date-range> a ns1:DateRange ;
+    ns1:EndDate "2021-12-09T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2020-11-05T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#committee-membership-d2a0864ccb996789b85b52ed0dfc7eb030cfd198e49237d8134144dbb85a7e0c> a ns1:CommitteeMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#committee-membership-d2a0864ccb996789b85b52ed0dfc7eb030cfd198e49237d8134144dbb85a7e0c#member-date-range> ;
+    ns1:isCommitteeMembershipOf <https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/joint_committee_on_environment_and_climate_action> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#committee-membership-d2a0864ccb996789b85b52ed0dfc7eb030cfd198e49237d8134144dbb85a7e0c#member-date-range> a ns1:DateRange ;
+    ns1:EndDate "2024-11-08T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2020-09-25T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#date-range> a ns1:DateRange ;
+    ns1:EndDate "2024-11-29T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2020-06-29T00:00:00"^^xsd:dateTime .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#party-membership-8cfd80d56bff0f7d6a4209d224dc7807b7b26348b20d84a84a3289550833a9da> a ns1:PartyMembership ;
+    ns1:hasMembershipDateRange <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#party-membership-8cfd80d56bff0f7d6a4209d224dc7807b7b26348b20d84a84a3289550833a9da#date-range> ;
+    ns1:isPartyMembershipOf <https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Fianna_Fáil> .
+
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26#party-membership-8cfd80d56bff0f7d6a4209d224dc7807b7b26348b20d84a84a3289550833a9da#date-range> a ns1:DateRange ;
+    ns1:EndDate "2024-11-29T00:00:00"^^xsd:dateTime ;
+    ns1:StartDate "2020-06-29T00:00:00"^^xsd:dateTime .
+

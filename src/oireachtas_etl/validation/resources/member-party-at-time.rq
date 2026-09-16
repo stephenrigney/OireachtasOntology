@@ -1,0 +1,18 @@
+# {{member}} is an IRI and {{instant}} is an xsd:dateTime supplied by the renderer.
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+SELECT ?member ?party ?start ?end WHERE {
+  VALUES ?member { {{member}} }
+  VALUES ?instant { {{instant}} }
+  GRAPH ?graph {
+    ?member a <https://data.oireachtas.ie/ontology#Member> ;
+      <https://data.oireachtas.ie/ontology/members#hasMembersMembership> ?pm .
+    ?pm a <https://data.oireachtas.ie/ontology/members#PartyMembership> ;
+      <https://data.oireachtas.ie/ontology/members#isPartyMembershipOf> ?party ;
+      <https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> ?range .
+    ?range <https://data.oireachtas.ie/ontology/members#StartDate> ?start .
+    OPTIONAL { ?range <https://data.oireachtas.ie/ontology/members#EndDate> ?end }
+  }
+  FILTER(STRSTARTS(STR(?graph), "https://data.oireachtas.ie/graph/member/"))
+  FILTER(?start <= ?instant && (!BOUND(?end) || ?instant <= ?end))
+}
+ORDER BY ?member ?party ?start

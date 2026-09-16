@@ -1,0 +1,11 @@
+# {{term}} is an IRI supplied by the competency-query renderer.
+SELECT ?member ?membership WHERE {
+  VALUES ?term { {{term}} }
+  GRAPH ?graph {
+    ?member a <https://data.oireachtas.ie/ontology#Member> ;
+      <https://data.oireachtas.ie/ontology/members#hasMembersMembership> ?membership .
+    ?membership <https://data.oireachtas.ie/ontology/members#inHouseTerm> ?term .
+  }
+  FILTER(STRSTARTS(STR(?graph), "https://data.oireachtas.ie/graph/member/"))
+}
+ORDER BY ?member ?membership

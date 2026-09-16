@@ -147,9 +147,9 @@ https://data.oireachtas.ie/ie/oireachtas/member/{firstname}-{opt middle name}-{l
 | `:elected` | `time:TemporalEntity` | `:EventDate` | Date of election |
 | `:isOireachtasMembershipOf` | `members:OireachtasMembership` | `agents:House` | The continuous house (`<.../house/dail>`) |
 | `:inHouseTerm` | `members:OireachtasMembership` | `agents:HouseTerm` | The specific numbered term |
-| `:constituencyInHouseTerm` | `members:Constituencies` | `agents:HouseTerm` | Sub-property of `:inHouseTerm`; links constituency/panel to its term |
-| `:partyCode` | `members:PartyGrouping` | `xsd:string` | Short party code from the API, e.g. `'Fianna_Fáil'` |
-| `:representCode` | `members:Constituencies` | `xsd:string` | Short constituency/panel code, e.g. `'Clare'`, `'Administrative-Panel'` |
+| `members:constituencyInHouseTerm` | `members:Constituencies` | `agents:HouseTerm` | Sub-property of `members:inHouseTerm`; links constituency/panel to its term |
+| `members:partyCode` | `members:PartyGrouping` | `xsd:string` | Short party code from the API, e.g. `'Fianna_Fáil'` |
+| `members:representCode` | `members:Constituencies` | `xsd:string` | Short constituency/panel code, e.g. `'Clare'`, `'Administrative-Panel'` |
 | `:committeeCode` | `members:Committee` | `xsd:string` | Short alphanumeric committee code, e.g. `'CAJ'` |
 | `:committeeID` | `members:Committee` | `xsd:integer` | Numeric committee identifier |
 | `:hasCommitteeRole` | `members:CommitteeMembership` | `org:Role` | Role held within the committee (`:Chair`, `:DeputyChair`); absent when no special role |
