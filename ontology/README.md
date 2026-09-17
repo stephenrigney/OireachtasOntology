@@ -545,4 +545,3 @@ Field-level mappings between Oireachtas API JSON responses and ontology terms ar
 | `implicit` | No explicit property needed — the information is derivable from the individual's IRI or class typing |
 | `future_work` | No ontology term yet; deferred |
 
-
