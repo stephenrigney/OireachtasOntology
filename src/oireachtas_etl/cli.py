@@ -17,6 +17,8 @@ from .validation import validate_member
 from .validation.members import validate_member_source
 from .transforms.members import member_graph_iri, source_hash, transform_member_with_report
 from .state import load_manifest, write_manifest, manifest_lock
+from .reconciliation import (DbpediaClient, ReconciliationStore, WikidataClient,
+                              FixtureResponseError, external_graph_iri, load_review, reconcile_records, valid_qid)
 
 def _records_from_fixture(path: Path) -> tuple[list[dict], bytes]:
     body = path.read_bytes()
@@ -229,6 +231,127 @@ def run_members(args: argparse.Namespace) -> int:
     with manifest_lock(path):
         return _run_members(args)
 
+
+class _FixtureWikidataClient:
+    """Offline, deterministic response adapter for reconciliation tests/runs."""
+    def __init__(self, data):
+        try:
+            wikidata = data["wikidata"]
+            if not isinstance(wikidata, dict) or not isinstance(wikidata["p4690"], dict) or not isinstance(wikidata["entities"], dict):
+                raise ValueError
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError("invalid reconciliation response fixture Wikidata schema") from error
+        self.data = wikidata
+    def lookup_member_code(self, code):
+        if code not in self.data["p4690"]: raise FixtureResponseError("response fixture lacks Wikidata P4690 entry for " + code)
+        return self.data["p4690"][code]
+    def entity(self, qid):
+        if qid not in self.data["entities"]: raise FixtureResponseError("response fixture lacks Wikidata entity for " + qid)
+        return self.data["entities"][qid]
+
+class _FixtureDbpediaClient:
+    def __init__(self, data):
+        try:
+            values = data["dbpedia"]["by_wikidata"]
+            if not isinstance(values, dict): raise ValueError
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError("invalid reconciliation response fixture DBpedia schema") from error
+        self.data = values
+    def resolve_wikidata(self, qid):
+        if qid not in self.data: raise FixtureResponseError("response fixture lacks DBpedia entry for " + qid)
+        return self.data[qid]
+
+
+def _validate_fixture_responses(data: object, records: list[dict], decisions: dict[str, dict]) -> None:
+    """Reject incomplete offline evidence before state is opened or changed."""
+    wikidata = _FixtureWikidataClient(data).data
+    dbpedia = _FixtureDbpediaClient(data).data
+    for wrapper in records:
+        code = wrapper["member"]["memberCode"]
+        decision = decisions.get(code)
+        if decision and decision["status"] == "rejected":
+            continue
+        if decision and decision["status"] == "accepted":
+            qids = [decision["wikidata"]]
+            for qid in qids:
+                if qid not in wikidata["entities"] or qid not in dbpedia:
+                    raise ValueError("response fixture lacks downstream entry for " + qid)
+            continue
+        if code not in wikidata["p4690"] or not isinstance(wikidata["p4690"][code], list):
+            raise ValueError("response fixture lacks valid Wikidata P4690 entry for " + code)
+        candidates = wikidata["p4690"][code]
+        if any(not valid_qid(value) for value in candidates):
+            raise ValueError("response fixture has invalid Wikidata QID for " + code)
+        for qid in candidates:
+            if qid not in wikidata["entities"] or qid not in dbpedia:
+                raise ValueError("response fixture lacks downstream entry for " + qid)
+
+
+def run_reconcile_members(args: argparse.Namespace) -> int:
+    if args.offline:
+        if not args.fixture or not args.responses_file:
+            raise ValueError("--offline reconciliation requires --fixture and --responses-file")
+        if args.publish:
+            raise ValueError("--offline reconciliation forbids --publish")
+    if args.fixture:
+        records, _, advertised = _members_fixture_records(Path(args.fixture))
+    else:
+        settings = Settings.from_environment()
+        records, advertised = [], None
+        for page in ApiClient(settings.members_api_url, retries=settings.retries, timeout=settings.timeout).harvest(limit=settings.limit):
+            decoded = json.loads(page.body)
+            if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list):
+                raise ValueError("every Members API page must be an object envelope with a results list")
+            counts = decoded.get("head", {}).get("counts") if isinstance(decoded.get("head"), dict) else None
+            count = counts.get("memberCount") if isinstance(counts, dict) else None
+            if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+                raise ValueError("every Members API page must contain a nonnegative integer head.counts.memberCount")
+            if advertised is None:
+                advertised = count
+            elif advertised != count:
+                raise ValueError("Members advertised count changed during scan")
+            records.extend(decoded["results"])
+    records = _deduplicate_members(records, advertised)
+    decisions, review_hash = load_review(Path(args.review_file))
+    if args.responses_file:
+        data = json.loads(Path(args.responses_file).read_text(encoding="utf-8"))
+        _validate_fixture_responses(data, records, decisions)
+        wikidata, dbpedia = _FixtureWikidataClient(data), _FixtureDbpediaClient(data)
+    else:
+        wikidata, dbpedia = WikidataClient(timeout=Settings.from_environment().timeout), DbpediaClient(timeout=Settings.from_environment().timeout)
+    store = ReconciliationStore(Path(args.reconciliation_state_file).expanduser())
+    try:
+        loader = None
+        publication_count = 0
+        competency_client = None
+        if args.publish:
+            settings = Settings.from_environment(); endpoint = args.fuseki_gsp_url or settings.fuseki_gsp_url
+            if not endpoint: raise ValueError("--publish requires a Fuseki GSP endpoint")
+            query_endpoint = args.fuseki_sparql_url or settings.fuseki_sparql_url
+            if not query_endpoint: raise ValueError("--publish requires a Fuseki SPARQL endpoint for competency verification")
+            upstream_loader = FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
+            class CountingLoader:
+                def replace(self, *replace_args, **replace_kwargs):
+                    nonlocal publication_count
+                    publication_count += 1
+                    return upstream_loader.replace(*replace_args, **replace_kwargs)
+            loader = CountingLoader()
+            competency_client = FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
+        results = reconcile_records(records, store, decisions, review_hash, wikidata, dbpedia, all_records=args.all, publish=loader, competency_client=competency_client)
+        if args.output_nq:
+            Path(args.output_nq).write_text("".join(nquads(graph, external_graph_iri(member)) for member, _, graph in results), encoding="utf-8")
+        summary = {state: sum(r.state == state for _, r, _ in results) for state in ("accepted", "rejected", "ambiguous", "pending")}
+        enrichment = {status: sum(r.enrichment_status == status for _, r, _ in results) for status in ("complete", "retry", "ambiguous", "unresolved")}
+        unresolved = sum(result.state in {"pending", "ambiguous"} or result.enrichment_status in {"retry", "ambiguous", "unresolved"} for _, result, _ in results)
+        unresolved_members = sorted(member["memberCode"] for member, result, _ in results
+                                    if result.state in {"pending", "ambiguous"}
+                                    or result.enrichment_status in {"retry", "ambiguous", "unresolved"})
+        print(json.dumps({"processed":len(results), "published":publication_count,
+                          "unresolved":unresolved, "unresolved_members":unresolved_members,
+                          "enrichment":enrichment, **summary}, sort_keys=True))
+        return 1 if unresolved else 0
+    finally: store.close()
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="oir-etl")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -236,7 +359,12 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--fixture"); run.add_argument("--offline", action="store_true"); run.add_argument("--raw-dir")
     run.add_argument("--state-file")
     run.add_argument("--output-ttl"); run.add_argument("--output-nq"); run.add_argument("--fuseki-gsp-url"); run.add_argument("--fuseki-sparql-url")
+    reconcile = sub.add_parser("reconcile"); reconcile.add_argument("endpoint", choices=["members"])
+    reconcile.add_argument("--fixture"); reconcile.add_argument("--responses-file"); reconcile.add_argument("--offline", action="store_true"); reconcile.add_argument("--all", action="store_true"); reconcile.add_argument("--publish", action="store_true"); reconcile.add_argument("--output-nq"); reconcile.add_argument("--fuseki-gsp-url"); reconcile.add_argument("--fuseki-sparql-url")
+    reconcile.add_argument("--review-file", default="reconciliation/member-decisions.json")
+    reconcile.add_argument("--reconciliation-state-file", default="~/.local/share/oireachtas-etl/member-reconciliation.sqlite")
     args = parser.parse_args(argv)
+    if args.command == "reconcile": return run_reconcile_members(args)
     if args.endpoint == "houses": return run_houses(args)
     if args.endpoint == "members": return run_members(args)
     return run_reference(args)

@@ -476,6 +476,28 @@ Competency queries should include:
 - Cross-resource references use the reference data created in previous phases.
 - Member graphs can be replaced without leaving stale membership triples.
 
+## Phase 3.5 — Member external identity reconciliation pilot
+
+### Outcome
+
+Maintain reviewed, externally sourced Member identity links without coupling
+external service availability or facts to the authoritative Members ETL.
+
+### Approved conventions
+
+- Operational state is a separate versioned SQLite store; human decisions are
+  version-controlled in `reconciliation/member-decisions.json`.
+- Wikidata P4690 and exact `memberCode` are the primary automated identity key.
+  Human accepted/rejected decisions override automation.
+- The subsystem alone owns
+  `https://data.oireachtas.ie/graph/member/{percent-encoded-memberCode}/external-links`.
+  Its graphs contain only approved `owl:sameAs` Wikidata/DBpedia and
+  `foaf:isPrimaryTopicOf` Wikipedia links, and are wholly replaceable.
+- Wikipedia is the accepted entity's enwiki sitelink. DBpedia follows only a
+  unique exact Wikidata link plus person check; no title or fuzzy match is used.
+- Lookup failures yield operational pending state and never block authoritative
+  Member RDF publication. See `documentation/member-reconciliation.md`.
+
 ## Phase 4 — Legislative lifecycle
 
 ### Outcome

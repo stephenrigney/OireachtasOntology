@@ -10,6 +10,7 @@ from oireachtas_etl.competency import verify_constituencies_competency, verify_h
 from oireachtas_etl.cli import run_members
 from oireachtas_etl.config import CONSTITUENCIES_GRAPH, HOUSES_GRAPH, PARTIES_GRAPH
 from oireachtas_etl.loader import FusekiGraphStoreLoader, FusekiSparqlClient
+from oireachtas_etl.reconciliation import ReconciliationStore, external_graph_iri, reconcile_records, verify_external_links_competency
 from oireachtas_etl.serialization import ntriples, turtle
 from oireachtas_etl.transforms.houses import transform_houses
 from oireachtas_etl.transforms.parties import transform_parties
@@ -133,3 +134,41 @@ def test_members_workflow_gsp_replacement_removes_stale_content_and_retains_abse
     assert third["new"] == [] and third["changed"] == [] and third["skipped_identities"] == [wrapper["member"]["uri"]]
     assert _count(client, graph_iri) == len(transform_member(changed))
     verify_members_competency(client)
+
+
+def test_member_external_links_are_isolated_verified_and_cleared_by_review(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    wrapper = json.loads((root / "data/api_examples/member.json").read_text())
+    member = wrapper["member"]
+    loader = FusekiGraphStoreLoader(GSP, user=FUSEKI_USER, password=FUSEKI_PASSWORD)
+    client = FusekiSparqlClient(SPARQL, user=FUSEKI_USER, password=FUSEKI_PASSWORD)
+
+    authoritative_graph = member_graph_iri(member)
+    authoritative = transform_member(wrapper)
+    loader.replace(authoritative_graph, ntriples(authoritative), content_type="application/n-triples")
+
+    class Wikidata:
+        def lookup_member_code(self, code):
+            return ["Q1"]
+        def entity(self, qid):
+            return {"entities": {qid: {"id": qid, "sitelinks": {"enwiki": {"title": "Example Person"}}}}}
+
+    class Dbpedia:
+        def resolve_wikidata(self, qid):
+            return [{"iri": "https://dbpedia.org/resource/Example_Person", "is_person": True}]
+
+    store = ReconciliationStore(tmp_path / "reconciliation.sqlite")
+    try:
+        accepted = reconcile_records([wrapper], store, {}, "empty-review", Wikidata(), Dbpedia(),
+                                     all_records=True, publish=loader, competency_client=client)
+        verify_external_links_competency(client, member, accepted[0][2])
+        assert _count(client, external_graph_iri(member)) == 3
+        assert _count(client, authoritative_graph) == len(authoritative)
+
+        review = {member["memberCode"]: {"status": "rejected"}}
+        reconcile_records([wrapper], store, review, "rejected-review", Wikidata(), Dbpedia(),
+                          publish=loader, competency_client=client)
+        assert _count(client, external_graph_iri(member)) == 0
+        assert _count(client, authoritative_graph) == len(authoritative)
+    finally:
+        store.close()
