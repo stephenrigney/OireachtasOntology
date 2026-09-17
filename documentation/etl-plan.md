@@ -491,6 +491,17 @@ Establish a reusable external-identity reconciliation layer using Members as the
 - External ontologies must not be imported wholesale into the Oireachtas domain model merely to support linking.
 - `owl:sameAs` must be asserted conservatively and only where identity is sufficiently established.
 
+### Settled implementation decisions
+
+- Store reconciliation operational state in SQLite, separately from core publication state.
+- Store explicit human reconciliation decisions in a small version-controlled review file. Human decisions take precedence over machine reconciliation and must never be overwritten automatically.
+- For exact-identifier reconciliation, record explicit matching method, evidence and status rather than an arbitrary numeric confidence score.
+- Publish an accepted unique Member-to-Wikidata Q-item identity as `owl:sameAs`.
+- Publish a Member-to-DBpedia person identity as `owl:sameAs` only where the DBpedia resource is established to denote the same person.
+- Link a Member to a Wikipedia article with `foaf:isPrimaryTopicOf`, not `owl:sameAs`.
+- Use Wikidata P4690 as the primary identity-reconciliation path. Resolve DBpedia and Wikipedia downstream from an accepted Wikidata identity rather than performing an independent fuzzy DBpedia match.
+- On the initial reconciliation run, process all Members. On normal runs, process new or identity-relevant changed Members; periodically re-check accepted links; re-check ambiguous or pending records more frequently where useful; and never automatically override a human decision.
+
 Conceptually:
 
 ```text
@@ -504,14 +515,15 @@ core deterministic ETL
                     v
             reconciliation queue
                     |
-          +---------+---------+
-          |                   |
-          v                   v
-      Wikidata             DBpedia
-          |                   |
-          +---------+---------+
-                    |
                     v
+                Wikidata
+                    |
+              accepted Q-ID
+               /         \
+              v           v
+         Wikipedia      DBpedia
+              \           /
+               v         v
              external-link graphs
 ```
 
@@ -519,10 +531,10 @@ core deterministic ETL
 
 #### Reconciliation model
 
-- [ ] Define a reconciliation record containing local entity, external entity, source, matching method, status, confidence/evidence and checked timestamp.
+- [ ] Define a SQLite reconciliation record containing local entity, external entity, source, matching method, status, evidence and checked timestamp.
 - [ ] Define accepted, rejected, ambiguous and pending reconciliation states.
 - [ ] Keep reconciliation evidence auditable independently of published RDF links.
-- [ ] Define manual-review handling for ambiguous or conflicting matches.
+- [ ] Implement a version-controlled manual-review file for ambiguous or conflicting matches and ensure explicit human decisions override automated reconciliation.
 
 #### Wikidata Member reconciliation
 
@@ -542,10 +554,19 @@ Wikidata P4690
 
 #### DBpedia and Wikipedia enrichment
 
-- [ ] Resolve DBpedia and Wikipedia identifiers from an accepted external identity where available.
+- [ ] Resolve DBpedia and Wikipedia identifiers from an accepted Wikidata identity where available.
 - [ ] Compare derived DBpedia/Wikipedia targets with the existing `wikiTitle` value.
 - [ ] Record redirects or title mismatches as reconciliation evidence.
+- [ ] Publish `owl:sameAs` for accepted Wikidata identities and same-person DBpedia resources, and `foaf:isPrimaryTopicOf` for Wikipedia article links.
 - [ ] Do not copy arbitrary DBpedia facts into authoritative Member graphs.
+
+#### Refresh policy
+
+- [ ] Reconcile all Members on the initial run.
+- [ ] Reconcile new Members and Members whose identity-relevant source fields change during normal runs.
+- [ ] Periodically re-check accepted external links independently of Member source hashes.
+- [ ] Re-check ambiguous or pending records more frequently where useful.
+- [ ] Never automatically overwrite a version-controlled human decision.
 
 #### Named graphs
 
@@ -576,8 +597,10 @@ Measure at least:
 
 - Member reconciliation is reproducible from authoritative Oireachtas identifiers.
 - Wikidata matching is based primarily on exact P4690 identifier equality rather than name similarity.
-- DBpedia is available as secondary enrichment without becoming a dependency of the core ETL.
-- External links and reconciliation evidence are separately stored and auditable.
+- Reconciliation state and evidence are persisted in SQLite, while explicit human decisions are version-controlled and take precedence over automation.
+- Accepted Wikidata, DBpedia and Wikipedia links use the documented predicates appropriate to what each external URI denotes.
+- DBpedia is downstream secondary enrichment from an accepted Wikidata identity and is not an independent fuzzy-matching dependency.
+- External links are refreshed independently of core Member publication and can be periodically re-verified even when Member source records are unchanged.
 - Rebuilding or failing the external-link layer cannot corrupt or block authoritative Oireachtas publication.
 
 ## Phase 4 — Legislative lifecycle
@@ -1178,17 +1201,18 @@ The ETL runs unattended with validation, provenance, quarantine, monitoring and 
 
 Phases 0–3 are complete. The next development iteration should establish the external identity layer before beginning the legislative lifecycle implementation.
 
-1. Define reconciliation records, states and evidence storage.
+1. Implement SQLite reconciliation records, states and evidence storage.
 2. Define source-specific external-link named graphs.
 3. Implement exact Member `memberCode` to Wikidata P4690 reconciliation.
-4. Add conflict, unmatched and manual-review handling.
+4. Add conflict and unmatched handling plus a version-controlled manual-review file whose human decisions override automated reruns.
 5. Use `wikiTitle` to verify or enrich accepted Member matches.
-6. Derive DBpedia/Wikipedia links as secondary enrichment where available.
-7. Add reconciliation coverage and false-match evaluation reports.
-8. Add tests proving external reconciliation cannot modify or block authoritative Member graphs.
-9. Complete the Phase 3.5 pilot and record its acceptance metrics.
-10. Begin the Phase 4 Bill/legislative-lifecycle vertical slice using Oireachtas and ELI identities as authoritative identifiers.
+6. Derive Wikipedia and DBpedia links downstream from accepted Wikidata identities using the documented predicates.
+7. Implement the initial/full, new-or-changed, and periodic external-link refresh policies.
+8. Add reconciliation coverage and false-match evaluation reports.
+9. Add tests proving external reconciliation cannot modify or block authoritative Member graphs.
+10. Complete the Phase 3.5 pilot and record its acceptance metrics.
+11. Begin the Phase 4 Bill/legislative-lifecycle vertical slice using Oireachtas and ELI identities as authoritative identifiers.
 
 The next concrete acceptance target is:
 
-> Given the authoritative Member graph produced by Phase 3, reproducibly reconcile Members to Wikidata using exact P4690/Oireachtas identifier matches, publish accepted links to a separate external-link graph, record unmatched or ambiguous cases for review, and demonstrate that the same core Member RDF can be published successfully when all external services are unavailable.
+> Given the authoritative Member graph produced by Phase 3, reproducibly reconcile Members to Wikidata using exact P4690/Oireachtas identifier matches, persist reconciliation state and evidence in SQLite, respect version-controlled human decisions, publish accepted links to separate external-link graphs using the documented predicates, derive DBpedia/Wikipedia links downstream from accepted Wikidata identities, and demonstrate that the same core Member RDF can be published successfully when all external services are unavailable.
