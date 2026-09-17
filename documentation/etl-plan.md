@@ -476,27 +476,136 @@ Competency queries should include:
 - Cross-resource references use the reference data created in previous phases.
 - Member graphs can be replaced without leaving stale membership triples.
 
-## Phase 3.5 — Member external identity reconciliation pilot
+## Phase 3.5 — External identity reconciliation pilot
 
 ### Outcome
 
-Maintain reviewed, externally sourced Member identity links without coupling
-external service availability or facts to the authoritative Members ETL.
+Establish a reusable external-identity reconciliation layer using Members as the first and best-supported entity type. External identity data is derived enrichment and must remain operationally and semantically separate from authoritative Oireachtas RDF.
 
-### Approved conventions
+### Architectural rules
 
-- Operational state is a separate versioned SQLite store; human decisions are
-  version-controlled in `reconciliation/member-decisions.json`.
-- Wikidata P4690 and exact `memberCode` are the primary automated identity key.
-  Human accepted/rejected decisions override automation.
-- The subsystem alone owns
-  `https://data.oireachtas.ie/graph/member/{percent-encoded-memberCode}/external-links`.
-  Its graphs contain only approved `owl:sameAs` Wikidata/DBpedia and
-  `foaf:isPrimaryTopicOf` Wikipedia links, and are wholly replaceable.
-- Wikipedia is the accepted entity's enwiki sitelink. DBpedia follows only a
-  unique exact Wikidata link plus person check; no title or fuzzy match is used.
-- Lookup failures yield operational pending state and never block authoritative
-  Member RDF publication. See `documentation/member-reconciliation.md`.
+- The deterministic Oireachtas transformation pipeline must not call Wikidata, DBpedia or other external services.
+- Failure or unavailability of an external service must never prevent publication of validated Oireachtas RDF.
+- External identity assertions must be stored separately from endpoint-owned authoritative graphs.
+- Reconciliation evidence and provenance must be retained separately from the resulting link assertion.
+- External ontologies must not be imported wholesale into the Oireachtas domain model merely to support linking.
+- `owl:sameAs` must be asserted conservatively and only where identity is sufficiently established.
+
+### Settled implementation decisions
+
+- Store reconciliation operational state in SQLite, separately from core publication state.
+- Store explicit human reconciliation decisions in a small version-controlled review file. Human decisions take precedence over machine reconciliation and must never be overwritten automatically.
+- For exact-identifier reconciliation, record explicit matching method, evidence and status rather than an arbitrary numeric confidence score.
+- Publish an accepted unique Member-to-Wikidata Q-item identity as `owl:sameAs`.
+- Publish a Member-to-DBpedia person identity as `owl:sameAs` only where the DBpedia resource is established to denote the same person.
+- Link a Member to a Wikipedia article with `foaf:isPrimaryTopicOf`, not `owl:sameAs`.
+- Use Wikidata P4690 as the primary identity-reconciliation path. Resolve DBpedia and Wikipedia downstream from an accepted Wikidata identity rather than performing an independent fuzzy DBpedia match.
+- On the initial reconciliation run, process all Members. On normal runs, process new or identity-relevant changed Members; periodically re-check accepted links; re-check ambiguous or pending records more frequently where useful; and never automatically override a human decision.
+
+The Phase 3.5 pilot implements these decisions in
+`src/oireachtas_etl/reconciliation.py`. Operational details, failure handling,
+and the review workflow are documented in
+`documentation/member-reconciliation.md`.
+
+Conceptually:
+
+```text
+Oireachtas API
+     |
+     v
+core deterministic ETL
+     |
+     +------> authoritative Oireachtas RDF
+                    |
+                    v
+            reconciliation queue
+                    |
+                    v
+                Wikidata
+                    |
+              accepted Q-ID
+               /         \
+              v           v
+         Wikipedia      DBpedia
+              \           /
+               v         v
+             external-link graphs
+```
+
+### Backlog
+
+#### Reconciliation model
+
+- [x] Define a SQLite reconciliation record containing local entity, external entity, source, matching method, status, evidence and checked timestamp.
+- [x] Define accepted, rejected, ambiguous and pending reconciliation states.
+- [x] Keep reconciliation evidence auditable independently of published RDF links.
+- [x] Implement a version-controlled manual-review file for ambiguous or conflicting matches and ensure explicit human decisions override automated reconciliation.
+
+#### Wikidata Member reconciliation
+
+Use the Oireachtas Member identifier as the first deterministic reconciliation path:
+
+```text
+Oireachtas :memberCode
+        <->
+Wikidata P4690
+```
+
+- [x] Implement exact `memberCode` to Wikidata P4690 lookup.
+- [x] Reject multiple external entities claiming the same Oireachtas identifier pending review.
+- [x] Record unmatched Members without inventing a fuzzy match.
+- [ ] Use `wikiTitle` as an independent verification/enrichment signal rather than as the primary identity key where P4690 is available.
+- [x] Record the Wikidata Q-ID as the primary external identity anchor for matched Members.
+
+#### DBpedia and Wikipedia enrichment
+
+- [x] Resolve DBpedia and Wikipedia identifiers from an accepted Wikidata identity where available.
+- [ ] Compare derived DBpedia/Wikipedia targets with the existing `wikiTitle` value.
+- [ ] Record redirects or title mismatches as reconciliation evidence.
+- [x] Publish `owl:sameAs` for accepted Wikidata identities and same-person DBpedia resources, and `foaf:isPrimaryTopicOf` for Wikipedia article links.
+- [x] Do not copy arbitrary DBpedia facts into authoritative Member graphs.
+
+#### Refresh policy
+
+- [x] Reconcile all Members on the initial run.
+- [x] Reconcile new Members and Members whose identity-relevant source fields change during normal runs.
+- [x] Periodically re-check accepted external links independently of Member source hashes.
+- [x] Re-check ambiguous or pending records more frequently where useful.
+- [x] Never automatically overwrite a version-controlled human decision.
+
+#### Named graphs
+
+The reconciliation subsystem exclusively owns one replaceable graph per Member:
+
+```text
+https://data.oireachtas.ie/graph/member/{percent-encoded-memberCode}/external-links
+```
+
+- [x] Publish only accepted identity links.
+- [x] Ensure external-link graphs can be rebuilt without regenerating core Oireachtas graphs.
+- [x] Add graph-boundary tests proving that enrichment does not alter endpoint-owned authoritative graphs.
+
+#### Evaluation
+
+Measure at least:
+
+- percentage of Members matched through P4690;
+- unmatched Member count;
+- duplicate or ambiguous identifier count;
+- agreement between P4690 matches and `wikiTitle`;
+- DBpedia coverage for accepted Member matches;
+- manually sampled false-match rate; and
+- useful enrichment yield per external source.
+
+### Exit criteria
+
+- Member reconciliation is reproducible from authoritative Oireachtas identifiers.
+- Wikidata matching is based primarily on exact P4690 identifier equality rather than name similarity.
+- Reconciliation state and evidence are persisted in SQLite, while explicit human decisions are version-controlled and take precedence over automation.
+- Accepted Wikidata, DBpedia and Wikipedia links use the documented predicates appropriate to what each external URI denotes.
+- DBpedia is downstream secondary enrichment from an accepted Wikidata identity and is not an independent fuzzy-matching dependency.
+- External links are refreshed independently of core Member publication and can be periodically re-verified even when Member source records are unchanged.
+- Rebuilding or failing the external-link layer cannot corrupt or block authoritative Oireachtas publication.
 
 ## Phase 4 — Legislative lifecycle
 
@@ -531,6 +640,13 @@ Represent Bills and their legislative lifecycle using the existing legislation m
 - [ ] Define deterministic identifiers for nested activities/events.
 - [ ] Preserve event ordering where source data permits it.
 - [ ] Ensure `latest_activity` references a generated activity resource.
+
+#### External identity policy
+
+- [ ] Keep Oireachtas identifiers and ELI identifiers authoritative for Bills, Acts and legislative lifecycle resources.
+- [ ] Do not route legislation identity through DBpedia merely because external-reconciliation infrastructure exists.
+- [ ] Treat any future Wikidata/DBpedia links for legislation as optional enrichment in separate external-link graphs.
+- [ ] Ensure external-service availability cannot affect Bill transformation, validation or publication.
 
 #### Scope
 
@@ -568,11 +684,43 @@ Competency queries should include:
 
 A Bill can be represented from introduction through its currently available legislative lifecycle, and updating the source Bill causes its complete RDF graph to be replaced safely.
 
+## Phase 4.5 — Broaden external identity reconciliation
+
+### Outcome
+
+Reuse the Phase 3.5 reconciliation infrastructure for additional Oireachtas entity classes where an external identity improves interoperability or search without weakening the authority of the Oireachtas graph.
+
+### Backlog
+
+Prioritise entity classes in approximately this order:
+
+1. political parties;
+2. Dáil constituencies;
+3. Dáil, Seanad and Oireachtas institutions;
+4. Governments and cabinets; and
+5. other entities with demonstrated external coverage and a concrete use case.
+
+- [ ] Define entity-specific candidate identifiers and verification rules.
+- [ ] Prefer stable external identifiers over fuzzy label matching.
+- [ ] Reuse the reconciliation evidence/status model created in Phase 3.5.
+- [ ] Record source-specific coverage and false-match metrics for each entity class.
+- [ ] Add manual-review paths where deterministic identifiers do not exist.
+- [ ] Add accepted links to source-specific external named graphs.
+- [ ] Keep committees, parliamentary events and individual legislation out of automatic reconciliation unless coverage and a user-facing use case justify the work.
+- [ ] Evaluate whether other authority sources such as GeoNames or domain-specific legal authorities are more appropriate than DBpedia for particular entity classes.
+
+### Exit criteria
+
+- The external-link subsystem supports more than one Oireachtas entity class without entity-specific architectural duplication.
+- Each supported class has documented matching and verification rules.
+- Weak or ambiguous matches remain reviewable rather than being promoted automatically.
+- External links remain derived enrichment and do not replace Oireachtas/ELI identities.
+
 ## Phase 5 — Incremental refresh and ETL state
 
 ### Outcome
 
-Move from manually repeatable transformations to reliable routine synchronisation with the Oireachtas API.
+Move from manually repeatable transformations to reliable routine synchronisation with the Oireachtas API while refreshing external identity links independently of the authoritative ETL path.
 
 ### Backlog
 
@@ -590,6 +738,9 @@ last_seen
 last_success
 status
 error
+reconciliation_state
+external_source
+external_checked_at
 ```
 
 - [ ] Record ETL run identifier.
@@ -600,6 +751,7 @@ error
 - [ ] Record success/failure status.
 - [ ] Record validation result.
 - [ ] Record error details.
+- [ ] Record external-reconciliation state separately from core publication state.
 
 #### Endpoint refresh policies
 
@@ -612,6 +764,7 @@ Implement explicit policies rather than assuming all endpoints support equivalen
 | Constituencies | full refresh |
 | Members | full scan with per-resource hashing |
 | Legislation | `last_updated` incremental fetch plus overlap |
+| External identity links | queued refresh for new/changed entities plus periodic verification |
 | Debates | deferred |
 | Votes | deferred |
 | Questions | deferred |
@@ -623,24 +776,49 @@ Implement explicit policies rather than assuming all endpoints support equivalen
 - [ ] Use an overlap window to protect against boundary errors.
 - [ ] Deduplicate by Bill identifier.
 - [ ] Hash individual Bill source records.
-- [ ] Periodically perform a complete reconciliation.
+- [ ] Periodically perform a complete source reconciliation.
 
-#### Reconciliation
+#### Core source reconciliation
 
-- [ ] Implement scheduled full comparison.
+- [ ] Implement scheduled full comparison against current Oireachtas API results.
 - [ ] Identify resources missing from current API results.
 - [ ] Define deletion/tombstone policy.
 - [ ] Detect RDF graph/state mismatches.
 
+#### External identity refresh
+
+Core ETL and external reconciliation are separate pipelines:
+
+```text
+Oireachtas source change
+        |
+        v
+core ETL -----------------> authoritative RDF published
+        |
+        v
+reconciliation candidate queued
+        |
+        v
+external lookup ----------> external-link graph refreshed
+```
+
+- [ ] Queue newly created entities for external reconciliation.
+- [ ] Queue entities whose identity-relevant fields change.
+- [ ] Periodically re-verify accepted external links.
+- [ ] Detect redirects, retired identifiers and disappeared external targets.
+- [ ] Retry external-service failures without rolling back successful core publication.
+- [ ] Permit a run state where core ETL is successful while external links are stale or pending.
+- [ ] Keep external freshness timestamps separate from Oireachtas source freshness timestamps.
+
 ### Exit criteria
 
-Routine execution processes only resources requiring publication while periodic reconciliation protects against missed updates.
+Routine execution processes only resources requiring publication, periodic source reconciliation protects against missed Oireachtas updates, and external identity links can lag or fail independently without affecting authoritative graph publication.
 
 ## Phase 6 — Production hardening
 
 ### Outcome
 
-Make the ETL process observable, recoverable and suitable for unattended operation.
+Make the ETL and external-reconciliation processes observable, recoverable and suitable for unattended operation.
 
 ### Backlog
 
@@ -679,8 +857,20 @@ Record graph/run-level provenance. Possible information:
 - [ ] Create ETL-run resources.
 - [ ] Create provenance/catalog named graph.
 - [ ] Link published graphs to ETL runs.
+- [ ] Record external source, lookup time, matching method and evidence for reconciliation assertions.
 
 Per-triple provenance and RDF-star are explicitly outside the initial scope.
+
+#### External enrichment operations
+
+- [ ] Cache external lookup responses where permitted and useful.
+- [ ] Implement rate limiting per external service.
+- [ ] Implement retry/backoff for transient external failures.
+- [ ] Provide a manual-review queue for ambiguous reconciliation results.
+- [ ] Record reconciliation coverage, accepted, rejected, ambiguous and unmatched counts.
+- [ ] Make external-link graphs reproducibly rebuildable independently of core RDF graphs.
+- [ ] Add tests preventing external enrichment statements from leaking into authoritative endpoint-owned graphs.
+- [ ] Ensure a Wikidata or DBpedia outage cannot fail an otherwise successful Oireachtas ETL run.
 
 #### Observability
 
@@ -693,6 +883,8 @@ Per-triple provenance and RDF-star are explicitly outside the initial scope.
 - [ ] Quarantine count.
 - [ ] Validation-failure count.
 - [ ] API request count and failures.
+- [ ] External reconciliation request count and failures.
+- [ ] External-link coverage and pending-review count.
 - [ ] Duration metrics.
 
 #### Deployment
@@ -715,6 +907,8 @@ Start with simple orchestration:
 
 Do not introduce Airflow, Kafka or equivalent infrastructure until the workload demonstrates a need for it.
 
+Core Oireachtas refresh and external identity refresh may run on different schedules. External reconciliation should normally be less time-critical than authoritative source publication.
+
 #### CI
 
 CI should run:
@@ -725,12 +919,13 @@ CI should run:
 - [ ] transformation unit tests;
 - [ ] golden RDF tests;
 - [ ] SHACL validation;
-- [ ] competency SPARQL queries; and
+- [ ] competency SPARQL queries;
+- [ ] external-link graph-boundary tests; and
 - [ ] integration tests where practical.
 
 ### Exit criteria
 
-The ETL process can run unattended, failures are diagnosable, malformed resources are recoverable, and successful graph publication can be traced to its source data and software versions.
+The ETL process can run unattended, failures are diagnosable, malformed resources are recoverable, successful graph publication can be traced to its source data and software versions, and external enrichment can fail or be rebuilt independently of the authoritative graph.
 
 ## Phase 7 — Extend dataset coverage
 
@@ -799,6 +994,14 @@ ownership
 - [ ] Avoid identifiers derived from array position where possible.
 - [ ] Add identifier regression tests.
 
+## External identity policy
+
+- [ ] Document the distinction between authoritative Oireachtas identifiers and derived external identities.
+- [ ] Document source-specific external-link graph names.
+- [ ] Document when `owl:sameAs` is permitted and when a weaker linking predicate is required.
+- [ ] Document reconciliation evidence and manual-review requirements.
+- [ ] Keep external identifier resolution outside deterministic endpoint transformation.
+
 ## Temporal modelling
 
 - [ ] Standardise date and date-time conversion.
@@ -827,6 +1030,7 @@ ownership
 - [ ] Document graph naming.
 - [ ] Document RDF ownership.
 - [ ] Document refresh policies.
+- [ ] Document external identity reconciliation and graph separation.
 - [ ] Document failure/recovery process.
 - [ ] Document how to add a new endpoint transformer.
 
@@ -844,6 +1048,7 @@ The following items should remain outside the critical path until a demonstrated
 - inference-heavy production configuration;
 - sophisticated graph version history;
 - automatic ontology evolution;
+- bulk import of external knowledge graphs;
 - unsupported mapping fields currently marked `future_work`; and
 - complete debates/votes/questions ingestion.
 
@@ -868,6 +1073,9 @@ Unless later evidence requires a change, development should proceed with the fol
 | Deployment | Docker Compose |
 | Provenance | Graph/run level |
 | Source preservation | Immutable raw JSON outside Git |
+| Primary external identity authority | Wikidata, using stable identifiers where available |
+| DBpedia role | Secondary enrichment and Linked Data interoperability |
+| External-link storage | Separate source-specific named graphs |
 
 These are implementation defaults, not ontology commitments.
 
@@ -913,6 +1121,29 @@ Mitigation:
 - deterministic URI-generation rules; and
 - regression tests.
 
+## External identity errors
+
+External datasets can contain missing, stale, duplicated or incorrect identity assertions, and fuzzy matching can create false equivalence.
+
+Mitigation:
+
+- prefer exact stable identifiers such as Oireachtas `memberCode` matched to Wikidata P4690;
+- retain reconciliation evidence;
+- require manual review for ambiguous matches;
+- publish external assertions in separate graphs; and
+- avoid automatic `owl:sameAs` assertions from weak label similarity.
+
+## External service availability
+
+Wikidata, DBpedia or other external services may be unavailable or rate limited.
+
+Mitigation:
+
+- keep external lookups outside deterministic core ETL;
+- cache where appropriate;
+- retry independently; and
+- allow authoritative publication to succeed while enrichment remains stale or pending.
+
 ## Ontology evolution
 
 Changes to ontology terms can make previously generated RDF obsolete.
@@ -950,37 +1181,29 @@ Houses, Parties and Constituencies are maintained as reusable reference data.
 
 Members and their parliamentary service histories can be queried across House terms, parties and constituencies.
 
-### Milestone E — Legislative graph
+### Milestone E — External identity pilot
+
+Members are reproducibly reconciled to Wikidata through stable identifiers, with DBpedia available as secondary enrichment in separate external-link graphs.
+
+### Milestone F — Legislative graph
 
 Bills and their legislative lifecycle can be queried from introduction through the latest known stage and resulting Act where applicable.
 
-### Milestone F — Incremental synchronisation
+### Milestone G — Broadened identity graph
 
-Routine executions update only changed resources and periodically reconcile the complete source dataset.
+Selected parties, constituencies and institutions are linked to external authorities through the reusable reconciliation subsystem.
 
-### Milestone G — Production ETL
+### Milestone H — Incremental synchronisation
 
-The ETL runs unattended with validation, provenance, quarantine, monitoring and recoverable publication.
+Routine executions update only changed authoritative resources, periodically reconcile the complete source dataset, and refresh external links independently.
+
+### Milestone I — Production ETL
+
+The ETL runs unattended with validation, provenance, quarantine, monitoring and recoverable publication, while external enrichment remains independently recoverable.
 
 # 10. Immediate implementation backlog
 
-The first development iteration should remain deliberately narrow.
-
-1. Stabilise and tag the ontology/mapping baseline.
-2. Create `src/oireachtas_etl`.
-3. Implement API extraction and raw-response persistence.
-4. Implement shared RDF helpers.
-5. Implement Houses transformation.
-6. Introduce deterministic period IRIs.
-7. Create Houses SHACL validation.
-8. Add golden JSON-to-RDF tests.
-9. Deploy local Fuseki/TDB2.
-10. Implement named-graph replacement.
-11. Add Houses competency SPARQL queries.
-12. Run the complete workflow through a single CLI command.
-
-The first concrete acceptance target is:
-
-> Given `data/api_examples/houses.json`, generate deterministic RDF conforming to the current ontology and mappings, validate it, load it into the Houses named graph in Fuseki, and demonstrate correctness with competency SPARQL queries.
-
-Work on Members or Legislation should not precede proving this vertical slice unless required to resolve an ontology or identifier-design issue.
+Phases 0–3.5 are complete. Phase 4 has not started. Remaining reconciliation
+evaluation work—`wikiTitle` comparison, coverage metrics, sampled false-match
+measurement, and broader entity support—remains explicitly deferred and must
+not delay or couple itself to authoritative Oireachtas publication.
