@@ -1,0 +1,2 @@
+PREFIX dct: <http://purl.org/dc/terms/>
+SELECT ?bill WHERE { GRAPH <https://data.oireachtas.ie/graph/bill/2025/60> { ?bill dct:modified ?updated . FILTER(?updated >= "2026-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>) } }

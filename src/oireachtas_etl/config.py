@@ -8,6 +8,8 @@ PARTIES_GRAPH = "https://data.oireachtas.ie/graph/parties"
 CONSTITUENCIES_GRAPH = "https://data.oireachtas.ie/graph/constituencies"
 MEMBERS_API_URL = "https://api.oireachtas.ie/v1/members"
 MEMBERS_STATE_FILE = Path.home() / ".local" / "share" / "oireachtas-etl" / "members-state.json"
+BILLS_API_URL = "https://api.oireachtas.ie/v1/legislation"
+BILLS_STATE_FILE = Path.home() / ".local" / "share" / "oireachtas-etl" / "bills-state.json"
 REFERENCE_ONTOLOGY_VERSION = "agents.owl.ttl+members.owl.ttl@phase-2-reference-data-2026"
 
 @dataclass(frozen=True)
@@ -17,6 +19,8 @@ class Settings:
     constituencies_api_url: str = "https://api.oireachtas.ie/v1/constituencies"
     members_api_url: str = MEMBERS_API_URL
     members_state_file: Path = MEMBERS_STATE_FILE
+    bills_api_url: str = BILLS_API_URL
+    bills_state_file: Path = BILLS_STATE_FILE
     raw_dir: Path = Path("data/raw")
     fuseki_gsp_url: str | None = None
     fuseki_sparql_url: str | None = None
@@ -36,6 +40,8 @@ class Settings:
             constituencies_api_url=os.getenv("OIR_CONSTITUENCIES_API_URL", cls.constituencies_api_url),
             members_api_url=os.getenv("OIR_MEMBERS_API_URL", cls.members_api_url),
             members_state_file=Path(os.getenv("OIR_MEMBERS_STATE_FILE", str(cls.members_state_file))),
+            bills_api_url=os.getenv("OIR_BILLS_API_URL", cls.bills_api_url),
+            bills_state_file=Path(os.getenv("OIR_BILLS_STATE_FILE", str(cls.bills_state_file))),
             raw_dir=Path(os.getenv("OIR_RAW_DIR", "data/raw")),
             fuseki_gsp_url=os.getenv("OIR_FUSEKI_GSP_URL"),
             fuseki_sparql_url=os.getenv("OIR_FUSEKI_SPARQL_URL"),

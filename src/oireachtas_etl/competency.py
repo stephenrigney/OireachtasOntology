@@ -58,6 +58,17 @@ def verify_member_competency(client: FusekiSparqlClient, graph_iri: str, member_
             raise ValueError(f"post-load Member graph count failed for {member_iri}")
 
 
+def verify_bill_competency(client: FusekiSparqlClient, graph_iri: str, bill_iri: str, expected_triples: int | None = None) -> None:
+    query = f'''SELECT ?bill ?latest WHERE {{ GRAPH <{graph_iri}> {{ BIND(<{bill_iri}> AS ?bill) . <{bill_iri}> a <http://data.europa.eu/eli/eli-draft-legislation-ontology#DraftLegislationWork> . <{bill_iri}#process> <http://data.europa.eu/eli/eli-draft-legislation-ontology#latest_activity> ?latest . ?latest a <http://data.europa.eu/eli/eli-draft-legislation-ontology#LegislativeActivity> }} }}'''
+    actual = [{name: binding["value"] for name, binding in row.items()} for row in client.query(query)]
+    if len(actual) != 1 or actual[0].get("bill") != bill_iri:
+        raise ValueError(f"post-load Bill competency check failed for {bill_iri}")
+    if expected_triples is not None:
+        rows = client.query(f"SELECT (COUNT(*) AS ?count) WHERE {{ GRAPH <{graph_iri}> {{ ?s ?p ?o }} }}")
+        if len(rows) != 1 or int(rows[0]["count"]["value"]) != expected_triples:
+            raise ValueError(f"post-load Bill graph count failed for {bill_iri}")
+
+
 # These acceptance parameters and rows are deliberately pinned to the Member
 # golden fixture.  They exercise public query resources; operational per-PUT
 # verification above remains data-independent.

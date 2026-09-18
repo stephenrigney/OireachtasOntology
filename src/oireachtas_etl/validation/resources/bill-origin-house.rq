@@ -1,0 +1,2 @@
+PREFIX oir: <https://data.oireachtas.ie/ontology#>
+SELECT ?house WHERE { GRAPH <https://data.oireachtas.ie/graph/bill/2025/60> { <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60> oir:originHouse ?house } }

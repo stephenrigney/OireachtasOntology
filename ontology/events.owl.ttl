@@ -54,7 +54,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 :inHouse rdf:type owl:ObjectProperty ;
 
-         rdfs:comment "The House (Dáil, Seanad or committee) in which a Bill event occurs. Renamed from :InChamber (2026) to follow lowerCamelCase property naming convention. Domain is :BillEvent; all stage concept individuals (:FirstStage, :CommitteeStage, etc.) are explicitly typed both :BillStage and :BillEvent, satisfying the domain without spurious inference. Instance data for stage occurrences (e.g. a specific Committee Stage activity for a given bill) should consequently be typed both :BillStage and :BillEvent."@en ;
+         rdfs:comment "The House (Dáil, Seanad or committee) in which a concrete Bill event occurrence takes place. Controlled stage, event and delivery values are ELI-DL concepts, not :BillEvent instances."@en ;
 
          rdfs:domain :BillEvent ;
 
@@ -220,8 +220,9 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#FirstStage
 
-:FirstStage rdf:type :BillEvent ,
-                     :BillStage ,
+:FirstStage rdf:type eli-dl:ProcessStage ,
+                      eli-dl:ActivityType ,
+                      skos:Concept ,
                      owl:NamedIndividual ;
 
             skos:prefLabel "First stage"@en ;
@@ -233,8 +234,9 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#SecondStage
 
-:SecondStage rdf:type :BillEvent ,
-                      :BillStage ,
+:SecondStage rdf:type eli-dl:ProcessStage ,
+                       eli-dl:ActivityType ,
+                       skos:Concept ,
                       owl:NamedIndividual ;
 
              skos:prefLabel "Second stage"@en ;
@@ -246,8 +248,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#OrderSecondStage
 
-:OrderSecondStage rdf:type :BillEvent ,
-                           :BillStage ,
+:OrderSecondStage rdf:type eli-dl:ProcessStage , eli-dl:ActivityType , skos:Concept ,
                            owl:NamedIndividual ;
 
                   skos:prefLabel "Order for second stage"@en ;
@@ -259,8 +260,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#SecondSubStages
 
-:SecondSubStages rdf:type :BillEvent ,
-                          :BillStage ,
+:SecondSubStages rdf:type eli-dl:ProcessStage , eli-dl:ActivityType , skos:Concept ,
                           owl:NamedIndividual ;
 
                  skos:prefLabel "Second and subsequent stages"@en ;
@@ -272,9 +272,9 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#CommitteeStage
 
-:CommitteeStage rdf:type :AmendingStage ,
-                         :BillEvent ,
-                         :BillStage ,
+:CommitteeStage rdf:type eli-dl:ProcessStage ,
+                          eli-dl:ActivityType ,
+                          skos:Concept ,
                          owl:NamedIndividual ;
 
                 skos:prefLabel "Committee stage"@en ;
@@ -286,8 +286,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#OrderCommitteeStage
 
-:OrderCommitteeStage rdf:type :BillEvent ,
-                              :BillStage ,
+:OrderCommitteeStage rdf:type eli-dl:ProcessStage , eli-dl:ActivityType , skos:Concept ,
                               owl:NamedIndividual ;
 
                      skos:prefLabel "Order for committee stage"@en ;
@@ -299,9 +298,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#CommitteeSubStages
 
-:CommitteeSubStages rdf:type :AmendingStage ,
-                             :BillEvent ,
-                             :BillStage ,
+:CommitteeSubStages rdf:type eli-dl:ProcessStage , eli-dl:ActivityType , skos:Concept ,
                              owl:NamedIndividual ;
 
                     skos:prefLabel "Committee and remaining stages"@en ;
@@ -313,9 +310,9 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#ReportStage
 
-:ReportStage rdf:type :AmendingStage ,
-                      :BillEvent ,
-                      :BillStage ,
+:ReportStage rdf:type eli-dl:ProcessStage ,
+                       eli-dl:ActivityType ,
+                       skos:Concept ,
                       owl:NamedIndividual ;
 
              skos:prefLabel "Report stage"@en ;
@@ -327,8 +324,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#OrderReportStage
 
-:OrderReportStage rdf:type :BillEvent ,
-                           :BillStage ,
+:OrderReportStage rdf:type eli-dl:ProcessStage , eli-dl:ActivityType , skos:Concept ,
                            owl:NamedIndividual ;
 
                   skos:prefLabel "Order for report stage"@en ;
@@ -340,9 +336,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#ReportSubStages
 
-:ReportSubStages rdf:type :AmendingStage ,
-                          :BillEvent ,
-                          :BillStage ,
+:ReportSubStages rdf:type eli-dl:ProcessStage , eli-dl:ActivityType , skos:Concept ,
                           owl:NamedIndividual ;
 
                  skos:prefLabel "Report and final stages"@en ;
@@ -354,8 +348,9 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#FifthStage
 
-:FifthStage rdf:type :BillEvent ,
-                     :BillStage ,
+:FifthStage rdf:type eli-dl:ProcessStage ,
+                      eli-dl:ActivityType ,
+                      skos:Concept ,
                      owl:NamedIndividual ;
 
             skos:prefLabel "Fifth stage"@en ;
@@ -367,8 +362,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#AllStages
 
-:AllStages rdf:type :BillEvent ,
-                    :BillStage ,
+:AllStages rdf:type eli-dl:ProcessStage , eli-dl:ActivityType , skos:Concept ,
                     owl:NamedIndividual ;
 
            skos:prefLabel "All stages"@en ;
@@ -387,7 +381,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#BallotOrder
 
-:BallotOrder rdf:type :BillEvent ,
+:BallotOrder rdf:type eli-dl:ActivityType , skos:Concept ,
                       owl:NamedIndividual ;
 
              skos:prefLabel "Ballot paper motion"@en ;
@@ -399,7 +393,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#BillAmend
 
-:BillAmend rdf:type :BillEvent ,
+:BillAmend rdf:type eli-dl:ActivityType , skos:Concept ,
                     owl:NamedIndividual ;
 
            skos:prefLabel "Bill amendment"@en ;
@@ -411,7 +405,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#BillAmend2Amend
 
-:BillAmend2Amend rdf:type :BillEvent ,
+:BillAmend2Amend rdf:type eli-dl:ActivityType , skos:Concept ,
                           owl:NamedIndividual ;
 
                  skos:prefLabel "Amendment to Bill amendment"@en ;
@@ -423,7 +417,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#BillRecommendation
 
-:BillRecommendation rdf:type :BillEvent ,
+:BillRecommendation rdf:type eli-dl:ActivityType , skos:Concept ,
                              owl:NamedIndividual ;
 
                     skos:prefLabel "Bill recommendation"@en ;
@@ -435,7 +429,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#DailAmdSeanad
 
-:DailAmdSeanad rdf:type :BillEvent ,
+:DailAmdSeanad rdf:type eli-dl:ActivityType , skos:Concept ,
                         owl:NamedIndividual ;
 
                skos:prefLabel "Dáil amendments in the Seanad"@en ;
@@ -447,7 +441,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#DischargeOrderSecondStage
 
-:DischargeOrderSecondStage rdf:type :BillEvent ,
+:DischargeOrderSecondStage rdf:type eli-dl:ActivityType , skos:Concept ,
                                     owl:NamedIndividual ;
 
                            skos:prefLabel "Motion for discharge order for second stage"@en ;
@@ -459,7 +453,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#DischargeSecondStage
 
-:DischargeSecondStage rdf:type :BillEvent ,
+:DischargeSecondStage rdf:type eli-dl:ActivityType , skos:Concept ,
                                owl:NamedIndividual ;
 
                       skos:prefLabel "Motion for discharge order for second stage"@en ;
@@ -471,7 +465,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#EarlySign
 
-:EarlySign rdf:type :BillEvent ,
+:EarlySign rdf:type eli-dl:ActivityType , skos:Concept ,
                     owl:NamedIndividual ;
 
            skos:prefLabel "Motion for early signature"@en ;
@@ -483,7 +477,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#FinancialResolution
 
-:FinancialResolution rdf:type :BillEvent ,
+:FinancialResolution rdf:type eli-dl:ActivityType , skos:Concept ,
                               owl:NamedIndividual ;
 
                      skos:prefLabel "Financial resolution"@en .
@@ -491,7 +485,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#InstrCommittee
 
-:InstrCommittee rdf:type :BillEvent ,
+:InstrCommittee rdf:type eli-dl:ActivityType , skos:Concept ,
                          owl:NamedIndividual ;
 
                 skos:prefLabel "Instruction to committee"@en ;
@@ -503,7 +497,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#LeaveToWithdraw
 
-:LeaveToWithdraw rdf:type :BillEvent ,
+:LeaveToWithdraw rdf:type eli-dl:ActivityType , skos:Concept ,
                           owl:NamedIndividual ;
 
                  skos:prefLabel "Leave to withdraw"@en ;
@@ -515,7 +509,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#RecommitBill
 
-:RecommitBill rdf:type :BillEvent ,
+:RecommitBill rdf:type eli-dl:ActivityType , skos:Concept ,
                        owl:NamedIndividual ;
 
               skos:prefLabel "Motion to recommit"@en ;
@@ -527,7 +521,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#RefCommittee
 
-:RefCommittee rdf:type :BillEvent ,
+:RefCommittee rdf:type eli-dl:ActivityType , skos:Concept ,
                        owl:NamedIndividual ;
 
               skos:prefLabel "Referral to select committee"@en ;
@@ -539,7 +533,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#RestoreBill
 
-:RestoreBill rdf:type :BillEvent ,
+:RestoreBill rdf:type eli-dl:ActivityType , skos:Concept ,
                       owl:NamedIndividual ;
 
              skos:prefLabel "Restoration of Bill"@en ;
@@ -551,7 +545,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#SeanadAmdDail
 
-:SeanadAmdDail rdf:type :BillEvent ,
+:SeanadAmdDail rdf:type eli-dl:ActivityType , skos:Concept ,
                         owl:NamedIndividual ;
 
                skos:prefLabel "Seanad amendments in the Dáil"@en ;
@@ -563,7 +557,7 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#VoterInfo
 
-:VoterInfo rdf:type :BillEvent ,
+:VoterInfo rdf:type eli-dl:ActivityType , skos:Concept ,
                     owl:NamedIndividual ;
 
            skos:prefLabel "Motion on statement of information for voters"@en ;
@@ -575,7 +569,8 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#Published
 
-:Published rdf:type :BillEvent ,
+:Published rdf:type eli-dl:ActivityType ,
+                     skos:Concept ,
                     owl:NamedIndividual ;
 
            skos:prefLabel "Published"@en ;
@@ -589,7 +584,9 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#Enacted
 
-:Enacted rdf:type :BillEvent ,
+:Enacted rdf:type eli-dl:ProcessStage ,
+                   eli-dl:ActivityType ,
+                   skos:Concept ,
                   owl:NamedIndividual ;
 
          skos:prefLabel "Enacted"@en ;
@@ -677,7 +674,8 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#Application
 
-:Application rdf:type :BillDelivery ,
+:Application rdf:type eli-dl:ActivityType ,
+                       skos:Concept ,
                       owl:NamedIndividual ;
 
              skos:topConceptOf :BillDeliveryTable ;
@@ -687,7 +685,8 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#Introduction
 
-:Introduction rdf:type :BillDelivery ,
+:Introduction rdf:type eli-dl:ActivityType ,
+                        skos:Concept ,
                        owl:NamedIndividual ;
 
               skos:topConceptOf :BillDeliveryTable ;
@@ -697,7 +696,8 @@ time:ProperInterval rdf:type owl:Class ;
 
 ###  https://data.oireachtas.ie/ontology#Presentation
 
-:Presentation rdf:type :BillDelivery ,
+:Presentation rdf:type eli-dl:ActivityType ,
+                        skos:Concept ,
                        owl:NamedIndividual ;
 
               skos:inScheme :BillDeliveryTable ;

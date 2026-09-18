@@ -56,7 +56,7 @@ eli-dl:process_number
     rdfs:comment "For Oireachtas bills: the full compound identifier, e.g. \"2025/60\" for the bill or \"2025/18\" for the resulting act (eli:LegalResource). The year component alone is expressed via :legislativeYear; the number component alone via eli-dl:process_number."@en .
 
 eli-dl:process_status
-    rdfs:comment "For Oireachtas bills: set on the eli-dl:LegislativeProcess instance. The stages[].stageOutcome string \"Enacted\" maps here as :EnactedBill, not as a :BillEventOutcome. The final stage completion is separately recorded via eli-dl:activity_completed true on the final eli-dl:LegislativeActivity."@en .
+    rdfs:comment "For Oireachtas bills: set on the eli-dl:LegislativeProcess instance. The stages[].stageOutcome string \"Enacted\" maps here as :EnactedBill, not as a :BillEventOutcome. ELI-DL 3.0 has no activity-completion boolean predicate; stageCompleted remains source evidence and eli-dl:latest_activity identifies the latest completed activity."@en .
 
 <http://data.europa.eu/eli/ontology#type_document>
     rdfs:comment "For Oireachtas bills: apply at Work level (eli-dl:DraftLegislationWork or eli:LegalResource) only. Bill-stage version expressions (eli:LegalExpression) do not carry eli:type_document — their document type is inferred from the Work. Exception: the enacted act is a separate eli:LegalResource (typed eli:type_document :Act) linked to the DraftLegislationWork via eli:basis_for. The JSON field versions[].docType = \"act\" signals this transition to the Act LegalResource."@en .
@@ -129,9 +129,9 @@ eli-dl:latest_activity
 
             rdfs:domain <http://data.europa.eu/eli/ontology#LegalResource> ;
 
-            rdfs:range xsd:dateTime ;
+             rdfs:range xsd:date ;
 
-            rdfs:comment "Date and time at which the President of Ireland signed the Bill into law under Article 25 of the Constitution."@en ;
+             rdfs:comment "Date on which the President of Ireland signed the Bill into law under Article 25 of the Constitution."@en ;
 
             skos:prefLabel "Date signed"@en .
 

@@ -254,7 +254,7 @@ Defines the detailed membership, role and party structures of the Houses of the 
 
 Defines the procedural events that occur during a Bill's lifecycle, including stages, delivery methods and outcomes.
 
-> **bill.json alignment (2026):** `:progressStage` and `:stageNo` datatype properties added to represent the cross-house stage ordering integer and per-house amendment list stage number respectively. `:Published` and `:Enacted` named individuals added to the `BillEventTable` concept scheme to cover the `bill.events[]` lifecycle events.
+> **bill.json alignment (2026):** `:progressStage` and `:stageNo` datatype properties represent cross-house stage ordering and per-house amendment list stage number. `stageURI` maps a concrete stage occurrence to the corresponding controlled individual via both `eli-dl:occured_at_stage` and `eli-dl:had_activity_type`; those controlled stage values are `eli-dl:ProcessStage` and `eli-dl:ActivityType` concepts. `eventURI` and `methodURI` map through `eli-dl:had_activity_type` to controlled `eli-dl:ActivityType` concepts. Amendment source stage references resolve to the same controlled ProcessStage as their associated concrete stage occurrence. `:Published` and `:Enacted` are controlled values, never occurrence instances.
 >
 > **Correction (Feb 2026):** `:mostRecentStage` removed — duplicated `eli-dl:latest_activity`. `eli-dl:latest_activity` is now annotated in `legislation.owl` for Oireachtas usage (maps to `bill.mostRecentStage`).
 
@@ -275,7 +275,7 @@ Defines the procedural events that occur during a Bill's lifecycle, including st
 
 | Property | Domain | Range | Notes |
 |---|---|---|---|
-| `:inHouse` | `:BillEvent` | `agents:House` | Renamed from `:InChamber` (2026) to follow lowerCamelCase convention. All stage concept individuals (`:FirstStage`, `:CommitteeStage`, etc.) are explicitly typed both `:BillStage` and `:BillEvent`, so the domain is satisfied without spurious inference. Instance data for stage occurrences should follow the same dual-typing pattern. |
+| `:inHouse` | `:BillEvent` | `agents:House` | Renamed from `:InChamber` (2026). Applied only to concrete occurrence activities; controlled stage/event/delivery values are not `:BillEvent` instances. |
 | `:commenced` | `time:TemporalEntity` | `:EventDate` | |
 | `:elected` | `time:TemporalEntity` | `:EventDate` | |
 | `:ended` | `time:TemporalEntity` | `:EventDate` | |
@@ -287,11 +287,11 @@ Defines the procedural events that occur during a Bill's lifecycle, including st
 | `:progressStage` | `eli-dl:LegislativeActivity` | `xsd:positiveInteger` | Cross-house sequential order (1 = First Stage Dáil … 10 = Enacted) |
 | `:stageNo` | `eli-dl:AmendmentToDraftLegislationWork` | `xsd:positiveInteger` | Stage within a single house at which an amendment list was tabled |
 
-#### Named Individuals — Bill Stages
+#### Controlled Individuals — Bill Stages
 
 `FirstStage`, `SecondStage`, `OrderSecondStage`, `SecondSubStages`, `CommitteeStage`, `OrderCommitteeStage`, `CommitteeSubStages`, `ReportStage`, `OrderReportStage`, `ReportSubStages`, `FifthStage`, `AllStages`
 
-#### Named Individuals — Other Bill Events
+#### Controlled Individuals — Other Bill Events
 
 `BallotOrder`, `BillAmend`, `BillAmend2Amend`, `BillRecommendation`, `DailAmdSeanad`, `DischargeOrderSecondStage`, `DischargeSecondStage`, `EarlySign`, `FinancialResolution`, `InstrCommittee`, `LeaveToWithdraw`, `RecommitBill`, `RefCommittee`, `RestoreBill`, `SeanadAmdDail`, `VoterInfo`, `Published`, `Enacted`
 
@@ -299,7 +299,7 @@ Defines the procedural events that occur during a Bill's lifecycle, including st
 
 `Agreed`, `DeclaredCarried`, `DeclaredLost`, `NotMoved`, `Withdrawn`
 
-#### Named Individuals — Bill Delivery Methods
+#### Controlled Individuals — Bill Delivery Methods
 
 `Application`, `Introduction`, `Presentation`
 
@@ -325,7 +325,7 @@ Defines the legislative documents published by the Oireachtas, including Bills, 
 
 > **ELI-DL migration (2026):** All local subclasses have been eliminated. Each is now replaced by the appropriate ELI-DL or ELI class used directly. The local `metalex` import has been replaced by `eli-dl`. The `:OriginalTitle` data property has been removed in favour of `dct:alternative`.
 >
-> **bill.json alignment (2026):** `:dateSigned` (sub-property of `eli:date_document`) added for presidential signature date. `:statuteBookURI` (sub-property of `dct:relation`) added for Irish Statute Book cross-references. `:hasAmendmentListType` property and `:NumberedAmendmentList` / `:UnnumberedAmendmentList` individuals added. `:Errata` and `:Gluais` resource type individuals added. `dct:modified` annotated for API record update timestamps.
+> **bill.json alignment (2026):** `:dateSigned` (sub-property of `eli:date_document`, `xsd:date`) added for presidential signature date. `:statuteBookURI` (sub-property of `dct:relation`) added for Irish Statute Book cross-references. `:hasAmendmentListType` property and `:NumberedAmendmentList` / `:UnnumberedAmendmentList` individuals added. `:Errata` and `:Gluais` resource type individuals added. `dct:modified` annotated for API record update timestamps.
 >
 > **Corrections and additions (Feb 2026):** `:hasBillType` removed — replaced by `eli-dl:process_type`; `:PublicBill` and `:PrivateBill` retyped as `eli-dl:ProcessType`. `:originHouse` object property added (domain `eli-dl:DraftLegislationWork`, range `:House`) for bill house of introduction. `:legislativeYear` datatype property added (`xsd:integer`) for the year component of `eli:id_local`. Six `eli-dl`/ELI property annotations added: `eli-dl:process_number`, `eli:id_local`, `eli-dl:process_status`, `eli:type_document`, `eli-dl:process_type`, `eli-dl:latest_activity`.
 
@@ -352,7 +352,7 @@ Defines the legislative documents published by the Oireachtas, including Bills, 
 | `dct:modified` | Timestamp of last API record update; applied to `eli-dl:DraftLegislationWork` instances (`xsd:dateTime`) |
 | `eli-dl:process_number` | For Oireachtas bills: bill/act number component of `eli:id_local` (e.g. `"60"`); maps `billNo` / `actNo` |
 | `eli:id_local` | For Oireachtas bills: full compound identifier (e.g. `"2025/60"`); year via `:legislativeYear`, number via `eli-dl:process_number` |
-| `eli-dl:process_status` | `stages[].stageOutcome "Enacted"` maps here as `:EnactedBill`, not a `BillEventOutcome`; final stage completion via `eli-dl:activity_completed true` |
+| `eli-dl:process_status` | `stages[].stageOutcome "Enacted"` maps here as `:EnactedBill`, not a `BillEventOutcome`; `stageCompleted` remains source evidence and `eli-dl:latest_activity` identifies the latest completed activity |
 | `eli:type_document` | Work-level only (`DraftLegislationWork` or `LegalResource`); `versions[].docType = "act"` signals an Act `eli:LegalResource` |
 | `eli-dl:process_type` | Set to `:PublicBill` or `:PrivateBill`; replaces removed `:hasBillType` |
 | `eli-dl:latest_activity` | Maps to `bill.mostRecentStage`; replaces removed `:mostRecentStage` (see `events.owl`) |
@@ -369,7 +369,7 @@ Defines the legislative documents published by the Oireachtas, including Bills, 
 
 | Property | Domain | Range | Notes |
 |---|---|---|---|
-| `:dateSigned` | `eli:LegalResource` | `xsd:dateTime` | Presidential signature date and time (Article 25); sub-property of `eli:date_document` |
+| `:dateSigned` | `eli:LegalResource` | `xsd:date` | Presidential signature date (Article 25); sub-property of `eli:date_document` |
 | `:legislativeYear` | `eli-dl:DraftLegislationWork` / `eli:LegalResource` | `xsd:integer` | Year component of `eli:id_local`; covers `billYear` and `actYear` JSON fields |
 
 #### Named Individuals — ELI Resource Types
@@ -544,4 +544,3 @@ Field-level mappings between Oireachtas API JSON responses and ontology terms ar
 | `new` | Term added during the alignment work |
 | `implicit` | No explicit property needed — the information is derivable from the individual's IRI or class typing |
 | `future_work` | No ontology term yet; deferred |
-

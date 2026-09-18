@@ -149,7 +149,9 @@ Run the Phase 0 checks from the repository root:
 The ontology validator parses every Turtle file beneath `ontology/` and runs
 the existing Owlready2/HermiT consistency check over the repository's local
 modules. The vendored ELI-DL schema is syntax-checked but excluded from HermiT
-because it declares datatypes unsupported by HermiT.
+because it declares datatypes unsupported by HermiT. The approved local
+`:dateSigned` `xsd:date` range is likewise syntax-checked and omitted only
+from HermiT input because `xsd:date` is outside HermiT's OWL 2 datatype map.
 
 Mapping-integrity validation examines all CSV rows with status `mapped` or
 `new`. Local terms (`:`, `agents:`, and `members:`) must be declared in the

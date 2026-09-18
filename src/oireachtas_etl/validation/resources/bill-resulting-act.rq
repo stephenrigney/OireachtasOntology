@@ -1,0 +1,2 @@
+PREFIX eli: <http://data.europa.eu/eli/ontology#>
+SELECT ?act WHERE { GRAPH <https://data.oireachtas.ie/graph/bill/2025/60> { <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60> eli:basis_for ?act } }

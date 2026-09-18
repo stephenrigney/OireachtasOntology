@@ -50,3 +50,14 @@ def datetime_literal(value: object) -> Literal:
     if parsed.tzinfo is not None:
         parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
     return Literal(parsed.isoformat(timespec="seconds"), datatype=XSD.dateTime)
+
+
+def date_literal(value: object) -> Literal:
+    """Return a validated canonical xsd:date literal."""
+    if not isinstance(value, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        raise ValueError(f"invalid date: {value!r}")
+    try:
+        date.fromisoformat(value)
+    except ValueError as error:
+        raise ValueError(f"invalid date: {value!r}") from error
+    return Literal(value, datatype=XSD.date)

@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import XSD
-from oireachtas_etl.competency import verify_constituencies_competency, verify_houses_competency, verify_parties_competency, verify_members_competency
+from oireachtas_etl.competency import verify_constituencies_competency, verify_houses_competency, verify_parties_competency, verify_members_competency, verify_bill_competency
 from oireachtas_etl.cli import run_members
 from oireachtas_etl.config import CONSTITUENCIES_GRAPH, HOUSES_GRAPH, PARTIES_GRAPH
 from oireachtas_etl.loader import FusekiGraphStoreLoader, FusekiSparqlClient
@@ -16,6 +16,7 @@ from oireachtas_etl.transforms.houses import transform_houses
 from oireachtas_etl.transforms.parties import transform_parties
 from oireachtas_etl.transforms.constituencies import transform_constituencies
 from oireachtas_etl.transforms.members import member_graph_iri, source_hash, transform_member
+from oireachtas_etl.transforms.bills import bill_graph_iri, transform_bill
 
 GSP = os.getenv("OIR_TEST_FUSEKI_GSP_URL")
 SPARQL = os.getenv("OIR_TEST_FUSEKI_SPARQL_URL")
@@ -172,3 +173,18 @@ def test_member_external_links_are_isolated_verified_and_cleared_by_review(tmp_p
         assert _count(client, authoritative_graph) == len(authoritative)
     finally:
         store.close()
+
+
+def test_bill_gsp_replacement_removes_stale_lifecycle_content():
+    root = Path(__file__).resolve().parents[1]
+    record = json.loads((root / "data/api_examples/bill.json").read_text())["results"][0]
+    bill, graph = record["bill"], transform_bill(record)
+    graph_iri = bill_graph_iri(bill)
+    loader = FusekiGraphStoreLoader(GSP, user=FUSEKI_USER, password=FUSEKI_PASSWORD)
+    client = FusekiSparqlClient(SPARQL, user=FUSEKI_USER, password=FUSEKI_PASSWORD)
+    stale = ntriples(graph) + "\n<https://example.test/stale> <https://example.test/p> <https://example.test/o> ."
+    loader.replace(graph_iri, stale, content_type="application/n-triples")
+    loader.replace(graph_iri, ntriples(graph), content_type="application/n-triples")
+    assert _count(client, graph_iri) == len(graph)
+    assert not list(_graph_from_gsp(GSP, graph_iri).triples((URIRef("https://example.test/stale"), None, None)))
+    verify_bill_competency(client, graph_iri, bill["uri"], len(graph))

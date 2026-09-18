@@ -1,0 +1,2 @@
+PREFIX dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>
+SELECT ?stage WHERE { GRAPH <https://data.oireachtas.ie/graph/bill/2025/60> { <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> dl:latest_activity ?stage } }

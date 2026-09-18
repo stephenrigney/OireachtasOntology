@@ -6,17 +6,19 @@ from .api import ApiClient, HousesApiClient
 from .config import CONSTITUENCIES_GRAPH, HOUSES_GRAPH, PARTIES_GRAPH, REFERENCE_ONTOLOGY_VERSION, Settings
 from .loader import FusekiGraphStoreLoader
 from .loader import FusekiSparqlClient
-from .competency import verify_constituencies_competency, verify_houses_competency, verify_parties_competency, verify_member_competency
+from .competency import verify_constituencies_competency, verify_houses_competency, verify_parties_competency, verify_member_competency, verify_bill_competency
 from .raw import persist_raw
 from .serialization import nquads, ntriples, turtle
 from .transforms.houses import transform_houses_with_report
 from .transforms.parties import transform_parties
 from .transforms.constituencies import transform_constituencies
 from .validation import validate_constituencies, validate_houses, validate_parties
-from .validation import validate_member
+from .validation import validate_member, validate_bill
 from .validation.members import validate_member_source
 from .transforms.members import member_graph_iri, source_hash, transform_member_with_report
-from .state import load_manifest, write_manifest, manifest_lock
+from .transforms.bills import bill_graph_iri, source_hash as bill_source_hash, transform_bill_with_report
+from .validation.bills import validate_bill_source
+from .state import load_manifest, load_bills_manifest, write_manifest, manifest_lock
 from .reconciliation import (DbpediaClient, ReconciliationStore, WikidataClient,
                               FixtureResponseError, external_graph_iri, load_review, reconcile_records, valid_qid)
 
@@ -232,6 +234,93 @@ def run_members(args: argparse.Namespace) -> int:
         return _run_members(args)
 
 
+def _bills_fixture_records(path: Path) -> tuple[list[dict], bytes, int | None]:
+    body = path.read_bytes(); value = json.loads(body)
+    if isinstance(value, dict):
+        records = value.get("results")
+        counts = value.get("head", {}).get("counts", {}) if isinstance(value.get("head"), dict) else {}
+        advertised = counts.get("billCount") if isinstance(counts, dict) else None
+    else:
+        records, advertised = value, None
+    if not isinstance(records, list):
+        raise ValueError("Bills fixture must be an array or Legislation results envelope")
+    return records, body, advertised
+
+
+def _deduplicate_bills(records: list[dict], advertised: int | None) -> list[dict]:
+    if not records: raise ValueError("Bills harvest must not be empty")
+    unique, graphs = {}, {}
+    for wrapper in records:
+        if not isinstance(wrapper, dict) or not isinstance(wrapper.get("bill"), dict): raise ValueError("each Legislation result must contain a bill object")
+        bill = wrapper["bill"]; identity, graph = bill["uri"], bill_graph_iri(bill)
+        if graph in graphs and graphs[graph] != identity: raise ValueError("Bill graph IRI collision")
+        graphs[graph] = identity
+        if identity in unique:
+            if bill_source_hash(unique[identity]["bill"]) != bill_source_hash(bill): raise ValueError(f"conflicting duplicate Bill identity: {identity}")
+            continue
+        unique[identity] = wrapper
+    if advertised is not None and (isinstance(advertised, bool) or not isinstance(advertised, int) or advertised != len(unique)):
+        raise ValueError(f"Bills unique count {len(unique)} does not match advertised count {advertised!r}")
+    return [unique[key] for key in sorted(unique)]
+
+
+def _run_bills(args: argparse.Namespace) -> int:
+    settings = Settings.from_environment()
+    settings = Settings(**{**settings.__dict__, "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir,
+                           "bills_state_file": Path(args.state_file) if args.state_file else settings.bills_state_file})
+    if args.fixture:
+        records, body, advertised = _bills_fixture_records(Path(args.fixture))
+        persist_raw(root=settings.raw_dir, endpoint=str(Path(args.fixture)), params={"skip": 0, "limit": len(records)}, body=body, status=200,
+                    retrieved_at=datetime.now(timezone.utc), ontology_version="legislation.owl.ttl@phase-4-legislative-lifecycle-2026", mapping_version="bill_mapping.csv@phase-4-legislative-lifecycle-2026", endpoint_name="legislation")
+    else:
+        records, advertised = [], None
+        for page in ApiClient(settings.bills_api_url, retries=settings.retries, timeout=settings.timeout).harvest(limit=settings.limit):
+            persist_raw(root=settings.raw_dir, endpoint=settings.bills_api_url, params=page.params, body=page.body, status=page.status, retrieved_at=datetime.now(timezone.utc), ontology_version="legislation.owl.ttl@phase-4-legislative-lifecycle-2026", mapping_version="bill_mapping.csv@phase-4-legislative-lifecycle-2026", endpoint_name="legislation")
+            decoded = json.loads(page.body)
+            if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list): raise ValueError("every Legislation API page must be an object envelope with a results list")
+            count = decoded.get("head", {}).get("counts", {}).get("billCount") if isinstance(decoded.get("head"), dict) else None
+            if isinstance(count, bool) or not isinstance(count, int) or count < 0: raise ValueError("every Legislation API page must contain a nonnegative integer head.counts.billCount")
+            if advertised is None: advertised = count
+            elif advertised != count: raise ValueError("Bills advertised count changed during scan")
+            records.extend(decoded["results"])
+    records = _deduplicate_bills(records, advertised)
+    manifest = load_bills_manifest(settings.bills_state_file)
+    work = []
+    for wrapper in records:
+        bill = wrapper["bill"]; identity, digest, graph_iri = bill["uri"], bill_source_hash(bill), bill_graph_iri(bill); old = manifest["bills"].get(identity, {})
+        # Hash-first source gate; unchanged Bills never construct RDF or invoke a loader.
+        omissions = validate_bill_source(wrapper)
+        if not args.offline and old.get("status") == "clean" and old.get("contract_version") == 1 and old.get("published_hash") == digest and old.get("graph_iri") == graph_iri:
+            work.append((wrapper, None, identity, digest, omissions, "skipped")); continue
+        graph, report = transform_bill_with_report(wrapper); validate_bill(wrapper, graph)
+        work.append((wrapper, graph, identity, digest, report, "changed" if old else "new"))
+    if args.output_nq: Path(args.output_nq).write_text("".join(nquads(graph, bill_graph_iri(wrapper["bill"])) for wrapper, graph, *_ in work if graph is not None), encoding="utf-8")
+    if getattr(args, "output_ttl", None): Path(args.output_ttl).write_text("\n".join(turtle(graph) for _, graph, *_ in work if graph is not None), encoding="utf-8")
+    endpoint = None if args.offline else (args.fuseki_gsp_url or settings.fuseki_gsp_url); query_endpoint = None if args.offline else (args.fuseki_sparql_url or settings.fuseki_sparql_url)
+    if endpoint and not query_endpoint: raise ValueError("Fuseki SPARQL endpoint is required for post-load competency verification")
+    published = skipped = 0
+    if endpoint:
+        loader = FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout); client = FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
+        for wrapper, graph, identity, digest, _, status in work:
+            old = manifest["bills"].get(identity, {})
+            if graph is None:
+                old["last_seen"] = datetime.now(timezone.utc).isoformat(); manifest["bills"][identity] = old; write_manifest(settings.bills_state_file, manifest); skipped += 1; continue
+            graph_iri = bill_graph_iri(wrapper["bill"])
+            manifest["bills"][identity] = {**old, "status": "dirty", "pending_hash": digest, "pending_graph_iri": graph_iri, "graph_iri": old.get("graph_iri", graph_iri), "contract_version": 1}; write_manifest(settings.bills_state_file, manifest)
+            loader.replace(graph_iri, ntriples(graph), content_type="application/n-triples"); verify_bill_competency(client, graph_iri, identity, len(graph))
+            manifest["bills"][identity] = {"source_hash": digest, "published_hash": digest, "graph_iri": graph_iri, "last_seen": datetime.now(timezone.utc).isoformat(), "last_published": datetime.now(timezone.utc).isoformat(), "contract_version": 1, "status": "clean"}; write_manifest(settings.bills_state_file, manifest); published += 1
+    elif not args.offline: raise ValueError("no Fuseki GSP endpoint configured; use --offline for fixture/developer runs")
+    identities = {kind: sorted(identity for _, _, identity, _, _, status in work if status == kind) for kind in ("new", "changed", "skipped")}
+    print(json.dumps({"records": len(records), "published": published, "skipped": skipped, "new": identities["new"], "changed": identities["changed"], "skipped_identities": identities["skipped"], "omitted": [item for *_, report, _ in work for item in report]}, sort_keys=True))
+    return 0
+
+
+def run_bills(args: argparse.Namespace) -> int:
+    if args.offline: return _run_bills(args)
+    settings = Settings.from_environment(); path = Path(args.state_file) if getattr(args, "state_file", None) else settings.bills_state_file
+    with manifest_lock(path): return _run_bills(args)
+
+
 class _FixtureWikidataClient:
     """Offline, deterministic response adapter for reconciliation tests/runs."""
     def __init__(self, data):
@@ -355,7 +444,7 @@ def run_reconcile_members(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="oir-etl")
     sub = parser.add_subparsers(dest="command", required=True)
-    run = sub.add_parser("run"); run.add_argument("endpoint", choices=["houses", "parties", "constituencies", "members"])
+    run = sub.add_parser("run"); run.add_argument("endpoint", choices=["houses", "parties", "constituencies", "members", "bills"])
     run.add_argument("--fixture"); run.add_argument("--offline", action="store_true"); run.add_argument("--raw-dir")
     run.add_argument("--state-file")
     run.add_argument("--output-ttl"); run.add_argument("--output-nq"); run.add_argument("--fuseki-gsp-url"); run.add_argument("--fuseki-sparql-url")
@@ -367,6 +456,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "reconcile": return run_reconcile_members(args)
     if args.endpoint == "houses": return run_houses(args)
     if args.endpoint == "members": return run_members(args)
+    if args.endpoint == "bills": return run_bills(args)
     return run_reference(args)
 
 if __name__ == "__main__": raise SystemExit(main())

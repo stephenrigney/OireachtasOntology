@@ -11,7 +11,7 @@ def persist_raw(*, root: Path, endpoint: str, params: dict, body: bytes, status:
     retrieved_at = retrieved_at or datetime.now(timezone.utc)
     day = retrieved_at.date().isoformat()
     skip = int(params["skip"])
-    if endpoint_name not in {"houses", "parties", "constituencies", "members"}:
+    if endpoint_name not in {"houses", "parties", "constituencies", "members", "legislation"}:
         raise ValueError(f"unsupported raw endpoint: {endpoint_name!r}")
     destination = root / endpoint_name / day
     destination.mkdir(parents=True, exist_ok=True)

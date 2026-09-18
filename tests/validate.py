@@ -7,11 +7,12 @@ import tempfile
 from pathlib import Path
 
 import owlready2
-from rdflib import Graph, OWL
+from rdflib import Graph, OWL, RDFS, URIRef
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ONTOLOGY_DIR = REPOSITORY_ROOT / "ontology"
+XSD_DATE = URIRef("http://www.w3.org/2001/XMLSchema#date")
 
 
 class OntologyValidationError(RuntimeError):
@@ -56,12 +57,22 @@ def load_local_ontology_graph(ontology_dir: Path = ONTOLOGY_DIR) -> Graph:
     return graph
 
 
-def run_consistency_check(graph: Graph) -> None:
-    """Run HermiT and reject inconsistent or unsatisfiable ontology classes."""
+def hermit_input(graph: Graph) -> Graph:
+    """Return HermiT-safe graph, excluding only the approved exact axiom."""
     flattened = Graph()
     for triple in graph:
-        if triple[1] != OWL.imports:
+        # HermiT implements the OWL 2 datatype map, which excludes xsd:date.
+        # Phase 4 deliberately uses xsd:date for :dateSigned because the API
+        # provides a date-only value. Turtle parsing still validates the range;
+        # omit only this unsupported range axiom from the HermiT input.
+        if triple[1] != OWL.imports and triple != (URIRef("https://data.oireachtas.ie/ontology#dateSigned"), RDFS.range, XSD_DATE):
             flattened.add(triple)
+    return flattened
+
+
+def run_consistency_check(graph: Graph) -> None:
+    """Run HermiT and reject inconsistent or unsatisfiable ontology classes."""
+    flattened = hermit_input(graph)
 
     with tempfile.NamedTemporaryFile(suffix=".owl", delete=False) as handle:
         ontology_path = Path(handle.name)
@@ -89,9 +100,9 @@ def run_consistency_check(graph: Graph) -> None:
 def validate_ontology(ontology_dir: Path = ONTOLOGY_DIR) -> Graph:
     """Parse and reason over the ontology, raising on every validation error."""
     graph = load_ontology_graph(ontology_dir)
-    # The vendored ELI-DL Turtle is syntax-checked above. Its xsd:date
-    # restrictions are outside HermiT's OWL 2 datatype support, so preserve
-    # the existing consistency boundary of the repository's own modules.
+    # Vendored ELI-DL and approved local :dateSigned xsd:date are syntax
+    # checked above. xsd:date is outside HermiT's OWL 2 datatype support, so
+    # retain the executable consistency boundary for all other local axioms.
     run_consistency_check(load_local_ontology_graph(ontology_dir))
     return graph
 

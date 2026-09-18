@@ -1,0 +1,27 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix eli: <http://data.europa.eu/eli/ontology#> .
+@prefix dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#> .
+@prefix oir: <https://data.oireachtas.ie/ontology#> .
+
+oir:BillShape a sh:NodeShape ; sh:targetClass dl:DraftLegislationWork ;
+  sh:property [ sh:path oir:legislativeYear ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:integer ] ;
+  sh:property [ sh:path eli:id_local ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path oir:originHouse ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] .
+
+oir:ProcessShape a sh:NodeShape ; sh:targetClass dl:LegislativeProcess ;
+  sh:property [ sh:path dl:process_number ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path dl:latest_activity ; sh:minCount 1 ; sh:maxCount 1 ; sh:class dl:LegislativeActivity ] .
+
+oir:ActivityShape a sh:NodeShape ; sh:targetClass dl:LegislativeActivity ;
+  sh:property [ sh:path dl:forms_part_of ; sh:minCount 1 ; sh:maxCount 1 ; sh:class dl:LegislativeProcess ] .
+
+oir:RelatedWorkShape a sh:NodeShape ; sh:targetClass eli:Work ;
+  sh:property [ sh:path eli:is_realized_by ; sh:minCount 1 ; sh:maxCount 1 ; sh:class eli:LegalExpression ] .
+
+oir:StageShape a sh:NodeShape ; sh:targetClass oir:BillStage ;
+   sh:property [ sh:path oir:progressStage ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:positiveInteger ] ;
+   sh:property [ sh:path dl:occured_at_stage ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+   sh:property [ sh:path dl:had_activity_type ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+   sh:property [ sh:path dl:activity_date ; sh:minCount 1 ; sh:datatype xsd:date ] .

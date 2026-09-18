@@ -36,6 +36,16 @@ def write_manifest(path: Path, manifest: dict) -> None:
         if os.path.exists(temporary): os.unlink(temporary)
 
 
+def load_bills_manifest(path: Path) -> dict:
+    """Separate Bill state; do not couple its lifecycle to Member state."""
+    if not path.exists():
+        return {"version": 1, "bills": {}}
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict) or value.get("version") != 1 or not isinstance(value.get("bills"), dict):
+        raise ValueError("invalid Bills state manifest")
+    return value
+
+
 @contextmanager
 def manifest_lock(path: Path):
     """Advisory process lock; one online writer owns a state file at a time."""

@@ -1,0 +1,331 @@
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix eli: <http://data.europa.eu/eli/ontology#> .
+@prefix eli-dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#> .
+@prefix oir: <https://data.oireachtas.ie/ontology#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60> a eli-dl:DraftLegislationWork,
+        eli:LegalResource ;
+    eli:basis_for <https://data.oireachtas.ie/ie/oireachtas/act/2025/18> ;
+    eli:has_part <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-06d2c9ba8ab0925dce73667db27ac5bec69692a1ef6a16c78cfbd45949e91ff3>,
+        <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-71a41a7affe9725493c5239ef4e3254446c60c40ab0a9e5f60a2f6f9e2a4053c>,
+        <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-8e4ed56c4e40fb3d3cf8695ac7b0b74b8ef17862c3407db5f1a979c70752cd85>,
+        <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-9e349975f8ca56c9a0991c4677c3d7fb6aa7d4b88046e93bd52af19ecc997493>,
+        <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/errata#work>,
+        <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/memo#work>,
+        <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/mul/gluais#work> ;
+    eli:id_local "2025/60"^^xsd:string ;
+    eli:is_realized_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/initiated>,
+        <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/ver_a>,
+        <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/ver_b> ;
+    eli:title "Finance Bill 2025"@en,
+        "An Bille Airgeadais, 2025"@ga ;
+    eli:title_alternative "<p>Bill entitled an Act to provide for the imposition, repeal, remission, alteration and regulation of taxation, of stamp duties and of duties relating to excise and otherwise to make further provision in connection with finance; and to provide for related matters.</p>"@en,
+        "<p>Bille dá ngairtear Acht do dhéanamh socrú maidir le forchur, aisghairm, loghadh, athrú agus rialáil cánachais, dleachtanna stampa agus dleachtanna a bhaineann le mál agus do dhéanamh socrú breise thairis sin i dtaobh airgeadais; agus do dhéanamh socrú i dtaobh nithe gaolmhara.</p>"@ga ;
+    eli:type_document oir:Bill ;
+    dcterms:modified "2026-01-08T16:24:56"^^xsd:dateTime ;
+    oir:legislativeYear 2025 ;
+    oir:originHouse <https://data.oireachtas.ie/house/dail> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-06d2c9ba8ab0925dce73667db27ac5bec69692a1ef6a16c78cfbd45949e91ff3#tabling-06d2c9ba8ab0925dce73667db27ac5bec69692a1ef6a16c78cfbd45949e91ff3> a eli-dl:LegislativeActivity ;
+    eli-dl:activity_date "2025-12-16"^^xsd:date ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:occured_at_stage oir:ReportStage ;
+    oir:inHouse <https://data.oireachtas.ie/house/seanad> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-71a41a7affe9725493c5239ef4e3254446c60c40ab0a9e5f60a2f6f9e2a4053c#tabling-71a41a7affe9725493c5239ef4e3254446c60c40ab0a9e5f60a2f6f9e2a4053c> a eli-dl:LegislativeActivity ;
+    eli-dl:activity_date "2025-11-25"^^xsd:date ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:occured_at_stage oir:ReportStage ;
+    oir:inHouse <https://data.oireachtas.ie/house/dail> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-8e4ed56c4e40fb3d3cf8695ac7b0b74b8ef17862c3407db5f1a979c70752cd85#tabling-8e4ed56c4e40fb3d3cf8695ac7b0b74b8ef17862c3407db5f1a979c70752cd85> a eli-dl:LegislativeActivity ;
+    eli-dl:activity_date "2025-12-09"^^xsd:date ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:occured_at_stage oir:CommitteeStage ;
+    oir:inHouse <https://data.oireachtas.ie/house/seanad> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-9e349975f8ca56c9a0991c4677c3d7fb6aa7d4b88046e93bd52af19ecc997493#tabling-9e349975f8ca56c9a0991c4677c3d7fb6aa7d4b88046e93bd52af19ecc997493> a eli-dl:LegislativeActivity ;
+    eli-dl:activity_date "2025-11-04"^^xsd:date ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:occured_at_stage oir:CommitteeStage ;
+    oir:inHouse <https://data.oireachtas.ie/house/dail> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d> a eli-dl:LegislativeActivity,
+        oir:BillDelivery ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:had_activity_type oir:Presentation .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/enacted> a eli-dl:LegislativeActivity,
+        oir:BillEvent ;
+    rdfs:label "Enacted" ;
+    eli-dl:activity_date "2025-12-23"^^xsd:date ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:had_activity_type oir:Enacted .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/published> a eli-dl:LegislativeActivity,
+        oir:BillEvent ;
+    rdfs:label "Published" ;
+    eli-dl:activity_date "2025-10-16"^^xsd:date,
+        "2025-12-23"^^xsd:date ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:had_activity_type oir:Published ;
+    oir:inHouse <https://data.oireachtas.ie/house/dail> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/stage/dail/1> a eli-dl:LegislativeActivity,
+        oir:BillEvent,
+        oir:BillStage ;
+    rdfs:label "First Stage" ;
+    eli-dl:activity_date "2025-10-16"^^xsd:date ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:had_activity_type oir:FirstStage ;
+    eli-dl:occured_at_stage oir:FirstStage ;
+    eli-dl:parliamentary_term <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> ;
+    oir:inHouse <https://data.oireachtas.ie/house/dail> ;
+    oir:progressStage "1"^^xsd:positiveInteger .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/stage/dail/2> a eli-dl:LegislativeActivity,
+        oir:BillEvent,
+        oir:BillStage ;
+    rdfs:label "Second Stage" ;
+    eli-dl:activity_date "2025-10-16"^^xsd:date ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:had_activity_type oir:SecondStage ;
+    eli-dl:occured_at_stage oir:SecondStage ;
+    eli-dl:parliamentary_term <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> ;
+    oir:inHouse <https://data.oireachtas.ie/house/dail> ;
+    oir:progressStage "2"^^xsd:positiveInteger .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/stage/dail/3> a eli-dl:LegislativeActivity,
+        oir:BillEvent,
+        oir:BillStage ;
+    rdfs:label "Committee Stage" ;
+    eli-dl:activity_date "2025-10-22"^^xsd:date ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:had_activity_type oir:CommitteeStage ;
+    eli-dl:occured_at_stage oir:CommitteeStage ;
+    eli-dl:parliamentary_term <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> ;
+    oir:inHouse <https://data.oireachtas.ie/house/dail> ;
+    oir:progressStage "3"^^xsd:positiveInteger .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/stage/dail/4> a eli-dl:LegislativeActivity,
+        oir:BillEvent,
+        oir:BillStage ;
+    rdfs:label "Report Stage" ;
+    eli-dl:activity_date "2025-11-26"^^xsd:date ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:had_activity_type oir:ReportStage ;
+    eli-dl:occured_at_stage oir:ReportStage ;
+    eli-dl:parliamentary_term <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> ;
+    oir:inHouse <https://data.oireachtas.ie/house/dail> ;
+    oir:progressStage "4"^^xsd:positiveInteger .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/stage/dail/5> a eli-dl:LegislativeActivity,
+        oir:BillEvent,
+        oir:BillStage ;
+    rdfs:label "Fifth Stage" ;
+    eli-dl:activity_date "2025-11-26"^^xsd:date ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:had_activity_type oir:FifthStage ;
+    eli-dl:occured_at_stage oir:FifthStage ;
+    eli-dl:parliamentary_term <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> ;
+    oir:inHouse <https://data.oireachtas.ie/house/dail> ;
+    oir:progressStage "5"^^xsd:positiveInteger .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/stage/seanad/2> a eli-dl:LegislativeActivity,
+        oir:BillEvent,
+        oir:BillStage ;
+    rdfs:label "Second Stage" ;
+    eli-dl:activity_date "2025-11-26"^^xsd:date ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:had_activity_type oir:SecondStage ;
+    eli-dl:occured_at_stage oir:SecondStage ;
+    eli-dl:parliamentary_term <https://data.oireachtas.ie/ie/oireachtas/house/seanad/27> ;
+    oir:inHouse <https://data.oireachtas.ie/house/seanad> ;
+    oir:progressStage "6"^^xsd:positiveInteger .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/stage/seanad/3> a eli-dl:LegislativeActivity,
+        oir:BillEvent,
+        oir:BillStage ;
+    rdfs:label "Committee Stage" ;
+    eli-dl:activity_date "2025-12-02"^^xsd:date ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:had_activity_type oir:CommitteeStage ;
+    eli-dl:occured_at_stage oir:CommitteeStage ;
+    eli-dl:parliamentary_term <https://data.oireachtas.ie/ie/oireachtas/house/seanad/27> ;
+    oir:inHouse <https://data.oireachtas.ie/house/seanad> ;
+    oir:progressStage "7"^^xsd:positiveInteger .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/stage/seanad/4> a eli-dl:LegislativeActivity,
+        oir:BillEvent,
+        oir:BillStage ;
+    rdfs:label "Report Stage" ;
+    eli-dl:activity_date "2025-12-09"^^xsd:date ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:had_activity_type oir:ReportStage ;
+    eli-dl:occured_at_stage oir:ReportStage ;
+    eli-dl:parliamentary_term <https://data.oireachtas.ie/ie/oireachtas/house/seanad/27> ;
+    oir:inHouse <https://data.oireachtas.ie/house/seanad> ;
+    oir:progressStage "8"^^xsd:positiveInteger .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/stage/seanad/5> a eli-dl:LegislativeActivity,
+        oir:BillEvent,
+        oir:BillStage ;
+    rdfs:label "Fifth Stage" ;
+    eli-dl:activity_date "2025-12-16"^^xsd:date ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:had_activity_type oir:FifthStage ;
+    eli-dl:occured_at_stage oir:FifthStage ;
+    eli-dl:parliamentary_term <https://data.oireachtas.ie/ie/oireachtas/house/seanad/27> ;
+    oir:inHouse <https://data.oireachtas.ie/house/seanad> ;
+    oir:progressStage "9"^^xsd:positiveInteger .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-06d2c9ba8ab0925dce73667db27ac5bec69692a1ef6a16c78cfbd45949e91ff3> a eli-dl:AmendmentToDraftLegislationWork ;
+    rdfs:label "Numbered List [Seanad]" ;
+    eli:is_realized_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-06d2c9ba8ab0925dce73667db27ac5bec69692a1ef6a16c78cfbd45949e91ff3#expression> ;
+    oir:hasAmendmentListType oir:NumberedAmendmentList ;
+    oir:stageNo "4"^^xsd:positiveInteger .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-06d2c9ba8ab0925dce73667db27ac5bec69692a1ef6a16c78cfbd45949e91ff3#expression> a eli:Expression ;
+    eli:is_embodied_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-06d2c9ba8ab0925dce73667db27ac5bec69692a1ef6a16c78cfbd45949e91ff3#expression#format-pdf> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-06d2c9ba8ab0925dce73667db27ac5bec69692a1ef6a16c78cfbd45949e91ff3#expression#format-pdf> a eli:Format ;
+    eli:media_type <https://www.iana.org/assignments/media-types/application/pdf> ;
+    eli:uri_schema <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/seanad/4/amendment/numberedList/eng/b60b25d-srnl.pdf> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-71a41a7affe9725493c5239ef4e3254446c60c40ab0a9e5f60a2f6f9e2a4053c> a eli-dl:AmendmentToDraftLegislationWork ;
+    rdfs:label "Numbered List [Dáil]" ;
+    eli:is_realized_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-71a41a7affe9725493c5239ef4e3254446c60c40ab0a9e5f60a2f6f9e2a4053c#expression> ;
+    oir:hasAmendmentListType oir:NumberedAmendmentList ;
+    oir:stageNo "4"^^xsd:positiveInteger .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-71a41a7affe9725493c5239ef4e3254446c60c40ab0a9e5f60a2f6f9e2a4053c#expression> a eli:Expression ;
+    eli:is_embodied_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-71a41a7affe9725493c5239ef4e3254446c60c40ab0a9e5f60a2f6f9e2a4053c#expression#format-pdf> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-71a41a7affe9725493c5239ef4e3254446c60c40ab0a9e5f60a2f6f9e2a4053c#expression#format-pdf> a eli:Format ;
+    eli:media_type <https://www.iana.org/assignments/media-types/application/pdf> ;
+    eli:uri_schema <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/dail/4/amendment/numberedList/eng/b60a25d-drnl.pdf> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-8e4ed56c4e40fb3d3cf8695ac7b0b74b8ef17862c3407db5f1a979c70752cd85> a eli-dl:AmendmentToDraftLegislationWork ;
+    rdfs:label "Numbered List [Seanad]" ;
+    eli:is_realized_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-8e4ed56c4e40fb3d3cf8695ac7b0b74b8ef17862c3407db5f1a979c70752cd85#expression> ;
+    oir:hasAmendmentListType oir:NumberedAmendmentList ;
+    oir:stageNo "3"^^xsd:positiveInteger .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-8e4ed56c4e40fb3d3cf8695ac7b0b74b8ef17862c3407db5f1a979c70752cd85#expression> a eli:Expression ;
+    eli:is_embodied_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-8e4ed56c4e40fb3d3cf8695ac7b0b74b8ef17862c3407db5f1a979c70752cd85#expression#format-pdf> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-8e4ed56c4e40fb3d3cf8695ac7b0b74b8ef17862c3407db5f1a979c70752cd85#expression#format-pdf> a eli:Format ;
+    eli:media_type <https://www.iana.org/assignments/media-types/application/pdf> ;
+    eli:uri_schema <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/seanad/3/amendment/numberedList/eng/b60b25d-scnl.pdf> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-9e349975f8ca56c9a0991c4677c3d7fb6aa7d4b88046e93bd52af19ecc997493> a eli-dl:AmendmentToDraftLegislationWork ;
+    rdfs:label "Numbered List [Dáil]" ;
+    eli:is_realized_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-9e349975f8ca56c9a0991c4677c3d7fb6aa7d4b88046e93bd52af19ecc997493#expression> ;
+    oir:hasAmendmentListType oir:NumberedAmendmentList ;
+    oir:stageNo "3"^^xsd:positiveInteger .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-9e349975f8ca56c9a0991c4677c3d7fb6aa7d4b88046e93bd52af19ecc997493#expression> a eli:Expression ;
+    eli:is_embodied_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-9e349975f8ca56c9a0991c4677c3d7fb6aa7d4b88046e93bd52af19ecc997493#expression#format-pdf> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#amendment-list-9e349975f8ca56c9a0991c4677c3d7fb6aa7d4b88046e93bd52af19ecc997493#expression#format-pdf> a eli:Format ;
+    eli:media_type <https://www.iana.org/assignments/media-types/application/pdf> ;
+    eli:uri_schema <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/dail/3/amendment/numberedList/eng/b6025d-dcnl.pdf> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process#sponsor-38695947ff87fa433d04aed54ff49e6cec634421255d2de43e2f6b22bfcc5905> a eli-dl:Participation ;
+    rdfs:label "Minister for Finance" ;
+    oir:isPrimarySponsor true .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/errata> a eli:LegalExpression ;
+    rdfs:label "Erratum slip" ;
+    eli:date_document "2025-11-04"^^xsd:date ;
+    eli:is_embodied_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/errata#format-pdf> ;
+    eli:language <http://publications.europa.eu/resource/authority/language/ENG> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/errata#format-pdf> a eli:Format ;
+    eli:media_type <https://www.iana.org/assignments/media-types/application/pdf> ;
+    eli:uri_schema <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/errata/erratum-slip-finance-bill-2025-as-passed-in-select-committee.pdf> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/errata#work> a eli:Work ;
+    eli:is_realized_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/errata> ;
+    eli:type_document oir:Errata .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/initiated> a eli:LegalExpression ;
+    rdfs:label "As Initiated" ;
+    eli:date_document "2025-10-16"^^xsd:date ;
+    eli:is_embodied_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/initiated#format-pdf> ;
+    eli:language <http://publications.europa.eu/resource/authority/language/ENG> ;
+    eli:version oir:AsInitiated .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/initiated#format-pdf> a eli:Format ;
+    eli:media_type <https://www.iana.org/assignments/media-types/application/pdf> ;
+    eli:uri_schema <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/initiated/b6025d.pdf> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/memo> a eli:LegalExpression ;
+    rdfs:label "Explanatory Memorandum" ;
+    eli:date_document "2025-10-16"^^xsd:date ;
+    eli:is_embodied_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/memo#format-pdf> ;
+    eli:language <http://publications.europa.eu/resource/authority/language/ENG> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/memo#format-pdf> a eli:Format ;
+    eli:media_type <https://www.iana.org/assignments/media-types/application/pdf> ;
+    eli:uri_schema <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/memo/b6025d-memo.pdf> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/memo#work> a eli:Work ;
+    eli:is_realized_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/memo> ;
+    eli:type_document oir:ExplanatoryMemo .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/ver_a> a eli:LegalExpression ;
+    rdfs:label "As amended in Committee/Select Committee [Dáil Éireann]" ;
+    eli:date_document "2025-11-10"^^xsd:date ;
+    eli:is_embodied_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/ver_a#format-pdf> ;
+    eli:language <http://publications.europa.eu/resource/authority/language/ENG> ;
+    eli:version oir:VersionA .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/ver_a#format-pdf> a eli:Format ;
+    eli:media_type <https://www.iana.org/assignments/media-types/application/pdf> ;
+    eli:uri_schema <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/ver_a/b60a25d.pdf> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/ver_b> a eli:LegalExpression ;
+    rdfs:label "As passed by Dáil Éireann" ;
+    eli:date_document "2025-11-26"^^xsd:date ;
+    eli:is_embodied_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/ver_b#format-pdf> ;
+    eli:language <http://publications.europa.eu/resource/authority/language/ENG> ;
+    eli:version oir:VersionB .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/ver_b#format-pdf> a eli:Format ;
+    eli:media_type <https://www.iana.org/assignments/media-types/application/pdf> ;
+    eli:uri_schema <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/eng/ver_b/b60b25d.pdf> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/mul/gluais> a eli:LegalExpression ;
+    rdfs:label "Glossary/Gluais" ;
+    eli:date_document "2025-10-21"^^xsd:date ;
+    eli:is_embodied_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/mul/gluais#format-pdf> ;
+    eli:language <http://publications.europa.eu/resource/authority/language/MUL> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/mul/gluais#format-pdf> a eli:Format ;
+    eli:media_type <https://www.iana.org/assignments/media-types/application/pdf> ;
+    eli:uri_schema <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/mul/gluais/gluais-15-2025-an-bille-airgeadais-2025.pdf> .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/mul/gluais#work> a eli:Work ;
+    eli:is_realized_by <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/mul/gluais> ;
+    eli:type_document oir:Gluais .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/stage/oireachtas/enacted> a eli-dl:LegislativeActivity,
+        oir:BillEvent,
+        oir:BillStage ;
+    rdfs:label "Enacted" ;
+    eli-dl:activity_date "2025-12-23"^^xsd:date ;
+    eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
+    eli-dl:had_activity_type oir:Enacted ;
+    eli-dl:occured_at_stage oir:Enacted ;
+    oir:progressStage "10"^^xsd:positiveInteger .
+
+<https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> a eli-dl:LegislativeProcess ;
+    eli-dl:had_participation <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process#sponsor-38695947ff87fa433d04aed54ff49e6cec634421255d2de43e2f6b22bfcc5905> ;
+    eli-dl:latest_activity <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60/stage/oireachtas/enacted> ;
+    eli-dl:process_number "60"^^xsd:string ;
+    eli-dl:process_status oir:EnactedBill ;
+    eli-dl:process_type oir:PublicBill ;
+    eli-dl:was_submitted_by <https://data.oireachtas.ie/ie/oireachtas/def/bill-source/government> .

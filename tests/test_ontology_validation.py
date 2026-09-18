@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from rdflib import Graph, Namespace, OWL, RDF
+from rdflib import Graph, Namespace, OWL, RDF, RDFS, URIRef
 
 import validate
 
@@ -49,3 +49,19 @@ def test_inconsistent_ontology_raises_validation_error() -> None:
         assert "inconsistent" in str(error).lower()
     else:
         raise AssertionError("Inconsistent ontology must fail validation")
+
+
+def test_datesigned_has_exact_xsd_date_range() -> None:
+    graph = validate.load_ontology_graph()
+    date_signed = URIRef("https://data.oireachtas.ie/ontology#dateSigned")
+    assert set(graph.objects(date_signed, RDFS.range)) == {URIRef("http://www.w3.org/2001/XMLSchema#date")}
+
+
+def test_hermit_filter_excludes_only_datesigned_range() -> None:
+    graph = Graph(); other = Namespace("https://example.test/")
+    date_signed = URIRef("https://data.oireachtas.ie/ontology#dateSigned")
+    date = URIRef("http://www.w3.org/2001/XMLSchema#date")
+    graph.add((date_signed, RDFS.range, date)); graph.add((other.otherDate, RDFS.range, date))
+    flattened = validate.hermit_input(graph)
+    assert (date_signed, RDFS.range, date) not in flattened
+    assert (other.otherDate, RDFS.range, date) in flattened
