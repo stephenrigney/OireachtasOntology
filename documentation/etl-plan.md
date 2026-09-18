@@ -613,6 +613,19 @@ Measure at least:
 
 Represent Bills and their legislative lifecycle using the existing legislation mappings.
 
+### Settled implementation decisions
+
+- Normalise Bill-origin and lifecycle House references to the canonical persistent House IRIs owned by Phase 1; do not mint or describe competing House identities from API definition URIs.
+- Model `act.dateSigned` as `xsd:date` because the API supplies a date-only value; update the ontology/mapping contract accordingly rather than inventing a time component.
+- Use one deterministic `eli-dl:LegislativeProcess` resource per Bill with IRI `{bill-uri}#process`.
+- Use deterministic IRIs for any source-less derived legislative activities, including the Bill delivery activity.
+- Link an amendment list to the stage at which it was tabled with `eli-dl:related_to`.
+- Model explanatory memoranda and comparable related documents as distinct parts of the Bill package via `eli-dl:has_part`, not as expressions of the Bill itself.
+- Bill versions such as "As Initiated" and amended printings remain `eli:LegalExpression` resources of the Bill.
+- Bill graphs may reference Member IRIs for sponsors but must not emit Member labels or other Member descriptions owned by Phase 3.
+- Defer debate-resource RDF in Phase 4. Preserve debate data in raw source responses for a later authoritative Debates ETL rather than emitting partial debate resources.
+- Bill graphs may reference the resulting Act but must not own or reproduce the Act description; authoritative Act descriptions are deferred to a later Acts ETL.
+
 ### Backlog
 
 #### Bill transformation
@@ -620,26 +633,38 @@ Represent Bills and their legislative lifecycle using the existing legislation m
 - [ ] Implement Bill transformer.
 - [ ] Map Bill as `eli-dl:DraftLegislationWork`.
 - [ ] Map Bill as appropriate ELI legal resource.
+- [ ] Create deterministic `{bill-uri}#process` LegislativeProcess.
 - [ ] Map process number.
 - [ ] Map legislative year.
 - [ ] Map Bill type.
 - [ ] Map English and Irish titles.
 - [ ] Map process status.
 - [ ] Map submitting source.
-- [ ] Map originating House.
-- [ ] Map legislative method.
+- [ ] Normalise originating House to the Phase 1 canonical House IRI.
+- [ ] Map legislative method and deterministic delivery activity.
 - [ ] Map last-updated timestamp.
 - [ ] Map latest activity.
+- [ ] Correct `dateSigned` ontology/mapping datatype to `xsd:date`.
 
 #### Legislative lifecycle
 
 - [ ] Transform legislative stages.
 - [ ] Transform supported legislative events.
-- [ ] Transform amendment-list relationships.
-- [ ] Transform enacted-Act relationships.
+- [ ] Transform amendment-list relationships using `eli-dl:related_to` to the associated stage.
+- [ ] Transform supported related documents using `eli-dl:has_part` where they are distinct supporting documents.
+- [ ] Transform Bill-version expressions.
+- [ ] Transform Bill-to-Act reference without emitting an authoritative Act description.
 - [ ] Define deterministic identifiers for nested activities/events.
 - [ ] Preserve event ordering where source data permits it.
 - [ ] Ensure `latest_activity` references a generated activity resource.
+- [ ] Ensure House and HouseTerm references reuse identifiers owned by earlier phases.
+
+#### Ownership
+
+- [ ] Do not recreate House or HouseTerm descriptions.
+- [ ] Do not recreate Member descriptions when linking sponsors.
+- [ ] Do not publish authoritative Act descriptions from the Bill graph.
+- [ ] Keep debate-resource descriptions deferred to the later Debates ETL.
 
 #### External identity policy
 
@@ -650,7 +675,8 @@ Represent Bills and their legislative lifecycle using the existing legislation m
 
 #### Scope
 
-- [ ] Keep unsupported debate mappings explicitly deferred where currently documented as future work.
+- [ ] Keep debate transformation explicitly deferred.
+- [ ] Preserve debate fields in immutable raw source responses.
 - [ ] Record API fields intentionally omitted from the first legislation implementation.
 
 #### Named graphs
@@ -666,10 +692,11 @@ https://data.oireachtas.ie/graph/bill/{year}/{number}
 #### Validation
 
 - [ ] Add Bill SHACL shapes.
-- [ ] Add legislative activity shapes.
-- [ ] Add enacted-Act consistency checks.
+- [ ] Add LegislativeProcess and legislative activity shapes.
+- [ ] Add Bill-to-Act reference consistency checks.
 - [ ] Add latest-stage consistency test.
 - [ ] Add event-date validation.
+- [ ] Add ownership/boundary tests preventing House, Member, Act and Debate descriptions from leaking into Bill graphs.
 
 Competency queries should include:
 
@@ -682,7 +709,7 @@ Competency queries should include:
 
 ### Exit criteria
 
-A Bill can be represented from introduction through its currently available legislative lifecycle, and updating the source Bill causes its complete RDF graph to be replaced safely.
+A Bill can be represented from introduction through its currently available legislative lifecycle, references earlier-phase resources through canonical identities, links to a resulting Act without owning its description, leaves debate RDF deferred, and updating the source Bill causes its complete RDF graph to be replaced safely.
 
 ## Phase 4.5 — Broaden external identity reconciliation
 
