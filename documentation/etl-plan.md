@@ -616,13 +616,21 @@ Represent Bills and their legislative lifecycle using the existing legislation m
 ### Settled implementation decisions
 
 - Normalise Bill-origin and lifecycle House references to the canonical persistent House IRIs owned by Phase 1; do not mint or describe competing House identities from API definition URIs.
+- Pin the Phase 4 external semantic baseline to ELI 1.5 and ELI-DL 3.0. Vendor or otherwise reproducibly pin those exact versions and audit every ELI/ELI-DL mapping against them before Phase 4 is accepted.
+- Revise mappings to terms actually declared by the pinned vocabularies rather than adding local bridge declarations merely to preserve obsolete or incorrect external property names.
 - Model `act.dateSigned` as `xsd:date` because the API supplies a date-only value; update the ontology/mapping contract accordingly rather than inventing a time component.
-- Use one deterministic `eli-dl:LegislativeProcess` resource per Bill with IRI `{bill-uri}#process`.
+- HermiT may exclude only the exact `:dateSigned rdfs:range xsd:date` axiom from its reasoner input because HermiT does not support that datatype. A regression test must independently prove that the ontology still contains exactly the required range axiom; no general `xsd:date` exclusion is permitted.
+- Use one deterministic legislative-process resource per Bill with IRI `{bill-uri}#process`; use the class/property names defined by the pinned ELI-DL 3.0 vocabulary.
 - Use deterministic IRIs for any source-less derived legislative activities, including the Bill delivery activity.
-- Link an amendment list to the stage at which it was tabled with `eli-dl:related_to`.
-- Model explanatory memoranda and comparable related documents as distinct parts of the Bill package via `eli-dl:has_part`, not as expressions of the Bill itself.
-- Bill versions such as "As Initiated" and amended printings remain `eli:LegalExpression` resources of the Bill.
+- Use ELI core `eli:has_part`, not `eli-dl:has_part`, for supporting-document inclusion.
+- Link the deterministic amendment-list activity to the relevant process stage using ELI-DL 3.0 `eli-dl:occured_at_stage`, not the undeclared `eli-dl:related_to`.
+- Represent each supporting document with separate deterministic Work and Expression identities. For an API expression IRI `{expression-uri}`, derive the Work as `{expression-uri}#work`; link the Bill to the Work with `eli:has_part`, and the Work to the source Expression with `eli:is_realized_by`.
+- Represent amendment-list formats on a separate deterministic Expression `{amendment-list-work-uri}#expression`, not directly on the amendment-list Work.
+- Bill versions such as "As Initiated" and amended printings remain ELI Expression resources of the Bill.
+- ELI language and media-type values must follow the object-resource semantics of pinned ELI 1.5; do not emit them as string/MIME literals where ELI requires object IRIs.
 - Bill graphs may reference Member IRIs for sponsors but must not emit Member labels or other Member descriptions owned by Phase 3.
+- For a resolved sponsoring Member, use the participant-person predicate defined by pinned ELI-DL 3.0. When only role text such as "Minister for Finance" is supplied and no role IRI exists, preserve that text as `rdfs:label` on the deterministic Participation resource; do not mint a ministerial-role identity from the label.
+- Defer reconciliation of textual sponsor roles to authoritative ministerial office/tenure identities to a later dedicated coverage phase.
 - Defer debate-resource RDF in Phase 4. Preserve debate data in raw source responses for a later authoritative Debates ETL rather than emitting partial debate resources.
 - Bill graphs may reference the resulting Act but must not own or reproduce the Act description; authoritative Act descriptions are deferred to a later Acts ETL.
 
@@ -645,13 +653,17 @@ Represent Bills and their legislative lifecycle using the existing legislation m
 - [ ] Map last-updated timestamp.
 - [ ] Map latest activity.
 - [ ] Correct `dateSigned` ontology/mapping datatype to `xsd:date`.
+- [ ] Pin/vendor ELI 1.5 and ELI-DL 3.0 and record the exact source/version used.
+- [ ] Audit every active ELI/ELI-DL mapping against the pinned vocabularies and correct incompatible term names, ranges and object/literal treatment.
+- [ ] Implement the narrowly scoped HermiT `dateSigned` range exclusion plus its independent regression assertion.
 
 #### Legislative lifecycle
 
 - [ ] Transform legislative stages.
 - [ ] Transform supported legislative events.
-- [ ] Transform amendment-list relationships using `eli-dl:related_to` to the associated stage.
-- [ ] Transform supported related documents using `eli-dl:has_part` where they are distinct supporting documents.
+- [ ] Transform amendment-list Work, deterministic tabling/activity resource, and Expression separately; link the activity to its stage with `eli-dl:occured_at_stage`.
+- [ ] Transform supported related-document Work/Expression pairs and link the Bill to each supporting Work using `eli:has_part`.
+- [ ] Attach PDF/XML formats to Expressions rather than Works and use ELI 1.5 object semantics for language/media type.
 - [ ] Transform Bill-version expressions.
 - [ ] Transform Bill-to-Act reference without emitting an authoritative Act description.
 - [ ] Define deterministic identifiers for nested activities/events.
@@ -663,6 +675,7 @@ Represent Bills and their legislative lifecycle using the existing legislation m
 
 - [ ] Do not recreate House or HouseTerm descriptions.
 - [ ] Do not recreate Member descriptions when linking sponsors.
+- [ ] Preserve unresolved sponsor-role text only as a label on Participation; do not mint role identities from labels.
 - [ ] Do not publish authoritative Act descriptions from the Bill graph.
 - [ ] Keep debate-resource descriptions deferred to the later Debates ETL.
 
@@ -696,7 +709,11 @@ https://data.oireachtas.ie/graph/bill/{year}/{number}
 - [ ] Add Bill-to-Act reference consistency checks.
 - [ ] Add latest-stage consistency test.
 - [ ] Add event-date validation.
+- [ ] Add vocabulary-coverage tests proving every emitted ELI/ELI-DL predicate/class is declared by the pinned external ontology versions.
+- [ ] Add Work/Expression/Format-level validation for supporting documents and amendment lists.
+- [ ] Add chronology and latest-stage source-correspondence tests.
 - [ ] Add ownership/boundary tests preventing House, Member, Act and Debate descriptions from leaking into Bill graphs.
+- [ ] Add publication-failure/recovery tests and reviewable golden RDF fixtures.
 
 Competency queries should include:
 
@@ -960,11 +977,12 @@ The ETL process can run unattended, failures are diagnosable, malformed resource
 
 Extend the graph beyond the initial core Houses, Member and legislation data once the ETL architecture is proven.
 
-Candidate endpoints:
+Candidate vertical slices:
 
 - debates;
-- votes; and
-- questions.
+- votes;
+- questions; and
+- ministerial office/tenure identities, including reconciliation of Phase 4 textual sponsor-role labels.
 
 These should not block completion of the core ETL system.
 
@@ -973,6 +991,7 @@ These should not block completion of the core ETL system.
 - [ ] Review ontology coverage for Debates.
 - [ ] Review ontology coverage for Votes.
 - [ ] Review ontology coverage for Questions.
+- [ ] Define authoritative ministerial office/tenure identities and reconcile unresolved Phase 4 sponsor-role labels without changing their preserved source evidence.
 - [ ] Create or update mapping specifications.
 - [ ] Identify resource ownership.
 - [ ] Define graph granularity.
