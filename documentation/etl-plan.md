@@ -730,37 +730,106 @@ Competency queries should include:
 
 A Bill can be represented from introduction through its currently available legislative lifecycle, references earlier-phase resources through canonical identities, links to a resulting Act without owning its description, leaves debate RDF deferred, and updating the source Bill causes its complete RDF graph to be replaced safely.
 
-## Phase 4.5 — Broaden external identity reconciliation
+## Phase 4.5 — External identity and institutional alignment
 
 ### Outcome
 
-Reuse the Phase 3.5 reconciliation infrastructure for additional Oireachtas entity classes where an external identity improves interoperability or search without weakening the authority of the Oireachtas graph.
+Extend the Phase 3.5 external-identity subsystem while first correcting the institutional model on which broader reconciliation depends. Phase 4.5 is delivered in three ordered tranches so that semantic changes are settled and regression-tested before external links depend on them.
 
-### Backlog
+### Tranche 1 — Institutional identity model
 
-Prioritise entity classes in approximately this order:
+#### Purpose
 
-1. political parties;
-2. Dáil constituencies;
-3. Dáil, Seanad and Oireachtas institutions;
-4. Governments and cabinets; and
-5. other entities with demonstrated external coverage and a concrete use case.
+Separate the ontology's current umbrella use of `:Oireachtas` from the identity of the enduring Oireachtas institution, and express constitutional/organisational relationships explicitly rather than through inappropriate subclassing.
 
-- [ ] Define entity-specific candidate identifiers and verification rules.
-- [ ] Prefer stable external identifiers over fuzzy label matching.
-- [ ] Reuse the reconciliation evidence/status model created in Phase 3.5.
-- [ ] Record source-specific coverage and false-match metrics for each entity class.
-- [ ] Add manual-review paths where deterministic identifiers do not exist.
-- [ ] Add accepted links to source-specific external named graphs.
-- [ ] Keep committees, parliamentary events and individual legislation out of automatic reconciliation unless coverage and a user-facing use case justify the work.
-- [ ] Evaluate whether other authority sources such as GeoNames or domain-specific legal authorities are more appropriate than DBpedia for particular entity classes.
+#### Backlog
 
-### Exit criteria
+- [ ] Introduce a class for parliamentary bodies, provisionally `:ParliamentaryBody`, as the organisational superclass needed by the Oireachtas and its Houses.
+- [ ] Introduce a persistent named individual for the enduring Oireachtas institution.
+- [ ] Retain the persistent Dáil and Seanad House individuals as authoritative local identities.
+- [ ] Model Dáil and Seanad as constituent/sub-organisations of the enduring Oireachtas using an explicit organisational relationship; do not use class inheritance to represent part-whole structure.
+- [ ] Preserve the existing `:HouseTerm -> :House` distinction so numbered Dáil/Seanad terms remain temporally bounded terms rather than enduring institutions.
+- [ ] Remove the current `:Government rdfs:subClassOf :Oireachtas` modelling.
+- [ ] Retain the constitutional Government as an organisation distinct from the Oireachtas.
+- [ ] Add an explicit Government-to-Dáil constitutional accountability relation, provisionally `:responsibleTo`, aligned as appropriate with `org:reportsTo`.
+- [ ] Preserve the relationship between Government and the Oireachtas through people and memberships: Government members must be Oireachtas members, represented through Cabinet membership/role records plus their parliamentary memberships.
+- [ ] Keep the generic Bill-source Government concept distinct from any later modelling of numbered Government administrations.
+- [ ] Decide whether a general constitutional constituent relation is required for the Oireachtas composition (President, Dáil, Seanad), rather than forcing all constitutional composition through organisational-subordination predicates.
+- [ ] Audit domain/range axioms and inference consequences affected by replacing the current `:Oireachtas` umbrella class.
+- [ ] Update mapping notes and competency queries where existing assumptions depend on the current hierarchy.
+- [ ] Regression-test all Phase 0–4 transformations, ownership boundaries, validation, and Fuseki publication behaviour.
+- [ ] Obtain an architecture/ontology review before closing the tranche.
 
-- The external-link subsystem supports more than one Oireachtas entity class without entity-specific architectural duplication.
-- Each supported class has documented matching and verification rules.
+#### Exit criteria
+
+- The enduring Oireachtas, Dáil and Seanad have unambiguous local identities distinct from classes and numbered parliamentary terms.
+- The ontology no longer uses subclassing to mean that Dáil, Seanad, Government, or House terms are parts/aspects of the Oireachtas.
+- Government is modelled as constitutionally distinct from the Oireachtas while retaining explicit accountability to Dáil and membership links through Oireachtas members.
+- Existing Phase 0–4 ETL and validation behaviour remains correct.
+- Tranches 2 and 3 have stable semantic targets for reconciliation.
+
+### Tranche 2 — Party reconciliation
+
+#### Purpose
+
+Bridge Oireachtas term-scoped party/grouping resources to enduring external political-party identities without pretending that a term-scoped grouping is identical to the enduring party organisation.
+
+#### Backlog
+
+- [ ] Reuse/refactor the Phase 3.5 reconciliation infrastructure so state, review, audit, dirty publication recovery and graph replacement are generic rather than copied into entity-specific implementations.
+- [ ] Treat Oireachtas party resources as term-scoped `members:PartyGrouping` resources owned by the Oireachtas graph.
+- [ ] Use `prov:specializationOf` (subject to vocabulary audit and explicit semantic-contract approval) to connect a term-scoped political-party grouping to an accepted enduring external party identity; do not use `owl:sameAs` for this relationship.
+- [ ] Define candidate generation from party code, label, Irish political-party context and source evidence.
+- [ ] Do not automatically accept label/fuzzy matches where no stable external identifier exists.
+- [ ] Require human review before first acceptance of an enduring external party identity unless a future deterministic authority key is identified.
+- [ ] Keep the general/term-scoped Independent grouping outside political-party reconciliation unless a separately justified external concept is required.
+- [ ] Record candidate evidence, ambiguity, rejection and accepted decisions in deterministic review/state data.
+- [ ] Publish accepted party links in independently replaceable external-link graphs without importing external party facts into authoritative Party graphs.
+- [ ] Define coverage and false-match review metrics before broad publication.
+- [ ] Decide separately whether DBpedia/Wikipedia enrichment adds sufficient value once the Wikidata identity is accepted.
+
+#### Exit criteria
+
+- Party reconciliation reuses the generic reconciliation subsystem rather than duplicating the Member implementation.
+- A term-scoped PartyGrouping is not asserted `owl:sameAs` an enduring political party.
+- Weak/ambiguous party matches remain reviewable.
+- Independent grouping semantics remain intact.
+- Accepted external links are derived enrichment and do not replace Oireachtas party identities.
+
+### Tranche 3 — Institutional reconciliation
+
+#### Purpose
+
+Bridge authoritative local institutional identities to external authority identities after Tranche 1 has established the correct local model.
+
+#### Backlog
+
+- [ ] Reconcile the enduring Oireachtas institution to an accepted external identity.
+- [ ] Reconcile persistent Dáil Éireann and Seanad Éireann House identities to accepted external identities.
+- [ ] Use reviewed `owl:sameAs` for accepted Wikidata/DBpedia institutional identities where the resources denote the same enduring institution.
+- [ ] Use `foaf:isPrimaryTopicOf` for the accepted institution's Wikipedia article.
+- [ ] Derive DBpedia/Wikipedia enrichment only from the accepted primary identity, following the Phase 3.5 evidence discipline.
+- [ ] Explicitly reject historical/revolutionary Dáil resources or other similarly named institutions that do not denote the modern enduring House.
+- [ ] Keep numbered HouseTerm reconciliation separate: a term may receive an external identity only where an external resource denotes that exact numbered term.
+- [ ] Ensure HouseTerm resources continue to reach enduring external institutional identity through their local `:termOf` relationship even when no term-specific external link exists.
+- [ ] Publish external institutional links in independently replaceable named graphs and preserve authoritative House/Oireachtas descriptions in their existing owned graphs.
+- [ ] Add competency queries proving the distinction between enduring institution, numbered term and external identity.
+
+#### Exit criteria
+
+- Oireachtas, Dáil and Seanad enduring identities can be traversed to reviewed external identities without conflating them with classes or numbered terms.
+- Numbered terms are not linked to enduring external institution resources with `owl:sameAs`.
+- External-link publication remains isolated from authoritative institutional graphs.
+- Reconciliation state, review and recovery behaviour is shared with Members and Parties.
+
+### Phase 4.5 overall exit criteria
+
+- The external-link subsystem supports Members, Parties and parliamentary institutions without entity-specific architectural duplication.
+- Each supported entity class has documented identity, matching, review and publication rules.
 - Weak or ambiguous matches remain reviewable rather than being promoted automatically.
-- External links remain derived enrichment and do not replace Oireachtas/ELI identities.
+- External identities enrich but do not replace Oireachtas-owned identities.
+- The institutional ontology distinguishes class/type, enduring institution, organisational/constitutional relationship and temporally bounded term.
+- All Phase 0–4 regression and integration suites continue to pass after the institutional refactor.
 
 ## Phase 5 — Incremental refresh and ETL state
 
