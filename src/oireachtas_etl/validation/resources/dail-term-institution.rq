@@ -1,0 +1,9 @@
+PREFIX oir: <https://data.oireachtas.ie/ontology#>
+PREFIX org: <http://www.w3.org/ns/org#>
+
+SELECT ?term ?house ?oireachtas WHERE {
+  ?term a oir:DailTerm ; oir:termOf ?house .
+  ?house a oir:House ; org:subOrganizationOf ?oireachtas .
+  ?oireachtas a oir:ParliamentaryBody .
+}
+ORDER BY ?term

@@ -738,6 +738,27 @@ Extend the Phase 3.5 external-identity subsystem while first correcting the inst
 
 ### Tranche 1 — Institutional identity model
 
+#### Implementation record
+
+The ontology distinguishes class from institution: `agents:ParliamentaryBody`
+is an enduring parliamentary-body class and
+`<https://data.oireachtas.ie/oireachtas>` is the enduring Oireachtas individual.
+Dáil and Seanad are enduring `agents:House` individuals connected to it by ORG
+organisational structure; numbered HouseTerms remain temporal and are connected
+to their House with `agents:termOf`. `is-a` is not used for constitutional
+composition.
+
+The constitutional Government is a separate formal organisation, not a
+ParliamentaryBody or constituent by class inheritance. Its enduring resource is
+accountable to the enduring Dáil through `agents:responsibleTo` (a subproperty
+of `org:reportsTo`), while Cabinet/Oireachtas membership remains a separate
+membership-record relationship. The generic Phase 4 Government bill-source IRI
+is a controlled source concept, not a Government administration. President
+modelling is deferred pending an authoritative source and ETL scope.
+
+Tranches 2 (Party reconciliation) and 3 (institutional external reconciliation)
+must use these stable local identities and do not alter them.
+
 #### Purpose
 
 Separate the ontology's current umbrella use of `:Oireachtas` from the identity of the enduring Oireachtas institution, and express constitutional/organisational relationships explicitly rather than through inappropriate subclassing.

@@ -14,7 +14,7 @@
 | `eli:embodies` | `eli:Format` | `eli:LegalExpression` | |
 | `eli:id_local` | Bill work / expression / format | `xsd:string` | Bill identifier, e.g. `{year}/{no}` |
 | `eli:type_document` | Bill work | `eli:ResourceType` | E.g. Bill, Act, Explanatory Memorandum |
-| `eli:passed_by` | Bill work (final stage) | `agents:Oireachtas` | |
+| `eli:passed_by` | Bill work (final stage) | `agents:ParliamentaryBody` | |
 | `eli:date_document` | Bill work | `xsd:date` | Date of President's signature |
 | `:dateSigned` | Bill work | `xsd:date` | Sub-property of `eli:date_document`; presidential signature date |
 | `eli:related_to` | Bill work / expression | `owl:Thing` | Relate to draft/heads of Bills, explanatory memos |
@@ -26,7 +26,7 @@
 | `eli:format` | Bill format | e.g. `iana:text/xml`, `iana:application/pdf` | |
 | `eli:version` | Bill expression | e.g. `oir:AsInitiated` | See [Concept Schemes](Concept-Schemes) |
 | `eli:version_date` | Bill expression | `xsd:date` | Date presented, passed or ordered to be printed |
-| `eli:rightsholder` | Bill format | `xsd:anyURI` | `agents:Oireachtas` IRI |
+| `eli:rightsholder` | Bill format | `xsd:anyURI` | Enduring Oireachtas IRI `<https://data.oireachtas.ie/oireachtas>` |
 | `eli:licence` | Bill format | `xsd:anyURI` | e.g. `https://oireachtas.ie/licence` |
 | `eli:legal_value` | Bill format | `eli:LegalValue` | Probably `eli:LegalValue-authoritative` |
 | `dct:title` | Bill work | `xsd:string` (lang en or ga) | Short title for the work (LegalResource) |
@@ -43,7 +43,7 @@
 | `eli-dl:process_number` | `eli-dl:LegislativeProcess` | `xsd:string` | Bill number within the legislative year |
 | `eli-dl:process_status` | `eli-dl:LegislativeProcess` | `skos:Concept` | Current bill status (see [Concept Schemes](Concept-Schemes)) |
 | `eli-dl:latest_activity` | `eli-dl:LegislativeProcess` | `eli-dl:LegislativeActivity` | Most recent bill stage/event; replaces former `oir:mostRecentStage` |
-| `eli-dl:was_submitted_by` | `eli-dl:LegislativeProcess` | `foaf:Agent` | Bill source: `agents:Government`, `agents:PrivateMember` or `agents:PrivateSponsor`; replaces former `oir:source` |
+| `eli-dl:was_submitted_by` | `eli-dl:LegislativeProcess` | `foaf:Agent` | Bill source: `agents:GovernmentBillSource`, `agents:PrivateMember` or `agents:PrivateSponsor`; the Government source is a controlled concept, not the constitutional Government institution |
 | `:originHouse` | `eli-dl:DraftLegislationWork` | `agents:House` | House of introduction (Dáil or Seanad) |
 | `eli-dl:parliamentary_term` | `eli-dl:LegislativeActivity` | `agents:HouseTerm` | The Dáil or Seanad term in which the activity occurs |
 | `eli-dl:had_activity_type` | `eli-dl:LegislativeActivity` | `eli-dl:ActivityType` | E.g. `:LegislativeCreationActivity`, `:LegislativeDeliveryActivity`, `:LegislativeModificationActivity` |
@@ -81,4 +81,3 @@
 | `metalex:result` | Eliminated with metalex import | `eli-dl:DecisionOutcome` as range of `oir:divisionOutcome` |
 | `metalex:predecessor` | Eliminated with metalex import | `eli:is_related_to` or ordering by `eli:version_date` |
 | `metalex:successor` | Eliminated with metalex import | as above |
-

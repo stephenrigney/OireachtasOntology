@@ -1,0 +1,6 @@
+PREFIX oir: <https://data.oireachtas.ie/ontology#>
+
+SELECT ?government ?dail WHERE {
+  ?government a oir:Government ; oir:responsibleTo ?dail .
+  ?dail a oir:House .
+}

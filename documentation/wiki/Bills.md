@@ -46,7 +46,7 @@ In addition to their existence as documents, Bills are subjects of procedural ev
 
 Key ELI-DL properties on `eli-dl:LegislativeProcess`:
 - `eli-dl:process_type` — bill type (`:PublicBill` / `:PrivateBill`)
-- `eli-dl:was_submitted_by` — bill source (`agents:Government`, `agents:PrivateMember`, `agents:PrivateSponsor`)
+- `eli-dl:was_submitted_by` — bill source (`agents:GovernmentBillSource`, `agents:PrivateMember`, `agents:PrivateSponsor`); GovernmentBillSource is a controlled source concept
 - `eli-dl:latest_activity` — most recent stage
 - `eli-dl:parliamentary_term` — the Dáil or Seanad term
 
@@ -93,5 +93,4 @@ The following table lists bill events along with example IRIs (full IRI base: `h
 | Bill amendment | `ie/oireachtas/bill/2015/44/dail/3/amd_1` |
 | Bill recommendation (Seanad) | `ie/oireachtas/bill/2015/44/seanad/3/rec_1` |
 | Bill amendment to amendment | `ie/oireachtas/bill/2015/44/dail/3/amd_1_1` |
-
 

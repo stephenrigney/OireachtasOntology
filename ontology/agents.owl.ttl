@@ -49,7 +49,20 @@
 
         rdfs:domain :HouseTerm ;
 
-        rdfs:range :House .
+         rdfs:range :House .
+
+
+###  https://data.oireachtas.ie/ontology#responsibleTo
+
+:responsibleTo rdf:type owl:ObjectProperty ;
+
+               rdfs:subPropertyOf org:reportsTo ;
+
+               rdfs:domain :Government ;
+
+               rdfs:range :House ;
+
+               rdfs:comment "Links the constitutional Government to the enduring Dáil institution to which it is collectively responsible. org:reportsTo is a valid broader interoperability relation: constitutional accountability is a form of organisational reporting, while this property preserves the stronger constitutional meaning."@en .
 
 
 ###  https://data.oireachtas.ie/ontology#hasCommitteeType
@@ -220,15 +233,15 @@
 #################################################################
 
 
-###  Restrict the range of eli:passed_by to :Oireachtas
+###  Restrict the range of eli:passed_by to :ParliamentaryBody
 
-<http://data.europa.eu/eli/ontology#passed_by> rdfs:range :Oireachtas .
+<http://data.europa.eu/eli/ontology#passed_by> rdfs:range :ParliamentaryBody .
 
 
 ###  eli-dl:was_submitted_by — use to link a LegislativeProcess to its Oireachtas submitter
 
 <http://data.europa.eu/eli/eli-draft-legislation-ontology#was_submitted_by>
-    rdfs:comment "Use eli-dl:was_submitted_by on eli-dl:LegislativeProcess instances to link a process to its submitter. The range includes :Government, :PrivateMember and :PrivateSponsor — the three submitter types recognised by the Oireachtas. This property replaces the former :BillSource class hierarchy."@en .
+    rdfs:comment "Use eli-dl:was_submitted_by on eli-dl:LegislativeProcess instances to link a process to its submitter. The Oireachtas mappings use :GovernmentBillSource, :PrivateMember and :PrivateSponsor submitters. :GovernmentBillSource is a controlled concept, distinct from the constitutional :Government institution. This property replaces the former :BillSource class hierarchy."@en .
 
 
 ###  eli-dl:had_participation — use to record activity-level agent participation
@@ -311,25 +324,22 @@ dcat:endDate rdf:type owl:DatatypeProperty ;
 #################################################################
 
 
-###  https://data.oireachtas.ie/ontology#Oireachtas
+###  https://data.oireachtas.ie/ontology#ParliamentaryBody
 
-:Oireachtas rdf:type owl:Class ;
+:ParliamentaryBody rdf:type owl:Class ;
 
-            rdfs:subClassOf org:FormalOrganization ;
+                    rdfs:subClassOf org:FormalOrganization ;
 
-            owl:disjointWith :PrivateSponsor ;
+                    owl:disjointWith :Government ;
 
-            dc:title "Houses of the Oireachtas"@en ;
-            dc:title "Tithe an Oireachtas"@ga ;
-
-            rdfs:comment "Houses of the Oireachtas as a legislative and parliamentary body, does not include the Houses of the Oireachtas Service."@en .
+                    rdfs:comment "An enduring formal parliamentary institution, including a parliament and its Houses. This is a class of organisations, not the Oireachtas institution itself. It excludes temporally bounded HouseTerms and the constitutional Government."@en .
 
 
 ###  https://data.oireachtas.ie/ontology#House
 
 :House rdf:type owl:Class ;
 
-       rdfs:subClassOf :Oireachtas ;
+       rdfs:subClassOf :ParliamentaryBody ;
 
        rdfs:comment "Dáil Éireann or Seanad Éireann as a continuous legal institution. A House is the enduring constitutional entity — it persists across successive parliamentary terms. Named individuals <https://data.oireachtas.ie/house/dail> and <https://data.oireachtas.ie/house/seanad> are instances. Committee chambers are also instances of :House. The bounded sitting periods of a House are represented by :HouseTerm subclass instances (:DailTerm, :SeanadTerm), reached via :hasTerm."@en .
 
@@ -338,9 +348,9 @@ dcat:endDate rdf:type owl:DatatypeProperty ;
 
 :HouseTerm rdf:type owl:Class ;
 
-           rdfs:subClassOf :Oireachtas ;
+             owl:disjointWith :ParliamentaryBody ;
 
-           rdfs:comment "A bounded parliamentary term — the sitting of the Dáil or Seanad between its commencement and dissolution. Subclasses :DailTerm and :SeanadTerm type each term by house. ELI-DL alignment: instances should additionally be typed as eli-dl:ParliamentaryTerm so they can be referenced via eli-dl:parliamentary_term on activities and works. The class itself is not made a subclass of eli-dl:ParliamentaryTerm because that class is a skos:Concept/crm:E55_Type, incompatible with the org:FormalOrganization superclass."@en ;
+            rdfs:comment "A bounded parliamentary term — the sitting of the Dáil or Seanad between its commencement and dissolution. Subclasses :DailTerm and :SeanadTerm type each term by house. A HouseTerm is temporal and is explicitly not an enduring ParliamentaryBody or formal organisation. Instances should additionally be typed as eli-dl:ParliamentaryTerm so they can be referenced via eli-dl:parliamentary_term on activities and works."@en ;
 
            skos:scopeNote "Use skos:prefLabel for the display name of a house term (corresponds to the 'showAs' field in the Oireachtas API, e.g. '31st Dáil'). Use :termNo for the ordinal integer, :houseCode for the house slug (e.g. 'dail'), :seats for the seat count, and dct:temporal (pointing to a dct:PeriodOfTime node) for the term's sitting date range (dcat:startDate / dcat:endDate)."@en .
 
@@ -373,12 +383,24 @@ dcat:endDate rdf:type owl:DatatypeProperty ;
 
 :Government rdf:type owl:Class ;
 
-            rdfs:subClassOf :Oireachtas ;
+             rdfs:subClassOf org:FormalOrganization ;
+
+             owl:disjointWith :ParliamentaryBody ;
 
             skos:prefLabel "The Government"@en ;
             skos:altLabel "Cabinet"@en ;
 
-            rdfs:comment "The Government as defined by Article 28 of the Constitution — the collective executive body with legal personality, also informally known as the Cabinet. Membership is confined to persons holding a members:CabinetMember role (members:TaoiseachRole, members:TanaisteRole or members:MinisterRole), each of whom must also be an agents:Member. See also: members:GovernmentExecutive (Government plus Ministers of State) and members:GovernmentBenches (the broader parliamentary whip bloc)."@en .
+             rdfs:comment "The Government as defined by Article 28 of the Constitution — the collective executive body with legal personality, also informally known as the Cabinet. Membership is confined to persons holding a members:CabinetMember role (members:TaoiseachRole, members:TanaisteRole or members:MinisterRole), each of whom must also be an agents:Member. See also: members:GovernmentExecutive (Government plus Ministers of State) and members:GovernmentBenches (the broader parliamentary whip bloc)."@en .
+
+
+###  https://data.oireachtas.ie/ontology#GovernmentBillSource
+
+:GovernmentBillSource rdf:type owl:Class ;
+
+                      rdfs:subClassOf foaf:Agent ,
+                                      skos:Concept ;
+
+                      rdfs:comment "A controlled bill-submitter concept denoting Government-originated legislation. It is not an individual constitutional Government or a numbered Government administration."@en .
 
 
 ###  https://data.oireachtas.ie/ontology#Member
@@ -434,6 +456,23 @@ dcat:endDate rdf:type owl:DatatypeProperty ;
 #################################################################
 
 
+###  https://data.oireachtas.ie/oireachtas
+
+<https://data.oireachtas.ie/oireachtas> rdf:type :ParliamentaryBody ,
+                                                  owl:NamedIndividual ;
+
+                                         dct:title "Houses of the Oireachtas"@en ,
+                                                   "Tithe an Oireachtais"@ga ;
+
+                                         skos:prefLabel "Houses of the Oireachtas"@en ,
+                                                        "Tithe an Oireachtais"@ga ;
+
+                                         org:hasSubOrganization <https://data.oireachtas.ie/house/dail> ,
+                                                                <https://data.oireachtas.ie/house/seanad> ;
+
+                                         rdfs:comment "The enduring Oireachtas institution. This named individual is distinct from all ontology classes. Its organisational structure includes Dáil Éireann and Seanad Éireann. The Constitution also comprises the President, whose identity and ETL representation are deliberately deferred rather than fabricated here."@en .
+
+
 ###  https://data.oireachtas.ie/house/dail
 
 <https://data.oireachtas.ie/house/dail> rdf:type :House ,
@@ -441,7 +480,9 @@ dcat:endDate rdf:type owl:DatatypeProperty ;
 
                                       dct:title "Dáil Éireann"@ga ;
 
-                                      skos:prefLabel "Dáil Éireann"@ga .
+                                       skos:prefLabel "Dáil Éireann"@ga ;
+
+                                       org:subOrganizationOf <https://data.oireachtas.ie/oireachtas> .
 
 
 ###  https://data.oireachtas.ie/house/seanad
@@ -451,7 +492,21 @@ dcat:endDate rdf:type owl:DatatypeProperty ;
 
                                         dct:title "Seanad Éireann"@ga ;
 
-                                        skos:prefLabel "Seanad Éireann"@ga .
+                                         skos:prefLabel "Seanad Éireann"@ga ;
+
+                                         org:subOrganizationOf <https://data.oireachtas.ie/oireachtas> .
+
+
+###  https://data.oireachtas.ie/government
+
+<https://data.oireachtas.ie/government> rdf:type :Government ,
+                                                  owl:NamedIndividual ;
+
+                                         skos:prefLabel "The Government"@en ;
+
+                                         :responsibleTo <https://data.oireachtas.ie/house/dail> ;
+
+                                         rdfs:comment "The enduring constitutional Government institution. This resource does not identify a particular Government administration; numbered administrations remain outside this tranche."@en .
 
 
 #################################################################
@@ -464,10 +519,10 @@ dcat:endDate rdf:type owl:DatatypeProperty ;
 ###  https://data.oireachtas.ie/ie/oireachtas/def/bill-source/government
 
 <https://data.oireachtas.ie/ie/oireachtas/def/bill-source/government>
-    rdf:type :Government , owl:NamedIndividual ;
+    rdf:type :GovernmentBillSource , owl:NamedIndividual ;
     skos:prefLabel "The Government"@en ;
     skos:altLabel "Cabinet"@en ;
-    rdfs:comment "Named individual for the Government as a bill source. Use as the target of eli-dl:was_submitted_by when bill.sourceURI = 'https://data.oireachtas.ie/ie/oireachtas/def/bill-source/government'."@en .
+    rdfs:comment "Controlled concept for the Government bill source. Use as the target of eli-dl:was_submitted_by when bill.sourceURI = 'https://data.oireachtas.ie/ie/oireachtas/def/bill-source/government'. It is deliberately distinct from <https://data.oireachtas.ie/government> and does not identify a particular Government administration."@en .
 
 
 ###  https://data.oireachtas.ie/ie/oireachtas/def/bill-source/private-member

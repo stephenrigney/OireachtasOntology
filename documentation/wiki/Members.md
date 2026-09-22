@@ -35,15 +35,15 @@ https://data.oireachtas.ie/ie/oireachtas/house/seanad/{no}     — a numbered Se
 
 | Class | Superclass(es) | Description |
 |---|---|---|
-| `agents:Oireachtas` | `org:FormalOrganization` | The Houses of the Oireachtas as a legislative body |
-| `agents:House` | `agents:Oireachtas` | Dáil or Seanad as a continuous constitutional institution; committees also typed here |
-| `agents:HouseTerm` | `agents:Oireachtas` | A bounded parliamentary sitting period |
+| `agents:ParliamentaryBody` | `org:FormalOrganization` | Class of enduring parliamentary institutions; `<https://data.oireachtas.ie/oireachtas>` is the Oireachtas individual |
+| `agents:House` | `agents:ParliamentaryBody` | Dáil or Seanad as a continuous constitutional institution |
+| `agents:HouseTerm` | —; disjoint with `agents:ParliamentaryBody` | A bounded parliamentary sitting period, not an enduring organisation |
 | `agents:DailTerm` | `agents:HouseTerm` | A specific numbered term of Dáil Éireann |
 | `agents:SeanadTerm` | `agents:HouseTerm` | A specific numbered term of Seanad Éireann |
-| `members:House` | `agents:Oireachtas`, `agents:House` | The two plenary houses as membership containers (`equivalentClass Dail ∪ Seanad`); excludes committees |
-| `members:Dail` | `members:House`, `agents:DailTerm` | Dáil as membership container |
-| `members:Seanad` | `members:House`, `agents:SeanadTerm` | Seanad as membership container |
-| `members:Committee` | `agents:Oireachtas` | A parliamentary committee. URI pattern: `<https://data.oireachtas.ie/ie/oireachtas/committee/{slug}/{term-no}>` |
+| `members:House` | `agents:House` | The two plenary houses as membership containers (`equivalentClass Dail ∪ Seanad`); excludes committees |
+| `members:Dail` | `members:House` | Dáil membership-container class; not a Dáil term |
+| `members:Seanad` | `members:House` | Seanad membership-container class; not a Seanad term |
+| `members:Committee` | `org:Organization` | A parliamentary committee. URI pattern: `<https://data.oireachtas.ie/ie/oireachtas/committee/{slug}/{term-no}>` |
 
 #### [House properties](#house-property)
 
@@ -69,7 +69,7 @@ The Government is modelled across three tiers to reflect both constitutional and
 
 The former `members:Cabinet` class (a subclass of the whip side — architecturally incorrect) has been eliminated. Use `agents:Government` for the constitutional Cabinet.
 
-Government URI: `<https://data.oireachtas.ie/def/bill-source/government>` — typed `agents:Government`.
+Enduring Government URI: `<https://data.oireachtas.ie/government>` — typed `agents:Government`, accountable to enduring Dáil. The separate `<https://data.oireachtas.ie/ie/oireachtas/def/bill-source/government>` is `agents:GovernmentBillSource`.
 
 #### Role classes
 
@@ -118,7 +118,7 @@ https://data.oireachtas.ie/ie/oireachtas/member/{firstname}-{opt middle name}-{l
 | `members:OireachtasMembership` | `members:MembersMembership` | Abstract superclass for house and committee membership records |
 | `members:DailMembership` | `members:OireachtasMembership` | Membership record for a specific Dáil term. `owl:disjointWith SeanadMembership` |
 | `members:SeanadMembership` | `members:OireachtasMembership` | Membership record for a specific Seanad term |
-| `members:CabinetMembership` | `members:MembersMembership` | Record of holding a `members:CabinetMember` role in `agents:Government` |
+| `members:CabinetMembership` | `members:MembersMembership` | Record of holding a `members:CabinetMember` role in the enduring constitutional Government; its holder must also have an OireachtasMembership |
 | `members:MinisterOfStateMembership` | `members:MembersMembership` | Record of holding a `members:MinisterOfStateRole` |
 | `members:CommitteeMembership` | `members:MembersMembership` | Membership of a committee |
 
@@ -143,7 +143,6 @@ https://data.oireachtas.ie/ie/oireachtas/member/{firstname}-{opt middle name}-{l
 | `:dateOfDeath` | `agents:Member` | `xsd:dateTime` | Date of death where known |
 | `:wikiTitle` | `agents:Member` | `xsd:string` | Wikipedia article title |
 | `:hasImage` | `agents:Member` | `xsd:boolean` | `true` if the API has an image available |
-| `org:memberOf` | `agents:Member` | `agents:Oireachtas` | |
 | `:elected` | `time:TemporalEntity` | `:EventDate` | Date of election |
 | `:isOireachtasMembershipOf` | `members:OireachtasMembership` | `agents:House` | The continuous house (`<.../house/dail>`) |
 | `:inHouseTerm` | `members:OireachtasMembership` | `agents:HouseTerm` | The specific numbered term |

@@ -23,6 +23,6 @@
 
 | Former class | Reason | Replacement |
 |---|---|---|
-| `oir:BillSource` | Submitter type is expressed via `eli-dl:was_submitted_by` (Process → Agent) | Use `eli-dl:was_submitted_by` on `eli-dl:LegislativeProcess` instances; see `agents:Government`, `agents:PrivateMember`, `agents:PrivateSponsor` |
+| `oir:BillSource` | Submitter type is expressed via `eli-dl:was_submitted_by` (Process → Agent) | Use `eli-dl:was_submitted_by` on `eli-dl:LegislativeProcess` instances; see `agents:GovernmentBillSource`, `agents:PrivateMember`, `agents:PrivateSponsor` |
 | `oir:Mover` | Activity-level participation is expressed via `eli-dl:Participation` + `eli-dl:ParticipationRole` | Use `eli-dl:had_participation` with `members:MoverRole` on `:JournalEvent` instances |
 | `metalex:Result` | Eliminated with metalex import | Use `eli-dl:DecisionOutcome` directly |

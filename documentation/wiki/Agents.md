@@ -28,16 +28,17 @@ The ontology distinguishes between the *continuous constitutional institution* a
 
 | Class | Ontology | Superclass | Description |
 |---|---|---|---|
-| `:House` | `agents.owl` | `:Oireachtas` | Dáil Éireann or Seanad Éireann as a continuous institution persisting across successive terms. Named individuals `<.../house/dail>` and `<.../house/seanad>` are the canonical instances. Committee chambers are also typed `:House`. |
-| `:HouseTerm` | `agents.owl` | `:Oireachtas` | A bounded parliamentary sitting period. Instances should also be typed `eli-dl:ParliamentaryTerm` to enable `eli-dl:parliamentary_term` on activities and works. |
+| `:ParliamentaryBody` | `agents.owl` | `org:FormalOrganization` | Class for enduring parliamentary institutions; the Oireachtas itself is a named individual. |
+| `:House` | `agents.owl` | `:ParliamentaryBody` | Dáil Éireann or Seanad Éireann as a continuous institution persisting across successive terms. Named individuals `<.../house/dail>` and `<.../house/seanad>` are the canonical instances. |
+| `:HouseTerm` | `agents.owl` | —; disjoint with `:ParliamentaryBody` | A bounded parliamentary sitting period, not an enduring organisation. |
 | `:DailTerm` | `agents.owl` | `:HouseTerm` | A specific numbered term of Dáil Éireann (e.g. the 33rd Dáil). Disjoint with `:SeanadTerm`. |
 | `:SeanadTerm` | `agents.owl` | `:HouseTerm` | A specific numbered term of Seanad Éireann. Disjoint with `:DailTerm`. |
 
 ### House and HouseTerm URIs
 
 ```
-https://data.oireachtas.ie/ie/oireachtas/house/dail
-https://data.oireachtas.ie/ie/oireachtas/house/seanad
+https://data.oireachtas.ie/house/dail
+https://data.oireachtas.ie/house/seanad
 https://data.oireachtas.ie/ie/oireachtas/house/dail/33
 https://data.oireachtas.ie/ie/oireachtas/house/seanad/27
 ```
@@ -103,7 +104,7 @@ foaf:Person
 
 ## Committee Structure
 
-Committees are typed `members:Committee` (subclass of `agents:Oireachtas`).
+Committees are typed `members:Committee` (an `org:Organization`); they are not made enduring parliamentary bodies merely by being term-scoped committees.
 
 ### Committee Classification
 
@@ -147,7 +148,7 @@ Bill submission is expressed via `eli-dl:was_submitted_by` on the `eli-dl:Legisl
 
 | Named individual | Type | When used |
 |---|---|---|
-| `<.../def/bill-source/government>` | `agents:Government` | Bill introduced by the Government |
+| `<.../def/bill-source/government>` | `agents:GovernmentBillSource` | Bill introduced by the Government; controlled source concept, not a Government administration |
 | `<.../def/bill-source/private-member>` | `agents:PrivateMember` | Bill introduced by a private Member |
 | *(specific PrivateSponsor individual)* | `agents:PrivateSponsor` | Bill introduced by a non-Member sponsor |
 
