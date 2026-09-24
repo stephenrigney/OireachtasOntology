@@ -307,6 +307,19 @@ Party review decisions are keyed by the full term-scoped ParliamentaryParty IRI,
 `partyCode`. A review decision for one House term must not silently propagate to every
 historical occurrence of the same party code.
 
+The Party external-link graph for a validated source record is:
+
+```text
+https://data.oireachtas.ie/graph/party/{houseCode}/{houseNo}/{percent-encoded-partyCode}/external-links
+```
+
+The full validated source IRI (including its House term) is the reconciliation
+state and review key. The graph convention does not make `partyCode` a state key.
+The Party review file is a separate strict version-1 format from Member's
+memberCode-keyed review file. A reviewed Wikidata QID is currently the only
+acceptance path; exact-label/type/jurisdiction candidate generation is evidence
+for a human decision, not a deterministic identifier or auto-accept rule.
+
 Unresolved, ambiguous and lookup-failure outcomes do not clear a previously published
 accepted graph. An explicit reviewed revocation/rejection may clear the graph. Dirty
 state must replay the exact stored payload before new reconciliation work, preserving

@@ -44,14 +44,27 @@ Wikipedia and DBpedia derivation still follows that reviewed Wikidata identity.
 
 The default SQLite path is `~/.local/share/oireachtas-etl/member-reconciliation.sqlite`
 and can be overridden with `--reconciliation-state-file`; it must not be the Phase 3 JSON manifest.  Its
-versioned schema records member identity fingerprint, outcome/candidates and
+version-4 generic schema uses `(entity_kind, local_iri)` as the record key and
+records member identity fingerprint, outcome/candidates and
 structured evidence, method, service errors and timestamps, review hash/use,
 accepted IRIs, recheck time, and dirty/clean publication data.  An append-only
 attempt table preserves every input fingerprint, decision snapshot, method,
 outcome, evidence/errors, and accepted outputs. Writes use SQLite transactions.
 Publication attempts and their payload hashes/results are also audited. A dirty
-row replays that exact stored payload before any further external lookup; it is
-clean only after PUT and whole-graph competency verification.
+row replays that exact stored payload before any further external lookup,
+regardless of changed source/review data or `--all`; the stored payload hash,
+saved graph IRI and Member graph boundary are validated before PUT. It is clean
+only after PUT and whole-graph competency verification. If recovery succeeds and
+source/review data changed, the new reconciliation may continue in the same
+invocation after the old exact payload has been replayed.
+
+Existing Member SQLite schema versions 1, 2 and 3 are migrated in place to
+version 4. Member rows, attempts, publication-attempt IDs and dirty stored
+payloads are retained; the Member public reconciliation API and version-1
+memberCode-keyed review file are unchanged. The authoritative Members manifest
+has a separate per-record transformation `contract_version`; it is now version
+2 so an unchanged Member graph is republished once under the Phase 4.5
+collection semantics.
 Initial runs use `--all`; ordinary runs select new, identity-relevant changed,
 review-changed, dirty, or due records. Accepted/rejected records recheck after
 90 days; pending/ambiguous and accepted records with enrichment errors recheck
@@ -79,3 +92,9 @@ the reconciliation command nonzero; it never affects authoritative ETL.
 
 Deferred: broader entity sources, non-English sitelinks, richer provenance
 graphs, automated review UI, retry orchestration, and Phase 4+ infrastructure.
+
+Party reconciliation uses this same generic SQLite machinery and publication
+recovery path, with an entity-specific Party policy and its own full-source-IRI
+review file. See `documentation/party-reconciliation.md` for Party candidate,
+review, graph and CLI details. Member review keys and emitted predicates remain
+Member-specific.

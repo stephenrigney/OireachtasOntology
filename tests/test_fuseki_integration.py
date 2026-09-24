@@ -10,7 +10,8 @@ from oireachtas_etl.competency import verify_constituencies_competency, verify_h
 from oireachtas_etl.cli import run_members
 from oireachtas_etl.config import CONSTITUENCIES_GRAPH, HOUSES_GRAPH, PARTIES_GRAPH
 from oireachtas_etl.loader import FusekiGraphStoreLoader, FusekiSparqlClient
-from oireachtas_etl.reconciliation import ReconciliationStore, external_graph_iri, reconcile_records, verify_external_links_competency
+from oireachtas_etl.reconciliation import (ReconciliationStore, external_graph_iri, party_external_graph_iri,
+    reconcile_party_records, reconcile_records, verify_external_links_competency, verify_reconciliation_graph)
 from oireachtas_etl.serialization import ntriples, turtle
 from oireachtas_etl.transforms.houses import transform_houses
 from oireachtas_etl.transforms.parties import transform_parties
@@ -171,6 +172,48 @@ def test_member_external_links_are_isolated_verified_and_cleared_by_review(tmp_p
                           publish=loader, competency_client=client)
         assert _count(client, external_graph_iri(member)) == 0
         assert _count(client, authoritative_graph) == len(authoritative)
+    finally:
+        store.close()
+
+
+def test_party_external_links_are_isolated_replaced_and_whole_graph_verified(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    records = json.loads((root / "data/api_examples/parties.json").read_text())["results"]
+    wrapper = next(row for row in records if row["party"]["partyCode"] != "Independent")
+    party, local_iri = wrapper["party"], wrapper["party"]["uri"]
+    external_graph = party_external_graph_iri(wrapper)
+    loader = FusekiGraphStoreLoader(GSP, user=FUSEKI_USER, password=FUSEKI_PASSWORD)
+    client = FusekiSparqlClient(SPARQL, user=FUSEKI_USER, password=FUSEKI_PASSWORD)
+    store = ReconciliationStore(tmp_path / "party-reconciliation.sqlite")
+    authoritative = transform_parties([wrapper])
+    try:
+        loader.replace(PARTIES_GRAPH, ntriples(authoritative), content_type="application/n-triples")
+        unrelated = "https://data.oireachtas.ie/graph/party-reconciliation-unrelated"
+        loader.replace(unrelated, "<https://example.test/untouched> <https://example.test/p> <https://example.test/o> .", content_type="application/n-triples")
+        decision = {local_iri: {"status": "accepted", "wikidata": "Q832321"}}
+        first = reconcile_party_records([wrapper], store, decision, "party-review", object(), all_records=True,
+                                       publish=loader, competency_client=client)
+        expected = first[0][2]
+        verify_reconciliation_graph(client, external_graph, expected)
+        assert _count(client, external_graph) == 1
+        assert _count(client, PARTIES_GRAPH) == len(authoritative)
+        assert set(_canonical_triples(_graph_from_gsp(GSP, PARTIES_GRAPH))) == set(_canonical_triples(authoritative))
+
+        contaminated = Graph().parse(data=ntriples(expected), format="nt")
+        contaminated.add((URIRef("https://example.test/stale"), URIRef("https://example.test/p"), URIRef("https://example.test/o")))
+        loader.replace(external_graph, ntriples(contaminated), content_type="application/n-triples")
+        replaced = reconcile_party_records([wrapper], store, decision, "party-review", object(), all_records=True,
+                                           publish=loader, competency_client=client)
+        verify_reconciliation_graph(client, external_graph, replaced[0][2])
+        assert _count(client, external_graph) == 1
+        assert not list(_graph_from_gsp(GSP, external_graph).triples((URIRef("https://example.test/stale"), None, None)))
+
+        rejected = reconcile_party_records([wrapper], store, {local_iri: {"status": "rejected"}}, "party-rejected", object(),
+                                           publish=loader, competency_client=client)
+        verify_reconciliation_graph(client, external_graph, rejected[0][2])
+        assert _count(client, external_graph) == 0
+        assert _count(client, PARTIES_GRAPH) == len(authoritative)
+        assert _count(client, unrelated) == 1
     finally:
         store.close()
 
