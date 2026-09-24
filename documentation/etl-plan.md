@@ -936,7 +936,7 @@ HouseTerm
 Candidate generation and review must explicitly distinguish the modern
 institution from historical/revolutionary predecessors, other similarly named
 bodies, classes/concepts and numbered parliamentary terms. Negative and
-contradictory evidence must be retained explicitly and audibly rather than
+contradictory evidence must be retained explicitly and auditably rather than
 collapsed into a numeric confidence score.
 
 Tranche 3 must reuse the generic reconciliation core delivered by Tranche 2.
