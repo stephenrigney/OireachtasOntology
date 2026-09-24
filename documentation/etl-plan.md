@@ -827,54 +827,64 @@ relationship rather than identity.
 
 ##### Ontology and API model
 
-- [ ] Introduce `members:ParliamentaryMemberCollection` as the general collection-of-Members class.
-- [ ] Replace the current `members:Party` semantics with `members:ParliamentaryParty`, a subclass of `members:ParliamentaryMemberCollection`.
-- [ ] Introduce `members:IndependentMemberCollection` for term-scoped API `Independent` collections.
-- [ ] Introduce `members:ParliamentaryGroup` as the Standing-Orders recognition concept and `members:TechnicalGroup` as its subclass.
-- [ ] Do not make `members:ParliamentaryParty` a subclass of `members:ParliamentaryGroup`; the same individual may be typed as both only where recognition is independently established.
-- [ ] Define `members:recognisedAsParty` from a ParliamentaryParty to the enduring registered political party on which that parliamentary collection is based; explicitly distinguish this from ParliamentaryGroup recognition.
-- [ ] Do not require a local enduring `PoliticalParty` class or locally minted enduring party individuals merely for reconciliation.
-- [ ] Preserve each Parties API source IRI as the identity of its term-scoped ParliamentaryMemberCollection instance.
-- [ ] Preserve party code, display label and HouseTerm context on API-derived collections.
-- [ ] Remove or retire the term-independent `members:Independent` grouping as a target for API records; API Independent collections remain term-scoped.
-- [ ] Audit dependent legacy party terms and restrictions (`PartyInGovernment`, `PartyInOpposition`, `PartiesMembership`, `isWhipFor`, and related properties) rather than mechanically retargeting them.
+- [x] Introduce `members:ParliamentaryMemberCollection` as the general collection-of-Members class.
+- [x] Replace the current `members:Party` semantics with `members:ParliamentaryParty`, a subclass of `members:ParliamentaryMemberCollection`.
+- [x] Introduce `members:IndependentMemberCollection` for term-scoped API `Independent` collections.
+- [x] Introduce `members:ParliamentaryGroup` as the Standing-Orders recognition concept and `members:TechnicalGroup` as its subclass.
+- [x] Do not make `members:ParliamentaryParty` a subclass of `members:ParliamentaryGroup`; the same individual may be typed as both only where recognition is independently established.
+- [x] Define `members:recognisedAsParty` from a ParliamentaryParty to the enduring registered political party on which that parliamentary collection is based; explicitly distinguish this from ParliamentaryGroup recognition.
+- [x] Do not require a local enduring `PoliticalParty` class or locally minted enduring party individuals merely for reconciliation.
+- [x] Preserve each Parties API source IRI as the identity of its term-scoped ParliamentaryMemberCollection instance.
+- [x] Preserve party code, display label and HouseTerm context on API-derived collections.
+- [x] Remove or retire the term-independent `members:Independent` grouping as a target for API records; API Independent collections remain term-scoped.
+- [x] Audit and retire the unsupported `PartyInGovernment`, `PartyInOpposition`, `PartiesMembership`, `hasPartiesMembership`, and `isPartyIn` model; defer `isWhipFor` until a supported source is modelled.
 
 ##### Member collection membership
 
-- [ ] Introduce a general parliamentary-collection membership record for dated Member-to-ParliamentaryMemberCollection relationships.
-- [ ] Retain `members:PartyMembership` as the more specific membership record for a ParliamentaryParty target.
-- [ ] Represent an API Independent record with the general collection-membership record rather than falsely treating Independent as membership of a political party.
-- [ ] Preserve the explicit relationship between each collection-membership record and the OireachtasMembership under which the API supplies it.
-- [ ] Update Member transformation, mappings and validation consistently with the collection model.
+- [x] Introduce a general parliamentary-collection membership record for dated Member-to-ParliamentaryMemberCollection relationships.
+- [x] Retain `members:PartyMembership` as the more specific membership record for a ParliamentaryParty target.
+- [x] Represent an API Independent record with the general collection-membership record rather than falsely treating Independent as membership of a political party.
+- [x] Preserve the explicit relationship between each collection-membership record and the OireachtasMembership under which the API supplies it.
+- [x] Update Member transformation, mappings and validation consistently with the collection model.
 
 ##### Population boundary
 
-- [ ] Populate ParliamentaryParty only from non-`Independent` Parties API records.
-- [ ] Populate IndependentMemberCollection only from `Independent` Parties API records.
-- [ ] Define ParliamentaryGroup and TechnicalGroup in the ontology but do not populate instances unless an API source explicitly provides sufficient evidence.
-- [ ] Do not infer Rural Independent, Civil Engagement or other technical/parliamentary groups from debates, biographies, Standing Orders application, press material or other non-API evidence in this iteration.
-- [ ] Do not infer ParliamentaryGroup recognition from party size, Opposition status or ministerial membership even where Standing Orders would permit the conclusion; record such information as a later gap-analysis/source-extension concern.
+- [x] Populate ParliamentaryParty only from non-`Independent` Parties API records.
+- [x] Populate IndependentMemberCollection only from `Independent` Parties API records.
+- [x] Define ParliamentaryGroup and TechnicalGroup in the ontology but do not populate instances unless an API source explicitly provides sufficient evidence.
+- [x] Do not infer Rural Independent, Civil Engagement or other technical/parliamentary groups from debates, biographies, Standing Orders application, press material or other non-API evidence in this iteration.
+- [x] Do not infer ParliamentaryGroup recognition from party size, Opposition status or ministerial membership even where Standing Orders would permit the conclusion; record such information as a later gap-analysis/source-extension concern.
 
 ##### Generic reconciliation architecture
 
-- [ ] Refactor the Phase 3.5 reconciliation infrastructure so state, review, audit, dirty publication recovery and graph replacement are generic rather than copied into entity-specific implementations.
-- [ ] Use generic reconciliation identity such as `(entity_kind, local_iri)`; do not generalise the Member table's unique `memberCode` assumption because party codes repeat across House terms.
-- [ ] Preserve Member reconciliation behaviour and migration history while introducing the generic state model.
-- [ ] Keep entity-specific eligibility, fingerprinting, candidate generation, review validation, accepted-link semantics and external graph naming behind Member/Party policies or adapters.
+- [x] Refactor the Phase 3.5 reconciliation infrastructure so state, review, audit, dirty publication recovery and graph replacement are generic rather than copied into entity-specific implementations.
+- [x] Use generic reconciliation identity `(entity_kind, local_iri)`; do not generalise the Member table's unique `memberCode` assumption because party codes repeat across House terms.
+- [x] Migrate reconciliation SQLite schemas v1-v3 in place while preserving Member rows, attempt histories, publication histories and dirty payloads; keep Member reconciliation behavior and review-file format.
+- [x] Keep entity-specific eligibility, fingerprinting, candidate generation, review validation, accepted-link semantics and external graph naming behind Member/Party policies or adapters.
 
 ##### Party candidate generation and review
 
-- [ ] Reconcile only `members:ParliamentaryParty` instances; exclude IndependentMemberCollection.
-- [ ] Define candidate generation from party code, label, Irish political-party context, external type/jurisdiction and relevant historical evidence.
-- [ ] Do not automatically accept label, normalised-label or fuzzy matches where no deterministic external identifier exists.
-- [ ] Require human review before first acceptance of an enduring external party identity unless a future deterministic authority key is identified.
-- [ ] Key party review decisions by the full term-scoped ParliamentaryParty IRI, not by party code, so a decision does not silently propagate across House terms.
-- [ ] Record candidate evidence, ambiguity, rejection and accepted decisions in deterministic review/state data.
-- [ ] Publish only `members:recognisedAsParty` for an accepted external political-party target; never publish `owl:sameAs` or `prov:specializationOf` between the ParliamentaryParty and enduring PoliticalParty.
-- [ ] Publish accepted links in independently replaceable external-link graphs without importing external party facts into authoritative Parties graphs.
-- [ ] Preserve Phase 3.5 recovery semantics: unresolved/ambiguous/service-failure outcomes do not clear an accepted graph; explicit reviewed revocation may clear it; dirty state replays the exact stored payload before new lookup work.
-- [ ] Define coverage and false-match review metrics before broad publication.
+- [x] Reconcile only `members:ParliamentaryParty` instances; exclude IndependentMemberCollection.
+- [x] Define candidate generation from party code, label, Irish political-party context, Wikidata political-party type/Ireland jurisdiction and available historical evidence.
+- [x] Do not automatically accept label, normalised-label or fuzzy matches where no deterministic external identifier exists.
+- [x] Require human review before first acceptance of an enduring external party identity unless a future deterministic authority key is identified.
+- [x] Key party review decisions by the full term-scoped ParliamentaryParty IRI, not by party code, so a decision does not silently propagate across House terms.
+- [x] Record candidate evidence, ambiguity, rejection and accepted decisions in deterministic review/state data.
+- [x] Publish only `members:recognisedAsParty` for an accepted external political-party target; never publish `owl:sameAs` or `prov:specializationOf` between the ParliamentaryParty and enduring PoliticalParty.
+- [x] Publish accepted links in independently replaceable external-link graphs without importing external party facts into authoritative Parties graphs.
+- [x] Preserve Phase 3.5 recovery semantics: unresolved/ambiguous/service-failure outcomes do not clear an accepted graph; explicit reviewed rejection may clear it; dirty state replays the exact stored payload before new lookup work, including changed source/review and `--all` runs.
+- [x] Define coverage and false-match review metrics before broad publication (see `documentation/party-reconciliation.md`); actual sampling requires reviewed accepted links.
 - [ ] Decide separately whether DBpedia/Wikipedia enrichment adds sufficient value once the Wikidata relationship is accepted.
+
+#### Tranche 2 verification record
+
+The ontology reasoner and mapping-integrity checks passed. The full Phase 0–4,
+Member reconciliation and Party reconciliation suite passed (206 tests),
+including seven tests against an isolated, disposable local Fuseki 5.1.0
+dataset. No Party review acceptance is included in the default decisions file;
+broad publication and a measured false-match sample remain contingent on
+actual human-reviewed links. Tranche 3 institutional reconciliation is not
+part of this delivery.
 
 #### Exit criteria
 
