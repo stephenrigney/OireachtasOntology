@@ -765,21 +765,21 @@ Separate the ontology's current umbrella use of `:Oireachtas` from the identity 
 
 #### Backlog
 
-- [ ] Introduce a class for parliamentary bodies, provisionally `:ParliamentaryBody`, as the organisational superclass needed by the Oireachtas and its Houses.
-- [ ] Introduce a persistent named individual for the enduring Oireachtas institution.
-- [ ] Retain the persistent Dáil and Seanad House individuals as authoritative local identities.
-- [ ] Model Dáil and Seanad as constituent/sub-organisations of the enduring Oireachtas using an explicit organisational relationship; do not use class inheritance to represent part-whole structure.
-- [ ] Preserve the existing `:HouseTerm -> :House` distinction so numbered Dáil/Seanad terms remain temporally bounded terms rather than enduring institutions.
-- [ ] Remove the current `:Government rdfs:subClassOf :Oireachtas` modelling.
-- [ ] Retain the constitutional Government as an organisation distinct from the Oireachtas.
-- [ ] Add an explicit Government-to-Dáil constitutional accountability relation, provisionally `:responsibleTo`, aligned as appropriate with `org:reportsTo`.
-- [ ] Preserve the relationship between Government and the Oireachtas through people and memberships: Government members must be Oireachtas members, represented through Cabinet membership/role records plus their parliamentary memberships.
-- [ ] Keep the generic Bill-source Government concept distinct from any later modelling of numbered Government administrations.
-- [ ] Decide whether a general constitutional constituent relation is required for the Oireachtas composition (President, Dáil, Seanad), rather than forcing all constitutional composition through organisational-subordination predicates.
-- [ ] Audit domain/range axioms and inference consequences affected by replacing the current `:Oireachtas` umbrella class.
-- [ ] Update mapping notes and competency queries where existing assumptions depend on the current hierarchy.
-- [ ] Regression-test all Phase 0–4 transformations, ownership boundaries, validation, and Fuseki publication behaviour.
-- [ ] Obtain an architecture/ontology review before closing the tranche.
+- [x] Introduce a class for parliamentary bodies, provisionally `:ParliamentaryBody`, as the organisational superclass needed by the Oireachtas and its Houses.
+- [x] Introduce a persistent named individual for the enduring Oireachtas institution.
+- [x] Retain the persistent Dáil and Seanad House individuals as authoritative local identities.
+- [x] Model Dáil and Seanad as constituent/sub-organisations of the enduring Oireachtas using an explicit organisational relationship; do not use class inheritance to represent part-whole structure.
+- [x] Preserve the existing `:HouseTerm -> :House` distinction so numbered Dáil/Seanad terms remain temporally bounded terms rather than enduring institutions.
+- [x] Remove the current `:Government rdfs:subClassOf :Oireachtas` modelling.
+- [x] Retain the constitutional Government as an organisation distinct from the Oireachtas.
+- [x] Add an explicit Government-to-Dáil constitutional accountability relation, provisionally `:responsibleTo`, aligned as appropriate with `org:reportsTo`.
+- [x] Preserve the relationship between Government and the Oireachtas through people and memberships: Government members must be Oireachtas members, represented through Cabinet membership/role records plus their parliamentary memberships.
+- [x] Keep the generic Bill-source Government concept distinct from any later modelling of numbered Government administrations.
+- [x] Decide whether a general constitutional constituent relation is required for the Oireachtas composition (President, Dáil, Seanad), rather than forcing all constitutional composition through organisational-subordination predicates.
+- [x] Audit domain/range axioms and inference consequences affected by replacing the current `:Oireachtas` umbrella class.
+- [x] Update mapping notes and competency queries where existing assumptions depend on the current hierarchy.
+- [x] Regression-test all Phase 0–4 transformations, ownership boundaries, validation, and Fuseki publication behaviour.
+- [x] Obtain an architecture/ontology review before closing the tranche.
 
 #### Exit criteria
 
