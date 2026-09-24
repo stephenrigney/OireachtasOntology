@@ -1,14 +1,39 @@
 @prefix : <https://data.oireachtas.ie/ontology/members#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-:PartyGroupingShape a sh:NodeShape ; sh:targetClass :PartyGrouping ;
+:ParliamentaryMemberCollectionShape a sh:NodeShape ;
+  sh:targetClass :ParliamentaryMemberCollection ;
   sh:property [ sh:path :partyCode ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
   sh:property [ sh:path skos:prefLabel ; sh:minCount 1 ; sh:maxCount 1 ; sh:languageIn ( "en" ) ] ;
   sh:property [ sh:path :activeDuringTerm ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
-  sh:sparql [ sh:message "Independent must not be typed Party" ; sh:select "PREFIX : <https://data.oireachtas.ie/ontology/members#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT $this WHERE { $this :partyCode \"Independent\"^^xsd:string ; rdf:type :Party }" ] .
-:NoPartyIdentityShape a sh:NodeShape ; sh:targetClass :PartyGrouping ;
-  sh:property [ sh:path owl:sameAs ; sh:maxCount 0 ] .
+  sh:property [ sh:path owl:sameAs ; sh:maxCount 0 ] ;
+  sh:property [ sh:path prov:specializationOf ; sh:maxCount 0 ] ;
+  sh:property [ sh:path :recognisedAsParty ; sh:maxCount 0 ] ;
+  sh:sparql [
+    sh:message "Independent must be typed IndependentMemberCollection, not ParliamentaryParty" ;
+    sh:select "PREFIX : <https://data.oireachtas.ie/ontology/members#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT $this WHERE { $this :partyCode \"Independent\"^^xsd:string ; rdf:type :ParliamentaryParty }"
+  ] ;
+  sh:sparql [
+    sh:message "Independent must be typed IndependentMemberCollection" ;
+    sh:select "PREFIX : <https://data.oireachtas.ie/ontology/members#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT $this WHERE { $this :partyCode \"Independent\"^^xsd:string . FILTER NOT EXISTS { $this rdf:type :IndependentMemberCollection } }"
+  ] ;
+  sh:sparql [
+    sh:message "Non-Independent must be typed ParliamentaryParty, not IndependentMemberCollection" ;
+    sh:select "PREFIX : <https://data.oireachtas.ie/ontology/members#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT $this WHERE { $this :partyCode ?code ; rdf:type :IndependentMemberCollection . FILTER (?code != \"Independent\"^^xsd:string) }"
+  ] ;
+  sh:sparql [
+    sh:message "Non-Independent must be typed ParliamentaryParty" ;
+    sh:select "PREFIX : <https://data.oireachtas.ie/ontology/members#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT $this WHERE { $this :partyCode ?code . FILTER (?code != \"Independent\"^^xsd:string && NOT EXISTS { $this rdf:type :ParliamentaryParty }) }"
+  ] .
+
+:ParliamentaryPartyPopulationShape a sh:NodeShape ;
+  sh:targetClass :ParliamentaryParty ;
+  sh:sparql [
+    sh:message "Parties API collections must not be asserted as recognised or technical groups" ;
+    sh:select "PREFIX : <https://data.oireachtas.ie/ontology/members#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> SELECT $this WHERE { $this rdf:type ?group . VALUES ?group { :ParliamentaryGroup :TechnicalGroup } }"
+  ] .

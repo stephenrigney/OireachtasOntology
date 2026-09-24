@@ -10,7 +10,7 @@ from rdflib.namespace import RDF
 
 from oireachtas_etl.api import ApiClient, ApiPage
 from oireachtas_etl.serialization import nquads
-from oireachtas_etl.transforms.common import OIR
+from oireachtas_etl.transforms.common import MEMBERS, OIR
 from oireachtas_etl.transforms.members import member_graph_iri, source_hash, transform_member_with_report
 from oireachtas_etl.validation import validate_member
 from oireachtas_etl.competency import MEMBERS_COMPETENCY_EXPECTED, render_member_competency_query, verify_member_competency, verify_members_competency
@@ -40,6 +40,80 @@ def test_member_golden_pins_full_sha_generated_iri_hierarchy():
     root = "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34"
     assert URIRef(root + "#minister-of-state-membership-681ed4c802b1acbb81a375404a6e076cd53901371313c501a8f7e77c9422b1a3#role") in set(graph.subjects())
     assert URIRef(root + "#party-membership-a0db44ca23cb7ed5129ed071ca4d545fee362c5137db08325cfebf43b296d273#date-range") in set(graph.subjects())
+
+
+def test_party_membership_requires_date_even_without_explicit_collection_membership_type():
+    from pyshacl import validate as validate_shacl
+
+    graph, _ = transform_member_with_report(WRAPPER)
+    party_membership = next(graph.subjects(RDF.type, MEMBERS.PartyMembership))
+    graph.remove((party_membership, RDF.type, MEMBERS.ParliamentaryCollectionMembership))
+    graph.remove((party_membership, MEMBERS.hasMembershipDateRange, None))
+
+    conforms, _, report = validate_shacl(
+        graph,
+        shacl_graph=(ROOT / "src/oireachtas_etl/validation/resources/members.ttl").read_text(),
+        shacl_graph_format="turtle",
+        inference="none",
+        abort_on_first=False,
+    )
+    assert not conforms
+    assert "hasMembershipDateRange" in str(report)
+
+
+def test_independent_member_record_uses_contextual_general_collection_membership_and_fails_closed():
+    changed = copied()
+    wrapped_membership = next(
+        value for value in changed["member"]["memberships"]
+        if value["membership"]["house"]["houseCode"] == "dail"
+        and value["membership"]["house"]["houseNo"] == "34"
+    )
+    membership = wrapped_membership["membership"]
+    party = membership["parties"][0]["party"]
+    party["uri"] = "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Independent"
+    party["partyCode"] = "Independent"
+    party["showAs"] = "Independent"
+
+    graph, _ = transform_member_with_report(changed)
+    collection = URIRef(party["uri"])
+    member = URIRef(changed["member"]["uri"])
+    oireachtas_membership = URIRef(membership["uri"])
+    collection_memberships = list(graph.subjects(MEMBERS.memberOfCollection, collection))
+    assert len(collection_memberships) == 1
+    collection_membership = collection_memberships[0]
+    assert (collection_membership, RDF.type, MEMBERS.ParliamentaryCollectionMembership) in graph
+    assert (collection_membership, RDF.type, MEMBERS.PartyMembership) not in graph
+    assert (collection_membership, MEMBERS.memberOfCollection, collection) in graph
+    assert (collection_membership, MEMBERS.inOireachtasMembership, oireachtas_membership) in graph
+    assert (member, MEMBERS.hasMembersMembership, collection_membership) in graph
+    assert not list(graph.triples((collection_membership, MEMBERS.isPartyMembershipOf, None)))
+    validate_member(changed, graph)
+
+    invalid_graphs = []
+    missing_context = Graph(); [missing_context.add(triple) for triple in graph]
+    missing_context.remove((collection_membership, MEMBERS.inOireachtasMembership, oireachtas_membership))
+    invalid_graphs.append((missing_context, "missing"))
+    missing_collection = Graph(); [missing_collection.add(triple) for triple in graph]
+    missing_collection.remove((collection_membership, MEMBERS.memberOfCollection, collection))
+    invalid_graphs.append((missing_collection, "missing"))
+    wrong_party_type = Graph(); [wrong_party_type.add(triple) for triple in graph]
+    wrong_party_type.add((collection_membership, RDF.type, MEMBERS.PartyMembership))
+    invalid_graphs.append((wrong_party_type, "unexpected"))
+    party_specific_link = Graph(); [party_specific_link.add(triple) for triple in graph]
+    party_specific_link.add((collection_membership, MEMBERS.isPartyMembershipOf, collection))
+    invalid_graphs.append((party_specific_link, "unexpected"))
+    for invalid, failure in invalid_graphs:
+        with pytest.raises(ValueError, match=f"source-to-RDF correspondence failed: {failure}"):
+            validate_member(changed, invalid)
+
+
+def test_member_source_validator_rejects_independent_code_with_party_source_iri():
+    from oireachtas_etl.validation.members import validate_member_source
+    changed = copied()
+    party = changed["member"]["memberships"][0]["membership"]["parties"][0]["party"]
+    party["partyCode"] = "Independent"
+    with pytest.raises(ValueError, match="party.uri must be the term-scoped Party source IRI"):
+        validate_member_source(changed)
 
 
 def test_member_synthetic_roles_and_office_uri_are_member_terms():

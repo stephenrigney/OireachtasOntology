@@ -15,9 +15,8 @@ def transform_parties(records: list[dict]) -> Graph:
         party, house = wrapper["party"], wrapper["house"]
         subject, term = iri(party.get("uri")), iri(house.get("uri"))
         code = party.get("partyCode")
-        graph.add((subject, RDF.type, MEMBERS.PartyGrouping))
-        if code != "Independent":
-            graph.add((subject, RDF.type, MEMBERS.Party))
+        graph.add((subject, RDF.type, MEMBERS.ParliamentaryMemberCollection))
+        graph.add((subject, RDF.type, MEMBERS.IndependentMemberCollection if code == "Independent" else MEMBERS.ParliamentaryParty))
         graph.add((subject, MEMBERS.partyCode, string(code)))
         graph.add((subject, SKOS.prefLabel, english(party.get("showAs"))))
         graph.add((subject, MEMBERS.activeDuringTerm, term))

@@ -22,11 +22,11 @@ CONSTITUENCIES = json.loads((ROOT / "data/api_examples/constituencies.json").rea
 def test_parties_are_deterministic_and_preserve_term_scoped_independent_iri():
     graph = transform_parties(PARTIES)
     independent = URIRef("https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Independent")
-    assert len(graph) == 54
+    assert len(graph) == 55
     assert set(graph) == set(Graph().parse(ROOT / "tests/expected/parties.ttl"))
-    assert (independent, RDF.type, MEMBERS.PartyGrouping) in graph
-    assert (independent, RDF.type, MEMBERS.Party) not in graph
-    assert not list(graph.triples((MEMBERS.Independent, None, None)))
+    assert (independent, RDF.type, MEMBERS.ParliamentaryMemberCollection) in graph
+    assert (independent, RDF.type, MEMBERS.IndependentMemberCollection) in graph
+    assert (independent, RDF.type, MEMBERS.ParliamentaryParty) not in graph
     assert nquads(graph, PARTIES_GRAPH) == nquads(transform_parties(PARTIES), PARTIES_GRAPH)
     validate_parties(PARTIES, graph)
 
@@ -182,16 +182,87 @@ def test_reference_shacl_rejects_mapping_mutations(records, transform, validator
         validator(records, graph)
 
 
-def test_independent_cannot_be_party_or_linked_to_ontology_independent():
+def test_independent_cannot_be_party_or_same_as_enduring_external_party():
     graph = transform_parties(PARTIES)
     independent = URIRef("https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Independent")
-    graph.add((independent, RDF.type, MEMBERS.Party))
+    graph.add((independent, RDF.type, MEMBERS.ParliamentaryParty))
     with pytest.raises(ValueError, match="source-to-RDF correspondence failed: unexpected"):
         validate_parties(PARTIES, graph)
     graph = transform_parties(PARTIES)
-    graph.add((independent, URIRef("http://www.w3.org/2002/07/owl#sameAs"), MEMBERS.Independent))
+    graph.add((independent, URIRef("http://www.w3.org/2002/07/owl#sameAs"), URIRef("https://example.test/enduring-party")))
     with pytest.raises(ValueError, match="source-to-RDF correspondence failed: unexpected"):
         validate_parties(PARTIES, graph)
+
+
+def test_authoritative_party_graph_forbids_prov_specialization_of():
+    from rdflib import Namespace
+    from oireachtas_etl.validation.parties import validate_quality, validate_shacl
+
+    party = URIRef("https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Fine_Gael")
+    graph = transform_parties(PARTIES)
+    graph.add((party, Namespace("http://www.w3.org/ns/prov#").specializationOf,
+               URIRef("https://example.test/enduring-party")))
+
+    with pytest.raises(ValueError, match="SHACL validation failed"):
+        validate_shacl(graph)
+    with pytest.raises(ValueError, match="quality checks failed"):
+        validate_quality(graph)
+
+
+def test_synthetic_independent_party_uses_term_scoped_collection_and_fails_closed():
+    record = {
+        "party": {
+            "uri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/35/Independent",
+            "partyCode": "Independent",
+            "showAs": "Independent",
+        },
+        "house": {
+            "uri": "https://data.oireachtas.ie/ie/oireachtas/house/dail/35",
+            "houseNo": "35",
+            "houseCode": "dail",
+        },
+    }
+    subject = URIRef(record["party"]["uri"])
+    graph = transform_parties([record])
+    validate_parties([record], graph)
+    assert (subject, RDF.type, MEMBERS.ParliamentaryMemberCollection) in graph
+    assert (subject, RDF.type, MEMBERS.IndependentMemberCollection) in graph
+    assert (subject, MEMBERS.activeDuringTerm, URIRef(record["house"]["uri"])) in graph
+
+    graph.add((subject, RDF.type, MEMBERS.ParliamentaryParty))
+    with pytest.raises(ValueError, match="source-to-RDF correspondence failed: unexpected"):
+        validate_parties([record], graph)
+
+
+def test_parliamentary_collection_ontology_replaces_legacy_party_model():
+    from rdflib import Namespace, RDFS
+    from rdflib.namespace import FOAF
+
+    ontology = Graph().parse(ROOT / "ontology/members.owl.ttl", format="turtle")
+    members = Namespace("https://data.oireachtas.ie/ontology/members#")
+    assert (members.ParliamentaryMemberCollection, RDFS.subClassOf, FOAF.Group) in ontology
+    assert (members.ParliamentaryParty, RDFS.subClassOf, members.ParliamentaryMemberCollection) in ontology
+    assert (members.IndependentMemberCollection, RDFS.subClassOf, members.ParliamentaryMemberCollection) in ontology
+    assert (members.ParliamentaryGroup, RDFS.subClassOf, members.ParliamentaryMemberCollection) in ontology
+    assert (members.TechnicalGroup, RDFS.subClassOf, members.ParliamentaryGroup) in ontology
+    assert (members.ParliamentaryParty, RDFS.subClassOf, members.ParliamentaryGroup) not in ontology
+    assert (members.recognisedAsParty, RDFS.domain, members.ParliamentaryParty) in ontology
+    assert not list(ontology.objects(members.recognisedAsParty, RDFS.range))
+    assert (members.isPartyMembershipOf, RDFS.range, members.ParliamentaryParty) in ontology
+    assert (members.isPartyMembershipOf, RDFS.subPropertyOf, members.memberOfCollection) in ontology
+    assert (members.PartyMembership, RDFS.subClassOf, members.ParliamentaryCollectionMembership) in ontology
+    assert (members.ParliamentaryCollectionMembership, RDFS.subClassOf, members.MembersMembership) in ontology
+    assert not list(ontology.subjects(RDF.type, members.ParliamentaryGroup))
+    assert not list(ontology.subjects(RDF.type, members.TechnicalGroup))
+
+    retired = (
+        members.PartyGrouping, members.Party, members.Independent,
+        members.PartyInGovernment, members.PartyInOpposition, members.PartiesMembership,
+        members.hasPartiesMembership, members.isPartyIn, members.isWhipFor,
+    )
+    for term in retired:
+        assert not list(ontology.triples((term, None, None)))
+        assert not list(ontology.triples((None, None, term)))
 
 
 @pytest.mark.parametrize(("records", "transform", "validator"), [

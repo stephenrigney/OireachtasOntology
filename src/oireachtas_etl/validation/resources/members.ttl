@@ -14,9 +14,18 @@ members:OireachtasMembershipShape a sh:NodeShape ; sh:targetClass members:Oireac
   sh:property [ sh:path members:isOireachtasMembershipOf ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
   sh:property [ sh:path members:hasMembershipDateRange ; sh:minCount 1 ; sh:maxCount 1 ; sh:class members:DateRange ] .
 
-members:PartyMembershipShape a sh:NodeShape ; sh:targetClass members:PartyMembership ;
-  sh:property [ sh:path members:isPartyMembershipOf ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+members:ParliamentaryCollectionMembershipShape a sh:NodeShape ; sh:targetClass members:ParliamentaryCollectionMembership ;
+  sh:property [ sh:path members:inOireachtasMembership ; sh:minCount 1 ; sh:maxCount 1 ; sh:class members:OireachtasMembership ] ;
+  sh:property [ sh:path members:memberOfCollection ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
   sh:property [ sh:path members:hasMembershipDateRange ; sh:minCount 1 ; sh:maxCount 1 ; sh:class members:DateRange ] .
+
+members:PartyMembershipShape a sh:NodeShape ; sh:targetClass members:PartyMembership ;
+  sh:property [ sh:path members:inOireachtasMembership ; sh:minCount 1 ; sh:maxCount 1 ; sh:class members:OireachtasMembership ] ;
+  sh:property [ sh:path members:memberOfCollection ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+  sh:property [ sh:path members:hasMembershipDateRange ; sh:minCount 1 ; sh:maxCount 1 ; sh:class members:DateRange ] ;
+  sh:property [ sh:path members:isPartyMembershipOf ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+  sh:sparql [ sh:message "PartyMembership must use the same ParliamentaryParty through both party-specific and general collection relationships" ;
+    sh:select "PREFIX members: <https://data.oireachtas.ie/ontology/members#> SELECT $this WHERE { $this members:isPartyMembershipOf ?party . FILTER NOT EXISTS { $this members:memberOfCollection ?party } }" ] .
 
 members:CommitteeMembershipShape a sh:NodeShape ; sh:targetClass members:CommitteeMembership ;
   sh:property [ sh:path members:isCommitteeMembershipOf ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;

@@ -80,16 +80,12 @@ def validate_parties_correspondence(records: list[dict], graph: Graph | None) ->
         code = party.get("partyCode")
         validate_party_iri(subject, term, code)
         expected.update({
-            (subject, RDF.type, MEMBERS.PartyGrouping),
+            (subject, RDF.type, MEMBERS.ParliamentaryMemberCollection),
             (subject, MEMBERS.partyCode, string(code)),
             (subject, SKOS.prefLabel, english(party.get("showAs"))),
             (subject, MEMBERS.activeDuringTerm, term),
         })
-        if code != "Independent":
-            expected.add((subject, RDF.type, MEMBERS.Party))
-        else:
-            if subject == MEMBERS.Independent:
-                raise ValueError("Independent API record must retain its source IRI")
+        expected.add((subject, RDF.type, MEMBERS.IndependentMemberCollection if code == "Independent" else MEMBERS.ParliamentaryParty))
     if graph is not None:
         assert_expected(graph, expected)
 

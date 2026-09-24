@@ -86,6 +86,18 @@ def _required_text(value, label):
     return value
 
 
+def _party_source(wrapped, membership_path):
+    if not isinstance(wrapped, dict) or not isinstance(wrapped.get("party"), dict):
+        raise ValueError("party wrapper must contain a party object")
+    party = wrapped["party"]
+    code = _required_text(party.get("partyCode"), "party.partyCode")
+    party_iri = _source(party.get("uri"), "party.uri")
+    path = [part for part in urlsplit(str(party_iri)).path.split("/") if part]
+    if len(membership_path) != 8 or len(path) != 6 or path[:3] != ["ie", "oireachtas", "party"] or path[3:5] != membership_path[6:8] or unquote(path[5]) != code:
+        raise ValueError("party.uri must be the term-scoped Party source IRI")
+    return party, party_iri, code
+
+
 def _range(graph, parent, fragment, value):
     if not isinstance(value, dict): raise ValueError("membership dateRange must be an object")
     start = datetime_literal(value.get("start"))
@@ -136,11 +148,16 @@ def expected_member_graph(wrapper: dict) -> tuple[Graph, list[dict]]:
             if len(rp) != 7 or rp[:5] != tp or rp[5] != kind or unquote(rp[6]) != _required_text(rep.get("representCode"), "representation.representCode"): raise ValueError("representation.uri must match membership HouseTerm, representType and representCode")
             graph.add((membership, MEMBERS.isRepresentativeFrom, rep_iri))
         for wrapped_party in record.get("parties", []):
-            if not isinstance(wrapped_party, dict) or not isinstance(wrapped_party.get("party"), dict): raise ValueError("party wrapper must contain a party object")
-            party = wrapped_party["party"]; party_iri = _source(party.get("uri"), "party.uri"); pp = [p for p in urlsplit(str(party_iri)).path.split("/") if p]
-            if len(pp) != 6 or pp[:3] != ["ie", "oireachtas", "party"] or pp[3:5] != mp[6:8] or unquote(pp[5]) != _required_text(party.get("partyCode"), "party.partyCode"): raise ValueError("party.uri must be the term-scoped Party source IRI")
+            party, party_iri, party_code = _party_source(wrapped_party, mp)
             pm = _generated(membership, "party-membership", {"membership": str(membership), "party": party_iri, "dateRange": party.get("dateRange")})
-            graph.add((pm, RDF.type, MEMBERS.PartyMembership)); graph.add((subject, MEMBERS.hasMembersMembership, pm)); graph.add((pm, MEMBERS.isPartyMembershipOf, party_iri)); _range(graph, pm, "date-range", party.get("dateRange"))
+            graph.add((pm, RDF.type, MEMBERS.ParliamentaryCollectionMembership))
+            graph.add((subject, MEMBERS.hasMembersMembership, pm))
+            graph.add((pm, MEMBERS.inOireachtasMembership, membership))
+            graph.add((pm, MEMBERS.memberOfCollection, party_iri))
+            if party_code != "Independent":
+                graph.add((pm, RDF.type, MEMBERS.PartyMembership))
+                graph.add((pm, MEMBERS.isPartyMembershipOf, party_iri))
+            _range(graph, pm, "date-range", party.get("dateRange"))
         for committee in record.get("committees", []):
             if not isinstance(committee, dict): raise ValueError("committee record must be an object")
             committee_iri = _source(committee.get("uri"), "committee.uri"); roles = committee.get("role", [])
@@ -179,6 +196,15 @@ def validate_member_source(wrapper: dict) -> list[dict]:
         if not isinstance(date, dict): raise ValueError("membership dateRange must be an object")
         start = datetime_literal(date.get("start"))
         if date.get("end") is not None and datetime_literal(date["end"]).toPython() < start.toPython(): raise ValueError("reverse membership date range")
+        parties = record.get("parties", [])
+        if not isinstance(parties, list): raise ValueError("membership.parties must be an array")
+        membership_path = [part for part in urlsplit(str(_source(record.get("uri"), "membership.uri"))).path.split("/") if part]
+        for wrapped_party in parties:
+            party, _, _ = _party_source(wrapped_party, membership_path)
+            party_range = party.get("dateRange")
+            if not isinstance(party_range, dict): raise ValueError("party dateRange must be an object")
+            party_start = datetime_literal(party_range.get("start"))
+            if party_range.get("end") is not None and datetime_literal(party_range["end"]).toPython() < party_start.toPython(): raise ValueError("reverse membership date range")
     return extract_member_omissions(wrapper)
 
 

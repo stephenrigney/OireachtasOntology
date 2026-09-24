@@ -147,7 +147,7 @@ https://data.oireachtas.ie/ie/oireachtas/member/{firstname}-{opt middle name}-{l
 | `:isOireachtasMembershipOf` | `members:OireachtasMembership` | `agents:House` | The continuous house (`<.../house/dail>`) |
 | `:inHouseTerm` | `members:OireachtasMembership` | `agents:HouseTerm` | The specific numbered term |
 | `members:constituencyInHouseTerm` | `members:Constituencies` | `agents:HouseTerm` | Sub-property of `members:inHouseTerm`; links constituency/panel to its term |
-| `members:partyCode` | `members:PartyGrouping` | `xsd:string` | Short party code from the API, e.g. `'Fianna_Fáil'` |
+| `members:partyCode` | `members:ParliamentaryMemberCollection` | `xsd:string` | Short API code on a term-scoped ParliamentaryParty or IndependentMemberCollection, e.g. `'Fianna_Fáil'` or `'Independent'` |
 | `members:representCode` | `members:Constituencies` | `xsd:string` | Short constituency/panel code, e.g. `'Clare'`, `'Administrative-Panel'` |
 | `:committeeCode` | `members:Committee` | `xsd:string` | Short alphanumeric committee code, e.g. `'CAJ'` |
 | `:committeeID` | `members:Committee` | `xsd:integer` | Numeric committee identifier |

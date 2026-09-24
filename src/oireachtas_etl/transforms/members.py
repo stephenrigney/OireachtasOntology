@@ -121,14 +121,23 @@ def _party(graph: Graph, member: URIRef, membership: URIRef, value: object) -> N
     party = value.get("party")
     if not isinstance(party, dict):
         raise ValueError("party wrapper must contain a party object")
+    code = party.get("partyCode")
+    if not isinstance(code, str) or not code:
+        raise ValueError("party.partyCode must be a non-empty string")
     party_iri = _source_iri(party.get("uri"), label="party.uri"); membership_path = [part for part in urlsplit(str(membership)).path.split("/") if part]
     party_path = [part for part in urlsplit(str(party_iri)).path.split("/") if part]
-    if len(membership_path) != 8 or len(party_path) != 6 or party_path[:3] != ["ie", "oireachtas", "party"] or party_path[3:5] != membership_path[6:8] or unquote(party_path[5]) != party.get("partyCode"):
+    if len(membership_path) != 8 or len(party_path) != 6 or party_path[:3] != ["ie", "oireachtas", "party"] or party_path[3:5] != membership_path[6:8] or unquote(party_path[5]) != code:
         raise ValueError("party.uri must be the term-scoped Party source IRI")
     identity = {"membership": str(membership), "party": party_iri, "dateRange": party.get("dateRange")}
     subject = _generated(membership, "party-membership", identity)
-    graph.add((subject, RDF.type, MEMBERS.PartyMembership)); graph.add((member, MEMBERS.hasMembersMembership, subject))
-    graph.add((subject, MEMBERS.isPartyMembershipOf, party_iri)); _date_range(graph, subject, "date-range", party.get("dateRange"))
+    graph.add((subject, RDF.type, MEMBERS.ParliamentaryCollectionMembership))
+    graph.add((member, MEMBERS.hasMembersMembership, subject))
+    graph.add((subject, MEMBERS.inOireachtasMembership, membership))
+    graph.add((subject, MEMBERS.memberOfCollection, party_iri))
+    if code != "Independent":
+        graph.add((subject, RDF.type, MEMBERS.PartyMembership))
+        graph.add((subject, MEMBERS.isPartyMembershipOf, party_iri))
+    _date_range(graph, subject, "date-range", party.get("dateRange"))
 
 
 def _committee(graph: Graph, member: URIRef, membership: URIRef, record: object, exclusions: list[dict], context: str) -> None:

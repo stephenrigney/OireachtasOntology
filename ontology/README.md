@@ -46,7 +46,7 @@ oireachtas.owl
 | Object properties | lowerCamelCase | `:inHouse`, `:hasTerm`, `:isPartyMembershipOf` |
 | Datatype properties | lowerCamelCase | `:memberCode`, `:progressStage`, `:legislativeYear` |
 | Named individuals — concept-scheme members | UpperCamelCase | `:FirstStage`, `:EnactedBill`, `:PublicBill` |
-| Named individuals — singleton instances | lowerCamelCase path segment (IRI) or UpperCamelCase local name | `<.../house/dail>`, `:MoverRole`, `:Independent` |
+| Named individuals — singleton instances | lowerCamelCase path segment (IRI) or UpperCamelCase local name | `<.../house/dail>`, `:MoverRole` |
 
 ---
 
@@ -152,7 +152,7 @@ Defines the organisations, roles and persons involved in the legislative process
 
 **IRI:** `https://data.oireachtas.ie/ontology/members`
 
-Defines the detailed membership, role and party structures of the Houses of the Oireachtas. Covers Deputies, Senators, Cabinet membership, committee membership, party groupings and parliamentary titles.
+Defines the detailed membership, role and parliamentary collection structures of the Houses of the Oireachtas. Covers Deputies, Senators, Cabinet membership, committee membership, parliamentary parties and groups, and parliamentary titles.
 
 > **ELI-DL alignment (2026):** `eli-dl` import added. `org:Role rdfs:subClassOf :OireachtasMember` axiom corrected to `:OireachtasMember rdfs:subClassOf org:Role`. `:MoverRole` and `:RapporteurRole` added as `eli-dl:ParticipationRole` individuals.
 >
@@ -166,7 +166,9 @@ Defines the detailed membership, role and party structures of the Houses of the 
 >
 > **bill.json alignment (2026):** `:isPrimarySponsor` datatype property (`xsd:boolean`) added on `eli-dl:Participation` to capture the `sponsors[].sponsor.isPrimary` flag. Set `true` on the primary sponsor's participation instance.
 >
-> **member.json alignment (2026):** `:DeputyChair` class added (`org:Role` subclass, companion to `:Chair`). `:hasCommitteeRole` object property added on `:CommitteeMembership` (range `org:Role`) to record the role a member holds within a committee. `:partyCode`, `:representCode`, `:committeeCode` (all `xsd:string`) and `:committeeID` (`xsd:integer`) datatype properties added for API short-code identifiers on `:PartyGrouping`, `:Constituencies` and `:Committee` respectively. `:officeNameUri` object property added on `:MinisterOfStateMembership` to link to the dereferenceable office IRI when provided by the API.
+> **member.json alignment (2026):** `:DeputyChair` class added (`org:Role` subclass, companion to `:Chair`). `:hasCommitteeRole` object property added on `:CommitteeMembership` (range `org:Role`) to record the role a member holds within a committee. `:partyCode`, `:representCode`, `:committeeCode` (all `xsd:string`) and `:committeeID` (`xsd:integer`) datatype properties added for API short-code identifiers on `:ParliamentaryMemberCollection`, `:Constituencies` and `:Committee` respectively. `:officeNameUri` object property added on `:MinisterOfStateMembership` to link to the dereferenceable office IRI when provided by the API.
+>
+> **Parliamentary member collection model (Phase 4.5 Tranche 2):** `:ParliamentaryMemberCollection` is a `foaf:Group`; API party resources are term-scoped instances typed as `:ParliamentaryParty` or `:IndependentMemberCollection` according to `partyCode`. `:ParliamentaryGroup` and `:TechnicalGroup` are ontology classes only; Parties and Members ETL do not infer their instances or recognition. Reviewed enduring-party links use `:recognisedAsParty` without a restrictive local range. Dated Member records use `:ParliamentaryCollectionMembership`, explicitly link to their containing `:OireachtasMembership` with `:inOireachtasMembership` and to their collection with `:memberOfCollection`; non-Independent targets additionally use `:PartyMembership` and `:isPartyMembershipOf`. The earlier `:PartyGrouping`, `:Party`, term-independent `:Independent`, `:PartyInGovernment`, `:PartyInOpposition`, `:PartiesMembership`, `:hasPartiesMembership`, `:isPartyIn`, and `:isWhipFor` terms are not active in the ontology.
 >
 > **constituencies.json alignment (2026):** `:constituencyInHouseTerm` object property added as a sub-property of `:inHouseTerm` (domain `:Constituencies`, range `agents:HouseTerm`) to reflect the term-scoped URI structure of the Oireachtas constituencies API (`constituencyOrPanel.uri` embeds the `houseNo`). `owl:disjointWith` added between `:DailConstituency` and `:SeanadPanel`, consistent with the disjointness pattern used for `:DailMembership`/`:SeanadMembership` and `agents:DailTerm`/`agents:SeanadTerm`. `rdfs:comment` added to `:Constituencies`, `:DailConstituency` and `:SeanadPanel` documenting URI patterns, `representType` → subclass mapping, and `showAs` → `skos:prefLabel` mapping.
 
@@ -189,7 +191,13 @@ Defines the detailed membership, role and party structures of the Houses of the 
 | `:Dail` | `:House` | Dáil membership-container class, not a Dáil term. |
 | `:Seanad` | `:House` | Seanad membership-container class, not a Seanad term. |
 | `:Committee` | `org:Organization` | A parliamentary committee |
-| `:PartyGrouping` | `foaf:Group` | Superclass of `:Party`; `:Independent` is a separate general named individual. Term-scoped API party records retain their source IRIs and are not linked to it. |
+| `:ParliamentaryMemberCollection` | `foaf:Group` | General class for Oireachtas Member collections defined by parliamentary relationship or status. Term-scoped API source IRIs are preserved. |
+| `:ParliamentaryParty` | `:ParliamentaryMemberCollection` | Term-scoped parliamentary collection of Members represented as belonging to the same registered political party for parliamentary purposes; distinct from an enduring external political-party organisation. |
+| `:IndependentMemberCollection` | `:ParliamentaryMemberCollection` | Term-scoped API collection for Members represented as Independent/non-party; does not imply a political party or recognised group. |
+| `:ParliamentaryGroup` | `:ParliamentaryMemberCollection` | Formally recognised group under the Standing Orders of the relevant House; not populated from current Parties or Members data. Not a superclass of `:ParliamentaryParty`. |
+| `:TechnicalGroup` | `:ParliamentaryGroup` | Standing-Orders-grounded technical-group class; no instances are emitted without explicit source evidence. |
+| `:ParliamentaryCollectionMembership` | `:MembersMembership` | Dated record of a Member's membership in a ParliamentaryMemberCollection, contextualised by the containing OireachtasMembership. |
+| `:PartyMembership` | `:ParliamentaryCollectionMembership` | More specific collection-membership record for a ParliamentaryParty target; never used for an IndependentMemberCollection. |
 | `:OireachtasMembership` | `:MembersMembership` | Abstract superclass for house and committee membership records |
 | `:DailMembership` | `:OireachtasMembership` | Membership record for a specific Dáil term. Requires `inHouseTerm someValuesFrom agents:DailTerm`. Disjoint with `:SeanadMembership`. |
 | `:SeanadMembership` | `:OireachtasMembership` | Membership record for a specific Seanad term. Requires `inHouseTerm someValuesFrom agents:SeanadTerm`. |
@@ -209,6 +217,11 @@ Defines the detailed membership, role and party structures of the Houses of the 
 |---|---|---|---|
 | `:isOireachtasMembershipOf` | `:OireachtasMembership` | `agents:House` | The continuous house (`<.../house/dail>`) |
 | `:inHouseTerm` | `:OireachtasMembership` | `agents:HouseTerm` | The specific numbered term (`<.../house/dail/33>`); same individual as `eli-dl:parliamentary_term` on associated activities |
+| `:activeDuringTerm` | `:ParliamentaryMemberCollection` | `agents:HouseTerm` | The HouseTerm context supplied with a Parties API collection; HouseTerm descriptions remain Houses-owned. |
+| `:recognisedAsParty` | `:ParliamentaryParty` | *(no local range)* | Reviewed relationship to an externally identified enduring political-party identity; not identity or ParliamentaryGroup recognition. |
+| `:inOireachtasMembership` | `:ParliamentaryCollectionMembership` | `:OireachtasMembership` | Contextualises a dated collection-membership record with the Oireachtas membership containing the source record. |
+| `:memberOfCollection` | `:ParliamentaryCollectionMembership` | `:ParliamentaryMemberCollection` | General Member-to-collection relationship recorded by a membership resource. |
+| `:isPartyMembershipOf` | `:PartyMembership` | `:ParliamentaryParty` | Party-specific collection link; subproperty of `:memberOfCollection`. Not used for IndependentMemberCollection targets. |
 | `:constituencyInHouseTerm` | `:Constituencies` | `agents:HouseTerm` | Sub-property of `:inHouseTerm`; links a `:DailConstituency` or `:SeanadPanel` instance to the term for which it exists. Reflects the term-scoped URI structure of the constituencies API. |
 | `:isHeadOf` | `:TaoiseachRole` | `agents:Government` | Links a TaoiseachRole instance to the constitutional Government it heads |
 | `:isHeadOfExecutive` | `:TaoiseachRole` | `:GovernmentExecutive` | Separate from `:isHeadOf` so the executive target is not inferred to be constitutional Government |
@@ -224,7 +237,7 @@ Defines the detailed membership, role and party structures of the Houses of the 
 
 | Property | Domain | Range | Notes |
 |---|---|---|---|
-| `:partyCode` | `:PartyGrouping` | `xsd:string` | Short party code from the API (e.g. `'Fianna_Fáil'`) |
+| `:partyCode` | `:ParliamentaryMemberCollection` | `xsd:string` | Short collection code from the API (e.g. `'Fianna_Fáil'` or `'Independent'`) |
 | `:representCode` | `:Constituencies` | `xsd:string` | Short constituency/panel code from the API (e.g. `'Clare'`, `'Administrative-Panel'`) |
 | `:committeeCode` | `:Committee` | `xsd:string` | Short alphanumeric committee code from the API (e.g. `'CAJ'`, `'CC2'`) |
 | `:committeeID` | `:Committee` | `xsd:integer` | Numeric committee identifier from the API |

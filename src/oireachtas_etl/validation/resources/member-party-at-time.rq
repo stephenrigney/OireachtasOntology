@@ -6,9 +6,13 @@ SELECT ?member ?party ?start ?end WHERE {
   GRAPH ?graph {
     ?member a <https://data.oireachtas.ie/ontology#Member> ;
       <https://data.oireachtas.ie/ontology/members#hasMembersMembership> ?pm .
-    ?pm a <https://data.oireachtas.ie/ontology/members#PartyMembership> ;
+    ?pm a <https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership>,
+          <https://data.oireachtas.ie/ontology/members#PartyMembership> ;
       <https://data.oireachtas.ie/ontology/members#isPartyMembershipOf> ?party ;
+      <https://data.oireachtas.ie/ontology/members#memberOfCollection> ?party ;
+      <https://data.oireachtas.ie/ontology/members#inOireachtasMembership> ?oireachtasMembership ;
       <https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> ?range .
+    ?oireachtasMembership a <https://data.oireachtas.ie/ontology/members#OireachtasMembership> .
     ?range <https://data.oireachtas.ie/ontology/members#StartDate> ?start .
     OPTIONAL { ?range <https://data.oireachtas.ie/ontology/members#EndDate> ?end }
   }
