@@ -1,6 +1,7 @@
 ---
 description: Independently reviews consequential OireachtasOntology architecture or plans when independence materially adds value.
 mode: subagent
+model: opencode-go/glm-5.3-flash
 permission:
   edit: deny
   bash:
