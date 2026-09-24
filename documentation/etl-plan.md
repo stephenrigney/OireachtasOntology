@@ -892,29 +892,144 @@ relationship rather than identity.
 
 ### Tranche 3 — Institutional reconciliation
 
+#### Design record
+
+The semantic and architectural contract for this tranche is documented in
+`documentation/institutional-reconciliation.md`.
+
+The initial reconciliation scope is limited to the three enduring institutional
+identities established by Tranche 1:
+
+```text
+https://data.oireachtas.ie/oireachtas
+https://data.oireachtas.ie/house/dail
+https://data.oireachtas.ie/house/seanad
+```
+
+Wikidata is the primary external identity authority. The first accepted
+Wikidata identity for each institution requires explicit human review; labels
+or apparently obvious organisational relationships are not sufficient for
+automatic acceptance. The initial review candidates are Q129821 for the
+Oireachtas, Q651981 for Dáil Éireann and Q1127591 for Seanad Éireann. These are
+review candidates rather than hard-coded accepted identities.
+
+An accepted external resource may be linked with `owl:sameAs` only where it
+denotes the same enduring institution. Wikipedia enrichment is derived
+downstream from the accepted Wikidata identity and uses
+`foaf:isPrimaryTopicOf` only where the article is genuinely about that
+institution. DBpedia enrichment is deferred from the initial Tranche 3
+implementation.
+
+Numbered HouseTerm reconciliation is also deferred from the initial runtime
+implementation. A HouseTerm must never be linked with `owl:sameAs` to the
+enduring House or to the accepted external identity for that enduring House.
+The normal traversal remains:
+
+```text
+HouseTerm
+    agents:termOf
+        enduring House
+            owl:sameAs
+                accepted external enduring House
+```
+
+Candidate generation and review must explicitly distinguish the modern
+institution from historical/revolutionary predecessors, other similarly named
+bodies, classes/concepts and numbered parliamentary terms. Negative and
+contradictory evidence must be retained explicitly and audibly rather than
+collapsed into a numeric confidence score.
+
+Tranche 3 must reuse the generic reconciliation core delivered by Tranche 2.
+The concrete policy interface, generic state schema and migration shape,
+review-file envelope, CLI shape and final external-link graph IRI convention
+remain deliberately unsettled until the Tranche 2 implementation is merged and
+reviewed.
+
 #### Purpose
 
-Bridge authoritative local institutional identities to external authority identities after Tranche 1 has established the correct local model.
+Bridge the authoritative enduring Oireachtas, Dáil and Seanad identities to
+reviewed external authority identities while preserving the distinctions
+between class and individual, enduring institution and numbered term, and
+modern institution and historical/predecessor bodies.
 
 #### Backlog
 
-- [ ] Reconcile the enduring Oireachtas institution to an accepted external identity.
-- [ ] Reconcile persistent Dáil Éireann and Seanad Éireann House identities to accepted external identities.
-- [ ] Use reviewed `owl:sameAs` for accepted Wikidata/DBpedia institutional identities where the resources denote the same enduring institution.
-- [ ] Use `foaf:isPrimaryTopicOf` for the accepted institution's Wikipedia article.
-- [ ] Derive DBpedia/Wikipedia enrichment only from the accepted primary identity, following the Phase 3.5 evidence discipline.
-- [ ] Explicitly reject historical/revolutionary Dáil resources or other similarly named institutions that do not denote the modern enduring House.
-- [ ] Keep numbered HouseTerm reconciliation separate: a term may receive an external identity only where an external resource denotes that exact numbered term.
-- [ ] Ensure HouseTerm resources continue to reach enduring external institutional identity through their local `:termOf` relationship even when no term-specific external link exists.
-- [ ] Publish external institutional links in independently replaceable named graphs and preserve authoritative House/Oireachtas descriptions in their existing owned graphs.
-- [ ] Add competency queries proving the distinction between enduring institution, numbered term and external identity.
+##### Institutional identity and review
+
+- [ ] Reconcile the enduring Oireachtas institution to a reviewed Wikidata identity.
+- [ ] Reconcile the enduring Dáil Éireann House identity to a reviewed Wikidata identity.
+- [ ] Reconcile the enduring Seanad Éireann House identity to a reviewed Wikidata identity.
+- [ ] Require explicit human review before the first Wikidata acceptance for each institutional target.
+- [ ] Key institutional review decisions by the authoritative local institutional IRI, not by label or external identifier.
+- [ ] Treat Q129821, Q651981 and Q1127591 as initial review candidates only; do not hard-code them as accepted identities.
+- [ ] Publish `owl:sameAs` only where the reviewed external resource denotes the same enduring institution.
+- [ ] Derive Wikipedia only from the accepted Wikidata identity and publish `foaf:isPrimaryTopicOf` only where the article's primary topic is that institution.
+- [ ] Keep DBpedia outside the initial Tranche 3 publication contract.
+
+##### Candidate evidence and historical disambiguation
+
+- [ ] Generate candidates from high-precision evidence such as labels/aliases, institution type, Irish jurisdiction, organisational relationships, official-site or authoritative properties, and compatible historical scope.
+- [ ] Do not automatically accept exact-label, normalised-label, near-label or fuzzy matches in the absence of reviewed identity evidence.
+- [ ] Record positive, negative and contradictory candidate evidence structurally rather than using an arbitrary numeric confidence score.
+- [ ] Explicitly exclude classes, categories, concepts, lists and other resources that do not denote an institution individual.
+- [ ] Explicitly exclude numbered Dáil or Seanad terms when reconciling an enduring House.
+- [ ] Explicitly identify historical/revolutionary Dáil bodies, predecessor legislatures, the historical Parliament of Ireland and other similarly named institutions as non-identical where their identity scope differs from the local target.
+- [ ] Distinguish candidate exclusion from a final reviewed rejection of the local entity, and retain auditable reason evidence for exclusions.
+- [ ] Do not import external constitutional, organisational or historical facts into authoritative local graphs merely because they were used as reconciliation evidence.
+
+##### HouseTerm boundary
+
+- [ ] Defer runtime HouseTerm reconciliation from the initial Tranche 3 implementation.
+- [ ] Preserve `agents:termOf` as the relationship from a numbered HouseTerm to its enduring House.
+- [ ] Add tests that prevent a HouseTerm from receiving `owl:sameAs` to the enduring House or to the accepted external enduring-House identity.
+- [ ] Ensure HouseTerms continue to reach enduring external institutional identity through `agents:termOf` and the accepted House identity.
+- [ ] Keep the architecture open to later exact term-specific reconciliation where an external resource denotes the same numbered term, House and temporal scope.
+
+##### Generic reconciliation integration
+
+- [ ] Reuse the generic Tranche 2 reconciliation core rather than creating a separate institutional subsystem.
+- [ ] Reuse generic state selection, review precedence and hashing, attempt audit history, retry/recheck scheduling, dirty publication recovery, exact stored-payload replay, graph replacement and post-publication whole-graph verification.
+- [ ] Keep institution-specific identity, eligibility, fingerprinting, candidate generation, evidence rules, accepted-link semantics and graph selection behind the entity-policy/adaptor boundary delivered by Tranche 2.
+- [ ] Inspect the merged Tranche 2 implementation before fixing institutional policy interfaces, state/review schemas, CLI shape or final graph IRI syntax.
+- [ ] Preserve the existing recovery guarantee that unresolved, ambiguous or external-service-failure outcomes do not clear a previously accepted external-link graph.
+- [ ] Permit an explicit reviewed revocation/rejection to clear the institution's owned external-link graph through the generic publication mechanism.
+- [ ] Ensure dirty recovery replays the exact stored payload before attempting new reconciliation work.
+
+##### External-link graph ownership
+
+- [ ] Publish one independently replaceable external-link graph per reconciled local institution.
+- [ ] Ensure every institutional external-link graph is keyed by stable local identity rather than mutable label.
+- [ ] Keep authoritative Oireachtas and Houses graphs unchanged by reconciliation publication.
+- [ ] Restrict the external-link graph to approved link assertions whose subject is the authoritative local institution; do not copy arbitrary Wikidata or Wikipedia descriptive facts.
+- [ ] Adopt the final institutional external-link graph IRI convention only after the Tranche 2 generic graph-naming mechanism is merged.
+
+##### Validation and competency queries
+
+- [ ] Test that first institutional Wikidata acceptance requires review and that review is keyed by full local IRI.
+- [ ] Test that label equality or similarity cannot auto-accept an institution.
+- [ ] Test rejection/exclusion of historical predecessors, wrong entity levels and wrong temporal levels with explicit evidence.
+- [ ] Test that Wikipedia is published only as `foaf:isPrimaryTopicOf` downstream from an accepted Wikidata identity.
+- [ ] Test that DBpedia is not emitted by the initial institutional policy.
+- [ ] Test unresolved/ambiguous/outage preservation, explicit reviewed revocation, dirty exact-payload replay, no-network dirty replay and post-publication whole-graph verification through the generic core.
+- [ ] Test independent replacement of Oireachtas, Dáil and Seanad external-link graphs.
+- [ ] Add a competency query proving each enduring institution reaches its reviewed external identity.
+- [ ] Add a competency query proving `HouseTerm -> agents:termOf -> House -> owl:sameAs -> external House` traversal.
+- [ ] Add a negative competency query proving no HouseTerm is `owl:sameAs` to an accepted enduring-House external identity.
+- [ ] Add graph-boundary competency checks proving institutional external-link graphs contain only the approved local subject and predicates.
+- [ ] Add an authoritative-graph isolation check proving reconciliation predicates are not written to the Houses/Oireachtas graph.
 
 #### Exit criteria
 
-- Oireachtas, Dáil and Seanad enduring identities can be traversed to reviewed external identities without conflating them with classes or numbered terms.
-- Numbered terms are not linked to enduring external institution resources with `owl:sameAs`.
-- External-link publication remains isolated from authoritative institutional graphs.
-- Reconciliation state, review and recovery behaviour is shared with Members and Parties.
+- Oireachtas, Dáil and Seanad enduring identities can be traversed to explicitly reviewed Wikidata identities without conflating them with classes, historical predecessors or numbered terms.
+- First institutional Wikidata acceptance is human-reviewed and keyed by the authoritative local IRI.
+- Accepted same-entity Wikidata links use `owl:sameAs`; accepted Wikipedia links use `foaf:isPrimaryTopicOf` and are derived from the accepted Wikidata identity.
+- DBpedia and runtime HouseTerm reconciliation remain deferred from the initial Tranche 3 implementation.
+- Historical, revolutionary, predecessor, class/concept and term-level false candidates remain rejected or excluded with explicit auditable evidence rather than being promoted through fuzzy matching.
+- Numbered HouseTerms are never linked to enduring House identities or enduring-House external identities with `owl:sameAs`; they reach those identities through `agents:termOf`.
+- External-link publication remains independently replaceable and isolated from authoritative institutional graphs.
+- Reconciliation state, review, audit, recovery, graph replacement and post-publication verification are shared with Members and Parties through the generic Tranche 2 subsystem.
+- Concrete institutional policy interfaces, state/review schema details, CLI shape and graph IRI syntax reflect the merged Tranche 2 implementation rather than a parallel design.
+- Earlier Phase 0-4, Phase 3.5 and Phase 4.5 regression/integration behaviour remains correct.
 
 ### Phase 4.5 overall exit criteria
 
