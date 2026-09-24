@@ -56,16 +56,30 @@ boundary.
 ## Working Contract
 
 For a bounded task, establish: outcome, boundaries/invariants, verification,
-and escalation conditions. Then implement directly in one executor session;
-do not create planner, orchestrator, or per-step workflow machinery.
+and escalation conditions.
 
-Use `executor-low` for mechanical, local work with a clear path. Use
-`executor-high` for diagnosis, design-sensitive work, broad uncertainty, or a
-material trade-off inside existing project decisions. Keep the selected
-executor through its deterministic verification tail while its context helps.
-Use `architecture-plan-auditor` only when independent review materially adds
-value, such as for consequential architecture, irreversible work, or broad
-regression risk.
+For ordinary standalone work, select `executor-low` for mechanical, local work
+with a clear path or `executor-high` for diagnosis, design-sensitive work,
+broad uncertainty, or a material trade-off inside existing project decisions.
+Keep the selected executor through its deterministic verification tail while
+its context helps.
+
+For phased implementation where decomposition, sequencing, delegation,
+integration, or phase-level acceptance materially benefits from a persistent
+control point, use `orchestrator`. The orchestrator may delegate bounded work
+to either executor, review their results, invoke independent audit when useful,
+and retain responsibility for scope, integration, verification, and escalation.
+Do not route every bounded task through the orchestrator merely because it
+exists.
+
+Use `architecture-plan-auditor` when independent review materially adds value,
+such as for consequential architecture, irreversible work, broad regression
+risk, or a phase where an independent challenge would strengthen acceptance.
+Independent review is a separate perspective, not an execution approval gate.
+
+Do not create additional planner/orchestrator layers, specialist-agent
+hierarchies, per-step workflow machinery, or agent tiers solely to encode
+model variants.
 
 If a prompt names a repository, worktree, or branch that does not match the
 current session, stop before mutation and report the expected and actual
