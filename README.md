@@ -11,6 +11,7 @@
 1. [Concept Schemes](documentation/wiki/Concept-Schemes.md)
 1. [Ordering Business](documentation/wiki/Ordering-Business.md)
 2. [Namespaces](#namespaces)
+1. [Download and transform data](#download-and-transform-data)
 
 
 ### Introduction
@@ -33,6 +34,95 @@ It is envisaged that the ontology will ultimately describe the following dataset
 One of the core functions of any Parliament is to decide on the legal basis for the creation and dissolution of State bodies, and to set the scope of their functions. Where relevant and feasible, the descriptions of Departments, roles and offices in this ontology will include a link to the decision of the Oireachtas on their creation, modification or dissolution, thereby allowing the Oireachtas dataset to be used as an authority vocabulary for Departments and Ministerial roles.
 
 For the current technical structure of the ontology, see [ontology/README.md](ontology/README.md).
+
+### Download and transform data
+
+The deterministic ETL downloads Oireachtas Open Data API responses, preserves
+the raw JSON, transforms each endpoint using its mapping and ontology terms,
+validates the RDF, and only then publishes to Fuseki. Raw downloads are kept
+under `data/raw/` (ignored by Git) so transformations can be inspected and
+reproduced. The ETL plan describes the ownership and validation boundaries:
+[documentation/etl-plan.md](documentation/etl-plan.md).
+
+#### Install and run the ETL
+
+From the repository root:
+
+```bash
+python3 -m venv .venv
+./.venv/bin/python -m pip install -e .
+```
+
+The `oir-etl` command supports these API endpoints: `houses`, `parties`,
+`constituencies`, `members`, and `bills`. For example, download, transform,
+validate and publish current API data for the reference graph families and
+Members:
+
+```bash
+docker compose up -d fuseki
+
+export OIR_FUSEKI_GSP_URL='http://localhost:3030/houses/data'
+export OIR_FUSEKI_SPARQL_URL='http://localhost:3030/houses/query'
+# For an authenticated Fuseki, also export OIR_FUSEKI_USER and OIR_FUSEKI_PASSWORD.
+
+./.venv/bin/oir-etl run houses
+./.venv/bin/oir-etl run parties
+./.venv/bin/oir-etl run constituencies
+./.venv/bin/oir-etl run members
+```
+
+Run `./.venv/bin/oir-etl run bills` to download and publish the Legislation
+endpoint as well. Each command fetches and transforms its source records and
+records immutable raw responses and metadata in `data/raw/`. The transformers
+validate their RDF before publication. Reference endpoints replace their
+owned named graph; Members and Bills use per-resource named graphs and refresh
+manifests. A successful publish also requires the configured SPARQL query URL
+for post-load competency checks. The CLI reads `OIR_*` settings from the shell
+environment; it does not automatically load the NLQ POC's `.env` file.
+
+The ETL owns distinct graphs:
+
+| Endpoint | Named graph(s) |
+|---|---|
+| Houses | `https://data.oireachtas.ie/graph/houses` |
+| Parties | `https://data.oireachtas.ie/graph/parties` |
+| Constituencies | `https://data.oireachtas.ie/graph/constituencies` |
+| Members | One `https://data.oireachtas.ie/graph/member/{memberCode}` graph per Member |
+| Bills | One `https://data.oireachtas.ie/graph/bill/{year}/{number}` graph per Bill |
+
+Starting Fuseki with Docker Compose only starts the triple store; it does not
+download or load data. The optional NLQ POC reports which graph families are
+present but never invokes the ETL or writes to Fuseki. See the
+[Fuseki User Guide](documentation/fuseki-user-guide.md) for endpoint details
+and inspection queries. Do not use `docker compose down -v` as a refresh step:
+it deletes the persistent local Fuseki volume.
+
+#### Run a fixture offline
+
+Fixtures let you exercise the transform and validation stages without network
+access or Fuseki publication. For example:
+
+```bash
+./.venv/bin/oir-etl run houses \
+  --fixture data/api_examples/houses.json \
+  --offline \
+  --output-ttl /tmp/houses.ttl \
+  --output-nq /tmp/houses.nq
+```
+
+The other checked-in examples can be supplied to `parties`, `constituencies`,
+`members`, and `bills` in the same way. `--offline` prevents publication;
+`--output-ttl` and `--output-nq` write inspection copies. Validation failures
+stop the command rather than publishing invalid RDF. Fixture contents are
+examples, not a complete or current dataset.
+
+Run the repository's ontology and mapping validation and automated tests with:
+
+```bash
+./.venv/bin/python -m pip install -e '.[test]'
+./.venv/bin/python tests/validate.py
+./.venv/bin/python -m pytest tests
+```
 
 
 #### Terms used
