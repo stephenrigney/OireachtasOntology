@@ -949,11 +949,12 @@ bodies, classes/concepts and numbered parliamentary terms. Negative and
 contradictory evidence must be retained explicitly and auditably rather than
 collapsed into a numeric confidence score.
 
-Tranche 3 must reuse the generic reconciliation core delivered by Tranche 2.
-The concrete policy interface, generic state schema and migration shape,
-review-file envelope, CLI shape and final external-link graph IRI convention
-remain deliberately unsettled until the Tranche 2 implementation is merged and
-reviewed.
+Tranche 3 reuses the merged Tranche 2 generic reconciliation core:
+`ReconciliationStore` schema v4, state identity `(entity_kind, local_iri)`,
+and the shared `reconcile_entities(...)` engine. Institutional reconciliation
+uses `entity_kind = "institution"`, a strict version-1 review file keyed by
+full local IRI, and the CLI surface `oir-etl reconcile institutions`.
+Review loading and graph naming remain policy-specific.
 
 #### Purpose
 
@@ -1000,7 +1001,7 @@ modern institution and historical/predecessor bodies.
 - [ ] Reuse the generic Tranche 2 reconciliation core rather than creating a separate institutional subsystem.
 - [ ] Reuse generic state selection, review precedence and hashing, attempt audit history, retry/recheck scheduling, dirty publication recovery, exact stored-payload replay, graph replacement and post-publication whole-graph verification.
 - [ ] Keep institution-specific identity, eligibility, fingerprinting, candidate generation, evidence rules, accepted-link semantics and graph selection behind the entity-policy/adaptor boundary delivered by Tranche 2.
-- [ ] Inspect the merged Tranche 2 implementation before fixing institutional policy interfaces, state/review schemas, CLI shape or final graph IRI syntax.
+- [ ] Implement the institution policy against the merged Tranche 2 policy contract and shared schema-v4 `ReconciliationStore`; do not introduce a parallel subsystem or schema migration.
 - [ ] Preserve the existing recovery guarantee that unresolved, ambiguous or external-service-failure outcomes do not clear a previously accepted external-link graph.
 - [ ] Permit an explicit reviewed revocation/rejection to clear the institution's owned external-link graph through the generic publication mechanism.
 - [ ] Ensure dirty recovery replays the exact stored payload before attempting new reconciliation work.
@@ -1011,7 +1012,7 @@ modern institution and historical/predecessor bodies.
 - [ ] Ensure every institutional external-link graph is keyed by stable local identity rather than mutable label.
 - [ ] Keep authoritative Oireachtas and Houses graphs unchanged by reconciliation publication.
 - [ ] Restrict the external-link graph to approved link assertions whose subject is the authoritative local institution; do not copy arbitrary Wikidata or Wikipedia descriptive facts.
-- [ ] Adopt the final institutional external-link graph IRI convention only after the Tranche 2 generic graph-naming mechanism is merged.
+- [ ] Use the settled graph IRIs: `https://data.oireachtas.ie/graph/institution/oireachtas/external-links`, `https://data.oireachtas.ie/graph/institution/house/dail/external-links`, and `https://data.oireachtas.ie/graph/institution/house/seanad/external-links`.
 
 ##### Validation and competency queries
 
@@ -1038,7 +1039,7 @@ modern institution and historical/predecessor bodies.
 - Numbered HouseTerms are never linked to enduring House identities or enduring-House external identities with `owl:sameAs`; they reach those identities through `agents:termOf`.
 - External-link publication remains independently replaceable and isolated from authoritative institutional graphs.
 - Reconciliation state, review, audit, recovery, graph replacement and post-publication verification are shared with Members and Parties through the generic Tranche 2 subsystem.
-- Concrete institutional policy interfaces, state/review schema details, CLI shape and graph IRI syntax reflect the merged Tranche 2 implementation rather than a parallel design.
+- Institutional reconciliation uses `entity_kind = "institution"`, the shared schema-v4 state store and `reconcile_entities(...)`, a strict full-IRI review file, the `reconcile institutions` CLI route and the settled institutional external-link graph IRIs.
 - Earlier Phase 0-4, Phase 3.5 and Phase 4.5 regression/integration behaviour remains correct.
 
 ### Phase 4.5 overall exit criteria
