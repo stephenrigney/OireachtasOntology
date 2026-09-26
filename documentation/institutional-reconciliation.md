@@ -406,25 +406,25 @@ DBpedia is not emitted in the initial implementation.
 The authoritative Houses graph, ontology graph and any other endpoint-owned
 authoritative graph must remain unchanged by reconciliation publication.
 
-The exact external-link graph IRI convention is intentionally not settled in
-this document. It must follow the graph-naming mechanism delivered by the
-Tranche 2 generic reconciliation refactor.
+The institutional external-link graph IRI convention is settled as:
 
-Whatever convention is adopted must be:
+```text
+https://data.oireachtas.ie/graph/institution/oireachtas/external-links
+https://data.oireachtas.ie/graph/institution/house/dail/external-links
+https://data.oireachtas.ie/graph/institution/house/seanad/external-links
+```
 
-- deterministic;
-- collision-free;
-- keyed by stable local identity rather than label;
-- independently replaceable per local entity; and
-- suitable for future HouseTerm reconciliation without conflating a term graph
-  with its enduring House graph.
+These graph names are policy-specific, deterministic, keyed by the stable local
+institutional identity and independently replaceable. They do not modify the
+authoritative Houses graph and leave a separate namespace available for any
+future exact HouseTerm reconciliation.
 
 ## Reuse of the generic reconciliation core
 
 Tranche 3 must not create a separate institutional reconciliation subsystem.
 
-Once Tranche 2 is complete, institutional reconciliation must reuse the same
-generic core for:
+Institutional reconciliation must reuse the Tranche 2 generic core implemented
+by `reconcile_entities(...)`. The shared engine owns:
 
 - state selection;
 - review hashing and review precedence;
@@ -436,20 +436,27 @@ generic core for:
 - graph replacement; and
 - post-publication whole-graph verification.
 
-The institution-specific policy or adapter should be limited to concerns such
-as:
+The institution policy must follow the existing Member/Party policy contract and
+supply:
 
-- local identity;
+- entity extraction and validation;
+- `entity_kind = "institution"`;
+- stable local IRI and entity key;
+- review key;
+- source/identity fingerprint;
 - eligibility;
-- source fingerprint;
-- candidate generation;
-- candidate evidence and contradiction rules;
-- review validation specific to the entity kind;
-- accepted-link semantics; and
-- external graph selection through the generic graph-naming mechanism.
+- policy-specific graph IRI and stored graph IRI;
+- candidate generation and resolution;
+- accepted-link graph construction; and
+- dirty stored-payload validation.
 
-The concrete policy interface must not be frozen until the Tranche 2 generic
-refactor is merged.
+Review loading remains entity-specific, as it is for Members and Parties.
+Institutional review decisions are keyed by the full local institutional IRI.
+The version-controlled default review file is
+`reconciliation/institution-decisions.json`.
+
+The CLI surface is `oir-etl reconcile institutions`, reusing the shared
+reconciliation SQLite store.
 
 ## Failure and recovery semantics
 
@@ -473,25 +480,36 @@ In particular:
 Authoritative Oireachtas ETL remains independent of external-service
 availability.
 
-## Tranche 2 integration boundary
+## Tranche 2 integration contract
 
-The following implementation details remain deliberately unsettled until the
-Tranche 2 generic reconciliation work is merged:
+The merged Tranche 2 implementation settles the integration boundary for this
+tranche:
 
-- generic reconciliation policy/adapter interface;
-- generic SQLite schema and Member-state migration shape;
-- review-file envelope and entity-kind representation;
-- CLI command and option shape;
-- exact state/repository APIs;
-- final external-link graph IRI constructor;
-- exact reason-code enum/storage representation; and
-- generic test fixtures and helper APIs.
+- reconciliation SQLite schema version remains version 4;
+- state identity is `(entity_kind, local_iri)`;
+- institutional reconciliation uses `entity_kind = "institution"`;
+- the shared `ReconciliationStore` is reused without an institutional schema
+  migration;
+- the shared `reconcile_entities(...)` engine is reused rather than copied;
+- review loading and graph naming remain entity-policy-specific;
+- institutional review uses a strict version-1 decisions file keyed by the full
+  local IRI;
+- institutional graph IRIs use the convention fixed in this document;
+- dirty replay validates and republishes the exact stored N-Triples payload
+  before any fresh lookup;
+- publication uses the shared graph replacement and exact whole-graph
+  verification path; and
+- the CLI extends the existing reconcile endpoint choices with
+  `institutions`.
 
-Tranche 3 implementation must inspect the merged Tranche 2 implementation
-before deciding any of these details.
+The generic engine currently formats stale-review errors around Member/Party
+names. Tranche 3 may make the smallest generic change needed to let a policy
+supply the appropriate entity display name; this must not become a broader
+reconciliation refactor.
 
-The semantic rules in this document must be implemented through that generic
-architecture rather than causing a parallel subsystem to be introduced.
+Exact reason-code representation and offline fixture helper structure may be
+chosen during implementation provided they preserve the semantic rules,
+determinism and fail-closed behavior in this document.
 
 ## Tests
 
