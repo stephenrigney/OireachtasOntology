@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oireachtas NLQ POC</title>
+  <style>
+    body { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; font: 1rem/1.5 system-ui, sans-serif; color: #202124; }
+    textarea { box-sizing: border-box; width: 100%; min-height: 6rem; padding: .7rem; font: inherit; }
+    button { margin-top: .5rem; padding: .55rem 1rem; font: inherit; cursor: pointer; }
+    section { margin-top: 1.5rem; }
+    pre { overflow-x: auto; padding: 1rem; background: #f2f4f7; border: 1px solid #d5d9df; white-space: pre-wrap; }
+    .error { padding: .75rem; color: #8b1111; background: #fff0f0; border: 1px solid #e5bcbc; }
+    .debug-panel { padding: .75rem; border: 1px solid #c8ccd0; background: #f8f9fa; }
+    .readiness { padding: .75rem; border: 1px solid #c8ccd0; }
+    .readiness.ready { background: #eff8ef; border-color: #83b883; }
+    .readiness.partial { background: #fff8e6; border-color: #d6b65d; }
+    .readiness.empty, .readiness.unavailable { background: #fff0f0; border-color: #e5bcbc; }
+    details { margin-top: 1.5rem; }
+    summary { cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: .5rem; border: 1px solid #c8ccd0; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+    th { background: #f2f4f7; }
+  </style>
+</head>
+<body>
+  <h1>Oireachtas natural-language query POC</h1>
+  {% if readiness %}
+  <section class="readiness {{ readiness.state }}" aria-live="polite">
+    <h2>Fuseki readiness <small>(read-only check)</small></h2>
+    <p><strong>{{ readiness.state|capitalize }}:</strong> {{ readiness.message }}</p>
+    <ul>
+    {% for source, present in readiness.sources %}
+      <li>{{ source }}: {% if readiness.state == "unavailable" %}unknown{% else %}{{ "present" if present else "not detected" }}{% endif %}{% if source == "Bills" %} (optional for the example member questions){% endif %}</li>
+    {% endfor %}
+    </ul>
+    <p>This check only queries Fuseki. The POC never loads, clears, or rebuilds graphs.</p>
+  </section>
+  {% endif %}
+  <form method="post" action="/ask">
+    <label for="question"><strong>Ask a question about the loaded Oireachtas graph</strong></label>
+    <textarea id="question" name="question" required maxlength="2000">{{ question }}</textarea>
+    <button type="submit">Ask</button>
+  </form>
+
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+
+  {% if interpretation %}
+  <section>
+    <h2>Interpreted as</h2>
+    <p>{{ interpretation }}</p>
+  </section>
+  {% endif %}
+
+  {% if result %}
+  <section aria-live="polite">
+    <h2>Results</h2>
+    {% if result.kind == "ask" %}
+      <p><strong>{{ "Yes" if result.boolean else "No" }}</strong></p>
+    {% elif result.rows %}
+      <table>
+        <thead><tr>{% for column in result.columns %}<th scope="col">{{ column }}</th>{% endfor %}</tr></thead>
+        <tbody>
+        {% for row in result.rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No matching rows.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if sparql %}
+  <section>
+    <h2>Generated SPARQL</h2>
+    <pre><code>{{ sparql }}</code></pre>
+  </section>
+  {% endif %}
+
+  {% if debug_message or debug_output %}
+  <section class="debug-panel" aria-live="polite">
+    <h2>Query debugger</h2>
+    {% if debug_message %}<p>{{ debug_message }}</p>{% endif %}
+    {% if debug_output %}
+    <details {% if debug_message or error %}open{% endif %}>
+      <summary>Raw {{ debug_source or "endpoint" }} response payload</summary>
+      <pre><code>{{ debug_output }}</code></pre>
+    </details>
+    {% elif error %}
+    <p>No response payload was received from {{ debug_source or "the endpoint" }}.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+</body>
+</html>
