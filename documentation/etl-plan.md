@@ -1042,6 +1042,20 @@ modern institution and historical/predecessor bodies.
 - Institutional reconciliation uses `entity_kind = "institution"`, the shared schema-v4 state store and `reconcile_entities(...)`, a strict full-IRI review file, the `reconcile institutions` CLI route and the settled institutional external-link graph IRIs.
 - Earlier Phase 0-4, Phase 3.5 and Phase 4.5 regression/integration behaviour remains correct.
 
+#### Implementation verification record (2026-09-28; completion pending)
+
+The institution policy, strict full-IRI review file, candidate-evidence path,
+CLI, external-link graph boundaries and generic state/publication integration
+are implemented. Focused offline and disposable Fuseki tests cover the
+independently replaceable graphs, review precedence, recovery, whole-graph
+verification and HouseTerm traversal. The default institutional decision file
+has no acceptances: **the first Wikidata identity for each of Oireachtas,
+Dáil and Seanad still requires explicit human review of the current items**.
+No initial identity link is claimed to have been reviewed or published to a
+production dataset. Consequently the Tranche 3 backlog remains open and the
+exit criteria are not yet marked complete; tests with synthetic reviewed
+decisions demonstrate capability, not the three actual reviews.
+
 ### Phase 4.5 overall exit criteria
 
 - The external-link subsystem supports Members, ParliamentaryParties and parliamentary institutions without entity-specific architectural duplication.
@@ -1540,18 +1554,11 @@ The ETL runs unattended with validation, provenance, quarantine, monitoring and 
 
 # 10. Immediate implementation backlog
 
-Phases 0-4 are complete. Phase 4.5 Tranche 1 (institutional identity model) is
-implemented and has passed independent architecture review. The immediate work
-is Phase 4.5 Tranche 2 as specified in
-`documentation/parliamentary-member-collection-model.md`: implement the
-ParliamentaryMemberCollection model first, then refactor/reuse the Phase 3.5
-reconciliation subsystem for reviewed ParliamentaryParty-to-external-party
-relationships.
-
-Tranche 2 must not infer ParliamentaryGroup or TechnicalGroup instances from
-non-API evidence. Standing-Orders-grounded classes may be defined even when the
-current API cannot populate them. Tranche 3 institutional reconciliation remains
-deferred until Tranche 2 is complete and regression-tested.
+Phases 0-4 and Phase 4.5 Tranches 1 and 2 are implemented. Tranche 3's
+institutional reconciliation implementation is in place, but completion is
+pending actual human review of the three first Wikidata identities, as recorded
+above. ParliamentaryGroup and TechnicalGroup instances remain out of scope
+without authoritative API evidence.
 
 Remaining Phase 3.5 evaluation work—`wikiTitle` comparison, coverage metrics
 and sampled false-match measurement—remains deferred unless directly required

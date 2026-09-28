@@ -10,7 +10,8 @@ from oireachtas_etl.competency import verify_constituencies_competency, verify_h
 from oireachtas_etl.cli import run_members
 from oireachtas_etl.config import CONSTITUENCIES_GRAPH, HOUSES_GRAPH, PARTIES_GRAPH
 from oireachtas_etl.loader import FusekiGraphStoreLoader, FusekiSparqlClient
-from oireachtas_etl.reconciliation import (ReconciliationStore, external_graph_iri, party_external_graph_iri,
+from oireachtas_etl.reconciliation import (INSTITUTIONS, ReconciliationStore, external_graph_iri,
+    institution_external_graph_iri, party_external_graph_iri, reconcile_institution_records,
     reconcile_party_records, reconcile_records, verify_external_links_competency, verify_reconciliation_graph)
 from oireachtas_etl.serialization import ntriples, turtle
 from oireachtas_etl.transforms.houses import transform_houses
@@ -18,6 +19,7 @@ from oireachtas_etl.transforms.parties import transform_parties
 from oireachtas_etl.transforms.constituencies import transform_constituencies
 from oireachtas_etl.transforms.members import member_graph_iri, source_hash, transform_member
 from oireachtas_etl.transforms.bills import bill_graph_iri, transform_bill
+from oireachtas_etl.transforms.common import OIR
 
 GSP = os.getenv("OIR_TEST_FUSEKI_GSP_URL")
 SPARQL = os.getenv("OIR_TEST_FUSEKI_SPARQL_URL")
@@ -231,3 +233,74 @@ def test_bill_gsp_replacement_removes_stale_lifecycle_content():
     assert _count(client, graph_iri) == len(graph)
     assert not list(_graph_from_gsp(GSP, graph_iri).triples((URIRef("https://example.test/stale"), None, None)))
     verify_bill_competency(client, graph_iri, bill["uri"], len(graph))
+
+
+def test_institutional_links_publish_revoke_independently_and_traverse_house_terms(tmp_path):
+    from rdflib.namespace import OWL
+
+    decisions = {
+        "https://data.oireachtas.ie/oireachtas": {"status": "accepted", "wikidata": "Q129821"},
+        "https://data.oireachtas.ie/house/dail": {"status": "accepted", "wikidata": "Q651981"},
+        "https://data.oireachtas.ie/house/seanad": {"status": "accepted", "wikidata": "Q1127591"},
+    }
+    records = [{"institution": {"uri": local_iri}} for local_iri in decisions]
+    loader = FusekiGraphStoreLoader(GSP, user=FUSEKI_USER, password=FUSEKI_PASSWORD)
+    client = FusekiSparqlClient(SPARQL, user=FUSEKI_USER, password=FUSEKI_PASSWORD)
+    store = ReconciliationStore(tmp_path / "institution-reconciliation.sqlite")
+    # Establish the authoritative fixture in this disposable dataset, then
+    # prove reconciliation publication never alters its graph.
+    houses = transform_houses(json.loads((Path(__file__).resolve().parents[1] / "data/api_examples/houses.json").read_text()))
+    loader.replace(HOUSES_GRAPH, ntriples(houses), content_type="application/n-triples")
+    houses_before = set(_canonical_triples(_graph_from_gsp(GSP, HOUSES_GRAPH)))
+    try:
+        results = reconcile_institution_records(
+            records, store, decisions, "reviewed-institutions", object(), all_records=True,
+            publish=loader, competency_client=client,
+        )
+        expected_graphs = {}
+        for entity, outcome, expected in results:
+            graph_iri = institution_external_graph_iri(entity)
+            expected_graphs[graph_iri] = expected
+            assert outcome.state == "accepted"
+            verify_reconciliation_graph(client, graph_iri, expected)
+            assert _count(client, graph_iri) == 1
+            assert set(_canonical_triples(_graph_from_gsp(GSP, graph_iri))) == set(_canonical_triples(expected))
+            assert set(expected) == {
+                (URIRef(entity["uri"]), OWL.sameAs,
+                 URIRef("https://www.wikidata.org/entity/" + decisions[entity["uri"]]["wikidata"]))
+            }
+
+        dail = "https://data.oireachtas.ie/house/dail"
+        dail_graph = institution_external_graph_iri({"institution": {"uri": dail}})
+        revoked = reconcile_institution_records(
+            [{"institution": {"uri": dail}}], store, {dail: {"status": "rejected"}},
+            "reviewed-dail-revocation", object(), all_records=True,
+            publish=loader, competency_client=client,
+        )
+        assert revoked[0][1].state == "rejected"
+        verify_reconciliation_graph(client, dail_graph, revoked[0][2])
+        assert _count(client, dail_graph) == 0
+        for graph_iri, expected in expected_graphs.items():
+            if graph_iri != dail_graph:
+                verify_reconciliation_graph(client, graph_iri, expected)
+                assert set(_canonical_triples(_graph_from_gsp(GSP, graph_iri))) == set(_canonical_triples(expected))
+
+        traversal = client.query(f"""
+            SELECT ?term ?house ?external WHERE {{
+              GRAPH <{HOUSES_GRAPH}> {{ ?term <{OIR.termOf}> ?house . }}
+              GRAPH <{institution_external_graph_iri({'institution': {'uri': 'https://data.oireachtas.ie/house/seanad'}})}> {{ ?house <{OWL.sameAs}> ?external . }}
+            }}
+        """)
+        assert traversal
+        assert all(row["house"]["value"] == "https://data.oireachtas.ie/house/seanad" for row in traversal)
+        direct_term_links = client.query(f"""
+            SELECT ?term ?external WHERE {{
+              GRAPH <{HOUSES_GRAPH}> {{ ?term <{OIR.termOf}> ?house . }}
+              GRAPH ?links {{ ?term <{OWL.sameAs}> ?external . }}
+            }}
+        """)
+        assert direct_term_links == []
+        assert set(_canonical_triples(_graph_from_gsp(GSP, HOUSES_GRAPH))) == houses_before
+        assert HOUSES_GRAPH not in expected_graphs
+    finally:
+        store.close()

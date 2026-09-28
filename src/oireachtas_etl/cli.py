@@ -22,7 +22,12 @@ from .state import load_manifest, load_bills_manifest, write_manifest, manifest_
 from .reconciliation import (DbpediaClient, ReconciliationStore, WikidataClient,
                               FixtureResponseError, external_graph_iri, party_external_graph_iri,
                               load_party_review, load_review, normalize_party_candidate,
-                              deduplicate_party_records, reconcile_party_records, reconcile_records, valid_qid)
+                              deduplicate_party_records, reconcile_party_records, reconcile_records, valid_qid,
+                              _enwiki, _institution_candidate_negative_evidence,
+                              _normalize_institution_candidate_for, deduplicate_institution_records,
+                              institution_external_graph_iri, institution_records,
+                              load_institution_review,
+                              reconcile_institution_records)
 
 def _records_from_fixture(path: Path) -> tuple[list[dict], bytes]:
     body = path.read_bytes()
@@ -444,6 +449,97 @@ def _validate_party_fixture_responses(data: object, records: list[dict], decisio
             seen.add(candidate["qid"])
 
 
+def _institution_fixture_records(path: Path) -> list[dict]:
+    """Read an optional v1 list of local institution IRIs for scoped runs."""
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError("invalid institution identity fixture: " + str(error)) from error
+    if (not isinstance(value, dict) or set(value) != {"version", "institutions"}
+            or type(value.get("version")) is not int or value["version"] != 1
+            or not isinstance(value.get("institutions"), list)):
+        raise ValueError("institution identity fixture must contain only version 1 and an institutions array")
+    if any(not isinstance(local_iri, str) for local_iri in value["institutions"]):
+        raise ValueError("institution identity fixture entries must be full local IRIs")
+    return deduplicate_institution_records([{"institution": {"uri": local_iri}}
+                                            for local_iri in value["institutions"]])
+
+
+class _FixtureInstitutionWikidataClient:
+    """Offline institution candidate and reviewed-sitelink fixture seam."""
+    def __init__(self, data):
+        try:
+            if not isinstance(data, dict) or set(data) != {"wikidata"}:
+                raise ValueError
+            wikidata = data["wikidata"]
+            if (not isinstance(wikidata, dict)
+                    or set(wikidata) != {"institution_candidates", "entities"}
+                    or not isinstance(wikidata["institution_candidates"], dict)
+                    or not isinstance(wikidata["entities"], dict)):
+                raise ValueError
+            if any(not isinstance(local_iri, str) for local_iri in wikidata["institution_candidates"]):
+                raise ValueError
+            if any(not valid_qid(qid) for qid in wikidata["entities"]):
+                raise ValueError
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError("invalid institutional reconciliation response fixture schema") from error
+        self.candidates = wikidata["institution_candidates"]
+        self.entities = wikidata["entities"]
+
+    def lookup_institution_candidates(self, entity):
+        local_iri = entity["uri"]
+        if local_iri not in self.candidates:
+            raise FixtureResponseError("response fixture lacks institutional candidate entry for " + local_iri)
+        return self.candidates[local_iri]
+
+    def entity(self, qid):
+        if qid not in self.entities:
+            raise FixtureResponseError("response fixture lacks Wikidata entity for reviewed QID " + qid)
+        return self.entities[qid]
+
+
+def _validate_institution_fixture_responses(data: object, records: list[dict], decisions: dict[str, dict]) -> None:
+    """Validate all offline evidence before opening the shared SQLite store."""
+    client = _FixtureInstitutionWikidataClient(data)
+    local_iris = {record["institution"]["uri"] for record in records}
+    unknown = sorted(set(client.candidates) - local_iris)
+    if unknown:
+        raise ValueError("response fixture contains unknown institutional IRI: " + ", ".join(unknown))
+    stale = sorted(set(decisions) - local_iris)
+    if stale:
+        raise ValueError("institutional review decisions do not match current input: " + ", ".join(stale))
+    entities_required = set()
+    for local_iri in sorted(local_iris):
+        decision = decisions.get(local_iri)
+        if decision is not None:
+            if decision["status"] == "accepted" and "wikipedia" in decision:
+                qid = decision["wikidata"]
+                entities_required.add(qid)
+                if qid not in client.entities:
+                    raise ValueError("response fixture lacks Wikidata entity for reviewed QID " + qid)
+                response = client.entities[qid]
+                if (not isinstance(response, dict) or response.get("redirects")
+                        or not isinstance(response.get("entities"), dict)
+                        or not isinstance(response["entities"].get(qid), dict)
+                        or response["entities"][qid].get("missing") is not None
+                        or response["entities"][qid].get("id", qid) != qid):
+                    raise ValueError("response fixture has malformed Wikidata entity for reviewed QID " + qid)
+                _enwiki(response["entities"][qid])  # validates any supplied sitelink
+            continue
+        if local_iri not in client.candidates or not isinstance(client.candidates[local_iri], list):
+            raise ValueError("response fixture lacks valid institutional candidate entry for " + local_iri)
+        seen = set()
+        for raw in client.candidates[local_iri]:
+            candidate = _normalize_institution_candidate_for(local_iri, raw)
+            if candidate["qid"] in seen:
+                raise ValueError("response fixture contains duplicate institutional candidate QID for " + local_iri)
+            _institution_candidate_negative_evidence(local_iri, candidate)
+            seen.add(candidate["qid"])
+    unknown_entities = sorted(set(client.entities) - entities_required)
+    if unknown_entities:
+        raise ValueError("response fixture contains unrequested Wikidata entities: " + ", ".join(unknown_entities))
+
+
 def run_reconcile_members(args: argparse.Namespace) -> int:
     if args.offline:
         if not args.fixture or not args.responses_file:
@@ -583,6 +679,74 @@ def run_reconcile_parties(args: argparse.Namespace) -> int:
     finally:
         store.close()
 
+
+def run_reconcile_institutions(args: argparse.Namespace) -> int:
+    """Reconcile the three fixed enduring institutions through generic state."""
+    if args.offline:
+        if not args.responses_file:
+            raise ValueError("--offline institutional reconciliation requires --responses-file")
+        if args.publish:
+            raise ValueError("--offline institutional reconciliation forbids --publish")
+    records = _institution_fixture_records(Path(args.fixture)) if args.fixture else institution_records()
+    records = deduplicate_institution_records(records)
+    decisions, review_hash = load_institution_review(Path(args.review_file or "reconciliation/institution-decisions.json"))
+    stale = sorted(set(decisions) - {record["institution"]["uri"] for record in records})
+    if stale:
+        raise ValueError("institutional review decisions do not match current input: " + ", ".join(stale))
+    if args.responses_file:
+        data = json.loads(Path(args.responses_file).read_text(encoding="utf-8"))
+        _validate_institution_fixture_responses(data, records, decisions)
+        wikidata = _FixtureInstitutionWikidataClient(data)
+    elif args.offline:
+        raise ValueError("--offline institutional reconciliation requires --responses-file")
+    else:
+        wikidata = WikidataClient(timeout=Settings.from_environment().timeout)
+
+    state_path = args.reconciliation_state_file or "~/.local/share/oireachtas-etl/member-reconciliation.sqlite"
+    store = ReconciliationStore(Path(state_path).expanduser())
+    try:
+        loader = None
+        publication_count = 0
+        competency_client = None
+        if args.publish:
+            settings = Settings.from_environment()
+            endpoint = args.fuseki_gsp_url or settings.fuseki_gsp_url
+            if not endpoint:
+                raise ValueError("--publish requires a Fuseki GSP endpoint")
+            query_endpoint = args.fuseki_sparql_url or settings.fuseki_sparql_url
+            if not query_endpoint:
+                raise ValueError("--publish requires a Fuseki SPARQL endpoint for whole-graph verification")
+            upstream_loader = FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user,
+                                                     password=settings.fuseki_password, timeout=settings.timeout)
+            class CountingLoader:
+                def replace(self, *replace_args, **replace_kwargs):
+                    nonlocal publication_count
+                    publication_count += 1
+                    return upstream_loader.replace(*replace_args, **replace_kwargs)
+            loader = CountingLoader()
+            competency_client = FusekiSparqlClient(query_endpoint, user=settings.fuseki_user,
+                                                   password=settings.fuseki_password, timeout=settings.timeout)
+        results = reconcile_institution_records(records, store, decisions, review_hash, wikidata,
+                                                all_records=args.all, publish=loader,
+                                                competency_client=competency_client)
+        if args.output_nq:
+            Path(args.output_nq).write_text("".join(
+                nquads(graph, institution_external_graph_iri(entity))
+                for entity, _, graph in results), encoding="utf-8")
+        summary = {state: sum(result.state == state for _, result, _ in results)
+                   for state in ("accepted", "rejected", "ambiguous", "pending")}
+        unresolved = sorted(entity["uri"] for entity, result, _ in results
+                            if result.state in {"pending", "ambiguous"}
+                            or result.enrichment_status in {"retry", "ambiguous", "unresolved"})
+        excluded_candidates = sum(len(result.evidence.get("excluded_candidates", []))
+                                  for _, result, _ in results if isinstance(result.evidence, dict))
+        print(json.dumps({"processed": len(results), "published": publication_count,
+                          "unresolved": len(unresolved), "unresolved_institutions": unresolved,
+                          "excluded_candidates": excluded_candidates, **summary}, sort_keys=True))
+        return 1 if unresolved else 0
+    finally:
+        store.close()
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="oir-etl")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -590,13 +754,15 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--fixture"); run.add_argument("--offline", action="store_true"); run.add_argument("--raw-dir")
     run.add_argument("--state-file")
     run.add_argument("--output-ttl"); run.add_argument("--output-nq"); run.add_argument("--fuseki-gsp-url"); run.add_argument("--fuseki-sparql-url")
-    reconcile = sub.add_parser("reconcile"); reconcile.add_argument("endpoint", choices=["members", "parties"])
+    reconcile = sub.add_parser("reconcile"); reconcile.add_argument("endpoint", choices=["members", "parties", "institutions"])
     reconcile.add_argument("--fixture"); reconcile.add_argument("--responses-file"); reconcile.add_argument("--offline", action="store_true"); reconcile.add_argument("--all", action="store_true"); reconcile.add_argument("--publish", action="store_true"); reconcile.add_argument("--output-nq"); reconcile.add_argument("--fuseki-gsp-url"); reconcile.add_argument("--fuseki-sparql-url")
     reconcile.add_argument("--review-file", help="review JSON (defaults to the endpoint-specific version-controlled review file)")
     reconcile.add_argument("--reconciliation-state-file", help="shared reconciliation SQLite path (defaults to the Phase 3.5 state file)")
     args = parser.parse_args(argv)
     if args.command == "reconcile":
-        return run_reconcile_parties(args) if args.endpoint == "parties" else run_reconcile_members(args)
+        if args.endpoint == "parties": return run_reconcile_parties(args)
+        if args.endpoint == "institutions": return run_reconcile_institutions(args)
+        return run_reconcile_members(args)
     if args.endpoint == "houses": return run_houses(args)
     if args.endpoint == "members": return run_members(args)
     if args.endpoint == "bills": return run_bills(args)

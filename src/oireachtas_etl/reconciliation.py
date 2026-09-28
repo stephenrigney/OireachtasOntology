@@ -28,6 +28,44 @@ WIKIPEDIA = "https://en.wikipedia.org/wiki/"
 DBPEDIA = "https://dbpedia.org/resource/"
 STATES = frozenset(("accepted", "rejected", "ambiguous", "pending"))
 
+# This allow-list is the complete initial institutional scope.  In particular,
+# neither Government resources nor numbered HouseTerms are valid policy inputs.
+INSTITUTIONS = {
+    "https://data.oireachtas.ie/oireachtas": {
+        "key": "oireachtas",
+        "graph": "https://data.oireachtas.ie/graph/institution/oireachtas/external-links",
+        "labels": ["Houses of the Oireachtas", "Tithe an Oireachtais", "Oireachtas"],
+        "label_values": [(label, language) for label in ("Houses of the Oireachtas", "Tithe an Oireachtais", "Oireachtas")
+                         for language in ("en", "ga")],
+        "seed_qids": ["Q129821"],
+    },
+    "https://data.oireachtas.ie/house/dail": {
+        "key": "dail",
+        "graph": "https://data.oireachtas.ie/graph/institution/house/dail/external-links",
+        "labels": ["Dáil Éireann", "Dail Eireann"],
+        "label_values": [(label, language) for label in ("Dáil Éireann", "Dail Eireann")
+                         for language in ("en", "ga")],
+        "seed_qids": ["Q651981"],
+    },
+    "https://data.oireachtas.ie/house/seanad": {
+        "key": "seanad",
+        "graph": "https://data.oireachtas.ie/graph/institution/house/seanad/external-links",
+        "labels": ["Seanad Éireann", "Seanad Eireann"],
+        "label_values": [(label, language) for label in ("Seanad Éireann", "Seanad Eireann")
+                         for language in ("en", "ga")],
+        "seed_qids": ["Q1127591"],
+    },
+}
+INSTITUTION_NEGATIVE_REASONS = frozenset({
+    "wrong-entity-level", "wrong-temporal-level", "historical-predecessor",
+    "wrong-jurisdiction", "succession-contradiction",
+    "wrong-organisational-context", "house-term-mismatch",
+})
+INSTITUTION_TYPE_PROPERTIES = frozenset({"P31"})
+INSTITUTION_JURISDICTION_PROPERTIES = frozenset({"P17", "P1001"})
+INSTITUTION_RELATION_PROPERTIES = frozenset({"P361", "P527", "P749", "P1365", "P1366"})
+_NON_INSTITUTION_TYPE_QIDS = frozenset({"Q4167410", "Q4167836", "Q13406463"})
+
 
 class ReconciliationError(RuntimeError): pass
 class ReviewError(ReconciliationError): pass
@@ -113,6 +151,265 @@ def normalize_party_candidate(value: object) -> dict:
         if any(_wikidata_year_or_date(item) != item for item in result[field]):
             raise ReconciliationError("malformed Wikidata Party candidate historical date")
     return result
+
+
+def _institution_spec(local_iri: object) -> tuple[str, dict]:
+    if not isinstance(local_iri, str) or local_iri != local_iri.strip() or any(c.isspace() for c in local_iri):
+        raise ValueError("institution identity must be a complete local IRI")
+    try:
+        return local_iri, INSTITUTIONS[local_iri]
+    except KeyError as error:
+        raise ValueError("institution identity is outside the approved enduring-institution scope") from error
+
+
+def _institution_entity(value: object) -> dict:
+    """Extract one of the three authoritative enduring institutional IRIs."""
+    if not isinstance(value, dict):
+        raise ValueError("each institution record must be an object")
+    entity = value.get("institution") if "institution" in value else value
+    if not isinstance(entity, dict) or set(entity) != {"uri"}:
+        raise ValueError("institution records must contain only the complete uri")
+    _institution_spec(entity.get("uri"))
+    return entity
+
+
+def _valid_wikipedia_iri(value: object) -> bool:
+    try:
+        valid = _valid_iri(value, WIKIPEDIA)
+    except ValueError:
+        return False
+    if not valid:
+        return False
+    path = urlsplit(value).path
+    encoded_title = path[len("/wiki/"):]
+    if re.search(r"%(?![0-9A-Fa-f]{2})", encoded_title):
+        return False
+    try:
+        title = unquote(encoded_title, errors="strict")
+    except UnicodeDecodeError:
+        return False
+    return bool(title) and quote(title, safe="()_,-.") == encoded_title
+
+
+def _institution_evidence_descriptors(value: object, field: str, keys: set[str], properties: frozenset[str] | None = None) -> list[dict]:
+    if not isinstance(value, list):
+        raise ReconciliationError("malformed institutional candidate " + field)
+    items = []
+    for item in value:
+        if not isinstance(item, dict) or set(item) != keys:
+            raise ReconciliationError("malformed institutional candidate " + field)
+        if "property" in keys and (not isinstance(item["property"], str) or item["property"] not in properties):
+            raise ReconciliationError("malformed institutional candidate " + field + " property")
+        if "qid" in keys and not valid_qid(item["qid"]):
+            raise ReconciliationError("malformed institutional candidate " + field + " QID")
+        if "label" in keys and item["label"] is not None and (not isinstance(item["label"], str) or not item["label"]):
+            raise ReconciliationError("malformed institutional candidate " + field + " label")
+        items.append(dict(item))
+    return sorted({ _json(item): item for item in items }.values(), key=_json)
+
+
+def normalize_institution_candidate(value: object) -> dict:
+    """Validate and canonicalize structured institutional candidate evidence.
+
+    Candidate facts are discovery/review evidence only. This function never
+    turns a label, type, jurisdiction or relationship into an identity match.
+    """
+    keys = {"qid", "labels", "descriptions", "matched_on", "discovery_methods", "positive_evidence", "negative_evidence"}
+    if not isinstance(value, dict) or set(value) != keys or not valid_qid(value.get("qid")):
+        raise ReconciliationError("malformed Wikidata institutional candidate")
+    result = {"qid": value["qid"]}
+    for field in ("labels", "descriptions", "matched_on"):
+        values = value[field]
+        if not isinstance(values, list) or any(not isinstance(item, str) or not item or item != item.strip() for item in values):
+            raise ReconciliationError("malformed Wikidata institutional candidate " + field)
+        result[field] = sorted(set(values), key=lambda item: (item.casefold(), item))
+    methods = value["discovery_methods"]
+    if (not isinstance(methods, list) or not methods
+            or any(not isinstance(method, str) or method not in {"exact-label", "initial-review-candidate"} for method in methods)):
+        raise ReconciliationError("malformed Wikidata institutional candidate discovery methods")
+    result["discovery_methods"] = sorted(set(methods))
+    if "exact-label" in result["discovery_methods"]:
+        if not result["matched_on"] or any(
+            not any(label.casefold() == matched.casefold() for label in result["labels"])
+            for matched in result["matched_on"]
+        ):
+            raise ReconciliationError("institutional candidate lacks its exact matched label")
+    if "initial-review-candidate" in result["discovery_methods"] and not result["matched_on"]:
+        # A documented seed is specific to exactly one local institution and
+        # remains a review candidate, not an accepted identity.
+        if not any(result["qid"] in spec["seed_qids"] for spec in INSTITUTIONS.values()):
+            raise ReconciliationError("unknown documented institutional review candidate")
+    evidence = value["positive_evidence"]
+    evidence_keys = {"entity_types", "jurisdictions", "relationships", "official_sites", "inception", "dissolution"}
+    if not isinstance(evidence, dict) or set(evidence) != evidence_keys:
+        raise ReconciliationError("malformed institutional candidate positive evidence")
+    positive = {
+        "entity_types": _institution_evidence_descriptors(evidence["entity_types"], "entity_types", {"qid", "label"}, INSTITUTION_TYPE_PROPERTIES),
+        "jurisdictions": _institution_evidence_descriptors(evidence["jurisdictions"], "jurisdictions", {"property", "qid", "label"}, INSTITUTION_JURISDICTION_PROPERTIES),
+        "relationships": _institution_evidence_descriptors(evidence["relationships"], "relationships", {"property", "qid", "label"}, INSTITUTION_RELATION_PROPERTIES),
+        "official_sites": [],
+        "inception": [],
+        "dissolution": [],
+    }
+    for site in evidence["official_sites"]:
+        if not isinstance(site, str) or not site.startswith(("https://", "http://")):
+            raise ReconciliationError("malformed institutional candidate official-site evidence")
+        parsed = urlsplit(site)
+        if not parsed.netloc or parsed.username or parsed.password or any(c.isspace() for c in site):
+            raise ReconciliationError("malformed institutional candidate official-site evidence")
+        positive["official_sites"].append(site)
+    positive["official_sites"] = sorted(set(positive["official_sites"]))
+    for field in ("inception", "dissolution"):
+        values = evidence[field]
+        if not isinstance(values, list) or any(_wikidata_year_or_date(item) != item for item in values):
+            raise ReconciliationError("malformed institutional candidate historical evidence")
+        positive[field] = sorted(set(values))
+    result["positive_evidence"] = positive
+
+    negative = value["negative_evidence"]
+    if not isinstance(negative, list):
+        raise ReconciliationError("malformed institutional candidate negative evidence")
+    allowed_properties = {
+        "wrong-entity-level": INSTITUTION_TYPE_PROPERTIES | {"label"},
+        "wrong-temporal-level": INSTITUTION_TYPE_PROPERTIES | {"label"},
+        "historical-predecessor": INSTITUTION_TYPE_PROPERTIES | INSTITUTION_RELATION_PROPERTIES | {"label", "description"},
+        "wrong-jurisdiction": INSTITUTION_JURISDICTION_PROPERTIES,
+        "succession-contradiction": {"P1365", "P1366", "description"},
+        "wrong-organisational-context": {"P361", "P527", "P749"},
+        "house-term-mismatch": INSTITUTION_TYPE_PROPERTIES | {"label"},
+    }
+    normalized_negative = []
+    for item in negative:
+        if not isinstance(item, dict) or set(item) != {"reason", "property", "value"}:
+            raise ReconciliationError("malformed institutional candidate negative evidence")
+        reason, prop, fact = item["reason"], item["property"], item["value"]
+        if (not isinstance(reason, str) or reason not in INSTITUTION_NEGATIVE_REASONS
+                or not isinstance(prop, str) or prop not in allowed_properties[reason]
+                or not isinstance(fact, str) or not fact or fact != fact.strip()):
+            raise ReconciliationError("malformed institutional candidate negative evidence")
+        if prop in INSTITUTION_TYPE_PROPERTIES | INSTITUTION_JURISDICTION_PROPERTIES | INSTITUTION_RELATION_PROPERTIES:
+            if not valid_qid(fact):
+                raise ReconciliationError("malformed institutional candidate negative evidence QID")
+        if prop in INSTITUTION_TYPE_PROPERTIES and not any(e["qid"] == fact for e in positive["entity_types"]):
+            raise ReconciliationError("institutional negative type evidence is absent from positive evidence")
+        if prop in INSTITUTION_JURISDICTION_PROPERTIES and not any(
+            e["property"] == prop and e["qid"] == fact for e in positive["jurisdictions"]
+        ):
+            raise ReconciliationError("institutional negative jurisdiction evidence is absent from positive evidence")
+        if prop in INSTITUTION_RELATION_PROPERTIES and not any(
+            e["property"] == prop and e["qid"] == fact for e in positive["relationships"]
+        ):
+            raise ReconciliationError("institutional negative relationship evidence is absent from positive evidence")
+        if prop == "label" and fact not in result["labels"]:
+            raise ReconciliationError("institutional negative label evidence is absent from candidate labels")
+        if prop == "description" and fact not in result["descriptions"]:
+            raise ReconciliationError("institutional negative description evidence is absent from candidate descriptions")
+        normalized_negative.append({"reason": reason, "property": prop, "value": fact})
+    result["negative_evidence"] = sorted({ _json(item): item for item in normalized_negative }.values(), key=_json)
+    return result
+
+
+def _institution_candidate_negative_evidence(local_iri: str, candidate: dict) -> list[dict]:
+    """Add only explicit, structurally evidenced contradictions to a candidate."""
+    spec = INSTITUTIONS[local_iri]
+    negatives = list(candidate["negative_evidence"])
+    jurisdictions = candidate["positive_evidence"]["jurisdictions"]
+    if jurisdictions and not any(item["qid"] == "Q27" for item in jurisdictions):
+        negatives.extend({"reason": "wrong-jurisdiction", "property": item["property"], "value": item["qid"]}
+                         for item in jurisdictions)
+    for entity_type in candidate["positive_evidence"]["entity_types"]:
+        label = (entity_type["label"] or "").casefold()
+        if (entity_type["qid"] in _NON_INSTITUTION_TYPE_QIDS
+                or re.search(r"\b(category|list article|disambiguation page|concept|class)\b", label)):
+            negatives.append({"reason": "wrong-entity-level", "property": "P31", "value": entity_type["qid"]})
+        if re.search(r"\b(parliamentary|legislative|house) term\b", label):
+            negatives.append({"reason": "wrong-temporal-level", "property": "P31", "value": entity_type["qid"]})
+    # A documented seed receives the same contradiction checks as every other
+    # candidate: its QID is a discovery hint, never an identity exception.
+    for description in candidate["descriptions"]:
+        revolutionary_scope = (
+            re.search(r"\b(revolutionary|provisional)\b.{0,100}\b(parliament|legislature|dáil|dail|seanad)\b", description, re.IGNORECASE)
+            or re.search(r"\b(parliament|legislature|dáil|dail|seanad)\b.{0,100}\b(revolutionary|provisional)\b", description, re.IGNORECASE)
+        )
+        predecessor = re.search(r"\b(?:historical\s+)?predecessor\s+(?:of|to)\b", description, re.IGNORECASE)
+        succession = re.search(
+            r"\b(?:successor|replacement)\s+(?:of|to)\b|\b(?:replaced|superseded)\s+by\b",
+            description, re.IGNORECASE)
+        if revolutionary_scope or predecessor:
+            negatives.append({"reason": "historical-predecessor", "property": "description", "value": description})
+        elif succession:
+            negatives.append({"reason": "succession-contradiction", "property": "description", "value": description})
+    if spec["key"] in {"dail", "seanad"}:
+        for label in candidate["labels"]:
+            if re.search(r"\b[1-9][0-9]*(?:st|nd|rd|th)\s+(?:dáil|dail|seanad)(?:\s+éireann)?\b", label, re.IGNORECASE):
+                negatives.append({"reason": "house-term-mismatch", "property": "label", "value": label})
+    for relationship in candidate["positive_evidence"]["relationships"]:
+        if relationship["property"] == "P1366":
+            negatives.append({"reason": "succession-contradiction",
+                              "property": "P1366", "value": relationship["qid"]})
+    return sorted({ _json(item): item for item in negatives }.values(), key=_json)
+
+
+def institutional_external_graph_iri(value: object) -> str:
+    entity = _institution_entity(value)
+    return INSTITUTIONS[entity["uri"]]["graph"]
+
+
+# Entity-policy naming parallel to party_external_graph_iri().
+institution_external_graph_iri = institutional_external_graph_iri
+
+
+def institution_records() -> list[dict]:
+    """Return the complete fixed set of locally authoritative institutions."""
+    return [{"institution": {"uri": local_iri}} for local_iri in INSTITUTIONS]
+
+
+def deduplicate_institution_records(records: list[dict], advertised: int | None = None) -> list[dict]:
+    if not isinstance(records, list) or not records:
+        raise ValueError("institution reconciliation input must be a non-empty list")
+    unique = {}
+    for wrapper in records:
+        entity = _institution_entity(wrapper)
+        local_iri = entity["uri"]
+        if local_iri in unique:
+            continue
+        unique[local_iri] = {"institution": {"uri": local_iri}}
+    if advertised is not None and (isinstance(advertised, bool) or not isinstance(advertised, int) or advertised != len(unique)):
+        raise ValueError(f"institution unique count {len(unique)} does not match advertised count {advertised!r}")
+    return [unique[key] for key in sorted(unique)]
+
+
+def load_institution_review(path: Path) -> tuple[dict[str, dict], str]:
+    """Load strict version-1 decisions keyed only by full local institution IRI."""
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ReviewError(f"invalid institutional review file: {error}") from error
+    if (not isinstance(value, dict) or set(value) != {"version", "decisions"}
+            or type(value.get("version")) is not int or value["version"] != 1
+            or not isinstance(value.get("decisions"), dict)):
+        raise ReviewError("institutional review file must contain only version 1 and a decisions object")
+    decisions = value["decisions"]
+    for local_iri, decision in decisions.items():
+        try:
+            _institution_spec(local_iri)
+        except (TypeError, ValueError) as error:
+            raise ReviewError("institutional review keys must be approved full local IRIs") from error
+        if (not isinstance(decision, dict) or not isinstance(decision.get("status"), str)
+                or decision["status"] not in {"accepted", "rejected"}):
+            raise ReviewError(f"invalid institutional decision for {local_iri!r}")
+        if decision["status"] == "accepted":
+            if not valid_qid(decision.get("wikidata")):
+                raise ReviewError(f"accepted institutional decision for {local_iri!r} needs a Wikidata QID")
+            if "wikipedia" in decision and not _valid_wikipedia_iri(decision["wikipedia"]):
+                raise ReviewError(f"institutional Wikipedia review for {local_iri!r} must be a canonical English Wikipedia article IRI")
+        elif "wikidata" in decision or "wikipedia" in decision:
+            raise ReviewError(f"rejected institutional decision for {local_iri!r} must not contain external identities")
+        if "note" in decision and not isinstance(decision["note"], str):
+            raise ReviewError(f"institutional review note for {local_iri!r} must be a string")
+        if set(decision) - {"status", "wikidata", "wikipedia", "note"}:
+            raise ReviewError(f"unknown institutional decision fields for {local_iri!r}")
+    return decisions, _hash(value)
 
 
 def external_graph_iri(member: dict) -> str:
@@ -681,6 +978,163 @@ SELECT DISTINCT ?item ?label ?instanceType ?jurisdiction ?inception ?dissolution
                     raise ReconciliationError("invalid Wikidata Party historical date")
                 candidate[name].append(normalized)
         return [normalize_party_candidate(candidate) for _, candidate in sorted(candidates.items())]
+
+    def lookup_institution_candidates(self, value: dict) -> list[dict]:
+        """Return exact-label and documented-seed candidates with typed facts.
+
+        All matches remain review candidates. The query deliberately returns
+        type, jurisdiction, organizational/succession, official-site and
+        historical facts as evidence; it does not rank or accept an identity.
+        """
+        entity = _institution_entity(value)
+        local_iri, spec = _institution_spec(entity["uri"])
+        labels = spec["labels"]
+        label_values = " ".join(
+            json.dumps(label, ensure_ascii=False) + "@" + language
+            for label, language in spec["label_values"]
+        )
+        seeds = " ".join("wd:" + qid for qid in spec["seed_qids"])
+        query = """PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX schema: <http://schema.org/>
+SELECT DISTINCT ?item ?label ?matchedOn ?discoveryMethod ?description ?instanceType ?instanceTypeLabel
+                ?jurisdiction ?jurisdictionProperty ?jurisdictionLabel ?relation ?relationProperty
+                ?relatedItem ?relatedLabel ?officialSite ?inception ?dissolution WHERE {
+  {
+    VALUES ?wantedLabel { %s }
+    { ?item rdfs:label ?wantedLabel }
+    UNION
+    { ?item skos:altLabel ?wantedLabel }
+    BIND(?wantedLabel AS ?label)
+    BIND(STR(?wantedLabel) AS ?matchedOn)
+    BIND("exact-label" AS ?discoveryMethod)
+  } UNION {
+    VALUES ?item { %s }
+    ?item (rdfs:label|skos:altLabel) ?label .
+    FILTER(LANG(?label) IN ("en", "ga"))
+    BIND("" AS ?matchedOn)
+    BIND("initial-review-candidate" AS ?discoveryMethod)
+  }
+  OPTIONAL { ?item schema:description ?description . FILTER(LANG(?description) IN ("en", "ga")) }
+  OPTIONAL {
+    ?item wdt:P31 ?instanceType .
+    OPTIONAL { ?instanceType rdfs:label ?instanceTypeLabel . FILTER(LANG(?instanceTypeLabel) = "en") }
+  }
+  OPTIONAL {
+    { ?item wdt:P17 ?jurisdiction . BIND("P17" AS ?jurisdictionProperty) }
+    UNION { ?item wdt:P1001 ?jurisdiction . BIND("P1001" AS ?jurisdictionProperty) }
+    OPTIONAL { ?jurisdiction rdfs:label ?jurisdictionLabel . FILTER(LANG(?jurisdictionLabel) = "en") }
+  }
+  OPTIONAL {
+    { ?item wdt:P361 ?relatedItem . BIND("P361" AS ?relationProperty) }
+    UNION { ?item wdt:P527 ?relatedItem . BIND("P527" AS ?relationProperty) }
+    UNION { ?item wdt:P749 ?relatedItem . BIND("P749" AS ?relationProperty) }
+    UNION { ?item wdt:P1365 ?relatedItem . BIND("P1365" AS ?relationProperty) }
+    UNION { ?item wdt:P1366 ?relatedItem . BIND("P1366" AS ?relationProperty) }
+    OPTIONAL { ?relatedItem rdfs:label ?relatedLabel . FILTER(LANG(?relatedLabel) = "en") }
+  }
+  OPTIONAL { ?item wdt:P856 ?officialSite }
+  OPTIONAL { ?item wdt:P571 ?inception }
+  OPTIONAL { ?item wdt:P576 ?dissolution }
+}""" % (label_values, seeds)
+        from urllib.parse import urlencode
+        request = Request(self.lookup_endpoint + "?" + urlencode({"query": query, "format": "json"}),
+                          headers={"Accept": "application/sparql-results+json", "User-Agent": "oireachtas-etl/phase-4.5"})
+        with urlopen(request, timeout=self.timeout) as response:
+            payload = json.loads(response.read())
+        try:
+            rows = payload["results"]["bindings"]
+        except (KeyError, TypeError) as error:
+            raise ReconciliationError("malformed Wikidata institutional candidate response") from error
+        if not isinstance(rows, list):
+            raise ReconciliationError("malformed Wikidata institutional candidate response")
+        candidates: dict[str, dict] = {}
+
+        def literal(row, name, *, required=False):
+            binding = row.get(name)
+            if binding is None and not required:
+                return None
+            if not isinstance(binding, dict) or binding.get("type") != "literal" or not isinstance(binding.get("value"), str):
+                raise ReconciliationError("malformed Wikidata institutional candidate " + name + " binding")
+            return binding["value"]
+
+        def qid(row, name, *, required=False):
+            binding = row.get(name)
+            if binding is None and not required:
+                return None
+            result = _wikidata_qid_from_sparql_binding(binding)
+            if result is None:
+                raise ReconciliationError("malformed Wikidata institutional candidate " + name + " binding")
+            return result
+
+        for row in rows:
+            if not isinstance(row, dict):
+                raise ReconciliationError("malformed Wikidata institutional candidate binding")
+            candidate_qid = qid(row, "item", required=True)
+            label = literal(row, "label", required=True)
+            method = literal(row, "discoveryMethod", required=True)
+            if method not in {"exact-label", "initial-review-candidate"}:
+                raise ReconciliationError("invalid Wikidata institutional candidate discovery method")
+            candidate = candidates.setdefault(candidate_qid, {
+                "qid": candidate_qid, "labels": [], "descriptions": [], "matched_on": [],
+                "discovery_methods": [],
+                "positive_evidence": {"entity_types": [], "jurisdictions": [], "relationships": [],
+                                      "official_sites": [], "inception": [], "dissolution": []},
+                "negative_evidence": [],
+            })
+            candidate["labels"].append(label)
+            candidate["discovery_methods"].append(method)
+            matched = literal(row, "matchedOn")
+            if matched:
+                candidate["matched_on"].append(matched)
+            description = literal(row, "description")
+            if description:
+                candidate["descriptions"].append(description)
+
+            instance_qid = qid(row, "instanceType")
+            if instance_qid:
+                type_label = literal(row, "instanceTypeLabel")
+                candidate["positive_evidence"]["entity_types"].append({"qid": instance_qid, "label": type_label})
+            jurisdiction_qid = qid(row, "jurisdiction")
+            if jurisdiction_qid:
+                prop = literal(row, "jurisdictionProperty", required=True)
+                jurisdiction_label = literal(row, "jurisdictionLabel")
+                candidate["positive_evidence"]["jurisdictions"].append(
+                    {"property": prop, "qid": jurisdiction_qid, "label": jurisdiction_label})
+            related_qid = qid(row, "relatedItem")
+            if related_qid:
+                prop = literal(row, "relationProperty", required=True)
+                related_label = literal(row, "relatedLabel")
+                candidate["positive_evidence"]["relationships"].append(
+                    {"property": prop, "qid": related_qid, "label": related_label})
+            site_binding = row.get("officialSite")
+            if site_binding is not None:
+                if not isinstance(site_binding, dict) or site_binding.get("type") != "uri" or not isinstance(site_binding.get("value"), str):
+                    raise ReconciliationError("malformed Wikidata institutional candidate officialSite binding")
+                candidate["positive_evidence"]["official_sites"].append(site_binding["value"])
+            for field in ("inception", "dissolution"):
+                date = literal(row, field)
+                if date:
+                    normalized = _wikidata_year_or_date(date)
+                    if normalized is None:
+                        raise ReconciliationError("malformed Wikidata institutional candidate historical date")
+                    candidate["positive_evidence"][field].append(normalized)
+
+        normalized_candidates = []
+        known_labels = {label.casefold() for label in labels}
+        for candidate_qid, raw in sorted(candidates.items()):
+            candidate = normalize_institution_candidate(raw)
+            if candidate["qid"] in spec["seed_qids"] and "initial-review-candidate" not in candidate["discovery_methods"]:
+                candidate["discovery_methods"].append("initial-review-candidate")
+                candidate["discovery_methods"].sort()
+            if any(matched.casefold() not in known_labels for matched in candidate["matched_on"]):
+                raise ReconciliationError("Wikidata institutional candidate matched an unknown local label")
+            candidate["negative_evidence"] = _institution_candidate_negative_evidence(local_iri, candidate)
+            normalized_candidates.append(candidate)
+        return normalized_candidates
+
     def entity(self, qid: str) -> dict: return self._get({"action":"wbgetentities", "ids":qid, "format":"json"})
 
 
@@ -902,6 +1356,126 @@ def resolve_party(record: dict, review: dict[str, dict], wikidata_client, *, pre
                       enrichment_status="unresolved", enrichment_reason="human-review-required")
 
 
+def _previous_institution_context(previous) -> tuple[list, dict | None]:
+    if previous is None:
+        return [], None
+    try:
+        evidence = json.loads(previous["evidence_json"])
+    except (TypeError, json.JSONDecodeError):
+        return [], None
+    if not isinstance(evidence, dict):
+        return [], None
+    candidates = []
+    for field in ("candidates", "excluded_candidates"):
+        values = evidence.get(field)
+        if isinstance(values, list):
+            candidates.extend(values)
+    previous_decision = evidence.get("decision")
+    if not isinstance(previous_decision, dict):
+        previous_decision = evidence.get("previous_review_decision")
+    if not isinstance(previous_decision, dict):
+        previous_decision = None
+    return candidates, previous_decision
+
+
+def _normalize_institution_candidate_for(local_iri: str, raw: object) -> dict:
+    _, spec = _institution_spec(local_iri)
+    candidate = normalize_institution_candidate(raw)
+    allowed_labels = {label.casefold() for label in spec["labels"]}
+    if any(matched.casefold() not in allowed_labels for matched in candidate["matched_on"]):
+        raise ReconciliationError("Wikidata institutional candidate matched an unknown local label")
+    if "initial-review-candidate" in candidate["discovery_methods"] and candidate["qid"] not in spec["seed_qids"]:
+        raise ReconciliationError("Wikidata institutional candidate used the wrong documented seed")
+    return candidate
+
+
+def resolve_institution(value: dict, review: dict[str, dict], wikidata_client, *, previous=None) -> Resolution:
+    """Resolve one enduring institution; no candidate evidence auto-accepts."""
+    entity = _institution_entity(value)
+    local_iri, spec = _institution_spec(entity["uri"])
+    previous_candidates, previous_decision = _previous_institution_context(previous)
+    decision = review.get(local_iri)
+    if decision and decision["status"] == "rejected":
+        return Resolution("rejected", "manual-review", {
+            "local_iri": local_iri, "decision": decision,
+            "previous_candidates": previous_candidates,
+            "previous_review_decision": previous_decision,
+        }, review_applied=True)
+    if decision:
+        qid = decision["wikidata"]
+        wikidata = wikidata_iri(qid)
+        evidence = {"local_iri": local_iri, "entity_key": spec["key"], "wikidata": wikidata,
+                    "decision": decision, "previous_candidates": previous_candidates,
+                    "previous_review_decision": previous_decision}
+        wikipedia = None
+        enrichment_status, enrichment_reason = "complete", None
+        requested_wikipedia = decision.get("wikipedia")
+        if requested_wikipedia is not None:
+            try:
+                response = wikidata_client.entity(qid)
+                if (not isinstance(response, dict) or response.get("redirects")
+                        or not isinstance(response.get("entities"), dict)
+                        or not isinstance(response["entities"].get(qid), dict)
+                        or response["entities"][qid].get("missing") is not None
+                        or response["entities"][qid].get("id", qid) != qid):
+                    raise ReconciliationError("malformed Wikidata entity response for reviewed institutional QID")
+                sitelink = _enwiki(response["entities"][qid])
+                evidence["wikipedia_review"] = {"requested": requested_wikipedia, "sitelink": sitelink}
+                if sitelink == requested_wikipedia:
+                    wikipedia = sitelink
+                else:
+                    # The primary, explicitly reviewed identity remains valid;
+                    # a stale or mismatching optional sitelink is not emitted.
+                    enrichment_status, enrichment_reason = "unresolved", "wikipedia-sitelink-review-mismatch"
+            except FixtureResponseError:
+                raise
+            except Exception as error:
+                evidence.setdefault("errors", []).append("Wikidata entity: " + str(error))
+                enrichment_status, enrichment_reason = "retry", "wikidata-entity-error"
+        return Resolution("accepted", "manual-review", evidence, wikidata, wikipedia,
+                          review_applied=True, enrichment_status=enrichment_status,
+                          enrichment_reason=enrichment_reason)
+
+    query_terms = sorted(spec["labels"], key=lambda label: (label.casefold(), label))
+    try:
+        raw_candidates = wikidata_client.lookup_institution_candidates(entity)
+        if not isinstance(raw_candidates, list):
+            raise ReconciliationError("malformed Wikidata institutional candidate response")
+        by_qid = {}
+        for raw in raw_candidates:
+            candidate = _normalize_institution_candidate_for(local_iri, raw)
+            if candidate["qid"] in by_qid:
+                raise ReconciliationError("duplicate Wikidata institutional candidate QID")
+            candidate["negative_evidence"] = _institution_candidate_negative_evidence(local_iri, candidate)
+            by_qid[candidate["qid"]] = candidate
+        all_candidates = [by_qid[qid] for qid in sorted(by_qid)]
+    except FixtureResponseError:
+        raise
+    except Exception as error:
+        evidence = {"local_iri": local_iri, "entity_key": spec["key"], "query_terms": query_terms,
+                    "candidates": [], "excluded_candidates": [], "previous_candidates": previous_candidates,
+                    "previous_review_decision": previous_decision, "errors": [str(error)],
+                    "reason": "lookup-error"}
+        return Resolution("pending", "wikidata-institution-candidate-outage", evidence,
+                          enrichment_status="unresolved", enrichment_reason="lookup-error")
+
+    candidates = [candidate for candidate in all_candidates if not candidate["negative_evidence"]]
+    excluded = [candidate for candidate in all_candidates if candidate["negative_evidence"]]
+    evidence = {"local_iri": local_iri, "entity_key": spec["key"], "query_terms": query_terms,
+                "candidates": candidates, "excluded_candidates": excluded,
+                "previous_candidates": previous_candidates,
+                "previous_review_decision": previous_decision,
+                "candidate_policy": "exact-label/documented-seed discovery; structured evidence only; human review required"}
+    if not candidates:
+        evidence["reason"] = "candidates-excluded-by-contradictory-evidence" if excluded else "no-wikidata-candidate"
+        return Resolution("pending", "wikidata-institution-no-candidate", evidence,
+                          enrichment_status="unresolved", enrichment_reason=evidence["reason"])
+    evidence["reason"] = "human-review-required" if len(candidates) == 1 else "multiple-review-candidates"
+    state = "pending" if len(candidates) == 1 else "ambiguous"
+    return Resolution(state, "wikidata-institution-candidate-review", evidence,
+                      enrichment_status="unresolved", enrichment_reason="human-review-required")
+
+
 def party_links_graph(record: dict, resolution: Resolution) -> Graph:
     party, _, local_iri = _party_entity(record)
     graph = Graph()
@@ -910,6 +1484,50 @@ def party_links_graph(record: dict, resolution: Resolution) -> Graph:
             raise ValueError("accepted Party identity requires an explicit reviewed Wikidata QID")
         graph.add((URIRef(local_iri), MEMBERS.recognisedAsParty, URIRef(resolution.wikidata)))
     _validate_party_graph(local_iri, graph)
+    return graph
+
+
+def _validate_institution_graph(local_iri: str, graph: Graph) -> None:
+    _institution_spec(local_iri)
+    subject = URIRef(local_iri)
+    same_as = []
+    wikipedia = []
+    for s, p, o in graph:
+        if not isinstance(s, URIRef) or not isinstance(p, URIRef) or not isinstance(o, URIRef) or s != subject:
+            raise ReconciliationError("institution external graph boundary violation")
+        if p == OWL.sameAs and _valid_iri(str(o), WIKIDATA):
+            same_as.append(o)
+        elif p == FOAF.isPrimaryTopicOf and _valid_wikipedia_iri(str(o)):
+            wikipedia.append(o)
+        else:
+            raise ReconciliationError("institution external graph boundary violation")
+    if len(same_as) > 1 or len(wikipedia) > 1 or (wikipedia and not same_as):
+        raise ReconciliationError("institution external graph contains unsupported identity links")
+
+
+def institution_links_graph(value: dict, resolution: Resolution) -> Graph:
+    entity = _institution_entity(value)
+    local_iri = entity["uri"]
+    if resolution.dbpedia is not None:
+        raise ReconciliationError("DBpedia is outside the institutional reconciliation contract")
+    graph = Graph()
+    if resolution.state == "accepted":
+        if (not resolution.review_applied or not resolution.wikidata
+                or not _valid_iri(resolution.wikidata, WIKIDATA)):
+            raise ReconciliationError("accepted institutional identity requires an explicit reviewed Wikidata QID")
+        if not isinstance(resolution.evidence, dict):
+            raise ReconciliationError("accepted institutional outcome has malformed review evidence")
+        decision = resolution.evidence.get("decision")
+        if (resolution.evidence.get("local_iri") != local_iri
+                or not isinstance(decision, dict) or decision.get("status") != "accepted"
+                or decision.get("wikidata") != resolution.wikidata[len(WIKIDATA):]):
+            raise ReconciliationError("accepted institutional graph does not match its review decision")
+        graph.add((URIRef(local_iri), OWL.sameAs, URIRef(resolution.wikidata)))
+        if resolution.wikipedia:
+            if decision.get("wikipedia") != resolution.wikipedia or not _valid_wikipedia_iri(resolution.wikipedia):
+                raise ReconciliationError("institutional Wikipedia link lacks matching same-topic review")
+            graph.add((URIRef(local_iri), FOAF.isPrimaryTopicOf, URIRef(resolution.wikipedia)))
+    _validate_institution_graph(local_iri, graph)
     return graph
 
 
@@ -973,6 +1591,7 @@ def verify_external_links_competency(client, member: dict, graph: Graph) -> None
 
 class _MemberPolicy:
     entity_kind = "member"
+    review_input_name = "Members"
 
     def extract(self, wrapper):
         if not isinstance(wrapper, dict) or not isinstance(wrapper.get("member"), dict):
@@ -1020,6 +1639,7 @@ class _MemberPolicy:
 
 class _PartyPolicy:
     entity_kind = "party"
+    review_input_name = "Parties"
 
     def extract(self, wrapper):
         _party_entity(wrapper)
@@ -1070,6 +1690,57 @@ class _PartyPolicy:
             expected.add((URIRef(local_iri), MEMBERS.recognisedAsParty, URIRef(resolution.wikidata)))
         if set(graph) != set(expected):
             raise ReconciliationError("Party dirty payload does not match its saved reconciliation outcome")
+
+
+class _InstitutionPolicy:
+    entity_kind = "institution"
+    review_input_name = "institutions"
+
+    def extract(self, wrapper):
+        return _institution_entity(wrapper)
+
+    def validate(self, entity):
+        _institution_entity(entity)
+
+    def local_iri(self, entity):
+        return entity["uri"]
+
+    def entity_key(self, entity):
+        return INSTITUTIONS[entity["uri"]]["key"]
+
+    def review_key(self, entity):
+        return self.local_iri(entity)
+
+    def fingerprint(self, entity):
+        # The fixed authoritative identity, not its label or a changing QID,
+        # selects this record's reconciliation state.
+        return _hash({"local_iri": self.local_iri(entity)})
+
+    def eligible(self, entity):
+        return True
+
+    def graph_iri(self, entity):
+        return institutional_external_graph_iri(entity)
+
+    def stored_graph_iri(self, local_iri, entity_key):
+        _, spec = _institution_spec(local_iri)
+        if entity_key != spec["key"]:
+            raise ReconciliationError("stored institution key does not match its complete local IRI")
+        return spec["graph"]
+
+    def resolve(self, entity, review, wikidata_client, dbpedia_client, previous):
+        return resolve_institution(entity, review, wikidata_client, previous=previous)
+
+    def links_graph(self, entity, resolution):
+        return institution_links_graph(entity, resolution)
+
+    def validate_stored_graph(self, local_iri, entity_key, graph, resolution):
+        self.stored_graph_iri(local_iri, entity_key)
+        _validate_institution_graph(local_iri, graph)
+        entity = {"uri": local_iri}
+        expected = institution_links_graph(entity, resolution) if resolution.state == "accepted" else Graph()
+        if set(graph) != set(expected):
+            raise ReconciliationError("institution dirty payload does not match its saved reconciliation outcome")
 
 
 def _stored_resolution(row) -> Resolution:
@@ -1128,8 +1799,7 @@ def reconcile_entities(records: list[dict], store: ReconciliationStore, review: 
         entities.append(entity)
     stale = sorted(set(review) - reviewable_keys)
     if stale:
-        noun = "Members" if policy.entity_kind == "member" else "Parties"
-        raise ReviewError("review decisions do not match current " + noun + " input: " + ", ".join(stale))
+        raise ReviewError("review decisions do not match current " + policy.review_input_name + " input: " + ", ".join(stale))
     # Once the review file has passed its input-membership gate, recover dirty
     # graphs before any new reconciliation or lookup. Every stored payload is
     # validated before a PUT.
@@ -1200,4 +1870,14 @@ def reconcile_party_records(records: list[dict], store: ReconciliationStore, rev
     validated = deduplicate_party_records(records)
     return reconcile_entities(validated, store, review, review_hash, wikidata_client,
                               policy=_PartyPolicy(), all_records=all_records, publish=publish,
+                              competency_client=competency_client)
+
+
+def reconcile_institution_records(records: list[dict], store: ReconciliationStore, review: dict[str, dict], review_hash: str,
+                                  wikidata_client, *, all_records=False, publish=None,
+                                  competency_client=None) -> list[tuple[dict, Resolution, Graph]]:
+    """Reconcile only the three authoritative enduring institutional IRIs."""
+    validated = deduplicate_institution_records(records)
+    return reconcile_entities(validated, store, review, review_hash, wikidata_client,
+                              policy=_InstitutionPolicy(), all_records=all_records, publish=publish,
                               competency_client=competency_client)

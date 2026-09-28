@@ -6,12 +6,13 @@ This document records the approved semantic and architectural contract for
 Phase 4.5 Tranche 3.
 
 Tranche 1 established the authoritative local institutional identities and is
-complete. Tranche 2 defines the generic reconciliation architecture that
-Tranche 3 must reuse, but its implementation is not yet merged into
-`master` at the time this note is written. Tranche 3 implementation must
-therefore not freeze policy interfaces, state schemas, review-file envelopes,
-CLI shape or final external-link graph IRI syntax until the Tranche 2
-reconciliation refactor has landed and been reviewed.
+complete. Tranche 2's generic reconciliation implementation is merged into
+`master`. The Tranche 3 institution policy and CLI are implemented against that
+core; the default review file intentionally has no accepted identities. This
+tranche is **not yet complete**: the first identity for each institution still
+requires an actual human review of the current external item's meaning before
+its reviewed decision may be recorded and published. Tests use synthetic
+review decisions in disposable state and do not constitute that review.
 
 The semantic decisions in this document are independent of those integration
 details.
@@ -502,10 +503,97 @@ tranche:
 - the CLI extends the existing reconcile endpoint choices with
   `institutions`.
 
-The generic engine currently formats stale-review errors around Member/Party
-names. Tranche 3 may make the smallest generic change needed to let a policy
-supply the appropriate entity display name; this must not become a broader
-reconciliation refactor.
+## Version-1 review and CLI fixture interface
+
+The initial `reconciliation/institution-decisions.json` contains no accepted
+identities. A reviewed acceptance is keyed by the complete local institution
+IRI, for example:
+
+```json
+{
+  "version": 1,
+  "decisions": {
+    "https://data.oireachtas.ie/house/dail": {
+      "status": "accepted",
+      "wikidata": "Q651981",
+      "wikipedia": "https://en.wikipedia.org/wiki/D%C3%A1il_%C3%89ireann",
+      "note": "Reviewed as the enduring House, not a numbered Dáil term"
+    }
+  }
+}
+```
+
+`wikipedia` is optional and is a separate human same-topic approval of the
+English sitelink currently present on that reviewed Wikidata item. It must be a
+canonical English Wikipedia article IRI and must match the item's live or
+fixture `enwiki` sitelink exactly. If omitted, no Wikipedia link is emitted.
+If the sitelink is missing, changed or different, the reviewed Wikidata
+`owl:sameAs` remains valid but the Wikipedia link is withheld for review.
+Rejected decisions contain only `status` and optional `note`; unknown fields,
+unknown local IRIs and malformed/stale decisions fail closed.
+
+The local institutions are a fixed three-IRI input; no Institutions API
+harvest is needed. `--fixture`, when supplied, may scope a run using this
+version-1 envelope (every entry is a full local IRI):
+
+```json
+{"version": 1, "institutions": ["https://data.oireachtas.ie/house/dail"]}
+```
+
+Offline candidate runs use `--responses-file`; `--fixture` is optional because
+the local identity set is authoritative and fixed:
+
+```text
+oir-etl reconcile institutions --offline --all \
+  --responses-file institution-candidates.json \
+  --review-file reconciliation/institution-decisions.json \
+  --reconciliation-state-file institution-state.sqlite --output-nq links.nq
+```
+
+The strict offline response envelope is:
+
+```json
+{
+  "wikidata": {
+    "institution_candidates": {
+      "https://data.oireachtas.ie/house/dail": [
+        {
+          "qid": "Q651981",
+          "labels": ["Dáil Éireann"],
+          "descriptions": ["parliamentary house of Ireland"],
+          "matched_on": ["Dáil Éireann"],
+          "discovery_methods": ["exact-label", "initial-review-candidate"],
+          "positive_evidence": {
+            "entity_types": [{"qid": "Q123", "label": "example parliamentary chamber type"}],
+            "jurisdictions": [{"property": "P17", "qid": "Q27", "label": "Ireland"}],
+            "relationships": [{"property": "P361", "qid": "Q129821", "label": "Houses of the Oireachtas"}],
+            "official_sites": [], "inception": [], "dissolution": []
+          },
+          "negative_evidence": []
+        }
+      ]
+    },
+    "entities": {}
+  }
+}
+```
+
+Every undecided target must have a candidate array; `[]` explicitly records no
+candidates. Each candidate's positive evidence fields are structured facts;
+negative evidence entries have exactly `reason`, `property` and `value` (using
+the reason codes documented above) and must refer to a fact retained in that
+candidate's evidence. The three QIDs in the approved initial
+candidate table may use `initial-review-candidate` discovery. Fixture facts are
+validated structurally but are not independently verified against Wikidata;
+candidate evidence never auto-accepts an identity. `entities` is required only
+for a reviewed acceptance with a `wikipedia` decision and is keyed by that QID
+using the Wikidata entity API response shape. Unknown targets/candidates,
+missing required evidence, duplicate candidate QIDs and unrequested entities
+fail before SQLite is opened. Offline publication is forbidden.
+
+The generic engine's stale-review error now gets its input name from the policy
+(`Members`, `Parties` or `institutions`); this is the only generic-core change
+made for Tranche 3.
 
 Exact reason-code representation and offline fixture helper structure may be
 chosen during implementation provided they preserve the semantic rules,
