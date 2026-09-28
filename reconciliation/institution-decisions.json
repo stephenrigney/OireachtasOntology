@@ -1,4 +1,17 @@
 {
   "version": 1,
-  "decisions": {}
+  "decisions": {
+    "https://data.oireachtas.ie/oireachtas": {
+      "status": "accepted",
+      "wikidata": "Q129821"
+    },
+    "https://data.oireachtas.ie/house/dail": {
+      "status": "accepted",
+      "wikidata": "Q651981"
+    },
+    "https://data.oireachtas.ie/house/seanad": {
+      "status": "accepted",
+      "wikidata": "Q1127591"
+    }
+  }
 }

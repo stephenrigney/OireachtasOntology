@@ -7,12 +7,10 @@ Phase 4.5 Tranche 3.
 
 Tranche 1 established the authoritative local institutional identities and is
 complete. Tranche 2's generic reconciliation implementation is merged into
-`master`. The Tranche 3 institution policy and CLI are implemented against that
-core; the default review file intentionally has no accepted identities. This
-tranche is **not yet complete**: the first identity for each institution still
-requires an actual human review of the current external item's meaning before
-its reviewed decision may be recorded and published. Tests use synthetic
-review decisions in disposable state and do not constitute that review.
+`master`. The Tranche 3 institution policy and CLI reuse that core. Tranche 3
+is complete: the first Wikidata identities for all three enduring institutions
+were explicitly approved by human review and recorded in the strict version-1
+decision file. This does not imply a production dataset was published.
 
 The semantic decisions in this document are independent of those integration
 details.
@@ -505,9 +503,9 @@ tranche:
 
 ## Version-1 review and CLI fixture interface
 
-The initial `reconciliation/institution-decisions.json` contains no accepted
-identities. A reviewed acceptance is keyed by the complete local institution
-IRI, for example:
+`reconciliation/institution-decisions.json` contains the three approved first
+Wikidata identities, keyed by complete local institution IRI. An illustrative
+example with an additional, separately reviewed Wikipedia article would be:
 
 ```json
 {
@@ -749,6 +747,41 @@ The initial Tranche 3 implementation is complete when:
   reconciliation core; and
 - all earlier Phase 0-4, Phase 3.5 and Phase 4.5 regression/integration
   behavior remains correct.
+
+## Tranche 3 completion and verification (2026-09-28)
+
+Human review approved these three first identities, recorded in
+`reconciliation/institution-decisions.json`:
+
+| Enduring local institution | Reviewed Wikidata identity |
+|---|---|
+| `https://data.oireachtas.ie/oireachtas` | `Q129821` |
+| `https://data.oireachtas.ie/house/dail` | `Q651981` |
+| `https://data.oireachtas.ie/house/seanad` | `Q1127591` |
+
+No Wikipedia article was included in this review. The published graphs
+therefore contain exactly one `owl:sameAs` assertion per institution and no
+`foaf:isPrimaryTopicOf` or DBpedia assertion. A future Wikipedia assertion
+still requires separate same-topic review and the accepted item's matching
+current sitelink.
+
+The real decision file reconciled all three identities offline (three accepted,
+none unresolved) and was published to a **disposable local Fuseki dataset**
+using the shared CLI and state store. Whole-graph verification established the
+exact approved link assertion in each of the three settled external-link graphs.
+The authoritative Houses graph was unchanged before and after publication (50
+triples). SPARQL competency checks returned two Dáil term traversals and two
+Seanad term traversals through `agents:termOf` to their enduring House's link;
+they returned zero direct HouseTerm `owl:sameAs` assertions to either accepted
+enduring-House Wikidata identity. No production endpoint was published.
+
+Ontology validation passed (2,370 triples); the full test suite passed (272
+passed, 8 optional Fuseki tests skipped without endpoints); all 8 disposable
+Fuseki integration tests passed separately with explicit local endpoints, and
+the full suite with those endpoints enabled passed (280 passed).
+Historical exclusion, review precedence, dirty replay, non-destructive
+unresolved outcomes, independent graph replacement and fail-closed whole-graph
+verification remain covered by the focused institutional and generic tests.
 
 ## Deferred follow-on
 
