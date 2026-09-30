@@ -1068,99 +1068,64 @@ Wikipedia link is asserted. Nothing was published to production.
 
 ### Outcome
 
-Move from manually repeatable transformations to reliable routine synchronisation with the Oireachtas API while refreshing external identity links independently of the authoritative ETL path.
+Make routine authoritative refresh restart-safe, idempotent, and efficient,
+while allowing external identity links to refresh and recover independently.
 
-### Backlog
+The approved Phase 5 architecture and acceptance contract are defined in
+`documentation/incremental-refresh-state.md`. That document is authoritative
+for state ownership, cursor semantics, complete-source reconciliation,
+missing-resource handling, recovery, migration, CLI direction, tranche
+boundaries, and Phase 5 exit criteria.
 
-#### ETL state store
+### Architectural summary
 
-Introduce a small operational state store, initially SQLite.
+- Introduce a core SQLite operational-state store for authoritative ETL runs,
+  endpoint state, resource publication state, and incremental cursors.
+- Keep the existing schema-v4 `ReconciliationStore` separate and authoritative
+  for external identity decisions, external-link publication recovery, and
+  periodic rechecks.
+- Migrate the existing Member and Bill JSON manifests into core SQLite; do not
+  dual-write legacy manifests after migration.
+- Preserve immutable raw source evidence independently of operational state.
+- Record dirty/pending state before remote graph mutation and mark publication
+  clean only after graph replacement and verification succeed.
+- Treat extraction completeness explicitly: absence has presence semantics only
+  after a successful complete scan, never after an incremental query.
+- Use `last_updated` incremental legislation refresh with a configurable
+  overlap (one hour by default) and periodic complete legislation extraction.
+- Advance the legislation cursor only to the fixed upper boundary of a wholly
+  successful incremental run.
+- Keep missing-resource handling non-destructive until complete-source evidence
+  satisfies the approved confirmation policy.
+- Make new or identity-relevant changed entities due in the existing
+  reconciliation subsystem; do not introduce a second external queue or
+  scheduler.
+- Leave deployment scheduling to Phase 6.
 
-Suggested information:
+### Delivery tranches
 
-```text
-etl_run
-resource_state
-source_hash
-last_seen
-last_success
-status
-error
-reconciliation_state
-external_source
-external_checked_at
-```
+1. **Core ETL operational state** — SQLite state model, Member/Bill manifest
+   migration, publication recovery, run/endpoint/resource state, and state
+   inspection.
+2. **Legislation incremental refresh and complete reconciliation** —
+   `last_updated` cursor, overlap, deduplication, safe cursor advancement,
+   periodic full extraction, missing detection, and graph/state mismatch
+   handling.
+3. **External reconciliation refresh integration** — identity-relevant
+   invalidation/handoff into the existing reconciliation due/recheck model,
+   periodic accepted-link verification, and independent retry/freshness.
 
-- [ ] Record ETL run identifier.
-- [ ] Record start and completion time.
-- [ ] Record endpoint.
-- [ ] Record source hash.
-- [ ] Record RDF graph URI.
-- [ ] Record success/failure status.
-- [ ] Record validation result.
-- [ ] Record error details.
-- [ ] Record external-reconciliation state separately from core publication state.
-
-#### Endpoint refresh policies
-
-Implement explicit policies rather than assuming all endpoints support equivalent change tracking.
-
-| Endpoint | Initial refresh strategy |
-|---|---|
-| Houses | full refresh |
-| Parties | full refresh |
-| Constituencies | full refresh |
-| Members | full scan with per-resource hashing |
-| Legislation | `last_updated` incremental fetch plus overlap |
-| External identity links | queued refresh for new/changed entities plus periodic verification |
-| Debates | deferred |
-| Votes | deferred |
-| Questions | deferred |
-
-#### Legislation incremental loading
-
-- [ ] Store last successful legislation cursor.
-- [ ] Request records using `last_updated`.
-- [ ] Use an overlap window to protect against boundary errors.
-- [ ] Deduplicate by Bill identifier.
-- [ ] Hash individual Bill source records.
-- [ ] Periodically perform a complete source reconciliation.
-
-#### Core source reconciliation
-
-- [ ] Implement scheduled full comparison against current Oireachtas API results.
-- [ ] Identify resources missing from current API results.
-- [ ] Define deletion/tombstone policy.
-- [ ] Detect RDF graph/state mismatches.
-
-#### External identity refresh
-
-Core ETL and external reconciliation are separate pipelines:
-
-```text
-Oireachtas source change
-        |
-        v
-core ETL -----------------> authoritative RDF published
-        |
-        v
-reconciliation candidate queued
-        |
-        v
-external lookup ----------> external-link graph refreshed
-```
-
-- [ ] Queue newly created entities for external reconciliation.
-- [ ] Queue entities whose identity-relevant fields change.
-- [ ] Periodically re-verify accepted external links.
-- [ ] Detect redirects, retired identifiers and disappeared external targets.
-- [ ] Retry external-service failures without rolling back successful core publication.
-- [ ] Permit a run state where core ETL is successful while external links are stale or pending.
-- [ ] Keep external freshness timestamps separate from Oireachtas source freshness timestamps.
+Implementation is gated in that order. Each tranche must satisfy the
+verification and exit checks in
+`documentation/incremental-refresh-state.md` before the next tranche proceeds.
 
 ### Exit criteria
 
-Routine execution processes only resources requiring publication, periodic source reconciliation protects against missed Oireachtas updates, and external identity links can lag or fail independently without affecting authoritative graph publication.
+Routine core refresh is restart-safe and idempotent; legislation incremental
+state cannot advance past unprocessed source time; periodic complete source
+reconciliation detects missed or disappeared resources without treating
+incremental absence as deletion; and external reconciliation can lag, fail, and
+recover independently of authoritative graph publication.
 
 ## Phase 6 — Production hardening
 
