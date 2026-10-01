@@ -1119,11 +1119,39 @@ Implementation is gated in that order. Each tranche must satisfy the
 verification and exit checks in
 `documentation/incremental-refresh-state.md` before the next tranche proceeds.
 
+### Completion
+
+Phase 5 is complete.
+
+Implementation commits, in tranche order:
+
+- `9c0c9b2` — core SQLite state and legacy-manifest migration;
+- `4e60298` — Bills incremental refresh and complete reconciliation; and
+- `30e8ec5` — external-reconciliation refresh integration.
+
+The final Phase 5 gate passed ontology validation, mapping-integrity validation,
+and 331 tests with disposable Fuseki.
+
+Compatibility decisions retained by the completed implementation:
+
+- legacy Member and Bill manifests are one-time, read-only migration inputs;
+- Bills refresh is incremental by default, with `--full` requesting a complete
+  scan;
+- fixture-backed runs do not advance authoritative source evidence; and
+- external due/recheck state remains in the existing reconciliation store, with
+  no second queue or scheduler.
+
+If the reconciliation store is unavailable during core publication, the core
+run succeeds and warns. External freshness can therefore lag until a later
+complete-source reconciliation run. Reviewed external targets that disappear
+or redirect are recorded for retry rather than silently replaced. Further
+operational hardening of this behavior belongs to Phase 6.
+
 ### Exit criteria
 
-Routine core refresh is restart-safe and idempotent; legislation incremental
-state cannot advance past unprocessed source time; periodic complete source
-reconciliation detects missed or disappeared resources without treating
+Satisfied. Routine core refresh is restart-safe and idempotent; legislation
+incremental state cannot advance past unprocessed source time; periodic complete
+source reconciliation detects missed or disappeared resources without treating
 incremental absence as deletion; and external reconciliation can lag, fail, and
 recover independently of authoritative graph publication.
 
@@ -1518,9 +1546,9 @@ The ETL runs unattended with validation, provenance, quarantine, monitoring and 
 
 # 10. Immediate implementation backlog
 
-Phases 0-4 and Phase 4.5 Tranches 1-3 are implemented; Tranche 3 closure and
-verification are recorded above. ParliamentaryGroup and TechnicalGroup
-instances remain out of scope without authoritative API evidence.
+Phases 0-5 are implemented. Phase 5 completion and its final verification
+baseline are recorded above. ParliamentaryGroup and TechnicalGroup instances
+remain out of scope without authoritative API evidence.
 
 Remaining Phase 3.5 evaluation work—`wikiTitle` comparison, coverage metrics
 and sampled false-match measurement—remains deferred unless directly required
