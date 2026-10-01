@@ -214,7 +214,8 @@ def test_failed_member_publication_never_writes_published_state(tmp_path, monkey
         def replace(self, *args, **kwargs): raise RuntimeError("PUT failed")
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
     args = Namespace(fixture=str(ROOT / "data/api_examples/member.json"), offline=False, raw_dir=str(tmp_path / "raw"),
-                     output_nq=None, fuseki_gsp_url="http://example.test/data", fuseki_sparql_url="http://example.test/query", state_db=str(tmp_path / "state.sqlite"))
+                     output_nq=None, fuseki_gsp_url="http://example.test/data", fuseki_sparql_url="http://example.test/query", state_db=str(tmp_path / "state.sqlite"),
+                     reconciliation_state_file=str(tmp_path / "reconciliation.sqlite"))
     with pytest.raises(RuntimeError, match="PUT failed"):
         cli.run_members(args)
     from oireachtas_etl.state import CoreStateStore
@@ -245,7 +246,8 @@ def test_member_competency_resources_execute_against_fixture_named_graph():
 def _online_args(tmp_path, fixture=ROOT / "data/api_examples/member.json"):
     return Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), output_nq=None,
                      output_ttl=None, fuseki_gsp_url="http://example.test/data", fuseki_sparql_url="http://example.test/query",
-                     state_db=str(tmp_path / "state.sqlite"))
+                     state_db=str(tmp_path / "state.sqlite"),
+                     reconciliation_state_file=str(tmp_path / "reconciliation.sqlite"))
 
 
 def _member_state(tmp_path, identity=WRAPPER["member"]["uri"]):

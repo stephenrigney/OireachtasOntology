@@ -97,6 +97,9 @@ class NoLookup:
     def lookup_institution_candidates(self, value):
         raise AssertionError("reviewed institution must not perform candidate lookup")
 
+    def entity(self, qid):
+        return {"entities": {qid: {"id": qid}}}
+
 
 class MemoryPublisher:
     def __init__(self, graphs=None):
@@ -337,6 +340,48 @@ def test_mismatched_reviewed_sitelink_withholds_only_wikipedia_enrichment():
     assert outcome.state == "accepted" and outcome.wikidata == WIKIDATA + qid
     assert outcome.enrichment_reason == "wikipedia-sitelink-review-mismatch"
     assert set(graph) == {(URIRef(DAIL), OWL.sameAs, URIRef(WIKIDATA + qid))}
+
+
+def test_missing_reviewed_target_records_retry_without_clearing_accepted_graph(tmp_path):
+    store = ReconciliationStore(tmp_path / "state.sqlite")
+    publisher = MemoryPublisher()
+    review = accepted_review(DAIL, "Q651981", wikipedia=WIKIPEDIA_DAIL)
+    graph_iri = institution_external_graph_iri(institution())
+    valid = Wikidata(entities={"Q651981": {"entities": {"Q651981": {
+        "id": "Q651981", "sitelinks": {"enwiki": {"title": "Dáil Éireann"}},
+    }}}})
+
+    class MissingTarget(NoLookup):
+        def entity(self, qid):
+            return {"entities": {qid: {"id": qid, "missing": ""}}}
+
+    try:
+        initial = reconcile_institution_records(
+            [institution()], store, review, "review-v1", valid,
+            publish=publisher, competency_client=GraphGate(publisher),
+        )
+        assert initial[0][1].state == "accepted" and len(publisher.calls) == 1
+        accepted_payload = publisher.graphs[graph_iri]
+        store.connection.execute(
+            "UPDATE reconciliation_record SET next_recheck_at='2000-01-01T00:00:00+00:00' "
+            "WHERE entity_kind='institution' AND local_iri=?", (DAIL,),
+        )
+        store.connection.commit()
+
+        retried = reconcile_institution_records(
+            [institution()], store, review, "review-v1", MissingTarget(),
+            publish=publisher, competency_client=GraphGate(publisher),
+        )
+        row = store.get_record("institution", DAIL)
+        errors = json.loads(row["service_errors_json"])
+        assert retried[0][1].state == "accepted"
+        assert retried[0][1].enrichment_status == "retry"
+        assert errors[0]["code"] == "missing"
+        assert publisher.calls == [(graph_iri, accepted_payload)]
+        assert publisher.graphs[graph_iri] == accepted_payload
+        assert row["wikipedia_iri"] == WIKIPEDIA_DAIL
+    finally:
+        store.close()
 
 
 @pytest.mark.parametrize("outcome_kind", ["unresolved", "outage"])

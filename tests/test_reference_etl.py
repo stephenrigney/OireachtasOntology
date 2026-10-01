@@ -307,7 +307,7 @@ def test_reference_cli_never_constructs_loader_after_validation_failure(tmp_path
     class Loader:
         def __init__(self, *args, **kwargs): called.append("constructed")
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
-    args = Namespace(endpoint="constituencies", fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(tmp_path / "state.sqlite"), output_ttl=None, output_nq=None, fuseki_gsp_url="http://local.test/data", fuseki_sparql_url="http://local.test/query")
+    args = Namespace(endpoint="constituencies", fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(tmp_path / "state.sqlite"), output_ttl=None, output_nq=None, fuseki_gsp_url="http://local.test/data", fuseki_sparql_url="http://local.test/query", reconciliation_state_file=str(tmp_path / "reconciliation.sqlite"))
     with pytest.raises(ValueError, match="unsupported representType"):
         cli.run_reference(args)
     assert called == []
@@ -321,7 +321,7 @@ def test_empty_reference_cli_never_constructs_loader(tmp_path, monkeypatch, endp
     class Loader:
         def __init__(self, *args, **kwargs): called.append("constructed")
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
-    args = Namespace(endpoint=endpoint, fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(tmp_path / "state.sqlite"), output_ttl=None, output_nq=None, fuseki_gsp_url="http://local.test/data", fuseki_sparql_url="http://local.test/query")
+    args = Namespace(endpoint=endpoint, fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(tmp_path / "state.sqlite"), output_ttl=None, output_nq=None, fuseki_gsp_url="http://local.test/data", fuseki_sparql_url="http://local.test/query", reconciliation_state_file=str(tmp_path / "reconciliation.sqlite"))
     with pytest.raises(ValueError, match="reference dataset must be a non-empty list"):
         cli.run_reference(args)
     assert called == []

@@ -388,7 +388,8 @@ def test_shared_graph_cli_verification_failure_recovers_without_clean_state(
     args = Namespace(endpoint=endpoint, fixture=str(ROOT / "data/api_examples" / fixture),
                      offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(database),
                      output_ttl=None, output_nq=None, fuseki_gsp_url="http://local.test/data",
-                     fuseki_sparql_url="http://local.test/query")
+                     fuseki_sparql_url="http://local.test/query",
+                     reconciliation_state_file=str(tmp_path / "reconciliation.sqlite"))
     run = cli.run_houses if endpoint == "houses" else cli.run_reference
     with pytest.raises(RuntimeError, match="post-PUT check failed"):
         run(args)

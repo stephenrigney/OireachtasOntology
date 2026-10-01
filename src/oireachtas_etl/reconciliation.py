@@ -547,6 +547,49 @@ class Resolution:
     enrichment_reason: str | None = None
 
 
+def _fetch_wikidata_target(client, qid: str) -> tuple[dict | None, dict | None]:
+    """Verify an explicitly selected QID without changing human-review policy.
+
+    A missing, redirected, retired, malformed or unreachable target is an
+    enrichment retry, not authority to replace or withdraw the accepted IRI.
+    """
+    context = {"service": "wikidata", "operation": "accepted-target-verification", "qid": qid}
+    try:
+        response = client.entity(qid)
+    except FixtureResponseError:
+        # Offline fixtures are completeness assertions, not simulated network
+        # outages; preserve their fail-closed preflight behavior.
+        raise
+    except Exception as error:
+        return None, {**context, "code": "unavailable", "detail": str(error)}
+    if not isinstance(response, dict) or not isinstance(response.get("entities"), dict):
+        return None, {**context, "code": "malformed-response",
+                      "detail": "Wikidata entity response has no entities object"}
+    if response.get("redirects"):
+        return None, {**context, "code": "redirected",
+                      "detail": "accepted Wikidata identifier now redirects"}
+    entity = response["entities"].get(qid)
+    if not isinstance(entity, dict):
+        return None, {**context, "code": "disappeared",
+                      "detail": "accepted Wikidata entity is absent from the response"}
+    if entity.get("missing") is not None:
+        return None, {**context, "code": "missing",
+                      "detail": "accepted Wikidata entity is reported missing"}
+    if entity.get("id", qid) != qid:
+        return None, {**context, "code": "retired",
+                      "detail": "accepted Wikidata identifier was replaced by another identifier"}
+    return entity, None
+
+
+def _record_target_error(evidence: dict, error: dict) -> None:
+    evidence.setdefault("errors", []).append(error)
+    evidence["target_verification"] = {"status": "retry", "error": error}
+
+
+def _record_target_verified(evidence: dict, qid: str) -> None:
+    evidence["target_verification"] = {"status": "verified", "qid": qid}
+
+
 class ReconciliationStore:
     """Transactional, entity-generic SQLite state store (schema version 4)."""
 
@@ -792,6 +835,45 @@ class ReconciliationStore:
     def is_due(self, row, review_hash: str) -> bool:
         return row["publication_state"] != "clean" or row["next_recheck_at"] <= _now() or row["review_hash"] != review_hash
 
+    def mark_due(self, entity_kind: str, local_iri: str, entity_key: str,
+                 identity_hash: str, *, force: bool = False) -> bool:
+        """Durably schedule a core-observed identity for reconciliation.
+
+        This is a local SQLite handoff only: it performs no external lookup or
+        graph publication. Existing policy fingerprints decide whether a
+        source observation invalidates freshness; otherwise the current
+        periodic/retry deadline is left untouched.
+        """
+        if entity_kind not in {"member", "party", "institution"}:
+            raise ValueError("unsupported reconciliation entity kind")
+        if any(not isinstance(value, str) or not value for value in
+               (local_iri, entity_key, identity_hash)):
+            raise ValueError("reconciliation handoff identity must be non-empty text")
+        now = _now()
+        with self.connection:
+            row = self.get_record(entity_kind, local_iri)
+            if row is None:
+                # Schema v4 has no separate queue entry. A pending record with
+                # an empty prior fingerprint is the existing due-state
+                # representation; normal reconciliation replaces it with a
+                # reviewed/observed result and audit attempt.
+                self.connection.execute("""INSERT INTO reconciliation_record
+                  (entity_kind,local_iri,entity_key,identity_hash,state,method,evidence_json,
+                   service_errors_json,review_hash,review_applied,checked_at,next_recheck_at,
+                   publication_state,enrichment_status,enrichment_reason)
+                  VALUES (?,?,?,'','pending','core-refresh','{}','[]','',0,?,?,
+                          'clean','unresolved','core-refresh')""",
+                  (entity_kind, local_iri, entity_key, now, now))
+                return True
+            if force or row["identity_hash"] != identity_hash:
+                # Keep the last completed external decision/evidence intact;
+                # next_recheck_at is the authoritative durable invalidation.
+                self.connection.execute("""UPDATE reconciliation_record
+                  SET next_recheck_at=? WHERE entity_kind=? AND local_iri=?""",
+                  (now, entity_kind, local_iri))
+                return True
+        return False
+
     def save_record(self, entity_kind: str, local_iri: str, entity_key: str, identity_hash: str,
                     resolution: Resolution, review_hash: str, review_snapshot: dict | None,
                     payload: str | None, graph_iri: str | None, *, dirty: bool,
@@ -860,6 +942,12 @@ class ReconciliationStore:
 
     def close(self):
         self.connection.close()
+
+    def __enter__(self) -> "ReconciliationStore":
+        return self
+
+    def __exit__(self, *_exc) -> None:
+        self.close()
 
 
 def load_review(path: Path) -> tuple[dict[str, dict], str]:
@@ -1205,19 +1293,17 @@ def resolve(member: dict, review: dict[str, dict], wikidata_client, dbpedia_clie
     if decision: evidence["decision"] = decision
     wikipedia = dbpedia = None
     enrichment_status, enrichment_reason = "complete", None
-    try:
-        response = wikidata_client.entity(qid)
-        if (not isinstance(response, dict) or response.get("redirects") or not isinstance(response.get("entities"), dict)
-                or not isinstance(response["entities"].get(qid), dict)
-                or response["entities"][qid].get("missing") is not None
-                or response["entities"][qid].get("id", qid) != qid):
-            raise ReconciliationError("malformed Wikidata entity response for accepted QID")
-        wikipedia = _enwiki(response["entities"][qid])
-    except FixtureResponseError:
-        raise
-    except Exception as error:
-        evidence.setdefault("errors", []).append("Wikidata entity: " + str(error))
+    entity, target_error = _fetch_wikidata_target(wikidata_client, qid)
+    if target_error is not None:
+        _record_target_error(evidence, target_error)
         enrichment_status, enrichment_reason = "retry", "wikidata-entity-error"
+    else:
+        _record_target_verified(evidence, qid)
+        try:
+            wikipedia = _enwiki(entity)
+        except Exception as error:
+            evidence.setdefault("errors", []).append("Wikidata entity: " + str(error))
+            enrichment_status, enrichment_reason = "retry", "wikidata-entity-error"
     try:
         raw_people = dbpedia_client.resolve_wikidata(qid)
         if not isinstance(raw_people, list) or any(not isinstance(r, dict) or set(r) != {"iri", "is_person"} or not isinstance(r["iri"], str) or not isinstance(r["is_person"], bool) or not _valid_iri(r["iri"], DBPEDIA) for r in raw_people):
@@ -1305,11 +1391,21 @@ def resolve_party(record: dict, review: dict[str, dict], wikidata_client, *, pre
         return Resolution("rejected", "manual-review", evidence, review_applied=True)
     if decision:
         qid = decision["wikidata"]
-        return Resolution("accepted", "manual-review", {
+        wikidata = wikidata_iri(qid)
+        evidence = {
             "local_iri": local_iri, "partyCode": party["partyCode"], "showAs": party["showAs"],
-            "wikidata": wikidata_iri(qid), "decision": decision,
+            "wikidata": wikidata, "decision": decision,
             "previous_candidates": previous_candidates, "previous_review_decision": previous_rejection,
-        }, wikidata_iri(qid), review_applied=True)
+        }
+        _, target_error = _fetch_wikidata_target(wikidata_client, qid)
+        if target_error is not None:
+            _record_target_error(evidence, target_error)
+            return Resolution("accepted", "manual-review", evidence, wikidata,
+                              review_applied=True, enrichment_status="retry",
+                              enrichment_reason="wikidata-target-unavailable")
+        _record_target_verified(evidence, qid)
+        return Resolution("accepted", "manual-review", evidence, wikidata,
+                          review_applied=True)
     query_terms = sorted({party["partyCode"], party["partyCode"].replace("_", " "), party["showAs"]})
     period = _party_term_period(house)
     try:
@@ -1410,16 +1506,32 @@ def resolve_institution(value: dict, review: dict[str, dict], wikidata_client, *
         wikipedia = None
         enrichment_status, enrichment_reason = "complete", None
         requested_wikipedia = decision.get("wikipedia")
-        if requested_wikipedia is not None:
+        target, target_error = _fetch_wikidata_target(wikidata_client, qid)
+        if target_error is not None:
+            _record_target_error(evidence, target_error)
+            enrichment_status, enrichment_reason = "retry", "wikidata-target-unavailable"
+            if (previous is not None and previous["state"] == "accepted"
+                    and previous["wikidata_iri"] == wikidata):
+                try:
+                    previous_evidence = json.loads(previous["evidence_json"])
+                except (TypeError, json.JSONDecodeError):
+                    previous_evidence = {}
+                previous_decision = (previous_evidence.get("decision")
+                                     if isinstance(previous_evidence, dict) else None)
+                if (isinstance(previous_decision, dict)
+                        and previous_decision.get("status") == "accepted"
+                        and previous_decision.get("wikidata") == qid
+                        and previous_decision.get("wikipedia") == requested_wikipedia
+                        and _valid_wikipedia_iri(previous["wikipedia_iri"])):
+                    # An unavailable target is retry evidence, not authority to
+                    # erase a still-current human-approved optional link.
+                    wikipedia = previous["wikipedia_iri"]
+                    evidence["preserved_previous_links"] = True
+        else:
+            _record_target_verified(evidence, qid)
+        if requested_wikipedia is not None and target_error is None:
             try:
-                response = wikidata_client.entity(qid)
-                if (not isinstance(response, dict) or response.get("redirects")
-                        or not isinstance(response.get("entities"), dict)
-                        or not isinstance(response["entities"].get(qid), dict)
-                        or response["entities"][qid].get("missing") is not None
-                        or response["entities"][qid].get("id", qid) != qid):
-                    raise ReconciliationError("malformed Wikidata entity response for reviewed institutional QID")
-                sitelink = _enwiki(response["entities"][qid])
+                sitelink = _enwiki(target)
                 evidence["wikipedia_review"] = {"requested": requested_wikipedia, "sitelink": sitelink}
                 if sitelink == requested_wikipedia:
                     wikipedia = sitelink
@@ -1624,7 +1736,20 @@ class _MemberPolicy:
         return external_graph_iri({"uri": local_iri, "memberCode": entity_key})
 
     def resolve(self, entity, review, wikidata_client, dbpedia_client, previous):
-        return resolve(entity, review, wikidata_client, dbpedia_client)
+        result = resolve(entity, review, wikidata_client, dbpedia_client)
+        target_check = result.evidence.get("target_verification")
+        if (target_check and target_check.get("status") == "retry"
+                and previous is not None and previous["state"] == "accepted"
+                and previous["wikidata_iri"] == result.wikidata):
+            # Failed verification of the same accepted QID must not erase
+            # previously published optional links while retry is pending.
+            evidence = dict(result.evidence)
+            evidence["preserved_previous_links"] = True
+            return Resolution(result.state, result.method, evidence, result.wikidata,
+                              previous["wikipedia_iri"], previous["dbpedia_iri"],
+                              result.review_applied, result.enrichment_status,
+                              result.enrichment_reason)
+        return result
 
     def links_graph(self, entity, resolution):
         return links_graph(entity, resolution)
@@ -1741,6 +1866,31 @@ class _InstitutionPolicy:
         expected = institution_links_graph(entity, resolution) if resolution.state == "accepted" else Graph()
         if set(graph) != set(expected):
             raise ReconciliationError("institution dirty payload does not match its saved reconciliation outcome")
+
+
+_ENTITY_POLICIES = {
+    "member": _MemberPolicy,
+    "party": _PartyPolicy,
+    "institution": _InstitutionPolicy,
+}
+
+
+def reconciliation_identity(entity_kind: str, wrapper: dict) -> tuple[str, str, str] | None:
+    """Return the existing policy's local IRI, key and identity fingerprint.
+
+    Returning ``None`` means the entity is deliberately outside that policy's
+    eligible reconciliation scope (currently independent Party collections).
+    Core ETL must not duplicate or approximate policy fingerprint fields.
+    """
+    try:
+        policy = _ENTITY_POLICIES[entity_kind]()
+    except KeyError as error:
+        raise ValueError("unsupported reconciliation entity kind") from error
+    entity = policy.extract(wrapper)
+    policy.validate(entity)
+    if not policy.eligible(entity):
+        return None
+    return policy.local_iri(entity), policy.entity_key(entity), policy.fingerprint(entity)
 
 
 def _stored_resolution(row) -> Resolution:

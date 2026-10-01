@@ -131,6 +131,27 @@ def test_offline_cli_writes_deterministic_named_graph_output(tmp_path):
     assert "external-links" in first and "wikidata.org/entity/Q1" in first
     assert main(arguments) == 0 and output.read_text() == first
 
+
+def test_reviewed_member_fixture_rejects_missing_target_before_state_creation(tmp_path):
+    from oireachtas_etl.cli import main
+
+    response_file = tmp_path / "responses.json"
+    response_file.write_text(json.dumps({
+        "wikidata": {"p4690": {}, "entities": {
+            "Q1": {"entities": {"Q1": {"id": "Q1", "missing": ""}}}}},
+        "dbpedia": {"by_wikidata": {"Q1": []}},
+    }))
+    review = tmp_path / "review.json"
+    review.write_text(json.dumps({"version": 1, "decisions": {
+        MEMBER["memberCode"]: {"status": "accepted", "wikidata": "Q1"},
+    }}))
+    state = tmp_path / "not-created.sqlite"
+    with pytest.raises(ValueError, match="invalid Wikidata entity for reviewed QID"):
+        main(["reconcile", "members", "--fixture", str(ROOT / "data/api_examples/member.json"),
+              "--responses-file", str(response_file), "--offline", "--review-file", str(review),
+              "--reconciliation-state-file", str(state)])
+    assert not state.exists()
+
 def test_malformed_and_service_failure_are_pending_but_manual_acceptance_survives_lookup_outage():
     assert resolve(MEMBER, {}, WD(["not-a-qid"]), DB()).state == "pending"
     assert resolve(MEMBER, {}, WD(["Q1"]), DB({"not":"a list"})).evidence["errors"]
@@ -519,6 +540,7 @@ def test_member_manifest_contract_bump_republishes_unchanged_graph(tmp_path, mon
     monkeypatch.setattr(cli, "verify_core_graph", lambda *args, **kwargs: None)
     state_db = tmp_path / "core-state.sqlite"
     assert cli.main(["run", "members", "--fixture", str(fixture), "--state-db", str(state_db),
+                     "--reconciliation-state-file", str(tmp_path / "reconciliation.sqlite"),
                      "--legacy-state-file", str(manifest),
                      "--raw-dir", str(tmp_path / "raw"), "--fuseki-gsp-url", "https://example.test/gsp",
                      "--fuseki-sparql-url", "https://example.test/sparql"]) == 0

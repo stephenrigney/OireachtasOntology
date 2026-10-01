@@ -104,7 +104,8 @@ def test_members_workflow_gsp_replacement_removes_stale_content_and_retains_abse
     absent = "https://data.oireachtas.ie/ie/oireachtas/member/id/Absent"
     legacy_state.write_text(json.dumps({"version": 1, "members": {absent: {"published_hash": "retained", "graph_iri": "https://data.oireachtas.ie/graph/member/Absent", "contract_version": 1}}}))
     args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(state), legacy_state_file=str(legacy_state), output_nq=None,
-                     output_ttl=None, fuseki_gsp_url=GSP, fuseki_sparql_url=SPARQL)
+                     output_ttl=None, fuseki_gsp_url=GSP, fuseki_sparql_url=SPARQL,
+                     reconciliation_state_file=str(tmp_path / "reconciliation.sqlite"))
     graph_iri = member_graph_iri(wrapper["member"])
     loader = FusekiGraphStoreLoader(GSP, user=FUSEKI_USER, password=FUSEKI_PASSWORD)
     client = FusekiSparqlClient(SPARQL, user=FUSEKI_USER, password=FUSEKI_PASSWORD)

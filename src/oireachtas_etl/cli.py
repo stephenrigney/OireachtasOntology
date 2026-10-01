@@ -1,5 +1,5 @@
 from __future__ import annotations
-import argparse, json
+import argparse, json, sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import hashlib
@@ -28,11 +28,44 @@ from .reconciliation import (DbpediaClient, ReconciliationStore, WikidataClient,
                               FixtureResponseError, external_graph_iri, party_external_graph_iri,
                               load_party_review, load_review, normalize_party_candidate,
                               deduplicate_party_records, reconcile_party_records, reconcile_records, valid_qid,
-                              _enwiki, _institution_candidate_negative_evidence,
+                              _enwiki, _fetch_wikidata_target,
+                              _institution_candidate_negative_evidence,
                               _normalize_institution_candidate_for, deduplicate_institution_records,
                               institution_external_graph_iri, institution_records,
                               load_institution_review,
-                              reconcile_institution_records)
+                              reconcile_institution_records, reconciliation_identity)
+
+
+def _reconciliation_state_path(args: argparse.Namespace, settings: Settings) -> Path:
+    return Path(getattr(args, "reconciliation_state_file", None)
+                or settings.reconciliation_state_db_file).expanduser()
+
+
+def _mark_reconciliation_due(store: ReconciliationStore, entity_kind: str,
+                             wrapper: dict, *, force: bool = False) -> bool:
+    identity = reconciliation_identity(entity_kind, wrapper)
+    if identity is None:
+        return False
+    local_iri, entity_key, fingerprint = identity
+    return store.mark_due(entity_kind, local_iri, entity_key, fingerprint, force=force)
+
+
+def _handoff_warning(entity_kind: str, error: Exception) -> None:
+    # Reconciliation still performs complete-source selection against its own
+    # durable fingerprint/next_recheck_at state. A failed eager handoff cannot
+    # undo a verified authoritative graph or make it dirty again.
+    print(f"external reconciliation handoff deferred for {entity_kind}: "
+          f"{type(error).__name__}: {error}; retry via reconcile {entity_kind}", file=sys.stderr)
+
+
+def _try_mark_due(store: ReconciliationStore | None, entity_kind: str,
+                  wrapper: dict, *, force: bool = False) -> None:
+    if store is None:
+        return
+    try:
+        _mark_reconciliation_due(store, entity_kind, wrapper, force=force)
+    except Exception as error:
+        _handoff_warning(entity_kind, error)
 
 def _records_from_fixture(path: Path) -> tuple[list[dict], bytes]:
     body = path.read_bytes()
@@ -157,6 +190,23 @@ def _run_reference_impl(args: argparse.Namespace, store: CoreStateStore | None =
         FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout).replace(graph_iri, payload, content_type="application/n-triples")
         competency(FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout))
         store.complete_endpoint_publication(endpoint_name, graph_iri, digest)
+        if endpoint_name == "parties":
+            # Core state is already clean. The existing reconciliation store is
+            # the sole due authority; if it is unavailable, the next complete
+            # reconcile scan still detects new/identity-changed source records.
+            try:
+                reconciliation_store = ReconciliationStore(_reconciliation_state_path(args, settings))
+            except Exception as error:
+                _handoff_warning("party", error)
+            else:
+                try:
+                    for wrapper in records:
+                        _try_mark_due(reconciliation_store, "party", wrapper)
+                finally:
+                    try:
+                        reconciliation_store.close()
+                    except Exception as error:
+                        _handoff_warning("party", error)
     elif not args.offline:
         raise ValueError("no Fuseki GSP endpoint configured; use --offline for fixture/developer runs")
     print(json.dumps({"records": len(records), "published": bool(endpoint)}, sort_keys=True))
@@ -247,7 +297,8 @@ def _replay_missing_dirty(endpoint: str, resource: dict, store: CoreStateStore,
 
 
 def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = None,
-                      run_id: str | None = None) -> int:
+                      run_id: str | None = None,
+                      reconciliation_store: ReconciliationStore | None = None) -> int:
     settings = Settings.from_environment()
     settings = Settings(**{**settings.__dict__, "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir})
     if args.fixture:
@@ -312,6 +363,8 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
                     except ValueError:
                         pass  # verified whole-graph replacement below repairs mismatch
                     else:
+                        _try_mark_due(reconciliation_store, "member", wrapper,
+                                      force=status == "new")
                         skipped += 1
                         continue
                 graph, exclusions = transform_member_with_report(wrapper); validate_member(wrapper, graph)
@@ -326,6 +379,7 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
             verify_core_graph(client, graph_iri, payload)
             store.complete_publication("members", identity, source_hash=digest, graph_iri=graph_iri,
                                        payload_hash=payload_hash, contract_version=2)
+            _try_mark_due(reconciliation_store, "member", wrapper, force=status == "new")
             published += 1
         for row in known:
             if row["resource_iri"] in seen or row["publication_state"] != "dirty":
@@ -343,7 +397,8 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
     return 0
 
 
-def _run_members(args: argparse.Namespace, store: CoreStateStore | None = None) -> int:
+def _run_members(args: argparse.Namespace, store: CoreStateStore | None = None,
+                 reconciliation_store: ReconciliationStore | None = None) -> int:
     if store is None:
         return _run_members_impl(args)
     settings = Settings.from_environment()
@@ -353,7 +408,7 @@ def _run_members(args: argparse.Namespace, store: CoreStateStore | None = None) 
                                          "api_url": None if args.fixture else settings.members_api_url,
                                          "limit": settings.limit})
     try:
-        result = _run_members_impl(args, store, run_id)
+        result = _run_members_impl(args, store, run_id, reconciliation_store)
     except Exception as error:
         store.finish_run(run_id, success=False, error=f"{type(error).__name__}: {error}")
         raise
@@ -371,7 +426,21 @@ def run_members(args: argparse.Namespace) -> int:
     with state_lock(state_db):
         with CoreStateStore(state_db, legacy_members=legacy_members,
                             legacy_bills=settings.bills_legacy_state_file) as store:
-            return _run_members(args, store)
+            endpoint = args.fuseki_gsp_url or settings.fuseki_gsp_url
+            if not endpoint:
+                return _run_members(args, store)
+            try:
+                reconciliation_store = ReconciliationStore(_reconciliation_state_path(args, settings))
+            except Exception as error:
+                _handoff_warning("member", error)
+                return _run_members(args, store)
+            try:
+                return _run_members(args, store, reconciliation_store)
+            finally:
+                try:
+                    reconciliation_store.close()
+                except Exception as error:
+                    _handoff_warning("member", error)
 
 
 def _bills_fixture_records(path: Path) -> tuple[list[dict], bytes, int | None]:
@@ -594,7 +663,8 @@ class _FixtureDbpediaClient:
 
 def _validate_fixture_responses(data: object, records: list[dict], decisions: dict[str, dict]) -> None:
     """Reject incomplete offline evidence before state is opened or changed."""
-    wikidata = _FixtureWikidataClient(data).data
+    wikidata_client = _FixtureWikidataClient(data)
+    wikidata = wikidata_client.data
     dbpedia = _FixtureDbpediaClient(data).data
     for wrapper in records:
         code = wrapper["member"]["memberCode"]
@@ -606,6 +676,10 @@ def _validate_fixture_responses(data: object, records: list[dict], decisions: di
             for qid in qids:
                 if qid not in wikidata["entities"] or qid not in dbpedia:
                     raise ValueError("response fixture lacks downstream entry for " + qid)
+                entity, target_error = _fetch_wikidata_target(wikidata_client, qid)
+                if target_error is not None:
+                    raise ValueError("response fixture has invalid Wikidata entity for reviewed QID " + qid)
+                _enwiki(entity)
             continue
         if code not in wikidata["p4690"] or not isinstance(wikidata["p4690"][code], list):
             raise ValueError("response fixture lacks valid Wikidata P4690 entry for " + code)
@@ -640,20 +714,30 @@ class _FixturePartyWikidataClient:
             if not isinstance(data, dict) or set(data) != {"wikidata"}:
                 raise ValueError
             wikidata = data["wikidata"]
-            if not isinstance(wikidata, dict) or set(wikidata) != {"party_candidates"}:
+            if (not isinstance(wikidata, dict)
+                    or set(wikidata) not in ({"party_candidates"}, {"party_candidates", "entities"})):
                 raise ValueError
             values = wikidata["party_candidates"]
             if not isinstance(values, dict) or any(not isinstance(key, str) for key in values):
                 raise ValueError
+            entities = wikidata.get("entities", {})
+            if not isinstance(entities, dict) or any(not valid_qid(qid) for qid in entities):
+                raise ValueError
         except (KeyError, TypeError, ValueError) as error:
             raise ValueError("invalid Party reconciliation response fixture schema") from error
         self.data = values
+        self.entities = entities
 
     def lookup_party_candidates(self, wrapper):
         local_iri = wrapper["party"]["uri"]
         if local_iri not in self.data:
             raise FixtureResponseError("response fixture lacks Party candidate entry for " + local_iri)
         return self.data[local_iri]
+
+    def entity(self, qid):
+        if qid not in self.entities:
+            raise FixtureResponseError("response fixture lacks Wikidata entity for reviewed QID " + qid)
+        return self.entities[qid]
 
 
 def _validate_party_fixture_responses(data: object, records: list[dict], decisions: dict[str, dict]) -> None:
@@ -662,9 +746,19 @@ def _validate_party_fixture_responses(data: object, records: list[dict], decisio
     unknown = sorted(set(client.data) - set(eligible))
     if unknown:
         raise ValueError("response fixture contains unknown or Independent Party IRI: " + ", ".join(unknown))
+    entities_required = set()
     for local_iri, wrapper in eligible.items():
         decision = decisions.get(local_iri)
         if decision is not None:
+            if decision["status"] == "accepted":
+                qid = decision["wikidata"]
+                entities_required.add(qid)
+                if qid not in client.entities:
+                    raise ValueError("response fixture lacks Wikidata entity for reviewed QID " + qid)
+                entity, target_error = _fetch_wikidata_target(client, qid)
+                if target_error is not None:
+                    raise ValueError("response fixture has invalid Wikidata entity for reviewed QID " + qid)
+                _enwiki(entity)  # validates any supplied sitelink
             continue
         if local_iri not in client.data or not isinstance(client.data[local_iri], list):
             raise ValueError("response fixture lacks valid Party candidate entry for " + local_iri)
@@ -681,6 +775,9 @@ def _validate_party_fixture_responses(data: object, records: list[dict], decisio
             if any(label.casefold() not in labels for label in candidate["matched_on"]):
                 raise ValueError("response fixture candidate lacks its matched label for " + local_iri)
             seen.add(candidate["qid"])
+    unknown_entities = sorted(set(client.entities) - entities_required)
+    if unknown_entities:
+        raise ValueError("response fixture contains unrequested Wikidata entities: " + ", ".join(unknown_entities))
 
 
 def _institution_fixture_records(path: Path) -> list[dict]:
@@ -746,19 +843,16 @@ def _validate_institution_fixture_responses(data: object, records: list[dict], d
     for local_iri in sorted(local_iris):
         decision = decisions.get(local_iri)
         if decision is not None:
-            if decision["status"] == "accepted" and "wikipedia" in decision:
+            if decision["status"] == "accepted":
                 qid = decision["wikidata"]
                 entities_required.add(qid)
                 if qid not in client.entities:
                     raise ValueError("response fixture lacks Wikidata entity for reviewed QID " + qid)
-                response = client.entities[qid]
-                if (not isinstance(response, dict) or response.get("redirects")
-                        or not isinstance(response.get("entities"), dict)
-                        or not isinstance(response["entities"].get(qid), dict)
-                        or response["entities"][qid].get("missing") is not None
-                        or response["entities"][qid].get("id", qid) != qid):
-                    raise ValueError("response fixture has malformed Wikidata entity for reviewed QID " + qid)
-                _enwiki(response["entities"][qid])  # validates any supplied sitelink
+                entity, target_error = _fetch_wikidata_target(client, qid)
+                if target_error is not None:
+                    raise ValueError("response fixture has invalid Wikidata entity for reviewed QID " + qid)
+                if "wikipedia" in decision:
+                    _enwiki(entity)
             continue
         if local_iri not in client.candidates or not isinstance(client.candidates[local_iri], list):
             raise ValueError("response fixture lacks valid institutional candidate entry for " + local_iri)
@@ -806,7 +900,8 @@ def run_reconcile_members(args: argparse.Namespace) -> int:
         wikidata, dbpedia = _FixtureWikidataClient(data), _FixtureDbpediaClient(data)
     else:
         wikidata, dbpedia = WikidataClient(timeout=Settings.from_environment().timeout), DbpediaClient(timeout=Settings.from_environment().timeout)
-    store = ReconciliationStore(Path(args.reconciliation_state_file or "~/.local/share/oireachtas-etl/member-reconciliation.sqlite").expanduser())
+    settings = Settings.from_environment()
+    store = ReconciliationStore(_reconciliation_state_path(args, settings))
     try:
         loader = None
         publication_count = 0
@@ -875,8 +970,8 @@ def run_reconcile_parties(args: argparse.Namespace) -> int:
         raise ValueError("--offline Party reconciliation requires --responses-file")
     else:
         wikidata = WikidataClient(timeout=Settings.from_environment().timeout)
-    state_path = args.reconciliation_state_file or "~/.local/share/oireachtas-etl/member-reconciliation.sqlite"
-    store = ReconciliationStore(Path(state_path).expanduser())
+    settings = Settings.from_environment()
+    store = ReconciliationStore(_reconciliation_state_path(args, settings))
     try:
         loader = None
         publication_count = 0
@@ -936,8 +1031,8 @@ def run_reconcile_institutions(args: argparse.Namespace) -> int:
     else:
         wikidata = WikidataClient(timeout=Settings.from_environment().timeout)
 
-    state_path = args.reconciliation_state_file or "~/.local/share/oireachtas-etl/member-reconciliation.sqlite"
-    store = ReconciliationStore(Path(state_path).expanduser())
+    settings = Settings.from_environment()
+    store = ReconciliationStore(_reconciliation_state_path(args, settings))
     try:
         loader = None
         publication_count = 0
@@ -997,6 +1092,8 @@ def main(argv: list[str] | None = None) -> int:
     run = sub.add_parser("run"); run.add_argument("endpoint", choices=["houses", "parties", "constituencies", "members", "bills"])
     run.add_argument("--fixture"); run.add_argument("--offline", action="store_true"); run.add_argument("--raw-dir")
     run.add_argument("--state-db", help="shared authoritative core ETL SQLite database")
+    run.add_argument("--reconciliation-state-file",
+                     help="existing external-reconciliation SQLite database (shared with reconcile commands)")
     run.add_argument("--full", action="store_true", help="complete Bills source reconciliation")
     run.add_argument("--overlap-seconds", type=int, help="Bills cursor overlap (default: 3600)")
     run.add_argument("--legacy-state-file", "--state-file", dest="legacy_state_file",

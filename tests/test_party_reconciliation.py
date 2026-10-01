@@ -48,10 +48,15 @@ class PartyWD:
     def __init__(self, candidates=None):
         self.candidates = [] if candidates is None else candidates
         self.calls = []
+        self.entity_calls = []
 
     def lookup_party_candidates(self, record):
         self.calls.append(record["party"]["uri"])
         return self.candidates
+
+    def entity(self, qid):
+        self.entity_calls.append(qid)
+        return {"entities": {qid: {"id": qid}}}
 
 
 class Publisher:
@@ -364,7 +369,10 @@ def test_party_cli_offline_reviewed_run_is_deterministic_and_preflights_fixture(
     source = tmp_path / "parties.json"
     source.write_text(json.dumps([PARTY, INDEPENDENT]))
     responses = tmp_path / "responses.json"
-    responses.write_text(json.dumps({"wikidata": {"party_candidates": {}}}))
+    responses.write_text(json.dumps({"wikidata": {
+        "party_candidates": {},
+        "entities": {"Q832321": {"entities": {"Q832321": {"id": "Q832321"}}}},
+    }}))
     review = review_file(tmp_path / "review.json", {PARTY["party"]["uri"]: {"status": "accepted", "wikidata": "Q832321"}})
     output, state = tmp_path / "links.nq", tmp_path / "state.sqlite"
     args = ["reconcile", "parties", "--fixture", str(source), "--responses-file", str(responses), "--offline", "--all",
@@ -383,4 +391,15 @@ def test_party_cli_offline_reviewed_run_is_deterministic_and_preflights_fixture(
     with pytest.raises(ValueError, match="lacks valid Party candidate"):
         main(["reconcile", "parties", "--fixture", str(source), "--responses-file", str(bad_responses), "--offline",
               "--review-file", str(no_review), "--reconciliation-state-file", str(no_state)])
+    assert not no_state.exists()
+
+    # A fixture describing a reviewed target as missing is invalid test
+    # evidence, not a simulated live-service retry or permission to publish.
+    bad_responses.write_text(json.dumps({"wikidata": {
+        "party_candidates": {},
+        "entities": {"Q832321": {"entities": {"Q832321": {"id": "Q832321", "missing": ""}}}},
+    }}))
+    with pytest.raises(ValueError, match="invalid Wikidata entity"):
+        main(["reconcile", "parties", "--fixture", str(source), "--responses-file", str(bad_responses),
+              "--offline", "--review-file", str(review), "--reconciliation-state-file", str(no_state)])
     assert not no_state.exists()
