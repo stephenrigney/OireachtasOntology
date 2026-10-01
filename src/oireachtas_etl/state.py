@@ -17,7 +17,7 @@ import uuid
 from urllib.parse import quote, unquote, urlsplit
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 ENDPOINTS = ("houses", "parties", "constituencies", "members", "legislation")
 RESOURCE_ENDPOINTS = ("members", "legislation")
 SHARED_GRAPHS = {
@@ -33,6 +33,18 @@ class CoreStateError(ValueError):
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _utc_timestamp(value: object, label: str) -> str:
+    if not isinstance(value, str):
+        raise CoreStateError(f"{label} must be an ISO timestamp")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise CoreStateError(f"invalid {label}: {value!r}") from error
+    if parsed.tzinfo is None:
+        raise CoreStateError(f"{label} must include a timezone")
+    return parsed.astimezone(timezone.utc).isoformat()
 
 
 def _json(value: object) -> str:
@@ -187,7 +199,7 @@ class CoreStateStore:
         connection.execute("BEGIN IMMEDIATE")
         try:
             version = connection.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, SCHEMA_VERSION):
+            if version not in (0, 1, SCHEMA_VERSION):
                 raise CoreStateError(f"unsupported core ETL state schema version: {version}")
             if version == 0:
                 # ``executescript`` implicitly commits an open transaction.
@@ -197,10 +209,32 @@ class CoreStateStore:
                     if statement.strip():
                         connection.execute(statement)
                 connection.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
+            elif version == 1:
+                # Tranche 2 adds the legislation cursor, complete-scan absence
+                # evidence and the last successfully published graph payload
+                # needed for exact graph/state verification and safe repair.
+                for statement in (
+                    "ALTER TABLE endpoint_state ADD COLUMN incremental_cursor TEXT",
+                    "ALTER TABLE resource_state ADD COLUMN published_payload TEXT",
+                    "ALTER TABLE resource_state ADD COLUMN last_missing_run_id TEXT",
+                    "ALTER TABLE resource_state ADD COLUMN last_missing_at TEXT",
+                    "ALTER TABLE resource_state ADD COLUMN missing_scan_count INTEGER NOT NULL DEFAULT 0",
+                ):
+                    connection.execute(statement)
+                connection.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
             else:
                 tables = {row[0] for row in connection.execute(
                     "SELECT name FROM sqlite_master WHERE type='table'")}
                 if not {"core_metadata", "etl_run", "endpoint_state", "resource_state"} <= tables:
+                    raise CoreStateError("core ETL SQLite schema is incomplete")
+                columns = {table: {row[1] for row in connection.execute(
+                    f"PRAGMA table_info({table})")} for table in ("endpoint_state", "resource_state")}
+                required = {
+                    "endpoint_state": {"incremental_cursor"},
+                    "resource_state": {"published_payload", "last_missing_run_id",
+                                       "last_missing_at", "missing_scan_count"},
+                }
+                if any(not names <= columns[table] for table, names in required.items()):
                     raise CoreStateError("core ETL SQLite schema is incomplete")
             migrations = (("members", legacy_members), ("legislation", legacy_bills))
             for endpoint, legacy_path in migrations:
@@ -209,14 +243,25 @@ class CoreStateStore:
                     "SELECT value FROM core_metadata WHERE key=?", (marker,)).fetchone()
                 if imported is not None:
                     continue
-                count = 0
-                if legacy_path is not None and Path(legacy_path).exists():
-                    manifest = _manifest(Path(legacy_path), endpoint)
-                    rows = [_validate_legacy_row(endpoint, identity, row)
-                            for identity, row in manifest.items()]
-                    for row in rows:
-                        self._insert_legacy_row(row)
-                    count = len(rows)
+                # An absent manifest has not been imported. In particular a
+                # read-only `state status` must not consume the one-time import
+                # opportunity before a legacy file is supplied.
+                if legacy_path is None or not Path(legacy_path).exists():
+                    continue
+                established = connection.execute(
+                    "SELECT 1 FROM resource_state WHERE endpoint=? LIMIT 1", (endpoint,)
+                ).fetchone()
+                if established is not None:
+                    raise CoreStateError(
+                        f"legacy {endpoint} manifest appeared after SQLite resource state was established; "
+                        "resolve the conflict explicitly rather than discarding or overwriting state"
+                    )
+                manifest = _manifest(Path(legacy_path), endpoint)
+                rows = [_validate_legacy_row(endpoint, identity, row)
+                        for identity, row in manifest.items()]
+                for row in rows:
+                    self._insert_legacy_row(row)
+                count = len(rows)
                 connection.execute("INSERT INTO core_metadata(key,value) VALUES (?,?)",
                                    (marker, _json({"source": str(legacy_path) if legacy_path else None,
                                                    "rows": count, "imported_at": _now()})))
@@ -234,7 +279,15 @@ class CoreStateStore:
           VALUES (:endpoint,:resource_iri,:graph_iri,:observed_source_hash,:published_source_hash,
           :published_payload_hash,:last_seen_at,:last_seen_run_id,:last_published_at,
           :publication_state,:pending_source_hash,:pending_graph_iri,:pending_payload,
-          :pending_payload_hash,:source_presence,:contract_version)""", row)
+           :pending_payload_hash,:source_presence,:contract_version)""", row)
+
+    def incremental_cursor(self, endpoint: str = "legislation") -> str | None:
+        if endpoint != "legislation":
+            raise CoreStateError(f"incremental cursors are not defined for {endpoint}")
+        row = self.connection.execute(
+            "SELECT incremental_cursor FROM endpoint_state WHERE endpoint=?", (endpoint,)
+        ).fetchone()
+        return row[0] if row else None
 
     def start_run(self, endpoint: str, run_kind: str, *, is_complete: bool,
                   parameters: dict, started_at: str | None = None) -> str:
@@ -246,6 +299,12 @@ class CoreStateStore:
             raise CoreStateError("run completeness and source parameters must be explicit")
         run_id = str(uuid.uuid4())
         with self._transaction():
+            # Online callers hold the database's advisory scan lock. Any old
+            # running row for this endpoint survived a process interruption;
+            # it must not remain indefinitely indistinguishable from live work.
+            self.connection.execute("""UPDATE etl_run SET status='failed',completed_at=?,
+                error='interrupted before completion; retry started'
+                WHERE endpoint=? AND status='running'""", (_now(), endpoint))
             self.connection.execute("""INSERT INTO etl_run
               (run_id,endpoint,run_kind,is_complete,started_at,status,parameters_json)
               VALUES (?,?,?,?,?,'running',?)""",
@@ -253,26 +312,68 @@ class CoreStateStore:
         return run_id
 
     def finish_run(self, run_id: str, *, success: bool, error: str | None = None,
-                   completed_at: str | None = None) -> None:
+                   completed_at: str | None = None, incremental_cursor: str | None = None,
+                   complete_scan: bool = False) -> None:
         if type(success) is not bool:
             raise CoreStateError("run success must be explicit")
+        if type(complete_scan) is not bool:
+            raise CoreStateError("complete-scan finalization must be explicit")
+        if incremental_cursor is not None:
+            incremental_cursor = _utc_timestamp(incremental_cursor, "incremental cursor")
+            if not success:
+                raise CoreStateError("a failed run cannot advance the legislation cursor")
+        if complete_scan and not success:
+            raise CoreStateError("a failed run cannot establish missing-resource evidence")
         status = "succeeded" if success else "failed"
         with self._transaction():
             row = self.connection.execute("SELECT * FROM etl_run WHERE run_id=?", (run_id,)).fetchone()
             if row is None or row["status"] != "running":
                 raise CoreStateError(f"run is not active: {run_id}")
+            if incremental_cursor is not None and (
+                    row["endpoint"] != "legislation"
+                    or row["run_kind"] not in {"incremental_refresh", "complete_source_reconciliation"}):
+                raise CoreStateError("only a successful legislation refresh can advance its cursor")
+            if complete_scan and (
+                    not row["is_complete"] or row["endpoint"] != "legislation"
+                    or row["run_kind"] != "complete_source_reconciliation"):
+                raise CoreStateError("missing-resource evidence requires a complete legislation reconciliation")
+            if (incremental_cursor is not None or complete_scan) and json.loads(row["parameters_json"]).get("source") != "api":
+                raise CoreStateError("only an API source run can advance a cursor or establish absence")
+            previous_cursor = None
+            if incremental_cursor is not None:
+                cursor_row = self.connection.execute(
+                    "SELECT incremental_cursor FROM endpoint_state WHERE endpoint='legislation'").fetchone()
+                previous_cursor = cursor_row[0] if cursor_row else None
+                if (previous_cursor is not None
+                        and datetime.fromisoformat(incremental_cursor)
+                        < datetime.fromisoformat(_utc_timestamp(previous_cursor, "stored legislation cursor"))):
+                    raise CoreStateError("legislation cursor cannot move backwards")
             when = completed_at or _now()
             self.connection.execute("UPDATE etl_run SET completed_at=?,status=?,error=? WHERE run_id=?",
                                     (when, status, None if success else error, run_id))
             if success:
                 complete_run_id = run_id if row["is_complete"] else None
                 self.connection.execute("""INSERT INTO endpoint_state
-                  (endpoint,last_successful_run_id,last_successful_complete_run_id,updated_at)
-                  VALUES (?,?,?,?) ON CONFLICT(endpoint) DO UPDATE SET
+                  (endpoint,last_successful_run_id,last_successful_complete_run_id,incremental_cursor,updated_at)
+                  VALUES (?,?,?,?,?) ON CONFLICT(endpoint) DO UPDATE SET
                   last_successful_run_id=excluded.last_successful_run_id,
                   last_successful_complete_run_id=COALESCE(excluded.last_successful_complete_run_id,
-                    endpoint_state.last_successful_complete_run_id), updated_at=excluded.updated_at""",
-                   (row["endpoint"], run_id, complete_run_id, when))
+                    endpoint_state.last_successful_complete_run_id),
+                  incremental_cursor=COALESCE(excluded.incremental_cursor,endpoint_state.incremental_cursor),
+                  updated_at=excluded.updated_at""",
+                    (row["endpoint"], run_id, complete_run_id, incremental_cursor, when))
+                if complete_scan:
+                    resources = self.connection.execute(
+                        "SELECT resource_iri,source_presence,missing_scan_count FROM resource_state "
+                        "WHERE endpoint='legislation' AND COALESCE(last_seen_run_id,'')<>?",
+                        (run_id,)).fetchall()
+                    for resource in resources:
+                        count = resource["missing_scan_count"] + 1
+                        presence = "missing" if resource["source_presence"] == "present" else "confirmed_missing"
+                        self.connection.execute("""UPDATE resource_state SET source_presence=?,
+                          last_missing_run_id=?,last_missing_at=?,missing_scan_count=?
+                          WHERE endpoint='legislation' AND resource_iri=?""",
+                          (presence, run_id, when, count, resource["resource_iri"]))
 
     def endpoint_publication(self, endpoint: str) -> dict | None:
         if endpoint not in SHARED_GRAPHS:
@@ -290,6 +391,7 @@ class CoreStateStore:
             old = self.endpoint_publication(endpoint) or {}
             metadata = {"graph_iri": graph_iri, "publication_state": "dirty",
                         "published_payload_hash": old.get("published_payload_hash"),
+                        "last_published_at": old.get("last_published_at"),
                         "pending_payload_hash": digest}
             self.connection.execute("""INSERT INTO endpoint_state
                 (endpoint,publication_metadata_json,updated_at) VALUES (?,?,?)
@@ -330,7 +432,8 @@ class CoreStateStore:
                publication_state,source_presence)
               VALUES (?,?,?,?,?,?, 'clean','present') ON CONFLICT(endpoint,resource_iri) DO UPDATE SET
               observed_source_hash=excluded.observed_source_hash,last_seen_at=excluded.last_seen_at,
-              last_seen_run_id=excluded.last_seen_run_id,source_presence='present'""",
+              last_seen_run_id=excluded.last_seen_run_id,source_presence='present',
+              last_missing_run_id=NULL,last_missing_at=NULL,missing_scan_count=0""",
               (endpoint, resource_iri, graph_iri, source_hash, when, run_id))
         return self.get_resource(endpoint, resource_iri)  # type: ignore[return-value]
 
@@ -364,19 +467,21 @@ class CoreStateStore:
             raise CoreStateError("publication contract version must be a positive integer")
         with self._transaction():
             row = self.connection.execute("""SELECT publication_state,pending_source_hash,
-              pending_graph_iri,pending_payload_hash FROM resource_state
+              pending_graph_iri,pending_payload_hash,pending_payload FROM resource_state
               WHERE endpoint=? AND resource_iri=?""", (endpoint, resource_iri)).fetchone()
             if (row is None or row["publication_state"] != "dirty"
                     or row["pending_source_hash"] != source_hash
                     or row["pending_graph_iri"] != graph_iri
-                    or row["pending_payload_hash"] != payload_hash):
+                    or row["pending_payload_hash"] != payload_hash
+                    or not isinstance(row["pending_payload"], str)
+                    or hashlib.sha256(row["pending_payload"].encode("utf-8")).hexdigest() != payload_hash):
                 raise CoreStateError(f"publication completion does not match durable pending state: {resource_iri}")
             self.connection.execute("""UPDATE resource_state SET graph_iri=?,observed_source_hash=?,
-              published_source_hash=?,published_payload_hash=?,last_published_at=?,
+              published_source_hash=?,published_payload_hash=?,published_payload=?,last_published_at=?,
               publication_state='clean',pending_source_hash=NULL,pending_graph_iri=NULL,
               pending_payload=NULL,pending_payload_hash=NULL,contract_version=?
               WHERE endpoint=? AND resource_iri=?""",
-              (graph_iri, source_hash, source_hash, payload_hash, published_at or _now(),
+              (graph_iri, source_hash, source_hash, payload_hash, row["pending_payload"], published_at or _now(),
                contract_version, endpoint, resource_iri))
 
     def get_resource(self, endpoint: str, resource_iri: str) -> dict | None:
@@ -399,18 +504,29 @@ class CoreStateStore:
             resources = self.connection.execute("""SELECT
               SUM(CASE WHEN publication_state='dirty' THEN 1 ELSE 0 END),COUNT(*)
               FROM resource_state WHERE endpoint=?""", (endpoint,)).fetchone()
+            presence = {row[0]: row[1] for row in self.connection.execute(
+                "SELECT source_presence,COUNT(*) FROM resource_state WHERE endpoint=? GROUP BY source_presence",
+                (endpoint,))}
             endpoints.append({"endpoint": endpoint,
                               "last_successful_run_id": state["last_successful_run_id"] if state else None,
                               "last_successful_complete_run_id": state["last_successful_complete_run_id"] if state else None,
+                              "incremental_cursor": state["incremental_cursor"] if state else None,
                                "updated_at": state["updated_at"] if state else None,
                                "publication": (json.loads(state["publication_metadata_json"])
                                                if state and state["publication_metadata_json"] else None),
                               "dirty_resources": resources[0] or 0,
-                              "resources": resources[1]})
+                              "resources": resources[1],
+                              "missing_resources": presence.get("missing", 0),
+                              "confirmed_missing_resources": presence.get("confirmed_missing", 0)})
         dirty_resources = [dict(row) for row in self.connection.execute("""SELECT
-          endpoint,resource_iri,graph_iri,observed_source_hash,published_source_hash,
-          pending_source_hash,pending_graph_iri,pending_payload_hash,last_seen_at
-          FROM resource_state WHERE publication_state='dirty' ORDER BY endpoint,resource_iri""")]
+            endpoint,resource_iri,graph_iri,observed_source_hash,published_source_hash,
+           pending_source_hash,pending_graph_iri,pending_payload_hash,last_seen_at,
+           source_presence,last_missing_run_id,last_missing_at,missing_scan_count
+           FROM resource_state WHERE publication_state='dirty' ORDER BY endpoint,resource_iri""")]
+        missing_resources = [dict(row) for row in self.connection.execute("""SELECT
+            endpoint,resource_iri,graph_iri,source_presence,last_missing_run_id,last_missing_at,missing_scan_count
+            FROM resource_state WHERE source_presence IN ('missing','confirmed_missing')
+            ORDER BY endpoint,resource_iri""")]
         runs = [dict(row) for row in self.connection.execute(
             "SELECT run_id,endpoint,run_kind,is_complete,started_at,completed_at,status,error,parameters_json "
             "FROM etl_run ORDER BY started_at DESC LIMIT 20")]
@@ -419,6 +535,7 @@ class CoreStateStore:
             run["parameters"] = json.loads(run.pop("parameters_json"))
         return {"schema_version": SCHEMA_VERSION, "database": str(self.path),
                 "endpoints": endpoints, "dirty_resources": dirty_resources,
+                "missing_resources": missing_resources,
                 "recent_runs": runs}
 
     @contextmanager
@@ -450,9 +567,10 @@ CREATE TABLE etl_run (
 );
 CREATE INDEX etl_run_endpoint_started ON etl_run(endpoint,started_at);
 CREATE TABLE endpoint_state (
-   endpoint TEXT PRIMARY KEY CHECK(endpoint IN ('houses','parties','constituencies','members','legislation')),
+    endpoint TEXT PRIMARY KEY CHECK(endpoint IN ('houses','parties','constituencies','members','legislation')),
   last_successful_run_id TEXT,
   last_successful_complete_run_id TEXT,
+  incremental_cursor TEXT,
   publication_metadata_json TEXT,
   updated_at TEXT NOT NULL
 );
@@ -463,9 +581,13 @@ CREATE TABLE resource_state (
   observed_source_hash TEXT,
   published_source_hash TEXT,
   published_payload_hash TEXT,
+  published_payload TEXT,
   last_seen_at TEXT,
   last_seen_run_id TEXT,
   last_published_at TEXT,
+  last_missing_run_id TEXT,
+  last_missing_at TEXT,
+  missing_scan_count INTEGER NOT NULL DEFAULT 0 CHECK(missing_scan_count >= 0),
   publication_state TEXT NOT NULL CHECK(publication_state IN ('clean','dirty')),
   pending_source_hash TEXT,
   pending_graph_iri TEXT,

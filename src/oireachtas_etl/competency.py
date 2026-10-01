@@ -1,6 +1,6 @@
 """Post-publication competency checks scoped to the fixed named graphs."""
 from importlib.resources import files
-from rdflib import Literal, URIRef
+from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import XSD
 from .loader import FusekiSparqlClient
 
@@ -128,3 +128,33 @@ def verify_members_competency(client: FusekiSparqlClient) -> None:
                   for row in client.query(render_member_competency_query(filename))]
         if actual != expected:
             raise ValueError(f"post-load Members competency check {filename} failed: expected {expected!r}, got {actual!r}")
+def verify_core_graph(client, graph_iri: str, payload: str) -> None:
+    """Fail closed unless the entire remote resource graph equals the validated payload."""
+    from rdflib import Graph, Literal, URIRef, BNode
+    from rdflib.namespace import XSD
+
+    expected = Graph().parse(data=payload, format="nt")
+    rows = client.query(f"SELECT ?s ?p ?o WHERE {{ GRAPH <{graph_iri}> {{ ?s ?p ?o }} }}")
+
+    def term(binding):
+        if not isinstance(binding, dict) or not isinstance(binding.get("value"), str):
+            raise ValueError("malformed core graph verification response")
+        kind = binding.get("type")
+        if kind == "uri": return URIRef(binding["value"])
+        if kind == "literal" or kind == "typed-literal":
+            return Literal(binding["value"], lang=binding.get("xml:lang"),
+                           datatype=URIRef(binding["datatype"]) if binding.get("datatype") else None)
+        if kind == "bnode": return BNode(binding["value"])
+        raise ValueError("unknown core graph verification term")
+
+    def normalise(triple):
+        return tuple(Literal(str(value)) if isinstance(value, Literal)
+                     and value.language is None and value.datatype in (None, XSD.string)
+                     else value for value in triple)
+
+    try:
+        actual = {normalise(tuple(term(row[key]) for key in ("s", "p", "o"))) for row in rows}
+    except (KeyError, TypeError, AttributeError) as error:
+        raise ValueError("malformed core graph verification response") from error
+    if actual != {normalise(triple) for triple in expected}:
+        raise ValueError(f"core graph/state mismatch for {graph_iri}; retry verified whole-graph replacement")

@@ -1,19 +1,28 @@
 """Immutable raw-response store; collisions never overwrite evidence."""
 from __future__ import annotations
 import json, os, tempfile
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from .provenance import package_version, sha256
 
 def persist_raw(*, root: Path, endpoint: str, params: dict, body: bytes, status: int,
                 retrieved_at: datetime | None = None, ontology_version: str = "agents.owl.ttl@phase-1-houses-2026",
-                mapping_version: str = "houses_mapping.csv@phase-1-houses-2026", endpoint_name: str = "houses") -> tuple[Path, Path]:
+                 mapping_version: str = "houses_mapping.csv@phase-1-houses-2026", endpoint_name: str = "houses",
+                 extraction_id: str | None = None) -> tuple[Path, Path]:
     retrieved_at = retrieved_at or datetime.now(timezone.utc)
     day = retrieved_at.date().isoformat()
     skip = int(params["skip"])
     if endpoint_name not in {"houses", "parties", "constituencies", "members", "legislation"}:
         raise ValueError(f"unsupported raw endpoint: {endpoint_name!r}")
     destination = root / endpoint_name / day
+    if extraction_id is not None:
+        # Each online run retains its own immutable pages even if the same
+        # endpoint/skip is fetched repeatedly within a calendar day.
+        canonical = str(uuid.UUID(extraction_id))
+        if canonical != extraction_id:
+            raise ValueError("raw extraction ID must be a canonical UUID")
+        destination = destination / ("run-" + canonical)
     destination.mkdir(parents=True, exist_ok=True)
     raw_path = destination / f"skip-{skip:06d}.json"
     meta_path = destination / f"skip-{skip:06d}.meta.json"
@@ -22,6 +31,8 @@ def persist_raw(*, root: Path, endpoint: str, params: dict, body: bytes, status:
         "sha256": sha256(body), "etl_version": package_version(),
         "ontology_version": ontology_version, "mapping_version": mapping_version,
     }
+    if extraction_id is not None:
+        metadata["run_id"] = extraction_id
     if raw_path.exists() or meta_path.exists():
         if not raw_path.exists() or not meta_path.exists():
             raise FileExistsError(f"incomplete raw storage collision: {destination}")

@@ -1,6 +1,6 @@
 from __future__ import annotations
 import argparse, json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import hashlib
 from .api import ApiClient, HousesApiClient
@@ -8,6 +8,7 @@ from .config import CONSTITUENCIES_GRAPH, HOUSES_GRAPH, PARTIES_GRAPH, REFERENCE
 from .loader import FusekiGraphStoreLoader
 from .loader import FusekiSparqlClient
 from .competency import verify_constituencies_competency, verify_houses_competency, verify_parties_competency, verify_member_competency, verify_bill_competency
+from .competency import verify_core_graph
 from .raw import persist_raw
 from .serialization import nquads, ntriples, turtle
 from .transforms.houses import transform_houses_with_report
@@ -39,17 +40,19 @@ def _records_from_fixture(path: Path) -> tuple[list[dict], bytes]:
     if not isinstance(value, list): raise ValueError("fixture must be a JSON array")
     return value, body
 
-def _run_houses_impl(args: argparse.Namespace, store: CoreStateStore | None = None) -> int:
+def _run_houses_impl(args: argparse.Namespace, store: CoreStateStore | None = None,
+                     run_id: str | None = None) -> int:
     settings = Settings.from_environment()
     settings = Settings(**{**settings.__dict__, "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir})
     if args.fixture:
         records, body = _records_from_fixture(Path(args.fixture))
         persist_raw(root=settings.raw_dir, endpoint=str(Path(args.fixture)), params={"skip": 0, "limit": len(records)}, body=body,
-                    status=200, retrieved_at=datetime.now(timezone.utc), ontology_version=settings.ontology_version, mapping_version=settings.mapping_version)
+                    status=200, retrieved_at=datetime.now(timezone.utc), ontology_version=settings.ontology_version, mapping_version=settings.mapping_version,
+                    extraction_id=run_id)
     else:
         records, pages = [], []
         for page in HousesApiClient(settings.api_url, retries=settings.retries, timeout=settings.timeout).harvest(limit=settings.limit):
-            persist_raw(root=settings.raw_dir, endpoint=settings.api_url, params=page.params, body=page.body, status=page.status, ontology_version=settings.ontology_version, mapping_version=settings.mapping_version)
+            persist_raw(root=settings.raw_dir, endpoint=settings.api_url, params=page.params, body=page.body, status=page.status, ontology_version=settings.ontology_version, mapping_version=settings.mapping_version, extraction_id=run_id)
             decoded = json.loads(page.body); records.extend(decoded.get("results", decoded) if isinstance(decoded, dict) else decoded)
     graph, exclusions = transform_houses_with_report(records)
     validate_houses(records, graph)  # deliberately before any loader construction/invocation
@@ -88,7 +91,7 @@ def _run_shared(args: argparse.Namespace, endpoint_name: str, operation) -> int:
                                                      "constituencies": "constituencies_api_url"}[endpoint_name]),
                                                  "limit": settings.limit})
             try:
-                result = operation(args, store)
+                result = operation(args, store, run_id)
             except Exception as error:
                 store.finish_run(run_id, success=False, error=f"{type(error).__name__}: {error}")
                 raise
@@ -115,7 +118,8 @@ def _reference_fixture_records(path: Path, endpoint: str) -> tuple[list[dict], b
     return records, body
 
 
-def _run_reference_impl(args: argparse.Namespace, store: CoreStateStore | None = None) -> int:
+def _run_reference_impl(args: argparse.Namespace, store: CoreStateStore | None = None,
+                        run_id: str | None = None) -> int:
     endpoint_name = args.endpoint
     graph_iri, url_attr, transform, validator, competency, mapping_version = REFERENCE_ENDPOINTS[endpoint_name]
     settings = Settings.from_environment()
@@ -124,13 +128,14 @@ def _run_reference_impl(args: argparse.Namespace, store: CoreStateStore | None =
         records, body = _reference_fixture_records(Path(args.fixture), endpoint_name)
         persist_raw(root=settings.raw_dir, endpoint=str(Path(args.fixture)), params={"skip": 0, "limit": len(records)}, body=body,
                     status=200, retrieved_at=datetime.now(timezone.utc), ontology_version=REFERENCE_ONTOLOGY_VERSION,
-                    mapping_version=mapping_version, endpoint_name=endpoint_name)
+                    mapping_version=mapping_version, endpoint_name=endpoint_name, extraction_id=run_id)
     else:
         records = []
         api_url = getattr(settings, url_attr)
         for page in ApiClient(api_url, retries=settings.retries, timeout=settings.timeout).harvest(limit=settings.limit):
             persist_raw(root=settings.raw_dir, endpoint=api_url, params=page.params, body=page.body, status=page.status,
-                        ontology_version=REFERENCE_ONTOLOGY_VERSION, mapping_version=mapping_version, endpoint_name=endpoint_name)
+                    ontology_version=REFERENCE_ONTOLOGY_VERSION, mapping_version=mapping_version, endpoint_name=endpoint_name,
+                    extraction_id=run_id)
             decoded = json.loads(page.body)
             page_records = decoded.get("results", decoded) if isinstance(decoded, dict) else decoded
             records.extend(page_records)
@@ -235,6 +240,7 @@ def _replay_missing_dirty(endpoint: str, resource: dict, store: CoreStateStore,
     # record is not grounds for deleting it or for skipping recovery.
     loader.replace(graph_iri, payload, content_type="application/n-triples")
     verifier(client, graph_iri, identity, len(graph))
+    verify_core_graph(client, graph_iri, payload)
     store.complete_publication(endpoint, identity, source_hash=source_hash,
                                 graph_iri=graph_iri, payload_hash=payload_hash,
                                 contract_version=resource["contract_version"])
@@ -248,12 +254,12 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
         records, body, advertised = _members_fixture_records(Path(args.fixture))
         persist_raw(root=settings.raw_dir, endpoint=str(Path(args.fixture)), params={"skip": 0, "limit": len(records)}, body=body, status=200,
                     retrieved_at=datetime.now(timezone.utc), ontology_version=REFERENCE_ONTOLOGY_VERSION,
-                    mapping_version="member_mapping.csv@phase-3-members-2026", endpoint_name="members")
+                    mapping_version="member_mapping.csv@phase-3-members-2026", endpoint_name="members", extraction_id=run_id)
     else:
         records, advertised = [], None
         for page in ApiClient(settings.members_api_url, retries=settings.retries, timeout=settings.timeout).harvest(limit=settings.limit):
             persist_raw(root=settings.raw_dir, endpoint=settings.members_api_url, params=page.params, body=page.body, status=page.status,
-                        ontology_version=REFERENCE_ONTOLOGY_VERSION, mapping_version="member_mapping.csv@phase-3-members-2026", endpoint_name="members")
+                        ontology_version=REFERENCE_ONTOLOGY_VERSION, mapping_version="member_mapping.csv@phase-3-members-2026", endpoint_name="members", extraction_id=run_id)
             decoded = json.loads(page.body)
             if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list):
                 raise ValueError("every Members API page must be an object envelope with a results list")
@@ -288,6 +294,7 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
     query_endpoint = None if args.offline else (args.fuseki_sparql_url or settings.fuseki_sparql_url)
     if endpoint and not query_endpoint: raise ValueError("Fuseki SPARQL endpoint is required for post-load competency verification")
     published = skipped = 0
+    repaired: list[str] = []
     seen = {identity for _, _, identity, _, _, _ in graphs}
     known = store.resources("members") if store is not None else []
     missing = sorted(row["resource_iri"] for row in known if row["resource_iri"] not in seen)
@@ -298,8 +305,17 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
         client = FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
         for wrapper, graph, identity, digest, exclusions, status in graphs:
             if graph is None:
-                skipped += 1
-                continue
+                prior = store.get_resource("members", identity)
+                if prior["published_payload"] is not None:
+                    try:
+                        verify_core_graph(client, prior["graph_iri"], prior["published_payload"])
+                    except ValueError:
+                        pass  # verified whole-graph replacement below repairs mismatch
+                    else:
+                        skipped += 1
+                        continue
+                graph, exclusions = transform_member_with_report(wrapper); validate_member(wrapper, graph)
+                repaired.append(identity)
             graph_iri = member_graph_iri(wrapper["member"])
             payload = ntriples(graph)
             payload_hash = store.mark_publication_dirty("members", identity, source_hash=digest,
@@ -307,6 +323,7 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
                                                         contract_version=2)
             loader.replace(graph_iri, payload, content_type="application/n-triples")
             verify_member_competency(client, graph_iri, identity, len(graph))
+            verify_core_graph(client, graph_iri, payload)
             store.complete_publication("members", identity, source_hash=digest, graph_iri=graph_iri,
                                        payload_hash=payload_hash, contract_version=2)
             published += 1
@@ -320,6 +337,8 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
         raise ValueError("no Fuseki GSP endpoint configured; use --offline for fixture/developer runs")
     report = [item for _, _, _, _, exclusions, _ in graphs for item in exclusions]
     identities = {kind: sorted(identity for _, _, identity, _, _, status in graphs if status == kind) for kind in ("new", "changed", "skipped")}
+    identities["skipped"] = sorted(set(identities["skipped"]) - set(repaired))
+    identities["changed"] = sorted(set(identities["changed"]) | set(repaired))
     print(json.dumps({"records": len(records), "published": published, "skipped": skipped, "new": identities["new"], "changed": identities["changed"], "skipped_identities": identities["skipped"], "missing_retained": missing, "future_work_omitted": report}, sort_keys=True))
     return 0
 
@@ -368,8 +387,8 @@ def _bills_fixture_records(path: Path) -> tuple[list[dict], bytes, int | None]:
     return records, body, advertised
 
 
-def _deduplicate_bills(records: list[dict], advertised: int | None) -> list[dict]:
-    if not records: raise ValueError("Bills harvest must not be empty")
+def _deduplicate_bills(records: list[dict], advertised: int | None, *, allow_empty=False) -> list[dict]:
+    if not records and not allow_empty: raise ValueError("Bills harvest must not be empty")
     unique, graphs = {}, {}
     for wrapper in records:
         if not isinstance(wrapper, dict) or not isinstance(wrapper.get("bill"), dict): raise ValueError("each Legislation result must contain a bill object")
@@ -385,18 +404,33 @@ def _deduplicate_bills(records: list[dict], advertised: int | None) -> list[dict
     return [unique[key] for key in sorted(unique)]
 
 
+def _bill_source_time(wrapper: dict) -> datetime:
+    try:
+        value = wrapper["bill"]["lastUpdated"]
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            raise ValueError("timezone is required")
+        return parsed.astimezone(timezone.utc)
+    except (KeyError, TypeError, AttributeError, ValueError) as error:
+        raise ValueError("Bill lastUpdated must be a timezone-aware ISO timestamp") from error
+
+
 def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = None,
-                    run_id: str | None = None) -> int:
+                    run_id: str | None = None, *, window_start: datetime | None = None,
+                    upper: datetime | None = None, complete: bool = True) -> int:
     settings = Settings.from_environment()
     settings = Settings(**{**settings.__dict__, "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir})
     if args.fixture:
         records, body, advertised = _bills_fixture_records(Path(args.fixture))
         persist_raw(root=settings.raw_dir, endpoint=str(Path(args.fixture)), params={"skip": 0, "limit": len(records)}, body=body, status=200,
-                    retrieved_at=datetime.now(timezone.utc), ontology_version="legislation.owl.ttl@phase-4-legislative-lifecycle-2026", mapping_version="bill_mapping.csv@phase-4-legislative-lifecycle-2026", endpoint_name="legislation")
+                    retrieved_at=datetime.now(timezone.utc), ontology_version="legislation.owl.ttl@phase-4-legislative-lifecycle-2026", mapping_version="bill_mapping.csv@phase-4-legislative-lifecycle-2026", endpoint_name="legislation", extraction_id=run_id)
     else:
         records, advertised = [], None
-        for page in ApiClient(settings.bills_api_url, retries=settings.retries, timeout=settings.timeout).harvest(limit=settings.limit):
-            persist_raw(root=settings.raw_dir, endpoint=settings.bills_api_url, params=page.params, body=page.body, status=page.status, retrieved_at=datetime.now(timezone.utc), ontology_version="legislation.owl.ttl@phase-4-legislative-lifecycle-2026", mapping_version="bill_mapping.csv@phase-4-legislative-lifecycle-2026", endpoint_name="legislation")
+        query = {"last_updated": window_start.isoformat()} if window_start else None
+        client = ApiClient(settings.bills_api_url, retries=settings.retries, timeout=settings.timeout)
+        pages = client.harvest(limit=settings.limit, query_params=query) if query else client.harvest(limit=settings.limit)
+        for page in pages:
+            persist_raw(root=settings.raw_dir, endpoint=settings.bills_api_url, params=page.params, body=page.body, status=page.status, retrieved_at=datetime.now(timezone.utc), ontology_version="legislation.owl.ttl@phase-4-legislative-lifecycle-2026", mapping_version="bill_mapping.csv@phase-4-legislative-lifecycle-2026", endpoint_name="legislation", extraction_id=run_id)
             decoded = json.loads(page.body)
             if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list): raise ValueError("every Legislation API page must be an object envelope with a results list")
             count = decoded.get("head", {}).get("counts", {}).get("billCount") if isinstance(decoded.get("head"), dict) else None
@@ -404,7 +438,16 @@ def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = Non
             if advertised is None: advertised = count
             elif advertised != count: raise ValueError("Bills advertised count changed during scan")
             records.extend(decoded["results"])
-    records = _deduplicate_bills(records, advertised)
+    if not complete:
+        # The API may interpret last_updated at day granularity and does not
+        # guarantee an upper filter. Keep the fixed run boundary locally.
+        if advertised is not None and len(records) != advertised:
+            raise ValueError("Legislation incremental extraction count changed during scan")
+        records = [record for record in records if _bill_source_time(record) <= upper]
+        records = _deduplicate_bills(records, None, allow_empty=True)
+    else:
+        records = _deduplicate_bills(records, advertised,
+                                     allow_empty=bool(store is not None and complete and advertised == 0))
     work = []
     for wrapper in records:
         bill = wrapper["bill"]; identity, digest, graph_iri = bill["uri"], bill_source_hash(bill), bill_graph_iri(bill)
@@ -424,6 +467,7 @@ def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = Non
     endpoint = None if args.offline else (args.fuseki_gsp_url or settings.fuseki_gsp_url); query_endpoint = None if args.offline else (args.fuseki_sparql_url or settings.fuseki_sparql_url)
     if endpoint and not query_endpoint: raise ValueError("Fuseki SPARQL endpoint is required for post-load competency verification")
     published = skipped = 0
+    repaired: list[str] = []
     known = store.resources("legislation") if store is not None else []
     seen = {identity for _, _, identity, _, _, _ in work}
     if endpoint:
@@ -432,8 +476,17 @@ def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = Non
         loader = FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout); client = FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
         for wrapper, graph, identity, digest, _, status in work:
             if graph is None:
-                skipped += 1
-                continue
+                prior = store.get_resource("legislation", identity)
+                if prior["published_payload"] is not None:
+                    try:
+                        verify_core_graph(client, prior["graph_iri"], prior["published_payload"])
+                    except ValueError:
+                        pass
+                    else:
+                        skipped += 1
+                        continue
+                graph, _ = transform_bill_with_report(wrapper); validate_bill(wrapper, graph)
+                repaired.append(identity)
             graph_iri = bill_graph_iri(wrapper["bill"])
             payload = ntriples(graph)
             payload_hash = store.mark_publication_dirty("legislation", identity, source_hash=digest,
@@ -441,6 +494,7 @@ def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = Non
                                                         contract_version=1)
             loader.replace(graph_iri, payload, content_type="application/n-triples")
             verify_bill_competency(client, graph_iri, identity, len(graph))
+            verify_core_graph(client, graph_iri, payload)
             store.complete_publication("legislation", identity, source_hash=digest,
                                        graph_iri=graph_iri, payload_hash=payload_hash,
                                        contract_version=1)
@@ -453,6 +507,8 @@ def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = Non
             published += 1
     elif not args.offline: raise ValueError("no Fuseki GSP endpoint configured; use --offline for fixture/developer runs")
     identities = {kind: sorted(identity for _, _, identity, _, _, status in work if status == kind) for kind in ("new", "changed", "skipped")}
+    identities["skipped"] = sorted(set(identities["skipped"]) - set(repaired))
+    identities["changed"] = sorted(set(identities["changed"]) | set(repaired))
     print(json.dumps({"records": len(records), "published": published, "skipped": skipped, "new": identities["new"], "changed": identities["changed"], "skipped_identities": identities["skipped"], "omitted": [item for *_, report, _ in work for item in report]}, sort_keys=True))
     return 0
 
@@ -461,17 +517,36 @@ def _run_bills(args: argparse.Namespace, store: CoreStateStore | None = None) ->
     if store is None:
         return _run_bills_impl(args)
     settings = Settings.from_environment()
-    run_id = store.start_run("legislation", "full_refresh", is_complete=True,
+    complete = bool(getattr(args, "full", False))
+    overlap = int(getattr(args, "overlap_seconds", None) if getattr(args, "overlap_seconds", None) is not None
+                  else settings.bills_cursor_overlap_seconds)
+    if overlap < 0:
+        raise ValueError("Bills cursor overlap must not be negative")
+    upper = datetime.now(timezone.utc)
+    previous = store.incremental_cursor()
+    window_start = (datetime.fromisoformat(previous) - timedelta(seconds=overlap)) if previous and not complete else None
+    authoritative_scan = not bool(args.fixture)
+    run_id = store.start_run("legislation", ("complete_source_reconciliation" if authoritative_scan
+                                                   else "full_refresh") if complete else "incremental_refresh",
+                             is_complete=complete and authoritative_scan,
                              parameters={"source": "fixture" if args.fixture else "api",
                                          "fixture": str(Path(args.fixture).resolve()) if args.fixture else None,
                                          "api_url": None if args.fixture else settings.bills_api_url,
-                                         "limit": settings.limit})
+                                         "limit": settings.limit, "cursor_before": previous,
+                                         "window_start": window_start.isoformat() if window_start else None,
+                                         "upper_boundary": upper.isoformat(), "overlap_seconds": overlap,
+                                         "complete": complete})
     try:
-        result = _run_bills_impl(args, store, run_id)
+        result = _run_bills_impl(args, store, run_id, window_start=window_start,
+                                 upper=upper, complete=complete)
     except Exception as error:
         store.finish_run(run_id, success=False, error=f"{type(error).__name__}: {error}")
         raise
-    store.finish_run(run_id, success=True)
+    # A developer fixture can exercise publication, but cannot attest to the
+    # completeness or source-time boundary of the authoritative API dataset.
+    store.finish_run(run_id, success=True,
+                     incremental_cursor=upper.isoformat() if authoritative_scan and not complete else None,
+                     complete_scan=complete and authoritative_scan)
     return result
 
 
@@ -922,6 +997,8 @@ def main(argv: list[str] | None = None) -> int:
     run = sub.add_parser("run"); run.add_argument("endpoint", choices=["houses", "parties", "constituencies", "members", "bills"])
     run.add_argument("--fixture"); run.add_argument("--offline", action="store_true"); run.add_argument("--raw-dir")
     run.add_argument("--state-db", help="shared authoritative core ETL SQLite database")
+    run.add_argument("--full", action="store_true", help="complete Bills source reconciliation")
+    run.add_argument("--overlap-seconds", type=int, help="Bills cursor overlap (default: 3600)")
     run.add_argument("--legacy-state-file", "--state-file", dest="legacy_state_file",
                      help="read-only legacy Member/Bill JSON manifest to import once")
     run.add_argument("--output-ttl"); run.add_argument("--output-nq"); run.add_argument("--fuseki-gsp-url"); run.add_argument("--fuseki-sparql-url")

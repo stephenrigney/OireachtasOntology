@@ -33,6 +33,7 @@ class Settings:
     fuseki_user: str | None = None
     fuseki_password: str | None = None
     limit: int = 100
+    bills_cursor_overlap_seconds: int = 3600
     retries: int = 3
     timeout: float = 30.0
     ontology_version: str = "agents.owl.ttl@phase-1-houses-2026"
@@ -55,6 +56,7 @@ class Settings:
             fuseki_user=os.getenv("OIR_FUSEKI_USER"),
             fuseki_password=os.getenv("OIR_FUSEKI_PASSWORD"),
             limit=int(os.getenv("OIR_API_LIMIT", "100")),
+            bills_cursor_overlap_seconds=int(os.getenv("OIR_BILLS_CURSOR_OVERLAP_SECONDS", "3600")),
             retries=int(os.getenv("OIR_API_RETRIES", "3")),
             timeout=float(os.getenv("OIR_API_TIMEOUT", "30")),
             ontology_version=os.getenv("OIR_ONTOLOGY_VERSION", cls.ontology_version),

@@ -264,6 +264,7 @@ def _mock_online(monkeypatch, calls, *, competency=None):
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
     monkeypatch.setattr(cli, "FusekiSparqlClient", Client)
     monkeypatch.setattr(cli, "verify_member_competency", competency or (lambda *args: None))
+    monkeypatch.setattr(cli, "verify_core_graph", lambda *args: None)
 
 
 def _report(capsys):
@@ -295,6 +296,7 @@ def _run_mocked_live_pages(tmp_path, monkeypatch, pages, *, limit, construction_
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
     monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
     monkeypatch.setattr(cli, "verify_member_competency", lambda *args, **kwargs: None)
+    monkeypatch.setattr(cli, "verify_core_graph", lambda *args: None)
     monkeypatch.setenv("OIR_API_LIMIT", str(limit))
 
     client = ApiClient("https://example.test/members")
@@ -415,6 +417,7 @@ def test_online_members_run_holds_manifest_lock_during_loader_publication(tmp_pa
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
     monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
     monkeypatch.setattr(cli, "verify_member_competency", lambda *args, **kwargs: None)
+    monkeypatch.setattr(cli, "verify_core_graph", lambda *args: None)
     assert cli.run_members(_online_args(tmp_path)) == 0
     assert lock_seen == [True]
 
@@ -525,6 +528,7 @@ def test_members_put_failure_is_dirty_and_retry_publishes_clean_current_state(tm
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", FailingLoader)
     monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
     monkeypatch.setattr(cli, "verify_member_competency", lambda *args, **kwargs: None)
+    monkeypatch.setattr(cli, "verify_core_graph", lambda *args: None)
     args = _online_args(tmp_path)
     with pytest.raises(RuntimeError, match="PUT failed"): cli.run_members(args)
     dirty = _member_state(tmp_path)

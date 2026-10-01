@@ -8,8 +8,25 @@ failure leaves the record dirty for retry. The shared core ETL SQLite database
 stores each complete Bill source hash, deterministic publication payload hash
 and durable pending publication data, so unchanged records are source-validated
 and skipped before RDF transformation or publication. The former
-`bills-state.json` file is imported once as read-only legacy state; online Bills
-runs continue to harvest the complete Legislation source in this tranche.
+`bills-state.json` file is imported once as read-only legacy state. Phase 5
+online Bills runs now use incremental `last_updated` extraction by default;
+`run bills --full` performs complete source reconciliation. The first incremental
+run without a cursor reads the whole source, then advances to its fixed upper
+source-time boundary only after all selected Bills complete. Later runs re-read
+one hour before the cursor by default (`--overlap-seconds` or
+`OIR_BILLS_CURSOR_OVERLAP_SECONDS`). The API may filter at day granularity, so
+the upper boundary is also enforced locally against `bill.lastUpdated`.
+Only successful `--full` runs infer non-destructive `missing`, then
+`confirmed_missing` after a second complete absence; no graph is erased.
+Full runs do not advance the incremental cursor. Deployment scheduling of
+periodic full runs remains outside Phase 5. SQLite v2 upgrades v1 state
+transactionally and retains successfully published payloads for exact graph
+verification and verified mismatch repair. Legacy clean rows without payloads
+are republished once to establish that baseline. Immutable online API pages
+are retained under date/run-ID paths, preventing same-day refresh collisions.
+Fixture-backed online runs may exercise graph publication but do not advance
+the API source-time cursor or establish source-absence evidence, because a
+fixture cannot attest to the completeness of the current API dataset.
 
 The Bill is an `eli-dl:DraftLegislationWork`/`eli:LegalResource` and owns one
 `{bill-uri}#process`. Stages and supported lifecycle events are owned

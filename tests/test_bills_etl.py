@@ -196,6 +196,7 @@ def test_online_bill_hash_skip_and_dirty_replacement_state(tmp_path, monkeypatch
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
     monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
     monkeypatch.setattr(cli, "verify_bill_competency", lambda *args: None)
+    monkeypatch.setattr(cli, "verify_core_graph", lambda *args: None)
     assert cli.run_bills(args) == 0 and len(calls) == 1
     from oireachtas_etl.state import CoreStateStore
     with CoreStateStore(Path(args.state_db)) as store:
@@ -214,6 +215,7 @@ def test_bill_publication_failure_and_competency_failure_are_dirty_and_retry(tmp
         def __init__(self, *args, **kwargs): pass
         def replace(self, *args, **kwargs): raise RuntimeError("PUT failed")
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", FailingLoader); monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
+    monkeypatch.setattr(cli, "verify_core_graph", lambda *args: None)
     with pytest.raises(RuntimeError, match="PUT failed"): cli.run_bills(args)
     from oireachtas_etl.state import CoreStateStore
     with CoreStateStore(Path(args.state_db)) as store:
@@ -260,6 +262,7 @@ def test_bills_full_scan_replays_durable_dirty_payload_for_unobserved_bill(tmp_p
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
     monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
     monkeypatch.setattr(cli, "verify_bill_competency", lambda *args, **kwargs: None)
+    monkeypatch.setattr(cli, "verify_core_graph", lambda *args: None)
     fixture = ROOT / "data/api_examples/bill.json"
     args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"),
                      state_db=str(database), output_nq=None, output_ttl=None,

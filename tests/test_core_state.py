@@ -97,6 +97,121 @@ def test_invalid_second_manifest_rolls_back_schema_and_first_manifest_import(tmp
     assert not tables
 
 
+def test_core_schema_v1_upgrades_resources_and_reopens(tmp_path):
+    database = tmp_path / "core-v1.sqlite"
+    member_identity = MEMBER["member"]["uri"]
+    member_graph = member_graph_iri(MEMBER["member"])
+    bill_identity = BILL["bill"]["uri"]
+    bill_graph = bill_graph_iri(BILL["bill"])
+
+    # The v1 layout is the current core schema before the cursor, published
+    # payload, and complete-scan absence columns were added.
+    with sqlite3.connect(database) as connection:
+        connection.executescript("""
+            CREATE TABLE core_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+            CREATE TABLE etl_run (
+              run_id TEXT PRIMARY KEY,
+              endpoint TEXT NOT NULL CHECK(endpoint IN ('houses','parties','constituencies','members','legislation')),
+              run_kind TEXT NOT NULL CHECK(run_kind IN ('full_refresh','incremental_refresh','complete_source_reconciliation')),
+              is_complete INTEGER NOT NULL CHECK(is_complete IN (0,1)), started_at TEXT NOT NULL,
+              completed_at TEXT, status TEXT NOT NULL CHECK(status IN ('running','succeeded','failed')),
+              error TEXT, parameters_json TEXT NOT NULL);
+            CREATE INDEX etl_run_endpoint_started ON etl_run(endpoint,started_at);
+            CREATE TABLE endpoint_state (
+              endpoint TEXT PRIMARY KEY CHECK(endpoint IN ('houses','parties','constituencies','members','legislation')),
+              last_successful_run_id TEXT, last_successful_complete_run_id TEXT,
+              publication_metadata_json TEXT, updated_at TEXT NOT NULL);
+            CREATE TABLE resource_state (
+              endpoint TEXT NOT NULL CHECK(endpoint IN ('members','legislation')),
+              resource_iri TEXT NOT NULL, graph_iri TEXT NOT NULL, observed_source_hash TEXT,
+              published_source_hash TEXT, published_payload_hash TEXT, last_seen_at TEXT,
+              last_seen_run_id TEXT, last_published_at TEXT,
+              publication_state TEXT NOT NULL CHECK(publication_state IN ('clean','dirty')),
+              pending_source_hash TEXT, pending_graph_iri TEXT, pending_payload TEXT,
+              pending_payload_hash TEXT,
+              source_presence TEXT NOT NULL DEFAULT 'present' CHECK(source_presence IN ('present','missing','confirmed_missing')),
+              contract_version INTEGER, PRIMARY KEY(endpoint,resource_iri),
+              CHECK(publication_state='dirty' OR
+                    (pending_source_hash IS NULL AND pending_graph_iri IS NULL AND pending_payload_hash IS NULL)));
+            CREATE INDEX resource_state_publication ON resource_state(endpoint,publication_state);
+            PRAGMA user_version=1;
+        """)
+        connection.execute("""INSERT INTO resource_state (
+          endpoint,resource_iri,graph_iri,observed_source_hash,published_source_hash,
+          published_payload_hash,last_seen_at,last_published_at,publication_state,contract_version)
+          VALUES (?,?,?,?,?,?,?,?,?,?)""",
+          ("members", member_identity, member_graph, "a" * 64, "b" * 64, "d" * 64,
+           "2026-09-30T10:00:00+00:00", "2026-09-30T10:00:01+00:00", "clean", 2))
+        pending_payload = "<https://example.test/s> <https://example.test/p> <https://example.test/o> .\n"
+        connection.execute("""INSERT INTO resource_state (
+           endpoint,resource_iri,graph_iri,observed_source_hash,published_source_hash,
+           published_payload_hash,last_seen_at,last_published_at,publication_state,
+           pending_source_hash,pending_graph_iri,pending_payload,pending_payload_hash,contract_version)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+           ("legislation", bill_identity, bill_graph, "e" * 64, "f" * 64, "a" * 64,
+            "2026-09-30T11:00:00+00:00", "2026-09-30T11:00:01+00:00", "dirty",
+            "e" * 64, bill_graph, pending_payload,
+            hashlib.sha256(pending_payload.encode()).hexdigest(), 1))
+
+    with CoreStateStore(database) as store:
+        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 2
+        clean = store.get_resource("members", member_identity)
+        dirty = store.get_resource("legislation", bill_identity)
+        assert clean["publication_state"] == "clean"
+        assert clean["published_source_hash"] == "b" * 64
+        assert clean["pending_source_hash"] is None
+        assert dirty["publication_state"] == "dirty"
+        assert dirty["published_source_hash"] == "f" * 64
+        assert dirty["pending_source_hash"] == "e" * 64
+        assert dirty["pending_graph_iri"] == bill_graph
+        assert dirty["pending_payload"] == pending_payload
+        assert dirty["pending_payload_hash"] == hashlib.sha256(pending_payload.encode()).hexdigest()
+        for row in (clean, dirty):
+            assert row["published_payload"] is None
+            assert row["last_missing_run_id"] is None
+            assert row["last_missing_at"] is None
+            assert row["missing_scan_count"] == 0
+            assert row["source_presence"] == "present"
+        assert store.incremental_cursor() is None
+
+    with CoreStateStore(database) as reopened:
+        assert reopened.connection.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert reopened.get_resource("members", member_identity)["published_source_hash"] == "b" * 64
+        assert reopened.get_resource("legislation", bill_identity)["pending_source_hash"] == "e" * 64
+
+
+def test_status_first_does_not_forfeit_later_legacy_import(tmp_path, monkeypatch):
+    from oireachtas_etl.cli import main
+    database = tmp_path / "core.sqlite"
+    member_manifest = tmp_path / "members.json"
+    monkeypatch.setenv("OIR_MEMBERS_STATE_FILE", str(member_manifest))
+    monkeypatch.setenv("OIR_BILLS_STATE_FILE", str(tmp_path / "bills.json"))
+    assert main(["state", "status", "--state-db", str(database)]) == 0
+    identity = MEMBER["member"]["uri"]
+    _manifest(member_manifest, "members", {identity: _member_row(state="dirty")})
+    with CoreStateStore(database, legacy_members=member_manifest) as store:
+        row = store.get_resource("members", identity)
+        assert row["publication_state"] == "dirty"
+        assert row["pending_source_hash"] == "c" * 64
+
+
+def test_late_manifest_cannot_override_established_sqlite_resource_state(tmp_path):
+    database = tmp_path / "core.sqlite"
+    identity = MEMBER["member"]["uri"]
+    graph_iri = member_graph_iri(MEMBER["member"])
+    with CoreStateStore(database) as store:
+        run = store.start_run("members", "full_refresh", is_complete=True,
+                              parameters={"source": "fixture"})
+        store.observe_resource("members", identity, graph_iri, "1" * 64, run)
+        store.finish_run(run, success=True)
+    manifest = _manifest(tmp_path / "members.json", "members",
+                         {identity: _member_row()})
+    with pytest.raises(CoreStateError, match="resolve the conflict explicitly"):
+        CoreStateStore(database, legacy_members=manifest)
+    with CoreStateStore(database) as store:
+        assert store.get_resource("members", identity)["observed_source_hash"] == "1" * 64
+
+
 @pytest.mark.parametrize("collection,identity,row", [
     ("members", "https://elsewhere.test/member/1", {"graph_iri": "https://data.oireachtas.ie/graph/member/1"}),
     ("bills", "https://data.oireachtas.ie/ie/oireachtas/bill/2024/5", {
@@ -162,11 +277,11 @@ def test_run_and_endpoint_state_distinguish_complete_scan_and_incremental_succes
                                parameters={"source": "api", "limit": 100})
         store.finish_run(full, success=True)
         failed = store.start_run("legislation", "incremental_refresh", is_complete=False,
-                                 parameters={"from": "2026-09-30T09:00:00Z",
-                                             "to": "2026-09-30T10:00:00Z"})
+                                 parameters={"source": "api", "from": "2026-09-30T09:00:00Z",
+                                              "to": "2026-09-30T10:00:00Z"})
         store.finish_run(failed, success=False, error="source timeout")
         good_incremental = store.start_run("legislation", "incremental_refresh", is_complete=False,
-                                           parameters={"from": "2026-09-30T09:00:00Z"})
+                                           parameters={"source": "api", "from": "2026-09-30T09:00:00Z"})
         store.finish_run(good_incremental, success=True)
         status = store.status()
         endpoint = status["endpoints"][0]
@@ -179,13 +294,27 @@ def test_run_and_endpoint_state_distinguish_complete_scan_and_incremental_succes
         assert runs[good_incremental]["is_complete"] is False
 
 
+def test_interrupted_run_is_recorded_failed_on_next_locked_run(tmp_path):
+    database = tmp_path / "core.sqlite"
+    with CoreStateStore(database) as store:
+        interrupted = store.start_run("legislation", "incremental_refresh", is_complete=False,
+                                      parameters={"upper": "2026-09-30T10:00:00Z"})
+    with CoreStateStore(database) as store:
+        resumed = store.start_run("legislation", "incremental_refresh", is_complete=False,
+                                  parameters={"retry": True})
+        runs = {run["run_id"]: run for run in store.status()["recent_runs"]}
+        assert runs[interrupted]["status"] == "failed"
+        assert "interrupted" in runs[interrupted]["error"]
+        assert runs[resumed]["status"] == "running"
+
+
 def test_core_state_cli_status_reports_database_without_reconciliation_state(tmp_path, capsys):
     from oireachtas_etl.cli import main
 
     database = tmp_path / "core.sqlite"
     assert main(["state", "status", "--state-db", str(database)]) == 0
     output = json.loads(capsys.readouterr().out)
-    assert output["schema_version"] == 1 and output["database"] == str(database)
+    assert output["schema_version"] == 2 and output["database"] == str(database)
     assert output["endpoints"] == [] and output["recent_runs"] == []
 
 

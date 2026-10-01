@@ -516,6 +516,7 @@ def test_member_manifest_contract_bump_republishes_unchanged_graph(tmp_path, mon
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
     monkeypatch.setattr(cli, "FusekiSparqlClient", Client)
     monkeypatch.setattr(cli, "verify_member_competency", lambda *args, **kwargs: None)
+    monkeypatch.setattr(cli, "verify_core_graph", lambda *args, **kwargs: None)
     state_db = tmp_path / "core-state.sqlite"
     assert cli.main(["run", "members", "--fixture", str(fixture), "--state-db", str(state_db),
                      "--legacy-state-file", str(manifest),
