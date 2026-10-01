@@ -1,8 +1,32 @@
 from __future__ import annotations
 
+import subprocess
+
+import pytest
 from rdflib import Graph, Namespace, OWL, RDF, RDFS, URIRef
 
 import validate
+
+
+def test_missing_java_reports_mise_bootstrap(monkeypatch) -> None:
+    monkeypatch.setattr(validate.shutil, "which", lambda _command: None)
+
+    with pytest.raises(validate.OntologyValidationError, match="mise install"):
+        validate.require_java()
+
+
+def test_java_older_than_minimum_is_rejected(monkeypatch) -> None:
+    monkeypatch.setattr(validate.shutil, "which", lambda _command: "/mise/java")
+    monkeypatch.setattr(
+        validate.subprocess,
+        "run",
+        lambda *_args, **_kwargs: subprocess.CompletedProcess(
+            ["java", "-version"], 0, "", 'openjdk version "1.7.0_80"'
+        ),
+    )
+
+    with pytest.raises(validate.OntologyValidationError, match="Java 8 or newer"):
+        validate.require_java()
 
 
 def test_all_ontology_turtle_files_parse() -> None:

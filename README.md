@@ -53,6 +53,28 @@ python3 -m venv .venv
 ./.venv/bin/python -m pip install -e .
 ```
 
+#### Java for ontology validation
+
+The ontology consistency check uses Owlready2 0.50, which invokes its bundled
+HermiT reasoner through the `java` executable on `PATH`. The bundled HermiT
+version is 1.3.8.1099; its JAR was built with Java 6 and uses Java 6 class
+files. Java 8 is the project's conservative runtime baseline for this legacy
+reasoner, rather than a Java 17 or 21 requirement. The exact Temurin release is
+pinned in `mise.toml`.
+
+With `mise` installed and activated for your shell, provision the project Java
+runtime from the repository root:
+
+```bash
+mise install
+```
+
+The ontology validator requires Java 8 or newer and reports a clear error if
+Java is missing or too old. If your shell does not activate `mise`, run the
+validation command with `mise exec --` so the project Java is on `PATH`. This
+only adds Java provisioning; keep using the existing Python environment and
+workflow unchanged.
+
 The `oir-etl` command supports these API endpoints: `houses`, `parties`,
 `constituencies`, `members`, and `bills`. For example, download, transform,
 validate and publish current API data for the reference graph families and

@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import argparse
+import re
+import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -13,6 +16,7 @@ from rdflib import Graph, OWL, RDFS, URIRef
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ONTOLOGY_DIR = REPOSITORY_ROOT / "ontology"
 XSD_DATE = URIRef("http://www.w3.org/2001/XMLSchema#date")
+MINIMUM_JAVA_MAJOR = 8
 
 
 class OntologyValidationError(RuntimeError):
@@ -70,8 +74,48 @@ def hermit_input(graph: Graph) -> Graph:
     return flattened
 
 
+def require_java() -> None:
+    """Require the Java runtime used by the bundled Owlready2/HermiT reasoner."""
+    java_executable = shutil.which("java")
+    if java_executable is None:
+        raise OntologyValidationError(
+            "Java was not found on PATH. Run `mise install` and ensure the "
+            "project's mise environment is active (or use `mise exec --`)."
+        )
+
+    try:
+        result = subprocess.run(
+            [java_executable, "-version"], capture_output=True, text=True, check=False
+        )
+    except OSError as error:
+        raise OntologyValidationError(f"Unable to run Java from PATH: {error}") from error
+
+    version_output = f"{result.stdout}\n{result.stderr}".strip()
+    match = re.search(
+        r'\b(?:openjdk|java)(?:\s+version)?\s+"?((?:1\.)?\d+)',
+        version_output,
+        re.IGNORECASE,
+    )
+    if result.returncode != 0 or match is None:
+        raise OntologyValidationError(
+            "Could not determine the Java version from `java -version` "
+            f"(exit status {result.returncode}): {version_output or '<no output>'}"
+        )
+
+    version = match.group(1)
+    version_parts = version.split(".")
+    major = int(version_parts[1] if version_parts[0] == "1" else version_parts[0])
+    if major < MINIMUM_JAVA_MAJOR:
+        raise OntologyValidationError(
+            f"Java {MINIMUM_JAVA_MAJOR} or newer is required for ontology "
+            f"consistency validation; found Java {major}. Run `mise install` "
+            "and ensure the project's mise environment is active (or use `mise exec --`)."
+        )
+
+
 def run_consistency_check(graph: Graph) -> None:
     """Run HermiT and reject inconsistent or unsatisfiable ontology classes."""
+    require_java()
     flattened = hermit_input(graph)
 
     with tempfile.NamedTemporaryFile(suffix=".owl", delete=False) as handle:
