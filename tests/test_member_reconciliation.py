@@ -516,14 +516,19 @@ def test_member_manifest_contract_bump_republishes_unchanged_graph(tmp_path, mon
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
     monkeypatch.setattr(cli, "FusekiSparqlClient", Client)
     monkeypatch.setattr(cli, "verify_member_competency", lambda *args, **kwargs: None)
-    assert cli.main(["run", "members", "--fixture", str(fixture), "--state-file", str(manifest),
+    state_db = tmp_path / "core-state.sqlite"
+    assert cli.main(["run", "members", "--fixture", str(fixture), "--state-db", str(state_db),
+                     "--legacy-state-file", str(manifest),
                      "--raw-dir", str(tmp_path / "raw"), "--fuseki-gsp-url", "https://example.test/gsp",
                      "--fuseki-sparql-url", "https://example.test/sparql"]) == 0
     result = json.loads(capsys.readouterr().out)
-    saved = json.loads(manifest.read_text())["members"][identity]
+    from oireachtas_etl.state import CoreStateStore
+    with CoreStateStore(state_db) as state:
+        saved = state.get_resource("members", identity)
     assert result["changed"] == [identity] and len(puts) == 1
-    assert saved["published_hash"] == source_hash(wrapper["member"])
-    assert saved["contract_version"] == 2 and saved["status"] == "clean"
+    assert saved["published_source_hash"] == source_hash(wrapper["member"])
+    assert saved["contract_version"] == 2 and saved["publication_state"] == "clean"
+    assert json.loads(manifest.read_text())["members"][identity]["contract_version"] == 1
 
 
 def test_production_parsers_and_graph_gate_term_types(monkeypatch):

@@ -1,57 +1,481 @@
-"""Small atomically-written operational manifest for Members refreshes."""
+"""Durable SQLite state for authoritative Oireachtas ETL runs.
+
+This store is deliberately separate from the external-identity
+``ReconciliationStore``.  Its transactions end before remote graph mutations;
+publication is clean only after the caller has completed its post-PUT checks.
+"""
 from __future__ import annotations
 
-import json
-import os
-import tempfile
-import fcntl
 from contextlib import contextmanager
+from datetime import datetime, timezone
+import fcntl
+import hashlib
+import json
 from pathlib import Path
+import sqlite3
+import uuid
+from urllib.parse import quote, unquote, urlsplit
 
 
-def load_manifest(path: Path) -> dict:
-    if not path.exists():
-        return {"version": 1, "members": {}}
-    value = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(value, dict) or value.get("version") != 1 or not isinstance(value.get("members"), dict):
-        raise ValueError("invalid Members state manifest")
-    return value
+SCHEMA_VERSION = 1
+ENDPOINTS = ("houses", "parties", "constituencies", "members", "legislation")
+RESOURCE_ENDPOINTS = ("members", "legislation")
+SHARED_GRAPHS = {
+    "houses": "https://data.oireachtas.ie/graph/houses",
+    "parties": "https://data.oireachtas.ie/graph/parties",
+    "constituencies": "https://data.oireachtas.ie/graph/constituencies",
+}
 
 
-def write_manifest(path: Path, manifest: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
+class CoreStateError(ValueError):
+    """Invalid or internally inconsistent authoritative ETL state."""
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _json(value: object) -> str:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def _manifest(path: Path, endpoint: str) -> dict:
+    key = "members" if endpoint == "members" else "bills"
+    label = "Members" if endpoint == "members" else "Bills"
     try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            json.dump(manifest, handle, sort_keys=True, indent=2)
-            handle.write("\n"); handle.flush(); os.fsync(handle.fileno())
-        os.replace(temporary, path)
-        try:
-            directory = os.open(path.parent, os.O_DIRECTORY)
-            try: os.fsync(directory)
-            finally: os.close(directory)
-        except (AttributeError, OSError):
-            pass
-    finally:
-        if os.path.exists(temporary): os.unlink(temporary)
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise CoreStateError(f"cannot import legacy {label} manifest {path}: {error}") from error
+    if (not isinstance(value, dict) or type(value.get("version")) is not int
+            or value["version"] != 1 or not isinstance(value.get(key), dict)):
+        raise CoreStateError(f"invalid legacy {label} state manifest: {path}")
+    return value[key]
 
 
-def load_bills_manifest(path: Path) -> dict:
-    """Separate Bill state; do not couple its lifecycle to Member state."""
-    if not path.exists():
-        return {"version": 1, "bills": {}}
-    value = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(value, dict) or value.get("version") != 1 or not isinstance(value.get("bills"), dict):
-        raise ValueError("invalid Bills state manifest")
-    return value
+def expected_graph_iri(endpoint: str, resource_iri: str) -> str:
+    """Validate a legacy resource IRI and derive its already-settled graph."""
+    if endpoint not in RESOURCE_ENDPOINTS or not isinstance(resource_iri, str):
+        raise CoreStateError(f"invalid core resource identity for {endpoint!r}: {resource_iri!r}")
+    try:
+        parsed = urlsplit(resource_iri)
+        port = parsed.port
+    except ValueError as error:
+        raise CoreStateError(f"invalid legacy {endpoint} resource IRI: {resource_iri!r}") from error
+    if (parsed.scheme != "https" or parsed.netloc != "data.oireachtas.ie"
+            or parsed.query or parsed.fragment or parsed.username or parsed.password
+            or port):
+        raise CoreStateError(f"invalid legacy {endpoint} resource IRI: {resource_iri!r}")
+    path = [part for part in parsed.path.split("/") if part]
+    try:
+        if endpoint == "members":
+            if len(path) != 5 or path[:4] != ["ie", "oireachtas", "member", "id"]:
+                raise ValueError
+            code = unquote(path[4])
+            if not code:
+                raise ValueError
+            return "https://data.oireachtas.ie/graph/member/" + quote(code, safe="")
+        if len(path) != 5 or path[:3] != ["ie", "oireachtas", "bill"]:
+            raise ValueError
+        year, number = path[3], unquote(path[4])
+        if not year.isdigit() or int(year) < 1 or not number:
+            raise ValueError
+        return ("https://data.oireachtas.ie/graph/bill/" + quote(year, safe="")
+                + "/" + quote(number, safe=""))
+    except (TypeError, ValueError) as error:
+        raise CoreStateError(f"invalid legacy {endpoint} resource IRI: {resource_iri!r}") from error
+
+
+def _validate_legacy_row(endpoint: str, identity: object, row: object) -> dict:
+    label = "Member" if endpoint == "members" else "Bill"
+    if not isinstance(identity, str) or not isinstance(row, dict):
+        raise CoreStateError(f"invalid legacy {label} state entry")
+    expected_graph = expected_graph_iri(endpoint, identity)
+    graph = row.get("graph_iri")
+    pending_graph = row.get("pending_graph_iri")
+    if graph is None and row.get("status") in {"dirty", "in_progress"}:
+        graph = pending_graph
+    if not isinstance(graph, str) or graph != expected_graph:
+        raise CoreStateError(f"legacy {label} graph IRI does not match resource identity: {identity}")
+    state = row.get("status", "clean")
+    if state == "in_progress":
+        state = "dirty"
+    if not isinstance(state, str) or state not in {"clean", "dirty"}:
+        raise CoreStateError(f"invalid legacy {label} publication status for {identity}: {state!r}")
+    for field in ("source_hash", "published_hash", "pending_hash"):
+        value = row.get(field)
+        if value is not None and (not isinstance(value, str) or not value):
+            raise CoreStateError(f"invalid legacy {label} {field} for {identity}")
+    if state == "dirty":
+        if not isinstance(row.get("pending_hash"), str) or not row["pending_hash"]:
+            raise CoreStateError(f"dirty legacy {label} state lacks pending_hash for {identity}")
+        if pending_graph != expected_graph:
+            raise CoreStateError(f"dirty legacy {label} pending graph IRI does not match identity: {identity}")
+    contract = row.get("contract_version")
+    if contract is not None and (type(contract) is not int or contract < 1):
+        raise CoreStateError(f"invalid legacy {label} contract version for {identity}")
+    return {
+        "endpoint": endpoint,
+        "resource_iri": identity,
+        "graph_iri": graph,
+        "observed_source_hash": row.get("source_hash"),
+        "published_source_hash": row.get("published_hash"),
+        "published_payload_hash": None,
+        "last_seen_at": row.get("last_seen"),
+        "last_seen_run_id": None,
+        "last_published_at": row.get("last_published"),
+        "publication_state": state,
+        "pending_source_hash": row.get("pending_hash") if state == "dirty" else None,
+        "pending_graph_iri": pending_graph if state == "dirty" else None,
+        # The legacy JSON stored neither an RDF payload nor its digest. Dirty
+        # entries are consequently re-transformed from the next observed source.
+        "pending_payload": None,
+        "pending_payload_hash": None,
+        "source_presence": "present",
+        "contract_version": contract,
+    }
 
 
 @contextmanager
-def manifest_lock(path: Path):
-    """Advisory process lock; one online writer owns a state file at a time."""
+def state_lock(path: Path):
+    """Serialize an endpoint's scan/publication sequence across processes."""
     path.parent.mkdir(parents=True, exist_ok=True)
     lock_path = path.with_name(path.name + ".lock")
     with lock_path.open("a+") as handle:
         fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        try: yield
-        finally: fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+class CoreStateStore:
+    """SQLite operational state for authoritative Members and Bills refreshes."""
+
+    def __init__(self, path: Path, *, legacy_members: Path | None = None,
+                 legacy_bills: Path | None = None):
+        self.path = Path(path).expanduser()
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        if self.path.exists() and self.path.stat().st_size:
+            with self.path.open("rb") as handle:
+                signature = handle.read(16)
+            if signature != b"SQLite format 3\x00":
+                raise CoreStateError(
+                    f"core state path is not SQLite: {self.path}; pass a legacy JSON manifest "
+                    "with --legacy-state-file (or the deprecated --state-file alias)"
+                )
+        self.connection = sqlite3.connect(self.path, timeout=30, isolation_level=None)
+        self.connection.row_factory = sqlite3.Row
+        self.connection.execute("PRAGMA foreign_keys=ON")
+        self.connection.execute("PRAGMA busy_timeout=30000")
+        try:
+            self._initialize(legacy_members, legacy_bills)
+        except BaseException:
+            self.connection.close()
+            raise
+
+    def close(self) -> None:
+        self.connection.close()
+
+    def __enter__(self) -> "CoreStateStore":
+        return self
+
+    def __exit__(self, *_exc) -> None:
+        self.close()
+
+    def _initialize(self, legacy_members: Path | None, legacy_bills: Path | None) -> None:
+        connection = self.connection
+        connection.execute("BEGIN IMMEDIATE")
+        try:
+            version = connection.execute("PRAGMA user_version").fetchone()[0]
+            if version not in (0, SCHEMA_VERSION):
+                raise CoreStateError(f"unsupported core ETL state schema version: {version}")
+            if version == 0:
+                # ``executescript`` implicitly commits an open transaction.
+                # Execute each DDL statement separately so schema creation and
+                # both one-time manifest imports share the same rollback.
+                for statement in _SCHEMA.split(";"):
+                    if statement.strip():
+                        connection.execute(statement)
+                connection.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
+            else:
+                tables = {row[0] for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'")}
+                if not {"core_metadata", "etl_run", "endpoint_state", "resource_state"} <= tables:
+                    raise CoreStateError("core ETL SQLite schema is incomplete")
+            migrations = (("members", legacy_members), ("legislation", legacy_bills))
+            for endpoint, legacy_path in migrations:
+                marker = "legacy_import:" + endpoint
+                imported = connection.execute(
+                    "SELECT value FROM core_metadata WHERE key=?", (marker,)).fetchone()
+                if imported is not None:
+                    continue
+                count = 0
+                if legacy_path is not None and Path(legacy_path).exists():
+                    manifest = _manifest(Path(legacy_path), endpoint)
+                    rows = [_validate_legacy_row(endpoint, identity, row)
+                            for identity, row in manifest.items()]
+                    for row in rows:
+                        self._insert_legacy_row(row)
+                    count = len(rows)
+                connection.execute("INSERT INTO core_metadata(key,value) VALUES (?,?)",
+                                   (marker, _json({"source": str(legacy_path) if legacy_path else None,
+                                                   "rows": count, "imported_at": _now()})))
+            connection.commit()
+        except BaseException:
+            connection.rollback()
+            raise
+
+    def _insert_legacy_row(self, row: dict) -> None:
+        self.connection.execute("""INSERT INTO resource_state (
+          endpoint,resource_iri,graph_iri,observed_source_hash,published_source_hash,
+          published_payload_hash,last_seen_at,last_seen_run_id,last_published_at,
+          publication_state,pending_source_hash,pending_graph_iri,pending_payload,
+          pending_payload_hash,source_presence,contract_version)
+          VALUES (:endpoint,:resource_iri,:graph_iri,:observed_source_hash,:published_source_hash,
+          :published_payload_hash,:last_seen_at,:last_seen_run_id,:last_published_at,
+          :publication_state,:pending_source_hash,:pending_graph_iri,:pending_payload,
+          :pending_payload_hash,:source_presence,:contract_version)""", row)
+
+    def start_run(self, endpoint: str, run_kind: str, *, is_complete: bool,
+                  parameters: dict, started_at: str | None = None) -> str:
+        if endpoint not in ENDPOINTS:
+            raise CoreStateError(f"unsupported core ETL endpoint: {endpoint}")
+        if run_kind not in {"full_refresh", "incremental_refresh", "complete_source_reconciliation"}:
+            raise CoreStateError(f"unsupported core ETL run kind: {run_kind}")
+        if type(is_complete) is not bool or not isinstance(parameters, dict):
+            raise CoreStateError("run completeness and source parameters must be explicit")
+        run_id = str(uuid.uuid4())
+        with self._transaction():
+            self.connection.execute("""INSERT INTO etl_run
+              (run_id,endpoint,run_kind,is_complete,started_at,status,parameters_json)
+              VALUES (?,?,?,?,?,'running',?)""",
+              (run_id, endpoint, run_kind, int(is_complete), started_at or _now(), _json(parameters)))
+        return run_id
+
+    def finish_run(self, run_id: str, *, success: bool, error: str | None = None,
+                   completed_at: str | None = None) -> None:
+        if type(success) is not bool:
+            raise CoreStateError("run success must be explicit")
+        status = "succeeded" if success else "failed"
+        with self._transaction():
+            row = self.connection.execute("SELECT * FROM etl_run WHERE run_id=?", (run_id,)).fetchone()
+            if row is None or row["status"] != "running":
+                raise CoreStateError(f"run is not active: {run_id}")
+            when = completed_at or _now()
+            self.connection.execute("UPDATE etl_run SET completed_at=?,status=?,error=? WHERE run_id=?",
+                                    (when, status, None if success else error, run_id))
+            if success:
+                complete_run_id = run_id if row["is_complete"] else None
+                self.connection.execute("""INSERT INTO endpoint_state
+                  (endpoint,last_successful_run_id,last_successful_complete_run_id,updated_at)
+                  VALUES (?,?,?,?) ON CONFLICT(endpoint) DO UPDATE SET
+                  last_successful_run_id=excluded.last_successful_run_id,
+                  last_successful_complete_run_id=COALESCE(excluded.last_successful_complete_run_id,
+                    endpoint_state.last_successful_complete_run_id), updated_at=excluded.updated_at""",
+                   (row["endpoint"], run_id, complete_run_id, when))
+
+    def endpoint_publication(self, endpoint: str) -> dict | None:
+        if endpoint not in SHARED_GRAPHS:
+            raise CoreStateError(f"endpoint does not own a shared graph: {endpoint}")
+        row = self.connection.execute(
+            "SELECT publication_metadata_json FROM endpoint_state WHERE endpoint=?", (endpoint,)
+        ).fetchone()
+        return json.loads(row[0]) if row and row[0] else None
+
+    def mark_endpoint_dirty(self, endpoint: str, graph_iri: str, payload: str) -> str:
+        if SHARED_GRAPHS.get(endpoint) != graph_iri:
+            raise CoreStateError(f"shared graph identity does not match {endpoint}")
+        digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        with self._transaction():
+            old = self.endpoint_publication(endpoint) or {}
+            metadata = {"graph_iri": graph_iri, "publication_state": "dirty",
+                        "published_payload_hash": old.get("published_payload_hash"),
+                        "pending_payload_hash": digest}
+            self.connection.execute("""INSERT INTO endpoint_state
+                (endpoint,publication_metadata_json,updated_at) VALUES (?,?,?)
+                ON CONFLICT(endpoint) DO UPDATE SET
+                publication_metadata_json=excluded.publication_metadata_json,
+                updated_at=excluded.updated_at""", (endpoint, _json(metadata), _now()))
+        return digest
+
+    def complete_endpoint_publication(self, endpoint: str, graph_iri: str, payload_hash: str) -> None:
+        with self._transaction():
+            metadata = self.endpoint_publication(endpoint)
+            if (metadata is None or metadata.get("graph_iri") != SHARED_GRAPHS.get(endpoint)
+                    or metadata["graph_iri"] != graph_iri
+                    or metadata.get("publication_state") != "dirty"
+                    or metadata.get("pending_payload_hash") != payload_hash):
+                raise CoreStateError(f"shared graph publication does not match pending state: {endpoint}")
+            self.connection.execute("""UPDATE endpoint_state SET
+                publication_metadata_json=?,updated_at=? WHERE endpoint=?""",
+                (_json({"graph_iri": graph_iri, "publication_state": "clean",
+                        "published_payload_hash": payload_hash, "last_published_at": _now()}),
+                 _now(), endpoint))
+
+    def observe_resource(self, endpoint: str, resource_iri: str, graph_iri: str,
+                         source_hash: str, run_id: str, *, observed_at: str | None = None) -> dict:
+        expected = expected_graph_iri(endpoint, resource_iri)
+        if graph_iri != expected:
+            raise CoreStateError(f"graph IRI does not match {endpoint} resource identity: {resource_iri}")
+        if not isinstance(source_hash, str) or not source_hash:
+            raise CoreStateError("observed source hash must be non-empty")
+        when = observed_at or _now()
+        with self._transaction():
+            existing = self.connection.execute("""SELECT graph_iri FROM resource_state
+              WHERE endpoint=? AND resource_iri=?""", (endpoint, resource_iri)).fetchone()
+            if existing is not None and existing["graph_iri"] != graph_iri:
+                raise CoreStateError(f"stored graph IRI changed for {endpoint} resource {resource_iri}")
+            self.connection.execute("""INSERT INTO resource_state
+              (endpoint,resource_iri,graph_iri,observed_source_hash,last_seen_at,last_seen_run_id,
+               publication_state,source_presence)
+              VALUES (?,?,?,?,?,?, 'clean','present') ON CONFLICT(endpoint,resource_iri) DO UPDATE SET
+              observed_source_hash=excluded.observed_source_hash,last_seen_at=excluded.last_seen_at,
+              last_seen_run_id=excluded.last_seen_run_id,source_presence='present'""",
+              (endpoint, resource_iri, graph_iri, source_hash, when, run_id))
+        return self.get_resource(endpoint, resource_iri)  # type: ignore[return-value]
+
+    def mark_publication_dirty(self, endpoint: str, resource_iri: str, *, source_hash: str,
+                               graph_iri: str, payload: str, contract_version: int) -> str:
+        if graph_iri != expected_graph_iri(endpoint, resource_iri):
+            raise CoreStateError(f"pending graph IRI does not match resource identity: {resource_iri}")
+        if type(contract_version) is not int or contract_version < 1:
+            raise CoreStateError("publication contract version must be a positive integer")
+        payload_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        with self._transaction():
+            row = self.connection.execute("SELECT graph_iri FROM resource_state WHERE endpoint=? AND resource_iri=?",
+                                          (endpoint, resource_iri)).fetchone()
+            if row is None:
+                raise CoreStateError(f"resource must be observed before publication: {resource_iri}")
+            if row["graph_iri"] != graph_iri:
+                raise CoreStateError(f"pending graph differs from stored graph identity: {resource_iri}")
+            self.connection.execute("""UPDATE resource_state SET graph_iri=?,observed_source_hash=?,
+              publication_state='dirty',pending_source_hash=?,pending_graph_iri=?,pending_payload=?,
+              pending_payload_hash=?,contract_version=? WHERE endpoint=? AND resource_iri=?""",
+              (graph_iri, source_hash, source_hash, graph_iri, payload, payload_hash,
+               contract_version, endpoint, resource_iri))
+        return payload_hash
+
+    def complete_publication(self, endpoint: str, resource_iri: str, *, source_hash: str,
+                             graph_iri: str, payload_hash: str, contract_version: int,
+                             published_at: str | None = None) -> None:
+        if graph_iri != expected_graph_iri(endpoint, resource_iri):
+            raise CoreStateError(f"published graph IRI does not match resource identity: {resource_iri}")
+        if type(contract_version) is not int or contract_version < 1:
+            raise CoreStateError("publication contract version must be a positive integer")
+        with self._transaction():
+            row = self.connection.execute("""SELECT publication_state,pending_source_hash,
+              pending_graph_iri,pending_payload_hash FROM resource_state
+              WHERE endpoint=? AND resource_iri=?""", (endpoint, resource_iri)).fetchone()
+            if (row is None or row["publication_state"] != "dirty"
+                    or row["pending_source_hash"] != source_hash
+                    or row["pending_graph_iri"] != graph_iri
+                    or row["pending_payload_hash"] != payload_hash):
+                raise CoreStateError(f"publication completion does not match durable pending state: {resource_iri}")
+            self.connection.execute("""UPDATE resource_state SET graph_iri=?,observed_source_hash=?,
+              published_source_hash=?,published_payload_hash=?,last_published_at=?,
+              publication_state='clean',pending_source_hash=NULL,pending_graph_iri=NULL,
+              pending_payload=NULL,pending_payload_hash=NULL,contract_version=?
+              WHERE endpoint=? AND resource_iri=?""",
+              (graph_iri, source_hash, source_hash, payload_hash, published_at or _now(),
+               contract_version, endpoint, resource_iri))
+
+    def get_resource(self, endpoint: str, resource_iri: str) -> dict | None:
+        row = self.connection.execute("SELECT * FROM resource_state WHERE endpoint=? AND resource_iri=?",
+                                      (endpoint, resource_iri)).fetchone()
+        return dict(row) if row is not None else None
+
+    def resources(self, endpoint: str) -> list[dict]:
+        return [dict(row) for row in self.connection.execute(
+            "SELECT * FROM resource_state WHERE endpoint=? ORDER BY resource_iri", (endpoint,))]
+
+    def status(self) -> dict:
+        endpoints = []
+        names = {row[0] for row in self.connection.execute(
+            "SELECT endpoint FROM endpoint_state UNION SELECT endpoint FROM resource_state "
+            "UNION SELECT endpoint FROM etl_run")}
+        for endpoint in sorted(names):
+            state = self.connection.execute(
+                "SELECT * FROM endpoint_state WHERE endpoint=?", (endpoint,)).fetchone()
+            resources = self.connection.execute("""SELECT
+              SUM(CASE WHEN publication_state='dirty' THEN 1 ELSE 0 END),COUNT(*)
+              FROM resource_state WHERE endpoint=?""", (endpoint,)).fetchone()
+            endpoints.append({"endpoint": endpoint,
+                              "last_successful_run_id": state["last_successful_run_id"] if state else None,
+                              "last_successful_complete_run_id": state["last_successful_complete_run_id"] if state else None,
+                               "updated_at": state["updated_at"] if state else None,
+                               "publication": (json.loads(state["publication_metadata_json"])
+                                               if state and state["publication_metadata_json"] else None),
+                              "dirty_resources": resources[0] or 0,
+                              "resources": resources[1]})
+        dirty_resources = [dict(row) for row in self.connection.execute("""SELECT
+          endpoint,resource_iri,graph_iri,observed_source_hash,published_source_hash,
+          pending_source_hash,pending_graph_iri,pending_payload_hash,last_seen_at
+          FROM resource_state WHERE publication_state='dirty' ORDER BY endpoint,resource_iri""")]
+        runs = [dict(row) for row in self.connection.execute(
+            "SELECT run_id,endpoint,run_kind,is_complete,started_at,completed_at,status,error,parameters_json "
+            "FROM etl_run ORDER BY started_at DESC LIMIT 20")]
+        for run in runs:
+            run["is_complete"] = bool(run["is_complete"])
+            run["parameters"] = json.loads(run.pop("parameters_json"))
+        return {"schema_version": SCHEMA_VERSION, "database": str(self.path),
+                "endpoints": endpoints, "dirty_resources": dirty_resources,
+                "recent_runs": runs}
+
+    @contextmanager
+    def _transaction(self):
+        self.connection.execute("BEGIN IMMEDIATE")
+        try:
+            yield
+            self.connection.commit()
+        except BaseException:
+            self.connection.rollback()
+            raise
+
+
+_SCHEMA = """
+CREATE TABLE core_metadata (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+CREATE TABLE etl_run (
+  run_id TEXT PRIMARY KEY,
+   endpoint TEXT NOT NULL CHECK(endpoint IN ('houses','parties','constituencies','members','legislation')),
+  run_kind TEXT NOT NULL CHECK(run_kind IN ('full_refresh','incremental_refresh','complete_source_reconciliation')),
+  is_complete INTEGER NOT NULL CHECK(is_complete IN (0,1)),
+  started_at TEXT NOT NULL,
+  completed_at TEXT,
+  status TEXT NOT NULL CHECK(status IN ('running','succeeded','failed')),
+  error TEXT,
+  parameters_json TEXT NOT NULL
+);
+CREATE INDEX etl_run_endpoint_started ON etl_run(endpoint,started_at);
+CREATE TABLE endpoint_state (
+   endpoint TEXT PRIMARY KEY CHECK(endpoint IN ('houses','parties','constituencies','members','legislation')),
+  last_successful_run_id TEXT,
+  last_successful_complete_run_id TEXT,
+  publication_metadata_json TEXT,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE resource_state (
+  endpoint TEXT NOT NULL CHECK(endpoint IN ('members','legislation')),
+  resource_iri TEXT NOT NULL,
+  graph_iri TEXT NOT NULL,
+  observed_source_hash TEXT,
+  published_source_hash TEXT,
+  published_payload_hash TEXT,
+  last_seen_at TEXT,
+  last_seen_run_id TEXT,
+  last_published_at TEXT,
+  publication_state TEXT NOT NULL CHECK(publication_state IN ('clean','dirty')),
+  pending_source_hash TEXT,
+  pending_graph_iri TEXT,
+  pending_payload TEXT,
+  pending_payload_hash TEXT,
+  source_presence TEXT NOT NULL DEFAULT 'present' CHECK(source_presence IN ('present','missing','confirmed_missing')),
+  contract_version INTEGER,
+  PRIMARY KEY(endpoint,resource_iri),
+  CHECK(publication_state='dirty' OR
+        (pending_source_hash IS NULL AND pending_graph_iri IS NULL AND pending_payload_hash IS NULL))
+);
+CREATE INDEX resource_state_publication ON resource_state(endpoint,publication_state);
+"""

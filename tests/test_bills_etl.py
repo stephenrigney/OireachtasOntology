@@ -188,7 +188,7 @@ def test_bills_cli_offline_never_writes_state(tmp_path):
 def test_online_bill_hash_skip_and_dirty_replacement_state(tmp_path, monkeypatch):
     from oireachtas_etl import cli
     fixture = tmp_path / "bill.json"; fixture.write_text(json.dumps({"head": {"counts": {"billCount": 1}}, "results": [RECORD]}))
-    args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_file=str(tmp_path / "state.json"), output_nq=None, output_ttl=None, fuseki_gsp_url="http://example.test/data", fuseki_sparql_url="http://example.test/query")
+    args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(tmp_path / "state.sqlite"), output_nq=None, output_ttl=None, fuseki_gsp_url="http://example.test/data", fuseki_sparql_url="http://example.test/query")
     calls = []
     class Loader:
         def __init__(self, *args, **kwargs): pass
@@ -197,8 +197,11 @@ def test_online_bill_hash_skip_and_dirty_replacement_state(tmp_path, monkeypatch
     monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
     monkeypatch.setattr(cli, "verify_bill_competency", lambda *args: None)
     assert cli.run_bills(args) == 0 and len(calls) == 1
-    state = json.loads(Path(args.state_file).read_text())["bills"][RECORD["bill"]["uri"]]
-    assert state["status"] == "clean" and state["published_hash"] == source_hash(RECORD["bill"])
+    from oireachtas_etl.state import CoreStateStore
+    with CoreStateStore(Path(args.state_db)) as store:
+        state = store.get_resource("legislation", RECORD["bill"]["uri"])
+    assert state["publication_state"] == "clean" and state["published_source_hash"] == source_hash(RECORD["bill"])
+    assert state["published_payload_hash"] and state["pending_payload"] is None
     monkeypatch.setattr(cli, "transform_bill_with_report", lambda value: (_ for _ in ()).throw(AssertionError("unchanged bill transformed")))
     assert cli.run_bills(args) == 0 and len(calls) == 1
 
@@ -206,23 +209,71 @@ def test_online_bill_hash_skip_and_dirty_replacement_state(tmp_path, monkeypatch
 def test_bill_publication_failure_and_competency_failure_are_dirty_and_retry(tmp_path, monkeypatch):
     from oireachtas_etl import cli
     fixture = tmp_path / "bill.json"; fixture.write_text(json.dumps({"head": {"counts": {"billCount": 1}}, "results": [RECORD]}))
-    args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_file=str(tmp_path / "state.json"), output_nq=None, output_ttl=None, fuseki_gsp_url="http://example.test/data", fuseki_sparql_url="http://example.test/query")
+    args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(tmp_path / "state.sqlite"), output_nq=None, output_ttl=None, fuseki_gsp_url="http://example.test/data", fuseki_sparql_url="http://example.test/query")
     class FailingLoader:
         def __init__(self, *args, **kwargs): pass
         def replace(self, *args, **kwargs): raise RuntimeError("PUT failed")
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", FailingLoader); monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
     with pytest.raises(RuntimeError, match="PUT failed"): cli.run_bills(args)
-    entry = json.loads(Path(args.state_file).read_text())["bills"][RECORD["bill"]["uri"]]
-    assert entry["status"] == "dirty" and "published_hash" not in entry
+    from oireachtas_etl.state import CoreStateStore
+    with CoreStateStore(Path(args.state_db)) as store:
+        entry = store.get_resource("legislation", RECORD["bill"]["uri"])
+    assert entry["publication_state"] == "dirty" and entry["published_source_hash"] is None
+    assert entry["pending_source_hash"] == source_hash(RECORD["bill"])
+    assert entry["pending_payload"] and entry["pending_payload_hash"]
     class Loader:
         def __init__(self, *args, **kwargs): pass
         def replace(self, *args, **kwargs): pass
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader); monkeypatch.setattr(cli, "verify_bill_competency", lambda *args: (_ for _ in ()).throw(ValueError("competency failed")))
     with pytest.raises(ValueError, match="competency failed"): cli.run_bills(args)
-    assert json.loads(Path(args.state_file).read_text())["bills"][RECORD["bill"]["uri"]]["status"] == "dirty"
+    with CoreStateStore(Path(args.state_db)) as store:
+        assert store.get_resource("legislation", RECORD["bill"]["uri"])["publication_state"] == "dirty"
     monkeypatch.setattr(cli, "verify_bill_competency", lambda *args: None)
     assert cli.run_bills(args) == 0
-    assert json.loads(Path(args.state_file).read_text())["bills"][RECORD["bill"]["uri"]]["status"] == "clean"
+    with CoreStateStore(Path(args.state_db)) as store:
+        assert store.get_resource("legislation", RECORD["bill"]["uri"])["publication_state"] == "clean"
+
+
+def test_bills_full_scan_replays_durable_dirty_payload_for_unobserved_bill(tmp_path, monkeypatch, capsys):
+    from oireachtas_etl import cli
+    from oireachtas_etl.serialization import ntriples
+    from oireachtas_etl.state import CoreStateStore
+
+    identity = "https://data.oireachtas.ie/ie/oireachtas/bill/2026/999"
+    graph_iri = "https://data.oireachtas.ie/graph/bill/2026/999"
+    graph = Graph()
+    graph.add((URIRef(identity), RDF.type, ELIDL.DraftLegislationWork))
+    payload = ntriples(graph)
+    database = tmp_path / "core.sqlite"
+    with CoreStateStore(database) as store:
+        run_id = store.start_run("legislation", "full_refresh", is_complete=True,
+                                 parameters={"seed": True})
+        store.observe_resource("legislation", identity, graph_iri, "a" * 64, run_id)
+        store.mark_publication_dirty("legislation", identity, source_hash="a" * 64,
+                                     graph_iri=graph_iri, payload=payload, contract_version=1)
+        store.finish_run(run_id, success=False, error="interrupted before verification")
+
+    calls = []
+    class Loader:
+        def __init__(self, *args, **kwargs): pass
+        def replace(self, *args, **kwargs): calls.append(args)
+    monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
+    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
+    monkeypatch.setattr(cli, "verify_bill_competency", lambda *args, **kwargs: None)
+    fixture = ROOT / "data/api_examples/bill.json"
+    args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"),
+                     state_db=str(database), output_nq=None, output_ttl=None,
+                     fuseki_gsp_url="http://example.test/data",
+                     fuseki_sparql_url="http://example.test/query")
+    assert cli.run_bills(args) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["published"] == 2
+    assert (graph_iri, payload) in calls
+    with CoreStateStore(database) as store:
+        recovered = store.get_resource("legislation", identity)
+        assert recovered["publication_state"] == "clean"
+        assert recovered["published_source_hash"] == "a" * 64
+        assert recovered["pending_payload"] is None
 
 
 def test_bill_competency_query_resources_execute_against_named_graph():

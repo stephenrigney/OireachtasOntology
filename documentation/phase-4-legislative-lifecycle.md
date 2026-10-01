@@ -4,9 +4,12 @@ Bills are transformed into one Bill-owned graph named
 `https://data.oireachtas.ie/graph/bill/{year}/{number}`.  A Graph Store PUT
 replaces the complete graph only after source, RDF and SHACL validation pass.
 Competency verification runs against the graph after PUT; a PUT or competency
-failure leaves the record dirty for retry. `bills-state.json` stores a SHA-256 hash of each complete Bill source
-record, so unchanged records are source-validated and skipped before RDF
-transformation or publication.
+failure leaves the record dirty for retry. The shared core ETL SQLite database
+stores each complete Bill source hash, deterministic publication payload hash
+and durable pending publication data, so unchanged records are source-validated
+and skipped before RDF transformation or publication. The former
+`bills-state.json` file is imported once as read-only legacy state; online Bills
+runs continue to harvest the complete Legislation source in this tranche.
 
 The Bill is an `eli-dl:DraftLegislationWork`/`eli:LegalResource` and owns one
 `{bill-uri}#process`. Stages and supported lifecycle events are owned

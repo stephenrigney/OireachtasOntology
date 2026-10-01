@@ -2,6 +2,7 @@ from __future__ import annotations
 import argparse, json
 from datetime import datetime, timezone
 from pathlib import Path
+import hashlib
 from .api import ApiClient, HousesApiClient
 from .config import CONSTITUENCIES_GRAPH, HOUSES_GRAPH, PARTIES_GRAPH, REFERENCE_ONTOLOGY_VERSION, Settings
 from .loader import FusekiGraphStoreLoader
@@ -18,7 +19,10 @@ from .validation.members import validate_member_source
 from .transforms.members import member_graph_iri, source_hash, transform_member_with_report
 from .transforms.bills import bill_graph_iri, source_hash as bill_source_hash, transform_bill_with_report
 from .validation.bills import validate_bill_source
-from .state import load_manifest, load_bills_manifest, write_manifest, manifest_lock
+from .state import CoreStateStore, expected_graph_iri, state_lock
+from rdflib import Graph, URIRef
+from rdflib.namespace import RDF
+from .transforms.common import ELIDL, OIR
 from .reconciliation import (DbpediaClient, ReconciliationStore, WikidataClient,
                               FixtureResponseError, external_graph_iri, party_external_graph_iri,
                               load_party_review, load_review, normalize_party_candidate,
@@ -35,7 +39,7 @@ def _records_from_fixture(path: Path) -> tuple[list[dict], bytes]:
     if not isinstance(value, list): raise ValueError("fixture must be a JSON array")
     return value, body
 
-def run_houses(args: argparse.Namespace) -> int:
+def _run_houses_impl(args: argparse.Namespace, store: CoreStateStore | None = None) -> int:
     settings = Settings.from_environment()
     settings = Settings(**{**settings.__dict__, "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir})
     if args.fixture:
@@ -56,12 +60,44 @@ def run_houses(args: argparse.Namespace) -> int:
     query_endpoint = None if args.offline else (args.fuseki_sparql_url or settings.fuseki_sparql_url)
     if endpoint:
         if not query_endpoint: raise ValueError("Fuseki SPARQL endpoint is required for post-load competency verification")
-        FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout).replace(HOUSES_GRAPH, ntriples(graph), content_type="application/n-triples")
+        payload = ntriples(graph)
+        if store is None: raise RuntimeError("online Houses publication requires durable core ETL state")
+        digest = store.mark_endpoint_dirty("houses", HOUSES_GRAPH, payload)
+        FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout).replace(HOUSES_GRAPH, payload, content_type="application/n-triples")
         verify_houses_competency(FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout))
+        store.complete_endpoint_publication("houses", HOUSES_GRAPH, digest)
     elif not args.offline:
         raise ValueError("no Fuseki GSP endpoint configured; use --offline for fixture/developer runs")
     print(json.dumps({"records": len(records), "excluded": exclusions, "published": bool(endpoint)}, sort_keys=True))
     return 0
+
+
+def _run_shared(args: argparse.Namespace, endpoint_name: str, operation) -> int:
+    if args.offline:
+        return operation(args)
+    settings = Settings.from_environment()
+    database = Path(getattr(args, "state_db", None) or settings.core_state_db_file).expanduser()
+    with state_lock(database):
+        with CoreStateStore(database, legacy_members=settings.members_legacy_state_file,
+                            legacy_bills=settings.bills_legacy_state_file) as store:
+            run_id = store.start_run(endpoint_name, "full_refresh", is_complete=True,
+                                     parameters={"source": "fixture" if args.fixture else "api",
+                                                 "fixture": str(Path(args.fixture).resolve()) if args.fixture else None,
+                                                 "api_url": None if args.fixture else getattr(settings, {
+                                                     "houses": "api_url", "parties": "parties_api_url",
+                                                     "constituencies": "constituencies_api_url"}[endpoint_name]),
+                                                 "limit": settings.limit})
+            try:
+                result = operation(args, store)
+            except Exception as error:
+                store.finish_run(run_id, success=False, error=f"{type(error).__name__}: {error}")
+                raise
+            store.finish_run(run_id, success=True)
+            return result
+
+
+def run_houses(args: argparse.Namespace) -> int:
+    return _run_shared(args, "houses", _run_houses_impl)
 
 
 REFERENCE_ENDPOINTS = {
@@ -79,7 +115,7 @@ def _reference_fixture_records(path: Path, endpoint: str) -> tuple[list[dict], b
     return records, body
 
 
-def run_reference(args: argparse.Namespace) -> int:
+def _run_reference_impl(args: argparse.Namespace, store: CoreStateStore | None = None) -> int:
     endpoint_name = args.endpoint
     graph_iri, url_attr, transform, validator, competency, mapping_version = REFERENCE_ENDPOINTS[endpoint_name]
     settings = Settings.from_environment()
@@ -110,12 +146,20 @@ def run_reference(args: argparse.Namespace) -> int:
     if endpoint:
         if not query_endpoint:
             raise ValueError("Fuseki SPARQL endpoint is required for post-load competency verification")
-        FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout).replace(graph_iri, ntriples(graph), content_type="application/n-triples")
+        payload = ntriples(graph)
+        if store is None: raise RuntimeError("online reference publication requires durable core ETL state")
+        digest = store.mark_endpoint_dirty(endpoint_name, graph_iri, payload)
+        FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout).replace(graph_iri, payload, content_type="application/n-triples")
         competency(FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout))
+        store.complete_endpoint_publication(endpoint_name, graph_iri, digest)
     elif not args.offline:
         raise ValueError("no Fuseki GSP endpoint configured; use --offline for fixture/developer runs")
     print(json.dumps({"records": len(records), "published": bool(endpoint)}, sort_keys=True))
     return 0
+
+
+def run_reference(args: argparse.Namespace) -> int:
+    return _run_shared(args, args.endpoint, _run_reference_impl)
 
 
 def _members_fixture_records(path: Path) -> tuple[list[dict], bytes, int | None]:
@@ -154,10 +198,52 @@ def _deduplicate_members(records: list[dict], advertised: int | None) -> list[di
     return [unique[key] for key in sorted(unique)]
 
 
-def _run_members(args: argparse.Namespace) -> int:
+def _legacy_override(args: argparse.Namespace) -> Path | None:
+    # ``--state-file`` remains an explicit, read-only legacy JSON import path.
+    # New operational state is always selected with ``--state-db``.
+    value = getattr(args, "legacy_state_file", None) or getattr(args, "state_file", None)
+    return Path(value).expanduser() if value else None
+
+
+def _replay_missing_dirty(endpoint: str, resource: dict, store: CoreStateStore,
+                          loader: FusekiGraphStoreLoader, client: FusekiSparqlClient,
+                          verifier) -> None:
+    """Replay a durable validated payload for a dirty resource omitted today."""
+    identity = resource["resource_iri"]
+    graph_iri = resource["graph_iri"]
+    payload = resource["pending_payload"]
+    payload_hash = resource["pending_payload_hash"]
+    source_hash = resource["pending_source_hash"]
+    if (not isinstance(payload, str) or not isinstance(payload_hash, str)
+            or hashlib.sha256(payload.encode("utf-8")).hexdigest() != payload_hash
+            or resource["pending_graph_iri"] != graph_iri
+            or expected_graph_iri(endpoint, identity) != graph_iri
+            or not isinstance(source_hash, str) or not source_hash
+            or type(resource["contract_version"]) is not int):
+        raise ValueError(
+            f"dirty {endpoint} resource {identity} has no intact replayable payload; "
+            "it must reappear in a source scan before publication can be retried"
+        )
+    try:
+        graph = Graph().parse(data=payload, format="nt")
+    except Exception as error:
+        raise ValueError(f"dirty {endpoint} payload is not valid N-Triples for {identity}") from error
+    root_type = OIR.Member if endpoint == "members" else ELIDL.DraftLegislationWork
+    if (URIRef(identity), RDF.type, root_type) not in graph:
+        raise ValueError(f"dirty {endpoint} payload has the wrong resource subject: {identity}")
+    # The row was made durable before its original PUT. A disappeared source
+    # record is not grounds for deleting it or for skipping recovery.
+    loader.replace(graph_iri, payload, content_type="application/n-triples")
+    verifier(client, graph_iri, identity, len(graph))
+    store.complete_publication(endpoint, identity, source_hash=source_hash,
+                                graph_iri=graph_iri, payload_hash=payload_hash,
+                                contract_version=resource["contract_version"])
+
+
+def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = None,
+                      run_id: str | None = None) -> int:
     settings = Settings.from_environment()
-    settings = Settings(**{**settings.__dict__, "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir,
-                           "members_state_file": Path(args.state_file) if args.state_file else settings.members_state_file})
+    settings = Settings(**{**settings.__dict__, "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir})
     if args.fixture:
         records, body, advertised = _members_fixture_records(Path(args.fixture))
         persist_raw(root=settings.raw_dir, endpoint=str(Path(args.fixture)), params={"skip": 0, "limit": len(records)}, body=body, status=200,
@@ -180,17 +266,20 @@ def _run_members(args: argparse.Namespace) -> int:
             if advertised is None: advertised = count
             elif count != advertised: raise ValueError("Members advertised count changed during scan")
     records = _deduplicate_members(records, advertised)
-    manifest = load_manifest(settings.members_state_file)
     graphs: list[tuple[dict, object | None, str, str, list[dict], str]] = []
     for wrapper in records:
         member = wrapper["member"]; identity, digest, graph_iri = str(__import__("oireachtas_etl.transforms.common", fromlist=["iri"]).iri(member["uri"])), source_hash(member), member_graph_iri(member)
-        old = manifest["members"].get(identity, {})
+        prior = store.get_resource("members", identity) if store is not None else None
+        old = (store.observe_resource("members", identity, graph_iri, digest, run_id)
+               if store is not None and run_id is not None else {})
         # Hash-first: unchanged published records do not enter transformation.
         omissions = validate_member_source(wrapper)
-        if not args.offline and old.get("status", "clean") == "clean" and old.get("contract_version") == 2 and old.get("published_hash") == digest and old.get("graph_iri") == graph_iri:
+        if (not args.offline and old.get("publication_state", "clean") == "clean"
+                and old.get("contract_version") == 2
+                and old.get("published_source_hash") == digest and old.get("graph_iri") == graph_iri):
             graphs.append((wrapper, None, identity, digest, omissions, "skipped")); continue
         graph, exclusions = transform_member_with_report(wrapper); validate_member(wrapper, graph)
-        graphs.append((wrapper, graph, identity, digest, exclusions, "changed" if old else "new"))
+        graphs.append((wrapper, graph, identity, digest, exclusions, "changed" if prior else "new"))
     if args.output_nq:
         Path(args.output_nq).write_text("".join(nquads(graph, graph_iri) for wrapper, graph, identity, digest, exclusions, _ in graphs if graph is not None for graph_iri in [member_graph_iri(wrapper["member"])]), encoding="utf-8")
     if getattr(args, "output_ttl", None):
@@ -200,29 +289,33 @@ def _run_members(args: argparse.Namespace) -> int:
     if endpoint and not query_endpoint: raise ValueError("Fuseki SPARQL endpoint is required for post-load competency verification")
     published = skipped = 0
     seen = {identity for _, _, identity, _, _, _ in graphs}
-    missing = sorted(identity for identity in manifest["members"] if identity not in seen)
+    known = store.resources("members") if store is not None else []
+    missing = sorted(row["resource_iri"] for row in known if row["resource_iri"] not in seen)
     if endpoint:
+        if store is None:
+            raise RuntimeError("online Member publication requires durable core ETL state")
         loader = FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
         client = FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
         for wrapper, graph, identity, digest, exclusions, status in graphs:
-            old = manifest["members"].get(identity, {})
             if graph is None:
-                old["last_seen"] = datetime.now(timezone.utc).isoformat()
-                manifest["members"][identity] = old
-                write_manifest(settings.members_state_file, manifest)
                 skipped += 1
                 continue
             graph_iri = member_graph_iri(wrapper["member"])
-            # Durable dirty marker means a crash, failed PUT, or failed gate is
-            # always retried even when the source later reverts to an old hash.
-            manifest["members"][identity] = {**old, "status": "dirty", "pending_hash": digest, "pending_graph_iri": graph_iri,
-                                               "graph_iri": old.get("graph_iri", graph_iri), "contract_version": 2}
-            write_manifest(settings.members_state_file, manifest)
-            loader.replace(graph_iri, ntriples(graph), content_type="application/n-triples")
+            payload = ntriples(graph)
+            payload_hash = store.mark_publication_dirty("members", identity, source_hash=digest,
+                                                        graph_iri=graph_iri, payload=payload,
+                                                        contract_version=2)
+            loader.replace(graph_iri, payload, content_type="application/n-triples")
             verify_member_competency(client, graph_iri, identity, len(graph))
-            manifest["members"][identity] = {"source_hash": digest, "published_hash": digest, "graph_iri": graph_iri,
-                                                "last_seen": datetime.now(timezone.utc).isoformat(), "last_published": datetime.now(timezone.utc).isoformat(), "contract_version": 2, "status": "clean"}
-            write_manifest(settings.members_state_file, manifest); published += 1
+            store.complete_publication("members", identity, source_hash=digest, graph_iri=graph_iri,
+                                       payload_hash=payload_hash, contract_version=2)
+            published += 1
+        for row in known:
+            if row["resource_iri"] in seen or row["publication_state"] != "dirty":
+                continue
+            _replay_missing_dirty("members", row, store, loader, client,
+                                  verify_member_competency)
+            published += 1
     elif not args.offline:
         raise ValueError("no Fuseki GSP endpoint configured; use --offline for fixture/developer runs")
     report = [item for _, _, _, _, exclusions, _ in graphs for item in exclusions]
@@ -231,14 +324,35 @@ def _run_members(args: argparse.Namespace) -> int:
     return 0
 
 
-def run_members(args: argparse.Namespace) -> int:
-    """Run Members; online refreshes hold the manifest's single-writer lock."""
-    if args.offline:
-        return _run_members(args)
+def _run_members(args: argparse.Namespace, store: CoreStateStore | None = None) -> int:
+    if store is None:
+        return _run_members_impl(args)
     settings = Settings.from_environment()
-    path = Path(args.state_file) if getattr(args, "state_file", None) else settings.members_state_file
-    with manifest_lock(path):
-        return _run_members(args)
+    run_id = store.start_run("members", "full_refresh", is_complete=True,
+                             parameters={"source": "fixture" if args.fixture else "api",
+                                         "fixture": str(Path(args.fixture).resolve()) if args.fixture else None,
+                                         "api_url": None if args.fixture else settings.members_api_url,
+                                         "limit": settings.limit})
+    try:
+        result = _run_members_impl(args, store, run_id)
+    except Exception as error:
+        store.finish_run(run_id, success=False, error=f"{type(error).__name__}: {error}")
+        raise
+    store.finish_run(run_id, success=True)
+    return result
+
+
+def run_members(args: argparse.Namespace) -> int:
+    """Run Members; online refreshes serialize against the shared SQLite state."""
+    if args.offline:
+        return _run_members_impl(args)
+    settings = Settings.from_environment()
+    state_db = Path(getattr(args, "state_db", None) or settings.core_state_db_file).expanduser()
+    legacy_members = _legacy_override(args) or settings.members_legacy_state_file
+    with state_lock(state_db):
+        with CoreStateStore(state_db, legacy_members=legacy_members,
+                            legacy_bills=settings.bills_legacy_state_file) as store:
+            return _run_members(args, store)
 
 
 def _bills_fixture_records(path: Path) -> tuple[list[dict], bytes, int | None]:
@@ -271,10 +385,10 @@ def _deduplicate_bills(records: list[dict], advertised: int | None) -> list[dict
     return [unique[key] for key in sorted(unique)]
 
 
-def _run_bills(args: argparse.Namespace) -> int:
+def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = None,
+                    run_id: str | None = None) -> int:
     settings = Settings.from_environment()
-    settings = Settings(**{**settings.__dict__, "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir,
-                           "bills_state_file": Path(args.state_file) if args.state_file else settings.bills_state_file})
+    settings = Settings(**{**settings.__dict__, "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir})
     if args.fixture:
         records, body, advertised = _bills_fixture_records(Path(args.fixture))
         persist_raw(root=settings.raw_dir, endpoint=str(Path(args.fixture)), params={"skip": 0, "limit": len(records)}, body=body, status=200,
@@ -291,41 +405,86 @@ def _run_bills(args: argparse.Namespace) -> int:
             elif advertised != count: raise ValueError("Bills advertised count changed during scan")
             records.extend(decoded["results"])
     records = _deduplicate_bills(records, advertised)
-    manifest = load_bills_manifest(settings.bills_state_file)
     work = []
     for wrapper in records:
-        bill = wrapper["bill"]; identity, digest, graph_iri = bill["uri"], bill_source_hash(bill), bill_graph_iri(bill); old = manifest["bills"].get(identity, {})
+        bill = wrapper["bill"]; identity, digest, graph_iri = bill["uri"], bill_source_hash(bill), bill_graph_iri(bill)
+        prior = store.get_resource("legislation", identity) if store is not None else None
+        old = (store.observe_resource("legislation", identity, graph_iri, digest, run_id)
+               if store is not None and run_id is not None else {})
         # Hash-first source gate; unchanged Bills never construct RDF or invoke a loader.
         omissions = validate_bill_source(wrapper)
-        if not args.offline and old.get("status") == "clean" and old.get("contract_version") == 1 and old.get("published_hash") == digest and old.get("graph_iri") == graph_iri:
+        if (not args.offline and old.get("publication_state") == "clean"
+                and old.get("contract_version") == 1
+                and old.get("published_source_hash") == digest and old.get("graph_iri") == graph_iri):
             work.append((wrapper, None, identity, digest, omissions, "skipped")); continue
         graph, report = transform_bill_with_report(wrapper); validate_bill(wrapper, graph)
-        work.append((wrapper, graph, identity, digest, report, "changed" if old else "new"))
+        work.append((wrapper, graph, identity, digest, report, "changed" if prior else "new"))
     if args.output_nq: Path(args.output_nq).write_text("".join(nquads(graph, bill_graph_iri(wrapper["bill"])) for wrapper, graph, *_ in work if graph is not None), encoding="utf-8")
     if getattr(args, "output_ttl", None): Path(args.output_ttl).write_text("\n".join(turtle(graph) for _, graph, *_ in work if graph is not None), encoding="utf-8")
     endpoint = None if args.offline else (args.fuseki_gsp_url or settings.fuseki_gsp_url); query_endpoint = None if args.offline else (args.fuseki_sparql_url or settings.fuseki_sparql_url)
     if endpoint and not query_endpoint: raise ValueError("Fuseki SPARQL endpoint is required for post-load competency verification")
     published = skipped = 0
+    known = store.resources("legislation") if store is not None else []
+    seen = {identity for _, _, identity, _, _, _ in work}
     if endpoint:
+        if store is None:
+            raise RuntimeError("online Bill publication requires durable core ETL state")
         loader = FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout); client = FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
         for wrapper, graph, identity, digest, _, status in work:
-            old = manifest["bills"].get(identity, {})
             if graph is None:
-                old["last_seen"] = datetime.now(timezone.utc).isoformat(); manifest["bills"][identity] = old; write_manifest(settings.bills_state_file, manifest); skipped += 1; continue
+                skipped += 1
+                continue
             graph_iri = bill_graph_iri(wrapper["bill"])
-            manifest["bills"][identity] = {**old, "status": "dirty", "pending_hash": digest, "pending_graph_iri": graph_iri, "graph_iri": old.get("graph_iri", graph_iri), "contract_version": 1}; write_manifest(settings.bills_state_file, manifest)
-            loader.replace(graph_iri, ntriples(graph), content_type="application/n-triples"); verify_bill_competency(client, graph_iri, identity, len(graph))
-            manifest["bills"][identity] = {"source_hash": digest, "published_hash": digest, "graph_iri": graph_iri, "last_seen": datetime.now(timezone.utc).isoformat(), "last_published": datetime.now(timezone.utc).isoformat(), "contract_version": 1, "status": "clean"}; write_manifest(settings.bills_state_file, manifest); published += 1
+            payload = ntriples(graph)
+            payload_hash = store.mark_publication_dirty("legislation", identity, source_hash=digest,
+                                                        graph_iri=graph_iri, payload=payload,
+                                                        contract_version=1)
+            loader.replace(graph_iri, payload, content_type="application/n-triples")
+            verify_bill_competency(client, graph_iri, identity, len(graph))
+            store.complete_publication("legislation", identity, source_hash=digest,
+                                       graph_iri=graph_iri, payload_hash=payload_hash,
+                                       contract_version=1)
+            published += 1
+        for row in known:
+            if row["resource_iri"] in seen or row["publication_state"] != "dirty":
+                continue
+            _replay_missing_dirty("legislation", row, store, loader, client,
+                                  verify_bill_competency)
+            published += 1
     elif not args.offline: raise ValueError("no Fuseki GSP endpoint configured; use --offline for fixture/developer runs")
     identities = {kind: sorted(identity for _, _, identity, _, _, status in work if status == kind) for kind in ("new", "changed", "skipped")}
     print(json.dumps({"records": len(records), "published": published, "skipped": skipped, "new": identities["new"], "changed": identities["changed"], "skipped_identities": identities["skipped"], "omitted": [item for *_, report, _ in work for item in report]}, sort_keys=True))
     return 0
 
 
+def _run_bills(args: argparse.Namespace, store: CoreStateStore | None = None) -> int:
+    if store is None:
+        return _run_bills_impl(args)
+    settings = Settings.from_environment()
+    run_id = store.start_run("legislation", "full_refresh", is_complete=True,
+                             parameters={"source": "fixture" if args.fixture else "api",
+                                         "fixture": str(Path(args.fixture).resolve()) if args.fixture else None,
+                                         "api_url": None if args.fixture else settings.bills_api_url,
+                                         "limit": settings.limit})
+    try:
+        result = _run_bills_impl(args, store, run_id)
+    except Exception as error:
+        store.finish_run(run_id, success=False, error=f"{type(error).__name__}: {error}")
+        raise
+    store.finish_run(run_id, success=True)
+    return result
+
+
 def run_bills(args: argparse.Namespace) -> int:
-    if args.offline: return _run_bills(args)
-    settings = Settings.from_environment(); path = Path(args.state_file) if getattr(args, "state_file", None) else settings.bills_state_file
-    with manifest_lock(path): return _run_bills(args)
+    if args.offline:
+        return _run_bills_impl(args)
+    settings = Settings.from_environment()
+    state_db = Path(getattr(args, "state_db", None) or settings.core_state_db_file).expanduser()
+    legacy_bills = _legacy_override(args) or settings.bills_legacy_state_file
+    with state_lock(state_db):
+        with CoreStateStore(state_db, legacy_members=settings.members_legacy_state_file,
+                            legacy_bills=legacy_bills) as store:
+            return _run_bills(args, store)
 
 
 class _FixtureWikidataClient:
@@ -747,18 +906,33 @@ def run_reconcile_institutions(args: argparse.Namespace) -> int:
     finally:
         store.close()
 
+
+def run_state_status(args: argparse.Namespace) -> int:
+    settings = Settings.from_environment()
+    state_db = Path(getattr(args, "state_db", None) or settings.core_state_db_file).expanduser()
+    with CoreStateStore(state_db, legacy_members=settings.members_legacy_state_file,
+                        legacy_bills=settings.bills_legacy_state_file) as store:
+        print(json.dumps(store.status(), sort_keys=True))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="oir-etl")
     sub = parser.add_subparsers(dest="command", required=True)
     run = sub.add_parser("run"); run.add_argument("endpoint", choices=["houses", "parties", "constituencies", "members", "bills"])
     run.add_argument("--fixture"); run.add_argument("--offline", action="store_true"); run.add_argument("--raw-dir")
-    run.add_argument("--state-file")
+    run.add_argument("--state-db", help="shared authoritative core ETL SQLite database")
+    run.add_argument("--legacy-state-file", "--state-file", dest="legacy_state_file",
+                     help="read-only legacy Member/Bill JSON manifest to import once")
     run.add_argument("--output-ttl"); run.add_argument("--output-nq"); run.add_argument("--fuseki-gsp-url"); run.add_argument("--fuseki-sparql-url")
+    state = sub.add_parser("state"); state_sub = state.add_subparsers(dest="state_command", required=True)
+    state_status = state_sub.add_parser("status"); state_status.add_argument("--state-db")
     reconcile = sub.add_parser("reconcile"); reconcile.add_argument("endpoint", choices=["members", "parties", "institutions"])
     reconcile.add_argument("--fixture"); reconcile.add_argument("--responses-file"); reconcile.add_argument("--offline", action="store_true"); reconcile.add_argument("--all", action="store_true"); reconcile.add_argument("--publish", action="store_true"); reconcile.add_argument("--output-nq"); reconcile.add_argument("--fuseki-gsp-url"); reconcile.add_argument("--fuseki-sparql-url")
     reconcile.add_argument("--review-file", help="review JSON (defaults to the endpoint-specific version-controlled review file)")
     reconcile.add_argument("--reconciliation-state-file", help="shared reconciliation SQLite path (defaults to the Phase 3.5 state file)")
     args = parser.parse_args(argv)
+    if args.command == "state": return run_state_status(args)
     if args.command == "reconcile":
         if args.endpoint == "parties": return run_reconcile_parties(args)
         if args.endpoint == "institutions": return run_reconcile_institutions(args)

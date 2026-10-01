@@ -214,13 +214,14 @@ def test_failed_member_publication_never_writes_published_state(tmp_path, monkey
         def replace(self, *args, **kwargs): raise RuntimeError("PUT failed")
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
     args = Namespace(fixture=str(ROOT / "data/api_examples/member.json"), offline=False, raw_dir=str(tmp_path / "raw"),
-                     output_nq=None, fuseki_gsp_url="http://example.test/data", fuseki_sparql_url="http://example.test/query", state_file=str(tmp_path / "state.json"))
+                     output_nq=None, fuseki_gsp_url="http://example.test/data", fuseki_sparql_url="http://example.test/query", state_db=str(tmp_path / "state.sqlite"))
     with pytest.raises(RuntimeError, match="PUT failed"):
         cli.run_members(args)
-    state = json.loads((tmp_path / "state.json").read_text())
-    entry = state["members"][WRAPPER["member"]["uri"]]
-    assert entry["status"] == "dirty"
-    assert "published_hash" not in entry
+    from oireachtas_etl.state import CoreStateStore
+    with CoreStateStore(tmp_path / "state.sqlite") as state:
+        entry = state.get_resource("members", WRAPPER["member"]["uri"])
+        assert entry["publication_state"] == "dirty"
+        assert entry["published_source_hash"] is None
 
 
 def test_member_competency_resources_execute_against_fixture_named_graph():
@@ -244,7 +245,13 @@ def test_member_competency_resources_execute_against_fixture_named_graph():
 def _online_args(tmp_path, fixture=ROOT / "data/api_examples/member.json"):
     return Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), output_nq=None,
                      output_ttl=None, fuseki_gsp_url="http://example.test/data", fuseki_sparql_url="http://example.test/query",
-                     state_file=str(tmp_path / "state.json"))
+                     state_db=str(tmp_path / "state.sqlite"))
+
+
+def _member_state(tmp_path, identity=WRAPPER["member"]["uri"]):
+    from oireachtas_etl.state import CoreStateStore
+    with CoreStateStore(tmp_path / "state.sqlite") as store:
+        return store.get_resource("members", identity)
 
 
 def _mock_online(monkeypatch, calls, *, competency=None):
@@ -352,21 +359,21 @@ def test_members_live_scan_rejects_lexical_uri_alias_collision_before_loader(tmp
 
 
 def _manifest_lock_holder(path, ready, release):
-    from oireachtas_etl.state import manifest_lock
-    with manifest_lock(Path(path)):
+    from oireachtas_etl.state import state_lock
+    with state_lock(Path(path)):
         ready.set()
         release.wait(5)
 
 
 def _manifest_lock_contender(path, entered):
-    from oireachtas_etl.state import manifest_lock
-    with manifest_lock(Path(path)):
+    from oireachtas_etl.state import state_lock
+    with state_lock(Path(path)):
         entered.set()
 
 
 def test_manifest_lock_blocks_second_process_until_first_releases(tmp_path):
     context = multiprocessing.get_context("fork")
-    state_path = tmp_path / "state.json"
+    state_path = tmp_path / "state.sqlite"
     held = context.Event(); release = context.Event(); entered = context.Event()
     holder = context.Process(target=_manifest_lock_holder, args=(str(state_path), held, release))
     contender = None
@@ -395,7 +402,7 @@ def test_online_members_run_holds_manifest_lock_during_loader_publication(tmp_pa
     class Loader:
         def __init__(self, *args, **kwargs): pass
         def replace(self, *args, **kwargs):
-            lock_path = Path(_online_args(tmp_path).state_file).with_name("state.json.lock")
+            lock_path = Path(_online_args(tmp_path).state_db).with_name("state.sqlite.lock")
             with lock_path.open("a+") as handle:
                 try:
                     fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -414,11 +421,11 @@ def test_online_members_run_holds_manifest_lock_during_loader_publication(tmp_pa
 
 def test_offline_members_run_does_not_acquire_lock_or_publish_state(tmp_path, monkeypatch):
     from oireachtas_etl import cli
-    monkeypatch.setattr(cli, "manifest_lock", lambda path: (_ for _ in ()).throw(AssertionError("offline run acquired lock")))
+    monkeypatch.setattr(cli, "state_lock", lambda path: (_ for _ in ()).throw(AssertionError("offline run acquired lock")))
     args = _online_args(tmp_path)
     args.offline = True
     assert cli.run_members(args) == 0
-    assert not Path(args.state_file).exists()
+    assert not Path(args.state_db).exists()
 
 
 def test_members_online_first_run_is_new_and_writes_published_state(tmp_path, monkeypatch, capsys):
@@ -426,10 +433,9 @@ def test_members_online_first_run_is_new_and_writes_published_state(tmp_path, mo
     calls = []; _mock_online(monkeypatch, calls)
     assert cli.run_members(_online_args(tmp_path)) == 0
     result, identity = _report(capsys), WRAPPER["member"]["uri"]
-    state = json.loads((tmp_path / "state.json").read_text())
     assert result["new"] == [identity] and result["changed"] == [] and result["skipped_identities"] == []
     assert result["published"] == 1 and len(calls) == 1
-    assert state["members"][identity]["published_hash"] == source_hash(WRAPPER["member"])
+    assert _member_state(tmp_path, identity)["published_source_hash"] == source_hash(WRAPPER["member"])
 
 
 def test_members_online_unchanged_skips_before_transform_and_put_but_reports_omissions(tmp_path, monkeypatch, capsys):
@@ -463,7 +469,7 @@ def test_members_online_competency_failure_after_put_keeps_previous_published_ha
     from oireachtas_etl import cli
     calls = []; _mock_online(monkeypatch, calls)
     cli.run_members(_online_args(tmp_path)); capsys.readouterr()
-    before = json.loads((tmp_path / "state.json").read_text())
+    before = _member_state(tmp_path)
     changed = copied(); changed["member"]["fullName"] = "Timmy Dooley changed"
     fixture = tmp_path / "changed.json"; fixture.write_text(json.dumps(changed))
     calls = []; _mock_online(monkeypatch, calls, competency=lambda *args: (_ for _ in ()).throw(ValueError("competency failed")))
@@ -471,25 +477,25 @@ def test_members_online_competency_failure_after_put_keeps_previous_published_ha
         args = _online_args(tmp_path, fixture); args.raw_dir = str(tmp_path / "raw-changed")
         cli.run_members(args)
     assert len(calls) == 1
-    after = json.loads((tmp_path / "state.json").read_text())
-    assert after["members"][WRAPPER["member"]["uri"]]["published_hash"] == before["members"][WRAPPER["member"]["uri"]]["published_hash"]
+    after = _member_state(tmp_path)
+    assert after["published_source_hash"] == before["published_source_hash"]
 
 
 def test_members_competency_failure_after_put_persists_dirty_pending_hash(tmp_path, monkeypatch, capsys):
     from oireachtas_etl import cli
     calls = []; _mock_online(monkeypatch, calls)
     cli.run_members(_online_args(tmp_path)); capsys.readouterr()
-    prior = json.loads((tmp_path / "state.json").read_text())["members"][WRAPPER["member"]["uri"]]
+    prior = _member_state(tmp_path)
     changed = copied(); changed["member"]["fullName"] = "A failed publication"
     fixture = tmp_path / "changed.json"; fixture.write_text(json.dumps(changed))
     _mock_online(monkeypatch, calls, competency=lambda *args: (_ for _ in ()).throw(ValueError("competency failed")))
     args = _online_args(tmp_path, fixture); args.raw_dir = str(tmp_path / "raw-changed")
     with pytest.raises(ValueError, match="competency failed"):
         cli.run_members(args)
-    entry = json.loads((tmp_path / "state.json").read_text())["members"][WRAPPER["member"]["uri"]]
-    assert entry["status"] in {"dirty", "in_progress"}
-    assert entry["pending_hash"] == source_hash(changed["member"])
-    assert entry["published_hash"] == prior["published_hash"]
+    entry = _member_state(tmp_path)
+    assert entry["publication_state"] == "dirty"
+    assert entry["pending_source_hash"] == source_hash(changed["member"])
+    assert entry["published_source_hash"] == prior["published_source_hash"]
 
 
 def test_members_reverted_source_republishes_dirty_entry_and_clears_pending(tmp_path, monkeypatch, capsys):
@@ -503,12 +509,12 @@ def test_members_reverted_source_republishes_dirty_entry_and_clears_pending(tmp_
     with pytest.raises(ValueError): cli.run_members(args)
     calls.clear(); _mock_online(monkeypatch, calls)
     result = cli.run_members(_online_args(tmp_path)); output = _report(capsys)
-    entry = json.loads((tmp_path / "state.json").read_text())["members"][WRAPPER["member"]["uri"]]
+    entry = _member_state(tmp_path)
     identity = WRAPPER["member"]["uri"]
     assert result == 0 and len(calls) == 1
     assert output["changed"] == [identity] and output["skipped_identities"] == []
-    assert entry["status"] == "clean" and "pending_hash" not in entry
-    assert entry["published_hash"] == source_hash(WRAPPER["member"])
+    assert entry["publication_state"] == "clean" and entry["pending_source_hash"] is None
+    assert entry["published_source_hash"] == source_hash(WRAPPER["member"])
 
 
 def test_members_put_failure_is_dirty_and_retry_publishes_clean_current_state(tmp_path, monkeypatch, capsys):
@@ -521,13 +527,13 @@ def test_members_put_failure_is_dirty_and_retry_publishes_clean_current_state(tm
     monkeypatch.setattr(cli, "verify_member_competency", lambda *args, **kwargs: None)
     args = _online_args(tmp_path)
     with pytest.raises(RuntimeError, match="PUT failed"): cli.run_members(args)
-    dirty = json.loads((tmp_path / "state.json").read_text())["members"][WRAPPER["member"]["uri"]]
-    assert dirty["status"] in {"dirty", "in_progress"} and dirty["pending_hash"] == source_hash(WRAPPER["member"])
+    dirty = _member_state(tmp_path)
+    assert dirty["publication_state"] == "dirty" and dirty["pending_source_hash"] == source_hash(WRAPPER["member"])
     calls = []; _mock_online(monkeypatch, calls)
     assert cli.run_members(args) == 0 and len(calls) == 1
-    clean = json.loads((tmp_path / "state.json").read_text())["members"][WRAPPER["member"]["uri"]]
-    assert clean["status"] == "clean" and "pending_hash" not in clean
-    assert clean["published_hash"] == source_hash(WRAPPER["member"])
+    clean = _member_state(tmp_path)
+    assert clean["publication_state"] == "clean" and clean["pending_source_hash"] is None
+    assert clean["published_source_hash"] == source_hash(WRAPPER["member"])
     assert _report(capsys)["changed"] == [WRAPPER["member"]["uri"]]
 
 
@@ -554,10 +560,47 @@ def test_members_online_retains_manifest_only_absent_member(tmp_path, monkeypatc
     from oireachtas_etl import cli
     absent = "https://data.oireachtas.ie/ie/oireachtas/member/id/Absent"
     state = {"version": 1, "members": {absent: {"published_hash": "old", "graph_iri": "https://data.oireachtas.ie/graph/member/Absent", "contract_version": 1}}}
-    (tmp_path / "state.json").write_text(json.dumps(state))
+    legacy = tmp_path / "members-state.json"
+    legacy.write_text(json.dumps(state))
     calls = []; _mock_online(monkeypatch, calls)
-    assert cli.run_members(_online_args(tmp_path)) == 0
+    args = _online_args(tmp_path); args.legacy_state_file = str(legacy)
+    assert cli.run_members(args) == 0
     result = _report(capsys)
-    persisted = json.loads((tmp_path / "state.json").read_text())
+    from oireachtas_etl.state import CoreStateStore
+    with CoreStateStore(tmp_path / "state.sqlite") as store:
+        persisted = store.get_resource("members", absent)
     assert result["missing_retained"] == [absent]
-    assert absent in persisted["members"]
+    assert persisted["published_source_hash"] == "old"
+    assert json.loads(legacy.read_text()) == state
+
+
+def test_members_full_scan_replays_durable_dirty_payload_when_source_omits_resource(tmp_path, monkeypatch, capsys):
+    from oireachtas_etl import cli
+    from oireachtas_etl.serialization import ntriples
+    from oireachtas_etl.state import CoreStateStore
+
+    absent = "https://data.oireachtas.ie/ie/oireachtas/member/id/PreviouslyObserved"
+    graph_iri = "https://data.oireachtas.ie/graph/member/PreviouslyObserved"
+    graph = Graph()
+    graph.add((URIRef(absent), RDF.type, OIR.Member))
+    payload = ntriples(graph)
+    database = tmp_path / "state.sqlite"
+    with CoreStateStore(database) as store:
+        run_id = store.start_run("members", "full_refresh", is_complete=True, parameters={"seed": True})
+        store.observe_resource("members", absent, graph_iri, "a" * 64, run_id)
+        store.mark_publication_dirty("members", absent, source_hash="a" * 64,
+                                     graph_iri=graph_iri, payload=payload, contract_version=2)
+        store.finish_run(run_id, success=False, error="interrupted after pending state")
+
+    calls = []; _mock_online(monkeypatch, calls)
+    args = _online_args(tmp_path)
+    assert cli.run_members(args) == 0
+    result = _report(capsys)
+    assert result["missing_retained"] == [absent]
+    assert result["published"] == 2  # current Member plus recovered prior payload
+    assert (graph_iri, payload) in calls
+    with CoreStateStore(database) as store:
+        recovered = store.get_resource("members", absent)
+        assert recovered["publication_state"] == "clean"
+        assert recovered["published_payload_hash"] == __import__("hashlib").sha256(payload.encode()).hexdigest()
+        assert recovered["pending_payload"] is None

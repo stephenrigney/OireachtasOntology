@@ -99,10 +99,11 @@ def test_members_workflow_gsp_replacement_removes_stale_content_and_retains_abse
     root = Path(__file__).resolve().parents[1]
     wrapper = json.loads((root / "data/api_examples/member.json").read_text())
     fixture = tmp_path / "member.json"; fixture.write_text(json.dumps(wrapper))
-    state = tmp_path / "members-state.json"
+    legacy_state = tmp_path / "members-state.json"
+    state = tmp_path / "core-state.sqlite"
     absent = "https://data.oireachtas.ie/ie/oireachtas/member/id/Absent"
-    state.write_text(json.dumps({"version": 1, "members": {absent: {"published_hash": "retained", "graph_iri": "https://data.oireachtas.ie/graph/member/Absent", "contract_version": 1}}}))
-    args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_file=str(state), output_nq=None,
+    legacy_state.write_text(json.dumps({"version": 1, "members": {absent: {"published_hash": "retained", "graph_iri": "https://data.oireachtas.ie/graph/member/Absent", "contract_version": 1}}}))
+    args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(state), legacy_state_file=str(legacy_state), output_nq=None,
                      output_ttl=None, fuseki_gsp_url=GSP, fuseki_sparql_url=SPARQL)
     graph_iri = member_graph_iri(wrapper["member"])
     loader = FusekiGraphStoreLoader(GSP, user=FUSEKI_USER, password=FUSEKI_PASSWORD)
@@ -110,8 +111,10 @@ def test_members_workflow_gsp_replacement_removes_stale_content_and_retains_abse
     assert run_members(args) == 0
     first = json.loads(capsys.readouterr().out)
     assert first["new"] == [wrapper["member"]["uri"]] and first["missing_retained"] == [absent]
-    first_state = json.loads(state.read_text())
-    assert first_state["members"][wrapper["member"]["uri"]]["published_hash"] == source_hash(wrapper["member"])
+    from oireachtas_etl.state import CoreStateStore
+    with CoreStateStore(state) as core_state:
+        first_state = core_state.get_resource("members", wrapper["member"]["uri"])
+    assert first_state["published_source_hash"] == source_hash(wrapper["member"])
     verify_members_competency(client)
 
     published = _graph_from_gsp(GSP, graph_iri)
@@ -127,10 +130,12 @@ def test_members_workflow_gsp_replacement_removes_stale_content_and_retains_abse
     second = json.loads(capsys.readouterr().out)
     assert second["changed"] == [wrapper["member"]["uri"]] and second["new"] == [] and second["skipped_identities"] == []
     assert not list(_graph_from_gsp(GSP, graph_iri).triples((URIRef("https://example.test/stale"), None, None)))
-    second_state = json.loads(state.read_text())
-    assert second_state["members"][wrapper["member"]["uri"]]["published_hash"] == source_hash(changed["member"])
-    assert second_state["members"][wrapper["member"]["uri"]]["published_hash"] != first_state["members"][wrapper["member"]["uri"]]["published_hash"]
-    assert absent in second_state["members"]
+    with CoreStateStore(state) as core_state:
+        second_state = core_state.get_resource("members", wrapper["member"]["uri"])
+        absent_state = core_state.get_resource("members", absent)
+    assert second_state["published_source_hash"] == source_hash(changed["member"])
+    assert second_state["published_source_hash"] != first_state["published_source_hash"]
+    assert absent_state["published_source_hash"] == "retained"
     verify_members_competency(client)
 
     assert run_members(args) == 0

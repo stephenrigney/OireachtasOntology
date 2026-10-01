@@ -106,7 +106,7 @@ def test_cli_never_constructs_loader_after_validation_failure(tmp_path, monkeypa
         def __init__(self, *args, **kwargs): called.append("constructed")
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
     monkeypatch.setenv("OIR_FUSEKI_GSP_URL", "http://local.test/data")
-    args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), output_ttl=None, output_nq=None, fuseki_gsp_url=None, fuseki_sparql_url=None)
+    args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(tmp_path / "state.sqlite"), output_ttl=None, output_nq=None, fuseki_gsp_url=None, fuseki_sparql_url=None)
     with pytest.raises(ValueError, match="unsupported houseCode"): cli.run_houses(args)
     assert called == []
 
@@ -121,7 +121,7 @@ def test_cli_never_constructs_loader_without_sparql_endpoint(tmp_path, monkeypat
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
     monkeypatch.setenv("OIR_FUSEKI_GSP_URL", "http://local.test/data")
     monkeypatch.delenv("OIR_FUSEKI_SPARQL_URL", raising=False)
-    args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), output_ttl=None, output_nq=None, fuseki_gsp_url=None, fuseki_sparql_url=None)
+    args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(tmp_path / "state.sqlite"), output_ttl=None, output_nq=None, fuseki_gsp_url=None, fuseki_sparql_url=None)
     with pytest.raises(ValueError, match="SPARQL endpoint is required"): cli.run_houses(args)
     assert called == []
 
