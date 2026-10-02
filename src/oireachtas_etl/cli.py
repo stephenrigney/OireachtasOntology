@@ -1,11 +1,12 @@
 from __future__ import annotations
-import argparse, json, sys
+import argparse, json, sys, uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import hashlib
 from .api import ApiClient, HousesApiClient
 from .config import (ADMINISTRATIVE_UNITS_GRAPH, CONSTITUENCIES_GRAPH, HOUSES_GRAPH,
-                     OFFICES_GRAPH, OFFICE_REGISTRY_FILE, PARTIES_GRAPH,
+                     OFFICES_GRAPH, OFFICE_REGISTRY_FILE, OFFICE_DECISIONS_FILE,
+                     OFFICE_OCCURRENCE_STATE_DB_FILE, PARTIES_GRAPH,
                      REFERENCE_ONTOLOGY_VERSION, Settings)
 from .loader import FusekiGraphStoreLoader
 from .loader import FusekiSparqlClient
@@ -38,6 +39,8 @@ from .reconciliation import (DbpediaClient, ReconciliationStore, WikidataClient,
                               institution_external_graph_iri, institution_records,
                               load_institution_review,
                               reconcile_institution_records, reconciliation_identity)
+from .office_observations import extract_office_observations
+from .office_reconciliation import OfficeOccurrenceStore, load_office_review
 
 
 def _reconciliation_state_path(args: argparse.Namespace, settings: Settings) -> Path:
@@ -1144,6 +1147,115 @@ def run_reconcile_institutions(args: argparse.Namespace) -> int:
         store.close()
 
 
+def _office_fixture_records(path: Path) -> tuple[list[dict], bytes, int | None, str]:
+    """Read one fixture page and identify the wrapper-level JSON pointers."""
+    body = path.read_bytes()
+    value = json.loads(body)
+    if isinstance(value, dict) and isinstance(value.get("member"), dict):
+        return [value], body, None, "single"
+    if isinstance(value, dict):
+        records = value.get("results")
+        counts = value.get("head", {}).get("counts", {}) if isinstance(value.get("head"), dict) else {}
+        advertised = counts.get("memberCount") if isinstance(counts, dict) else None
+        if not isinstance(records, list):
+            raise ValueError("Members fixture must be a member wrapper, array, or results envelope")
+        return records, body, advertised, "results"
+    if isinstance(value, list):
+        return value, body, None, "array"
+    raise ValueError("Members fixture must be a member wrapper, array, or results envelope")
+
+
+def _office_raw_pointer(raw_path: Path, raw_root: Path, body: bytes, json_pointer: str) -> dict:
+    return {"path": raw_path.resolve().relative_to(raw_root.resolve()).as_posix(),
+            "sha256": hashlib.sha256(body).hexdigest(), "json_pointer": json_pointer}
+
+
+def run_reconcile_offices(args: argparse.Namespace) -> int:
+    """Extract every Member office report and reconcile only against local review data."""
+    if args.offline and not args.fixture:
+        raise ValueError("--offline office reconciliation requires --fixture")
+    if (args.publish or args.responses_file or args.all or args.output_nq
+            or args.fuseki_gsp_url or args.fuseki_sparql_url):
+        raise ValueError("office occurrence reconciliation is local-only and does not accept external reconciliation options")
+
+    registry_path = Path(args.registry_file or OFFICE_REGISTRY_FILE)
+    try:
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"invalid office registry: {error}") from error
+    validate_registry_source(registry)
+    decisions, review_hash = load_office_review(
+        Path(args.review_file or OFFICE_DECISIONS_FILE), registry)
+
+    settings = Settings.from_environment()
+    raw_root = Path(args.raw_dir).expanduser() if args.raw_dir else settings.raw_dir
+    raw_root = raw_root.resolve()
+    run_id = str(uuid.uuid4())
+    records_with_pointers: list[tuple[dict, dict]] = []
+    advertised: int | None = None
+
+    if args.fixture:
+        fixture = Path(args.fixture)
+        records, body, advertised, shape = _office_fixture_records(fixture)
+        raw_path, _ = persist_raw(
+            root=raw_root, endpoint=str(fixture.resolve()),
+            params={"skip": 0, "limit": len(records)}, body=body, status=200,
+            retrieved_at=datetime.now(timezone.utc), ontology_version=REFERENCE_ONTOLOGY_VERSION,
+            mapping_version="member_mapping.csv@phase-3-members-2026", endpoint_name="members",
+            extraction_id=run_id)
+        for index, wrapper in enumerate(records):
+            if shape == "single":
+                json_pointer = ""
+            elif shape == "results":
+                json_pointer = f"/results/{index}"
+            else:
+                json_pointer = f"/{index}"
+            records_with_pointers.append((wrapper, _office_raw_pointer(raw_path, raw_root, body, json_pointer)))
+    else:
+        for page in ApiClient(settings.members_api_url, retries=settings.retries,
+                              timeout=settings.timeout).harvest(limit=settings.limit):
+            raw_path, _ = persist_raw(
+                root=raw_root, endpoint=settings.members_api_url, params=page.params,
+                body=page.body, status=page.status, ontology_version=REFERENCE_ONTOLOGY_VERSION,
+                mapping_version="member_mapping.csv@phase-3-members-2026", endpoint_name="members",
+                extraction_id=run_id)
+            decoded = json.loads(page.body)
+            if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list):
+                raise ValueError("every Members API page must be an object envelope with a results list")
+            counts = decoded.get("head", {}).get("counts") if isinstance(decoded.get("head"), dict) else None
+            count = counts.get("memberCount") if isinstance(counts, dict) else None
+            if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+                raise ValueError("every Members API page must contain a nonnegative integer head.counts.memberCount")
+            if advertised is None:
+                advertised = count
+            elif count != advertised:
+                raise ValueError("Members advertised count changed during office scan")
+            for index, wrapper in enumerate(decoded["results"]):
+                records_with_pointers.append((
+                    wrapper, _office_raw_pointer(raw_path, raw_root, page.body, f"/results/{index}")))
+
+    # Reuse the established duplicate/collision/count rules without discarding
+    # duplicate raw contexts before office observations are extracted.
+    _deduplicate_members([wrapper for wrapper, _pointer in records_with_pointers], advertised)
+    observations = extract_office_observations(records_with_pointers)
+    state_path = Path(args.office_state_file or OFFICE_OCCURRENCE_STATE_DB_FILE).expanduser()
+    with OfficeOccurrenceStore(state_path) as store:
+        result = store.reconcile(observations, registry, decisions, review_hash, run_id=run_id)
+
+    report = []
+    for item in result["records"]:
+        report.append({key: item.get(key) for key in (
+            "occurrence_key", "status", "resolution_method", "label", "date_range",
+            "current_fingerprint", "office_iris", "candidate_iris", "current_candidates", "current_raw_pointers",
+            "conflicts", "pattern_hints", "source_presence") if key in item})
+    print(json.dumps({"processed": result["processed"], "accepted": result["accepted"],
+                      "rejected": result["rejected"], "unresolved": result["unresolved"],
+                      "review_required": result["review_required"],
+                      "stale_decisions": result["stale_decisions"],
+                      "state_db": str(state_path), "records": report}, sort_keys=True))
+    return 1 if result["review_required"] or result["unresolved"] else 0
+
+
 def run_state_status(args: argparse.Namespace) -> int:
     settings = Settings.from_environment()
     state_db = Path(getattr(args, "state_db", None) or settings.core_state_db_file).expanduser()
@@ -1169,13 +1281,17 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--output-ttl"); run.add_argument("--output-nq"); run.add_argument("--fuseki-gsp-url"); run.add_argument("--fuseki-sparql-url")
     state = sub.add_parser("state"); state_sub = state.add_subparsers(dest="state_command", required=True)
     state_status = state_sub.add_parser("status"); state_status.add_argument("--state-db")
-    reconcile = sub.add_parser("reconcile"); reconcile.add_argument("endpoint", choices=["members", "parties", "institutions"])
+    reconcile = sub.add_parser("reconcile"); reconcile.add_argument("endpoint", choices=["members", "parties", "institutions", "offices"])
     reconcile.add_argument("--fixture"); reconcile.add_argument("--responses-file"); reconcile.add_argument("--offline", action="store_true"); reconcile.add_argument("--all", action="store_true"); reconcile.add_argument("--publish", action="store_true"); reconcile.add_argument("--output-nq"); reconcile.add_argument("--fuseki-gsp-url"); reconcile.add_argument("--fuseki-sparql-url")
     reconcile.add_argument("--review-file", help="review JSON (defaults to the endpoint-specific version-controlled review file)")
     reconcile.add_argument("--reconciliation-state-file", help="shared reconciliation SQLite path (defaults to the Phase 3.5 state file)")
+    reconcile.add_argument("--registry-file", help="versioned local office/unit registry JSON")
+    reconcile.add_argument("--office-state-file", help="durable SQLite office observation/evidence ledger")
+    reconcile.add_argument("--raw-dir", help="immutable raw response root for office source scans")
     args = parser.parse_args(argv)
     if args.command == "state": return run_state_status(args)
     if args.command == "reconcile":
+        if args.endpoint == "offices": return run_reconcile_offices(args)
         if args.endpoint == "parties": return run_reconcile_parties(args)
         if args.endpoint == "institutions": return run_reconcile_institutions(args)
         return run_reconcile_members(args)

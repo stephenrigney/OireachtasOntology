@@ -39,7 +39,13 @@ registry. Its version-1 shape is:
 }
 ```
 
-`label_ga` is optional. Aliases are language-tagged (`en` or `ga`). Office
+`label_ga` is optional. Aliases are language-tagged (`en` or `ga`). For
+Tranche 2 candidate generation an alias may also contain the optional reviewed
+scope fields `source_uris`, `contexts`, `validity` (`start` and optional `end`),
+and `unit_keys`; see
+`documentation/office-observation-reconciliation.md`. These fields constrain
+candidate evidence only and are not emitted as RDF or interpreted as office
+establishment/abolition assertions. Office
 types are the registered `members:OfficeType` concepts. Only
 `MinisterOfficeType` may assert `headsAdministrativeUnit`, and only
 `MinisterOfStateOfficeType` may assert `assignedToAdministrativeUnit`; these

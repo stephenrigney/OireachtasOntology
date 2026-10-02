@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
+from urllib.parse import urlsplit
 
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import RDF, SKOS
@@ -25,6 +27,7 @@ UNIT_RELATIONS = {
 TOP_FIELDS = {"version", "administrative_units", "offices"}
 UNIT_FIELDS = {"key", "label_en", "label_ga", "aliases", "reviewer_notes", "evidence"}
 OFFICE_FIELDS = UNIT_FIELDS | {"office_type", "unit_relationships"}
+ALIAS_FIELDS = {"language", "label", "contexts", "validity", "unit_keys", "source_uris"}
 
 
 def _text(value: object, field: str) -> str:
@@ -64,8 +67,10 @@ def _validate_common(entry: dict, label: str) -> None:
         raise ValueError(f"registry {label}.aliases must be a list")
     seen = set()
     for alias in aliases:
-        if not isinstance(alias, dict) or set(alias) != {"language", "label"}:
-            raise ValueError(f"each registry {label} alias must have language and label")
+        allowed_alias_fields = {"language", "label"} if label == "administrative unit" else ALIAS_FIELDS
+        if (not isinstance(alias, dict) or not {"language", "label"} <= set(alias)
+                or set(alias) - allowed_alias_fields):
+            raise ValueError(f"each registry {label} alias must have language and label, with supported optional review scope")
         language = alias["language"]
         if not isinstance(language, str) or language not in {"en", "ga"}:
             raise ValueError(f"registry {label} alias language must be en or ga")
@@ -74,6 +79,60 @@ def _validate_common(entry: dict, label: str) -> None:
         if pair in seen:
             raise ValueError(f"registry {label} contains a duplicate alias")
         seen.add(pair)
+        contexts = alias.get("contexts", [])
+        if (not isinstance(contexts, list) or any(not isinstance(value, str) or not value.strip()
+                                                   for value in contexts)
+                or len(contexts) != len(set(contexts))):
+            raise ValueError(f"registry {label} alias contexts must be unique non-empty strings")
+        for context in contexts:
+            if context in {"dail", "seanad"}:
+                continue
+            if not _local_source_iri(context):
+                raise ValueError(f"registry {label} alias context must be a House code or local Oireachtas source IRI")
+        source_uris = alias.get("source_uris", [])
+        if (not isinstance(source_uris, list) or any(not _local_source_iri(value)
+                                                     for value in source_uris)
+                or len(source_uris) != len(set(source_uris))):
+            raise ValueError(f"registry {label} alias source_uris must be unique local Oireachtas source IRIs")
+        unit_keys = alias.get("unit_keys", [])
+        if (not isinstance(unit_keys, list) or any(not isinstance(value, str)
+                                                   or not re.fullmatch(r"u-[0-9]{6}", value)
+                                                   for value in unit_keys)
+                or len(unit_keys) != len(set(unit_keys))):
+            raise ValueError(f"registry {label} alias unit_keys must be unique registered unit keys")
+        validity = alias.get("validity")
+        if validity is not None:
+            if not isinstance(validity, dict) or set(validity) - {"start", "end"} or "start" not in validity:
+                raise ValueError(f"registry {label} alias validity must have start and optional end")
+            start = _instant(validity["start"], f"{label}.alias.validity.start")
+            end = _instant(validity["end"], f"{label}.alias.validity.end") if validity.get("end") is not None else None
+            if end is not None and end < start:
+                raise ValueError(f"registry {label} alias validity has reverse dates")
+
+
+def _local_source_iri(value: object) -> bool:
+    if not isinstance(value, str) or value != value.strip() or any(c.isspace() for c in value):
+        return False
+    try:
+        parsed = urlsplit(value)
+        port = parsed.port
+    except ValueError:
+        return False
+    return (parsed.scheme == "https" and parsed.netloc == "data.oireachtas.ie"
+            and not parsed.query and not parsed.fragment and not parsed.username
+            and not parsed.password and not port and bool(parsed.path))
+
+
+def _instant(value: object, label: str) -> datetime:
+    if not isinstance(value, str):
+        raise ValueError(f"registry {label} must be an ISO date or date-time")
+    try:
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            return datetime.fromisoformat(value).replace(tzinfo=timezone.utc)
+        instant = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise ValueError(f"registry {label} must be an ISO date or date-time") from error
+    return instant.replace(tzinfo=timezone.utc) if instant.tzinfo is None else instant.astimezone(timezone.utc)
 
 
 def validate_registry_source(registry: object) -> dict:
@@ -121,6 +180,10 @@ def validate_registry_source(registry: object) -> dict:
             if pair in seen_relationships:
                 raise ValueError(f"office {office['key']} repeats an administrative-unit relationship")
             seen_relationships.add(pair)
+        for alias in office["aliases"]:
+            unknown_units = sorted(set(alias.get("unit_keys", [])) - unit_keys)
+            if unknown_units:
+                raise ValueError(f"office {office['key']} alias references unregistered AdministrativeUnit {unknown_units[0]!r}")
     return registry
 
 
