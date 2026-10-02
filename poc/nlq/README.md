@@ -1,195 +1,299 @@
 # Natural-language query POC
 
-This isolated experiment tests whether an ontology-grounded LLM can translate
-plain-language questions into inspectable, read-only SPARQL for the current
-Oireachtas RDF dataset in Fuseki. It is a small server-rendered FastAPI/Jinja
-application; it is **not** part of the deterministic ETL pipeline and it does
-not load, transform, validate, or publish RDF.
+This proof of concept lets you ask questions about the Oireachtas RDF dataset in plain English.
 
-## Flow
+The application sends the question, together with schema context derived from the repository ontology, to an OpenAI Responses-compatible LLM. The model returns read-only SPARQL, the application validates it, runs it against Fuseki, and shows both the result and the generated SPARQL.
 
-```text
-Question in browser
-  -> OpenAI Responses-compatible LLM (schema context + question)
-  -> structured { interpretation, sparql }
-  -> RDFLib SPARQL parse and safety checks
-  -> configured Fuseki /query endpoint
-  -> SPARQL JSON converted to a result table / ASK answer
-```
+This is an experimental query interface. It is separate from the deterministic ETL pipeline and never writes to Fuseki.
 
-At startup, the POC reads every `ontology/*.owl.ttl` module with RDFLib. It
-derives local classes, object/datatype properties, direct named superclass
-links, asserted property domains/ranges, and useful labels/comments. It reads
-the repository-pinned ELI/ELI-DL schemas and active mapping CSV rows to ground
-external predicates such as `eli:title` and `eli-dl:process_status`. The query
-gate rejects triple predicates not declared by this ontology or an active
-mapping. It also includes the ETL's actual named-graph identifiers and ownership patterns, so
-the prompt distinguishes `agents:Member`, `members:OireachtasMembership`,
-`agents:HouseTerm`, `members:ParliamentaryParty`,
-`members:IndependentMemberCollection`, and their separately owned graph
-descriptions. It warns that Fuseki does not entail OWL subclass types, that
-Independent collection memberships use the general relationship, and that the
-current Members ETL does not emit Cabinet/Taoiseach role instances. No dataset
-assertions are sent to the LLM.
+## Quick start
 
-## Install and run
+Run all commands from the repository root.
 
-From the repository root, install the optional POC dependencies:
+### 1. Install the POC dependencies
+
+The repository uses `uv` for the POC environment:
 
 ```bash
-./.venv/bin/python -m pip install -e '.[nlq]'
+uv sync --extra nlq
 ```
 
-Start the repository's existing Fuseki service if it is not already running:
+At present the repository package itself is not installed by `uv sync`, so commands that import `oireachtas_etl` must include `PYTHONPATH=src`. This is a repository packaging limitation, not an NLQ configuration setting.
+
+### 2. Start Fuseki
 
 ```bash
 docker compose up -d fuseki
 ```
 
-The default query URL is `http://localhost:3030/houses/query`, matching
-`docker-compose.yml`. Starting Fuseki does not load RDF; use the already
-published dataset. Do not set this app to a `/data`, `/update`, or admin URL.
+The default query endpoint is:
 
-When the home page opens, it runs a read-only readiness check against the
-`/query` endpoint. It reports whether Fuseki is reachable and whether it finds
-typed instance data in the Houses, Parties, Constituencies, Member, and optional
-Bills graph families. For the example member questions, Houses, Parties,
-Constituencies, and Member graphs are expected. “Ready” only means those graph
-families have instances; it does not guarantee that a requested historic fact
-is present. The check never creates, loads, replaces, or deletes a graph.
-
-Copy the example configuration and edit `.env` with your own API key:
-
-```bash
-cp .env.example .env
-# Edit .env and replace NLQ_LLM_API_KEY with your provider API key.
+```text
+http://localhost:3030/houses/query
 ```
 
-The app loads `.env` from the repository root when it starts. `.env` is
-git-ignored; environment variables already set in the process take precedence.
-Restart the app after editing `.env`. You can also configure these values
-directly in the process environment.
+Starting the container does **not** load RDF data. The POC only queries data that is already present.
 
-Then launch the browser app:
+### 3. Configure the LLM
 
-```bash
-./.venv/bin/uvicorn poc.nlq.app:app --reload
-```
-
-Open <http://127.0.0.1:8000/>. For an authenticated local Fuseki, the POC
-also reads the repository's existing `OIR_FUSEKI_USER` and
-`OIR_FUSEKI_PASSWORD` environment variables. The LLM endpoint must implement
-the OpenAI Responses API, including structured JSON-schema output.
-An HTTP 401 means the provider rejected the configured key: ensure the key and
-base URL belong to the same provider (for example, an OpenCode Go key with the
-OpenCode Go base URL).
-
-### Deliberately loading data
-
-If the readiness panel reports an empty or partial dataset, data loading stays
-an explicit ETL operation—not an app-startup side effect. The ETL fetches source
-records, preserves raw inputs, transforms and validates RDF, then replaces the
-owned named graphs and runs competency checks before reporting success. To
-publish current API data, configure the ETL's write and verification endpoints
-in the shell that will run the commands:
-
-```bash
-export OIR_FUSEKI_GSP_URL='http://localhost:3030/houses/data'
-export OIR_FUSEKI_SPARQL_URL='http://localhost:3030/houses/query'
-```
-
-The ETL CLI reads these from the process environment; unlike the NLQ web app, it
-does not load `.env` automatically. For an authenticated Fuseki, also export
-`OIR_FUSEKI_USER` and `OIR_FUSEKI_PASSWORD`. Then, from the repository root,
-run only the data sources you intend to refresh:
-
-```bash
-./.venv/bin/oir-etl run houses
-./.venv/bin/oir-etl run parties
-./.venv/bin/oir-etl run constituencies
-./.venv/bin/oir-etl run members
-./.venv/bin/oir-etl run bills
-```
-
-These commands fetch from the configured Oireachtas APIs and publish validated
-graphs. Review their output and source-data implications before running them.
-They are not called by the NLQ app. Do not use `docker compose down -v` as a
-readiness or refresh action: it deletes Fuseki's persistent volume.
-
-### OpenCode Go / GPT-5.6 Luna
-
-OpenCode Go's Responses-compatible endpoint can be configured as follows; use
-the API key issued for your OpenCode Go account:
+Copy the example environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-Set these values in the root `.env` (without `export`) before launching Uvicorn:
+Edit the repository-root `.env`.
+
+For OpenCode Console inference with GPT-6 Luna:
 
 ```dotenv
-NLQ_LLM_API_KEY=your-opencode-go-api-key
-NLQ_LLM_BASE_URL=https://opencode.ai/zen/go/v1
-NLQ_LLM_MODEL=gpt-5.6-luna
+NLQ_LLM_API_KEY=your-service-account-key
+NLQ_LLM_BASE_URL=https://opencode.ai/inference/openai/v1
+NLQ_LLM_MODEL=gpt-6-luna
 NLQ_FUSEKI_QUERY_URL=http://localhost:3030/houses/query
 ```
 
-Then run `./.venv/bin/uvicorn poc.nlq.app:app --reload`.
+Do **not** add `/responses` to `NLQ_LLM_BASE_URL`; the application adds it.
 
-The adapter calls `{NLQ_LLM_BASE_URL}/responses` and requests a strict JSON
-schema containing `interpretation` and `sparql`. If a compatible provider does
-not support Responses structured outputs, this POC intentionally reports an
-error instead of guessing at response structure. It sends an application
-User-Agent and a per-request `x-opencode-session` identifier as OpenCode Go
-requests recommend.
+The application loads `.env` automatically when it starts. Existing process environment variables take precedence. Restart the application after changing `.env`.
 
-## Example questions
+For an authenticated local Fuseki instance, also set:
+
+```dotenv
+OIR_FUSEKI_USER=...
+OIR_FUSEKI_PASSWORD=...
+```
+
+### 4. Start the application
+
+```bash
+PYTHONPATH=src uv run uvicorn poc.nlq.app:app --reload
+```
+
+### 5. Open the browser interface
+
+Open:
+
+<http://127.0.0.1:8000/>
+
+The home page performs a read-only readiness check against Fuseki and reports whether the expected graph families are present.
+
+Try questions such as:
 
 - Who were the Fine Gael members of the 33rd Dáil?
 - Which TDs represented Dublin constituencies in the 32nd Dáil?
 - Which parliamentary member collection did Micheál Martin belong to in the 33rd Dáil?
 - How many members were in each parliamentary member collection in the 33rd Dáil?
 
-The exact SPARQL submitted to Fuseki is displayed with the answer, along with
-the model's concise interpretation. The query debugger opens automatically for
-LLM/validation/Fuseki failures and empty SELECT results. It shows the raw LLM
-response when available (API-key text is redacted) and the Fuseki response JSON;
-debug output is capped at 50,000 characters. SELECT outputs are limited to 100 rows.
-An empty result can mean either that the graph has not been populated with the
-relevant historical data or that the model's query did not match the graph;
-inspect the visible SPARQL to distinguish these cases.
+The application shows:
 
-## Safety and limitations
+- the model's interpretation of the question;
+- the exact SPARQL submitted to Fuseki;
+- the SELECT result table or ASK result;
+- debugging information when translation, validation, or Fuseki execution fails.
 
-- Only RDFLib-parseable model-generated `SELECT` and `ASK` are sent to Fuseki.
-  The app's separate, fixed readiness probes are read-only `ASK`/`SELECT`
-  requests. SPARQL Update,
-  malformed queries, `SERVICE`, `FROM`, `FROM NAMED`, subqueries, property
-  paths, and variable predicates are rejected. SELECT results are capped at
-  100 rows (a missing limit is added; a larger limit is rejected); OFFSET is
-  capped at 10,000 rows. Triple predicates are checked against ontology
-  declarations and active mapping properties, including properties from the
-  repository-pinned ELI vocabularies.
-- The Fuseki query request has a 15-second timeout and uses only the configured
-  `/query` endpoint. LLM requests time out after 45 seconds.
-- The generated text is untrusted. Parsing, an operation allowlist, and simple
-  endpoint/result restrictions are not a complete SPARQL sandbox; expensive
-  graph patterns may still time out. Use a disposable/local Fuseki instance
-  and do not expose this unauthenticated POC to untrusted users.
-- The gate is not a complete SPARQL sandbox or full static type checker: it
-  validates predicate vocabulary, but a supported predicate can still be used
-  with the wrong resource type or graph pattern.
-- A well-formed query can still be semantically wrong, miss facts not present
-  in the dataset, or misunderstand the distinction between people, dated
-  memberships, houses/terms, parties, independent collections, and recognised
-  groups. Always inspect the query and answer.
-- The schema prompt is derived from every ontology module and active mapping
-  terms; application-side predicate validation rejects predicates outside the
-  ontology/mapping vocabulary. This is not a full ontology reasoner,
-  query planner, or data retrieval/RAG system. There is no auth, persistent
-  history, conversational follow-up, or entity-resolution subsystem.
-- Fuseki remains the factual source. The prompt includes schema descriptions,
-  never the full RDF dataset.
+## If the application does not start
 
-This is an experimental evaluation POC only. It is deliberately separate from
-ETL, validation, reconciliation, and graph publication.
+### `ModuleNotFoundError: No module named 'oireachtas_etl'`
+
+Run the application with the repository source directory on `PYTHONPATH`:
+
+```bash
+PYTHONPATH=src uv run uvicorn poc.nlq.app:app --reload
+```
+
+You can verify the ETL package is visible with:
+
+```bash
+PYTHONPATH=src uv run python - <<'PY'
+import oireachtas_etl.config as c
+
+print("Loaded from:", c.__file__)
+print("HOUSES_GRAPH =", c.HOUSES_GRAPH)
+print("PARTIES_GRAPH =", c.PARTIES_GRAPH)
+print("CONSTITUENCIES_GRAPH =", c.CONSTITUENCIES_GRAPH)
+print("OFFICES_GRAPH =", c.OFFICES_GRAPH)
+print("ADMINISTRATIVE_UNITS_GRAPH =", c.ADMINISTRATIVE_UNITS_GRAPH)
+PY
+```
+
+### LLM authentication or model errors
+
+First test the provider independently.
+
+For OpenCode Console inference:
+
+```bash
+curl --fail-with-body \
+  https://opencode.ai/inference/openai/v1/responses \
+  -H "Authorization: Bearer $NLQ_LLM_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-6-luna",
+    "input": "Return only the word OK"
+  }'
+```
+
+If this succeeds but the POC fails, check that the values in the repository-root `.env` exactly match the working endpoint and model.
+
+### Fuseki is reachable but the readiness panel is empty or partial
+
+Starting Fuseki does not populate it. Data loading is deliberately an ETL operation, not an application startup side effect.
+
+See the next section if you intentionally want to refresh your local dataset.
+
+## Loading data into local Fuseki
+
+Only do this when you intend to fetch and publish current Oireachtas API data.
+
+Set the ETL write and verification endpoints in the shell:
+
+```bash
+export OIR_FUSEKI_GSP_URL=http://localhost:3030/houses/data
+export OIR_FUSEKI_SPARQL_URL=http://localhost:3030/houses/query
+```
+
+For authenticated Fuseki, also export `OIR_FUSEKI_USER` and `OIR_FUSEKI_PASSWORD`.
+
+Under the repository's current packaging setup, run the ETL module with `PYTHONPATH=src`:
+
+```bash
+PYTHONPATH=src uv run python -m oireachtas_etl.cli run houses
+PYTHONPATH=src uv run python -m oireachtas_etl.cli run parties
+PYTHONPATH=src uv run python -m oireachtas_etl.cli run constituencies
+PYTHONPATH=src uv run python -m oireachtas_etl.cli run members
+```
+
+Bills are optional for the member-oriented example queries:
+
+```bash
+PYTHONPATH=src uv run python -m oireachtas_etl.cli run bills
+```
+
+The POC never invokes these commands itself.
+
+Do not use `docker compose down -v` as a refresh step: it deletes Fuseki's persistent volume.
+
+## How it works
+
+```text
+Question in browser
+  -> OpenAI Responses-compatible LLM
+       - repository-derived schema context
+       - dataset graph conventions
+       - user question
+  -> structured { interpretation, sparql }
+  -> RDFLib SPARQL parsing and safety checks
+  -> configured Fuseki /query endpoint
+  -> SPARQL Results JSON
+  -> result table / ASK answer in browser
+```
+
+At startup, the POC reads the repository's `ontology/*.owl.ttl` modules with RDFLib.
+
+It derives model-facing context from:
+
+- local classes;
+- object and datatype properties;
+- direct named superclass relationships;
+- asserted property domains and ranges;
+- useful labels and comments;
+- the repository-pinned ELI and ELI-DL schemas;
+- active mapping CSV rows for reused external predicates;
+- the ETL's actual named-graph conventions.
+
+The prompt distinguishes important concepts such as:
+
+- `agents:Member`;
+- `members:OireachtasMembership`;
+- `agents:HouseTerm`;
+- `members:ParliamentaryParty`;
+- `members:IndependentMemberCollection`.
+
+No RDF instance dataset is sent to the LLM. Fuseki remains the factual source.
+
+## Named graph expectations
+
+The POC uses the same graph conventions as the ETL:
+
+| Data | Named graph |
+|---|---|
+| Houses | `https://data.oireachtas.ie/graph/houses` |
+| Parties | `https://data.oireachtas.ie/graph/parties` |
+| Constituencies | `https://data.oireachtas.ie/graph/constituencies` |
+| Offices | `https://data.oireachtas.ie/graph/offices` |
+| Administrative units | `https://data.oireachtas.ie/graph/administrative-units` |
+| Members | `https://data.oireachtas.ie/graph/member/{memberCode}` |
+| Bills | `https://data.oireachtas.ie/graph/bill/{year}/{number}` |
+
+Descriptions and references may live in different named graphs. Queries should join them using the same RDF resource IRI rather than assuming all related triples are co-located.
+
+## Query safety
+
+Model-generated SPARQL is treated as untrusted input.
+
+The POC currently:
+
+- accepts only RDFLib-parseable `SELECT` and `ASK` queries;
+- rejects SPARQL Update operations;
+- rejects `SERVICE`;
+- rejects `FROM` and `FROM NAMED`;
+- rejects subqueries;
+- rejects property paths;
+- rejects variable predicates;
+- validates predicates against ontology declarations and active mappings;
+- caps SELECT results at 100 rows;
+- caps OFFSET at 10,000 rows;
+- applies a 15-second Fuseki timeout;
+- uses only the configured Fuseki `/query` endpoint.
+
+The fixed readiness probes are also read-only.
+
+This is still not a complete SPARQL sandbox. Expensive graph patterns can exist even in read-only queries, so the POC should remain local or otherwise isolated from untrusted public use.
+
+## Limitations
+
+A syntactically valid and safe SPARQL query can still be semantically wrong.
+
+In particular:
+
+- the store does not provide general OWL entailment;
+- people, memberships, House terms and parliamentary collections are distinct resources;
+- party and independent collection membership use related but not identical graph patterns;
+- some ontology vocabulary is defined before corresponding instance data is populated;
+- historic facts can only be returned when the required source data has been loaded;
+- there is no dedicated entity-resolution subsystem;
+- there is no conversational follow-up state;
+- there is no authentication or production hardening;
+- the schema grounding is not a full reasoner or query planner.
+
+Always inspect the generated SPARQL when evaluating the POC.
+
+## Development checks
+
+Install the test dependencies:
+
+```bash
+uv sync --extra test --extra nlq
+```
+
+Run the tests:
+
+```bash
+PYTHONPATH=src uv run pytest tests
+```
+
+Run ontology validation, with the repository's pinned Java runtime available through `mise`:
+
+```bash
+mise install
+PYTHONPATH=src mise exec -- uv run python tests/validate.py
+```
+
+## Scope
+
+This POC exists to answer one question:
+
+> Can a schema-grounded LLM translate useful natural-language questions about the current OireachtasOntology graph into safe, inspectable SPARQL and return useful Fuseki results?
+
+It does not redesign the ontology, modify ETL semantics, use a vector database, provide a general agent framework, or write to Fuseki.
