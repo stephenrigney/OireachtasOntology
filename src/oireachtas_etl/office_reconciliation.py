@@ -324,6 +324,71 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _legacy_auto_acceptance(row: dict, *, attempt: bool) -> dict | None:
+    """Recover only v1 automatic acceptances whose target is unambiguous.
+
+    V1 did not persist reviewed decision contents or accepted target IRIs. An
+    explicit review-file acceptance therefore cannot be reconstructed safely.
+    """
+    if row["status"] != "accepted" or row["resolution_method"] != "unique-reviewed-registry-match":
+        return None
+    candidates_field = "candidates_json" if attempt else "current_candidates_json"
+    snapshot_field = "source_snapshot_json" if attempt else "current_snapshot_json"
+    pointers_field = "raw_pointers_json" if attempt else "current_raw_pointers_json"
+    fingerprint_field = "fingerprint" if attempt else "current_fingerprint"
+    timestamp_field = "attempted_at" if attempt else "updated_at"
+    candidates = json.loads(row[candidates_field]) if row[candidates_field] else None
+    snapshot = json.loads(row[snapshot_field]) if row[snapshot_field] else None
+    pointers = json.loads(row[pointers_field]) if row[pointers_field] else None
+    if (not isinstance(candidates, list) or len(candidates) != 1
+            or not isinstance(candidates[0], dict)
+            or not isinstance(candidates[0].get("office_iri"), str)
+            or not isinstance(snapshot, dict) or not isinstance(pointers, list)):
+        return None
+    candidate = candidates[0]
+    return {
+        "office_iris": [candidate["office_iri"]],
+        "fingerprint": row[fingerprint_field],
+        "snapshot": snapshot,
+        "raw_pointers": pointers,
+        "candidates": candidates,
+        "decision": None,
+        "decision_hash": None,
+        "review_hash": row["review_hash"],
+        "registry_hash": row["registry_hash"],
+        "resolution_method": "unique-reviewed-registry-match",
+        "acceptance_evidence": {
+            "kind": "legacy-auto-acceptance-recovered",
+            "candidate": candidate,
+        },
+        "accepted_at": row[timestamp_field],
+    }
+
+
+def _accepted_resolution(observation: dict, candidates: list[dict], targets: list[str],
+                         decision: dict | None, decision_hash: str | None,
+                         review_hash: str, registry_hash: str, method: str,
+                         accepted_at: str) -> dict:
+    if decision is None:
+        evidence = {"kind": "unique-reviewed-registry-match", "candidate": candidates[0]}
+    else:
+        evidence = {"kind": "review-decision", "decision": decision}
+    return {
+        "office_iris": sorted(targets),
+        "fingerprint": observation["fingerprint"],
+        "snapshot": observation["snapshot"],
+        "raw_pointers": observation["raw_pointers"],
+        "candidates": candidates,
+        "decision": decision,
+        "decision_hash": decision_hash,
+        "review_hash": review_hash,
+        "registry_hash": registry_hash,
+        "resolution_method": method,
+        "acceptance_evidence": evidence,
+        "accepted_at": accepted_at,
+    }
+
+
 class OfficeOccurrenceStore:
     """Atomic durable evidence and correspondence ledger for office reports."""
 
@@ -352,63 +417,121 @@ class OfficeOccurrenceStore:
 
     def _initialize(self) -> None:
         version = self.connection.execute("PRAGMA user_version").fetchone()[0]
-        if version not in (0, 1):
+        if version not in (0, 1, 2):
             raise ValueError(f"unsupported office occurrence state schema version: {version}")
         if version == 1:
+            self._migrate_v1()
+        elif version == 2:
             tables = {row[0] for row in self.connection.execute(
                 "SELECT name FROM sqlite_master WHERE type='table'")}
             if not {"office_occurrence", "office_occurrence_attempt"} <= tables:
                 raise ValueError("office occurrence SQLite state schema is incomplete")
-            return
-        self.connection.executescript("""
-          BEGIN IMMEDIATE;
-          CREATE TABLE office_occurrence (
-            occurrence_key TEXT PRIMARY KEY,
-            identity_key TEXT NOT NULL,
-            member_iri TEXT NOT NULL,
-            membership_iri TEXT NOT NULL,
-            source_presence TEXT NOT NULL CHECK(source_presence IN ('present','missing')),
-            status TEXT NOT NULL CHECK(status IN ('accepted','rejected','unresolved','review_required')),
-            resolution_method TEXT NOT NULL,
-            current_fingerprint TEXT NOT NULL,
-            previous_fingerprint TEXT,
-            current_snapshot_json TEXT NOT NULL,
-            previous_snapshot_json TEXT,
-            current_candidates_json TEXT NOT NULL,
-            previous_candidates_json TEXT,
-            current_raw_pointers_json TEXT NOT NULL,
-            previous_raw_pointers_json TEXT,
-            conflicts_json TEXT NOT NULL,
-            review_hash TEXT NOT NULL,
-            registry_hash TEXT NOT NULL,
-            decision_hash TEXT,
-            last_seen_run_id TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-          );
-          CREATE INDEX office_occurrence_identity ON office_occurrence(identity_key, source_presence);
-          CREATE TABLE office_occurrence_attempt (
-            attempt_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            run_id TEXT NOT NULL,
-            occurrence_key TEXT NOT NULL,
-            attempted_at TEXT NOT NULL,
-            status TEXT NOT NULL CHECK(status IN ('accepted','rejected','unresolved','review_required')),
-            resolution_method TEXT NOT NULL,
-            fingerprint TEXT,
-            previous_fingerprint TEXT,
-            source_snapshot_json TEXT,
-            previous_snapshot_json TEXT,
-            candidates_json TEXT NOT NULL,
-            previous_candidates_json TEXT,
-            raw_pointers_json TEXT NOT NULL,
-            previous_raw_pointers_json TEXT,
-            conflicts_json TEXT NOT NULL,
-            review_hash TEXT NOT NULL,
-            registry_hash TEXT NOT NULL
-          );
-          CREATE INDEX office_occurrence_attempt_run ON office_occurrence_attempt(run_id, occurrence_key);
-          PRAGMA user_version=1;
-          COMMIT;
-        """)
+            columns = {table: {row[1] for row in self.connection.execute(
+                f"PRAGMA table_info({table})")} for table in (
+                    "office_occurrence", "office_occurrence_attempt")}
+            if any("last_accepted_resolution_json" not in columns[table] for table in columns):
+                raise ValueError("office occurrence SQLite state schema is incomplete")
+        else:
+            self.connection.executescript("""
+              BEGIN IMMEDIATE;
+              CREATE TABLE office_occurrence (
+                occurrence_key TEXT PRIMARY KEY,
+                identity_key TEXT NOT NULL,
+                member_iri TEXT NOT NULL,
+                membership_iri TEXT NOT NULL,
+                source_presence TEXT NOT NULL CHECK(source_presence IN ('present','missing')),
+                status TEXT NOT NULL CHECK(status IN ('accepted','rejected','unresolved','review_required')),
+                resolution_method TEXT NOT NULL,
+                current_fingerprint TEXT NOT NULL,
+                previous_fingerprint TEXT,
+                current_snapshot_json TEXT NOT NULL,
+                previous_snapshot_json TEXT,
+                current_candidates_json TEXT NOT NULL,
+                previous_candidates_json TEXT,
+                current_raw_pointers_json TEXT NOT NULL,
+                previous_raw_pointers_json TEXT,
+                conflicts_json TEXT NOT NULL,
+                review_hash TEXT NOT NULL,
+                registry_hash TEXT NOT NULL,
+                decision_hash TEXT,
+                last_seen_run_id TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                last_accepted_resolution_json TEXT
+              );
+              CREATE INDEX office_occurrence_identity ON office_occurrence(identity_key, source_presence);
+              CREATE TABLE office_occurrence_attempt (
+                attempt_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id TEXT NOT NULL,
+                occurrence_key TEXT NOT NULL,
+                attempted_at TEXT NOT NULL,
+                status TEXT NOT NULL CHECK(status IN ('accepted','rejected','unresolved','review_required')),
+                resolution_method TEXT NOT NULL,
+                fingerprint TEXT,
+                previous_fingerprint TEXT,
+                source_snapshot_json TEXT,
+                previous_snapshot_json TEXT,
+                candidates_json TEXT NOT NULL,
+                previous_candidates_json TEXT,
+                raw_pointers_json TEXT NOT NULL,
+                previous_raw_pointers_json TEXT,
+                conflicts_json TEXT NOT NULL,
+                review_hash TEXT NOT NULL,
+                registry_hash TEXT NOT NULL,
+                last_accepted_resolution_json TEXT
+              );
+              CREATE INDEX office_occurrence_attempt_run ON office_occurrence_attempt(run_id, occurrence_key);
+              PRAGMA user_version=2;
+              COMMIT;
+            """)
+
+    def _migrate_v1(self) -> None:
+        """Add accepted-resolution state without guessing unavailable decisions."""
+        connection = self.connection
+        connection.execute("BEGIN IMMEDIATE")
+        try:
+            tables = {row[0] for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'")}
+            if not {"office_occurrence", "office_occurrence_attempt"} <= tables:
+                raise ValueError("office occurrence SQLite state schema is incomplete")
+            for table in ("office_occurrence", "office_occurrence_attempt"):
+                columns = {row[1] for row in connection.execute(f"PRAGMA table_info({table})")}
+                if "last_accepted_resolution_json" in columns:
+                    raise ValueError("office occurrence SQLite v1 schema is incomplete")
+                connection.execute(
+                    f"ALTER TABLE {table} ADD COLUMN last_accepted_resolution_json TEXT")
+
+            latest_by_occurrence: dict[str, dict | None] = {}
+            attempt_rows = connection.execute(
+                "SELECT * FROM office_occurrence_attempt ORDER BY attempt_id").fetchall()
+            for row in attempt_rows:
+                attempt = dict(row)
+                key = attempt["occurrence_key"]
+                if attempt["status"] == "accepted":
+                    # An unrecoverable explicit acceptance supersedes any older
+                    # recoverable automatic one; do not resurrect stale targets.
+                    latest_by_occurrence[key] = _legacy_auto_acceptance(attempt, attempt=True)
+                current = latest_by_occurrence.get(key)
+                connection.execute(
+                    "UPDATE office_occurrence_attempt SET last_accepted_resolution_json=? WHERE attempt_id=?",
+                    (canonical_json(current) if current is not None else None, attempt["attempt_id"]))
+
+            for row in connection.execute("SELECT * FROM office_occurrence").fetchall():
+                occurrence = dict(row)
+                key = occurrence["occurrence_key"]
+                if key in latest_by_occurrence:
+                    resolution = latest_by_occurrence[key]
+                elif occurrence["status"] == "accepted":
+                    resolution = _legacy_auto_acceptance(occurrence, attempt=False)
+                else:
+                    resolution = None
+                connection.execute(
+                    "UPDATE office_occurrence SET last_accepted_resolution_json=? WHERE occurrence_key=?",
+                    (canonical_json(resolution) if resolution is not None else None, key))
+            connection.execute("PRAGMA user_version=2")
+            connection.commit()
+        except BaseException:
+            connection.rollback()
+            raise
 
     def occurrences(self) -> list[dict]:
         rows = self.connection.execute(
@@ -418,7 +541,8 @@ class OfficeOccurrenceStore:
             item = dict(row)
             for field in ("current_snapshot_json", "previous_snapshot_json", "current_candidates_json",
                           "previous_candidates_json", "current_raw_pointers_json",
-                          "previous_raw_pointers_json", "conflicts_json"):
+                          "previous_raw_pointers_json", "conflicts_json",
+                          "last_accepted_resolution_json"):
                 value = item.pop(field)
                 item[field.removesuffix("_json")] = json.loads(value) if value is not None else None
             output.append(item)
@@ -437,7 +561,7 @@ class OfficeOccurrenceStore:
             item = dict(row)
             for field in ("source_snapshot_json", "previous_snapshot_json", "candidates_json",
                           "previous_candidates_json", "raw_pointers_json", "previous_raw_pointers_json",
-                          "conflicts_json"):
+                          "conflicts_json", "last_accepted_resolution_json"):
                 value = item.pop(field)
                 item[field.removesuffix("_json")] = json.loads(value) if value is not None else None
             output.append(item)
@@ -611,6 +735,17 @@ class OfficeOccurrenceStore:
                         if decision is None:
                             conflicts.append({"kind": "missing-review-decision"})
 
+                    accepted_targets = (sorted(decision["office_iris"]) if status == "accepted" and decision
+                                        else candidate_iris if status == "accepted" else [])
+                    last_accepted_resolution = (
+                        json.loads(old["last_accepted_resolution_json"])
+                        if old and old["last_accepted_resolution_json"] else None
+                    )
+                    if status == "accepted":
+                        last_accepted_resolution = _accepted_resolution(
+                            observation, candidate_info["candidates"], accepted_targets,
+                            decision, decision_hash, review_hash, registry_hash, method, now)
+
                     record = {
                         "occurrence_key": occurrence_key,
                         "identity_key": identity_key,
@@ -636,8 +771,8 @@ class OfficeOccurrenceStore:
                         "decision_hash": decision_hash if decision_hash is not None else old_decision_hash,
                         "last_seen_run_id": run_id,
                         "updated_at": now,
-                        "office_iris": (sorted(decision["office_iris"]) if status == "accepted" and decision
-                                        else candidate_iris if status == "accepted" else []),
+                        "office_iris": accepted_targets,
+                        "last_accepted_resolution": last_accepted_resolution,
                         "candidate_iris": candidate_iris,
                         "label": observation["label"],
                         "date_range": observation["date_range"],
@@ -680,6 +815,8 @@ class OfficeOccurrenceStore:
                     "previous_raw_pointers": json.loads(old["previous_raw_pointers_json"]) if old["previous_raw_pointers_json"] else None,
                     "conflicts": conflicts, "review_hash": review_hash, "registry_hash": registry_hash,
                     "decision_hash": _decision_digest(stale_decision) or old["decision_hash"],
+                    "last_accepted_resolution": (json.loads(old["last_accepted_resolution_json"])
+                                                  if old["last_accepted_resolution_json"] else None),
                     "last_seen_run_id": old["last_seen_run_id"],
                     "updated_at": now, "office_iris": [], "candidate_iris": [],
                     "label": json.loads(old["current_snapshot_json"])["office_label"],
@@ -734,9 +871,16 @@ class OfficeOccurrenceStore:
             canonical_json(record["previous_raw_pointers"]) if record["previous_raw_pointers"] is not None else None,
             canonical_json(record["conflicts"]), record["review_hash"], record["registry_hash"],
             record["decision_hash"], record["last_seen_run_id"], record["updated_at"],
+            (canonical_json(record["last_accepted_resolution"])
+             if record["last_accepted_resolution"] is not None else None),
         )
-        connection.execute("""INSERT INTO office_occurrence VALUES
-          (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        connection.execute("""INSERT INTO office_occurrence (
+          occurrence_key,identity_key,member_iri,membership_iri,source_presence,status,
+          resolution_method,current_fingerprint,previous_fingerprint,current_snapshot_json,
+          previous_snapshot_json,current_candidates_json,previous_candidates_json,
+          current_raw_pointers_json,previous_raw_pointers_json,conflicts_json,review_hash,
+          registry_hash,decision_hash,last_seen_run_id,updated_at,last_accepted_resolution_json)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           ON CONFLICT(occurrence_key) DO UPDATE SET identity_key=excluded.identity_key,
           member_iri=excluded.member_iri,membership_iri=excluded.membership_iri,
           source_presence='present',status=excluded.status,resolution_method=excluded.resolution_method,
@@ -745,8 +889,9 @@ class OfficeOccurrenceStore:
           previous_candidates_json=excluded.previous_candidates_json,current_candidates_json=excluded.current_candidates_json,
           previous_raw_pointers_json=excluded.previous_raw_pointers_json,current_raw_pointers_json=excluded.current_raw_pointers_json,
           conflicts_json=excluded.conflicts_json,review_hash=excluded.review_hash,registry_hash=excluded.registry_hash,
-          decision_hash=excluded.decision_hash,last_seen_run_id=excluded.last_seen_run_id,updated_at=excluded.updated_at""",
-          values)
+          decision_hash=excluded.decision_hash,last_seen_run_id=excluded.last_seen_run_id,updated_at=excluded.updated_at,
+          last_accepted_resolution_json=excluded.last_accepted_resolution_json""",
+           values)
 
     def _attempt(self, record: dict, fingerprint: str | None, previous_snapshot: dict | None,
                  candidates: list, previous_candidates: list | None, raw_pointers: list,
@@ -754,15 +899,18 @@ class OfficeOccurrenceStore:
         self.connection.execute("""INSERT INTO office_occurrence_attempt
           (run_id,occurrence_key,attempted_at,status,resolution_method,fingerprint,previous_fingerprint,
            source_snapshot_json,previous_snapshot_json,candidates_json,previous_candidates_json,
-           raw_pointers_json,previous_raw_pointers_json,conflicts_json,review_hash,registry_hash)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+           raw_pointers_json,previous_raw_pointers_json,conflicts_json,review_hash,registry_hash,
+           last_accepted_resolution_json)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
           (attempt_run_id or record["last_seen_run_id"], record["occurrence_key"], record["updated_at"],
            record["status"], record["resolution_method"], fingerprint,
            record.get("previous_fingerprint"),
            canonical_json(record["current_snapshot"]) if fingerprint is not None and record.get("current_snapshot") is not None else None,
            canonical_json(previous_snapshot) if previous_snapshot is not None else None,
-           canonical_json(candidates),
-           canonical_json(previous_candidates) if previous_candidates is not None else None,
+            canonical_json(candidates),
+            canonical_json(previous_candidates) if previous_candidates is not None else None,
            canonical_json(raw_pointers),
            canonical_json(previous_raw_pointers) if previous_raw_pointers is not None else None,
-           canonical_json(record["conflicts"]), record["review_hash"], record["registry_hash"]))
+           canonical_json(record["conflicts"]), record["review_hash"], record["registry_hash"],
+           (canonical_json(record["last_accepted_resolution"])
+            if record.get("last_accepted_resolution") is not None else None)))

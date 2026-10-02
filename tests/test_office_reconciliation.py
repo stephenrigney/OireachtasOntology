@@ -4,12 +4,13 @@ import copy
 import hashlib
 import json
 from pathlib import Path
+import sqlite3
 import uuid
 
 import pytest
 
 from oireachtas_etl.cli import main
-from oireachtas_etl.office_observations import extract_office_observations
+from oireachtas_etl.office_observations import canonical_json, extract_office_observations, json_hash
 from oireachtas_etl.office_reconciliation import (
     OfficeOccurrenceStore,
     OfficeReviewError,
@@ -266,6 +267,194 @@ def test_identifiable_date_correction_preserves_key_and_both_raw_snapshots(tmp_p
         assert attempts[-1]["previous_snapshot"]["date_range"]["start"] == "2024-01-01"
 
 
+def test_last_accepted_resolution_survives_correction_absence_and_reappearance_then_rereview_updates(
+        tmp_path):
+    registry = synthetic_registry()
+    target = str(office_iri("o-000001"))
+    before = observations_for(wrapper(), json_pointer="/results/0")[0]
+    corrected = observations_for(wrapper(start="2024-01-02"), json_pointer="/results/1")[0]
+    key = "occ-" + before["identity_key"]
+    with OfficeOccurrenceStore(tmp_path / "office.sqlite") as store:
+        initial = store.reconcile([before], registry, {}, REVIEW_HASH)
+        assert initial["records"][0]["status"] == "accepted"
+        accepted = initial["records"][0]["last_accepted_resolution"]
+        assert accepted["office_iris"] == [target]
+        assert accepted["snapshot"]["date_range"]["start"] == "2024-01-01"
+        assert accepted["raw_pointers"][0]["json_pointer"].startswith("/results/0/")
+        assert accepted["acceptance_evidence"]["kind"] == "unique-reviewed-registry-match"
+        assert accepted["review_hash"] == REVIEW_HASH
+
+        changed = store.reconcile([corrected], registry, {}, REVIEW_HASH)
+        assert changed["records"][0]["status"] == "review_required"
+        assert changed["records"][0]["last_accepted_resolution"] == accepted
+        assert store.occurrences()[0]["last_accepted_resolution"] == accepted
+
+        missing = store.reconcile([], registry, {}, REVIEW_HASH)
+        assert missing["records"][0]["status"] == "review_required"
+        assert missing["records"][0]["last_accepted_resolution"] == accepted
+        assert store.occurrences()[0]["last_accepted_resolution"] == accepted
+
+        reappeared = store.reconcile([corrected], registry, {}, REVIEW_HASH)
+        assert reappeared["records"][0]["status"] == "review_required"
+        assert reappeared["records"][0]["last_accepted_resolution"] == accepted
+
+        rereview = {
+            "status": "accepted", "office_iris": [target],
+            "evidence": ["review:corrected-source-snapshot"],
+            "reason": "The corrected date was reviewed against the source response.",
+            "observation_fingerprint": corrected["fingerprint"],
+        }
+        new_review_hash = hashlib.sha256(b"reviewed corrected occurrence").hexdigest()
+        accepted_again = store.reconcile([corrected], registry, {key: rereview}, new_review_hash)
+        assert accepted_again["records"][0]["status"] == "accepted"
+        updated = accepted_again["records"][0]["last_accepted_resolution"]
+        assert updated["office_iris"] == [target]
+        assert updated["snapshot"]["date_range"]["start"] == "2024-01-02"
+        assert updated["raw_pointers"][0]["json_pointer"].startswith("/results/1/")
+        assert updated["decision"] == rereview
+        assert updated["acceptance_evidence"] == {"kind": "review-decision", "decision": rereview}
+        assert updated["review_hash"] == new_review_hash
+        assert updated != accepted
+
+        # A rejection is a current review outcome, not a revocation operation.
+        rejected = {"status": "rejected", "office_iris": [],
+                    "evidence": ["review:identity-not-supported"],
+                    "reason": "The current observation was rejected for identity review."}
+        rejected_result = store.reconcile([corrected], registry, {key: rejected},
+                                          hashlib.sha256(b"rejection decision").hexdigest())
+        assert rejected_result["records"][0]["status"] == "rejected"
+        assert rejected_result["records"][0]["last_accepted_resolution"] == updated
+
+        attempts = store.attempts(key)
+        assert attempts[0]["last_accepted_resolution"] == accepted
+        assert attempts[1]["last_accepted_resolution"] == accepted
+        assert attempts[2]["last_accepted_resolution"] == accepted
+        assert attempts[3]["last_accepted_resolution"] == accepted
+        assert attempts[4]["last_accepted_resolution"] == updated
+        assert attempts[5]["last_accepted_resolution"] == updated
+
+
+def test_reconcile_failure_rolls_back_occurrence_and_attempt_acceptance_evidence(tmp_path, monkeypatch):
+    registry = synthetic_registry()
+    before = observations_for(wrapper())[0]
+    corrected = observations_for(wrapper(start="2024-03-01"), json_pointer="/results/1")[0]
+    with OfficeOccurrenceStore(tmp_path / "office.sqlite") as store:
+        store.reconcile([before], registry, {}, REVIEW_HASH)
+        before_rows, before_attempts = store.occurrences(), store.attempts()
+
+        def fail_after_upsert(*_args, **_kwargs):
+            raise RuntimeError("synthetic attempt insert failure")
+
+        monkeypatch.setattr(store, "_attempt", fail_after_upsert)
+        with pytest.raises(RuntimeError, match="synthetic attempt insert failure"):
+            store.reconcile([corrected], registry, {}, REVIEW_HASH)
+        assert store.occurrences() == before_rows
+        assert store.attempts() == before_attempts
+
+
+def _create_v1_office_state(path: Path, observation: dict, registry: dict, *, method: str) -> None:
+    candidate_info = generate_office_candidates(observation, registry)
+    now = "2026-01-02T03:04:05+00:00"
+    registry_hash = json_hash(registry)
+    decision_hash = json_hash({"legacy": "decision contents unavailable"}) if method == "review-file" else None
+    key = "occ-" + observation["identity_key"]
+    with sqlite3.connect(path) as connection:
+        connection.executescript("""
+          CREATE TABLE office_occurrence (
+            occurrence_key TEXT PRIMARY KEY, identity_key TEXT NOT NULL,
+            member_iri TEXT NOT NULL, membership_iri TEXT NOT NULL,
+            source_presence TEXT NOT NULL CHECK(source_presence IN ('present','missing')),
+            status TEXT NOT NULL CHECK(status IN ('accepted','rejected','unresolved','review_required')),
+            resolution_method TEXT NOT NULL, current_fingerprint TEXT NOT NULL,
+            previous_fingerprint TEXT, current_snapshot_json TEXT NOT NULL,
+            previous_snapshot_json TEXT, current_candidates_json TEXT NOT NULL,
+            previous_candidates_json TEXT, current_raw_pointers_json TEXT NOT NULL,
+            previous_raw_pointers_json TEXT, conflicts_json TEXT NOT NULL,
+            review_hash TEXT NOT NULL, registry_hash TEXT NOT NULL, decision_hash TEXT,
+            last_seen_run_id TEXT NOT NULL, updated_at TEXT NOT NULL
+          );
+          CREATE INDEX office_occurrence_identity ON office_occurrence(identity_key, source_presence);
+          CREATE TABLE office_occurrence_attempt (
+            attempt_id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL,
+            occurrence_key TEXT NOT NULL, attempted_at TEXT NOT NULL,
+            status TEXT NOT NULL CHECK(status IN ('accepted','rejected','unresolved','review_required')),
+            resolution_method TEXT NOT NULL, fingerprint TEXT, previous_fingerprint TEXT,
+            source_snapshot_json TEXT, previous_snapshot_json TEXT, candidates_json TEXT NOT NULL,
+            previous_candidates_json TEXT, raw_pointers_json TEXT NOT NULL,
+            previous_raw_pointers_json TEXT, conflicts_json TEXT NOT NULL,
+            review_hash TEXT NOT NULL, registry_hash TEXT NOT NULL
+          );
+          CREATE INDEX office_occurrence_attempt_run ON office_occurrence_attempt(run_id, occurrence_key);
+          PRAGMA user_version=1;
+        """)
+        connection.execute("""INSERT INTO office_occurrence (
+          occurrence_key,identity_key,member_iri,membership_iri,source_presence,status,
+          resolution_method,current_fingerprint,previous_fingerprint,current_snapshot_json,
+          previous_snapshot_json,current_candidates_json,previous_candidates_json,
+          current_raw_pointers_json,previous_raw_pointers_json,conflicts_json,review_hash,
+          registry_hash,decision_hash,last_seen_run_id,updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+          (key, observation["identity_key"], observation["member_iri"], observation["membership_iri"],
+           "present", "accepted", method, observation["fingerprint"], None,
+           canonical_json(observation["snapshot"]), None, canonical_json(candidate_info["candidates"]),
+           None, canonical_json(observation["raw_pointers"]), None, "[]", REVIEW_HASH,
+           registry_hash, decision_hash, "legacy-run", now))
+        connection.execute("""INSERT INTO office_occurrence_attempt (
+          run_id,occurrence_key,attempted_at,status,resolution_method,fingerprint,previous_fingerprint,
+          source_snapshot_json,previous_snapshot_json,candidates_json,previous_candidates_json,
+          raw_pointers_json,previous_raw_pointers_json,conflicts_json,review_hash,registry_hash)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+          ("legacy-run", key, now, "accepted", method, observation["fingerprint"], None,
+           canonical_json(observation["snapshot"]), None, canonical_json(candidate_info["candidates"]),
+           None, canonical_json(observation["raw_pointers"]), None, "[]", REVIEW_HASH, registry_hash))
+
+
+def test_schema_v1_migration_recovers_only_unambiguous_automatic_acceptance(tmp_path):
+    registry = synthetic_registry()
+    observation = observations_for(wrapper(), json_pointer="/legacy/0")[0]
+    automatic_state = tmp_path / "automatic-v1.sqlite"
+    _create_v1_office_state(automatic_state, observation, registry,
+                            method="unique-reviewed-registry-match")
+    # Model the diagnosed v1 defect: the occurrence row now says review-required,
+    # although an earlier automatic acceptance remains in the attempt history.
+    with sqlite3.connect(automatic_state) as connection:
+        connection.execute("UPDATE office_occurrence SET status='review_required',"
+                           "resolution_method='review-required'")
+        connection.execute("""INSERT INTO office_occurrence_attempt (
+          run_id,occurrence_key,attempted_at,status,resolution_method,fingerprint,
+          previous_fingerprint,source_snapshot_json,previous_snapshot_json,candidates_json,
+          previous_candidates_json,raw_pointers_json,previous_raw_pointers_json,conflicts_json,
+          review_hash,registry_hash)
+          SELECT 'correction-run',occurrence_key,'2026-01-03T03:04:05+00:00',
+          'review_required','review-required',current_fingerprint,current_fingerprint,
+          current_snapshot_json,current_snapshot_json,current_candidates_json,current_candidates_json,
+          current_raw_pointers_json,current_raw_pointers_json,'[]',review_hash,registry_hash
+          FROM office_occurrence""")
+    target = str(office_iri("o-000001"))
+
+    with OfficeOccurrenceStore(automatic_state) as store:
+        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 2
+        row = store.occurrences()[0]
+        accepted = row["last_accepted_resolution"]
+        assert row["status"] == "review_required"
+        assert accepted["office_iris"] == [target]
+        assert accepted["snapshot"] == observation["snapshot"]
+        assert accepted["raw_pointers"] == observation["raw_pointers"]
+        assert accepted["review_hash"] == REVIEW_HASH
+        assert accepted["acceptance_evidence"]["kind"] == "legacy-auto-acceptance-recovered"
+        assert store.attempts()[0]["last_accepted_resolution"] == accepted
+        assert store.attempts()[1]["last_accepted_resolution"] == accepted
+
+    # V1 retained only a decision digest, not its target set or evidence. Even
+    # with one candidate available, migration must not invent the reviewed IRI.
+    explicit_state = tmp_path / "explicit-v1.sqlite"
+    _create_v1_office_state(explicit_state, observation, registry, method="review-file")
+    with OfficeOccurrenceStore(explicit_state) as store:
+        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert store.occurrences()[0]["last_accepted_resolution"] is None
+        assert store.attempts()[0]["last_accepted_resolution"] is None
+
+
 def test_unchanged_review_decision_becomes_stale_after_a_source_correction(tmp_path):
     registry = synthetic_registry()
     before = observations_for(wrapper())
@@ -383,6 +572,7 @@ def test_registry_candidate_set_change_rechecks_prior_automatic_acceptance(tmp_p
         assert record["occurrence_key"] == key
         assert record["status"] == "review_required"
         assert len(record["candidate_iris"]) == 2
+        assert record["last_accepted_resolution"]["office_iris"] == first["records"][0]["office_iris"]
         assert any(item["kind"] == "candidate-set-changed" for item in record["conflicts"])
 
 
