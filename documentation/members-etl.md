@@ -4,6 +4,15 @@ Member graphs are named `https://data.oireachtas.ie/graph/member/{percent-encode
 
 Nested records with no source IRI use a parent-scoped IRI with a SHA-256 digest of canonical, identity-bearing JSON. Canonical JSON sorts object keys and treats only the full approved schema paths (`memberships.membership.*`) as unordered; unknown arrays retain source order. Date ranges use stable fragments of their parent membership IRI. Exact duplicate Member records coalesce; divergent records with the same `member.uri` fail. The party-membership IRI continues to hash the same containing OireachtasMembership IRI, term-scoped collection IRI and source date range; the Tranche 2 type and relationship additions do not change that deterministic identifier.
 
+An invalid office observation is quarantined at its individual
+`membership.offices[]` entry: it is reported with a source path/reason and is
+not transformed into the legacy office-role triples. Other independently
+valid Member content and sibling office observations continue through
+validation. Member identity, membership/House context, and a malformed
+non-array office collection remain fail-closed. The separate Phase 7 office
+occurrence ledger retains any earlier accepted resolution for malformed
+current evidence; this behavior does not introduce `OfficeHolding` RDF.
+
 Members own only Member, membership, generated role, and generated date-range descriptions. House/HouseTerm, ParliamentaryMemberCollection, constituency/panel and Committee IRIs are references. Historical reference acquisition remains follow-up work: current reference endpoints do not cover the historical IRIs in Member history.
 
 Member roots and agent terms use `https://data.oireachtas.ie/ontology#`; every membership, ParliamentaryMemberCollection, constituency/panel, role and DateRange term uses `https://data.oireachtas.ie/ontology/members#`. Each Members API party record is represented as a `members:ParliamentaryCollectionMembership` linked to its containing `members:OireachtasMembership` with `members:inOireachtasMembership`, and to its source collection with `members:memberOfCollection`. A non-`Independent` target additionally uses `members:PartyMembership` and `members:isPartyMembershipOf` (range `members:ParliamentaryParty`); an `Independent` target uses only the general collection membership class and relationship. Parties endpoint resources remain the authoritative descriptions of both collection types. Member graphs do not assert ParliamentaryGroup or TechnicalGroup membership or any party-side/reconciliation assertions.

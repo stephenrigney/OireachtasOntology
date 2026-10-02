@@ -11,6 +11,7 @@ from pyshacl import validate
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import FOAF, RDF, SKOS, XSD
 
+from ..office_observations import parse_office_observation
 from ..transforms.common import MEMBERS, OIR, datetime_literal, iri, string
 from .houses import validate_rdf
 from .reference import assert_expected
@@ -131,7 +132,7 @@ def expected_member_graph(wrapper: dict) -> tuple[Graph, list[dict]]:
     graph.add((subject, OIR.hasImage, Literal(data["image"], datatype=XSD.boolean)))
     memberships = data.get("memberships")
     if not isinstance(memberships, list): raise ValueError("member.memberships must be an array")
-    for wrapped in memberships:
+    for membership_index, wrapped in enumerate(memberships):
         if not isinstance(wrapped, dict) or not isinstance(wrapped.get("membership"), dict): raise ValueError("membership wrapper must contain a membership object")
         record = wrapped["membership"]; membership = _source(record.get("uri"), "membership.uri"); house = record.get("house")
         if not isinstance(house, dict) or house.get("houseCode") not in HOUSES: raise ValueError("house must be a supported object")
@@ -167,14 +168,28 @@ def expected_member_graph(wrapper: dict) -> tuple[Graph, list[dict]]:
             for role in roles:
                 if role not in {"Chair", "Deputy Chair"}: raise ValueError(f"unsupported committee role: {role!r}")
                 ri = _generated(cm, "role", {"role": role}); graph.add((ri, RDF.type, MEMBERS.Chair if role == "Chair" else MEMBERS.DeputyChair)); graph.add((cm, MEMBERS.hasCommitteeRole, ri))
-        for wrapped_office in record.get("offices", []):
+        offices = record.get("offices", [])
+        if not isinstance(offices, list): raise ValueError("membership.offices must be an array")
+        for office_index, wrapped_office in enumerate(offices):
+            try:
+                parse_office_observation(wrapped_office)
+            except ValueError as error:
+                exclusions.append({
+                    "path": f"member.memberships[{membership_index}].membership.offices[{office_index}]",
+                    "context": str(membership),
+                    "reason": str(error),
+                    "category": "source_quarantine",
+                    "status": "review_required",
+                })
+                continue
             if not isinstance(wrapped_office, dict) or not isinstance(wrapped_office.get("office"), dict): raise ValueError("office wrapper must contain an office object")
             office = wrapped_office["office"]; name = office.get("officeName")
             if not isinstance(name, dict): raise ValueError("office.officeName must be an object")
             om = _generated(membership, "minister-of-state-membership", {"membership": str(membership), "office": office}); role = URIRef(f"{om}#role")
             graph.add((om, RDF.type, MEMBERS.MinisterOfStateMembership)); graph.add((subject, MEMBERS.hasMembersMembership, om)); graph.add((role, RDF.type, MEMBERS.MinisterOfStateRole)); graph.add((role, SKOS.prefLabel, Literal(_required_text(name.get("showAs"), "office.officeName.showAs")))); graph.add((om, MEMBERS.hasMinisterOfStateRole, role)); _range(graph, om, "date-range", office.get("dateRange"))
             if name.get("uri") is not None: graph.add((om, MEMBERS.officeNameUri, _source(name["uri"], "officeName.uri")))
-    return graph, extract_member_omissions(wrapper)
+    exclusions.extend(extract_member_omissions(wrapper))
+    return graph, sorted(exclusions, key=lambda value: (value["category"], value["path"], value["context"], value["reason"]))
 
 
 def validate_member_source(wrapper: dict) -> list[dict]:
@@ -186,7 +201,8 @@ def validate_member_source(wrapper: dict) -> list[dict]:
     _source(member.get("uri"), "member.uri")
     if not isinstance(member.get("image"), bool): raise ValueError("member.image must be boolean")
     if not isinstance(member.get("memberships"), list): raise ValueError("member.memberships must be an array")
-    for wrapped in member["memberships"]:
+    malformed_offices = []
+    for membership_index, wrapped in enumerate(member["memberships"]):
         if not isinstance(wrapped, dict) or not isinstance(wrapped.get("membership"), dict): raise ValueError("membership wrapper must contain a membership object")
         record = wrapped["membership"]
         _source(record.get("uri"), "membership.uri")
@@ -205,7 +221,21 @@ def validate_member_source(wrapper: dict) -> list[dict]:
             if not isinstance(party_range, dict): raise ValueError("party dateRange must be an object")
             party_start = datetime_literal(party_range.get("start"))
             if party_range.get("end") is not None and datetime_literal(party_range["end"]).toPython() < party_start.toPython(): raise ValueError("reverse membership date range")
-    return extract_member_omissions(wrapper)
+        offices = record.get("offices", [])
+        if not isinstance(offices, list): raise ValueError("membership.offices must be an array")
+        for office_index, wrapped_office in enumerate(offices):
+            try:
+                parse_office_observation(wrapped_office)
+            except ValueError as error:
+                malformed_offices.append({
+                    "path": f"member.memberships[{membership_index}].membership.offices[{office_index}]",
+                    "context": str(record["uri"]),
+                    "reason": str(error),
+                    "category": "source_quarantine",
+                    "status": "review_required",
+                })
+    return sorted([*extract_member_omissions(wrapper), *malformed_offices],
+                  key=lambda value: (value["category"], value["path"], value["context"], value["reason"]))
 
 
 def validate_member(wrapper: dict, graph: Graph) -> list[dict]:

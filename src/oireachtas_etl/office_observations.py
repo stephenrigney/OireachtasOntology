@@ -56,6 +56,29 @@ def _date_range(value: object, label: str) -> dict:
     return {"start": start, "end": end}
 
 
+def parse_office_observation(wrapped_office: object) -> tuple[dict, dict, str, str | None, dict]:
+    """Validate one nested office report and return its source fields.
+
+    Callers may quarantine a ``ValueError`` from this function at the individual
+    ``offices[]`` boundary.  Containing Member and House-membership validation
+    remains separate and fail-closed.
+    """
+    if not isinstance(wrapped_office, dict) or not isinstance(wrapped_office.get("office"), dict):
+        raise ValueError("each membership.offices item must contain an office object")
+    office = wrapped_office["office"]
+    name = office.get("officeName")
+    if not isinstance(name, dict):
+        raise ValueError("office.officeName must be an object")
+    label = name.get("showAs")
+    if not isinstance(label, str) or not label.strip():
+        raise ValueError("office.officeName.showAs must be a non-empty string")
+    source_uri = name.get("uri")
+    if source_uri is not None:
+        source_uri = _source_iri(source_uri, "office.officeName.uri")
+    dates = _date_range(office.get("dateRange"), "office.dateRange")
+    return office, name, label, source_uri, dates
+
+
 def normalize_label(value: str) -> str:
     """Conservative text normalisation used only for reviewed alias matching."""
     return " ".join(unicodedata.normalize("NFC", value).casefold().split())
@@ -144,49 +167,87 @@ def extract_office_observations(records: list[tuple[object, dict]]) -> list[dict
             if not isinstance(offices, list):
                 raise ValueError("membership.offices must be an array")
             for office_index, wrapped_office in enumerate(offices):
-                if not isinstance(wrapped_office, dict) or not isinstance(wrapped_office.get("office"), dict):
-                    raise ValueError("each membership.offices item must contain an office object")
-                office = wrapped_office["office"]
-                name = office.get("officeName")
-                if not isinstance(name, dict):
-                    raise ValueError("office.officeName must be an object")
-                label = name.get("showAs")
-                if not isinstance(label, str) or not label.strip():
-                    raise ValueError("office.officeName.showAs must be a non-empty string")
-                source_uri = name.get("uri")
-                if source_uri is not None:
-                    source_uri = _source_iri(source_uri, "office.officeName.uri")
-                dates = _date_range(office.get("dateRange"), "office.dateRange")
-                snapshot = {
-                    "member_iri": member_iri,
-                    "membership_iri": membership_iri,
-                    "house": dict(house_context),
-                    "office_label": label,
-                    "source_office_uri": source_uri,
-                    "date_range": dates,
-                    "raw_office": office,
-                }
-                identity_subject = ({"source_office_uri": source_uri} if source_uri is not None
-                                    else {"normalized_label": normalize_label(label)})
-                identity_key = json_hash({"member_iri": member_iri,
-                                          "membership_iri": membership_iri,
-                                          **identity_subject})
+                malformed_reason = None
+                try:
+                    office, _name, label, source_uri, dates = parse_office_observation(wrapped_office)
+                except ValueError as error:
+                    # The Member and its containing House-membership have already
+                    # passed their fail-closed checks. Isolate only this nested
+                    # office payload so an invalid appointment cannot hide other
+                    # valid observations from the same Member.
+                    malformed_reason = str(error)
+                    office = (wrapped_office.get("office")
+                              if isinstance(wrapped_office, dict) else None)
+                    name = office.get("officeName") if isinstance(office, dict) else None
+                    label = name.get("showAs") if isinstance(name, dict) else None
+                    if not isinstance(label, str):
+                        label = None
+                    source_uri = None
+                    if isinstance(name, dict) and name.get("uri") is not None:
+                        try:
+                            source_uri = _source_iri(name["uri"], "office.officeName.uri")
+                        except ValueError:
+                            # Invalid source identity evidence is retained in the
+                            # raw office snapshot, never used as a local identity.
+                            pass
+                    dates = office.get("dateRange") if isinstance(office, dict) else None
+
                 office_pointer = dict(pointer)
                 office_pointer["json_pointer"] = (
                     f"{record_pointer}/member/memberships/{membership_index}/membership/offices/"
                     f"{office_index}/office"
                 )
-                extracted.append({
+
+                if malformed_reason is None:
+                    snapshot = {
+                        "member_iri": member_iri,
+                        "membership_iri": membership_iri,
+                        "house": dict(house_context),
+                        "office_label": label,
+                        "source_office_uri": source_uri,
+                        "date_range": dates,
+                        "raw_office": office,
+                    }
+                    identity_subject = ({"source_office_uri": source_uri} if source_uri is not None
+                                        else {"normalized_label": normalize_label(label)})
+                else:
+                    # Keep malformed values verbatim in the snapshot. In
+                    # particular, reversed dates are evidence, not values to
+                    # swap, clip or normalize.
+                    snapshot = {
+                        "member_iri": member_iri,
+                        "membership_iri": membership_iri,
+                        "house": dict(house_context),
+                        "office_label": label,
+                        "source_office_uri": source_uri,
+                        "date_range": dates,
+                        "raw_office": office,
+                        "malformed_reason": malformed_reason,
+                    }
+                    if (not isinstance(wrapped_office, dict)
+                            or not isinstance(wrapped_office.get("office"), dict)):
+                        snapshot["raw_observation"] = wrapped_office
+                    identity_subject = ({"source_office_uri": source_uri} if source_uri is not None
+                                        else {"normalized_label": normalize_label(label)} if label
+                                        else {"malformed_observation": wrapped_office})
+
+                identity_key = json_hash({"member_iri": member_iri,
+                                          "membership_iri": membership_iri,
+                                          **identity_subject})
+                observation = {
                     "identity_key": identity_key,
                     "fingerprint": json_hash(snapshot),
                     "member_iri": member_iri,
                     "membership_iri": membership_iri,
                     "house_context": dict(house_context),
                     "label": label,
-                    "normalized_label": normalize_label(label),
+                    "normalized_label": normalize_label(label) if label else "",
                     "source_office_uri": source_uri,
                     "date_range": dates,
                     "snapshot": snapshot,
                     "raw_pointers": [office_pointer],
-                })
+                }
+                if malformed_reason is not None:
+                    observation["malformed_reason"] = malformed_reason
+                extracted.append(observation)
     return extracted

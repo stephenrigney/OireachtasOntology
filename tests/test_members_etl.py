@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 from rdflib import Dataset, Graph, URIRef
-from rdflib.namespace import RDF
+from rdflib.namespace import RDF, SKOS
 
 from oireachtas_etl.api import ApiClient, ApiPage
 from oireachtas_etl.serialization import nquads
@@ -157,6 +157,45 @@ def test_member_identity_and_temporal_fail_closed():
         transform_member_with_report(changed)
 
 
+def test_malformed_nested_office_is_quarantined_while_valid_sibling_and_member_continue():
+    from oireachtas_etl.validation.members import validate_member_source
+
+    changed = copied()
+    offices = changed["member"]["memberships"][3]["membership"]["offices"]
+    assert len(offices) == 2
+    invalid = offices[0]["office"]
+    invalid["dateRange"]["end"] = "2025-01-01"
+    source_before = json.dumps(changed, sort_keys=True)
+    graph, transform_report = transform_member_with_report(changed)
+    source_report = validate_member_source(changed)
+
+    assert source_before == json.dumps(changed, sort_keys=True)
+    assert len(list(graph.subjects(RDF.type, MEMBERS.MinisterOfStateMembership))) == 1
+    valid_label = offices[1]["office"]["officeName"]["showAs"]
+    valid_office = next(graph.subjects(RDF.type, MEMBERS.MinisterOfStateMembership))
+    role = next(graph.objects(valid_office, MEMBERS.hasMinisterOfStateRole), None)
+    # The office-membership has a generated role carrying the valid source label.
+    assert role is not None
+    assert str(next(graph.objects(role, SKOS.prefLabel))) == valid_label
+    malformed = [item for item in transform_report if item["category"] == "source_quarantine"]
+    assert len(malformed) == 1
+    assert malformed[0]["path"] == "member.memberships[3].membership.offices[0]"
+    assert malformed[0]["reason"] == "office.dateRange has reverse dates"
+    assert malformed[0]["status"] == "review_required"
+    assert source_report == transform_report
+    assert validate_member(changed, graph) == transform_report
+
+
+def test_unsafe_member_level_source_errors_remain_fail_closed():
+    from oireachtas_etl.validation.members import validate_member_source
+
+    changed = copied()
+    changed["member"]["memberships"][0]["membership"]["dateRange"] = {
+        "start": "2025-01-01", "end": "2024-01-01"}
+    with pytest.raises(ValueError, match="reverse membership date range"):
+        validate_member_source(changed)
+
+
 @pytest.mark.parametrize("uri", [
     "http://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12",
     "https://evil.example/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12",
@@ -195,6 +234,55 @@ def test_members_cli_offline_never_marks_publication_state(tmp_path):
     assert run_members(args) == 0
     assert not state.exists()
     assert (tmp_path / "members.nq").exists()
+
+
+def test_members_cli_surfaces_malformed_office_and_serializes_valid_member_content(tmp_path, capsys):
+    from oireachtas_etl.cli import run_members
+
+    changed = copied()
+    offices = changed["member"]["memberships"][3]["membership"]["offices"]
+    invalid_label = offices[0]["office"]["officeName"]["showAs"]
+    valid_label = offices[1]["office"]["officeName"]["showAs"]
+    offices[0]["office"]["dateRange"]["end"] = "2025-01-01"
+    fixture = tmp_path / "malformed-office-member.json"
+    fixture.write_text(json.dumps([changed]), encoding="utf-8")
+    output = tmp_path / "members.nq"
+    args = Namespace(fixture=str(fixture), offline=True, raw_dir=str(tmp_path / "raw"),
+                     output_nq=str(output), output_ttl=None, fuseki_gsp_url=None,
+                     fuseki_sparql_url=None, state_file=None)
+
+    assert run_members(args) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert len(report["malformed_offices"]) == 1
+    assert report["malformed_offices"][0]["reason"] == "office.dateRange has reverse dates"
+    assert report["malformed_offices"][0]["status"] == "review_required"
+    serialized = output.read_text(encoding="utf-8")
+    assert valid_label in serialized
+    assert invalid_label not in serialized
+
+
+def test_online_member_publication_continues_with_valid_sibling_office(tmp_path, monkeypatch, capsys):
+    from oireachtas_etl import cli
+
+    changed = copied()
+    offices = changed["member"]["memberships"][3]["membership"]["offices"]
+    invalid_label = offices[0]["office"]["officeName"]["showAs"]
+    valid_label = offices[1]["office"]["officeName"]["showAs"]
+    offices[0]["office"]["dateRange"]["end"] = "2025-01-01"
+    fixture = tmp_path / "malformed-office-member.json"
+    fixture.write_text(json.dumps([changed]), encoding="utf-8")
+    calls = []
+    _mock_online(monkeypatch, calls)
+    args = _online_args(tmp_path, fixture)
+
+    assert cli.run_members(args) == 0
+    report = _report(capsys)
+    assert report["published"] == 1
+    assert len(report["malformed_offices"]) == 1
+    assert len(calls) == 1
+    published_payload = calls[0][1]
+    assert valid_label in published_payload
+    assert invalid_label not in published_payload
 
 
 def test_members_scan_deduplicates_identical_and_rejects_conflicts():

@@ -139,14 +139,148 @@ def test_source_extractor_captures_every_generic_observation_and_exact_raw_evide
 
 @pytest.mark.parametrize("mutation, message", [
     (lambda value: value["member"]["memberships"][0]["membership"]["offices"][0]["office"]["dateRange"].update(start="not-a-date"), "office.dateRange contains invalid date evidence"),
+    (lambda value: value["member"]["memberships"][0]["membership"]["offices"][0]["office"]["dateRange"].update(start="2025-01-01", end="2024-01-01"), "office.dateRange has reverse dates"),
     (lambda value: value["member"]["memberships"][0]["membership"]["offices"][0]["office"]["officeName"].update(uri="https://evil.example/office"), "office.officeName.uri must use canonical"),
-    (lambda value: value["member"]["memberships"][0]["membership"]["house"].update(uri="https://data.oireachtas.ie/ie/oireachtas/house/seanad/34"), "house.uri must match"),
+    (lambda value: value["member"]["memberships"][0]["membership"]["offices"].__setitem__(0, {"office": "not an object"}), "each membership.offices item must contain an office object"),
 ])
-def test_source_extractor_fails_closed_on_invalid_office_or_containing_house_evidence(mutation, message):
+def test_source_extractor_quarantines_malformed_nested_office_evidence(mutation, message):
     broken = wrapper()
     mutation(broken)
-    with pytest.raises(ValueError, match=message):
+    extracted = observations_for(broken)
+    assert len(extracted) == 1
+    observation = extracted[0]
+    assert observation["malformed_reason"].startswith(message)
+    assert observation["snapshot"]["malformed_reason"] == observation["malformed_reason"]
+    assert observation["raw_pointers"][0]["json_pointer"].endswith("/offices/0/office")
+    assert observation["snapshot"]["raw_office"] == broken["member"]["memberships"][0]["membership"]["offices"][0].get("office")
+
+
+def test_source_extractor_still_fails_closed_on_unsafe_containing_house_evidence():
+    broken = wrapper()
+    broken["member"]["memberships"][0]["membership"]["house"]["uri"] = (
+        "https://data.oireachtas.ie/ie/oireachtas/house/seanad/34")
+    with pytest.raises(ValueError, match="house.uri must match"):
         observations_for(broken)
+
+    broken = wrapper()
+    broken["member"]["memberships"][0]["membership"]["offices"] = "not-an-array"
+    with pytest.raises(ValueError, match="membership.offices must be an array"):
+        observations_for(broken)
+
+
+def _observed_reversed_case(member_code: str, result_index: int, membership_index: int,
+                            house_number: int, membership_dates: dict, office_index: int,
+                            label: str, office_dates: dict) -> tuple[dict, str]:
+    member_iri = f"https://data.oireachtas.ie/ie/oireachtas/member/id/{member_code}"
+    memberships = []
+    for index in range(membership_index + 1):
+        number = house_number - (membership_index - index)
+        membership_iri = f"{member_iri}/house/dail/{number}"
+        dates = membership_dates if index == membership_index else {
+            "start": "2000-01-01", "end": "2001-01-01"}
+        offices = []
+        if index == membership_index:
+            offices = [{"office": {
+                "officeName": {"showAs": f"Filler office {office_no}", "uri": None},
+                "dateRange": {"start": "2001-01-01", "end": "2002-01-01"},
+            }} for office_no in range(office_index)]
+            offices.append({"office": {
+                "officeName": {"showAs": label, "uri": None},
+                "dateRange": office_dates,
+            }})
+        memberships.append({"membership": {
+            "uri": membership_iri,
+            "house": {"houseCode": "dail", "houseNo": str(number),
+                      "uri": f"https://data.oireachtas.ie/ie/oireachtas/house/dail/{number}"},
+            "dateRange": dates,
+            "offices": offices,
+        }})
+    return {"member": {"memberCode": member_code, "uri": member_iri,
+                        "image": False, "memberships": memberships}}, f"/results/{result_index}"
+
+
+@pytest.mark.parametrize(("member_code", "result_index", "membership_index", "house_number",
+                          "membership_dates", "office_index", "label", "office_dates",
+                          "expected_pointer"), [
+    ("Leo-Varadkar.D.2007-06-14", 28, 0, 32,
+     {"start": "2016-03-10", "end": "2020-01-14"}, 3,
+     "Minister for Business, Enterprise and Innovation",
+     {"start": "2017-11-28", "end": "2016-11-29"},
+     "/results/28/member/memberships/0/membership/offices/3/office"),
+    ("Jack-Chambers.D.2016-10-03", 95, 1, 33,
+     {"start": "2020-02-08", "end": "2024-11-08"}, 5,
+     "Minister of State at the Department of Transport and at the Department of the Environment, Climate and Communications",
+     {"start": "2024-04-09", "end": "2023-07-26"},
+     "/results/95/member/memberships/1/membership/offices/5/office"),
+])
+def test_observed_reversed_date_records_are_explicitly_quarantined(
+        tmp_path, member_code, result_index, membership_index, house_number,
+        membership_dates, office_index, label, office_dates, expected_pointer):
+    source, record_pointer = _observed_reversed_case(
+        member_code, result_index, membership_index, house_number,
+        membership_dates, office_index, label, office_dates)
+    source_before = copy.deepcopy(source)
+    observation = next(item for item in extract_office_observations([
+        (source, pointer(json_pointer=record_pointer))])
+        if item["raw_pointers"][0]["json_pointer"] == expected_pointer)
+
+    assert source == source_before
+    assert observation["malformed_reason"] == "office.dateRange has reverse dates"
+    assert observation["snapshot"]["raw_office"]["dateRange"] == office_dates
+    assert observation["date_range"] == office_dates
+    assert observation["raw_pointers"][0]["json_pointer"] == expected_pointer
+
+    with OfficeOccurrenceStore(tmp_path / f"{result_index}.sqlite") as store:
+        result = store.reconcile([observation], empty_registry(), {}, REVIEW_HASH)
+    record = next(item for item in result["records"]
+                  if item.get("current_fingerprint") == observation["fingerprint"])
+    assert record["status"] == "review_required"
+    assert record["resolution_method"] == "malformed-source-quarantine"
+    assert record["office_iris"] == record["candidate_iris"] == []
+    assert record["malformed_reason"] == "office.dateRange has reverse dates"
+    assert record["current_raw_pointers"] == observation["raw_pointers"]
+    assert {item["kind"] for item in record["conflicts"]} >= {"malformed-office-observation"}
+
+
+def test_malformed_office_does_not_block_valid_sibling_or_clear_last_acceptance(tmp_path):
+    registry = synthetic_registry()
+    registry["offices"][0]["aliases"].append(
+        {"language": "en", "label": "Minister for Valid Sibling", "contexts": ["dail"]})
+    previously_valid = observations_for(wrapper())[0]
+    malformed_member = wrapper(start="2025-01-01", end="2024-01-01")
+    good = {"office": {
+        "officeName": {"showAs": "Minister for Valid Sibling", "uri": None},
+        "dateRange": {"start": "2024-01-01", "end": None},
+    }}
+    malformed_member["member"]["memberships"][0]["membership"]["offices"].append(good)
+    extracted = observations_for(malformed_member)
+    malformed = next(item for item in extracted if item.get("malformed_reason"))
+    valid = next(item for item in extracted if item["label"] == "Minister for Valid Sibling")
+    key = "occ-" + malformed["identity_key"]
+    target = str(office_iri("o-000001"))
+    decision = {"status": "accepted", "office_iris": [target],
+                "evidence": ["review:malformed-source-must-not-accept"],
+                "reason": "A decision cannot override malformed source dates.",
+                "observation_fingerprint": malformed["fingerprint"]}
+
+    with OfficeOccurrenceStore(tmp_path / "sibling.sqlite") as store:
+        result = store.reconcile([previously_valid], registry, {}, REVIEW_HASH)
+        accepted = result["records"][0]["last_accepted_resolution"]
+        assert result["records"][0]["status"] == "accepted"
+
+        # An explicit acceptance cannot make the malformed sibling acceptable.
+        current = store.reconcile([malformed, valid], registry, {key: decision}, REVIEW_HASH)
+        bad_record = next(item for item in current["records"]
+                          if item["current_fingerprint"] == malformed["fingerprint"])
+        good_record = next(item for item in current["records"]
+                           if item["current_fingerprint"] == valid["fingerprint"])
+        assert bad_record["status"] == "review_required"
+        assert bad_record["office_iris"] == []
+        assert bad_record["last_accepted_resolution"] == accepted
+        assert any(item["kind"] == "review-decision-not-applied-to-malformed-observation"
+                   for item in bad_record["conflicts"])
+        assert good_record["status"] == "accepted"
+        assert good_record["office_iris"] == [target]
 
 
 def test_reviewed_alias_context_date_unit_and_source_uri_only_generate_registered_candidates():
@@ -680,7 +814,40 @@ def test_cli_persists_immutable_raw_response_and_reports_fixture_offices_unresol
             assert target["officeName"]["showAs"] == row["current_snapshot"]["office_label"]
 
 
-def test_failed_source_scan_keeps_raw_evidence_but_does_not_partially_update_ledger(tmp_path):
+def test_cli_surfaces_malformed_office_reason_and_immutable_source_pointer(tmp_path, capsys):
+    source = wrapper(start="2025-01-01", end="2024-01-01")
+    source_bytes = (json.dumps([source], ensure_ascii=False, separators=(",", ":")) + "\n").encode()
+    fixture = tmp_path / "members.json"
+    fixture.write_bytes(source_bytes)
+    registry_file = tmp_path / "registry.json"
+    registry_file.write_text(json.dumps(empty_registry()), encoding="utf-8")
+    review_file = tmp_path / "office-decisions.json"
+    write_review(review_file, {})
+    raw_root, state_file = tmp_path / "raw", tmp_path / "office.sqlite"
+
+    assert main([
+        "reconcile", "offices", "--fixture", str(fixture), "--offline",
+        "--registry-file", str(registry_file), "--review-file", str(review_file),
+        "--office-state-file", str(state_file), "--raw-dir", str(raw_root),
+    ]) == 1
+    report = json.loads(capsys.readouterr().out)
+    item = report["records"][0]
+    assert item["status"] == "review_required"
+    assert item["malformed_reason"] == "office.dateRange has reverse dates"
+    assert item["office_iris"] == item["candidate_iris"] == []
+    assert item["current_raw_pointers"][0]["json_pointer"] == (
+        "/0/member/memberships/0/membership/offices/0/office")
+    raw_pointer = item["current_raw_pointers"][0]
+    captured = (raw_root / raw_pointer["path"]).read_bytes()
+    assert captured == source_bytes
+    assert hashlib.sha256(captured).hexdigest() == raw_pointer["sha256"]
+    with OfficeOccurrenceStore(state_file) as store:
+        attempt = store.attempts()[0]
+        assert any(conflict.get("reason") == "office.dateRange has reverse dates"
+                   for conflict in attempt["conflicts"])
+
+
+def test_unsafe_member_context_scan_keeps_raw_evidence_but_does_not_partially_update_ledger(tmp_path):
     registry_file = tmp_path / "registry.json"
     registry_file.write_text(json.dumps(empty_registry()), encoding="utf-8")
     review_file = tmp_path / "office-decisions.json"
@@ -696,9 +863,9 @@ def test_failed_source_scan_keeps_raw_evidence_but_does_not_partially_update_led
     with OfficeOccurrenceStore(state_file) as store:
         before_rows, before_attempts = store.occurrences(), store.attempts()
     broken = copy.deepcopy(original)
-    broken["member"]["memberships"][0]["membership"]["offices"][0]["office"]["dateRange"]["start"] = "invalid"
+    broken["member"]["memberships"][0]["membership"]["dateRange"]["start"] = "invalid"
     fixture.write_text(json.dumps([broken]), encoding="utf-8")
-    with pytest.raises(ValueError, match="office.dateRange contains invalid date evidence"):
+    with pytest.raises(ValueError, match="membership.dateRange contains invalid date evidence"):
         main(args)
     with OfficeOccurrenceStore(state_file) as store:
         assert store.occurrences() == before_rows

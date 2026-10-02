@@ -463,7 +463,14 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
     identities = {kind: sorted(identity for _, _, identity, _, _, status in graphs if status == kind) for kind in ("new", "changed", "skipped")}
     identities["skipped"] = sorted(set(identities["skipped"]) - set(repaired))
     identities["changed"] = sorted(set(identities["changed"]) | set(repaired))
-    print(json.dumps({"records": len(records), "published": published, "skipped": skipped, "new": identities["new"], "changed": identities["changed"], "skipped_identities": identities["skipped"], "missing_retained": missing, "future_work_omitted": report}, sort_keys=True))
+    print(json.dumps({"records": len(records), "published": published, "skipped": skipped,
+                      "new": identities["new"], "changed": identities["changed"],
+                      "skipped_identities": identities["skipped"], "missing_retained": missing,
+                      "future_work_omitted": [item for item in report
+                                              if item["category"] != "source_quarantine"],
+                      "malformed_offices": [item for item in report
+                                            if item["category"] == "source_quarantine"]},
+                     sort_keys=True))
     return 0
 
 
@@ -1247,7 +1254,7 @@ def run_reconcile_offices(args: argparse.Namespace) -> int:
         report.append({key: item.get(key) for key in (
             "occurrence_key", "status", "resolution_method", "label", "date_range",
             "current_fingerprint", "office_iris", "candidate_iris", "current_candidates", "current_raw_pointers",
-            "conflicts", "pattern_hints", "source_presence") if key in item})
+            "conflicts", "pattern_hints", "malformed_reason", "source_presence") if key in item})
     print(json.dumps({"processed": result["processed"], "accepted": result["accepted"],
                       "rejected": result["rejected"], "unresolved": result["unresolved"],
                       "review_required": result["review_required"],

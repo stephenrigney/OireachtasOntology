@@ -9,6 +9,7 @@ from urllib.parse import unquote, urlsplit
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import FOAF, RDF, SKOS, XSD
 
+from ..office_observations import parse_office_observation
 from .common import MEMBERS, OIR, datetime_literal, iri, string
 
 HOUSES = {"dail": URIRef("https://data.oireachtas.ie/house/dail"), "seanad": URIRef("https://data.oireachtas.ie/house/seanad")}
@@ -227,7 +228,22 @@ def transform_member_with_report(wrapper: dict) -> tuple[Graph, list[dict]]:
             graph.add((membership, MEMBERS.isRepresentativeFrom, _reference_representation(representation["represent"], term, code)))
         for party in record.get("parties", []): _party(graph, subject, membership, party)
         for committee in record.get("committees", []): _committee(graph, subject, membership, committee, exclusions, "member.memberships[].membership.committees[]")
-        for office in record.get("offices", []): _office(graph, subject, membership, office)
+        offices = record.get("offices", [])
+        if not isinstance(offices, list):
+            raise ValueError("membership.offices must be an array")
+        for office_index, office in enumerate(offices):
+            try:
+                parse_office_observation(office)
+            except ValueError as error:
+                exclusions.append({
+                    "path": f"member.memberships[{number}].membership.offices[{office_index}]",
+                    "context": str(membership),
+                    "reason": str(error),
+                    "category": "source_quarantine",
+                    "status": "review_required",
+                })
+                continue
+            _office(graph, subject, membership, office)
     return graph, sorted(exclusions, key=lambda value: (value["category"], value["path"], value["context"], value["reason"]))
 
 

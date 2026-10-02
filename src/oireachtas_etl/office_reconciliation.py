@@ -227,6 +227,30 @@ def generate_office_candidates(observation: dict, registry: dict) -> dict:
     }
 
 
+def _candidate_info(observation: dict, registry: dict) -> dict:
+    """Return no candidates for an observation quarantined by source validation."""
+    malformed_reason = observation.get("malformed_reason")
+    if malformed_reason is None:
+        return generate_office_candidates(observation, registry)
+    label = observation.get("label")
+    hints = pattern_hints(label) if isinstance(label, str) else []
+    type_hints = sorted(set(hint for hint in hints if hint in {
+        "TaoiseachOfficeType", "TanaisteOfficeType", "MinisterOfficeType",
+        "MinisterOfStateOfficeType", "CeannComhairleOfficeType",
+        "CathaoirleachOfficeType", "AttorneyGeneralOfficeType",
+    }))
+    return {
+        "candidates": [],
+        "candidate_iris": [],
+        "pattern_hints": hints,
+        "type_hints": type_hints,
+        "mentioned_unit_keys": [],
+        "multi_department": False,
+        "conflicts": [{"kind": "malformed-office-observation", "reason": malformed_reason}],
+        "auto_accept": False,
+    }
+
+
 def _json_object_no_duplicates(pairs):
     result = {}
     for key, value in pairs:
@@ -577,7 +601,7 @@ class OfficeOccurrenceStore:
         if not isinstance(review_hash, str) or not FINGERPRINT_RE.fullmatch(review_hash):
             raise ValueError("office review hash must be a SHA-256 digest")
         current = _deduplicate_observations(observations)
-        prepared = [(observation, generate_office_candidates(observation, registry))
+        prepared = [(observation, _candidate_info(observation, registry))
                     for observation in current]
         run_id = run_id or str(uuid.uuid4())
         if not isinstance(run_id, str) or not run_id:
@@ -702,6 +726,10 @@ class OfficeOccurrenceStore:
                         conflicts.append({"kind": "review-fingerprint-stale",
                                           "reviewed_fingerprint": decision["observation_fingerprint"],
                                           "current_fingerprint": observation["fingerprint"]})
+                    malformed_reason = observation.get("malformed_reason")
+                    if malformed_reason is not None and decision is not None:
+                        conflicts.append({"kind": "review-decision-not-applied-to-malformed-observation",
+                                          "decision_status": decision["status"]})
                     same_decision_as_before = bool(old and old_decision_hash == decision_hash)
                     decision_removed = bool(old and old_decision_hash is not None and decision is None)
                     if decision_removed:
@@ -719,7 +747,9 @@ class OfficeOccurrenceStore:
                         "review-decision-stale-after-candidate-change", "review-decision-stale-after-absence",
                         "review-decision-removed",
                     } for item in conflicts)
-                    if hard_correspondence_conflict or stale_review or (reappeared and decision is None):
+                    if malformed_reason is not None:
+                        status, method = "review_required", "malformed-source-quarantine"
+                    elif hard_correspondence_conflict or stale_review or (reappeared and decision is None):
                         status, method = "review_required", "review-required"
                     elif decision is not None:
                         status, method = decision["status"], "review-file"
@@ -778,6 +808,8 @@ class OfficeOccurrenceStore:
                         "date_range": observation["date_range"],
                         "pattern_hints": candidate_info["pattern_hints"],
                     }
+                    if malformed_reason is not None:
+                        record["malformed_reason"] = malformed_reason
                     self._upsert(record)
                     self._attempt(record, observation["fingerprint"], previous_snapshot,
                                   candidate_info["candidates"], previous_candidates,

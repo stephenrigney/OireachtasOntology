@@ -5,7 +5,14 @@ every `member.memberships[].membership.offices[].office` report from a fixture
 or a complete Members API scan, persists each response through the immutable
 raw-response store, validates Member/House-membership context and raw dates,
 generates candidates only from the reviewed local registry, and records the
-result in its own SQLite occurrence ledger. It does not transform/publish
+result in its own SQLite occurrence ledger. A malformed item inside
+`membership.offices[]` (including an invalid or reversed office date range) is
+quarantined as `review_required` with its exact raw pointer and validation
+reason; it receives no candidates and cannot be accepted. Its source JSON is
+never repaired. Member identity, membership/House context, a non-array
+`offices` field, and raw-page integrity remain fail-closed. The occurrence
+ledger keeps any prior `last_accepted_resolution` when current office evidence
+is malformed. It does not transform/publish
 Member RDF, allocate office identities, create holdings, or contact external
 identity services.
 
@@ -19,10 +26,10 @@ Useful options are `--registry-file`, `--review-file`, `--office-state-file`
 and `--raw-dir`. The command prints occurrence keys, source labels and dates,
 registered candidates, review-required conflicts, and immutable raw pointers.
 Exit status 1 means one or more reports need review or remain explicitly
-unresolved. Invalid source, registry, review, or SQLite data fails closed. Raw
-responses are persisted before source validation; the occurrence ledger uses
-one SQLite transaction per completed source scan. The CLI never writes the
-review file.
+unresolved. Unsafe Member context, registry, review, or SQLite errors still
+fail closed. Raw responses are persisted before source validation; the
+occurrence ledger uses one SQLite transaction per completed source scan. The
+CLI never writes the review file.
 
 ## Reviewed alias scope
 
