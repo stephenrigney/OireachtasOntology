@@ -1159,114 +1159,332 @@ recover independently of authoritative graph publication.
 
 ### Outcome
 
-Make the ETL and external-reconciliation processes observable, recoverable and suitable for unattended operation.
+Make the authoritative ETL and external-reconciliation processes observable,
+recoverable and suitable for unattended production operation without weakening
+the deterministic publication and external-enrichment boundaries established in
+earlier phases.
 
-### Backlog
+### Approved architecture and operating policy
 
-#### Error handling
+#### Failure handling and quarantine
 
-- [ ] Separate record-level failures from run-level failures.
-- [ ] Introduce quarantine storage.
-- [ ] Preserve failing source record.
-- [ ] Record transformation exception.
-- [ ] Record mapping and ontology versions.
-- [ ] Allow unaffected resources to continue processing where safe.
-- [ ] Establish thresholds that cause publication to fail.
+Failures have three scopes: record, source and run.
+
+- Recoverable record-level transformation failures are quarantined with the
+  failing source evidence, processing stage, exception, ETL run, mapping
+  version and ontology version. Unaffected resources may continue where doing
+  so is safe, and the run is explicitly degraded rather than silently
+  successful.
+- Source-level failure means that a trustworthy complete view of that source
+  cannot be established. An incomplete source view must never be interpreted
+  as authoritative evidence that missing resources should be deleted.
+- Integrity, state-store, publication or other system failures that make safe
+  continuation impossible abort the run.
+- Quarantined records are retried automatically on subsequent applicable runs,
+  with an explicit manual retry path. Unresolved records remain quarantined;
+  historical failure evidence remains available through run history.
+- Publication-failure thresholds and retry/retention parameters are
+  configurable operational policy rather than transformation semantics.
 
 #### Schema drift
 
-- [ ] Detect previously unseen JSON properties.
-- [ ] Report additional fields as warnings.
-- [ ] Detect disappearance of fields required by mappings.
-- [ ] Treat required mapped-field disappearance as a higher-severity issue.
-- [ ] Produce schema-drift report.
+Schema drift is classified rather than treating every source-schema change as
+fatal.
+
+- Previously unseen, unused additive JSON properties are reported as warnings.
+- Missing, type-changed or otherwise incompatible fields consumed by mappings
+  or source contracts fail the affected record/source/run according to their
+  impact.
+- Drift reporting must identify the endpoint, field/change, severity and
+  affected run/source evidence.
+- Source-contract tests make the consumed API contract explicit.
+
+The policy is fail-closed where drift could alter semantic output or undermine
+source completeness.
 
 #### Provenance
 
-Record graph/run-level provenance. Possible information:
+Record provenance at run, published graph/entity and source-evidence level.
+Per-triple provenance and RDF-star remain outside the initial scope.
 
-- `prov:wasGeneratedBy`;
-- `prov:wasDerivedFrom`;
-- retrieval timestamp;
-- API request;
-- source hash;
+Provenance should be sufficient to answer which source observation and
+transformation produced a published resource or graph and should include, where
+applicable:
+
+- ETL run identity;
+- `prov:wasGeneratedBy` and `prov:wasDerivedFrom`;
+- retrieval timestamp and API request;
+- immutable source hash;
 - ETL version;
-- ontology version; and
-- mapping version.
+- ontology version;
+- mapping version; and
+- for external assertions, external source, lookup time, matching method and
+  evidence.
 
-- [ ] Define provenance vocabulary usage.
-- [ ] Create ETL-run resources.
-- [ ] Create provenance/catalog named graph.
-- [ ] Link published graphs to ETL runs.
-- [ ] Record external source, lookup time, matching method and evidence for reconciliation assertions.
-
-Per-triple provenance and RDF-star are explicitly outside the initial scope.
-
-#### External enrichment operations
-
-- [ ] Cache external lookup responses where permitted and useful.
-- [ ] Implement rate limiting per external service.
-- [ ] Implement retry/backoff for transient external failures.
-- [ ] Provide a manual-review queue for ambiguous reconciliation results.
-- [ ] Record reconciliation coverage, accepted, rejected, ambiguous and unmatched counts.
-- [ ] Make external-link graphs reproducibly rebuildable independently of core RDF graphs.
-- [ ] Add tests preventing external enrichment statements from leaking into authoritative endpoint-owned graphs.
-- [ ] Ensure a Wikidata or DBpedia outage cannot fail an otherwise successful Oireachtas ETL run.
+Create ETL-run resources and a provenance/catalog named graph without making
+the semantic RDF dataset the store for mutable operational state.
 
 #### Observability
 
-- [ ] Structured logging.
-- [ ] Run summary.
-- [ ] Extracted resource count.
-- [ ] Changed resource count.
-- [ ] Unchanged resource count.
-- [ ] Published graph count.
-- [ ] Quarantine count.
-- [ ] Validation-failure count.
-- [ ] API request count and failures.
-- [ ] External reconciliation request count and failures.
-- [ ] External-link coverage and pending-review count.
-- [ ] Duration metrics.
+Use machine-readable structured logs together with persisted run summaries.
+Every run has an explicit `success`, `degraded` or `failed` outcome.
 
-#### Deployment
+Run summaries should record at least:
 
-- [ ] Containerise ETL application.
-- [ ] Add Fuseki/TDB2 container configuration.
-- [ ] Add Docker Compose development deployment.
-- [ ] Configure persistent volumes.
-- [ ] Configure environment-specific settings.
-- [ ] Protect update endpoints where required.
-- [ ] Establish backup procedure.
+- extracted, changed and unchanged resource counts;
+- published graph count;
+- quarantine and validation-failure counts;
+- API request/failure counts;
+- external reconciliation request/failure counts;
+- external-link coverage and pending-review counts;
+- reconciliation freshness/degraded state;
+- publication outcome; and
+- stage/run duration.
+
+A failed run alerts. Degraded runs are recorded and alert when degradation is
+persistent or repeated. The notification mechanism and thresholds are
+configurable operational settings.
+
+#### Recovery semantics
+
+Prefer idempotent deterministic replay from durable state over a complex
+mid-process resume engine.
+
+- Preserve and build on the Phase 5 authoritative and reconciliation state
+  stores.
+- Make stages safely replayable and publication idempotent.
+- Dirty/pending state remains the recovery boundary around remote graph
+  mutation.
+- Explicit retry tooling may target quarantined work, but recovery must converge
+  on the same state as a clean deterministic rerun.
+- Reproducibility-critical provenance is retained indefinitely. Detailed
+  operational/run history defaults to 12 months, configurable at deployment.
+
+#### External enrichment operations
+
+Authoritative publication remains independent of external enrichment.
+
+- Wikidata, DBpedia or other external-service failure must not fail an otherwise
+  valid authoritative Oireachtas publication.
+- External failures produce explicit due/stale/degraded state and recover
+  through the existing reconciliation store; they never silently substitute
+  external identities.
+- Cache external responses where permitted and useful.
+- Rate limits are configurable per service.
+- Transient failures use bounded retries with exponential backoff and jitter.
+- Human review remains authoritative for ambiguous/conflicting matches.
+- External-link graphs remain independently reproducible and replaceable.
+- CI must continue to prove that enrichment statements cannot leak into
+  authoritative endpoint-owned graphs.
+
+This formalises the Phase 5 behaviour where the core run can succeed while the
+reconciliation store or an external authority is unavailable.
+
+#### Publication atomicity
+
+A candidate graph/dataset is completely transformed and validated before it
+replaces the currently published production graph. A failed or degraded build
+must not leave Fuseki partially updated. Existing dirty/pending publication
+state continues to make interrupted remote mutation detectable and recoverable.
+
+#### Production topology
+
+Use a single production host initially with a Compose-based application stack.
+Containers and services are replaceable; durable data is explicitly separated
+from them.
+
+The durable/reproducible boundary consists of canonical RDF/source evidence,
+core ETL state, reconciliation state, required provenance/run records and
+configuration. Fuseki/TDB2 storage is a rebuildable projection rather than the
+authoritative persistence layer for ETL state or provenance needed to reproduce
+the dataset.
+
+Keep triple-store-specific publication behind the publisher/loader boundary.
+A future move from Fuseki to another standards-compatible store may require a
+new publication adapter and store-specific validation, but must not require
+changing the canonical transformation model.
+
+#### Backup and recovery
+
+Back up canonical RDF/source material needed for recovery, durable ETL and
+reconciliation state, required provenance and deployment configuration. Do not
+treat Fuseki's internal TDB2 files as the authoritative backup.
+
+Initial configurable operational defaults are:
+
+- recovery-point objective (RPO): no more than 24 hours;
+- retention: 30 daily and 12 monthly recovery points using
+  deduplicating/incremental backup where practical;
+- no formal recovery-time objective (RTO) initially;
+- automated backup, retention, integrity checking and backup-age/RPO
+  monitoring;
+- operator-triggered but scripted restoration and triple-store rebuild; and
+- periodic automated restore/rebuild tests against disposable infrastructure.
+
+A configured backup schedule is not sufficient on its own: monitoring and
+restore tests must demonstrate that retained recovery points are usable.
 
 #### Scheduling
 
-Start with simple orchestration:
+Use a systemd timer for the initial single-host production deployment, with a
+daily authoritative ETL refresh as the initial configurable default. Manual and
+scheduled execution must invoke the same application path.
 
-- cron;
-- systemd timer; or
-- scheduled container execution.
+Core refresh and external reconciliation may use different schedules. Do not
+introduce Airflow, Kafka or equivalent orchestration until measured workload
+requires it.
 
-Do not introduce Airflow, Kafka or equivalent infrastructure until the workload demonstrates a need for it.
+#### Configuration and secrets
 
-Core Oireachtas refresh and external identity refresh may run on different schedules. External reconciliation should normally be less time-critical than authoritative source publication.
+Operational schedules, retention periods, retry limits, alert thresholds and
+similar policy values are configuration, not ETL semantics.
 
-#### CI
+Keep non-secret environment/deployment configuration in version control where
+appropriate. Inject credentials and other secrets externally at deployment or
+runtime. Secrets must not be embedded in container images, RDF, run/provenance
+records or ordinary backups unless the backup mechanism explicitly protects
+them.
 
-CI should run:
+#### CI and release gate
 
-- [ ] ontology parse test;
-- [ ] ontology consistency test;
-- [ ] mapping-integrity test;
-- [ ] transformation unit tests;
-- [ ] golden RDF tests;
-- [ ] SHACL validation;
-- [ ] competency SPARQL queries;
-- [ ] external-link graph-boundary tests; and
-- [ ] integration tests where practical.
+Use a layered CI model:
 
-### Exit criteria
+- normal changes run the fast ontology, mapping, unit, golden RDF, SHACL,
+  competency-query and graph-boundary checks appropriate to the change; and
+- the release/deployment gate runs a complete production simulation against
+  disposable infrastructure.
 
-The ETL process can run unattended, failures are diagnosable, malformed resources are recoverable, successful graph publication can be traced to its source data and software versions, and external enrichment can fail or be rebuilt independently of the authoritative graph.
+The release gate must exercise at least:
+
+- a clean-state ETL run;
+- an incremental second run and idempotency;
+- quarantine, failure and recovery paths;
+- schema-drift warning and fail-closed cases;
+- external-service outage/staleness behaviour;
+- provenance and persisted run summaries;
+- external-enrichment graph isolation;
+- interrupted/failed publication recovery; and
+- reconstruction of a fresh triple store from canonical/durable state.
+
+### Delivery tranches
+
+Implementation is dependency-ordered. Each tranche must satisfy its exit checks
+before the next tranche begins.
+
+#### Tranche 1 — Failure model, run records and observability
+
+Implement the operational contract on which later production behaviour depends.
+
+- Add explicit record/source/run failure classification.
+- Add quarantine persistence, inspection and retry support.
+- Add persisted run records and `success/degraded/failed` outcomes.
+- Add structured logging and agreed run-summary counters/timings.
+- Add source-contract/schema-drift classification and reports.
+- Ensure incomplete/failed source views cannot trigger authoritative deletion.
+- Add tests for record quarantine, source failure, fatal run failure and schema
+  drift.
+
+**Exit:** failures are classified and diagnosable; recoverable records can be
+quarantined without unsafe deletion; every run has a persisted outcome and
+useful structured summary; contract-breaking drift fails closed.
+
+#### Tranche 2 — Provenance, publication safety and deterministic recovery
+
+Make successful publication traceable and failed/interrupted publication
+recoverable.
+
+- Define provenance vocabulary usage and ETL-run resources.
+- Add provenance/catalog graph publication at run and graph/entity/source
+  evidence granularity.
+- Record software, ontology, mapping and immutable source evidence.
+- Enforce complete validation before production graph replacement.
+- Exercise dirty/pending Phase 5 publication state through failure/replay tests.
+- Add deterministic replay and targeted quarantine-retry tests.
+- Verify a rerun converges on the same published state.
+- Keep provenance required for reproducibility independent of Fuseki internal
+  storage.
+
+**Exit:** each published graph can be traced to its producing run and source
+evidence; invalid candidates cannot replace valid production graphs;
+interrupted publication is detectable and deterministic replay restores a
+consistent result.
+
+#### Tranche 3 — External-enrichment operational hardening
+
+Operationalise the independent external-reconciliation lifecycle established in
+Phases 3.5, 4.5 and 5.
+
+- Add configurable per-service caching, rate limiting and bounded
+  exponential-backoff-with-jitter retry.
+- Persist/report due, stale, degraded and recovery state using the existing
+  reconciliation store rather than a second queue.
+- Complete reconciliation coverage/review metrics in run summaries.
+- Exercise external authority and reconciliation-store outages.
+- Verify reviewed targets that disappear/redirect remain retryable and are not
+  silently replaced.
+- Verify external-link graphs remain independently rebuildable and cannot
+  mutate authoritative graphs.
+
+**Exit:** external services can fail, recover and be rebuilt independently while
+authoritative publication remains correct and observable.
+
+#### Tranche 4 — Production packaging, scheduling and recovery
+
+Establish the initial single-host production operating model.
+
+- Containerise the ETL application and maintain Fuseki/TDB2 Compose
+  configuration with explicit durable-volume boundaries.
+- Keep the triple-store publisher boundary replaceable.
+- Add environment-specific configuration and runtime secret injection.
+- Add systemd service/timer units or generated deployment equivalents using the
+  same ETL invocation as manual runs.
+- Implement configurable backup/retention/integrity/RPO monitoring.
+- Implement operator-triggered scripted restore and fresh triple-store rebuild.
+- Add periodic disposable restore/rebuild verification.
+- Protect production update endpoints and document operating/recovery
+  procedures.
+
+**Exit:** a clean host can be configured from documented deployment inputs,
+durable state can be restored, Fuseki can be rebuilt as a projection, scheduled
+and manual ETL use the same path, and backup age/integrity is observable.
+
+#### Tranche 5 — Layered CI and production release gate
+
+Turn the Phase 6 operating contract into a repeatable deployment gate.
+
+- Retain fast checks for normal development.
+- Add disposable full-stack production-simulation CI.
+- Exercise clean/incremental/idempotent runs, quarantine/recovery, schema drift,
+  external outage/staleness, provenance/run summaries and graph boundaries.
+- Exercise interrupted publication and deterministic replay.
+- Restore a retained test backup into disposable infrastructure and rebuild a
+  fresh triple store.
+- Document the release-gate command/workflow and failure diagnostics.
+
+**Exit:** the complete release gate passes from a clean environment and
+demonstrates unattended execution, safe failure, traceable publication,
+recoverable durable state and independent external enrichment.
+
+### Phase 6 exit criteria
+
+Phase 6 is complete when:
+
+- routine production execution can run unattended on the initial single-host
+  deployment;
+- failures are classified, quarantined where safe, visible and recoverable;
+- incomplete source evidence cannot cause destructive authoritative updates;
+- contract-breaking schema drift fails closed;
+- every published graph can be traced to source evidence and software/semantic
+  versions;
+- publication validates completely before replacement and interrupted
+  publication is recoverable through deterministic replay;
+- external reconciliation can lag, fail and recover independently without
+  changing authoritative assertions;
+- canonical/durable state can rebuild a fresh triple store;
+- automated backups meet the configured RPO and have a tested restore path;
+- operational schedules, retention and alert thresholds remain configurable;
+  and
+- the layered CI release gate passes against disposable infrastructure.
 
 ## Phase 7 — Extend dataset coverage
 
