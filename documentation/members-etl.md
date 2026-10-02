@@ -13,6 +13,23 @@ non-array office collection remain fail-closed. The separate Phase 7 office
 occurrence ledger retains any earlier accepted resolution for malformed
 current evidence; this behavior does not introduce `OfficeHolding` RDF.
 
+Committee special roles have two observed Members API encodings: the existing
+array form (including `[]` when there is no special role), and an object form
+with `title` and `dateRange`. The two object titles present in the captured
+Members source, `Cathaoirleach` and `Leas-Chathaoirleach`, map respectively to
+the existing `members:Chair` and `members:DeputyChair` roles. The object's
+`dateRange` is validated and explicitly listed under `future_work_omitted`;
+the current Member mapping has no relation for special-role tenure separate
+from the committee membership's own `memberDateRange`. Unknown object shapes
+or titles remain fail-closed. The published Oireachtas Swagger schema leaves
+`committees.items` untyped, so the repeated captured records (rather than a
+In the complete Members capture of 2026-10-02, all 317 object-form roles had
+exactly this structure: 211 `Cathaoirleach` and 106 `Leas-Chathaoirleach`; all
+2,737 array-form roles were empty. Garret Ahearn's instance is at
+`/results/4/member/memberships/0/membership/committees/1/role` in
+`skip=0&limit=100` (captured page SHA-256
+`832a12d7cb701dad7e5ef72169e18ad37a828f40a018d8807550705048471855`).
+
 Members own only Member, membership, generated role, and generated date-range descriptions. House/HouseTerm, ParliamentaryMemberCollection, constituency/panel and Committee IRIs are references. Historical reference acquisition remains follow-up work: current reference endpoints do not cover the historical IRIs in Member history.
 
 Member roots and agent terms use `https://data.oireachtas.ie/ontology#`; every membership, ParliamentaryMemberCollection, constituency/panel, role and DateRange term uses `https://data.oireachtas.ie/ontology/members#`. Each Members API party record is represented as a `members:ParliamentaryCollectionMembership` linked to its containing `members:OireachtasMembership` with `members:inOireachtasMembership`, and to its source collection with `members:memberOfCollection`. A non-`Independent` target additionally uses `members:PartyMembership` and `members:isPartyMembershipOf` (range `members:ParliamentaryParty`); an `Independent` target uses only the general collection membership class and relationship. Parties endpoint resources remain the authoritative descriptions of both collection types. Member graphs do not assert ParliamentaryGroup or TechnicalGroup membership or any party-side/reconciliation assertions.

@@ -11,6 +11,7 @@ from pyshacl import validate
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import FOAF, RDF, SKOS, XSD
 
+from ..committee_roles import normalize_committee_roles
 from ..office_observations import parse_office_observation
 from ..transforms.common import MEMBERS, OIR, datetime_literal, iri, string
 from .houses import validate_rdf
@@ -42,6 +43,17 @@ def extract_member_omissions(wrapper: dict) -> list[dict]:
         for committee in record.get("committees", []) if isinstance(record, dict) else []:
             if not isinstance(committee, dict): continue
             context = str(committee.get("uri", "")); base = "member.memberships[].membership.committees[]"
+            role = committee.get("role")
+            role_dates = role.get("dateRange") if isinstance(role, dict) else None
+            if isinstance(role_dates, dict):
+                for key in ("start", "end"):
+                    if role_dates.get(key) is not None:
+                        output.append({
+                            "path": f"{base}.role.dateRange.{key}",
+                            "context": context,
+                            "reason": "Committee special-role tenure dates have no property in the current Member mapping; only the committee membership tenure is represented.",
+                            "category": "future_work",
+                        })
             for key, (category, reason) in reasons.items():
                 if committee.get(key) not in (None, [], ""):
                     output.append({"path": f"{base}.{key}", "context": context, "reason": reason, "category": category})
@@ -159,14 +171,39 @@ def expected_member_graph(wrapper: dict) -> tuple[Graph, list[dict]]:
                 graph.add((pm, RDF.type, MEMBERS.PartyMembership))
                 graph.add((pm, MEMBERS.isPartyMembershipOf, party_iri))
             _range(graph, pm, "date-range", party.get("dateRange"))
-        for committee in record.get("committees", []):
+        committees = record.get("committees", [])
+        if not isinstance(committees, list): raise ValueError("membership.committees must be an array")
+        for committee in committees:
             if not isinstance(committee, dict): raise ValueError("committee record must be an object")
-            committee_iri = _source(committee.get("uri"), "committee.uri"); roles = committee.get("role", [])
-            if not isinstance(roles, list): raise ValueError("committee role must be an array")
+            committee_iri = _source(committee.get("uri"), "committee.uri")
+            raw_roles = committee.get("role", [])
+            if isinstance(raw_roles, list):
+                roles = raw_roles
+                role_date_range = None
+            elif isinstance(raw_roles, dict):
+                if set(raw_roles) != {"title", "dateRange"}:
+                    raise ValueError("committee role object must contain only title and dateRange")
+                role_title = raw_roles.get("title")
+                role_titles = {"Cathaoirleach": "Chair", "Leas-Chathaoirleach": "Deputy Chair"}
+                if not isinstance(role_title, str) or role_title not in role_titles:
+                    raise ValueError(f"unsupported committee role title: {role_title!r}")
+                role_date_range = raw_roles.get("dateRange")
+                if not isinstance(role_date_range, dict) or set(role_date_range) - {"start", "end"}:
+                    raise ValueError("committee role.dateRange must contain start and optional end")
+                if role_date_range.get("start") is None:
+                    raise ValueError("committee role.dateRange.start is required")
+                role_start = datetime_literal(role_date_range["start"])
+                if role_date_range.get("end") is not None and datetime_literal(role_date_range["end"]).toPython() < role_start.toPython():
+                    raise ValueError("reverse committee role date range")
+                roles = [role_titles[role_title]]
+            else:
+                raise ValueError("committee role must be an array or a supported role object")
+            for role in roles:
+                if not isinstance(role, str) or role not in {"Chair", "Deputy Chair"}:
+                    raise ValueError(f"unsupported committee role: {role!r}")
             cm = _generated(membership, "committee-membership", {"membership": str(membership), "committee": str(committee_iri), "memberDateRange": committee.get("memberDateRange"), "role": sorted(roles)})
             graph.add((cm, RDF.type, MEMBERS.CommitteeMembership)); graph.add((subject, MEMBERS.hasMembersMembership, cm)); graph.add((cm, MEMBERS.isCommitteeMembershipOf, committee_iri)); _range(graph, cm, "member-date-range", committee.get("memberDateRange"))
             for role in roles:
-                if role not in {"Chair", "Deputy Chair"}: raise ValueError(f"unsupported committee role: {role!r}")
                 ri = _generated(cm, "role", {"role": role}); graph.add((ri, RDF.type, MEMBERS.Chair if role == "Chair" else MEMBERS.DeputyChair)); graph.add((cm, MEMBERS.hasCommitteeRole, ri))
         offices = record.get("offices", [])
         if not isinstance(offices, list): raise ValueError("membership.offices must be an array")
@@ -221,6 +258,18 @@ def validate_member_source(wrapper: dict) -> list[dict]:
             if not isinstance(party_range, dict): raise ValueError("party dateRange must be an object")
             party_start = datetime_literal(party_range.get("start"))
             if party_range.get("end") is not None and datetime_literal(party_range["end"]).toPython() < party_start.toPython(): raise ValueError("reverse membership date range")
+        committees = record.get("committees", [])
+        if not isinstance(committees, list): raise ValueError("membership.committees must be an array")
+        for committee in committees:
+            if not isinstance(committee, dict): raise ValueError("committee record must be an object")
+            _source(committee.get("uri"), "committee.uri")
+            normalize_committee_roles(committee.get("role", []))
+            committee_range = committee.get("memberDateRange")
+            if not isinstance(committee_range, dict): raise ValueError("committee memberDateRange must be an object")
+            committee_start = datetime_literal(committee_range.get("start"))
+            if (committee_range.get("end") is not None
+                    and datetime_literal(committee_range["end"]).toPython() < committee_start.toPython()):
+                raise ValueError("reverse committee membership date range")
         offices = record.get("offices", [])
         if not isinstance(offices, list): raise ValueError("membership.offices must be an array")
         for office_index, wrapped_office in enumerate(offices):

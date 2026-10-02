@@ -9,6 +9,7 @@ from urllib.parse import unquote, urlsplit
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import FOAF, RDF, SKOS, XSD
 
+from ..committee_roles import normalize_committee_roles
 from ..office_observations import parse_office_observation
 from .common import MEMBERS, OIR, datetime_literal, iri, string
 
@@ -145,18 +146,23 @@ def _committee(graph: Graph, member: URIRef, membership: URIRef, record: object,
     if not isinstance(record, dict):
         raise ValueError("committee record must be an object")
     committee = _source_iri(record.get("uri"), label="committee.uri")
-    roles = record.get("role", [])
-    if not isinstance(roles, list):
-        raise ValueError("committee role must be an array")
+    roles, _role_date_range = normalize_committee_roles(record.get("role", []))
     identity = {"membership": str(membership), "committee": str(committee), "memberDateRange": record.get("memberDateRange"), "role": sorted(roles)}
     subject = _generated(membership, "committee-membership", identity)
     graph.add((subject, RDF.type, MEMBERS.CommitteeMembership)); graph.add((member, MEMBERS.hasMembersMembership, subject))
     graph.add((subject, MEMBERS.isCommitteeMembershipOf, committee)); _date_range(graph, subject, "member-date-range", record.get("memberDateRange"))
     for role in roles:
-        if role not in COMMITTEE_ROLES:
-            raise ValueError(f"unsupported committee role: {role!r}")
         role_iri = _generated(subject, "role", {"role": role})
         graph.add((role_iri, RDF.type, COMMITTEE_ROLES[role])); graph.add((subject, MEMBERS.hasCommitteeRole, role_iri))
+    if _role_date_range is not None:
+        for key in ("start", "end"):
+            if _role_date_range.get(key) is not None:
+                exclusions.append({
+                    "path": f"{context}.role.dateRange.{key}",
+                    "context": str(committee),
+                    "reason": "Committee special-role tenure dates have no property in the current Member mapping; only the committee membership tenure is represented.",
+                    "category": "future_work",
+                })
     for key, reason in FUTURE_COMMITTEE_FIELDS.items():
         if key in record and record[key] not in (None, [], ""):
             exclusions.append({"path": f"{context}.{key}", "context": str(committee), "reason": reason, "category": "future_work"})
@@ -227,7 +233,12 @@ def transform_member_with_report(wrapper: dict) -> tuple[Graph, list[dict]]:
             if not isinstance(representation, dict) or not isinstance(representation.get("represent"), dict): raise ValueError("representation wrapper must contain a represent object")
             graph.add((membership, MEMBERS.isRepresentativeFrom, _reference_representation(representation["represent"], term, code)))
         for party in record.get("parties", []): _party(graph, subject, membership, party)
-        for committee in record.get("committees", []): _committee(graph, subject, membership, committee, exclusions, "member.memberships[].membership.committees[]")
+        committees = record.get("committees", [])
+        if not isinstance(committees, list):
+            raise ValueError("membership.committees must be an array")
+        for committee in committees:
+            _committee(graph, subject, membership, committee, exclusions,
+                       "member.memberships[].membership.committees[]")
         offices = record.get("offices", [])
         if not isinstance(offices, list):
             raise ValueError("membership.offices must be an array")

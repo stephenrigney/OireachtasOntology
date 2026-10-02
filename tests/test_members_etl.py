@@ -130,6 +130,143 @@ def test_member_synthetic_roles_and_office_uri_are_member_terms():
     validate_member(changed, graph)
 
 
+def _garret_ahearn_role_case() -> dict:
+    """Minimal Member record retaining Garret's captured committee role form.
+
+    Source: Members API skip=0, result 4, pointer
+    /results/4/member/memberships/0/membership/committees/1/role.
+    """
+    member_code = "Garret-Ahearn.S.2020-03-30"
+    member_uri = f"https://data.oireachtas.ie/ie/oireachtas/member/id/{member_code}"
+    membership_uri = f"{member_uri}/house/seanad/26"
+    committee_uri = (
+        "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/"
+        "joint_committee_on_enterprise_trade_and_employment")
+    return {"member": {
+        "memberCode": member_code,
+        "uri": member_uri,
+        "image": False,
+        "memberships": [{"membership": {
+            "uri": membership_uri,
+            "house": {"houseCode": "seanad", "houseNo": "26",
+                      "uri": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/26"},
+            "dateRange": {"start": "2020-03-30", "end": "2025-01-29"},
+            "committees": [
+                {"uri": "https://data.oireachtas.ie/ie/oireachtas/committee/seanad/26/"
+                         "committee_of_selection",
+                 "memberDateRange": {"start": "2020-09-25 00:00:00+00:00",
+                                     "end": "2024-11-08 00:00:00+00:00"},
+                 "role": []},
+                {"committeeCode": "BUJ",
+                 "memberDateRange": {"start": "2020-09-25 00:00:00+00:00",
+                                     "end": "2024-11-08 00:00:00+00:00"},
+                 "uri": committee_uri,
+                 "role": {"title": "Leas-Chathaoirleach",
+                          "dateRange": {"start": "2023-05-03 00:00:00+00:00",
+                                        "end": None}}},
+            ],
+            "parties": [], "represents": [], "offices": [],
+        }}],
+    }}
+
+
+def test_garret_ahearn_committee_role_object_maps_without_changing_existing_rdf_semantics():
+    from oireachtas_etl.validation.members import validate_member_source
+
+    changed = _garret_ahearn_role_case()
+    source_before = json.dumps(changed, ensure_ascii=False, sort_keys=True)
+    graph, report = transform_member_with_report(changed)
+    assert json.dumps(changed, ensure_ascii=False, sort_keys=True) == source_before
+    assert validate_member_source(changed) == report
+    assert validate_member(changed, graph) == report
+
+    member = URIRef(changed["member"]["uri"])
+    committee_memberships = set(graph.subjects(RDF.type, MEMBERS.CommitteeMembership))
+    assert len(committee_memberships) == 2
+    assert all((member, MEMBERS.hasMembersMembership, cm) in graph
+               for cm in committee_memberships)
+    deputy_roles = set(graph.subjects(RDF.type, MEMBERS.DeputyChair))
+    assert len(deputy_roles) == 1
+    assert (next(cm for cm in committee_memberships
+                 if (cm, MEMBERS.isCommitteeMembershipOf,
+                     URIRef("https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/"
+                            "joint_committee_on_enterprise_trade_and_employment")) in graph),
+            MEMBERS.hasCommitteeRole, next(iter(deputy_roles))) in graph
+    assert not list(graph.subjects(RDF.type, MEMBERS.Chair))
+
+    # The role object's source interval is validated and reported, not silently
+    # conflated with the committee membership interval or emitted as new RDF.
+    role_date_omissions = [item for item in report
+                           if item["path"].endswith("role.dateRange.start")]
+    assert len(role_date_omissions) == 1
+    assert role_date_omissions[0]["category"] == "future_work"
+    assert "no property in the current Member mapping" in role_date_omissions[0]["reason"]
+
+    # Equivalent mapped array input yields exactly the same RDF as the object
+    # title, keeping existing deterministic committee-role semantics intact.
+    array_form = json.loads(json.dumps(changed))
+    array_form["member"]["memberships"][0]["membership"]["committees"][1]["role"] = ["Deputy Chair"]
+    array_graph, _ = transform_member_with_report(array_form)
+    assert set(array_graph) == set(graph)
+
+
+@pytest.mark.parametrize(("title", "expected_role"), [
+    ("Cathaoirleach", MEMBERS.Chair),
+    ("Leas-Chathaoirleach", MEMBERS.DeputyChair),
+])
+def test_committee_role_object_maps_each_observed_irish_title(title, expected_role):
+    from oireachtas_etl.validation.members import validate_member_source
+
+    changed = _garret_ahearn_role_case()
+    committee = changed["member"]["memberships"][0]["membership"]["committees"][1]
+    committee["role"]["title"] = title
+    graph, _ = transform_member_with_report(changed)
+    validate_member_source(changed)
+    validate_member(changed, graph)
+    assert len(list(graph.subjects(RDF.type, expected_role))) == 1
+
+
+def test_existing_empty_committee_role_array_remains_no_special_role():
+    graph, _ = transform_member_with_report(WRAPPER)
+    assert not list(graph.subjects(RDF.type, MEMBERS.Chair))
+    assert not list(graph.subjects(RDF.type, MEMBERS.DeputyChair))
+
+
+@pytest.mark.parametrize(("role", "message"), [
+    ("Chair", "committee role must be an array or a supported role object"),
+    ({"title": "Unknown role", "dateRange": {"start": "2024-01-01", "end": None}},
+     "unsupported committee role title"),
+    ({"title": "Leas-Chathaoirleach", "dateRange": {"start": "2025-01-01", "end": "2024-01-01"}},
+     "reverse committee role date range"),
+    ({"title": "Leas-Chathaoirleach", "dateRange": {"start": "2024-01-01", "end": None},
+      "unexpected": True}, "only title and dateRange"),
+])
+def test_unsafe_committee_role_shapes_fail_closed(role, message):
+    from oireachtas_etl.validation.members import validate_member_source
+
+    changed = _garret_ahearn_role_case()
+    changed["member"]["memberships"][0]["membership"]["committees"][1]["role"] = role
+    with pytest.raises(ValueError, match=message):
+        validate_member_source(changed)
+    with pytest.raises(ValueError, match=message):
+        transform_member_with_report(changed)
+
+
+@pytest.mark.parametrize(("committee_value", "message"), [
+    ("not-an-array", "membership.committees must be an array"),
+    (["not-an-object"], "committee record must be an object"),
+])
+def test_unsafe_committee_containers_remain_fail_closed(committee_value, message):
+    from oireachtas_etl.validation.members import validate_member_source
+
+    changed = _garret_ahearn_role_case()
+    changed["member"]["memberships"][0]["membership"]["committees"] = committee_value
+    with pytest.raises(ValueError, match=message):
+        validate_member_source(changed)
+    with pytest.raises(ValueError, match=message):
+        transform_member_with_report(changed)
+
+
 def test_member_hash_known_nested_arrays_are_unordered_but_unknown_arrays_are_not():
     changed = copied()
     membership = changed["member"]["memberships"][0]["membership"]
