@@ -61,14 +61,28 @@ def sample_registry() -> dict:
     }
 
 
-def test_bootstrap_registry_is_intentionally_empty_and_independently_valid():
+def test_initial_reviewed_registry_is_independently_valid_and_minimal():
     registry = json.loads(REGISTRY_FILE.read_text(encoding="utf-8"))
     units = transform_administrative_units(registry)
     offices = transform_offices(registry)
     validate_administrative_units(registry, units)
     validate_offices(registry, offices)
-    assert len(units) == 0
-    assert len(offices) == 0
+
+    assert [unit["key"] for unit in registry["administrative_units"]] == ["u-000001"]
+    assert [office["key"] for office in registry["offices"]] == [
+        "o-000001", "o-000002", "o-000003"
+    ]
+    finance_unit = administrative_unit_iri("u-000001")
+    taoiseach = office_iri("o-000001")
+    tanaiste = office_iri("o-000002")
+    finance = office_iri("o-000003")
+    assert len(list(units.triples((None, RDF.type, MEMBERS.AdministrativeUnit)))) == 1
+    assert (taoiseach, MEMBERS.hasRoleType, MEMBERS.TaoiseachOfficeType) in offices
+    assert (tanaiste, MEMBERS.hasRoleType, MEMBERS.TanaisteOfficeType) in offices
+    assert (finance, MEMBERS.hasRoleType, MEMBERS.MinisterOfficeType) in offices
+    assert (finance, MEMBERS.headsAdministrativeUnit, finance_unit) in offices
+    assert not list(offices.triples((taoiseach, MEMBERS.headsAdministrativeUnit, None)))
+    assert not list(offices.triples((tanaiste, MEMBERS.headsAdministrativeUnit, None)))
 
 
 def test_transformers_emit_only_registry_identities_and_unit_relationships():

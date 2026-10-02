@@ -67,25 +67,45 @@ endpoints, persists publication state before graph replacement, and verifies
 the exact whole graph after PUT. Registry graphs do not contain Member
 holdings, external identity links or Bill-local links.
 
-## Bootstrap coverage limitation
+## Initial reviewed bootstrap and coverage limit
 
-The registry is intentionally initialized with no named offices or
-administrative units. The repository's Member fixture contains two
-Minister-of-State observations with null source office URIs. Their labels each
-name more than one Department, and the fixture alone does not establish which
-local enduring office identities or unit identities those observations
-represent. The label wording cannot be used to split appointments or mint
-identities under the approved contract. There is therefore no positive reviewed
-identity evidence in the current fixture from which to bootstrap a local office
-or unit. Both reference graphs are valid empty graphs until reviewed evidence
-supports specific entries.
+Tranche 1 and Tranche 2 are implemented. The intentionally small initial
+registry contains these locally reviewed identities:
 
-This is a coverage limitation, not a transformation failure. The four primary
-Cabinet office-type concepts and the Ceann Comhairle, Cathaoirleach and
-Attorney General office-type concepts exist in the ontology, but no particular
-NamedOffice instance is inferred from a category. The active Member office
-mapping and Member transformer remain unchanged until the approved later
-Member-migration tranche.
+| Key | Identity | Identity evidence |
+|---|---|---|
+| `u-000001` | Department of Finance | Section 1(ii) of the [Ministers and Secretaries Act 1924](https://www.irishstatutebook.ie/eli/1924/act/16/section/1/enacted/en/html) specifies the named Department and its head; the [current revised consolidation](https://revisedacts.lawreform.ie/eli/1924/act/16/revised/en/html) retains the provision. |
+| `o-000001` | Taoiseach (`TaoiseachOfficeType`) | The [Constitution](https://www.irishstatutebook.ie/eli/cons/en/html), in force from 29 December 1937, defines appointment of the Taoiseach and the Government's composition (Articles 13 and 28). |
+| `o-000002` | Tánaiste (`TanaisteOfficeType`) | Constitution Article 28.6.1 defines the distinct office of Tánaiste. |
+| `o-000003` | Minister for Finance (`MinisterOfficeType`) | Ministers and Secretaries Act 1924 section 1(ii) names the Department's head as Minister for Finance; the current revised text preserves that named office and Department. |
+
+The Minister for Finance office's `headsAdministrativeUnit` relationship to
+`u-000001` follows that same explicit statutory provision. The reviewed aliases
+are limited by validity dates in the registry: constitutional titles from
+29 December 1937, and the Minister for Finance source label only from the first
+accepted bootstrap observation on 27 June 2020. These are candidate-matching
+limits, not RDF establishment/abolition dates or claims about earlier
+historical observations.
+
+Three exact observations from the official Members API are accepted by explicit
+review decisions: Micheál Martin as Taoiseach (Dáil 34, from 2025-01-23), Mary
+Harney as Tánaiste (Dáil 29, 2002-06-06–2006-09-13), and Paschal Donohoe as
+Minister for Finance (Dáil 33, 2020-06-27–2022-12-17). The decisions record
+response hashes, JSON pointers, fingerprints and primary legal evidence in
+`reconciliation/office-decisions.json`.
+
+The repository's Member fixture still contains two explicit unresolved
+Minister-of-State observations with null source office URIs. Each label names
+two Departments; the fixture does not positively establish local unit identity,
+department-level Minister-of-State office identity, or (for the later wording)
+Department continuity. The observations are not split and no Minister-of-State
+office or unit is minted from their labels or dates. This is a deliberate
+coverage limit, not a transformation failure.
+
+The primary Cabinet office-type concepts and the Ceann Comhairle,
+Cathaoirleach and Attorney General office-type concepts exist in the ontology,
+but no instance is inferred from a category. The active Member office mapping
+and Member transformer remain unchanged until Tranche 3.
 
 The deterministic ETL policy table is explicitly versioned as
 `OFFICE_TYPE_POLICY_VERSION = 1`: Taoiseach, Tánaiste and Minister office types

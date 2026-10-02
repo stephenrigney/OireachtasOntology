@@ -1,4 +1,60 @@
 {
   "version": 1,
-  "decisions": {}
+  "decisions": {
+    "occ-9862f2b2e99387a510d0c032f9d072d794408121d9135b9b132372ccc87c2aef": {
+      "status": "accepted",
+      "office_iris": [
+        "https://data.oireachtas.ie/office/o-000001"
+      ],
+      "evidence": [
+        "https://api.oireachtas.ie/v1/members?skip=1100&limit=100 (retrieved 2026-10-02; response SHA-256 aa591dff3ae205238f5a2731e9922f6ec08f42721f159795b073d9e55918b60c; JSON pointer /results/98/member/memberships/8/membership/offices/0/office)",
+        "https://www.irishstatutebook.ie/eli/cons/en/html (Articles 13 and 28)"
+      ],
+      "reason": "The official Members API reports Micheál Martin's Dáil 34 office as Taoiseach from 2025-01-23 with no end date. The Constitution, in force since 1937-12-29, establishes the distinct Taoiseach office. This reviewed observation resolves to the existing constitutional office identity; it does not mint an identity from the holder, label, or dates.",
+      "observation_fingerprint": "e80638ebd208deb91795faddaab8522850d73336f5536ea5eac5ab336fd8e778"
+    },
+    "occ-3ea3d774a00d050a5f1dc9aac2d1f4266febe8d35aee478c9d37c28a8b8016b3": {
+      "status": "accepted",
+      "office_iris": [
+        "https://data.oireachtas.ie/office/o-000002"
+      ],
+      "evidence": [
+        "https://api.oireachtas.ie/v1/members?skip=800&limit=100 (retrieved 2026-10-02; response SHA-256 935d6d18c2879d48ec6921086a86563ec07f3c468623732997b92c60e49ddb26; JSON pointer /results/30/member/memberships/1/membership/offices/1/office)",
+        "https://www.irishstatutebook.ie/eli/cons/en/html (Article 28.6.1)"
+      ],
+      "reason": "The official Members API reports Mary Harney's Dáil 29 office as Tánaiste from 2002-06-06 through 2006-09-13, within the containing Dáil membership interval. Article 28.6.1 of the Constitution defines the distinct office of Tánaiste. This reviewed observation resolves to the existing constitutional office identity, independently of the holder and appointment dates.",
+      "observation_fingerprint": "7ff5229653b6c49ca5702c06887cc0770451beab447cd0de61b40f5459b65a99"
+    },
+    "occ-a717dc7316547e0d0598ee2878c4fa4af84039f3ea4e3f87d8d273854d88ca37": {
+      "status": "accepted",
+      "office_iris": [
+        "https://data.oireachtas.ie/office/o-000003"
+      ],
+      "evidence": [
+        "https://api.oireachtas.ie/v1/members?skip=500&limit=100 (retrieved 2026-10-02; response SHA-256 4b9f8031c4200bf7bfcbd2b3868b663a29693f0edee37b50fe8e9ddefa7cfbaa; JSON pointer /results/71/member/memberships/3/membership/offices/0/office)",
+        "https://www.irishstatutebook.ie/eli/1924/act/16/section/1/enacted/en/html (section 1(ii))",
+        "https://revisedacts.lawreform.ie/eli/1924/act/16/revised/en/html (current revised section 1(ii))"
+      ],
+      "reason": "The official Members API reports Paschal Donohoe's Dáil 33 office as Minister for Finance from 2020-06-27 through 2022-12-17. Section 1(ii) of the 1924 Act establishes the Department of Finance and names its head as Minister for Finance; the current revised Act retains that provision. The source label, office type, and reviewed Department headship agree with registered office o-000003.",
+      "observation_fingerprint": "bfb9dd3eb808c5615d9b3d3d082d54584366b01e4fda4cdf60e99fd74c34d3dc"
+    },
+    "occ-1415c765740e93233dd095a5b7e045f768c4b0d4056eca60b9362dced2d12323": {
+      "status": "unresolved",
+      "office_iris": [],
+      "evidence": [
+        "data/api_examples/member.json#/member/memberships/3/membership/offices/0/office"
+      ],
+      "reason": "The single source report names two Departments. The repository fixture does not establish reviewed local AdministrativeUnit identities or which enduring department-level Minister-of-State office identity or identities apply. Do not split or mint offices from the label alone; retain this observation as unresolved.",
+      "observation_fingerprint": "afedf8b7a0a8c3d7bfb89e40e5a8316ffd0eb3c3b55192e55d468d453065d8ab"
+    },
+    "occ-5b4a965247097290313718d11aecbaf72873c892e8545d492f877c3a3ee62468": {
+      "status": "unresolved",
+      "office_iris": [],
+      "evidence": [
+        "data/api_examples/member.json#/member/memberships/3/membership/offices/1/office"
+      ],
+      "reason": "This source report also names two Departments, and the later Department wording does not prove the identity or continuity of a local AdministrativeUnit or department-level Minister-of-State office. The source label and dates alone are insufficient; do not infer succession or split the observation.",
+      "observation_fingerprint": "03b455531fb060b8ae4ac7eed06adae3110009f4f6b976b14c984de851fbaed5"
+    }
+  }
 }

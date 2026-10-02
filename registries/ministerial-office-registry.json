@@ -1,5 +1,83 @@
 {
   "version": 1,
-  "administrative_units": [],
-  "offices": []
+  "administrative_units": [
+    {
+      "key": "u-000001",
+      "label_en": "Department of Finance",
+      "aliases": [],
+      "reviewer_notes": "Section 1(ii) of the Ministers and Secretaries Act 1924 provides the statutory basis for the Department of Finance and names the Minister for Finance as its head. The Law Reform Commission's current revised consolidation retains section 1(ii), with later function transfers noted separately. This supports the local unit identity and evidenced headship relationship; no identity is inferred from a label or external identifier.",
+      "evidence": [
+        "https://www.irishstatutebook.ie/eli/1924/act/16/section/1/enacted/en/html",
+        "https://revisedacts.lawreform.ie/eli/1924/act/16/revised/en/html"
+      ]
+    }
+  ],
+  "offices": [
+    {
+      "key": "o-000001",
+      "label_en": "Taoiseach",
+      "aliases": [
+        {
+          "language": "en",
+          "label": "Taoiseach",
+          "validity": {
+            "start": "1937-12-29",
+            "end": null
+          }
+        }
+      ],
+      "office_type": "TaoiseachOfficeType",
+      "unit_relationships": [],
+      "reviewer_notes": "The Constitution in force from 29 December 1937 defines the Taoiseach as a distinct constitutional office: the President appoints the Taoiseach on Dáil nomination (Article 13), and the Government consists of the Taoiseach, Tánaiste and other members (Article 28). The reviewed alias is restricted to the constitutional period; no earlier office or succession is inferred.",
+      "evidence": [
+        "https://www.irishstatutebook.ie/eli/cons/en/html"
+      ]
+    },
+    {
+      "key": "o-000002",
+      "label_en": "Tánaiste",
+      "aliases": [
+        {
+          "language": "en",
+          "label": "Tánaiste",
+          "validity": {
+            "start": "1937-12-29",
+            "end": null
+          }
+        }
+      ],
+      "office_type": "TanaisteOfficeType",
+      "unit_relationships": [],
+      "reviewer_notes": "Article 28.6.1 of the Constitution defines the distinct office of Tánaiste as the Deputy Prime Minister nominated by the Taoiseach from among the members of Government. The Constitution came into operation on 29 December 1937; the reviewed alias is limited to that constitutional period.",
+      "evidence": [
+        "https://www.irishstatutebook.ie/eli/cons/en/html"
+      ]
+    },
+    {
+      "key": "o-000003",
+      "label_en": "Minister for Finance",
+      "aliases": [
+        {
+          "language": "en",
+          "label": "Minister for Finance",
+          "validity": {
+            "start": "2020-06-27",
+            "end": null
+          }
+        }
+      ],
+      "office_type": "MinisterOfficeType",
+      "unit_relationships": [
+        {
+          "relationship": "headsAdministrativeUnit",
+          "unit_key": "u-000001"
+        }
+      ],
+      "reviewer_notes": "Section 1(ii) of the Ministers and Secretaries Act 1924 specifies the Department of Finance and names its head as the Minister for Finance. The current revised consolidation retains this provision; later transfers of particular functions do not by themselves establish a different office or Department. For this narrow bootstrap, the source-label alias is scoped only from its first accepted source observation, 2020-06-27; that candidate-matching limit is not an office establishment date.",
+      "evidence": [
+        "https://www.irishstatutebook.ie/eli/1924/act/16/section/1/enacted/en/html",
+        "https://revisedacts.lawreform.ie/eli/1924/act/16/revised/en/html"
+      ]
+    }
+  ]
 }

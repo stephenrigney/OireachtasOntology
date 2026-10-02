@@ -315,6 +315,15 @@ def test_last_accepted_resolution_survives_correction_absence_and_reappearance_t
         assert updated["acceptance_evidence"] == {"kind": "review-decision", "decision": rereview}
         assert updated["review_hash"] == new_review_hash
         assert updated != accepted
+        reviewed_resolution = updated
+
+        normal_rerun = store.reconcile([corrected], registry, {key: rereview}, new_review_hash)
+        rerun_record = normal_rerun["records"][0]
+        assert rerun_record["status"] == "accepted"
+        assert rerun_record["occurrence_key"] == key
+        assert rerun_record["office_iris"] == [target]
+        assert rerun_record["last_accepted_resolution"]["snapshot"] == corrected["snapshot"]
+        rerun_resolution = rerun_record["last_accepted_resolution"]
 
         # A rejection is a current review outcome, not a revocation operation.
         rejected = {"status": "rejected", "office_iris": [],
@@ -323,15 +332,16 @@ def test_last_accepted_resolution_survives_correction_absence_and_reappearance_t
         rejected_result = store.reconcile([corrected], registry, {key: rejected},
                                           hashlib.sha256(b"rejection decision").hexdigest())
         assert rejected_result["records"][0]["status"] == "rejected"
-        assert rejected_result["records"][0]["last_accepted_resolution"] == updated
+        assert rejected_result["records"][0]["last_accepted_resolution"] == rerun_resolution
 
         attempts = store.attempts(key)
         assert attempts[0]["last_accepted_resolution"] == accepted
         assert attempts[1]["last_accepted_resolution"] == accepted
         assert attempts[2]["last_accepted_resolution"] == accepted
         assert attempts[3]["last_accepted_resolution"] == accepted
-        assert attempts[4]["last_accepted_resolution"] == updated
-        assert attempts[5]["last_accepted_resolution"] == updated
+        assert attempts[4]["last_accepted_resolution"] == reviewed_resolution
+        assert attempts[5]["last_accepted_resolution"] == rerun_resolution
+        assert attempts[6]["last_accepted_resolution"] == rerun_resolution
 
 
 def test_reconcile_failure_rolls_back_occurrence_and_attempt_acceptance_evidence(tmp_path, monkeypatch):
@@ -694,3 +704,33 @@ def test_failed_source_scan_keeps_raw_evidence_but_does_not_partially_update_led
         assert store.occurrences() == before_rows
         assert store.attempts() == before_attempts
     assert len(list(raw_root.glob("members/*/run-*/skip-000000.json"))) == 2
+
+
+def test_reviewed_bootstrap_decisions_bind_accepted_targets_and_keep_fixture_ambiguities_unresolved():
+    root = Path(__file__).resolve().parents[1]
+    registry = json.loads((root / "registries/ministerial-office-registry.json").read_text(
+        encoding="utf-8"))
+    decisions, _review_hash = load_office_review(root / "reconciliation/office-decisions.json",
+                                                  registry)
+    assert sum(item["status"] == "accepted" for item in decisions.values()) == 3
+    assert sum(item["status"] == "unresolved" for item in decisions.values()) == 2
+    registered = {str(office_iri(item["key"])) for item in registry["offices"]}
+    assert all(target in registered for decision in decisions.values()
+               if decision["status"] == "accepted" for target in decision["office_iris"])
+
+    fixture_path = root / "data/api_examples/member.json"
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+    fixture_hash = hashlib.sha256(fixture_path.read_bytes()).hexdigest()
+    observations = extract_office_observations([
+        (fixture, {"path": "api_examples/member.json", "sha256": fixture_hash,
+                  "json_pointer": ""})
+    ])
+    for observation in observations:
+        key = "occ-" + observation["identity_key"]
+        decision = decisions[key]
+        candidates = generate_office_candidates(observation, registry)
+        assert decision["status"] == "unresolved"
+        assert decision["office_iris"] == []
+        assert decision["observation_fingerprint"] == observation["fingerprint"]
+        assert candidates["candidate_iris"] == []
+        assert candidates["multi_department"] is True
