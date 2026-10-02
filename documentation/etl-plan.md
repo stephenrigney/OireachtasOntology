@@ -1492,35 +1492,94 @@ Phase 6 is complete when:
 
 Extend the graph beyond the initial core Houses, Member and legislation data once the ETL architecture is proven.
 
-Candidate vertical slices:
+Phase 7 proceeds as separate vertical slices:
 
-- debates;
-- votes;
-- questions; and
-- ministerial office/tenure identities, including reconciliation of Phase 4 textual sponsor-role labels.
+- Debates, using Akoma Ntoso XML and owning the parliamentary questions and
+  divisions/votes contained in each debate record; and
+- ministerial office/tenure identities, including reconciliation of Phase 4
+  textual sponsor-role labels.
 
-These should not block completion of the core ETL system.
+Questions and votes are therefore not separate publication owners from the
+Debates slice.
 
-### Backlog
+These slices should not block completion of the core ETL system.
 
-- [ ] Review ontology coverage for Debates.
-- [ ] Review ontology coverage for Votes.
-- [ ] Review ontology coverage for Questions.
-- [ ] Define authoritative ministerial office/tenure identities and reconcile unresolved Phase 4 sponsor-role labels without changing their preserved source evidence.
-- [ ] Create or update mapping specifications.
-- [ ] Identify resource ownership.
-- [ ] Define graph granularity.
-- [ ] Define incremental extraction strategy.
-- [ ] Implement transformer.
-- [ ] Add SHACL validation.
-- [ ] Add competency queries.
-- [ ] Add incremental loading.
+### Debates vertical slice
 
-Each endpoint should proceed as a separate vertical slice rather than being implemented simultaneously.
+The approved Debates design is recorded in
+`documentation/phase-7-debates.md`. The existing ontology-specific baseline
+remains `documentation/debates_ontology_outline.md` and
+`ontology/debates.owl.ttl`.
+
+**Status:** design complete; implementation not started.
+
+Settled boundaries include:
+
+- intended source scope is Dáil, Seanad, committees and written answers,
+  subject to an implementation-time volume/resource gate that may restrict the
+  initial production scope to Bill debates;
+- AKN XML is authoritative source evidence;
+- Debates owns its questions and divisions/votes;
+- transcript text is not copied into RDF; future topic/keyword extraction is
+  deferred;
+- deterministic resource identity prefers stable AKN identifiers/eIds with a
+  documented URI-safe normalization/encoding rule rather than copying awkward
+  XML syntax such as raw ampersands into public IRIs;
+- XML remains authoritative for complete document order, with only lightweight
+  integer source ordinals represented where graph ordering is useful;
+- unresolved cross-resource references are preserved/reported without
+  inventing placeholder semantic entities;
+- one replaceable authoritative named graph is used per debate record/sitting;
+  and
+- Phase 7 supplies source identity, hashing, replay and graph-replacement
+  mechanics, while Phase 6 owns production scan cadence, reconciliation
+  windows, scheduling and other operational refresh policy.
+
+#### Debates implementation tranches
+
+1. **Source contract, mapping and fixtures** — audit representative source
+   types, measure the corpus/resource gate, define the mapping and settle exact
+   identifier/order/unresolved-reference representations.
+2. **Core debate transformation** — implement records/sittings, sections,
+   speeches, summaries, questions, divisions/votes and source order without
+   transcript text.
+3. **Cross-dataset integration and validation** — resolve existing Member,
+   House/HouseTerm/committee, ministerial and legislative resources; add SHACL,
+   quality checks, competency queries and graph-boundary tests.
+4. **Source ingestion, state and publication mechanics** — preserve AKN input,
+   persist source identity/hashes, add replay/idempotency and per-record graph
+   replacement through the normal ETL path. Production scanning policy remains
+   Phase 6 work.
+
+#### Debates backlog
+
+- [x] Review the existing Debates ontology baseline, including question and
+  division/vote coverage.
+- [x] Define authoritative source, scope and RDF ownership.
+- [x] Define graph granularity and cross-resource resolution policy.
+- [x] Define the Phase 6/Phase 7 refresh responsibility boundary.
+- [ ] Create or update the Debates mapping specification.
+- [ ] Complete the representative-corpus/resource audit and record the initial
+  full-corpus versus Bill-debates-only implementation scope.
+- [ ] Implement the four Debates tranches above.
+- [ ] Add Debates SHACL/quality validation and competency queries.
+- [ ] Add deterministic graph replacement and replay/idempotency tests.
+
+### Other Phase 7 work
+
+- [ ] Continue the separately designed ministerial office/tenure vertical
+  slice, including reconciliation of Phase 4 textual sponsor-role labels
+  without changing preserved source evidence.
+
+Each vertical slice should follow the same extract, transform, validate,
+publish and reconcile model as the core datasets.
 
 ### Exit criteria
 
-Each additional endpoint follows the same extract, transform, validate, publish and reconcile model as the core datasets.
+Each implemented Phase 7 vertical slice has explicit RDF ownership,
+deterministic identifiers, validation, stable graph replacement and competency
+queries, and can use Phase 6 production operations without embedding
+environment-specific scheduling policy in its transformer.
 
 # 5. Cross-cutting backlog
 
