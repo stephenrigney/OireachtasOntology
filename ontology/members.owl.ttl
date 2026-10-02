@@ -104,6 +104,64 @@ eli-dl:ParliamentaryTerm a owl:Class .
     rdfs:domain :CabinetMembership ;
     rdfs:range :CabinetMember .
 
+:hasRoleType a owl:ObjectProperty ;
+    rdfs:domain :NamedOffice ;
+    rdfs:range :OfficeType ;
+    skos:prefLabel "has office type"@en ;
+    rdfs:comment "Links a NamedOffice to its controlled OfficeType concept. Despite the property name, the object is a SKOS concept, not an OWL role class or role individual."@en .
+
+:heldOffice a owl:ObjectProperty ;
+    rdfs:domain :OfficeHolding ;
+    rdfs:range :NamedOffice ;
+    rdfs:comment "Links an OfficeHolding record to the one enduring NamedOffice it records. Exactly one target is checked during ETL validation."@en .
+
+:officeHolder a owl:ObjectProperty ;
+    rdfs:domain :OfficeHolding ;
+    rdfs:range foaf:Person ;
+    owl:inverseOf :hasOfficeHolding ;
+    rdfs:comment "Links an OfficeHolding record to its person holder. Member ETL emits both this and the inverse hasOfficeHolding assertion explicitly."@en .
+
+:hasOfficeHolding a owl:ObjectProperty ;
+    rdfs:domain foaf:Person ;
+    rdfs:range :OfficeHolding ;
+    owl:inverseOf :officeHolder .
+
+:headsAdministrativeUnit a owl:ObjectProperty ;
+    rdfs:domain :NamedOffice ;
+    rdfs:range :AdministrativeUnit ;
+    rdfs:comment "Links a NamedOffice to an AdministrativeUnit it heads where that departmental headship is evidenced."@en .
+
+:assignedToAdministrativeUnit a owl:ObjectProperty ;
+    rdfs:domain :NamedOffice ;
+    rdfs:range :AdministrativeUnit ;
+    rdfs:comment "Links a Minister-of-State NamedOffice to an AdministrativeUnit to which it is assigned where that relationship is evidenced. This is not a subproperty of headship."@en .
+
+:predecessorOffice a owl:ObjectProperty ;
+    rdfs:domain :NamedOffice ;
+    rdfs:range :NamedOffice ;
+    owl:inverseOf :successorOffice ;
+    rdfs:comment "Links an office to a positively reviewed predecessor identity. No succession is inferred from chronology, labels, functions, or unit succession."@en .
+
+:successorOffice a owl:ObjectProperty ;
+    rdfs:domain :NamedOffice ;
+    rdfs:range :NamedOffice ;
+    owl:inverseOf :predecessorOffice .
+
+:reconciledSponsorOffice a owl:ObjectProperty ;
+    rdfs:domain eli-dl:Participation ;
+    rdfs:range :NamedOffice ;
+    rdfs:comment "Bill-local reconciliation link from a source Participation to a uniquely justified NamedOffice. It is owned by the separate per-Bill local reconciliation graph."@en .
+
+:reconciledSponsorHolding a owl:ObjectProperty ;
+    rdfs:domain eli-dl:Participation ;
+    rdfs:range :OfficeHolding ;
+    rdfs:comment "Bill-local reconciliation link from a source Participation to a positively evidenced, time-applicable OfficeHolding. It is owned by the separate per-Bill local reconciliation graph."@en .
+
+:supportedByOfficeHolding a owl:ObjectProperty ;
+    rdfs:domain :CabinetMembership ;
+    rdfs:range :OfficeHolding ;
+    rdfs:comment "Links a derived CabinetMembership episode to a qualifying OfficeHolding that supports it. Individual support need not span the entire merged Cabinet period."@en .
+
 :isCabinetMembershipOf a owl:ObjectProperty ;
     rdfs:domain :CabinetMembership ;
     rdfs:range agents:Government ;
@@ -331,37 +389,84 @@ org:Membership rdfs:subClassOf [ a owl:Restriction ;
     rdfs:subClassOf org:Role ;
     owl:disjointWith :CabinetMember ;
     skos:prefLabel "Minister of State"@en ;
-    rdfs:comment "The role of Minister of State (formerly Parliamentary Secretary) appointed under the Ministers and Secretaries Acts. An executive role within a Government Department; not a member of the formal constitutional Government (agents:Government). Disjoint with :CabinetMember — a holder cannot simultaneously hold :TaoiseachRole, :TanaisteRole or :MinisterRole. The holder must be an :OireachtasMember. Persons holding this role are members of :GovernmentExecutive alongside :CabinetMember role-holders."@en .
+    rdfs:comment "The generic OWL role class for a Minister of State, distinct from a particular enduring NamedOffice. Its disjointness with :CabinetMember applies to role individuals; it does not prevent one person from holding distinct roles in both classes. The holder must be an :OireachtasMember, and such persons are part of the wider :GovernmentExecutive."@en .
 
 :MinisterOfStateMembership a owl:Class ;
     rdfs:subClassOf :MembersMembership ;
-    rdfs:comment "A record of an agents:Member holding a :MinisterOfStateRole during a specific period. Analogous to :CabinetMembership for the formal Government. Linked to the specific role via :hasMinisterOfStateRole."@en .
+    owl:deprecated true ;
+    rdfs:comment "Deprecated legacy class retained only for migration compatibility. Do not use for new Member office observations; use :OfficeHolding linked to an enduring :NamedOffice."@en .
 
 :hasMinisterOfStateRole a owl:ObjectProperty ;
     rdfs:domain :MinisterOfStateMembership ;
     rdfs:range :MinisterOfStateRole ;
-    rdfs:comment "Links a :MinisterOfStateMembership record to the specific :MinisterOfStateRole held. Analogous to :hasCabinetRole for :CabinetMembership."@en .
+    owl:deprecated true ;
+    rdfs:comment "Deprecated legacy property retained only for migration compatibility. Do not use for new Member office observations."@en .
 
 :officeNameUri a owl:ObjectProperty ;
     rdfs:domain :MinisterOfStateMembership ;
+    owl:deprecated true ;
     skos:prefLabel "Office name URI"@en ;
-    rdfs:comment "Links a :MinisterOfStateMembership record to the dereferenceable IRI of the named ministerial office, when provided by the API (office.officeName.uri). The IRI carries the authoritative description of the office; no named office individuals are defined in this ontology (see Future Work in README)."@en .
+    rdfs:comment "Deprecated legacy property retained only for migration compatibility. Source office URI values do not establish local NamedOffice identity."@en .
+
+:NamedOffice a owl:Class ;
+    rdfs:comment "A particular enduring institutional office, independent of its holder, display label, associated AdministrativeUnit, or responsibilities. Similar names or functions do not prove continuity; their change alone does not prove discontinuity."@en .
+
+:AdministrativeUnit a owl:Class ;
+    rdfs:subClassOf org:Organization ;
+    rdfs:comment "A distinct, locally determined enduring administrative institution. Historical-unit identifiers or events are evidence, not automatic local identities."@en .
+
+:OfficeHolding a owl:Class ;
+    rdfs:subClassOf org:Membership ;
+    rdfs:comment "A dated relationship between a person and one particular NamedOffice, separate from CabinetMembership."@en .
+
+:OfficeType a owl:Class ;
+    rdfs:subClassOf skos:Concept ;
+    rdfs:comment "A controlled concept identifying the category of a NamedOffice. OfficeType concepts are not OWL role classes and do not classify NamedOffice individuals as members of role classes."@en .
+
+:OfficeTypeTable a owl:NamedIndividual, skos:ConceptScheme ;
+    skos:prefLabel "Ministerial and parliamentary office types"@en ;
+    rdfs:comment "Controlled OfficeType concepts used by NamedOffice individuals through :hasRoleType."@en .
+
+:TaoiseachOfficeType a owl:NamedIndividual, :OfficeType ;
+    skos:prefLabel "Taoiseach"@en ;
+    skos:inScheme :OfficeTypeTable ;
+    skos:topConceptOf :OfficeTypeTable .
+
+:TanaisteOfficeType a owl:NamedIndividual, :OfficeType ;
+    skos:prefLabel "Tánaiste"@en ;
+    skos:inScheme :OfficeTypeTable ;
+    skos:topConceptOf :OfficeTypeTable .
+
+:MinisterOfficeType a owl:NamedIndividual, :OfficeType ;
+    skos:prefLabel "Minister"@en ;
+    skos:inScheme :OfficeTypeTable ;
+    skos:topConceptOf :OfficeTypeTable .
+
+:MinisterOfStateOfficeType a owl:NamedIndividual, :OfficeType ;
+    skos:prefLabel "Minister of State"@en ;
+    skos:inScheme :OfficeTypeTable ;
+    skos:topConceptOf :OfficeTypeTable .
+
+:CeannComhairleOfficeType a owl:NamedIndividual, :OfficeType ;
+    skos:prefLabel "Ceann Comhairle"@en ;
+    skos:inScheme :OfficeTypeTable ;
+    skos:topConceptOf :OfficeTypeTable .
+
+:CathaoirleachOfficeType a owl:NamedIndividual, :OfficeType ;
+    skos:prefLabel "Cathaoirleach"@en ;
+    skos:inScheme :OfficeTypeTable ;
+    skos:topConceptOf :OfficeTypeTable .
+
+:AttorneyGeneralOfficeType a owl:NamedIndividual, :OfficeType ;
+    skos:prefLabel "Attorney General"@en ;
+    skos:inScheme :OfficeTypeTable ;
+    skos:topConceptOf :OfficeTypeTable .
 
 :GovernmentExecutive a owl:Class ;
-    rdfs:subClassOf org:FormalOrganization ,
-        [ a owl:Restriction ;
-            owl:onProperty :hasMembers ;
-            owl:allValuesFrom [ a owl:Class ;
-                    owl:intersectionOf ( agents:Member [ a owl:Class ;
-                                owl:unionOf ( [ a owl:Restriction ;
-                                            owl:onProperty :hasMembersMembership ;
-                                            owl:someValuesFrom :CabinetMembership ]
-                                        [ a owl:Restriction ;
-                                            owl:onProperty :hasMembersMembership ;
-                                            owl:someValuesFrom :MinisterOfStateMembership ] ) ] ) ] ] ;
+    rdfs:subClassOf org:FormalOrganization ;
     owl:disjointWith agents:Government ;
     skos:prefLabel "Government Executive"@en ;
-    rdfs:comment "The wider executive — the formal constitutional Government (agents:Government, comprising :TaoiseachRole, :TanaisteRole and :MinisterRole role-holders) together with Ministers of State (:MinisterOfStateRole role-holders). Informally referred to as 'the Government' in everyday parliamentary usage. All members must be :OireachtasMembers. A proper subset of :GovernmentBenches (the wider parliamentary whip bloc)."@en .
+    rdfs:comment "The wider executive tier comprises the constitutional Government and Ministers of State, and is distinct from the constitutional Government organization and the wider parliamentary whip bloc. This class does not require the deprecated :MinisterOfStateMembership record; asserted executive membership is validated against office holdings where such membership is populated."@en .
 
 :DateRange a owl:Class ;
     rdfs:subClassOf :Temporal ;

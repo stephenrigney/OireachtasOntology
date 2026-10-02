@@ -154,7 +154,7 @@ def test_core_schema_v1_upgrades_resources_and_reopens(tmp_path):
             hashlib.sha256(pending_payload.encode()).hexdigest(), 1))
 
     with CoreStateStore(database) as store:
-        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 3
         clean = store.get_resource("members", member_identity)
         dirty = store.get_resource("legislation", bill_identity)
         assert clean["publication_state"] == "clean"
@@ -175,9 +175,65 @@ def test_core_schema_v1_upgrades_resources_and_reopens(tmp_path):
         assert store.incremental_cursor() is None
 
     with CoreStateStore(database) as reopened:
-        assert reopened.connection.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert reopened.connection.execute("PRAGMA user_version").fetchone()[0] == 3
         assert reopened.get_resource("members", member_identity)["published_source_hash"] == "b" * 64
         assert reopened.get_resource("legislation", bill_identity)["pending_source_hash"] == "e" * 64
+
+
+def test_core_schema_v2_migration_preserves_runs_and_adds_registry_endpoints(tmp_path):
+    database = tmp_path / "core-v2.sqlite"
+    with sqlite3.connect(database) as connection:
+        connection.executescript("""
+            CREATE TABLE core_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+            CREATE TABLE etl_run (
+              run_id TEXT PRIMARY KEY,
+              endpoint TEXT NOT NULL CHECK(endpoint IN ('houses','parties','constituencies','members','legislation')),
+              run_kind TEXT NOT NULL CHECK(run_kind IN ('full_refresh','incremental_refresh','complete_source_reconciliation')),
+              is_complete INTEGER NOT NULL CHECK(is_complete IN (0,1)), started_at TEXT NOT NULL,
+              completed_at TEXT, status TEXT NOT NULL CHECK(status IN ('running','succeeded','failed')),
+              error TEXT, parameters_json TEXT NOT NULL);
+            CREATE INDEX etl_run_endpoint_started ON etl_run(endpoint,started_at);
+            CREATE TABLE endpoint_state (
+              endpoint TEXT PRIMARY KEY CHECK(endpoint IN ('houses','parties','constituencies','members','legislation')),
+              last_successful_run_id TEXT, last_successful_complete_run_id TEXT,
+              incremental_cursor TEXT, publication_metadata_json TEXT, updated_at TEXT NOT NULL);
+            CREATE TABLE resource_state (
+              endpoint TEXT NOT NULL CHECK(endpoint IN ('members','legislation')),
+              resource_iri TEXT NOT NULL, graph_iri TEXT NOT NULL, observed_source_hash TEXT,
+              published_source_hash TEXT, published_payload_hash TEXT, published_payload TEXT,
+              last_seen_at TEXT, last_seen_run_id TEXT, last_published_at TEXT,
+              last_missing_run_id TEXT, last_missing_at TEXT,
+              missing_scan_count INTEGER NOT NULL DEFAULT 0 CHECK(missing_scan_count >= 0),
+              publication_state TEXT NOT NULL CHECK(publication_state IN ('clean','dirty')),
+              pending_source_hash TEXT, pending_graph_iri TEXT, pending_payload TEXT,
+              pending_payload_hash TEXT,
+              source_presence TEXT NOT NULL DEFAULT 'present' CHECK(source_presence IN ('present','missing','confirmed_missing')),
+              contract_version INTEGER, PRIMARY KEY(endpoint,resource_iri),
+              CHECK(publication_state='dirty' OR
+                    (pending_source_hash IS NULL AND pending_graph_iri IS NULL AND pending_payload_hash IS NULL)));
+            CREATE INDEX resource_state_publication ON resource_state(endpoint,publication_state);
+            PRAGMA user_version=2;
+        """)
+        connection.execute("""INSERT INTO etl_run
+          (run_id,endpoint,run_kind,is_complete,started_at,completed_at,status,error,parameters_json)
+          VALUES ('prior-run','houses','full_refresh',1,'2026-01-01T00:00:00+00:00',
+                  '2026-01-01T00:00:01+00:00','succeeded',NULL,'{"source":"fixture"}')""")
+        connection.execute("""INSERT INTO endpoint_state
+          (endpoint,last_successful_run_id,last_successful_complete_run_id,incremental_cursor,
+           publication_metadata_json,updated_at)
+          VALUES ('houses','prior-run','prior-run',NULL,NULL,'2026-01-01T00:00:01+00:00')""")
+
+    with CoreStateStore(database) as store:
+        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        prior = store.connection.execute("SELECT endpoint,status FROM etl_run WHERE run_id='prior-run'").fetchone()
+        assert (prior["endpoint"], prior["status"]) == ("houses", "succeeded")
+        assert store.endpoint_publication("houses") is None
+        run = store.start_run("administrative-units", "full_refresh", is_complete=True,
+                              parameters={"source": "registry"})
+        store.finish_run(run, success=True)
+        office_run = store.start_run("offices", "full_refresh", is_complete=True,
+                                     parameters={"source": "registry"})
+        store.finish_run(office_run, success=True)
 
 
 def test_status_first_does_not_forfeit_later_legacy_import(tmp_path, monkeypatch):
@@ -314,7 +370,7 @@ def test_core_state_cli_status_reports_database_without_reconciliation_state(tmp
     database = tmp_path / "core.sqlite"
     assert main(["state", "status", "--state-db", str(database)]) == 0
     output = json.loads(capsys.readouterr().out)
-    assert output["schema_version"] == 2 and output["database"] == str(database)
+    assert output["schema_version"] == 3 and output["database"] == str(database)
     assert output["endpoints"] == [] and output["recent_runs"] == []
 
 
@@ -328,6 +384,8 @@ def test_json_legacy_path_is_never_silently_opened_as_sqlite(tmp_path):
     ("houses", "https://data.oireachtas.ie/graph/houses"),
     ("parties", "https://data.oireachtas.ie/graph/parties"),
     ("constituencies", "https://data.oireachtas.ie/graph/constituencies"),
+    ("administrative-units", "https://data.oireachtas.ie/graph/administrative-units"),
+    ("offices", "https://data.oireachtas.ie/graph/offices"),
 ])
 def test_shared_graph_run_and_durable_publication_state(tmp_path, endpoint, graph):
     database = tmp_path / "core.sqlite"

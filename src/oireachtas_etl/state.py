@@ -17,13 +17,16 @@ import uuid
 from urllib.parse import quote, unquote, urlsplit
 
 
-SCHEMA_VERSION = 2
-ENDPOINTS = ("houses", "parties", "constituencies", "members", "legislation")
+SCHEMA_VERSION = 3
+ENDPOINTS = ("houses", "parties", "constituencies", "members", "legislation",
+             "administrative-units", "offices")
 RESOURCE_ENDPOINTS = ("members", "legislation")
 SHARED_GRAPHS = {
     "houses": "https://data.oireachtas.ie/graph/houses",
     "parties": "https://data.oireachtas.ie/graph/parties",
     "constituencies": "https://data.oireachtas.ie/graph/constituencies",
+    "administrative-units": "https://data.oireachtas.ie/graph/administrative-units",
+    "offices": "https://data.oireachtas.ie/graph/offices",
 }
 
 
@@ -199,7 +202,7 @@ class CoreStateStore:
         connection.execute("BEGIN IMMEDIATE")
         try:
             version = connection.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, 1, SCHEMA_VERSION):
+            if version not in (0, 1, 2, SCHEMA_VERSION):
                 raise CoreStateError(f"unsupported core ETL state schema version: {version}")
             if version == 0:
                 # ``executescript`` implicitly commits an open transaction.
@@ -209,6 +212,7 @@ class CoreStateStore:
                     if statement.strip():
                         connection.execute(statement)
                 connection.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
+                version = SCHEMA_VERSION
             elif version == 1:
                 # Tranche 2 adds the legislation cursor, complete-scan absence
                 # evidence and the last successfully published graph payload
@@ -221,8 +225,39 @@ class CoreStateStore:
                     "ALTER TABLE resource_state ADD COLUMN missing_scan_count INTEGER NOT NULL DEFAULT 0",
                 ):
                     connection.execute(statement)
+                connection.execute("PRAGMA user_version=2")
+                version = 2
+            if version == 2:
+                # Tranche 1 adds two reference registries as independently
+                # owned shared-graph endpoints. Rebuild just the constrained
+                # run/publication tables; preserve their complete histories.
+                connection.execute("DROP INDEX IF EXISTS etl_run_endpoint_started")
+                connection.execute("ALTER TABLE etl_run RENAME TO etl_run_v2")
+                connection.execute("ALTER TABLE endpoint_state RENAME TO endpoint_state_v2")
+                connection.execute("""CREATE TABLE etl_run (
+                  run_id TEXT PRIMARY KEY,
+                  endpoint TEXT NOT NULL CHECK(endpoint IN ('houses','parties','constituencies','members','legislation','administrative-units','offices')),
+                  run_kind TEXT NOT NULL CHECK(run_kind IN ('full_refresh','incremental_refresh','complete_source_reconciliation')),
+                  is_complete INTEGER NOT NULL CHECK(is_complete IN (0,1)),
+                  started_at TEXT NOT NULL, completed_at TEXT,
+                  status TEXT NOT NULL CHECK(status IN ('running','succeeded','failed')),
+                  error TEXT, parameters_json TEXT NOT NULL)""")
+                connection.execute("""CREATE TABLE endpoint_state (
+                  endpoint TEXT PRIMARY KEY CHECK(endpoint IN ('houses','parties','constituencies','members','legislation','administrative-units','offices')),
+                  last_successful_run_id TEXT, last_successful_complete_run_id TEXT,
+                  incremental_cursor TEXT, publication_metadata_json TEXT, updated_at TEXT NOT NULL)""")
+                connection.execute("""INSERT INTO etl_run
+                  SELECT run_id,endpoint,run_kind,is_complete,started_at,completed_at,status,error,parameters_json
+                  FROM etl_run_v2""")
+                connection.execute("""INSERT INTO endpoint_state
+                  SELECT endpoint,last_successful_run_id,last_successful_complete_run_id,
+                    incremental_cursor,publication_metadata_json,updated_at FROM endpoint_state_v2""")
+                connection.execute("DROP TABLE etl_run_v2")
+                connection.execute("DROP TABLE endpoint_state_v2")
+                connection.execute("CREATE INDEX etl_run_endpoint_started ON etl_run(endpoint,started_at)")
                 connection.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
-            else:
+                version = SCHEMA_VERSION
+            if version == SCHEMA_VERSION:
                 tables = {row[0] for row in connection.execute(
                     "SELECT name FROM sqlite_master WHERE type='table'")}
                 if not {"core_metadata", "etl_run", "endpoint_state", "resource_state"} <= tables:
@@ -556,7 +591,7 @@ CREATE TABLE core_metadata (
 );
 CREATE TABLE etl_run (
   run_id TEXT PRIMARY KEY,
-   endpoint TEXT NOT NULL CHECK(endpoint IN ('houses','parties','constituencies','members','legislation')),
+   endpoint TEXT NOT NULL CHECK(endpoint IN ('houses','parties','constituencies','members','legislation','administrative-units','offices')),
   run_kind TEXT NOT NULL CHECK(run_kind IN ('full_refresh','incremental_refresh','complete_source_reconciliation')),
   is_complete INTEGER NOT NULL CHECK(is_complete IN (0,1)),
   started_at TEXT NOT NULL,
@@ -567,7 +602,7 @@ CREATE TABLE etl_run (
 );
 CREATE INDEX etl_run_endpoint_started ON etl_run(endpoint,started_at);
 CREATE TABLE endpoint_state (
-    endpoint TEXT PRIMARY KEY CHECK(endpoint IN ('houses','parties','constituencies','members','legislation')),
+    endpoint TEXT PRIMARY KEY CHECK(endpoint IN ('houses','parties','constituencies','members','legislation','administrative-units','offices')),
   last_successful_run_id TEXT,
   last_successful_complete_run_id TEXT,
   incremental_cursor TEXT,

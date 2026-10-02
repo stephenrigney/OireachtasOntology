@@ -6,6 +6,9 @@ from pathlib import Path
 HOUSES_GRAPH = "https://data.oireachtas.ie/graph/houses"
 PARTIES_GRAPH = "https://data.oireachtas.ie/graph/parties"
 CONSTITUENCIES_GRAPH = "https://data.oireachtas.ie/graph/constituencies"
+OFFICES_GRAPH = "https://data.oireachtas.ie/graph/offices"
+ADMINISTRATIVE_UNITS_GRAPH = "https://data.oireachtas.ie/graph/administrative-units"
+OFFICE_REGISTRY_FILE = Path("registries/ministerial-office-registry.json")
 MEMBERS_API_URL = "https://api.oireachtas.ie/v1/members"
 CORE_STATE_DB_FILE = Path.home() / ".local" / "share" / "oireachtas-etl" / "core-state.sqlite"
 RECONCILIATION_STATE_DB_FILE = Path.home() / ".local" / "share" / "oireachtas-etl" / "member-reconciliation.sqlite"

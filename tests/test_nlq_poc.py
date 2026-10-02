@@ -411,6 +411,12 @@ def test_schema_context_comes_from_real_member_and_agent_ontology():
     assert "members:ParliamentaryGroup" in context
     assert "members:memberOfCollection" in context
     assert "members:inOireachtasMembership" in context
+    assert "members:NamedOffice" in context
+    assert "members:OfficeHolding" in context
+    assert "members:OfficeType" in context
+    assert "members:hasRoleType" in context
+    assert "members:hasMinisterOfStateRole (" not in context
+    assert "members:officeNameUri (" not in context
     assert "foaf:name" in context and "skos:prefLabel" in context
     assert "Micheál Martin" not in context
     assert "eli-dl:LegislativeProcess" in context
@@ -424,6 +430,7 @@ def test_schema_context_comes_from_real_member_and_agent_ontology():
     assert "graph/houses" in context
     assert "graph/parties" in context
     assert "graph/constituencies" in context
+    assert "graph/administrative-units" in context and "graph/offices" in context
     assert "graph/member/{percent-encoded-memberCode}" in context
     assert "Optional Member reconciliation links" in context
     assert "The store does not entail OWL subclass types" in context

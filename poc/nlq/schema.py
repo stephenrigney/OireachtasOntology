@@ -11,7 +11,7 @@ from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
 SCHEMA_TYPE_URIS = (OWL.Class, OWL.ObjectProperty, OWL.DatatypeProperty)
 MAX_SCHEMA_CONTEXT_CHARS = 48_000
-COMMENT_CHARS = 160
+COMMENT_CHARS = 120
 
 
 def _one_line(graph: Graph, subject: URIRef, predicate: URIRef, limit: int = COMMENT_CHARS) -> str:
@@ -47,7 +47,8 @@ def _dataset_context(repository_root: Path) -> list[str]:
     and Bills transforms and documented in the ETL plan.
     """
     try:
-        from oireachtas_etl.config import CONSTITUENCIES_GRAPH, HOUSES_GRAPH, PARTIES_GRAPH
+        from oireachtas_etl.config import (ADMINISTRATIVE_UNITS_GRAPH, CONSTITUENCIES_GRAPH,
+                                           HOUSES_GRAPH, OFFICES_GRAPH, PARTIES_GRAPH)
     except ImportError as error:
         raise RuntimeError("Could not load the repository ETL graph identifiers") from error
 
@@ -56,6 +57,7 @@ def _dataset_context(repository_root: Path) -> list[str]:
         f"  Houses descriptions: <{HOUSES_GRAPH}> (HouseTerm resources and labels).",
         f"  Parties descriptions: <{PARTIES_GRAPH}> (term-scoped ParliamentaryMemberCollection resources and labels).",
         f"  Constituency/panel descriptions: <{CONSTITUENCIES_GRAPH}>.",
+        f"  Reviewed administrative-unit and office descriptions: <{ADMINISTRATIVE_UNITS_GRAPH}> and <{OFFICES_GRAPH}>; current bootstrap registries are empty.",
         "  Member and all Member membership records: <https://data.oireachtas.ie/graph/member/{percent-encoded-memberCode}>.",
         "  Bill and legislative-process records: <https://data.oireachtas.ie/graph/bill/{year}/{number}>.",
         "  Optional Member reconciliation links: the Member graph pattern plus /external-links; this graph uses owl:sameAs for reviewed Wikidata/DBpedia identities and foaf:isPrimaryTopicOf for reviewed Wikipedia links.",
@@ -63,7 +65,7 @@ def _dataset_context(repository_root: Path) -> list[str]:
         "  Join graphs using the same RDF resource IRI; do not require descriptions to be co-located with their references.",
         "  The store does not entail OWL subclass types: match explicit instance types such as agents:DailTerm or agents:SeanadTerm, or omit a term type filter when matching its label.",
         "  Houses, Parties and Constituencies ETL writes skos:prefLabel as an English-language (@en) literal. For user-entered label matching, bind ?label and compare STR(?label) in a FILTER rather than matching an untagged literal directly. Member foaf:name values are plain literals.",
-        "  The ontology describes more than current ETL data. Current Member ETL emits Member, OireachtasMembership, ParliamentaryCollectionMembership, committee and MinisterOfStateMembership descriptions; it does not emit CabinetMembership, TaoiseachRole or MinisterRole instances. Do not imply the loaded graph can answer current-Taoiseach/Cabinet questions unless such source assertions are actually present.",
+        "  Current Member ETL emits Member, parliamentary/committee memberships and legacy MinisterOfStateMembership; it does not emit CabinetMembership, TaoiseachRole or MinisterRole instances. The new OfficeHolding vocabulary is not populated. Do not infer executive tenure.",
         "  The Debates ontology is a schema module; this repository does not currently publish debate instances through a Debates ETL. Bill queryability likewise depends on Bill graphs actually being loaded.",
         "  Current emitted patterns:",
         "    Member graph: ?member a agents:Member; foaf:name ?name; members:hasMembersMembership ?membership. The membership resource is explicitly typed members:OireachtasMembership and DailMembership or SeanadMembership, and links to its term with members:inHouseTerm.",
@@ -199,12 +201,20 @@ def build_schema_context(ontology_dir: str | Path) -> str:
 
     schema_terms = {
         type_: sorted(
-            {term for term in graph.subjects(RDF.type, type_) if local(term)},
+            {term for term in graph.subjects(RDF.type, type_)
+             if local(term) and not any(str(value).lower() == "true"
+                                        for value in graph.objects(term, OWL.deprecated))},
             key=str,
         )
         for type_ in SCHEMA_TYPE_URIS
     }
-    locally_declared = set().union(*(set(terms) for terms in schema_terms.values()))
+    # Deprecated local ontology terms are omitted from the model-facing schema
+    # but remain local declarations; do not reclassify active legacy mapping
+    # references as external vocabulary predicates.
+    locally_declared = {
+        term for type_ in SCHEMA_TYPE_URIS for term in graph.subjects(RDF.type, type_)
+        if local(term)
+    }
 
     lines = ["Authoritative vocabulary (asserted in the repository's ontology/*.owl.ttl files):", "Namespaces:"]
     namespace_uris = set()

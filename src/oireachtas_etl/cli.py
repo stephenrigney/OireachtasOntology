@@ -4,7 +4,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import hashlib
 from .api import ApiClient, HousesApiClient
-from .config import CONSTITUENCIES_GRAPH, HOUSES_GRAPH, PARTIES_GRAPH, REFERENCE_ONTOLOGY_VERSION, Settings
+from .config import (ADMINISTRATIVE_UNITS_GRAPH, CONSTITUENCIES_GRAPH, HOUSES_GRAPH,
+                     OFFICES_GRAPH, OFFICE_REGISTRY_FILE, PARTIES_GRAPH,
+                     REFERENCE_ONTOLOGY_VERSION, Settings)
 from .loader import FusekiGraphStoreLoader
 from .loader import FusekiSparqlClient
 from .competency import verify_constituencies_competency, verify_houses_competency, verify_parties_competency, verify_member_competency, verify_bill_competency
@@ -14,7 +16,9 @@ from .serialization import nquads, ntriples, turtle
 from .transforms.houses import transform_houses_with_report
 from .transforms.parties import transform_parties
 from .transforms.constituencies import transform_constituencies
+from .transforms.offices import transform_administrative_units, transform_offices
 from .validation import validate_constituencies, validate_houses, validate_parties
+from .validation import validate_administrative_units, validate_offices, validate_registry_source
 from .validation import validate_member, validate_bill
 from .validation.members import validate_member_source
 from .transforms.members import member_graph_iri, source_hash, transform_member_with_report
@@ -116,13 +120,15 @@ def _run_shared(args: argparse.Namespace, endpoint_name: str, operation) -> int:
     with state_lock(database):
         with CoreStateStore(database, legacy_members=settings.members_legacy_state_file,
                             legacy_bills=settings.bills_legacy_state_file) as store:
+            registry_run = endpoint_name in {"administrative-units", "offices"}
             run_id = store.start_run(endpoint_name, "full_refresh", is_complete=True,
-                                     parameters={"source": "fixture" if args.fixture else "api",
-                                                 "fixture": str(Path(args.fixture).resolve()) if args.fixture else None,
-                                                 "api_url": None if args.fixture else getattr(settings, {
-                                                     "houses": "api_url", "parties": "parties_api_url",
-                                                     "constituencies": "constituencies_api_url"}[endpoint_name]),
-                                                 "limit": settings.limit})
+                                     parameters={"source": "registry" if registry_run else ("fixture" if args.fixture else "api"),
+                                                  "fixture": str(Path(args.fixture).resolve()) if args.fixture else None,
+                                                  "registry_file": str(Path(args.registry_file or OFFICE_REGISTRY_FILE).resolve()) if registry_run else None,
+                                                  "api_url": None if registry_run or args.fixture else getattr(settings, {
+                                                      "houses": "api_url", "parties": "parties_api_url",
+                                                      "constituencies": "constituencies_api_url"}[endpoint_name]),
+                                                  "limit": settings.limit})
             try:
                 result = operation(args, store, run_id)
             except Exception as error:
@@ -215,6 +221,67 @@ def _run_reference_impl(args: argparse.Namespace, store: CoreStateStore | None =
 
 def run_reference(args: argparse.Namespace) -> int:
     return _run_shared(args, args.endpoint, _run_reference_impl)
+
+
+def _run_office_registry_impl(args: argparse.Namespace, store: CoreStateStore | None = None,
+                              run_id: str | None = None) -> int:
+    endpoint_name = args.endpoint
+    if getattr(args, "fixture", None):
+        raise ValueError("office registry commands use --registry-file, not an API --fixture")
+    registry_path = Path(getattr(args, "registry_file", None) or OFFICE_REGISTRY_FILE)
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    validate_registry_source(registry)
+    units_graph = transform_administrative_units(registry)
+    offices_graph = transform_offices(registry)
+    validate_administrative_units(registry, units_graph)
+    validate_offices(registry, offices_graph)
+
+    if endpoint_name == "administrative-units":
+        graph, graph_iri = units_graph, ADMINISTRATIVE_UNITS_GRAPH
+    elif endpoint_name == "offices":
+        graph, graph_iri = offices_graph, OFFICES_GRAPH
+    else:
+        raise ValueError(f"unsupported office registry graph endpoint: {endpoint_name}")
+
+    if args.output_ttl:
+        Path(args.output_ttl).write_text(turtle(graph), encoding="utf-8")
+    payload = nquads(graph, graph_iri)
+    if args.output_nq:
+        Path(args.output_nq).write_text(payload, encoding="utf-8")
+
+    settings = Settings.from_environment()
+    endpoint = None if args.offline else (args.fuseki_gsp_url or settings.fuseki_gsp_url)
+    query_endpoint = None if args.offline else (args.fuseki_sparql_url or settings.fuseki_sparql_url)
+    if endpoint:
+        if not query_endpoint:
+            raise ValueError("Fuseki SPARQL endpoint is required for post-load whole-graph verification")
+        if store is None:
+            raise RuntimeError("online registry publication requires durable core ETL state")
+        if endpoint_name == "offices":
+            units_state = store.endpoint_publication("administrative-units")
+            expected_units_hash = hashlib.sha256(ntriples(units_graph).encode("utf-8")).hexdigest()
+            if (not units_state or units_state.get("publication_state") != "clean"
+                    or units_state.get("published_payload_hash") != expected_units_hash):
+                raise ValueError("publish the current validated AdministrativeUnit graph before the office graph")
+        serialized = ntriples(graph)
+        digest = store.mark_endpoint_dirty(endpoint_name, graph_iri, serialized)
+        FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password,
+                               timeout=settings.timeout).replace(graph_iri, serialized,
+                                                                  content_type="application/n-triples")
+        verify_core_graph(FusekiSparqlClient(query_endpoint, user=settings.fuseki_user,
+                                             password=settings.fuseki_password,
+                                             timeout=settings.timeout), graph_iri, serialized)
+        store.complete_endpoint_publication(endpoint_name, graph_iri, digest)
+    elif not args.offline:
+        raise ValueError("no Fuseki GSP endpoint configured; use --offline for registry/developer runs")
+    records = registry["administrative_units"] if endpoint_name == "administrative-units" else registry["offices"]
+    print(json.dumps({"records": len(records), "published": bool(endpoint),
+                      "graph": graph_iri, "registry_file": str(registry_path)}, sort_keys=True))
+    return 0
+
+
+def run_office_registry(args: argparse.Namespace) -> int:
+    return _run_shared(args, args.endpoint, _run_office_registry_impl)
 
 
 def _members_fixture_records(path: Path) -> tuple[list[dict], bytes, int | None]:
@@ -1089,8 +1156,9 @@ def run_state_status(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="oir-etl")
     sub = parser.add_subparsers(dest="command", required=True)
-    run = sub.add_parser("run"); run.add_argument("endpoint", choices=["houses", "parties", "constituencies", "members", "bills"])
+    run = sub.add_parser("run"); run.add_argument("endpoint", choices=["houses", "parties", "constituencies", "administrative-units", "offices", "members", "bills"])
     run.add_argument("--fixture"); run.add_argument("--offline", action="store_true"); run.add_argument("--raw-dir")
+    run.add_argument("--registry-file", help="version-controlled office/unit registry JSON")
     run.add_argument("--state-db", help="shared authoritative core ETL SQLite database")
     run.add_argument("--reconciliation-state-file",
                      help="existing external-reconciliation SQLite database (shared with reconcile commands)")
@@ -1114,6 +1182,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.endpoint == "houses": return run_houses(args)
     if args.endpoint == "members": return run_members(args)
     if args.endpoint == "bills": return run_bills(args)
+    if args.endpoint in {"administrative-units", "offices"}: return run_office_registry(args)
     return run_reference(args)
 
 if __name__ == "__main__": raise SystemExit(main())

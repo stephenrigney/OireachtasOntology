@@ -12,7 +12,7 @@ The ontology is split into six sub-ontologies, each covering one of the four dec
 | [agents.owl.ttl](agents.owl.ttl) | `https://data.oireachtas.ie/ontology/agents` | Persons, roles and organisations |
 | [events.owl.ttl](events.owl.ttl) | `https://data.oireachtas.ie/ontology/events` | Journal events, bill stages and procedural outcomes |
 | [legislation.owl.ttl](legislation.owl.ttl) | `https://data.oireachtas.ie/ontology/legislation` | Legislative documents, versions and statuses |
-| [members.owl.ttl](members.owl.ttl) | `https://data.oireachtas.ie/ontology/members` | Membership, roles, party groupings and government tiers |
+| [members.owl.ttl](members.owl.ttl) | `https://data.oireachtas.ie/ontology/members` | Membership, roles, enduring offices, party collections and government tiers |
 | [vocabulary.owl.ttl](vocabulary.owl.ttl) | `https://data.oireachtas.ie/ontology/vocabulary` | SKOS controlled vocabularies (concept schemes) |
 | [debates.owl.ttl](debates.owl.ttl) | `https://data.oireachtas.ie/ontology/debates` | Official Report and debates — Akoma Ntoso structure, speeches, divisions and participation |
 
@@ -164,9 +164,11 @@ Defines the detailed membership, role and parliamentary collection structures of
 >
 > **Role class rename (2026):** All four `members` role classes renamed for unambiguous person/role distinction: `members:Minister` → `members:MinisterRole`, `members:Taoiseach` → `members:TaoiseachRole`, `members:Tanaiste` → `members:TanaisteRole`, `members:MinisterOfState` → `members:MinisterOfStateRole`. `org:holds` / `org:heldBy` bridge axioms added in `members.owl` connecting `agents:Minister` (person) ↔ `members:MinisterRole` (role). `rdfs:comment` added to `agents:Minister` cross-referencing the bridge.
 >
+> **Ministerial office identities (Phase 7 Tranche 1):** `members:NamedOffice`, `members:AdministrativeUnit`, `members:OfficeHolding` and the controlled `members:OfficeType` concepts distinguish enduring office identities, administrative units, person–office holdings and office categories from the existing generic role classes. `members:hasRoleType` points to an `OfficeType` concept, not an OWL role class. The legacy `members:MinisterOfStateMembership`, `members:hasMinisterOfStateRole` and `members:officeNameUri` declarations are deprecated but retained until the separately reviewed Member migration; active Member mappings and transformation remain unchanged in this tranche. The versioned local registry currently contains no named offices or units because current fixture labels alone do not establish identities.
+>
 > **bill.json alignment (2026):** `:isPrimarySponsor` datatype property (`xsd:boolean`) added on `eli-dl:Participation` to capture the `sponsors[].sponsor.isPrimary` flag. Set `true` on the primary sponsor's participation instance.
 >
-> **member.json alignment (2026):** `:DeputyChair` class added (`org:Role` subclass, companion to `:Chair`). `:hasCommitteeRole` object property added on `:CommitteeMembership` (range `org:Role`) to record the role a member holds within a committee. `:partyCode`, `:representCode`, `:committeeCode` (all `xsd:string`) and `:committeeID` (`xsd:integer`) datatype properties added for API short-code identifiers on `:ParliamentaryMemberCollection`, `:Constituencies` and `:Committee` respectively. `:officeNameUri` object property added on `:MinisterOfStateMembership` to link to the dereferenceable office IRI when provided by the API.
+> **member.json alignment (2026):** `:DeputyChair` class added (`org:Role` subclass, companion to `:Chair`). `:hasCommitteeRole` object property added on `:CommitteeMembership` (range `org:Role`) to record the role a member holds within a committee. `:partyCode`, `:representCode`, `:committeeCode` (all `xsd:string`) and `:committeeID` (`xsd:integer`) datatype properties added for API short-code identifiers on `:ParliamentaryMemberCollection`, `:Constituencies` and `:Committee` respectively. The former `:officeNameUri` property has been retained as a deprecated legacy term pending Member migration.
 >
 > **Parliamentary member collection model (Phase 4.5 Tranche 2):** `:ParliamentaryMemberCollection` is a `foaf:Group`; API party resources are term-scoped instances typed as `:ParliamentaryParty` or `:IndependentMemberCollection` according to `partyCode`. `:ParliamentaryGroup` and `:TechnicalGroup` are ontology classes only; Parties and Members ETL do not infer their instances or recognition. Reviewed enduring-party links use `:recognisedAsParty` without a restrictive local range. Dated Member records use `:ParliamentaryCollectionMembership`, explicitly link to their containing `:OireachtasMembership` with `:inOireachtasMembership` and to their collection with `:memberOfCollection`; non-Independent targets additionally use `:PartyMembership` and `:isPartyMembershipOf`. The earlier `:PartyGrouping`, `:Party`, term-independent `:Independent`, `:PartyInGovernment`, `:PartyInOpposition`, `:PartiesMembership`, `:hasPartiesMembership`, `:isPartyIn`, and `:isWhipFor` terms are not active in the ontology.
 >
@@ -183,8 +185,13 @@ Defines the detailed membership, role and parliamentary collection structures of
 | `:TaoiseachRole` | `:CabinetMember` | Role of Taoiseach (Head of Government). `owl:disjointWith :TanaisteRole`. |
 | `:TanaisteRole` | `:CabinetMember` | Role of Tánaiste (Deputy Head of Government). `owl:disjointWith :TaoiseachRole`. |
 | `:CabinetMember` | `org:Role` | Abstract role in `agents:Government`. Subclasses: `:TaoiseachRole`, `:TanaisteRole`, `:MinisterRole`. Holders must be `:OireachtasMembers`. |
-| `:MinisterOfStateRole` | `org:Role` | Role of a Minister of State. `owl:disjointWith :CabinetMember`. Holder must be an `:OireachtasMember`. |
-| `:GovernmentExecutive` | `org:FormalOrganization` | The wider executive — `agents:Government` (TaoiseachRole, TanaisteRole, MinisterRole holders) plus MinisterOfStateRole holders. Disjoint with the constitutional Government. |
+| `:MinisterOfStateRole` | `org:Role` | Generic role class of a Minister of State, distinct from a NamedOffice. Disjointness with `:CabinetMember` applies to role individuals, not distinct roles held by one person. |
+| `:NamedOffice` | — | A particular enduring institutional office, independent of holder, label, associated unit or responsibilities. |
+| `:AdministrativeUnit` | `org:Organization` | A distinct, locally determined enduring administrative institution. |
+| `:OfficeHolding` | `org:Membership` | A dated person-to-one-NamedOffice relationship, separate from CabinetMembership. |
+| `:OfficeType` | `skos:Concept` | Controlled category for a NamedOffice, not an OWL role class. Concepts include Taoiseach, Tánaiste, Minister, Minister of State, Ceann Comhairle, Cathaoirleach and Attorney General office types. |
+| `:MinisterOfStateMembership` | `:MembersMembership` | **Deprecated legacy class** retained only for migration compatibility; new office tenure uses `:OfficeHolding`. |
+| `:GovernmentExecutive` | `org:FormalOrganization` | The wider executive tier, distinct from constitutional Government and GovernmentBenches. It no longer requires the deprecated MinisterOfStateMembership record; populated executive membership is checked against office holdings. |
 | `:GovernmentBenches` | `:SidesOfHouse` | The parliamentary whip bloc supporting the Government. Comprises `:GovernmentExecutive` members plus other OireachtasMembers under the government whip. `owl:disjointWith :Opposition`. Replaces the former `:Government` (whip side). |
 | `:Opposition` | `:SidesOfHouse` | The opposition |
 | `:House` | `agents:House` | equivalentClass `Dail ∪ Seanad`. Plenary houses only; committee chambers are outside this extension. |
@@ -202,7 +209,6 @@ Defines the detailed membership, role and parliamentary collection structures of
 | `:DailMembership` | `:OireachtasMembership` | Membership record for a specific Dáil term. Requires `inHouseTerm someValuesFrom agents:DailTerm`. Disjoint with `:SeanadMembership`. |
 | `:SeanadMembership` | `:OireachtasMembership` | Membership record for a specific Seanad term. Requires `inHouseTerm someValuesFrom agents:SeanadTerm`. |
 | `:CabinetMembership` | `:MembersMembership` | Record of an `agents:Member` holding a `:CabinetMember` role (`:TaoiseachRole`, `:TanaisteRole` or `:MinisterRole`) in `agents:Government`. Linked to role via `:hasCabinetRole`. |
-| `:MinisterOfStateMembership` | `:MembersMembership` | Record of an `agents:Member` holding a `:MinisterOfStateRole`. Linked to role via `:hasMinisterOfStateRole`. |
 | `:CommitteeMembership` | `:MembersMembership` | Membership of a committee |
 | `:DateRange` | `:Temporal` | Temporal extent for org:Membership subclasses; start/end typed `xsd:dateTime` (note: `xsd:date` is not in the OWL 2 DL datatype map) |
 | `:Chair` | `org:Role` | Role of Chair of a committee. Used via `:hasCommitteeRole` on `:CommitteeMembership` records. |
@@ -229,9 +235,16 @@ Defines the detailed membership, role and parliamentary collection structures of
 | `:isDeputyHeadOf` | `:TanaisteRole` | `agents:Government` | Links a TanaisteRole instance to the constitutional Government |
 | `:isDeputyHeadOfExecutive` | `:TanaisteRole` | `:GovernmentExecutive` | Separate from `:isDeputyHeadOf` so the executive target is not inferred to be constitutional Government |
 | `:isDeputyHeadOfBenches` | `:TanaisteRole` | `:GovernmentBenches` | Separate from `:isDeputyHeadOf` so the whip-bloc target is not inferred to be constitutional Government |
-| `:hasMinisterOfStateRole` | `:MinisterOfStateMembership` | `:MinisterOfStateRole` | Links a membership record to the specific MinisterOfStateRole held |
+| `:hasRoleType` | `:NamedOffice` | `:OfficeType` | Controlled office-type concept; despite the property name, not an OWL role class |
+| `:heldOffice` | `:OfficeHolding` | `:NamedOffice` | Exactly one target per published holding, enforced by validation |
+| `:officeHolder` / `:hasOfficeHolding` | `:OfficeHolding` / `foaf:Person` | `foaf:Person` / `:OfficeHolding` | Inverse links; Member ETL emits both directions |
+| `:headsAdministrativeUnit` | `:NamedOffice` | `:AdministrativeUnit` | Evidenced departmental Minister headship |
+| `:assignedToAdministrativeUnit` | `:NamedOffice` | `:AdministrativeUnit` | Evidenced Minister-of-State assignment; not a subproperty of headship |
+| `:predecessorOffice` / `:successorOffice` | `:NamedOffice` | `:NamedOffice` | Inverse properties; positively reviewed assertions only |
+| `:reconciledSponsorOffice` / `:reconciledSponsorHolding` | `eli-dl:Participation` | `:NamedOffice` / `:OfficeHolding` | Owned by separate Bill-local reconciliation, not the Bill source graph |
+| `:supportedByOfficeHolding` | `:CabinetMembership` | `:OfficeHolding` | Records holdings supporting a derived Cabinet episode |
+| `:hasMinisterOfStateRole` / `:officeNameUri` | `:MinisterOfStateMembership` | Legacy range | **Deprecated**; retained only until Member migration |
 | `:hasCommitteeRole` | `:CommitteeMembership` | `org:Role` | The role held by the member within the committee (`:Chair`, `:DeputyChair`); absent when no special role |
-| `:officeNameUri` | `:MinisterOfStateMembership` | (IRI) | Links to the dereferenceable IRI of the named ministerial office when provided by the API (`office.officeName.uri`) |
 
 #### Datatype Properties
 
@@ -261,7 +274,7 @@ Defines the detailed membership, role and parliamentary collection structures of
 | Committee lifecycle status | Add `CommitteeStatusTable` concept scheme with members `Active` / `Archived` / etc. to map `committee.status` and `committee.mainStatus` fields. |
 | Committee expiry type | Add `CommitteeExpiryTable` concept scheme with members `Sessional` / `Special` etc. to map `committee.expiryType`. |
 | Committee time-bounded names | `committee.committeeName` is an array of names each with a validity `dateRange`. Modelling this requires a reification pattern — e.g. a `:CommitteeName` class with `:nameEn`, `:nameGa` and `:hasMembershipDateRange`. Architecturally non-trivial; deferred. |
-| Named ministerial office individuals | `office.officeName.uri` currently mapped via bare IRI link (`:officeNameUri`). A future extension could define typed named individuals for each ministerial office (portfolio + department), enabling richer querying. |
+| Reviewed ministerial office and unit population | `registries/ministerial-office-registry.json` is the authoritative local registry bootstrap. It is intentionally empty until positive reviewed identity evidence establishes particular enduring offices and administrative units; source labels and external identifiers do not mint identities. |
 
 ---
 
