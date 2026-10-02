@@ -1565,11 +1565,86 @@ Settled boundaries include:
 - [ ] Add Debates SHACL/quality validation and competency queries.
 - [ ] Add deterministic graph replacement and replay/idempotency tests.
 
-### Other Phase 7 work
+### Ministerial office/tenure slice — approved design; Tranches 1–2 implemented
 
-- [ ] Continue the separately designed ministerial office/tenure vertical
-  slice, including reconciliation of Phase 4 textual sponsor-role labels
-  without changing preserved source evidence.
+The first ministerial office/tenure vertical slice has a complete approved
+implementation design in [phase-7-ministerial-offices.md](phase-7-ministerial-offices.md).
+Tranches 1 and 2 are implemented, including the new ontology vocabulary,
+reviewed office/unit registry publication, local source-observation review and
+the occurrence/evidence ledger. The initial registry and decisions are a small,
+high-confidence bootstrap, not comprehensive coverage. Tranche 3 Member
+holdings/Cabinet migration has not started: the active Member mapping and
+Member/Bill RDF behavior remain unchanged until that migration. This status
+does not change the completion/history of earlier phases or other Phase 7
+slices.
+
+Settled semantics and ownership for this slice:
+
+- A locally controlled `NamedOffice` is an enduring particular office,
+  independent of holder, label, Department and responsibilities. A locally
+  controlled `AdministrativeUnit` is a distinct enduring unit; ISAD IDs and
+  replacement events are evidence, not automatically separate local units or
+  office successions. Office succession needs reviewed positive evidence.
+- `NamedOffice` has explicit `hasRoleType` links to **distinct `OfficeType`
+  concept individuals** such as `MinisterOfficeType`. Existing `*Role` IRIs
+  remain OWL classes only: no class/individual punning and no typing a
+  particular office as a generic role class. The ETL's versioned category
+  table determines Cabinet qualification without an unnecessary RDF
+  concept-to-class link.
+- A departmental Minister's office `headsAdministrativeUnit`; a Minister-of-
+  State office `assignedToAdministrativeUnit` and does not imply headship.
+  Minister-of-State office identity is department-level, not one office per
+  portfolio or delegated responsibility. Those functions remain separate.
+- A Member graph owns dated `OfficeHolding`s, their Oireachtas-derived dates
+  and generated `CabinetMembership`s. Source office observations have no
+  stable record IRI; persist their correspondence so an identifiable holding
+  survives a date correction. An unresolved observation emits no guessed
+  holding. Once person and office resolve, generation is automatic unless
+  ambiguity or material conflict arises.
+- Qualifying Taoiseach/Tánaiste/Minister office-type holdings produce
+  constitutional Government membership. Minister-of-State holdings do not.
+  Merge overlapping/continuous qualifying intervals so concurrent offices
+  never create duplicate Government memberships. Derive the Cabinet episode
+  URI deterministically from Member, Government and episode start; a corrected
+  episode may change its derived URI. **Do not add a Cabinet identity ledger.**
+- Shared `https://data.oireachtas.ie/graph/offices` and
+  `https://data.oireachtas.ie/graph/administrative-units` own reference
+  descriptions. Member graph replacement cannot erase them. Per-office
+  `/external-links` graphs independently own reviewed external identities;
+  external evidence never silently changes source-derived holding dates.
+- A separate per-Bill `/office-reconciliation` graph owns **local** links
+  from a Participation to a supported `NamedOffice`, and to an `OfficeHolding`
+  only when person and temporal evidence establish it. Retain the original
+  Participation and source `rdfs:label` in the Bill-owned graph. Role text
+  alone cannot establish a person.
+- Retain and flag a disappeared nested office observation and its previously
+  published holding during Member graph replacement. Only a reviewed
+  erroneous/revoked-assertion action removes it. A changed identifiable
+  observation can update its holding subject to conflict review. Migrate
+  away from blanket `MinisterOfStateMembership`, generated occurrence roles
+  and active `officeNameUri` use through a versioned, validated Member
+  republish, not generic triple deletion.
+
+Tranches 1 and 2 are **implemented**; Tranches 3–6 are **not started**:
+
+| Tranche | Status | Prerequisite/work | Exit criterion |
+|---|---|---|---|
+| 1. Semantic contract and reference bootstrap | Implemented | Approved design; revised ontology/mapping, distinct category concepts, reviewed office/unit registries, validated shared-graph publication. | Reasoner and mapping checks pass; office/unit graphs publish independently without prematurely changing Member behavior. |
+| 2. Observation resolution and holding correspondence | Implemented | Published registries; local review decisions, source-occurrence/evidence ledger, candidate generation and source validation. | Every observation accepted, unresolved or review-required; identifiable corrections retain OfficeHolding keys; no Cabinet ledger. |
+| 3. Member holdings and Cabinet migration | Not started | Reviewed resolutions and migration inventory; Member transform, independent validation, non-destructive nested absence, contract bump and full republish. | Correct concurrent holdings and deduplicated Cabinet episodes; legacy erroneous RDF removed, missing holdings retained and recovery tested. |
+| 4. External office identities | Not started | Stable local offices; policy, reviewed external links, independent graphs and retry/recheck tests. May follow tranche 5 if needed. | External links replace independently without rewriting authoritative RDF. |
+| 5. Bill local sponsor links | Not started | Published offices/holdings; per-Bill local graph, decisions and change invalidation. | Correct office-only/person-and-time-qualified holding links, unchanged Bill evidence, stale local links cleared. |
+| 6. End-to-end acceptance | Not started | Earlier core tranches; joined competency, migration, URI, absence/conflict, publication/isolation tests and operations notes. | Phase 0 validation and full tests pass; graph-scoped recovery and review boundaries verified. |
+
+Deferred beyond this slice: detailed delegated functions, responsibilities
+and portfolios; temporally qualified office–unit assignments; ISAD
+historical-incarnation ingestion; full statutory/constitutional provision-
+level grounding (the model must permit this later); unsupported historical
+succession; numbered Governments; weaker Cabinet attendance relationships;
+competing-date-evidence RDF; and Questions recipient-role reconciliation.
+Specific ambiguous identity/tenure/sponsor cases require evidence review, not
+invented classifications. See the dedicated design for URI derivation,
+review state, validation, migration and tranche-level gates.
 
 Each vertical slice should follow the same extract, transform, validate,
 publish and reconcile model as the core datasets.
