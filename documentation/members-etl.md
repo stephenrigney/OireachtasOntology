@@ -23,12 +23,38 @@ the current Member mapping has no relation for special-role tenure separate
 from the committee membership's own `memberDateRange`. Unknown object shapes
 or titles remain fail-closed. The published Oireachtas Swagger schema leaves
 `committees.items` untyped, so the repeated captured records (rather than a
-In the complete Members capture of 2026-10-02, all 317 object-form roles had
+schema guarantee) establish this supported source form. In the complete
+Members capture of 2026-10-02, all 317 object-form roles had
 exactly this structure: 211 `Cathaoirleach` and 106 `Leas-Chathaoirleach`; all
 2,737 array-form roles were empty. Garret Ahearn's instance is at
 `/results/4/member/memberships/0/membership/committees/1/role` in
 `skip=0&limit=100` (captured page SHA-256
 `832a12d7cb701dad7e5ef72169e18ad37a828f40a018d8807550705048471855`).
+
+A party record with a valid term-scoped party identity but an unusable nested
+`party.dateRange` is quarantined at that party observation. Its raw nested
+record, date values, wrapper-relative JSON pointer, reason and party context
+are reported unchanged; it creates no party-membership or date-range RDF.
+Other Member and party records continue after this nested-only error. Unsafe
+party wrappers/identities, non-array `membership.parties`, invalid containing
+Member/House membership structures, and other Member-level ambiguity remain
+fail-closed.
+
+For online publication, if a changed Member has malformed party-date evidence,
+the ETL composes the current validated graph with the exact previously
+published party-membership triples scoped to each affected Oireachtas
+membership. It verifies the stored prior payload hash and validates the
+composed graph before replacement. If a prior published graph is known but its
+payload is unavailable or unverifiable, that Member graph is left untouched
+and reported as blocked rather than deleting accepted party evidence. When no
+previous accepted Member graph exists, the malformed nested party observation
+is omitted while independently valid current Member content can be published.
+Offline transformation has no prior publication state to compose and reports
+that preservation as not applicable.
+
+The complete captured Members evidence review and immutable response hashes for
+the 12 reversed party ranges are recorded in
+`documentation/member-nested-evidence-audit.md`.
 
 Members own only Member, membership, generated role, and generated date-range descriptions. House/HouseTerm, ParliamentaryMemberCollection, constituency/panel and Committee IRIs are references. Historical reference acquisition remains follow-up work: current reference endpoints do not cover the historical IRIs in Member history.
 

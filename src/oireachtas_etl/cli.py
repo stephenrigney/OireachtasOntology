@@ -22,7 +22,8 @@ from .validation import validate_constituencies, validate_houses, validate_parti
 from .validation import validate_administrative_units, validate_offices, validate_registry_source
 from .validation import validate_member, validate_bill
 from .validation.members import validate_member_source
-from .transforms.members import member_graph_iri, source_hash, transform_member_with_report
+from .transforms.members import (member_graph_iri, prior_party_membership_evidence,
+                                 source_hash, transform_member_with_report)
 from .transforms.bills import bill_graph_iri, source_hash as bill_source_hash, transform_bill_with_report
 from .validation.bills import validate_bill_source
 from .state import CoreStateStore, expected_graph_iri, state_lock
@@ -300,6 +301,24 @@ def _members_fixture_records(path: Path) -> tuple[list[dict], bytes, int | None]
     return records, body, advertised
 
 
+def _verified_previous_member_graph(prior: dict | None, graph_iri: str) -> Graph:
+    """Load only the hash-verified last accepted Member payload from state."""
+    if not isinstance(prior, dict) or prior.get("graph_iri") != graph_iri:
+        raise ValueError("previous accepted Member graph identity is invalid")
+    payload = prior.get("published_payload")
+    if not isinstance(payload, str):
+        raise ValueError("previous accepted Member payload is unavailable")
+    payload_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    if payload_hash != prior.get("published_payload_hash"):
+        raise ValueError("previous accepted Member payload hash is invalid")
+    graph = Graph()
+    try:
+        graph.parse(data=payload, format="nt")
+    except Exception as error:
+        raise ValueError("previous accepted Member payload cannot be parsed") from error
+    return graph
+
+
 def _deduplicate_members(records: list[dict], advertised: int | None) -> list[dict]:
     if not records: raise ValueError("Members harvest must not be empty")
     unique: dict[str, dict] = {}
@@ -404,9 +423,66 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
         if (not args.offline and old.get("publication_state", "clean") == "clean"
                 and old.get("contract_version") == 2
                 and old.get("published_source_hash") == digest and old.get("graph_iri") == graph_iri):
+            for item in omissions:
+                if (item.get("category") == "source_quarantine"
+                        and ".parties[" in item.get("path", "")):
+                    item["preservation_status"] = "unchanged_published_graph_retained"
             graphs.append((wrapper, None, identity, digest, omissions, "skipped")); continue
-        graph, exclusions = transform_member_with_report(wrapper); validate_member(wrapper, graph)
-        graphs.append((wrapper, graph, identity, digest, exclusions, "changed" if prior else "new"))
+        graph, exclusions = transform_member_with_report(wrapper)
+        validate_member(wrapper, graph)
+        malformed_parties = [item for item in exclusions
+                             if item.get("category") == "source_quarantine"
+                             and ".parties[" in item.get("path", "")]
+        status = "changed" if prior else "new"
+        if malformed_parties and not args.offline:
+            affected_memberships = {item["context"] for item in malformed_parties}
+            previous_payload = prior.get("published_payload") if prior else None
+            has_published_state = bool(prior and (
+                prior.get("published_source_hash")
+                or prior.get("published_payload") is not None
+                or prior.get("last_published_at")
+            ))
+            preserved = Graph()
+            preserved_by_membership = {}
+            preservation_error = None
+            if has_published_state:
+                try:
+                    previous_graph = _verified_previous_member_graph(prior, graph_iri)
+                    preserved_by_membership = {
+                        membership: prior_party_membership_evidence(
+                            previous_graph, URIRef(member["uri"]), {membership})
+                        for membership in affected_memberships
+                    }
+                    for evidence in preserved_by_membership.values():
+                        preserved += evidence
+                except Exception as error:
+                    preservation_error = f"{type(error).__name__}: {error}"
+            if has_published_state and preservation_error is not None:
+                # Without the last accepted payload there is no safe way to
+                # distinguish previously accepted party evidence from a
+                # deletion. Leave the existing Member graph untouched.
+                for item in malformed_parties:
+                    item["preservation_status"] = "blocked_previous_graph_retained"
+                    item["preservation_reason"] = preservation_error
+                graph = None
+                status = "skipped"
+            else:
+                if preserved:
+                    graph += preserved
+                    validate_member(wrapper, graph, preserved_party_graph=preserved)
+                for item in malformed_parties:
+                    has_old_party_data = bool(preserved_by_membership.get(item["context"]))
+                    item["preservation_status"] = (
+                        "previous_accepted_party_evidence_composed"
+                        if has_old_party_data else
+                        "no_previous_party_evidence_for_membership"
+                        if has_published_state else
+                        "no_previous_accepted_member_graph"
+                    )
+        elif malformed_parties:
+            for item in malformed_parties:
+                item["preservation_status"] = "not_applicable_offline"
+        graphs.append((wrapper, graph, identity, digest, exclusions, status))
     if args.output_nq:
         Path(args.output_nq).write_text("".join(nquads(graph, graph_iri) for wrapper, graph, identity, digest, exclusions, _ in graphs if graph is not None for graph_iri in [member_graph_iri(wrapper["member"])]), encoding="utf-8")
     if getattr(args, "output_ttl", None):
@@ -427,18 +503,59 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
         for wrapper, graph, identity, digest, exclusions, status in graphs:
             if graph is None:
                 prior = store.get_resource("members", identity)
-                if prior["published_payload"] is not None:
+                if any(item.get("preservation_status") == "blocked_previous_graph_retained"
+                       for item in exclusions):
+                    # Current evidence cannot safely replace the accepted graph
+                    # because its party payload is unavailable or unverifiable.
+                    skipped += 1
+                    continue
+                malformed_parties = [item for item in exclusions
+                                     if item.get("category") == "source_quarantine"
+                                     and ".parties[" in item.get("path", "")]
+                if (malformed_parties
+                        and any(item.get("preservation_status") == "unchanged_published_graph_retained"
+                                for item in malformed_parties)):
+                    try:
+                        previous_graph = _verified_previous_member_graph(
+                            prior, member_graph_iri(wrapper["member"]))
+                    except ValueError as error:
+                        for item in malformed_parties:
+                            item["preservation_status"] = "blocked_previous_graph_retained"
+                            item["preservation_reason"] = str(error)
+                        skipped += 1
+                        continue
+                    preserved = prior_party_membership_evidence(
+                        previous_graph, URIRef(wrapper["member"]["uri"]),
+                        {item["context"] for item in malformed_parties})
+                    validate_member(wrapper, previous_graph,
+                                    preserved_party_graph=preserved)
                     try:
                         verify_core_graph(client, prior["graph_iri"], prior["published_payload"])
                     except ValueError:
-                        pass  # verified whole-graph replacement below repairs mismatch
+                        # Repair from the last accepted graph, not a fresh
+                        # transform that would omit its retained party evidence.
+                        graph = previous_graph
+                        for item in malformed_parties:
+                            item["preservation_status"] = "unchanged_published_graph_replayed"
+                        repaired.append(identity)
                     else:
                         _try_mark_due(reconciliation_store, "member", wrapper,
                                       force=status == "new")
                         skipped += 1
                         continue
-                graph, exclusions = transform_member_with_report(wrapper); validate_member(wrapper, graph)
-                repaired.append(identity)
+                if graph is None:
+                    if prior["published_payload"] is not None:
+                        try:
+                            verify_core_graph(client, prior["graph_iri"], prior["published_payload"])
+                        except ValueError:
+                            pass  # verified whole-graph replacement below repairs mismatch
+                        else:
+                            _try_mark_due(reconciliation_store, "member", wrapper,
+                                          force=status == "new")
+                            skipped += 1
+                            continue
+                    graph, exclusions = transform_member_with_report(wrapper); validate_member(wrapper, graph)
+                    repaired.append(identity)
             graph_iri = member_graph_iri(wrapper["member"])
             payload = ntriples(graph)
             payload_hash = store.mark_publication_dirty("members", identity, source_hash=digest,
@@ -469,7 +586,11 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
                       "future_work_omitted": [item for item in report
                                               if item["category"] != "source_quarantine"],
                       "malformed_offices": [item for item in report
-                                            if item["category"] == "source_quarantine"]},
+                                            if item["category"] == "source_quarantine"
+                                            and ".offices[" in item.get("path", "")],
+                      "malformed_parties": [item for item in report
+                                            if item["category"] == "source_quarantine"
+                                            and ".parties[" in item.get("path", "")]},
                      sort_keys=True))
     return 0
 

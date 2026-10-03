@@ -13,6 +13,8 @@ from rdflib.namespace import FOAF, RDF, SKOS, XSD
 
 from ..committee_roles import normalize_committee_roles
 from ..office_observations import parse_office_observation
+from ..party_observations import (malformed_party_report, parse_party_identity,
+                                  party_date_range_error)
 from ..transforms.common import MEMBERS, OIR, datetime_literal, iri, string
 from .houses import validate_rdf
 from .reference import assert_expected
@@ -99,18 +101,6 @@ def _required_text(value, label):
     return value
 
 
-def _party_source(wrapped, membership_path):
-    if not isinstance(wrapped, dict) or not isinstance(wrapped.get("party"), dict):
-        raise ValueError("party wrapper must contain a party object")
-    party = wrapped["party"]
-    code = _required_text(party.get("partyCode"), "party.partyCode")
-    party_iri = _source(party.get("uri"), "party.uri")
-    path = [part for part in urlsplit(str(party_iri)).path.split("/") if part]
-    if len(membership_path) != 8 or len(path) != 6 or path[:3] != ["ie", "oireachtas", "party"] or path[3:5] != membership_path[6:8] or unquote(path[5]) != code:
-        raise ValueError("party.uri must be the term-scoped Party source IRI")
-    return party, party_iri, code
-
-
 def _range(graph, parent, fragment, value):
     if not isinstance(value, dict): raise ValueError("membership dateRange must be an object")
     start = datetime_literal(value.get("start"))
@@ -123,7 +113,7 @@ def _range(graph, parent, fragment, value):
     graph.add((parent, MEMBERS.hasMembershipDateRange, subject))
 
 
-def expected_member_graph(wrapper: dict) -> tuple[Graph, list[dict]]:
+def expected_member_graph(wrapper: dict, *, preserved_party_graph: Graph | None = None) -> tuple[Graph, list[dict]]:
     """Independent source-to-RDF acceptance contract for Member-owned triples."""
     if not isinstance(wrapper, dict) or not isinstance(wrapper.get("member"), dict): raise ValueError("each Members record must contain a member object")
     data = wrapper["member"]
@@ -160,8 +150,20 @@ def expected_member_graph(wrapper: dict) -> tuple[Graph, list[dict]]:
             rp, tp = [p for p in urlsplit(str(rep_iri)).path.split("/") if p], [p for p in urlsplit(str(term)).path.split("/") if p]
             if len(rp) != 7 or rp[:5] != tp or rp[5] != kind or unquote(rp[6]) != _required_text(rep.get("representCode"), "representation.representCode"): raise ValueError("representation.uri must match membership HouseTerm, representType and representCode")
             graph.add((membership, MEMBERS.isRepresentativeFrom, rep_iri))
-        for wrapped_party in record.get("parties", []):
-            party, party_iri, party_code = _party_source(wrapped_party, mp)
+        parties = record.get("parties", [])
+        if not isinstance(parties, list): raise ValueError("membership.parties must be an array")
+        for party_index, wrapped_party in enumerate(parties):
+            party, party_uri, party_code = parse_party_identity(wrapped_party, str(membership))
+            party_iri = _source(party_uri, "party.uri")
+            reason = party_date_range_error(party)
+            if reason is not None:
+                exclusions.append(malformed_party_report(
+                    membership_index=membership_index, party_index=party_index,
+                    membership_uri=str(membership), member_uri=str(subject),
+                    party=party, party_uri=party_uri, party_code=party_code,
+                    wrapped=wrapped_party, reason=reason,
+                ))
+                continue
             pm = _generated(membership, "party-membership", {"membership": str(membership), "party": party_iri, "dateRange": party.get("dateRange")})
             graph.add((pm, RDF.type, MEMBERS.ParliamentaryCollectionMembership))
             graph.add((subject, MEMBERS.hasMembersMembership, pm))
@@ -226,6 +228,8 @@ def expected_member_graph(wrapper: dict) -> tuple[Graph, list[dict]]:
             graph.add((om, RDF.type, MEMBERS.MinisterOfStateMembership)); graph.add((subject, MEMBERS.hasMembersMembership, om)); graph.add((role, RDF.type, MEMBERS.MinisterOfStateRole)); graph.add((role, SKOS.prefLabel, Literal(_required_text(name.get("showAs"), "office.officeName.showAs")))); graph.add((om, MEMBERS.hasMinisterOfStateRole, role)); _range(graph, om, "date-range", office.get("dateRange"))
             if name.get("uri") is not None: graph.add((om, MEMBERS.officeNameUri, _source(name["uri"], "officeName.uri")))
     exclusions.extend(extract_member_omissions(wrapper))
+    if preserved_party_graph is not None:
+        graph += preserved_party_graph
     return graph, sorted(exclusions, key=lambda value: (value["category"], value["path"], value["context"], value["reason"]))
 
 
@@ -239,6 +243,7 @@ def validate_member_source(wrapper: dict) -> list[dict]:
     if not isinstance(member.get("image"), bool): raise ValueError("member.image must be boolean")
     if not isinstance(member.get("memberships"), list): raise ValueError("member.memberships must be an array")
     malformed_offices = []
+    malformed_parties = []
     for membership_index, wrapped in enumerate(member["memberships"]):
         if not isinstance(wrapped, dict) or not isinstance(wrapped.get("membership"), dict): raise ValueError("membership wrapper must contain a membership object")
         record = wrapped["membership"]
@@ -251,13 +256,16 @@ def validate_member_source(wrapper: dict) -> list[dict]:
         if date.get("end") is not None and datetime_literal(date["end"]).toPython() < start.toPython(): raise ValueError("reverse membership date range")
         parties = record.get("parties", [])
         if not isinstance(parties, list): raise ValueError("membership.parties must be an array")
-        membership_path = [part for part in urlsplit(str(_source(record.get("uri"), "membership.uri"))).path.split("/") if part]
-        for wrapped_party in parties:
-            party, _, _ = _party_source(wrapped_party, membership_path)
-            party_range = party.get("dateRange")
-            if not isinstance(party_range, dict): raise ValueError("party dateRange must be an object")
-            party_start = datetime_literal(party_range.get("start"))
-            if party_range.get("end") is not None and datetime_literal(party_range["end"]).toPython() < party_start.toPython(): raise ValueError("reverse membership date range")
+        for party_index, wrapped_party in enumerate(parties):
+            party, party_uri, party_code = parse_party_identity(wrapped_party, str(_source(record.get("uri"), "membership.uri")))
+            reason = party_date_range_error(party)
+            if reason is not None:
+                malformed_parties.append(malformed_party_report(
+                    membership_index=membership_index, party_index=party_index,
+                    membership_uri=str(record["uri"]), member_uri=str(member["uri"]),
+                    party=party, party_uri=party_uri, party_code=party_code,
+                    wrapped=wrapped_party, reason=reason,
+                ))
         committees = record.get("committees", [])
         if not isinstance(committees, list): raise ValueError("membership.committees must be an array")
         for committee in committees:
@@ -283,15 +291,15 @@ def validate_member_source(wrapper: dict) -> list[dict]:
                     "category": "source_quarantine",
                     "status": "review_required",
                 })
-    return sorted([*extract_member_omissions(wrapper), *malformed_offices],
+    return sorted([*extract_member_omissions(wrapper), *malformed_offices, *malformed_parties],
                   key=lambda value: (value["category"], value["path"], value["context"], value["reason"]))
 
 
-def validate_member(wrapper: dict, graph: Graph) -> list[dict]:
+def validate_member(wrapper: dict, graph: Graph, *, preserved_party_graph: Graph | None = None) -> list[dict]:
     """Validate source shape, exact owned triples, SHACL, and temporal quality."""
     # The expected member graph is constructed from source by the independent
     # acceptance contract, never by the production transformer.
-    expected, exclusions = expected_member_graph(wrapper)
+    expected, exclusions = expected_member_graph(wrapper, preserved_party_graph=preserved_party_graph)
     assert_expected(graph, set(expected))
     validate_rdf(graph)
     conforms, _, report = validate(

@@ -333,6 +333,267 @@ def test_unsafe_member_level_source_errors_remain_fail_closed():
         validate_member_source(changed)
 
 
+@pytest.mark.parametrize(("date_range", "reason"), [
+    ({"start": "2016-03-10", "end": "2016-03-09"}, "party.dateRange has reverse dates"),
+    ({"start": "not-a-date", "end": None}, "party.dateRange contains invalid date evidence"),
+    ({"end": "2016-03-09"}, "party.dateRange.start is required"),
+    (None, "party.dateRange must be an object with a required start"),
+])
+def test_invalid_nested_party_range_is_quarantined_without_losing_valid_member_data(date_range, reason):
+    from oireachtas_etl.validation.members import validate_member_source
+
+    changed = copied()
+    party = changed["member"]["memberships"][0]["membership"]["parties"][0]["party"]
+    party["dateRange"] = date_range
+    source_before = json.dumps(changed, ensure_ascii=False, sort_keys=True)
+
+    graph, report = transform_member_with_report(changed)
+    assert json.dumps(changed, ensure_ascii=False, sort_keys=True) == source_before
+    assert validate_member_source(changed) == report
+    assert validate_member(changed, graph) == report
+
+    malformed = [item for item in report if item.get("category") == "source_quarantine"
+                 and ".parties[" in item.get("path", "")]
+    assert len(malformed) == 1
+    item = malformed[0]
+    assert item["path"] == "member.memberships[0].membership.parties[0].party.dateRange"
+    assert item["json_pointer"] == "/member/memberships/0/membership/parties/0/party/dateRange"
+    assert item["party_uri"] == party["uri"]
+    assert item["party_code"] == party["partyCode"]
+    assert item["date_range"] == date_range
+    assert item["raw_observation"] == changed["member"]["memberships"][0]["membership"]["parties"][0]
+    assert item["reason"].startswith(reason)
+    assert item["status"] == "review_required"
+
+    # The malformed observation creates no party membership, while valid
+    # party and Member content in other HouseTerms is retained.
+    assert len(list(graph.subjects(RDF.type, MEMBERS.ParliamentaryCollectionMembership))) == 5
+    assert len(list(graph.subjects(RDF.type, MEMBERS.OireachtasMembership))) == 6
+    assert (URIRef(changed["member"]["uri"]), RDF.type, OIR.Member) in graph
+
+
+@pytest.mark.parametrize(("parties", "message"), [
+    ("not-an-array", "membership.parties must be an array"),
+    (["not-a-party-wrapper"], "party wrapper must contain a party object"),
+])
+def test_unsafe_party_containers_remain_fail_closed(parties, message):
+    from oireachtas_etl.validation.members import validate_member_source
+
+    changed = copied()
+    changed["member"]["memberships"][0]["membership"]["parties"] = parties
+    with pytest.raises(ValueError, match=message):
+        validate_member_source(changed)
+    with pytest.raises(ValueError, match=message):
+        transform_member_with_report(changed)
+
+
+def test_malformed_party_identity_remains_fail_closed():
+    from oireachtas_etl.validation.members import validate_member_source
+
+    changed = copied()
+    party = changed["member"]["memberships"][0]["membership"]["parties"][0]["party"]
+    party["uri"] = "https://data.oireachtas.ie/ie/oireachtas/party/dail/25/Other-Party"
+    with pytest.raises(ValueError, match="party.uri must be the term-scoped Party source IRI"):
+        validate_member_source(changed)
+    with pytest.raises(ValueError, match="party.uri must be the term-scoped Party source IRI"):
+        transform_member_with_report(changed)
+
+
+def test_offline_members_cli_surfaces_quarantined_party_and_keeps_valid_siblings(tmp_path, capsys):
+    from oireachtas_etl.cli import run_members
+
+    changed = copied()
+    bad_party = changed["member"]["memberships"][0]["membership"]["parties"][0]["party"]
+    raw_start, raw_end = "2016-03-10", "2016-03-09"
+    bad_party["dateRange"] = {"start": raw_start, "end": raw_end}
+    fixture = tmp_path / "malformed-party-member.json"
+    fixture.write_text(json.dumps([changed], ensure_ascii=False), encoding="utf-8")
+    fixture_before = fixture.read_bytes()
+    output = tmp_path / "members.nq"
+    args = Namespace(fixture=str(fixture), offline=True, raw_dir=str(tmp_path / "raw"),
+                     output_nq=str(output), output_ttl=None, fuseki_gsp_url=None,
+                     fuseki_sparql_url=None, state_file=None)
+
+    assert run_members(args) == 0
+    first_report = json.loads(capsys.readouterr().out)
+    first_payload = output.read_bytes()
+    assert fixture.read_bytes() == fixture_before
+    assert len(first_report["malformed_parties"]) == 1
+    malformed = first_report["malformed_parties"][0]
+    assert malformed["reason"] == "party.dateRange has reverse dates"
+    assert malformed["date_range"] == {"start": raw_start, "end": raw_end}
+    assert malformed["preservation_status"] == "not_applicable_offline"
+    bad_ranges = []
+    generated_graph, _ = transform_member_with_report(changed)
+    for party_membership in generated_graph.subjects(
+            RDF.type, MEMBERS.ParliamentaryCollectionMembership):
+        periods = generated_graph.objects(party_membership, MEMBERS.hasMembershipDateRange)
+        values = {(str(start), str(end)) for period in periods
+                  for start in generated_graph.objects(period, MEMBERS.StartDate)
+                  for end in generated_graph.objects(period, MEMBERS.EndDate)}
+        if (raw_start, raw_end) in values:
+            bad_ranges.append(party_membership)
+    assert not bad_ranges
+
+    # Repeated offline runs must produce byte-identical RDF and the same
+    # source-quarantine report independent of generated run metadata.
+    assert run_members(args) == 0
+    second_report = json.loads(capsys.readouterr().out)
+    assert output.read_bytes() == first_payload
+    assert second_report["malformed_parties"] == first_report["malformed_parties"]
+
+
+def test_online_member_change_composes_previously_accepted_party_evidence(tmp_path, monkeypatch, capsys):
+    from oireachtas_etl import cli
+    from oireachtas_etl.transforms.members import prior_party_membership_evidence
+    from oireachtas_etl.state import CoreStateStore
+
+    original = copied()
+    first_fixture = tmp_path / "accepted-member.json"
+    first_fixture.write_text(json.dumps([original], ensure_ascii=False), encoding="utf-8")
+    first_calls = []
+    _mock_online(monkeypatch, first_calls)
+    assert cli.run_members(_online_args(tmp_path, first_fixture)) == 0
+    capsys.readouterr()
+    assert len(first_calls) == 1
+
+    identity = original["member"]["uri"]
+    with CoreStateStore(tmp_path / "state.sqlite") as state:
+        accepted = state.get_resource("members", identity)
+        old_payload = accepted["published_payload"]
+    previous_graph = Graph()
+    previous_graph.parse(data=old_payload, format="nt")
+    affected_membership = original["member"]["memberships"][0]["membership"]["uri"]
+    prior_party_graph = prior_party_membership_evidence(
+        previous_graph, URIRef(identity), {affected_membership})
+    assert prior_party_graph
+
+    current = copied()
+    current["member"]["fullName"] = "Current Member Name"
+    party = current["member"]["memberships"][0]["membership"]["parties"][0]["party"]
+    party["dateRange"] = {"start": "2016-03-10", "end": "2016-03-09"}
+    second_fixture = tmp_path / "malformed-current-member.json"
+    second_fixture.write_text(json.dumps([current], ensure_ascii=False), encoding="utf-8")
+    second_args = _online_args(tmp_path, second_fixture)
+    second_calls = []
+    _mock_online(monkeypatch, second_calls)
+    assert cli.run_members(second_args) == 0
+    second_report = _report(capsys)
+    assert second_report["published"] == 1
+    assert len(second_calls) == 1
+    quarantine = second_report["malformed_parties"]
+    assert len(quarantine) == 1
+    assert quarantine[0]["preservation_status"] == "previous_accepted_party_evidence_composed"
+
+    published_graph = Graph()
+    published_graph.parse(data=second_calls[0][1], format="nt")
+    assert set(prior_party_graph).issubset(set(published_graph))
+    assert "Current Member Name" in second_calls[0][1]
+    assert validate_member(current, published_graph, preserved_party_graph=prior_party_graph)
+
+    # If the remote graph has drifted, an unchanged-source repair replays the
+    # exact last accepted Member graph rather than rebuilding without its
+    # retained party evidence.
+    with CoreStateStore(tmp_path / "state.sqlite") as state:
+        published_payload = state.get_resource("members", identity)["published_payload"]
+    third_calls = []
+    _mock_online(monkeypatch, third_calls)
+    verify_calls = []
+
+    def mismatch_then_repair(*args):
+        verify_calls.append(args)
+        if len(verify_calls) == 1:
+            raise ValueError("remote graph mismatch")
+
+    monkeypatch.setattr(cli, "verify_core_graph", mismatch_then_repair)
+    assert cli.run_members(second_args) == 0
+    third_report = _report(capsys)
+    assert third_report["published"] == 1 and third_report["skipped"] == 0
+    assert len(third_calls) == 1 and len(verify_calls) == 2
+    assert third_report["malformed_parties"][0]["preservation_status"] == "unchanged_published_graph_replayed"
+    assert third_calls[0][1] == published_payload
+    with CoreStateStore(tmp_path / "state.sqlite") as state:
+        assert state.get_resource("members", identity)["published_payload"] == published_payload
+
+    # A subsequent unchanged run is a clean skip and leaves the accepted
+    # composite payload unchanged.
+    fourth_calls = []
+    _mock_online(monkeypatch, fourth_calls)
+    assert cli.run_members(second_args) == 0
+    fourth_report = _report(capsys)
+    assert fourth_report["published"] == 0 and fourth_report["skipped"] == 1
+    assert fourth_calls == []
+    assert fourth_report["malformed_parties"][0]["preservation_status"] == "unchanged_published_graph_retained"
+    with CoreStateStore(tmp_path / "state.sqlite") as state:
+        assert state.get_resource("members", identity)["published_payload"] == published_payload
+
+
+def test_online_member_change_does_not_replace_prior_graph_without_retrievable_payload(tmp_path, monkeypatch, capsys):
+    from oireachtas_etl import cli
+    from oireachtas_etl.state import CoreStateStore
+
+    original = copied()
+    accepted_fixture = tmp_path / "accepted-member.json"
+    accepted_fixture.write_text(json.dumps([original], ensure_ascii=False), encoding="utf-8")
+    first_calls = []
+    _mock_online(monkeypatch, first_calls)
+    assert cli.run_members(_online_args(tmp_path, accepted_fixture)) == 0
+    capsys.readouterr()
+
+    identity = original["member"]["uri"]
+    with CoreStateStore(tmp_path / "state.sqlite") as state:
+        state.connection.execute(
+            "UPDATE resource_state SET published_payload=NULL WHERE endpoint='members' AND resource_iri=?",
+            (identity,))
+
+    current = copied()
+    current["member"]["fullName"] = "Must Not Replace Prior Graph"
+    party = current["member"]["memberships"][0]["membership"]["parties"][0]["party"]
+    party["dateRange"] = {"start": "2016-03-10", "end": "2016-03-09"}
+    fixture = tmp_path / "malformed-current-member.json"
+    fixture.write_text(json.dumps([current], ensure_ascii=False), encoding="utf-8")
+    calls = []
+    _mock_online(monkeypatch, calls)
+    assert cli.run_members(_online_args(tmp_path, fixture)) == 0
+    report = _report(capsys)
+    assert report["published"] == 0 and report["skipped"] == 1
+    assert report["malformed_parties"][0]["preservation_status"] == "blocked_previous_graph_retained"
+    assert "previous accepted Member payload is unavailable" in report["malformed_parties"][0]["preservation_reason"]
+    assert calls == []
+
+
+def test_unchanged_malformed_party_source_blocks_repair_when_accepted_payload_is_missing(tmp_path, monkeypatch, capsys):
+    from oireachtas_etl import cli
+    from oireachtas_etl.state import CoreStateStore
+
+    current = copied()
+    party = current["member"]["memberships"][0]["membership"]["parties"][0]["party"]
+    party["dateRange"] = {"start": "2016-03-10", "end": "2016-03-09"}
+    fixture = tmp_path / "malformed-member.json"
+    fixture.write_text(json.dumps([current], ensure_ascii=False), encoding="utf-8")
+    initial_calls = []
+    _mock_online(monkeypatch, initial_calls)
+    assert cli.run_members(_online_args(tmp_path, fixture)) == 0
+    initial_report = _report(capsys)
+    assert initial_report["published"] == 1
+    assert initial_report["malformed_parties"][0]["preservation_status"] == "no_previous_accepted_member_graph"
+
+    identity = current["member"]["uri"]
+    with CoreStateStore(tmp_path / "state.sqlite") as state:
+        state.connection.execute(
+            "UPDATE resource_state SET published_payload=NULL WHERE endpoint='members' AND resource_iri=?",
+            (identity,))
+
+    repair_calls = []
+    _mock_online(monkeypatch, repair_calls)
+    assert cli.run_members(_online_args(tmp_path, fixture)) == 0
+    report = _report(capsys)
+    assert report["published"] == 0 and report["skipped"] == 1
+    assert report["malformed_parties"][0]["preservation_status"] == "blocked_previous_graph_retained"
+    assert "previous accepted Member payload is unavailable" in report["malformed_parties"][0]["preservation_reason"]
+    assert repair_calls == []
+
+
 @pytest.mark.parametrize("uri", [
     "http://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12",
     "https://evil.example/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12",

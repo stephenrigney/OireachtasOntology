@@ -11,6 +11,8 @@ from rdflib.namespace import FOAF, RDF, SKOS, XSD
 
 from ..committee_roles import normalize_committee_roles
 from ..office_observations import parse_office_observation
+from ..party_observations import (malformed_party_report, parse_party_identity,
+                                  party_date_range_error)
 from .common import MEMBERS, OIR, datetime_literal, iri, string
 
 HOUSES = {"dail": URIRef("https://data.oireachtas.ie/house/dail"), "seanad": URIRef("https://data.oireachtas.ie/house/seanad")}
@@ -117,19 +119,10 @@ def _reference_representation(record: dict, term: URIRef, house_code: str) -> UR
     return subject
 
 
-def _party(graph: Graph, member: URIRef, membership: URIRef, value: object) -> None:
-    if not isinstance(value, dict):
-        raise ValueError("party wrapper must contain a party object")
-    party = value.get("party")
-    if not isinstance(party, dict):
-        raise ValueError("party wrapper must contain a party object")
-    code = party.get("partyCode")
-    if not isinstance(code, str) or not code:
-        raise ValueError("party.partyCode must be a non-empty string")
-    party_iri = _source_iri(party.get("uri"), label="party.uri"); membership_path = [part for part in urlsplit(str(membership)).path.split("/") if part]
-    party_path = [part for part in urlsplit(str(party_iri)).path.split("/") if part]
-    if len(membership_path) != 8 or len(party_path) != 6 or party_path[:3] != ["ie", "oireachtas", "party"] or party_path[3:5] != membership_path[6:8] or unquote(party_path[5]) != code:
-        raise ValueError("party.uri must be the term-scoped Party source IRI")
+def _party(graph: Graph, member: URIRef, membership: URIRef, value: object,
+           identity: tuple[dict, str, str] | None = None) -> None:
+    party, party_uri, code = identity or parse_party_identity(value, str(membership))
+    party_iri = URIRef(party_uri)
     identity = {"membership": str(membership), "party": party_iri, "dateRange": party.get("dateRange")}
     subject = _generated(membership, "party-membership", identity)
     graph.add((subject, RDF.type, MEMBERS.ParliamentaryCollectionMembership))
@@ -140,6 +133,39 @@ def _party(graph: Graph, member: URIRef, membership: URIRef, value: object) -> N
         graph.add((subject, RDF.type, MEMBERS.PartyMembership))
         graph.add((subject, MEMBERS.isPartyMembershipOf, party_iri))
     _date_range(graph, subject, "date-range", party.get("dateRange"))
+
+
+def prior_party_membership_evidence(previous: Graph, member: URIRef,
+                                    membership_iris: set[str]) -> Graph:
+    """Select exact previously accepted party RDF for affected House terms.
+
+    Party resources are parent-scoped under their containing Oireachtas
+    membership. The explicit context predicates cover current payloads; the
+    stable parent-scoped IRI also permits safe recovery from older accepted
+    payloads predating the explicit context relation.
+    """
+    retained = Graph()
+    for membership_text in sorted(membership_iris):
+        membership = URIRef(membership_text)
+        subjects = set(previous.subjects(MEMBERS.inOireachtasMembership, membership))
+        prefix = membership_text + "#party-membership-"
+        subjects.update(
+            candidate for candidate in previous.objects(member, MEMBERS.hasMembersMembership)
+            if isinstance(candidate, URIRef) and str(candidate).startswith(prefix)
+        )
+        for subject in subjects:
+            if (member, MEMBERS.hasMembersMembership, subject) not in previous:
+                continue
+            if not (list(previous.objects(subject, MEMBERS.memberOfCollection))
+                    or list(previous.objects(subject, MEMBERS.isPartyMembershipOf))):
+                continue
+            for triple in previous.triples((subject, None, None)):
+                retained.add(triple)
+            retained.add((member, MEMBERS.hasMembersMembership, subject))
+            for period in previous.objects(subject, MEMBERS.hasMembershipDateRange):
+                for triple in previous.triples((period, None, None)):
+                    retained.add(triple)
+    return retained
 
 
 def _committee(graph: Graph, member: URIRef, membership: URIRef, record: object, exclusions: list[dict], context: str) -> None:
@@ -232,7 +258,22 @@ def transform_member_with_report(wrapper: dict) -> tuple[Graph, list[dict]]:
         for representation in representations:
             if not isinstance(representation, dict) or not isinstance(representation.get("represent"), dict): raise ValueError("representation wrapper must contain a represent object")
             graph.add((membership, MEMBERS.isRepresentativeFrom, _reference_representation(representation["represent"], term, code)))
-        for party in record.get("parties", []): _party(graph, subject, membership, party)
+        parties = record.get("parties", [])
+        if not isinstance(parties, list):
+            raise ValueError("membership.parties must be an array")
+        for party_index, wrapped_party in enumerate(parties):
+            party, party_uri, party_code = parse_party_identity(wrapped_party, str(membership))
+            reason = party_date_range_error(party)
+            if reason is not None:
+                exclusions.append(malformed_party_report(
+                    membership_index=number, party_index=party_index,
+                    membership_uri=str(membership), member_uri=str(subject),
+                    party=party, party_uri=party_uri, party_code=party_code,
+                    wrapped=wrapped_party, reason=reason,
+                ))
+                continue
+            _party(graph, subject, membership, wrapped_party,
+                   identity=(party, party_uri, party_code))
         committees = record.get("committees", [])
         if not isinstance(committees, list):
             raise ValueError("membership.committees must be an array")
