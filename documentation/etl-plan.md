@@ -1511,13 +1511,17 @@ The approved Debates design is recorded in
 remains `documentation/debates_ontology_outline.md` and
 `ontology/debates.owl.ttl`.
 
-**Status:** design complete; implementation not started.
+**Status:** Debates Tranche 1 semantic/source contract is complete and verified;
+Tranche 2 may start on representative fixtures. No runtime Debates transformer
+is implemented yet.
 
 Settled boundaries include:
 
-- intended source scope is Dáil, Seanad, committees and written answers,
-  subject to an implementation-time volume/resource gate that may restrict the
-  initial production scope to Bill debates;
+- intended source scope for representative transformation is Dáil, Seanad,
+  committees and written answers. The production-scope gate does not block
+  Tranche 1 or Tranche 2; after the core transformer exists and before broad
+  production ingestion, a measured census/benchmark will select full-corpus or
+  Bill-debates-first ingestion;
 - AKN XML is authoritative source evidence;
 - Debates owns its questions and divisions/votes;
 - transcript text is not copied into RDF; future topic/keyword extraction is
@@ -1529,27 +1533,46 @@ Settled boundaries include:
   integer source ordinals represented where graph ordering is useful;
 - unresolved cross-resource references are preserved/reported without
   inventing placeholder semantic entities;
-- one replaceable authoritative named graph is used per debate record/sitting;
+- one replaceable authoritative named graph is used per Work/debate record;
+  any eligible DebateSitting belongs in that same graph;
   and
 - Phase 7 supplies source identity, hashing, replay and graph-replacement
   mechanics, while Phase 6 owns production scan cadence, reconciliation
   windows, scheduling and other operational refresh policy.
 
+The approved identity contract uses exact Work and Expression `FRBRuri/@value`
+paths with UTF-8 component-wise RFC 3986 percent encoding. The graph URI
+replaces `/akn/ie/debateRecord` in the once-encoded Work IRI path with
+`/graph/debate`, without a second encoding pass. A sitting IRI `{work IRI}#sitting`
+is used only when the approved `FRBRname` and Work-path rule identifies an
+actual non-written sitting; written-answer Works receive no `DebateSitting`.
+Known multiple Expressions for one Work fail closed for that Work, rather than
+publishing a graph from one Expression alone. The full rules are in
+`documentation/debates-identity-contract.md`.
+
 #### Debates implementation tranches
 
-1. **Source contract, mapping and fixtures** — audit representative source
-   types, measure the corpus/resource gate, define the mapping and settle exact
-   identifier/order/unresolved-reference representations.
+1. **Source contract, mapping and fixtures** — complete and implement the
+   approved semantic/source contract, verify exact identity/order/reference
+   rules against representative Dáil, Seanad, committee and written-answer AKN
+   sources, and preserve immutable representative fixtures.
 2. **Core debate transformation** — implement records/sittings, sections,
    speeches, summaries, questions, divisions/votes and source order without
-   transcript text.
+   transcript text; run deterministic/golden tests across all four source
+   types. Tranche 1 static contract tests do not prove RDF non-emission;
+   Tranche 2 goldens must inspect actual RDF for the approved negative cases.
 3. **Cross-dataset integration and validation** — resolve existing Member,
    House/HouseTerm/committee, ministerial and legislative resources; add SHACL,
    quality checks, competency queries and graph-boundary tests.
 4. **Source ingestion, state and publication mechanics** — preserve AKN input,
    persist source identity/hashes, add replay/idempotency and per-record graph
-   replacement through the normal ETL path. Production scanning policy remains
-   Phase 6 work.
+   replacement through the normal ETL path. After the core transformer exists,
+   census all in-scope XML (including `writtens`) and benchmark runtime and RDF
+   output/working storage on representative records. Use measured XML volume,
+   runtime and RDF output against deployment budgets to choose full-corpus or
+   Bill-debates-first production ingestion before broad production ingestion.
+   This gate does not block Tranche 1 or Tranche 2. Production scanning cadence
+   and scheduling policy remain Phase 6 work.
 
 #### Debates backlog
 
@@ -1558,10 +1581,16 @@ Settled boundaries include:
 - [x] Define authoritative source, scope and RDF ownership.
 - [x] Define graph granularity and cross-resource resolution policy.
 - [x] Define the Phase 6/Phase 7 refresh responsibility boundary.
-- [ ] Create or update the Debates mapping specification.
-- [ ] Complete the representative-corpus/resource audit and record the initial
-  full-corpus versus Bill-debates-only implementation scope.
-- [ ] Implement the four Debates tranches above.
+- [x] Complete and verify the approved Debates mapping specification against
+  the ontology and semantic-review contract.
+- [x] Audit representative Dáil, Seanad, committee and written-answer source
+  structures and preserve byte-checked fixtures.
+- [ ] After the core transformer exists, census/benchmark total in-scope XML
+  volume (including written answers), runtime and RDF output/working storage;
+  choose full-corpus or Bill-debates-first production ingestion before broad
+  production ingestion.
+- [ ] Implement the remaining Debates tranches (2–4) above; Tranche 1's
+  semantic/source contract is complete.
 - [ ] Add Debates SHACL/quality validation and competency queries.
 - [ ] Add deterministic graph replacement and replay/idempotency tests.
 

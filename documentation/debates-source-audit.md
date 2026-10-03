@@ -1,10 +1,13 @@
-# Phase 7 Debates — source audit (proposal-only partial tranche)
+# Phase 7 Debates — representative source audit
 
 This records source evidence for the approved [Phase 7 design](phase-7-debates.md),
-not a transformation or final mapping contract. Three full official AKN responses
-were added byte-for-byte; the two existing Dáil examples were left untouched.
-Audit retrieval date: 2026-10-02. Transcript text remains source-only under the
-approved RDF boundary.
+not a transformation or production-corpus census. Three full official AKN
+responses were added byte-for-byte; the two existing Dáil examples were left
+untouched. Audit retrieval date: 2026-10-02. Transcript text remains source-only
+under the approved RDF boundary. The ontology-gap descriptions below are
+explicitly the historical, pre-approval baseline; the approved I1/I2/O1–O8
+contract and current implementation status are recorded in the
+[semantic review](debates-semantic-review.md).
 
 ## Representative source inventory
 
@@ -51,46 +54,54 @@ separate `writtens` AKN documents. On 2015-07-02, `/v1/questions` returns 239
 questions (10 oral in the Dáil debate file and 229 written in the separate
 `writtens` file), illustrating that boundary.
 
-The Phase 7 full-corpus-versus-Bill-debates gate is **insufficiently measured**;
-record counts alone cannot establish storage or processing cost, and the written
-answer source family is outside the count above. Do not infer a scope decision
-or an arbitrary cutoff from this census. The smallest useful next measurement is
-to enumerate all in-scope AKN main documents (including `writtens`) and sum
-their primary immutable-source bytes, then record bytes actually written for
-source preservation and derived/temporary processing on a representative full
-record. Measure the processing multiplier against primary input bytes (with
-peak working storage and elapsed time) before comparing the extrapolated totals
-with deployment budgets. No numeric threshold or Bill-only decision is proposed
-here.
+The Phase 7 full-corpus-versus-Bill-debates production gate is **insufficiently
+measured**: the API census excludes written-answer XML, and record counts do not
+establish total XML volume, runtime or RDF output. This gate does **not** block
+Tranche 1 semantic/source-contract work or Tranche 2 representative
+transformation. After the core transformer exists and before broad production
+ingestion, enumerate all in-scope AKN main documents (including `writtens`) and
+measure primary XML bytes, elapsed runtime, RDF output and working/storage needs
+on representative records. Compare the measured costs with deployment budgets
+to choose full-corpus or Bill-debates-first production ingestion. Do not infer a
+scope decision from record counts or set an arbitrary cutoff; no production
+scope has been selected by this source audit.
 
-## AKN structure, intended RDF coverage, and open questions
+## Historical ontology baseline reviewed before semantic approval
 
-The baseline in `ontology/debates.owl.ttl` already defines the principal
+This section records the ontology/mapping baseline and open questions at the
+2026-10-02 audit, before I1/I2/O1–O8 were approved. These are historical
+findings, not claims about the current approved vocabulary or mapping. The
+approved contract and implementation-verification status are in the
+[semantic review](debates-semantic-review.md).
+
+At audit time, `ontology/debates.owl.ttl` already defined the principal
 `DebateRecord`, `DebateExpression`, `DebateSitting`, `DebateSection`, `Speech`,
-`Summary`, `ParliamentaryQuestion`, and `Division` classes. It provides section,
-speech, summary and division containment; question/speaker shortcuts; division
-counts/outcome/vote links; and ELI-DL activity/vote terms. This is evidence of
-candidate coverage, not approval to emit every source relationship.
+`Summary`, `ParliamentaryQuestion`, and `Division` classes. It provided some
+section, speech, summary and division containment; question/speaker shortcuts;
+division counts/outcome/vote links; and ELI-DL activity/vote terms. This was
+candidate coverage evidence, not approval to emit every source relationship.
 
-| AKN paths / observed variants | Intended existing coverage | Ambiguity requiring review |
+| AKN paths / observed variants | Historical baseline coverage | Audit-time gap or ambiguity; current disposition |
 |---|---|---|
-| `meta/identification/{FRBRWork,FRBRExpression,FRBRManifestation}`; `FRBRname` absent in the older Dáil sample, `debate` in current debate samples, `writtens` in written answers. Work paths include `/debate/` or `/writtens/`; the older Dáil snapshot lacks that segment. Expression paths use both `eng@` and `mul@` while inspected `FRBRlanguage` values say `eng`. | Record/expression/sitting resources and source identity. Preserve AKN IDs and source bytes; do not treat expression path spelling as a language assertion. | The ontology has no explicit expression-to-record link or language term. Stable public IRI normalization and source identity remain subject to the Phase 7 contract; do not infer language from `mul@`/`eng@`. |
-| `debateBody/debateSection[@name]`, recursively nested; observed names include `prelude`, `debate`, `questions`, `question`, `topical`, `motion`, `statement`, `orderofBusiness`, `billReport`, `division`, `ta`, `nil`, `staon`, `writtenAnswers`, and `writtenAnswer`. XML sibling order is present. | `DebateSection`, `:hasSection`, `:hasSubSection`, `:hasSpeech`, `:hasSummary`, `:hasDivision`; transcript prose is excluded from RDF. | RDF is unordered and the ontology has no source ordinal. Phase 7 design calls for a lightweight source ordinal, but its ontology representation needs semantic approval. Host House/committee links also need review; the outline's `:inHouse` suggestion conflicts with its declared `BillEvent` domain, and a committee is not an enduring House. |
-| `<speech by="…" as="…">`, `<from>`, and `recordedTime`; committee speeches and a committee roll call are present. | `Speech`, the `:speaker` shortcut for a resolved Member, and recorded-time metadata; canonical participation is intended to use ELI-DL. | `:speaker` cannot represent witnesses. The `eli-dl:had_participation` domain is `Activity`, despite the ontology comment suggesting it on `Speech`; do not assert it without semantic review. A `TLCRole`/label does not itself establish a `ParticipationRole`. |
-| `<question by="…" to="…">`; written answers group `<question>` and `<speech>` inside `writtenAnswer` sections. No `<answer>` element occurs in these samples. | `ParliamentaryQuestion`, `:askedBy`, `:directedTo`; source remains available for replay. | The ontology has no question-to-section or explicit question-to-answer link. A written response encoded as `<speech>` is not necessarily an oral `Speech`; `:directedTo` expects `eli-dl:ParticipationRole`, not a `TLCRole` merely because the labels match. |
-| `meta/analysis/parliamentary/voting` with `count/@refersTo` values `#ta`, `#nil` and (in 2026) `#staon`; body `division` subsections can carry individual `person` votes. Seanad 2015 includes `voting/@outcome="#declared"` and `voting/@refersTo="#sum_7"`. | `Division`, its count/outcome terms, and recorded Member vote properties are present in the ontology. | **`#declared` is a semantic review gap:** current named outcomes cover `#carried`/`#lost`, not `#declared`. Also, the observed summary target does not match the outline's proposed `DebateSection`/`BillEvent` target for `:refersToProposal`. Do not coerce either source reference. |
-| Committee `<rollCall><summary/><table>`; table `person/@refersTo` entries identify those present. | No explicit attendance/roll-call class or relation is defined in the existing Debates ontology. | **`rollCall` is a semantic review gap:** attendance must not be inferred as speech participation or a vote. Decide whether and how presence is represented before mapping it. |
+| `meta/identification/{FRBRWork,FRBRExpression,FRBRManifestation}`; `FRBRname` absent in the older Dáil sample, `debate` in current debate samples, `writtens` in written answers. Work paths include `/debate/` or `/writtens/`; the older Dáil snapshot lacks that segment. Expression paths use both `eng@` and `mul@` while inspected `FRBRlanguage` values say `eng`. | At audit time, record/expression/sitting classes and source identity evidence existed. | The baseline lacked explicit Work/Expression links and a language-code property. **O2 now approves** `:hasExpression`, `:expressionHasSection` and `:expressionLanguageCode`; the exact IRI policy is approved under I1. Never infer language from URI spelling. |
+| `debateBody/debateSection[@name]`, recursively nested; observed names include `prelude`, `debate`, `questions`, `question`, `topical`, `motion`, `statement`, `orderofBusiness`, `billReport`, `division`, `ta`, `nil`, `staon`, `writtenAnswers`, and `writtenAnswer`. XML sibling order is present. | The baseline covered some section/contribution containment; transcript prose was out of scope. | The baseline lacked a source ordinal and approved host links. **O1/O4 now define** `:sourceOrdinal`, `:recordOfBody` and `:recordOfHouseTerm`; their ontology/mapping contract checks pass. Runtime ordinal assignment and owner resolution remain transformation work. |
+| `<speech by="…" as="…">`, `<from>`, and `recordedTime`; committee speeches and a committee roll call are present. | The baseline had `Speech`, resolved-Member `:speaker`, and recorded-time metadata. | The ELI-DL `Activity` domain made `eli-dl:had_participation` unsafe on Speech. **O5 now approves** local `:hasSpeechParticipation`; unresolved person/role references remain non-RDF evidence. |
+| `<question by="…" to="…">`; written answers group `<question>` and `<speech>` inside `writtenAnswer` sections. No `<answer>` element occurs in these samples. | The baseline had `ParliamentaryQuestion` and `:askedBy`. | **O3 now approves** immediate `:hasQuestion` containment and clarifies that written response `<speech>` is not a one-to-one answer link. `:directedTo` still requires an existing resolved role; O6 approves a separate conditional office link. |
+| `meta/analysis/parliamentary/voting` with `count/@refersTo` values `#ta`, `#nil` and (in 2026) `#staon`; body `division` subsections can carry individual `person` votes. Seanad 2015 includes `voting/@outcome="#declared"` and `voting/@refersTo="#sum_7"`. | The baseline had Division/count/outcome/vote terms. | **O7 keeps `#declared` source-only for outcome purposes** (no carried/lost inference) and keeps `voting/@refersTo` inactive under the initial boundary. The current 2015 Staon evidence supersedes the old temporal annotation; the approved annotation now says “when supplied.” |
+| Committee `<rollCall><summary/><table>`; table `person/@refersTo` entries identify those present. | No roll-call attendance model existed in the baseline. | **O8 approves source-only attendance** in the initial RDF scope. Do not infer speech participation, Division or votes; a future attendance RDF model needs separate approval. |
 
 The current official 2015 Dáil response (distinct from the older checked-in
 snapshot) also has `#staon` aggregate counts without a corresponding Staon
-member subsection. This contradicts the ontology annotation that Staon counts
-appear from 2026 onward. A count is not evidence for a complete individual
-voter list; map the supplied aggregate independently of voter membership after
-the source join is validated.
+member subsection. This contradicted the historical ontology annotation that
+Staon counts appeared from 2026 onward; the approved annotation now says “when
+supplied.” A count is not evidence for a complete individual voter list; the
+aggregate and voter membership remain distinct source assertions.
 
-These findings preserve the approved phase boundary: no ontology or mapping
-semantics, RDF ownership, source identifiers, or publication behavior are changed
-by this partial source audit.
+These findings preserve source evidence and explain the historical review
+baseline; they do not define current ontology gaps or claim a Debates
+transformation. Current approval and verification status belongs to the semantic
+review. This source audit itself does not alter ontology or mapping semantics,
+RDF ownership, source identifiers, or publication behavior.
 
 ## Existing repository samples versus current official bytes
 

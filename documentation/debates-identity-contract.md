@@ -1,10 +1,10 @@
 # Phase 7 Debates — Tranche 1 identity, order and reference contract
 
-**Status: proposal-only, partial Tranche 1 contract.** This document makes the
-candidate rules below exact enough to review and regression-test; it does not
-approve an ontology or mapping change, establish a new graph boundary, or
-implement an extractor, transformer, resolver, validator, or publisher. The
-source audit and ontology/mapping review remain prerequisites to implementation.
+**Status: approved identity/source contract; Tranche 1 complete.** The
+ontology/mapping additions and static contract checks are verified. Tranche 2
+may start. This document records the approved identity,
+graph, ordering and reference-evidence rules; it does not claim that a runtime
+extractor, transformer, resolver or publisher implements them.
 The governing boundaries are in [Phase 7](phase-7-debates.md), especially its
 identifier, order, cross-resource, and graph-ownership sections.
 
@@ -42,7 +42,7 @@ preserved as written, not silently treated as absent.
 
 ## 2. Work, expression, resource, and graph identity
 
-The candidate source identity for each FRBR level is the exact XML-parsed
+The approved source identity for each FRBR level is the exact XML-parsed
 `@value` of that level's single `FRBRuri` element:
 
 * Work key: `FRBRWork/FRBRuri/@value`.
@@ -83,8 +83,10 @@ are:
 | Work | `/akn/ie/debateRecord/dail/2015-07-02/debate` | `https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/debate` |
 | Expression | `/akn/ie/debateRecord/dail/2015-07-02/debate/mul@` | `https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/debate/mul%40` |
 
-The proposed replaceable graph URI is keyed by the Work FRBR URI, not an
-expression URI or any component eId:
+The approved replaceable graph URI is keyed by the Work FRBR URI, not an
+expression URI or any component eId. Replace the `/akn/ie/debateRecord` prefix
+of the once-encoded Work IRI path with `/graph/debate`; retain the already
+encoded suffix exactly as-is and do not encode any segment a second time:
 
 ```text
 graph URI = https://data.oireachtas.ie/graph/debate/{encoded Work path after /akn/ie/debateRecord/}
@@ -92,25 +94,34 @@ graph URI = https://data.oireachtas.ie/graph/debate/{encoded Work path after /ak
 
 For the Work example above, this is
 `https://data.oireachtas.ie/graph/debate/dail/2015-07-02/debate`.
-The sitting has no source eId in the audited records. A deterministic
-**proposal**, pending semantic review of the Work-to-sitting correspondence,
-is `{work IRI}#sitting` (for the example,
+The sitting has no source eId in the audited records. Its approved IRI is
+`{work IRI}#sitting` (for the example,
 `https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/debate#sitting`).
 The fragment does not encode source position, language, or an invented
 ministerial/legislative identity.
 
-This is intended to preserve Phase 7's existing one-authoritative-graph-per
-debate record/sitting boundary; it does not authorize one graph per expression
-or per section. A second expression for the same work therefore has a distinct
-expression IRI but the same proposed graph key. **Open decision:** whether a
-work with multiple expressions is out of initial scope, selects one expression,
-or combines expressions within the one record graph. Do not merge, overwrite,
-or create a per-expression graph until that decision is reviewed. If an input
-cannot be processed unambiguously under the selected policy, fail closed and
-retain the source; do not change the graph boundary to make it fit. This
-work-key proposal also depends on confirming that one Work identifies exactly
-one Phase 7 debate record/sitting; if source evidence contradicts that, stop for
-graph-boundary review rather than widening or narrowing graph ownership.
+This preserves Phase 7's one-authoritative-graph-per-record boundary; it does
+not authorize one graph per expression or per section. A second expression for
+the same Work therefore has a distinct expression IRI but the same graph key.
+The approved initial policy is to fail closed for a Work when more than one of
+its Expressions is known: retain each exact input and report the condition, but
+do not publish or replace that Work's graph from one Expression in isolation.
+A single fetched file does not prove that the Work has only one Expression
+globally; `/v1/debates` is not a complete Expression manifest. Do not merge
+partial expression inputs, select one arbitrarily, or create per-Expression
+graphs. Any later complete-bundle policy requires separate review and an
+authoritative discovery/completeness contract. If evidence contradicts the
+one-Work-to-one-record graph boundary, stop for graph-boundary review rather
+than widening or narrowing graph ownership.
+
+Create a `DebateSitting` at `{work IRI}#sitting` only when `FRBRname/@value` is
+absent or exactly `debate`, the Work does not identify `/writtens`, and those
+source-type signals do not conflict. Use `eli-dl:activity_date` from the Work
+date and `:producedRecord` to the Work. For `FRBRname="writtens"`, emit the
+separate `DebateRecord` and date but no sitting: publication of written answers
+does not evidence another activity. A conflicting or unreviewed source type
+fails closed for sitting emission and is reported; matching House/date alone
+is not evidence of a sitting.
 
 ## 3. eId uniqueness and missing-ID fallback
 
@@ -122,7 +133,7 @@ references, or the elements have different classes. A duplicate is a hard
 contract error: do not disambiguate it by class, suffix, source position, or
 fallback hash. The source expression's eId index would otherwise be ambiguous.
 
-An addressable RDF resource with a missing or empty eId may use this proposed
+An addressable RDF resource with a missing or empty eId may use this approved
 fallback, provided its XML subtree and containing-resource context are
 available:
 
@@ -168,14 +179,16 @@ SHA-256:       646242b40e1062e09f7d3cfbcb6d5506ecb032b190ec264e23f52940ad9749a2
 fallback IRI:  https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/debate/mul%40/fallback/fb-646242b40e1062e09f7d3cfbcb6d5506ecb032b190ec264e23f52940ad9749a2
 ```
 
-## 4. Source order (proposal pending ontology approval)
+## 4. Source order (approved contract; static ontology/mapping checks verified)
 
-AKN child order remains authoritative. For each XML parent independently,
-assign an addressable RDF child resource a **1-based source ordinal among all
-immediate RDF-addressable siblings of that parent**, in their original XML
-child order. Count mixed addressable resource kinds in one sequence. Skip
-non-addressable elements, text, and comments; do not count descendants while
-processing their parent. A nested parent starts its own sequence at 1. The
+AKN child order remains authoritative. For each containing XML resource
+independently, assign each immediate addressable RDF child a **positive,
+consecutive, 1-based source ordinal among all immediate addressable siblings**,
+in original XML child order. Count mixed addressable resource kinds in one
+sequence. Addressable children include DebateSection (including division and
+ta/nil/staon groups), Speech, Summary and ParliamentaryQuestion. Skip
+non-addressable elements, text and comments; do not count descendants while
+processing their parent. A nested container starts its own sequence at 1. The
 ordinal is ordering metadata only and is never an identifier, fallback input,
 or tie-breaker.
 
@@ -183,10 +196,11 @@ Example: for immediate children `section`, non-addressable `heading`, `speech`,
 `summary`, `section`, the addressable ordinals are respectively `1`, `2`, `3`,
 and `4`. A nested section's own addressable children begin again at `1`.
 
-The existing Debates ontology has no approved property for this mixed-sibling
-integer. `:sourceOrdinal` with `xsd:integer` is a proposal only, pending
-ontology/semantic approval. No property assertion or mapping is authorized by
-this document; do not use `eli-dl:activity_order` as a substitute.
+The approved property is `:sourceOrdinal` with `xsd:integer` range and no class
+domain or key implication. Its ontology declaration and active mapping row pass
+the static ontology/mapping checks. Runtime ordinal assignment and transformed-
+RDF ordering validation belong to Tranche 2; do not use
+`eli-dl:activity_order` as a substitute.
 
 ## 5. Reference outcomes and source-hash sidecar
 
@@ -194,8 +208,10 @@ Resolve a source reference only under the field's reviewed source-reference
 rules and against an existing resource owned by that dataset. Preserve the
 XML-parsed source reference value and the reference's source context; do not
 guess from labels, invent placeholder entities, or add descriptive triples
-for cross-dataset resources. The exact field-by-field reference grammar and
-ontology predicates remain subject to the mapping/semantic review.
+for cross-dataset resources. Apply the attribute-specific parsing, resolution
+and predicate conditions in the approved
+[`debates-semantic-review.md`](debates-semantic-review.md) and mapping contract;
+the generic outcome mechanics here do not authorize an otherwise inactive link.
 
 For each reviewed source reference slot, keep one deterministic non-RDF
 reference-outcome row in the existing transform-report/raw-source state
@@ -249,15 +265,16 @@ input to `source_sha256`.
 
 ## 6. Regression scope and explicit non-implementation
 
-`tests/test_debates_identity_contract.py` checks the examples, formulae, and
-fail-closed cases specified here using test-local reference calculations. It
-does not import a Debates transformer, read an AKN corpus fixture, assert RDF
-output, or claim that extraction, URI generation, ordering, reference
-resolution, graph publication, or the proposed ordinal property is implemented.
+`tests/test_debates_identity_contract.py` checks the examples, formulae and
+fail-closed cases specified here using test-local reference calculations. Some
+tests read immutable AKN fixtures to verify source evidence and the reference
+ordering rule. The tests do not import a Debates transformer or assert
+transformed RDF, and do not claim runtime extraction, URI generation, ordering,
+reference resolution or graph publication is implemented. The companion static
+source/mapping/ontology contract checks likewise do not execute a transform or
+prove RDF non-emission.
 
-Still open for Tranche 1 review: confirmation against representative AKN
-metadata that the selected `FRBRuri` values are present and unique; the
-one-work-to-one-record/sitting assumption and multiple-expressions-per-work
-policy; source-specific reference grammar and field mappings; approval of the
-local namespace and graph-key formula; and approval of the ordinal predicate
-before any ontology/mapping change.
+The approved ontology/mapping additions, source-integrity checks, focused
+Debates tests and repository validation have passed. This verifies the static
+contract, not a transformer. Runtime identity/order/reference behavior and
+actual RDF output remain Tranche 2 work; the Tranche 1 exit is confirmed.

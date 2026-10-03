@@ -1,12 +1,15 @@
-"""Regression-test the proposal's examples, not a Debates ETL implementation.
+"""Check approved identity/source examples, not a Debates ETL implementation.
 
 The small calculations here are a test-local reference of the contract in
 documentation/debates-identity-contract.md. There is deliberately no import
-from the ETL package and no assertion about transformed RDF.
+from the ETL package and no assertion about transformed RDF. A few tests read
+immutable AKN fixtures to verify source evidence and the reference ordering rule;
+they still do not exercise runtime extraction, mapping or RDF publication.
 """
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import re
 import unittest
@@ -21,10 +24,18 @@ CONTRACT = (
     / "debates-identity-contract.md"
 )
 CONTRACT_TEXT = CONTRACT.read_text(encoding="utf-8")
+ROOT = Path(__file__).resolve().parents[1]
+AKN_NAMESPACE = "http://docs.oasis-open.org/legaldocml/ns/akn/3.0/CSD13"
+AKN_NS = {"akn": AKN_NAMESPACE}
+FIXTURE_DIR = ROOT / "data" / "debates_examples"
 UNRESERVED = "-._~"
 WORK_PREFIX = "https://data.oireachtas.ie/"
 EXPRESSION_PREFIX = "https://data.oireachtas.ie/"
 GRAPH_PREFIX = "https://data.oireachtas.ie/graph/debate/"
+ADDRESSABLE_CHILD_TAGS = {
+    f"{{{AKN_NAMESPACE}}}{local_name}"
+    for local_name in ("debateSection", "speech", "summary", "question")
+}
 
 
 def _reference_akn_path(value: str) -> str:
@@ -126,6 +137,27 @@ def _markdown_rows(section_heading: str) -> list[list[str]]:
     ]
 
 
+def _fixture_frbr_value(root: ET.Element, level: str) -> str:
+    values = root.findall(
+        f".//akn:identification/akn:{level}/akn:FRBRuri", AKN_NS
+    )
+    if len(values) != 1 or not values[0].get("value"):
+        raise ValueError(f"fixture must have one non-empty {level}/FRBRuri")
+    return values[0].attrib["value"]
+
+
+def _addressable_ordinals(parent: ET.Element) -> dict[ET.Element, int]:
+    """Test-local ordinal reference: count addressable direct children only."""
+
+    result = {}
+    ordinal = 0
+    for child in parent:
+        if child.tag in ADDRESSABLE_CHILD_TAGS:
+            ordinal += 1
+            result[child] = ordinal
+    return result
+
+
 class TestDebatesIdentityContract(unittest.TestCase):
     def test_eid_xml_vectors_use_parsed_value_and_exact_component_encoding(self):
         rows = _markdown_rows("## 1. URI component encoding")
@@ -181,8 +213,9 @@ class TestDebatesIdentityContract(unittest.TestCase):
             EXPRESSION_PREFIX
             + _reference_akn_path(work_value + "/eng@"),
         )
-        self.assertIn("multiple expressions", CONTRACT_TEXT)
         normalized_doc = " ".join(CONTRACT_TEXT.split())
+        self.assertIn("more than one of its Expressions is known", normalized_doc)
+        self.assertIn("same graph key", normalized_doc)
         self.assertIn(
             "not an expression URI or any component eId", normalized_doc
         )
@@ -201,6 +234,100 @@ class TestDebatesIdentityContract(unittest.TestCase):
         ):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 _reference_akn_path(invalid)
+
+    def test_all_immutable_fixture_frbr_values_use_the_canonical_work_expression_and_graph_rules(self):
+        expected = {
+            "dail_2015-07-02.akn.xml": (
+                "/akn/ie/debateRecord/dail/2015-07-02",
+                "/akn/ie/debateRecord/dail/2015-07-02/eng@",
+                "https://data.oireachtas.ie/graph/debate/dail/2015-07-02",
+            ),
+            "dail_2026-02-26.akn.xml": (
+                "/akn/ie/debateRecord/dail/2026-02-25/debate",
+                "/akn/ie/debateRecord/dail/2026-02-25/debate/mul@",
+                "https://data.oireachtas.ie/graph/debate/dail/2026-02-25/debate",
+            ),
+            "seanad_2015-07-02.akn.xml": (
+                "/akn/ie/debateRecord/seanad/2015-07-02/debate",
+                "/akn/ie/debateRecord/seanad/2015-07-02/debate/mul@",
+                "https://data.oireachtas.ie/graph/debate/seanad/2015-07-02/debate",
+            ),
+            "committee_public_accounts_2026-09-24.akn.xml": (
+                "/akn/ie/debateRecord/committee_of_public_accounts/2026-09-24/debate",
+                "/akn/ie/debateRecord/committee_of_public_accounts/2026-09-24/debate/mul@",
+                "https://data.oireachtas.ie/graph/debate/committee_of_public_accounts/2026-09-24/debate",
+            ),
+            "dail_written_answers_2015-07-02.akn.xml": (
+                "/akn/ie/debateRecord/dail/2015-07-02/writtens",
+                "/akn/ie/debateRecord/dail/2015-07-02/writtens/mul@",
+                "https://data.oireachtas.ie/graph/debate/dail/2015-07-02/writtens",
+            ),
+        }
+
+        for filename, (source_work, source_expression, expected_graph) in expected.items():
+            with self.subTest(filename=filename):
+                root = ET.parse(FIXTURE_DIR / filename).getroot()
+                self.assertEqual(_fixture_frbr_value(root, "FRBRWork"), source_work)
+                self.assertEqual(
+                    _fixture_frbr_value(root, "FRBRExpression"), source_expression
+                )
+                work_iri = WORK_PREFIX + _reference_akn_path(source_work)
+                expression_iri = EXPRESSION_PREFIX + _reference_akn_path(source_expression)
+                graph_iri = GRAPH_PREFIX + _reference_akn_path(source_work).removeprefix(
+                    "akn/ie/debateRecord/"
+                )
+                self.assertEqual(
+                    work_iri, "https://data.oireachtas.ie" + source_work
+                )
+                self.assertEqual(
+                    expression_iri,
+                    "https://data.oireachtas.ie"
+                    + source_expression.replace("@", "%40"),
+                )
+                self.assertEqual(graph_iri, expected_graph)
+                # Literal @ is encoded once in the Expression path, never again
+                # in the Work-keyed graph path.
+                self.assertIn("%40", expression_iri)
+                self.assertNotIn("%2540", expression_iri)
+                self.assertNotIn("mul%40", graph_iri)
+
+        # The written-answer Work is distinct from the same-date Dáil debate;
+        # matching House/date does not merge their identities or graph keys.
+        self.assertNotEqual(
+            expected["dail_2015-07-02.akn.xml"][0],
+            expected["dail_written_answers_2015-07-02.akn.xml"][0],
+        )
+        self.assertNotEqual(
+            expected["dail_2015-07-02.akn.xml"][2],
+            expected["dail_written_answers_2015-07-02.akn.xml"][2],
+        )
+
+    def test_contract_fails_closed_for_known_multiple_expressions_at_work_boundary(self):
+        work = "/akn/ie/debateRecord/dail/2015-07-02/debate"
+        expressions = (work + "/eng@", work + "/mul@")
+        expression_iris = tuple(
+            EXPRESSION_PREFIX + _reference_akn_path(value) for value in expressions
+        )
+        graph_iri = GRAPH_PREFIX + _reference_akn_path(work).removeprefix(
+            "akn/ie/debateRecord/"
+        )
+        self.assertNotEqual(expression_iris[0], expression_iris[1])
+        self.assertEqual(
+            graph_iri,
+            "https://data.oireachtas.ie/graph/debate/dail/2015-07-02/debate",
+        )
+
+        review_path = ROOT / "documentation" / "debates-semantic-review.md"
+        review = " ".join(review_path.read_text(encoding="utf-8").split())
+        self.assertIn(
+            "Where more than one Expression is *known* for the same Work, preserve each exact input but fail closed for that Work rather than replacing its graph from one file.",
+            review,
+        )
+        self.assertIn(
+            "Do not claim that a single fetched file proves there is only one Expression globally.",
+            review,
+        )
+        self.assertIn("Never silently pick the last fetched Expression", review)
 
     def test_fallback_vector_is_deterministic_and_excludes_position(self):
         container = (
@@ -343,14 +470,57 @@ class TestDebatesIdentityContract(unittest.TestCase):
         self.assertIn('speech/@by="#"', CONTRACT_TEXT)
         self.assertIn("`#lost` used as a controlled", CONTRACT_TEXT)
 
-    def test_order_is_a_mixed_sibling_proposal_not_an_identifier(self):
+    def test_approved_source_order_is_mixed_sibling_metadata_not_an_identifier(self):
         self.assertIn("1-based source ordinal among all", CONTRACT_TEXT)
         normalized_doc = " ".join(CONTRACT_TEXT.split())
-        self.assertIn("pending ontology/semantic approval", normalized_doc)
         self.assertIn(
             "never an identifier, fallback input, or tie-breaker", normalized_doc
         )
-        self.assertIn("No property assertion or mapping is authorized", CONTRACT_TEXT)
+
+    def test_written_answer_ordinal_uses_mixed_immediate_children_and_restarts_in_container(self):
+        root = ET.parse(
+            FIXTURE_DIR / "dail_written_answers_2015-07-02.akn.xml"
+        ).getroot()
+        parents = {child: parent for parent in root.iter() for child in parent}
+        written_answer = root.find(
+            ".//akn:debateSection[@eId='dbsect_83']", AKN_NS
+        )
+        self.assertIsNotNone(written_answer)
+        parent = parents[written_answer]
+        self.assertEqual(parent.get("eId"), "dbsect_69")
+
+        # The thirteenth preceding writtenAnswer group makes dbsect_83 the
+        # fourteenth addressable direct child; its heading is not addressable.
+        self.assertEqual(_addressable_ordinals(parent)[written_answer], 14)
+
+        # Within dbsect_83's own immediate scope, two questions and a speech
+        # are mixed siblings. The nested scope starts again at one.
+        children = _addressable_ordinals(written_answer)
+        self.assertEqual(
+            [
+                (child.tag.rsplit("}", maxsplit=1)[-1], child.get("eId"), ordinal)
+                for child, ordinal in children.items()
+            ],
+            [
+                ("question", "pq_38", 1),
+                ("question", "pq_57", 2),
+                ("speech", "spk_1033", 3),
+            ],
+        )
+
+        mapping_path = ROOT / "mappings" / "debates_mapping.csv"
+        with mapping_path.open(encoding="utf-8", newline="") as handle:
+            ordinal_rows = [
+                row for row in csv.DictReader(handle)
+                if row["ontology_term"] == ":sourceOrdinal"
+            ]
+        self.assertEqual(len(ordinal_rows), 1)
+        self.assertEqual(ordinal_rows[0]["mapping_status"], "mapped")
+        ordinal_notes = " ".join(ordinal_rows[0]["notes"].split())
+        self.assertIn("across child kinds", ordinal_notes)
+        self.assertIn("addressable immediate XML children", ordinal_notes)
+        self.assertIn("nested container restarts at 1", ordinal_notes)
+        self.assertIn("never identity", ordinal_notes)
 
 
 if __name__ == "__main__":

@@ -10,6 +10,14 @@ AKN_NAMESPACE = "http://docs.oasis-open.org/legaldocml/ns/akn/3.0/CSD13"
 NS = {"akn": AKN_NAMESPACE}
 
 FIXTURES = {
+    "dail_2015-07-02.akn.xml": {
+        "sha256": "0ca15d12a7154c460f7459090b2838f25f5a63ef85017a2cce474ddc5f1731c6",
+        "source_feature": "older-dail-debate",
+    },
+    "dail_2026-02-26.akn.xml": {
+        "sha256": "1e6762bae013b22c37a4167f630530189bbf8f7057214b0676e699d97ed946ad",
+        "source_feature": "current-dail-debate",
+    },
     "seanad_2015-07-02.akn.xml": {
         "sha256": "6e2920af4b97aa0f692162f9fcd94324a18a1c26495399e8600a5ca450d762c0",
         "source_feature": "declared-vote-outcome",
@@ -37,13 +45,34 @@ def test_debates_source_fixtures_preserve_authoritative_bytes_and_structure():
         assert root.find("akn:debate", NS) is not None
         assert root.find("akn:debate/akn:debateBody", NS) is not None
 
-        if expectations["source_feature"] == "declared-vote-outcome":
+        if expectations["source_feature"] == "older-dail-debate":
+            assert len(root.findall(".//akn:debateSection", NS)) == 54
+            assert len(root.findall(".//akn:voting", NS)) == 8
+            assert root.find(
+                ".//akn:FRBRWork/akn:FRBRuri[@value='/akn/ie/debateRecord/dail/2015-07-02']",
+                NS,
+            ) is not None
+        elif expectations["source_feature"] == "current-dail-debate":
+            assert len(root.findall(".//akn:debateSection", NS)) == 54
+            assert len(root.findall(".//akn:voting", NS)) == 9
+            assert root.find(
+                ".//akn:FRBRWork/akn:FRBRuri[@value='/akn/ie/debateRecord/dail/2026-02-25/debate']",
+                NS,
+            ) is not None
+        elif expectations["source_feature"] == "declared-vote-outcome":
+            assert len(root.findall(".//akn:debateSection", NS)) == 17
+            assert len(root.findall(".//akn:voting", NS)) == 2
             assert root.find(
                 ".//akn:voting[@outcome='#declared']", NS
             ) is not None
         elif expectations["source_feature"] == "roll-call-table":
             assert root.find(".//akn:rollCall/akn:table", NS) is not None
+            assert len(root.findall(".//akn:debateSection", NS)) == 3
         elif expectations["source_feature"] == "written-answer-structure":
+            assert len(root.findall(".//akn:debateSection", NS)) == 217
+            assert len(root.findall(".//akn:question", NS)) == 229
+            assert len(root.findall(".//akn:speech", NS)) == 197
+            assert len(root.findall(".//akn:answer", NS)) == 0
             assert root.find(
                 ".//akn:FRBRname[@value='writtens']", NS
             ) is not None

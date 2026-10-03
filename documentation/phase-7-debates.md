@@ -2,7 +2,9 @@
 
 ## Status
 
-Design complete. Implementation has not started.
+Tranche 1 semantic/source contract is complete and verified. Tranche 2 may
+start against representative fixtures; no runtime Debates transformer is
+implemented yet.
 
 This note records the approved Phase 7 design for the Debates vertical slice.
 It complements the ontology-specific material in
@@ -11,12 +13,14 @@ It complements the ontology-specific material in
 ## Scope and source
 
 - Akoma Ntoso (AKN) XML is the authoritative source format.
-- The intended corpus covers Dáil, Seanad, committees and written answers,
-  subject to an implementation-time volume/resource gate.
-- The implementation must first measure realistic source volume, storage and
-  processing cost. If full-corpus ingestion is disproportionate for the
-  initial delivery, the first production scope may be restricted to Bill
-  debates without changing the semantic design.
+- The intended corpus covers Dáil, Seanad, committees and written answers for
+  Tranche 2 representative transformation.
+- A separate production-scope gate does not block Tranche 1 or Tranche 2. After
+  the core transformer exists and before broad production ingestion, census and
+  benchmark the in-scope corpus (including written-answer XML), then choose
+  full-corpus or Bill-debates-first production ingestion from measured XML
+  volume, runtime and RDF output against deployment budgets. This choice does
+  not change the semantic design.
 - The Debates slice owns parliamentary questions and divisions/votes found in
   the AKN debate record. They are not separate Phase 7 publication owners.
 - Raw AKN source must be preserved so the RDF can be regenerated and source
@@ -30,6 +34,9 @@ In scope are the debate record/sitting, sections, speeches as contribution
 resources, summaries as structural/procedural resources, parliamentary
 questions, divisions/votes, participation metadata, dates, source ordering and
 cross-dataset links.
+
+Committee `rollCall` is evidenced, but its attendance entries remain source-only
+in the initial RDF scope; they are not divisions, votes or speech participation.
 
 The spoken/written transcript text itself is not copied into RDF.
 
@@ -49,10 +56,16 @@ The existing Debates ontology remains the starting semantic model:
 - `Division`;
 - ELI-DL participation, legislative-activity and vote alignment.
 
-Implementation must audit representative Dáil, Seanad, committee and written
-answer records against that baseline before changing ontology semantics.
-Ontology changes remain subject to the repository semantic-contract approval
-boundary.
+Written-answer Works are `DebateRecord`s with their date and structure, but do
+not receive a `DebateSitting`: a written-answer publication does not itself
+evidence a sitting activity. Emit a sitting only for a non-`writtens` Work when
+the approved `FRBRname`/Work-path rule identifies an actual sitting; type
+disagreement or an unreviewed type fails closed for sitting emission.
+
+Representative Dáil, Seanad, committee and written-answer records have been
+audited. The I1/I2/O1–O8 semantic decisions are approved, and their Debates
+ontology/mapping additions pass static verification under the repository
+semantic-contract boundary. Runtime transformation remains future work.
 
 ## Identifier policy
 
@@ -68,6 +81,16 @@ boundary.
 - Where no stable AKN identifier exists, use a deterministic content/context
   derived identifier or hash.
 - Array/document position alone must not be the resource identity.
+
+The approved exact Work, Expression, eId, fallback and graph formulas are in
+[`debates-identity-contract.md`](debates-identity-contract.md). In brief, derive
+Work and Expression IRIs from their own `FRBRuri/@value` paths by UTF-8
+component-wise RFC 3986 percent encoding; derive the replaceable graph IRI by
+replacing the once-encoded Work path prefix `/akn/ie/debateRecord` with
+`/graph/debate` without encoding the path a second time. Use `{work IRI}#sitting`
+only for an eligible actual sitting. Known multiple Expressions for one Work
+fail closed for that Work rather than publishing a graph from one Expression
+alone; one fetched file does not prove global Expression completeness.
 
 ## Ordering
 
@@ -101,8 +124,10 @@ reprocessing to resolve it.
 
 ## RDF ownership and graph boundary
 
-Use one replaceable authoritative named graph per debate record/sitting. The
-graph owns the debate resources derived from that AKN record, including its
+Use one replaceable authoritative named graph per Work/debate record. If the
+source establishes an eligible sitting, it belongs in that same graph; a
+written-answer Work still has a record graph but no DebateSitting. The graph
+owns the debate resources derived from that AKN record, including its
 questions and divisions/votes.
 
 Cross-dataset resources remain owned by their established endpoint/vertical
@@ -134,7 +159,8 @@ replicate the complete AKN XML schema in SHACL.
 At minimum, implementation should validate:
 
 - deterministic identity and graph ownership;
-- required debate-record/sitting dates and containment relationships;
+- required Work dates and, for eligible non-written records only, sitting dates
+  and containment relationships;
 - valid source ordinals within their containing scope;
 - Member/House/HouseTerm/committee references where resolvable;
 - legislative-section links to Bills/events/processes/stages;
@@ -165,24 +191,32 @@ initial slice:
 - inline amendment entity markup;
 - image and table content;
 - bilingual-heading deduplication;
-- AKN `answer` and `rollCall` constructs not yet evidenced by the reviewed
-  representative corpus.
+- AKN `answer` modelling (not observed in the reviewed fixtures); committee
+  `rollCall` attendance RDF, which is evidenced but deferred from the initial
+  RDF scope.
 
 ## Implementation tranches
 
 ### Tranche 1 — Source contract, mapping and fixtures
 
-- Audit representative Dáil, Seanad, committee and written-answer AKN records.
-- Measure corpus volume/resource cost and apply the full-corpus versus
-  Bill-debates-only implementation gate.
-- Define the Debates mapping specification.
-- Finalise the URI normalization rule, source-ordinal representation and
-  unresolved-reference evidence representation.
-- Preserve representative fixtures and expected RDF.
-- Make only ontology changes demonstrated necessary by source evidence.
+- The approved semantic/source contract, mapping, exact identity/graph rules,
+  source ordering and unresolved-reference outcomes are defined and statically
+  checked.
+- Representative Dáil, Seanad, committee and written-answer AKN sources have
+  been preserved and audited; ontology/mapping changes were checked against the
+  approved review.
+- Representative immutable source fixtures are recorded. Expected RDF goldens
+  are exercised with transformation tests in Tranche 2.
 
-**Exit:** source coverage, mapping, identifiers, ownership and fixtures are
-stable enough for deterministic transformation.
+**Exit:** approved semantics are reflected in the ontology/mapping and verified;
+the source, mapping, identity, ownership and reference-outcome contract is stable
+enough to implement deterministically. The production resource gate is not a
+Tranche 1 exit criterion.
+
+The ontology reasoner, mapping-integrity and source/fixture checks pass, as do
+the 28 focused Debates tests and the full repository suite (427 passed,
+8 skipped). This verifies the Tranche 1 static contract, not runtime RDF
+emission; those goldens belong to Tranche 2.
 
 ### Tranche 2 — Core debate transformation
 
@@ -190,10 +224,27 @@ stable enough for deterministic transformation.
 - Implement nested sections, speeches, summaries and lightweight source order.
 - Implement questions and divisions/votes as Debates-owned resources.
 - Exclude transcript text.
-- Add deterministic/golden tests across representative source types.
+- Add deterministic/golden tests across representative Dáil, Seanad, committee
+  and written-answer sources.
+
+Tranche 1 tests are static contract checks over ontology terms, mapping rows and
+source fixtures; they do not execute a transformer or prove RDF non-emission.
+Tranche 2 goldens must inspect actual transformed RDF and assert both supported
+output and required absences, including no `#declared` carried/lost outcome, no
+placeholder/link for unresolved references, no Division/vote/participation from
+committee `rollCall` attendance, and no transcript literals.
 
 **Exit:** representative AKN records transform deterministically into the agreed
 Debates structure without transcript text.
+
+The census/benchmark for the full-corpus versus Bill-debates-first production
+choice is run after the core transformer exists and before broad production
+ingestion. Measure total in-scope XML volume (including `writtens`), runtime and
+RDF output (and required working/storage volume) on representative records;
+make the scope choice from those measurements and deployment budgets, not from
+sample size alone. This gate does not delay Tranche 1 or representative Tranche
+2 implementation. Phase 6's scan cadence, scheduling and reconciliation policy
+remain unchanged.
 
 ### Tranche 3 — Cross-dataset integration and validation
 
@@ -225,14 +276,15 @@ model.
 
 The Debates slice is complete when:
 
-- the agreed source scope can be processed within the accepted resource gate;
+- the measured production scope (full corpus or Bill-debates-first) can be
+  processed within accepted resource budgets;
 - AKN source is preserved and replayable;
 - generated RDF is deterministic and contains no transcript text;
 - questions and divisions/votes are owned by the debate graph;
 - cross-resource links respect existing RDF ownership;
 - unresolved references fail safe and remain auditable;
 - representative Dáil, Seanad, committee and written-answer fixtures pass
-  validation, or an explicitly recorded Bill-debates-only initial scope has
-  been selected by the resource gate;
+  validation for Tranche 2, regardless of when the later production-scope gate
+  selects full-corpus or Bill-debates-first ingestion;
 - graph replacement is idempotent and removes stale debate-owned triples; and
 - the agreed competency queries pass.

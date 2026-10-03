@@ -452,11 +452,11 @@ Contains the SKOS `ConceptScheme` individuals that act as controlled vocabularie
 
 Models the Official Report of Debates (Akoma Ntoso XML) as OWL classes and properties, covering the structural and semantic elements of parliamentary debates in the Dáil, Seanad and committees.
 
-> **Implementation (2026):** Initial release. `:DebateRecord`, `:DebateExpression`, `:DebateSitting`, `:DebateSection`, `:Speech`, `:Summary`, `:ParliamentaryQuestion` and `:Division` classes defined. Full property set covering structure, participation, voting and legislative linkage. Named individuals for division outcomes, vote categories and participation roles aligned to AKN `TLCConcept` IRIs.
+> **Implementation (2026):** The Tranche 1 ontology and mapping contract covers Dáil, Seanad, committee and written-answer AKN records. The transformer, RDF goldens and publication are Tranche 2 and later work. Transcript text is excluded. `:DebateRecord`, `:DebateExpression`, `:DebateSitting`, `:DebateSection`, `:Speech`, `:Summary`, `:ParliamentaryQuestion` and `:Division` are defined; a written-answer Work is a record, not evidence of a sitting. See `documentation/debates-semantic-review.md` for the approved conditional mappings and deferred links.
 >
 > **Key design decisions:** `:DebateRecord` is a `foaf:Document` (not a subclass of `eli-dl:LegislativeProcessWork`) because debates are not always legislative in nature. `:DebateSitting` is always typed `eli-dl:Activity` (not `eli-dl:LegislativeActivity`) because a sitting may mix legislation with questions, statements and motions. `:DebateSection` instances that carry `:refersToEvent` are additionally typed `eli-dl:LegislativeActivity` at instance level (multiple typing); `eli-dl:occured_at_stage` and `eli-dl:forms_part_of` apply on those sections.
 >
-> **Divisions:** `:Division` is a subclass of `eli-dl:Vote`. Three vote-count properties (`:taCount`, `:nilCount`, `:staonCount`) and three member-vote properties (`:votedFor`, `:votedAgainst`, `:abstained`) reflect the Tá / Níl / Staon structure of Oireachtas divisions; `:staonCount` and `:abstained` are present in data from 2026 onwards.
+> **Divisions:** `:Division` is a subclass of `eli-dl:Vote`. Three vote-count properties (`:taCount`, `:nilCount`, `:staonCount`) and three member-vote properties (`:votedFor`, `:votedAgainst`, `:abstained`) reflect the Tá / Níl / Staon structure; `:staonCount` and `:abstained` are used when supplied. Only source `#carried` and `#lost` map to the named outcome individuals; `#declared` remains auditable source evidence, not an inferred outcome. Committee `rollCall` is source-only, never a division or vote.
 >
 > **`xsd:dateTime` for dates:** `:debateDate` uses `xsd:dateTime` rather than `xsd:date` — `xsd:date` is not in the OWL 2 DL datatype map and is rejected by HermiT. This follows the same convention as the rest of the ontology.
 
@@ -464,11 +464,11 @@ Models the Official Report of Debates (Akoma Ntoso XML) as OWL classes and prope
 
 | Class | Superclass(es) | Maps to AKN |
 |---|---|---|
-| `:DebateRecord` | `foaf:Document` | `FRBRWork` — debate as an intellectual work for a house/date |
+| `:DebateRecord` | `foaf:Document` | `FRBRWork` — record for a House or committee/date, including written answers |
 | `:DebateExpression` | *(bare OWL class)* | `FRBRExpression` — language-specific version (eng / gle / mul); FRBR correspondence documented in `rdfs:comment` |
 | `:DebateSitting` | `eli-dl:Activity` | The sitting activity that produces a `:DebateRecord`; always `eli-dl:Activity`, never `eli-dl:LegislativeActivity` |
 | `:DebateSection` | — | `debateSection` — topic-bounded section; nests via `:hasSubSection`; additionally typed `eli-dl:LegislativeActivity` when `:refersToEvent` is present |
-| `:Speech` | — | `speech` — oral contribution by a Member or witness |
+| `:Speech` | — | `speech` — structural contribution, including written-answer response `<speech>`; not an `eli-dl:Activity` |
 | `:Summary` | — | `summary` — narrative or procedural text not attributed to a speaker |
 | `:ParliamentaryQuestion` | — | `question` — parliamentary question (oral or written) |
 | `:Division` | `eli-dl:Vote` | `debateSection[@name='division']` — division with Tá / Níl / Staon sub-sections |
@@ -477,34 +477,43 @@ Models the Official Report of Debates (Akoma Ntoso XML) as OWL classes and prope
 
 | Property | Domain | Range | Notes |
 |---|---|---|---|
-| `:hasSection` | `:DebateRecord` | `:DebateSection` | Top-level sections of the record |
+| `:hasSection` | `:DebateRecord` | `:DebateSection` | Work-level convenience link to top-level sections |
+| `:hasExpression` | `:DebateRecord` | `:DebateExpression` | Work-to-Expression link |
+| `:expressionHasSection` | `:DebateExpression` | `:DebateSection` | Expression's immediate top-level sections; ordinal scope |
+| `:recordOfBody` | `:DebateRecord` | `org:Organization` | Reference to an existing resolved House or Committee, not a new description |
+| `:recordOfHouseTerm` | `:DebateRecord` | `:HouseTerm` | Reference to an existing numbered term, not the enduring House |
 | `:hasSubSection` | `:DebateSection` | `:DebateSection` | Nested child sections |
-| `:hasSpeech` | `:DebateSection` | `:Speech` | |
+| `:hasSpeech` | `:DebateSection` | `:Speech` | Includes written-answer response speech; no one-to-one question-to-answer assertion |
+| `:hasQuestion` | `:DebateSection` | `:ParliamentaryQuestion` | Immediate question containment |
 | `:hasSummary` | `:DebateSection` | `:Summary` | |
 | `:hasDivision` | `:DebateSection` | `:Division` | |
 | `:producedRecord` | `:DebateSitting` | `:DebateRecord` | Links the sitting activity to its documentary output |
 | `:relatedProcess` | `:DebateSitting` | `eli-dl:LegislativeProcess` | Convenience flag; present when at least one section is legislative |
 | `:refersToEvent` | `:DebateSection` | `:BillEvent` or `eli:LegalResource` | AKN `debateSection/@refersTo`; triggers `eli-dl:LegislativeActivity` typing |
-| `:speaker` | `:Speech` | `:Member` | Shortcut; canonical path is `eli-dl:had_participation` |
+| `:speaker` | `:Speech` | `:Member` | Resolved-Member shortcut only |
+| `:hasSpeechParticipation` | `:Speech` | `eli-dl:Participation` | Participation metadata on a separate resource; does not infer Speech as Activity |
 | `:askedBy` | `:ParliamentaryQuestion` | `:Member` | `question/@by` → `TLCPerson` |
-| `:directedTo` | `:ParliamentaryQuestion` | `eli-dl:ParticipationRole` | `question/@to` → `TLCRole` |
-| `:divisionOutcome` | `:Division` | `eli-dl:DecisionOutcome` | `:DeclaredCarried` or `:DeclaredLost` |
+| `:directedTo` | `:ParliamentaryQuestion` | `eli-dl:ParticipationRole` | Deferred pending exact source-role resolution |
+| `:directedToOffice` | `:ParliamentaryQuestion` | `members:NamedOffice` | Declared but mapping deferred pending reviewed recipient-to-office reconciliation |
+| `:divisionOutcome` | `:Division` | `eli-dl:DecisionOutcome` | `:DeclaredCarried` or `:DeclaredLost` only for supported source outcomes |
 | `:refersToProposal` | `:Division` | `:DebateSection` or `:BillEvent` | Subject of the vote; from `voting/@refersTo` |
 | `:votedFor` | `:Division` | `:Member` | Members voting Tá |
 | `:votedAgainst` | `:Division` | `:Member` | Members voting Níl |
-| `:abstained` | `:Division` | `:Member` | Members voting Staon (2026 onwards) |
+| `:abstained` | `:Division` | `:Member` | Members voting Staon (when supplied) |
 
 #### Datatype Properties
 
 | Property | Domain | Range | Notes |
 |---|---|---|---|
-| `:debateDate` | `:DebateRecord` | `xsd:dateTime` | Sitting date; from AKN `FRBRWork/FRBRdate` |
+| `:debateDate` | `:DebateRecord` | `xsd:dateTime` | Record date; from AKN `FRBRWork/FRBRdate`, not proof of a sitting |
+| `:sourceOrdinal` | *(no domain)* | `xsd:integer` | Positive, consecutive 1-based order of immediate addressable siblings; never an IRI component |
+| `:expressionLanguageCode` | `:DebateExpression` | `xsd:string` | Exact `FRBRlanguage/@language` code, not a code guessed from an Expression URI |
 | `:debateType` | `:DebateRecord` | `xsd:string` | AKN `FRBRname/@value` sub-type (e.g. `"debate"`, `"writtens"`) |
 | `:sectionName` | `:DebateSection` | `xsd:string` | AKN `debateSection/@name` value |
 | `:recordedTime` | `:Speech` | `xsd:dateTime` | AKN `from/recordedTime/@time`; accurate to ~5–10 min |
 | `:taCount` | `:Division` | `xsd:integer` | Aggregate Tá votes |
 | `:nilCount` | `:Division` | `xsd:integer` | Aggregate Níl votes |
-| `:staonCount` | `:Division` | `xsd:integer` | Aggregate Staon votes (2026 onwards) |
+| `:staonCount` | `:Division` | `xsd:integer` | Aggregate Staon votes (when supplied) |
 
 #### Named Individuals
 
@@ -522,7 +531,7 @@ Models the Official Report of Debates (Akoma Ntoso XML) as OWL classes and prope
 
 | Property | Annotation |
 |---|---|
-| `eli-dl:had_participation` | Use on `:Speech` (speaker + role) and on legislative `:DebateSection` instances (mover / rapporteur) |
+| `eli-dl:had_participation` | Use on legislative `:DebateSection` instances (mover / rapporteur), **not** on `:Speech`: its Activity domain would infer Speech as an Activity. For Speech use `:hasSpeechParticipation` and resolved person/role links on the Participation resource. |
 | `eli-dl:occured_at_stage` | Apply on `:DebateSection` instances additionally typed `eli-dl:LegislativeActivity` |
 | `eli-dl:forms_part_of` | Apply on `:DebateSection` instances additionally typed `eli-dl:LegislativeActivity` — links section to `eli-dl:LegislativeProcess` |
 
