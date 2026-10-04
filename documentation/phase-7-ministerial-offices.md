@@ -14,6 +14,14 @@ episodes. Bill reconciliation remains unimplemented; Bill RDF behavior is
 unchanged. The
 broader Phase 7 debates, votes and questions slices remain separate.
 
+Tranche 3 is complete: the Member contract is version 3, and whole-graph
+migration/replacement removes legacy office RDF. The captured full Member run
+completed deterministically; malformed nested office/party evidence remains
+quarantined. Verification did not mutate production graphs. The conservative
+House-membership-loss publication block remains as documented in
+`documentation/office-observation-reconciliation.md`. Tranches 4–6 remain
+pending; this is status only, not a change to the approved design below.
+
 Before Tranche 3 the Member transformer interpreted every
 `membership.offices[]` observation as a `MinisterOfStateMembership` and created
 an occurrence-specific `MinisterOfStateRole`. The validated Member graph

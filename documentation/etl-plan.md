@@ -1601,11 +1601,20 @@ implementation design in [phase-7-ministerial-offices.md](phase-7-ministerial-of
 Tranches 1–3 are implemented, including the new ontology vocabulary,
 reviewed office/unit registry publication, local source-observation review and
 the occurrence/evidence ledger. The initial registry and decisions are a small,
-high-confidence bootstrap, not comprehensive coverage. Tranche 3 migrates the
+high-confidence bootstrap, not comprehensive coverage. Tranche 3 migrated the
 active Member mapping and graph publication to accepted holdings and derived
-Cabinet episodes; Bill RDF behavior remains unchanged. This status
-does not change the completion/history of earlier phases or other Phase 7
-slices.
+Cabinet episodes; the Member contract is now version 3. Its validated
+migration/whole-graph replacement removes legacy office RDF. The captured full
+Member run completed deterministically; malformed nested office and party
+evidence remains quarantined under the existing non-destructive policy.
+Production graphs were not mutated during Tranche 3 verification. A known
+conservative limitation remains: if an accepted holding loses its entire
+containing House membership, the prior Member graph is retained and publication
+for that Member is blocked pending review. See
+`documentation/office-observation-reconciliation.md` for verification evidence
+and operational details. Bill RDF behavior remains unchanged. Tranches 4–6
+remain pending. This status does not change the completion/history of earlier
+phases or other Phase 7 slices.
 
 Settled semantics and ownership for this slice:
 
