@@ -8,69 +8,43 @@ This is an experimental query interface. It is separate from the deterministic E
 
 ## Quick start
 
-Run all commands from the repository root.
+Run all commands from the repository root. The launcher needs `uv`, Docker with
+the `docker compose` plugin, and `curl`.
 
-### 1. Install the POC dependencies
-
-The repository uses `uv` for the POC environment:
-
-```bash
-uv sync --extra nlq
-```
-
-At present the repository package itself is not installed by `uv sync`, so commands that import `oireachtas_etl` must include `PYTHONPATH=src`. This is a repository packaging limitation, not an NLQ configuration setting.
-
-### 2. Start Fuseki
+### 1. Configure the LLM key
 
 ```bash
-docker compose up -d fuseki
+cp .env.local.example .env.local
+# edit .env.local and set NLQ_LLM_API_KEY
 ```
 
-The default query endpoint is:
+`.env.local` is git-ignored. `NLQ_LLM_API_KEY` is required and has no default.
 
-```text
-http://localhost:3030/houses/query
-```
-
-Starting the container does **not** load RDF data. The POC only queries data that is already present.
-
-### 3. Configure the LLM
-
-Copy the example environment file:
-
-```bash
-cp .env.example .env
-```
-
-Edit the repository-root `.env`.
-
-For OpenCode Console inference with GPT-6 Luna:
+The endpoint and model are optional overrides. When they are omitted, the
+launcher uses these local-development defaults:
 
 ```dotenv
-NLQ_LLM_API_KEY=your-service-account-key
 NLQ_LLM_BASE_URL=https://opencode.ai/inference/openai/v1
 NLQ_LLM_MODEL=gpt-6-luna
 NLQ_FUSEKI_QUERY_URL=http://localhost:3030/houses/query
 ```
 
-Do **not** add `/responses` to `NLQ_LLM_BASE_URL`; the application adds it.
+Do **not** add `/responses` to `NLQ_LLM_BASE_URL`; the application adds it. The
+endpoint and model are not hard-coded into the application; the launcher only
+supplies development defaults.
 
-The application loads `.env` automatically when it starts. Existing process environment variables take precedence. Restart the application after changing `.env`.
-
-For an authenticated local Fuseki instance, also set:
-
-```dotenv
-OIR_FUSEKI_USER=...
-OIR_FUSEKI_PASSWORD=...
-```
-
-### 4. Start the application
+### 2. Start the POC
 
 ```bash
-PYTHONPATH=src uv run uvicorn poc.nlq.app:app --reload
+scripts/dev-nlq.sh
 ```
 
-### 5. Open the browser interface
+The launcher resolves configuration, installs the NLQ dependencies from the
+committed `uv.lock`, starts or reuses the local Docker Compose Fuseki service,
+waits until Fuseki is reachable, applies the local Fuseki credentials, and
+starts the FastAPI application under Uvicorn with auto-reload enabled.
+
+### 3. Open the browser interface
 
 Open:
 
@@ -92,29 +66,67 @@ The application shows:
 - the SELECT result table or ASK result;
 - debugging information when translation, validation, or Fuseki execution fails.
 
-## If the application does not start
-
-### `ModuleNotFoundError: No module named 'oireachtas_etl'`
-
-Run the application with the repository source directory on `PYTHONPATH`:
+### Other launcher commands
 
 ```bash
-PYTHONPATH=src uv run uvicorn poc.nlq.app:app --reload
+scripts/dev-nlq.sh --load-data   # publish Houses/Parties/Constituencies/Members first
+scripts/dev-nlq.sh --no-reload   # start without the Uvicorn autoreload watcher
 ```
 
-You can verify the ETL package is visible with:
+Ordinary startup never fetches or republishes source data. `--load-data`
+explicitly runs the existing ETL for the graph families the member-oriented POC
+needs — houses, parties, constituencies and members — and then starts the POC.
+Bills are not loaded because the current example queries do not need them. If
+the ETL load fails, the POC is not started.
+
+## Configuration precedence
+
+The launcher applies one precedence to every value:
+
+```text
+explicit process environment
+    > .env.local
+    > launcher development defaults
+```
+
+Only `scripts/dev-nlq.sh` reads `.env.local`; the launcher parses it as data and
+does not `source` it. The application itself loads the repository-root `.env`
+with `override=False`, so the values the launcher exports always win over
+`.env`. A per-value override in `.env.local` is optional.
+
+## Fuseki and credentials
+
+The launcher uses the bundled `docker-compose.yml` Fuseki service. It:
+
+- verifies Docker and the Compose plugin are available;
+- runs `docker compose up -d fuseki`, recreating the container when the Compose
+  configuration changed but never deleting the persistent `fuseki-data` volume;
+- waits for the anonymous `/$/ping` endpoint with a bounded retry loop before
+  starting Uvicorn;
+- applies the configured local admin password in place if an existing volume has
+  a different stored credential, then restarts the service.
+
+The local-development admin password default is `oireachtas-dev`, which is also
+the non-production fallback in `docker-compose.yml`. Override it with
+`FUSEKI_ADMIN_PASSWORD` in the process environment or `.env.local`. An
+`OIR_FUSEKI_PASSWORD` supplied by either source is reused as the local admin
+password so an existing Fuseki volume keeps working. The launcher populates
+`OIR_FUSEKI_USER` (default `admin`) and `OIR_FUSEKI_PASSWORD` for the
+application and does not print credentials.
+
+These credentials are for local development only and must not be treated as
+production credentials. Do not use `docker compose down -v` as a refresh step:
+it deletes the persistent local Fuseki volume.
+
+## If the application does not start
+
+### `NLQ_LLM_API_KEY is not set`
+
+The launcher fails immediately when no key is available. Copy
+`.env.local.example` to `.env.local` and set `NLQ_LLM_API_KEY`, or export it:
 
 ```bash
-PYTHONPATH=src uv run python - <<'PY'
-import oireachtas_etl.config as c
-
-print("Loaded from:", c.__file__)
-print("HOUSES_GRAPH =", c.HOUSES_GRAPH)
-print("PARTIES_GRAPH =", c.PARTIES_GRAPH)
-print("CONSTITUENCIES_GRAPH =", c.CONSTITUENCIES_GRAPH)
-print("OFFICES_GRAPH =", c.OFFICES_GRAPH)
-print("ADMINISTRATIVE_UNITS_GRAPH =", c.ADMINISTRATIVE_UNITS_GRAPH)
-PY
+export NLQ_LLM_API_KEY=...
 ```
 
 ### LLM authentication or model errors
@@ -134,40 +146,71 @@ curl --fail-with-body \
   }'
 ```
 
-If this succeeds but the POC fails, check that the values in the repository-root `.env` exactly match the working endpoint and model.
+If this succeeds but the POC fails, check that `NLQ_LLM_BASE_URL`,
+`NLQ_LLM_MODEL` and `NLQ_LLM_API_KEY` resolve to the working endpoint. Remember
+that an explicit process environment value wins over `.env.local`.
 
 ### Fuseki is reachable but the readiness panel is empty or partial
 
-Starting Fuseki does not populate it. Data loading is deliberately an ETL operation, not an application startup side effect.
+Starting Fuseki does not populate it. Data loading is deliberately an ETL
+operation, not an application startup side effect. Run
+`scripts/dev-nlq.sh --load-data` when you intentionally want to fetch and publish
+current Oireachtas API data for the reference and Member graphs.
 
-See the next section if you intentionally want to refresh your local dataset.
+## Manual commands (advanced / troubleshooting)
 
-## Loading data into local Fuseki
+These are the operations the launcher performs. Use them only when diagnosing
+launcher behaviour; normal development should use `scripts/dev-nlq.sh`.
 
-Only do this when you intend to fetch and publish current Oireachtas API data.
+### Dependencies
 
-Set the ETL write and verification endpoints in the shell:
+```bash
+uv sync --locked --extra nlq
+```
+
+The local `oireachtas_etl` package is installed by `uv sync` from the committed
+lockfile; no `PYTHONPATH` override is needed.
+
+### Fuseki endpoints
+
+```bash
+docker compose up -d fuseki
+```
+
+```text
+Query endpoint: http://localhost:3030/houses/query
+Write endpoint: http://localhost:3030/houses/data
+```
+
+### Start Uvicorn directly
+
+```bash
+uv run --locked uvicorn poc.nlq.app:app --reload
+```
+
+### Load data with the existing ETL
+
+Set the ETL write and verification endpoints:
 
 ```bash
 export OIR_FUSEKI_GSP_URL=http://localhost:3030/houses/data
 export OIR_FUSEKI_SPARQL_URL=http://localhost:3030/houses/query
 ```
 
-For authenticated Fuseki, also export `OIR_FUSEKI_USER` and `OIR_FUSEKI_PASSWORD`.
-
-Under the repository's current packaging setup, run the ETL module with `PYTHONPATH=src`:
+For authenticated Fuseki, also export `OIR_FUSEKI_USER` and
+`OIR_FUSEKI_PASSWORD`.
 
 ```bash
-PYTHONPATH=src uv run python -m oireachtas_etl.cli run houses
-PYTHONPATH=src uv run python -m oireachtas_etl.cli run parties
-PYTHONPATH=src uv run python -m oireachtas_etl.cli run constituencies
-PYTHONPATH=src uv run python -m oireachtas_etl.cli run members
+uv run --locked oir-etl run houses
+uv run --locked oir-etl run parties
+uv run --locked oir-etl run constituencies
+uv run --locked oir-etl run members
 ```
 
 Bills are optional for the member-oriented example queries:
 
 ```bash
-PYTHONPATH=src uv run python -m oireachtas_etl.cli run bills
+uv run --locked oir-etl run bills
 ```
 
 The POC never invokes these commands itself.
@@ -274,20 +317,20 @@ Always inspect the generated SPARQL when evaluating the POC.
 Install the test dependencies:
 
 ```bash
-uv sync --extra test --extra nlq
+uv sync --locked --extra test --extra nlq
 ```
 
 Run the tests:
 
 ```bash
-PYTHONPATH=src uv run pytest tests
+uv run --locked pytest tests
 ```
 
 Run ontology validation, with the repository's pinned Java runtime available through `mise`:
 
 ```bash
 mise install
-PYTHONPATH=src mise exec -- uv run python tests/validate.py
+mise exec -- uv run --locked python tests/validate.py
 ```
 
 ## Scope

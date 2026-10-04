@@ -119,6 +119,22 @@ present but never invokes the ETL or writes to Fuseki. See the
 and inspection queries. Do not use `docker compose down -v` as a refresh step:
 it deletes the persistent local Fuseki volume.
 
+#### Natural-language query POC (local development)
+
+Start the experimental natural-language query interface, and its local Fuseki
+service, with the one-command launcher:
+
+```bash
+cp .env.local.example .env.local   # then set NLQ_LLM_API_KEY
+scripts/dev-nlq.sh
+```
+
+The launcher manages dependency installation, local Fuseki startup and
+credentials, and the Uvicorn command, and exposes optional `--load-data` and
+`--no-reload` flags. Ordinary startup never loads or republishes data. See
+[`poc/nlq/README.md`](poc/nlq/README.md) for configuration precedence and
+advanced/manual commands.
+
 #### Run a fixture offline
 
 Fixtures let you exercise the transform and validation stages without network

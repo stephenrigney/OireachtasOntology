@@ -14,6 +14,15 @@ dependencies = [
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
+# The import package lives under src/; make the src layout explicit so a normal
+# `uv sync` installs `oireachtas_etl` rather than relying on setuptools
+# auto-discovery.
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [project.optional-dependencies]
 test = [
   "pytest>=9.1,<10",

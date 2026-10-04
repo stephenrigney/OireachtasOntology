@@ -36,27 +36,30 @@ Graph Store Protocol:
 http://localhost:3030/houses/data
 ```
 
-## 2. Find the Fuseki admin password
+## 2. Fuseki admin credentials
 
-The Docker image uses the `admin` account.
-
-If no password was explicitly configured, inspect the container logs:
-
-```bash
-docker compose logs fuseki
-```
-
-or:
-
-```bash
-docker compose logs fuseki | grep -i password
-```
-
-Username:
+The Docker image uses the `admin` account. The bundled `docker-compose.yml`
+supplies a predictable local-development password through the
+`FUSEKI_ADMIN_PASSWORD` Compose variable. When it is not set, the documented
+non-production fallback `oireachtas-dev` applies:
 
 ```text
-admin
+Username: admin
+Password: oireachtas-dev   # local development only
 ```
+
+Override it by exporting `FUSEKI_ADMIN_PASSWORD` before starting Compose, or by
+setting it in `.env.local` when you use `scripts/dev-nlq.sh`:
+
+```bash
+export FUSEKI_ADMIN_PASSWORD='<local-development-password>'
+docker compose up -d fuseki
+```
+
+These credentials are for local development only. Do not use them for anything
+reachable beyond the local development machine. An existing `fuseki-data` volume
+keeps the password it was first initialised with; `scripts/dev-nlq.sh` reconciles
+that stored password to the configured value without deleting the volume.
 
 ## 3. Configure the ETL client
 
@@ -354,7 +357,9 @@ Confirm:
 echo "$OIR_FUSEKI_USER"
 ```
 
-and ensure `OIR_FUSEKI_PASSWORD` contains the password shown in the Fuseki startup logs.
+and ensure `OIR_FUSEKI_PASSWORD` matches the configured local development
+password (the `FUSEKI_ADMIN_PASSWORD` value, or the `oireachtas-dev` fallback
+from `docker-compose.yml`).
 
 ### Check container logs
 

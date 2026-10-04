@@ -3,6 +3,11 @@ services:
     image: stain/jena-fuseki:5.1.0
     environment:
       FUSEKI_DATASET_1: houses
+      # Local-development admin password for the Fuseki web UI and write
+      # endpoints. scripts/dev-nlq.sh exports FUSEKI_ADMIN_PASSWORD, and the
+      # value below is a documented, non-production local fallback. Do not use
+      # it for anything reachable beyond the local development machine.
+      ADMIN_PASSWORD: ${FUSEKI_ADMIN_PASSWORD:-oireachtas-dev}
     ports:
       - "3030:3030"
     volumes:
