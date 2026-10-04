@@ -316,6 +316,20 @@ def _parse_spans(source_xml: bytes) -> tuple[list[dict], str]:
     """
 
     parser = expat.ParserCreate(namespace_separator="}")
+    if source_xml.startswith(b"\xff\xfe\x00\x00") or source_xml.startswith(b"<\x00\x00\x00"):
+        unit_width, byte_order = 4, "little"
+    elif source_xml.startswith(b"\x00\x00\xfe\xff") or source_xml.startswith(b"\x00\x00\x00<"):
+        unit_width, byte_order = 4, "big"
+    elif source_xml.startswith(b"\xff\xfe") or source_xml.startswith(b"<\x00"):
+        unit_width, byte_order = 2, "little"
+    elif source_xml.startswith(b"\xfe\xff") or source_xml.startswith(b"\x00<"):
+        unit_width, byte_order = 2, "big"
+    else:
+        unit_width, byte_order = 1, "little"
+
+    def ascii_token(value: str) -> bytes:
+        return ord(value).to_bytes(unit_width, byte_order)
+
     pending_namespaces: list[tuple[str, str | None]] = []
     scopes: list[dict[str, str | None]] = [{"xml": "http://www.w3.org/XML/1998/namespace"}]
     frames: list[dict] = []
@@ -323,18 +337,28 @@ def _parse_spans(source_xml: bytes) -> tuple[list[dict], str]:
     declared_encoding: list[str | None] = [None]
 
     def scan_tag_end(start: int) -> int:
-        quote_byte: int | None = None
-        for index in range(start, len(source_xml)):
-            byte = source_xml[index]
-            if quote_byte is not None:
-                if byte == quote_byte:
-                    quote_byte = None
+        quote_token: bytes | None = None
+        for index in range(start, len(source_xml), unit_width):
+            token = source_xml[index:index + unit_width]
+            if len(token) != unit_width:
+                break
+            if quote_token is not None:
+                if token == quote_token:
+                    quote_token = None
                 continue
-            if byte in (ord("\""), ord("'")):
-                quote_byte = byte
-            elif byte == ord(">"):
-                return index
+            if token in {ascii_token("\""), ascii_token("'")}:
+                quote_token = token
+            elif token == ascii_token(">"):
+                return index + unit_width - 1
         raise ValueError("unterminated XML tag")
+
+    def empty_tag(start: int, tag_end: int) -> bool:
+        before_close = source_xml[start:tag_end + 1 - unit_width]
+        units = [before_close[index:index + unit_width] for index in range(0, len(before_close), unit_width)]
+        whitespace = {ascii_token(character) for character in " \t\r\n"}
+        while units and units[-1] in whitespace:
+            units.pop()
+        return bool(units and units[-1] == ascii_token("/"))
 
     def namespace_start(prefix: str | None, namespace: str | None) -> None:
         pending_namespaces.append((prefix or "", namespace))
@@ -350,7 +374,7 @@ def _parse_spans(source_xml: bytes) -> tuple[list[dict], str]:
                 scope[prefix] = namespace
         pending_namespaces.clear()
         tag_end = scan_tag_end(start)
-        is_empty = source_xml[start:tag_end].rstrip().endswith(b"/")
+        is_empty = empty_tag(start, tag_end)
         frame = {
             "start": start,
             "tag_end": tag_end,

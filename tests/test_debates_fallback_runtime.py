@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+
 import pytest
 from rdflib import URIRef
 from rdflib.namespace import RDF
@@ -91,3 +93,18 @@ def test_identical_runtime_fallback_siblings_fail_closed():
     assert error.value.reference_report["diagnostics"][0]["code"] == (
         "duplicate-proposed-resource-iri"
     )
+
+
+def test_utf8_and_utf16_bom_sources_preserve_fallback_but_hash_exact_bytes():
+    source_utf8 = _source(SPEECH_SUBTREE)
+    source_utf16 = source_utf8.decode("utf-8").encode("utf-16")
+    assert source_utf16.startswith((b"\xff\xfe", b"\xfe\xff"))
+
+    utf8_result = transform_debate(source_utf8)
+    utf16_result = transform_debate(source_utf16)
+
+    assert _fallback_resource_iris(utf8_result) == {EXPECTED_FALLBACK_IRI}
+    assert _fallback_resource_iris(utf16_result) == {EXPECTED_FALLBACK_IRI}
+    assert utf8_result.source_sha256 == hashlib.sha256(source_utf8).hexdigest()
+    assert utf16_result.source_sha256 == hashlib.sha256(source_utf16).hexdigest()
+    assert utf8_result.source_sha256 != utf16_result.source_sha256

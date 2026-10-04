@@ -58,6 +58,6 @@ are checked against sorted named-graph N-Quads and source-hash-linked JSON;
 manual expected-RDF subsets and source-derived structure checks remain
 independent of the production transformer.
 At Tranche 2 acceptance, ontology/HermiT and active mapping-term validation
-passed; the focused Debates suite had 77 passing tests (23 subtests), and the
-full repository suite had 502 passing tests, 9 skips (23 subtests). These
+passed; the focused Debates suite had 78 passing tests (23 subtests), and the
+full repository suite had 503 passing tests, 9 skips (23 subtests). These
 results verify representative output, not a production-corpus resource gate.
