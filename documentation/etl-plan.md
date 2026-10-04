@@ -1512,16 +1512,21 @@ remains `documentation/debates_ontology_outline.md` and
 `ontology/debates.owl.ttl`.
 
 **Status:** Debates Tranches 1–2 are complete and verified against preserved
-representative fixtures. Tranche 3 cross-dataset integration and validation may
-start; ingestion, broad-corpus scope and publication remain pending.
+representative fixtures. The production-corpus census/benchmark has been
+measured (see `documentation/debates-production-benchmark.md`); the
+full-corpus-versus-Bill-debates-first scope choice and gate remain pending an
+operational acceptability threshold. Tranche 3 cross-dataset integration and
+validation may start; ingestion, broad-corpus scope and publication remain
+pending.
 
 Settled boundaries include:
 
 - intended source scope for representative transformation is Dáil, Seanad,
   committees and written answers. The production-scope gate does not block
-  Tranche 1 or Tranche 2; after the core transformer exists and before broad
-  production ingestion, a measured census/benchmark will select full-corpus or
-  Bill-debates-first ingestion;
+  Tranche 1 or Tranche 2; after the core transformer, the measured
+  census/benchmark is recorded in `documentation/debates-production-benchmark.md`
+  and selects full-corpus or Bill-debates-first ingestion once an operational
+  resource threshold exists;
 - AKN XML is authoritative source evidence;
 - Debates owns its questions and divisions/votes;
 - transcript text is not copied into RDF; future topic/keyword extraction is
@@ -1566,13 +1571,14 @@ publishing a graph from one Expression alone. The full rules are in
    quality checks, competency queries and graph-boundary tests.
 4. **Source ingestion, state and publication mechanics** — preserve AKN input,
    persist source identity/hashes, add replay/idempotency and per-record graph
-   replacement through the normal ETL path. After the core transformer exists,
-   census all in-scope XML (including `writtens`) and benchmark runtime and RDF
-   output/working storage on representative records. Use measured XML volume,
-   runtime and RDF output against deployment budgets to choose full-corpus or
-   Bill-debates-first production ingestion before broad production ingestion.
-   This gate does not block Tranche 1 or Tranche 2. Production scanning cadence
-   and scheduling policy remain Phase 6 work.
+   replacement through the normal ETL path. The census/benchmark of all
+   in-scope XML (including `writtens`), runtime and RDF output/working storage
+   required before broad ingestion has been measured and is recorded in
+   `documentation/debates-production-benchmark.md`; the full-corpus versus
+   Bill-debates-first choice still awaits an operational resource threshold and
+   a disposition for its quarantine/fragment findings. This gate does not block
+   Tranche 1 or Tranche 2. Production scanning cadence and scheduling policy
+   remain Phase 6 work.
 
 #### Debates backlog
 
@@ -1585,10 +1591,13 @@ publishing a graph from one Expression alone. The full rules are in
   the ontology and semantic-review contract.
 - [x] Audit representative Dáil, Seanad, committee and written-answer source
   structures and preserve byte-checked fixtures.
-- [ ] After the core transformer exists, census/benchmark total in-scope XML
-  volume (including written answers), runtime and RDF output/working storage;
-  choose full-corpus or Bill-debates-first production ingestion before broad
-  production ingestion.
+- [ ] Production-scope choice after the core transformer: the census/benchmark
+  of total in-scope XML volume (including written answers), runtime and RDF
+  output/working storage has been measured and is recorded in
+  `documentation/debates-production-benchmark.md`. The full-corpus versus
+  Bill-debates-first choice itself remains open pending an operational resource
+  threshold and a disposition for the measured quarantine and pre-2013
+  written-answer fragmentation findings.
 - [ ] Implement the remaining Debates tranches (3–4) above; Tranches 1–2 are
   complete.
 - [ ] Add Debates SHACL/quality validation and competency queries.

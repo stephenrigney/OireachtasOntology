@@ -35,7 +35,10 @@ full in-scope XML (including `writtens`) and benchmark runtime, working/storage
 needs and RDF output on representative records. Choose full-corpus or
 Bill-debates-first production ingestion from the measured XML volume, runtime
 and RDF output against deployment budgets; do not infer scope from sample size
-or use an arbitrary cutoff.
+or use an arbitrary cutoff. The post-Tranche-2 census/benchmark has since been
+measured and is recorded in
+[`debates-production-benchmark.md`](debates-production-benchmark.md); the scope
+choice remains pending an operational threshold.
 
 ## Identifier and graph identity
 

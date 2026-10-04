@@ -4,8 +4,12 @@
 
 Tranches 1 and 2 are complete. The deterministic representative-fixture
 transformer and independent RDF acceptance are verified; Tranche 3 may start.
-This does not claim broad cross-dataset reconciliation, SHACL/competency
-acceptance, ingestion or graph publication.
+The production-corpus resource benchmark required before broad ingestion has
+been measured and is reported in
+[`debates-production-benchmark.md`](debates-production-benchmark.md); the
+production-scope choice and gate remain open pending an operational
+acceptability threshold. This does not claim broad cross-dataset
+reconciliation, SHACL/competency acceptance, ingestion or graph publication.
 
 This note records the approved Phase 7 design for the Debates vertical slice.
 It complements the ontology-specific material in
@@ -16,12 +20,12 @@ It complements the ontology-specific material in
 - Akoma Ntoso (AKN) XML is the authoritative source format.
 - The intended corpus covers Dáil, Seanad, committees and written answers for
   Tranche 2 representative transformation.
-- A separate production-scope gate does not block Tranche 1 or Tranche 2. After
-  the core transformer exists and before broad production ingestion, census and
-  benchmark the in-scope corpus (including written-answer XML), then choose
-  full-corpus or Bill-debates-first production ingestion from measured XML
-  volume, runtime and RDF output against deployment budgets. This choice does
-  not change the semantic design.
+- A separate production-scope gate does not block Tranche 1 or Tranche 2. The
+  in-scope corpus (including written-answer XML) has been censused and
+  benchmarked after the core transformer; see
+  [`debates-production-benchmark.md`](debates-production-benchmark.md). The
+  full-corpus versus Bill-debates-first choice is still pending an operational
+  resource threshold, and this choice does not change the semantic design.
 - The Debates slice owns parliamentary questions and divisions/votes found in
   the AKN debate record. They are not separate Phase 7 publication owners.
 - Raw AKN source must be preserved so the RDF can be regenerated and source
@@ -261,13 +265,16 @@ resource gate remains open before broad ingestion; Tranche 3 owns broader
 cross-dataset resolution, SHACL and competency acceptance.
 
 The census/benchmark for the full-corpus versus Bill-debates-first production
-choice is run after the core transformer exists and before broad production
-ingestion. Measure total in-scope XML volume (including `writtens`), runtime and
-RDF output (and required working/storage volume) on representative records;
-make the scope choice from those measurements and deployment budgets, not from
-sample size alone. This gate does not delay Tranche 1 or representative Tranche
-2 implementation. Phase 6's scan cadence, scheduling and reconciliation policy
-remain unchanged.
+choice was run after the core transformer existed and is recorded in
+[`debates-production-benchmark.md`](debates-production-benchmark.md). It
+measures total in-scope XML volume (including `writtens`), runtime and RDF
+output (and required working/storage volume). The scope choice has not been
+made: no operational resource budget/threshold is defined in the repository,
+and the measurement also found quarantine and source-fragmentation limits
+(2004–2007 duplicate-eId records; pre-2013 written answers lacking a
+whole-record source) that need separate disposition. This gate does not delay
+Tranche 1 or representative Tranche 2 implementation. Phase 6's scan cadence,
+scheduling and reconciliation policy remain unchanged.
 
 ### Tranche 3 — Cross-dataset integration and validation
 

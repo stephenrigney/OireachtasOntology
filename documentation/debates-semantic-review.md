@@ -435,17 +435,23 @@ Verification used the project Java runtime through `mise exec --`: run
 
 ## Resource gate and release boundary
 
-The production-scope census/benchmark remains open; the API census excludes
-written-answer XML, and total in-scope XML volume, runtime and RDF output have
-not yet been measured. This gate does **not** block Tranche 1 source-contract
+The production-scope census/benchmark remains open: it selects full-corpus or
+Bill-debates-first production ingestion, and no operational acceptability
+threshold exists yet. The state recorded when this review was approved is that
+total in-scope XML volume, runtime and RDF output have not yet been measured,
+because the API census excludes written-answer XML and record counts do not
+establish them. This gate does **not** block Tranche 1 source-contract
 completion or Tranche 2 implementation and representative-fixture tests. Tranche
 2 follows the completed Tranche 1 contract and must cover
 representative Dáil, Seanad, committee and written-answer records.
 
-After the core transformer exists and before broad production ingestion,
-enumerate the full in-scope corpus including `writtens`, measure XML volume, and
-benchmark elapsed runtime, working/storage needs and RDF output on representative
-records. Decide full-corpus versus Bill-debates-first production ingestion from
+The measured census/benchmark has since been produced from the committed
+Tranche 2 transformer and is recorded in
+[`debates-production-benchmark.md`](debates-production-benchmark.md). Before
+broad production ingestion, decide full-corpus versus Bill-debates-first from
 the measured XML volume, runtime and RDF output against deployment budgets; do
-not infer a scope choice from record counts or choose an arbitrary cutoff.
-Phase 6 scan cadence, scheduling and reconciliation policy remains unchanged.
+not infer a scope choice from record counts or choose an arbitrary cutoff. The
+benchmark also recorded quarantine (2004–2007 duplicate-eId records) and
+pre-2013 written-answer source-fragmentation limits that need separate
+disposition. Phase 6 scan cadence, scheduling and reconciliation policy remains
+unchanged.

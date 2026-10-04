@@ -54,17 +54,15 @@ separate `writtens` AKN documents. On 2015-07-02, `/v1/questions` returns 239
 questions (10 oral in the Dáil debate file and 229 written in the separate
 `writtens` file), illustrating that boundary.
 
-The Phase 7 full-corpus-versus-Bill-debates production gate is **insufficiently
-measured**: the API census excludes written-answer XML, and record counts do not
-establish total XML volume, runtime or RDF output. This gate does **not** block
-Tranche 1 semantic/source-contract work or Tranche 2 representative
-transformation. After the core transformer exists and before broad production
-ingestion, enumerate all in-scope AKN main documents (including `writtens`) and
-measure primary XML bytes, elapsed runtime, RDF output and working/storage needs
-on representative records. Compare the measured costs with deployment budgets
-to choose full-corpus or Bill-debates-first production ingestion. Do not infer a
-scope decision from record counts or set an arbitrary cutoff; no production
-scope has been selected by this source audit.
+The Phase 7 full-corpus-versus-Bill-debates production gate was **insufficiently
+measured** as of this audit: the API census excludes written-answer XML, and
+record counts do not establish total XML volume, runtime or RDF output. This
+gate did **not** block Tranche 1 semantic/source-contract work or Tranche 2
+representative transformation. The required census and benchmark have since
+been measured from the core transformer and are recorded in
+[`debates-production-benchmark.md`](debates-production-benchmark.md); the scope
+choice remains pending an operational acceptability threshold. No production
+scope has been selected by this source audit or by the benchmark report.
 
 ## Historical ontology baseline reviewed before semantic approval
 
