@@ -1017,21 +1017,35 @@ def transform_debate(
             evidence={"source_date": source_date},
         )
 
+    work_names = _children_named(work_element, "FRBRname")
+    work_name_values = [name.get("value") for name in work_names]
+    missing_name_values = [
+        name for name in work_names if name.get("value") in (None, "")
+    ]
+    if missing_name_values:
+        _raise_transform_error(
+            "FRBRWork/FRBRname must have a non-empty @value when present",
+            report=report,
+            code="work-type-missing-value",
+            evidence={
+                "source_pointers": [source_paths[name] for name in missing_name_values],
+                "frbr_name_values": work_name_values,
+            },
+        )
+
     graph = Graph(identifier=URIRef(graph_iri_text))
     graph.bind("oir", OIR)
     graph.bind("eli-dl", ELIDL)
     graph.add((work_iri, RDF.type, OIR.DebateRecord))
     graph.add((work_iri, OIR.debateDate, debate_date))
-    work_names = _children_named(work_element, "FRBRname")
-    work_name_values = [name.get("value") for name in work_names]
     for value in work_name_values:
         if value is not None:
             graph.add((work_iri, OIR.debateType, string(value)))
-    if len(work_names) > 1 or (work_names and work_names[0].get("value") is None):
+    if len(work_names) > 1:
         report["diagnostics"].append(
             {
                 "code": "sitting-source-type-ambiguous",
-                "message": "missing or multiple FRBRWork/FRBRname source signals prevent sitting emission",
+                "message": "multiple FRBRWork/FRBRname source signals prevent sitting emission",
                 "evidence": {"frbr_names": work_name_values},
             }
         )
@@ -1054,8 +1068,8 @@ def transform_debate(
     name_signal = work_name_values[0] if len(work_names) == 1 else None
     sitting_eligible = False
     sitting_reason = None
-    if len(work_names) > 1 or (work_names and work_names[0].get("value") is None):
-        sitting_reason = "missing-or-multiple-FRBRname-signals"
+    if len(work_names) > 1:
+        sitting_reason = "multiple-FRBRname-signals"
     elif path_is_writtens:
         if name_signal not in (None, "writtens"):
             sitting_reason = "work-path-and-FRBRname-disagree"

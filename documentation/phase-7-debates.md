@@ -66,7 +66,9 @@ disagreement or an unreviewed type fails closed for sitting emission.
 Representative Dáil, Seanad, committee and written-answer records have been
 audited. The I1/I2/O1–O8 semantic decisions are approved, and their Debates
 ontology/mapping additions pass static verification under the repository
-semantic-contract boundary. Runtime transformation remains future work.
+semantic-contract boundary. Representative runtime transformation and RDF
+acceptance are implemented in Tranche 2; general integration and publication
+remain later work.
 
 ## Identifier policy
 

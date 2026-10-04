@@ -49,6 +49,12 @@ Summary/ordinal is recorded in `phase-7-debates.md`; the broader active CSV
 selector needs a separately approved correction. No broad production ingestion,
 publication mechanics or corpus-scope selection was done in Tranche 2.
 
+Each Work and Expression IRI comes from its own FRBR URI; the Expression path
+need not nest under the Work path. A present but valueless `FRBRWork/FRBRname`
+fails source validation with hash-linked evidence instead of being mistaken
+for an absent name and assigned a sitting. An absent `FRBRname` remains eligible
+under the approved non-written Work rule.
+
 The Tranche 2 acceptance commands are
 `mise exec -- .venv/bin/python tests/validate.py`,
 `mise exec -- .venv/bin/python -m tools.validation`,
@@ -58,6 +64,6 @@ are checked against sorted named-graph N-Quads and source-hash-linked JSON;
 manual expected-RDF subsets and source-derived structure checks remain
 independent of the production transformer.
 At Tranche 2 acceptance, ontology/HermiT and active mapping-term validation
-passed; the focused Debates suite had 78 passing tests (23 subtests), and the
-full repository suite had 503 passing tests, 9 skips (23 subtests). These
+passed; the focused Debates suite had 87 passing tests (23 subtests), and the
+full repository suite had 512 passing tests, 9 skips (23 subtests). These
 results verify representative output, not a production-corpus resource gate.

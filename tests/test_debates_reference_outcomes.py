@@ -135,6 +135,7 @@ def _assert_no_owner_descriptions(graph, *owner_iris: URIRef) -> None:
 def _minimal_source(
     body_xml: str,
     *,
+    references_xml: str = "",
     author_href: str = "#oireachtas",
     work_path: str = "/akn/ie/debateRecord/dail/2026-01-01/debate",
     expression_suffix: str = "mul@",
@@ -150,7 +151,8 @@ def _minimal_source(
         f"<FRBRauthor href={quoteattr(author_href)}/></FRBRWork>"
         f"<FRBRExpression><FRBRuri value={quoteattr(expression_path)}/>"
         '<FRBRlanguage language="eng"/></FRBRExpression>'
-        f"</identification></meta><debateBody>{body_xml}</debateBody>"
+        f"</identification></meta>{references_xml}"
+        f"<debateBody>{body_xml}</debateBody>"
         "</debate></akomaNtoso>"
     )
     return source.encode("utf-8")
@@ -410,6 +412,74 @@ def test_question_recipient_stays_deferred_and_does_not_touch_named_office_model
         for subject in graph.subjects()
     )
     _assert_fixture_report(result, filename)
+
+
+def test_question_asked_by_links_only_to_existing_member_owner(owner_examples):
+    source = _minimal_source(
+        '<debateSection eId="questions">'
+        '<question eId="q1" by="#TimDooley" to="#minister"/>'
+        "</debateSection>",
+        references_xml=(
+            "<references>"
+            f'<TLCPerson eId="TimDooley" href={quoteattr(MEMBER_SOURCE_HREF)} '
+            'showAs="Timmy Dooley"/>'
+            '<TLCRole eId="minister" href="/ie/oireachtas/role/dail/minister" '
+            'showAs="Minister"/>'
+            "</references>"
+        ),
+    )
+    result = transform_debate(
+        source, resolver=_checked_in_owner_resolver(owner_examples)
+    )
+    graph = result.graph
+    question = URIRef(result.expression_iri + "/eid/e-q1")
+    member = owner_examples["member_iri"]
+
+    assert (member, RDF.type, OIR.Member) in owner_examples["member_graph"]
+    assert (question, RDF.type, OIR.ParliamentaryQuestion) in graph
+    assert (question, OIR.askedBy, member) in graph
+    assert set(graph.triples((None, OIR.askedBy, None))) == {
+        (question, OIR.askedBy, member)
+    }
+    assert set(graph.triples((None, None, member))) == {
+        (question, OIR.askedBy, member)
+    }
+    _assert_no_owner_descriptions(graph, member)
+
+    expected_hash = hashlib.sha256(source).hexdigest()
+    assert result.source_sha256 == expected_hash
+    sidecar = json.loads(result.reference_report_json.decode("utf-8"))
+    assert sidecar["source_sha256"] == expected_hash
+    asked_by_rows = [
+        row
+        for row in sidecar["reference_outcomes"]
+        if row["slot"] == "question/@by"
+    ]
+    assert len(asked_by_rows) == 1
+    assert asked_by_rows[0]["raw_reference"] == "#TimDooley"
+    assert asked_by_rows[0]["status"] == "resolved"
+    assert asked_by_rows[0]["target_iri"] == str(member)
+    assert asked_by_rows[0]["source_sha256"] == expected_hash
+    assert asked_by_rows[0]["resolution_evidence"]["tlc_person_href"] == (
+        MEMBER_SOURCE_HREF
+    )
+
+    recipient_rows = [
+        row
+        for row in sidecar["reference_outcomes"]
+        if row["slot"] == "question/@to->directedTo/directedToOffice"
+    ]
+    assert len(recipient_rows) == 1
+    assert recipient_rows[0]["status"] == "unresolved"
+    assert recipient_rows[0]["reason"] == "question-recipient-resolution-deferred"
+    assert not list(graph.triples((None, OIR.directedTo, None)))
+    assert not list(graph.triples((None, OIR.directedToOffice, None)))
+    for owned_office_class in (
+        MEMBERS.NamedOffice,
+        MEMBERS.OfficeHolding,
+        MEMBERS.CabinetMembership,
+    ):
+        assert not list(graph.triples((None, RDF.type, owned_office_class)))
 
 
 def test_declared_seanad_outcome_is_raw_hash_linked_evidence_but_not_an_rdf_outcome():

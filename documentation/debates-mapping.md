@@ -4,10 +4,10 @@ This is the approved mapping contract for the Phase 7 Debates vertical slice,
 incorporating the approved identity and semantic decisions in
 [`debates-semantic-review.md`](debates-semantic-review.md) and
 [`debates-identity-contract.md`](debates-identity-contract.md). The Tranche 1
-semantic/source contract is complete and statically verified; it does not claim
-that the production resource gate, Debates transformer or RDF goldens are
-complete. The
-executable vocabulary is `ontology/debates.owl.ttl`; the matching CSV is
+semantic/source contract and Tranche 2 representative RDF acceptance are
+complete. The production resource gate, broad owner integration and publication
+remain pending. The executable vocabulary is `ontology/debates.owl.ttl`; the
+matching CSV is
 [`mappings/debates_mapping.csv`](../mappings/debates_mapping.csv). Every active
 local term in that CSV must resolve to one local ontology definition before
 mapping-integrity validation can pass.

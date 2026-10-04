@@ -9,6 +9,7 @@ the immutable XML tree and compared with the emitted RDF.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote
 import xml.etree.ElementTree as ET
@@ -248,6 +249,55 @@ def _ordinal_expectations(case: dict, root: ET.Element) -> set[tuple]:
     return expected
 
 
+def _recorded_time_literal(source_time: str) -> Literal:
+    """Convert a source timestamp to a timezone-normalized xsd:dateTime."""
+
+    parsed = datetime.fromisoformat(source_time.replace("Z", "+00:00"))
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+    return Literal(parsed.isoformat(timespec="seconds"), datatype=XSD.dateTime)
+
+
+def _recorded_time_expectations(case: dict, root: ET.Element) -> set[tuple]:
+    """Convert only AKN Speech/from/recordedTime/@time values to RDF terms."""
+
+    expected = set()
+    speeches = root.findall(".//akn:debateBody//akn:speech", NS)
+    for speech in speeches:
+        speech_ref = _eid_resource(case["expression"], speech)
+        for from_element in speech.findall("akn:from", NS):
+            for recorded_time in from_element.findall("akn:recordedTime", NS):
+                source_time = recorded_time.get("time")
+                assert source_time is not None, "source recordedTime lacks @time"
+                expected.add(
+                    (speech_ref, OIR.recordedTime, _recorded_time_literal(source_time))
+                )
+    return expected
+
+
+@pytest.mark.parametrize(
+    "key,eid,source_lexical,expected_lexical",
+    [
+        ("committee", "spk_1", "2026-09-24T10:20:00+01:00", "2026-09-24T09:20:00"),
+        ("written", "spk_1007", "2015-07-02T23:30:00+01:00", "2015-07-02T22:30:00"),
+        ("dail_2026", "spk_1", "2026-02-25T09:00:00+00:00", "2026-02-25T09:00:00"),
+    ],
+)
+def test_recorded_time_conversion_matches_hand_pinned_source_values(
+    key, eid, source_lexical, expected_lexical
+):
+    root = _source_root(CASES[key])
+    speech = root.find(f".//akn:debateBody//akn:speech[@eId='{eid}']", NS)
+    assert speech is not None
+    recorded_time = speech.find("akn:from/akn:recordedTime", NS)
+    assert recorded_time is not None
+    assert recorded_time.get("time") == source_lexical
+
+    expected = _recorded_time_literal(source_lexical)
+    assert expected.datatype == XSD.dateTime
+    assert str(expected) == expected_lexical
+
+
 def _class_count(graph: Graph, class_iri: URIRef) -> int:
     return len(set(graph.subjects(RDF.type, class_iri)))
 
@@ -359,7 +409,10 @@ def test_each_full_fixture_matches_fixed_counts_and_independent_structural_rdf(
     assert len(set(graph.triples((None, OIR.hasSummary, None)))) == counts["has_summary"]
     assert len(set(graph.triples((None, OIR.hasQuestion, None)))) == counts["has_question"]
     assert len(set(graph.triples((None, OIR.sectionName, None)))) == counts["sections"]
-    assert len(set(graph.triples((None, OIR.recordedTime, None)))) == counts["recorded_times"]
+    expected_recorded_times = _recorded_time_expectations(case, root)
+    actual_recorded_times = set(graph.triples((None, OIR.recordedTime, None)))
+    assert len(expected_recorded_times) == counts["recorded_times"]
+    assert actual_recorded_times == expected_recorded_times
 
     _assert_vote_golden(key, graph, case["expression"])
 

@@ -1,10 +1,10 @@
 # Phase 7 Debates — Tranche 1 identity, order and reference contract
 
-**Status: approved identity/source contract; Tranche 1 complete.** The
-ontology/mapping additions and static contract checks are verified. Tranche 2
-may start. This document records the approved identity,
-graph, ordering and reference-evidence rules; it does not claim that a runtime
-extractor, transformer, resolver or publisher implements them.
+**Status: approved identity/source contract; Tranches 1–2 complete.** The
+ontology/mapping additions, static checks and representative RDF transformation
+are verified. This document records the approved identity, graph, ordering and
+reference-evidence rules; it does not claim that acquisition, general owner
+resolution or publication is implemented.
 The governing boundaries are in [Phase 7](phase-7-debates.md), especially its
 identifier, order, cross-resource, and graph-ownership sections.
 
@@ -47,6 +47,11 @@ The approved source identity for each FRBR level is the exact XML-parsed
 
 * Work key: `FRBRWork/FRBRuri/@value`.
 * Expression key: `FRBRExpression/FRBRuri/@value`.
+
+These two keys are validated and encoded independently. An Expression path is
+not required to be a child of its Work path; the explicit `:hasExpression` link
+and Work-keyed graph establish their relationship. This clarifies the approved
+no-truncation identity rule and does not authorize guessing either path.
 
 `FRBRuri` identifies the whole document at its FRBR level. Do not substitute
 `FRBRthis` (which can identify a component), infer one level by truncating the

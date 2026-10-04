@@ -1,12 +1,12 @@
 """Static Debates source-contract regressions; these are not runtime RDF tests.
 
-The repository has no Debates transformer yet. These checks bind the approved
-mapping rules to the immutable AKN evidence, but they cannot demonstrate that a
-future transformer emits or omits triples. Tranche 2 deterministic RDF goldens
-must prove both supported assertions and negative cases (unresolved references,
-``#declared``, ``rollCall`` attendance, and transcript text) on real transforms;
-this file deliberately fabricates no RDF output. The corpus/resource gate also
-remains a separate, unpassed production-scope decision.
+These checks bind the approved mapping rules to the immutable AKN evidence,
+but do not themselves demonstrate RDF emission or non-emission. Separate
+Tranche 2 runtime tests and independently specified RDF expectations prove
+supported assertions and negative cases (unresolved references, ``#declared``,
+``rollCall`` attendance, and transcript text) on real transforms; this file
+deliberately fabricates no RDF output. The corpus/resource gate remains a
+separate, unpassed production-scope decision.
 """
 
 from __future__ import annotations

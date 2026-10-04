@@ -1,12 +1,14 @@
+import hashlib
 from pathlib import Path
 from types import SimpleNamespace
+from xml.sax.saxutils import quoteattr
 
 import pytest
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import RDF, RDFS, XSD
 
 from oireachtas_etl.transforms.common import ELIDL, OIR
-from oireachtas_etl.transforms.debates import transform_debate
+from oireachtas_etl.transforms.debates import DebateTransformError, transform_debate
 from oireachtas_etl.validation.debates import (
     DEFERRED_PREDICATES,
     RDF_ONLY_LIMITATIONS,
@@ -116,6 +118,19 @@ def copied(result):
                            expression_iri=result.expression_iri)
 
 
+def minimal_source(*, work_path, expression_path, frbr_name=""):
+    return (
+        f'<akomaNtoso xmlns="http://docs.oasis-open.org/legaldocml/ns/akn/3.0/CSD13">'
+        f"<debate><meta><identification>"
+        f"<FRBRWork><FRBRuri value={quoteattr(work_path)}/>"
+        '<FRBRdate name="#generation" date="2026-01-01"/>'
+        f"{frbr_name}</FRBRWork>"
+        f"<FRBRExpression><FRBRuri value={quoteattr(expression_path)}/>"
+        '<FRBRlanguage language="eng"/></FRBRExpression>'
+        f"</identification></meta><debateBody/></debate></akomaNtoso>"
+    ).encode("utf-8")
+
+
 def test_valid_debates_rdf_passes_and_rdf_only_limits_are_explicit():
     validate_debates(make_result())
     assert any("transcript" in limit and "source-aware" in limit for limit in RDF_ONLY_LIMITATIONS)
@@ -127,6 +142,71 @@ def test_preserved_fixture_transforms_pass_debates_validation(filename):
     source = (ROOT / "data" / "debates_examples" / filename).read_bytes()
     result = transform_debate(source, resolver=None)
     validate_debates(result)
+
+
+def test_independent_work_and_expression_paths_transform_and_validate():
+    work_path = "/akn/ie/debateRecord/dail/2026-01-01/debate"
+    expression_path = "/akn/ie/debateRecord/seanad/2025-12-31/archive/mul@"
+    source = minimal_source(work_path=work_path, expression_path=expression_path)
+
+    result = transform_debate(source, resolver=None)
+    validate_debates(result)
+
+    work = URIRef("https://data.oireachtas.ie" + work_path)
+    expression = URIRef(
+        "https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2025-12-31/archive/mul%40"
+    )
+    assert result.work_iri == str(work)
+    assert result.expression_iri == str(expression)
+    assert result.graph_iri == "https://data.oireachtas.ie/graph/debate/dail/2026-01-01/debate"
+    assert (work, OIR.hasExpression, expression) in result.graph
+    assert (URIRef(str(work) + "#sitting"), RDF.type, OIR.DebateSitting) in result.graph
+
+
+@pytest.mark.parametrize(
+    ("expression_iri", "message"),
+    [
+        (
+            "https://data.oireachtas.ie/akn/ie/other/dail/2026-02-26/debate/mul%40",
+            "approved canonical debateRecord path",
+        ),
+        (
+            "https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-02-26/debate/mul@",
+            "non-empty RFC 3986 encoded components",
+        ),
+    ],
+)
+def test_expression_identity_still_requires_canonical_route_and_encoded_path(
+    expression_iri, message
+):
+    result = copied(make_result())
+    result.expression_iri = URIRef(expression_iri)
+
+    with pytest.raises(ValueError, match=message):
+        validate_debates(result)
+
+
+@pytest.mark.parametrize("frbr_name", ['<FRBRname/>', '<FRBRname value=""/>'])
+def test_present_frbr_name_without_nonempty_value_fails_with_source_hash_evidence(frbr_name):
+    source = minimal_source(
+        work_path="/akn/ie/debateRecord/dail/2026-01-01/debate",
+        expression_path="/akn/ie/debateRecord/dail/2026-01-01/debate/mul@",
+        frbr_name=frbr_name,
+    )
+
+    with pytest.raises(DebateTransformError, match="FRBRWork/FRBRname must have a non-empty @value") as caught:
+        transform_debate(source, resolver=None)
+
+    expected_hash = hashlib.sha256(source).hexdigest()
+    assert caught.value.source_sha256 == expected_hash
+    assert caught.value.reference_report["source_sha256"] == expected_hash
+    diagnostics = caught.value.reference_report["diagnostics"]
+    assert any(
+        diagnostic["code"] == "work-type-missing-value"
+        and diagnostic["message"] == "FRBRWork/FRBRname must have a non-empty @value when present"
+        and diagnostic["evidence"]["source_pointers"]
+        for diagnostic in diagnostics
+    )
 
 
 def test_written_answer_work_keeps_record_and_date_but_has_no_sitting():

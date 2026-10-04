@@ -300,13 +300,13 @@ def validate_debates(result: object) -> None:
     expected_graph = _expected_graph_iri(work)
     if str(graph_iri) != expected_graph:
         raise ValueError("graph_iri does not match the approved Work-owned Debates graph identity")
-    work_path = urlsplit(str(work)).path
     expression_parts = urlsplit(str(expression))
     expression_path = expression_parts.path
     if (expression_parts.scheme != "https" or expression_parts.netloc != "data.oireachtas.ie"
             or expression_parts.query or expression_parts.fragment
-            or not expression_path.startswith(work_path.rstrip("/") + "/")):
-        raise ValueError("expression_iri must be a child FRBR path of work_iri")
+            or not expression_path.startswith("/akn/ie/debateRecord/")
+            or expression_path == "/akn/ie/debateRecord/"):
+        raise ValueError("expression_iri must use the approved canonical debateRecord path")
     _check_encoded_path(expression_path, "expression_iri")
 
     _check_graph_terms(graph, set(graph.subjects(RDF.type, OIR.Speech)))
