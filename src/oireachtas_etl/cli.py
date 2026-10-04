@@ -24,6 +24,8 @@ from .validation import validate_member, validate_bill
 from .validation.members import validate_member_source
 from .transforms.members import (member_graph_iri, prior_party_membership_evidence,
                                  source_hash, transform_member_with_report)
+from .transforms.common import MEMBERS, datetime_literal
+from .transforms.offices import office_iri
 from .transforms.bills import bill_graph_iri, source_hash as bill_source_hash, transform_bill_with_report
 from .validation.bills import validate_bill_source
 from .state import CoreStateStore, expected_graph_iri, state_lock
@@ -40,8 +42,11 @@ from .reconciliation import (DbpediaClient, ReconciliationStore, WikidataClient,
                               institution_external_graph_iri, institution_records,
                               load_institution_review,
                               reconcile_institution_records, reconciliation_identity)
-from .office_observations import extract_office_observations
+from .office_observations import canonical_json, extract_office_observations, json_hash
 from .office_reconciliation import OfficeOccurrenceStore, load_office_review
+
+
+MEMBER_MAPPING_VERSION = "member_mapping.csv@phase-7-ministerial-offices-2026"
 
 
 def _reconciliation_state_path(args: argparse.Namespace, settings: Settings) -> Path:
@@ -319,6 +324,449 @@ def _verified_previous_member_graph(prior: dict | None, graph_iri: str) -> Graph
     return graph
 
 
+def _member_migration_inventory(store: CoreStateStore,
+                                office_rows: list[dict],
+                                run_id: str) -> tuple[dict | None, dict[str, str]]:
+    """Inventory locally verified legacy Member payloads before contract-3 PUTs.
+
+    This deliberately uses only the last validated payloads kept in core state
+    and the local office occurrence ledger. It never reads a live triple store.
+    Missing payloads are reported as inventory gaps; payloads that are present
+    but fail integrity checks block only their Member's migration.
+    """
+    legacy_types = {
+        "MinisterOfStateMembership": MEMBERS.MinisterOfStateMembership,
+        "MinisterOfStateRole": MEMBERS.MinisterOfStateRole,
+    }
+    legacy_predicates = {
+        "hasMinisterOfStateRole": MEMBERS.hasMinisterOfStateRole,
+        "officeNameUri": MEMBERS.officeNameUri,
+    }
+
+    def describe_payload(payload: object, expected_hash: object, graph_iri: str,
+                         identity: str) -> tuple[dict | None, str]:
+        if not isinstance(payload, str) or not isinstance(expected_hash, str):
+            return None, "unavailable"
+        if graph_iri != expected_graph_iri("members", identity):
+            return None, "wrong_graph_identity"
+        digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        if digest != expected_hash:
+            return None, "hash_mismatch"
+        graph = Graph()
+        try:
+            graph.parse(data=payload, format="nt")
+        except Exception:
+            return None, "invalid_ntriples"
+        if (URIRef(identity), RDF.type, OIR.Member) not in graph:
+            return None, "wrong_member_subject"
+        legacy_memberships = set(graph.subjects(
+            RDF.type, MEMBERS.MinisterOfStateMembership))
+        legacy_roles_found = set(graph.subjects(RDF.type, MEMBERS.MinisterOfStateRole))
+        legacy_roles_found.update(
+            role for membership in legacy_memberships
+            for role in graph.objects(membership, MEMBERS.hasMinisterOfStateRole))
+        legacy_subjects = legacy_memberships | legacy_roles_found
+        legacy_subjects.update(
+            period for subject in legacy_memberships
+            for period in graph.objects(subject, MEMBERS.hasMembershipDateRange))
+        legacy_triples = {
+            triple for subject in legacy_subjects
+            for triple in graph.triples((subject, None, None))
+        }
+        legacy_triples.update(
+            triple for subject in legacy_subjects
+            for triple in graph.triples((None, None, subject)))
+        legacy_triples.update(graph.triples((None, MEMBERS.hasMinisterOfStateRole, None)))
+        legacy_triples.update(graph.triples((None, MEMBERS.officeNameUri, None)))
+        return {
+            "payload_hash": digest,
+            "legacy_triples": {
+                **{name: len(list(graph.triples((None, RDF.type, term))))
+                   for name, term in legacy_types.items()},
+                **{name: len(list(graph.triples((None, term, None))))
+                   for name, term in legacy_predicates.items()},
+            },
+            "legacy_office_triple_count": len(legacy_triples),
+            "legacy_office_resource_iris": sorted(map(str, legacy_subjects)),
+            "office_holding_count": len(set(graph.subjects(RDF.type, MEMBERS.OfficeHolding))),
+            "office_holding_iris": sorted(map(str, set(
+                graph.subjects(RDF.type, MEMBERS.OfficeHolding)))),
+            "verified": True,
+        }, "verified"
+
+    resources = store.resources("members")
+    resources_by_iri = {row["resource_iri"]: row for row in resources}
+    migration_resources = []
+    blocked: dict[str, str] = {}
+    for prior in resources:
+        identity = prior["resource_iri"]
+        contract = prior.get("contract_version")
+        legacy_contract = type(contract) is not int or contract < 3
+        has_publication = bool(
+            prior.get("published_source_hash") or prior.get("published_payload") is not None
+            or prior.get("last_published_at") or prior.get("publication_state") == "dirty")
+        if not legacy_contract or not has_publication:
+            continue
+
+        published, published_status = describe_payload(
+            prior.get("published_payload"), prior.get("published_payload_hash"),
+            prior["graph_iri"], identity)
+        pending = None
+        pending_status = "not_present"
+        if prior.get("pending_payload") is not None:
+            pending, pending_status = describe_payload(
+                prior.get("pending_payload"), prior.get("pending_payload_hash"),
+                prior["graph_iri"], identity)
+            if (pending is not None and prior.get("pending_graph_iri") != prior["graph_iri"]):
+                pending, pending_status = None, "wrong_graph_identity"
+
+        item = {
+            "member_iri": identity,
+            "graph_iri": prior["graph_iri"],
+            "contract_version": contract,
+            "publication_state": prior.get("publication_state"),
+            "published_payload": published or {"verified": False, "status": published_status},
+            "pending_payload": pending or {"verified": False, "status": pending_status},
+        }
+        # Old manifest imports did not retain an RDF payload. Report that gap
+        # explicitly in the inventory, but keep the approved contract-bump
+        # republish path; a corrupt payload that is present is different and
+        # fails closed because its inventory cannot be trusted.
+        if prior.get("published_payload") is not None and published is None:
+            blocked[identity] = (
+                "legacy Member payload is present but cannot be verified for inventory; "
+                "no live triple-store query was attempted")
+        if prior.get("pending_payload") is not None and pending is None:
+            blocked[identity] = (
+                "dirty legacy Member pending payload is present but cannot be verified for inventory; "
+                "no live triple-store query was attempted")
+        migration_resources.append(item)
+
+    # Record disappeared source observations and whether a contract-3 prior
+    # graph contains the exact ledger-derived holding. Contract-2 payloads did
+    # not publish OfficeHolding records, but their absent reports are inventoried.
+    missing_observations = []
+    for row in office_rows:
+        if row.get("source_presence") not in {"missing", "confirmed_missing"}:
+            continue
+        identity = row.get("member_iri")
+        prior = resources_by_iri.get(identity)
+        contract = prior.get("contract_version") if prior else None
+        payload_graph = None
+        if prior and prior.get("published_payload") is not None:
+            try:
+                payload_graph = _verified_previous_member_graph(prior, prior["graph_iri"])
+            except ValueError:
+                payload_graph = None
+        resolution = row.get("last_accepted_resolution")
+        matched = []
+        if isinstance(resolution, dict) and isinstance(resolution.get("snapshot"), dict):
+            snapshot = resolution["snapshot"]
+            for office in resolution.get("office_iris", []):
+                holding = _office_holding_iri(identity, row["occurrence_key"], office)
+                if (payload_graph is not None and holding in set(
+                        payload_graph.subjects(RDF.type, MEMBERS.OfficeHolding))
+                        and _prior_office_holding_matches(
+                            payload_graph, identity, holding, office,
+                            snapshot.get("date_range", {}))):
+                    matched.append(str(holding))
+        if type(contract) is int and contract >= 3:
+            inventory_status = "matched_prior_holding" if matched else "no_exact_prior_holding_match"
+        else:
+            inventory_status = "contract_predates_office_holding_publication"
+        missing_observations.append({
+            "member_iri": identity,
+            "occurrence_key": row["occurrence_key"],
+            "source_presence": row.get("source_presence"),
+            "has_last_accepted_resolution": isinstance(resolution, dict),
+            "matched_published_holding_iris": sorted(matched),
+            "inventory_status": inventory_status,
+        })
+
+    if not migration_resources:
+        return None, blocked
+    inventory = {
+        "version": 1,
+        "run_id": run_id,
+        "basis": "verified local CoreStateStore Member payloads and OfficeOccurrenceStore ledger; no live triple-store access",
+        "member_graphs": sorted(migration_resources, key=lambda item: item["member_iri"]),
+        "missing_observations": sorted(
+            missing_observations,
+            key=lambda item: (item["member_iri"], item["occurrence_key"])),
+    }
+    return inventory, blocked
+
+
+def _write_member_migration_inventory(inventory: dict, path: Path) -> str:
+    """Atomically persist the pre-publication migration inventory evidence."""
+    payload = json.dumps(inventory, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+    digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    path = path.expanduser()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(payload, encoding="utf-8")
+    temporary.replace(path)
+    return digest
+
+
+def _member_office_policy(args: argparse.Namespace) -> tuple[dict, dict, str, dict[str, str]]:
+    """Load the reviewed local office authority used by Member transformation."""
+    registry_path = Path(getattr(args, "registry_file", None) or OFFICE_REGISTRY_FILE)
+    try:
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"invalid office registry: {error}") from error
+    validate_registry_source(registry)
+    decisions, review_hash = load_office_review(
+        Path(getattr(args, "review_file", None) or OFFICE_DECISIONS_FILE), registry)
+    office_types = {
+        str(office_iri(office["key"])): office["office_type"]
+        for office in registry["offices"]
+    }
+    return registry, decisions, review_hash, office_types
+
+
+def _resolution_records(occurrence_key: str, resolution: dict, *, retained: bool,
+                        retention_status: str | None = None) -> list[dict]:
+    """Adapt one ledger acceptance to the transform/validator public contract."""
+    snapshot = resolution.get("snapshot")
+    if not isinstance(snapshot, dict):
+        raise ValueError(f"accepted office resolution {occurrence_key} has no source snapshot")
+    member_iri = snapshot.get("member_iri")
+    membership_iri = snapshot.get("membership_iri")
+    date_range = snapshot.get("date_range")
+    office_iris = resolution.get("office_iris")
+    if not isinstance(office_iris, list) or not office_iris:
+        raise ValueError(f"accepted office resolution {occurrence_key} has no office targets")
+    record = {
+        "occurrence_key": occurrence_key,
+        "member_iri": member_iri,
+        "membership_iri": membership_iri,
+        "date_range": date_range,
+        "retained": retained,
+    }
+    if retention_status is not None:
+        record["retention_status"] = retention_status
+    return [{**record, "office_iri": office} for office in sorted(office_iris)]
+
+
+def _accepted_office_ledger_rows(rows: list[dict], current_observations: list[dict],
+                                 decisions: dict[str, dict], *,
+                                 allow_revocation: bool) -> tuple[dict[str, list[dict]],
+                                                                  dict[str, list[dict]],
+                                                                  dict[str, list[dict]]]:
+    """Partition ledger evidence into current, retainable and reviewed-revoke rows."""
+    present = {}
+    for observation in current_observations:
+        present.setdefault(observation["member_iri"], set()).add(
+            (observation["identity_key"], observation["fingerprint"]))
+
+    current: dict[str, list[dict]] = {}
+    retained: dict[str, list[dict]] = {}
+    revoked: dict[str, list[dict]] = {}
+    for row in rows:
+        resolution = row.get("last_accepted_resolution")
+        if not isinstance(resolution, dict):
+            continue
+        member_iri = row["member_iri"]
+        key = row["occurrence_key"]
+        decision = decisions.get(key)
+        is_current_source = (
+            row.get("source_presence") == "present"
+            and (row.get("identity_key"), row.get("current_fingerprint"))
+            in present.get(member_iri, set())
+        )
+        explicitly_revoked = bool(
+            allow_revocation and is_current_source
+            and row.get("status") == "rejected"
+            and isinstance(decision, dict)
+            and decision.get("action") == "revoke"
+            and decision.get("observation_fingerprint") == row.get("current_fingerprint")
+        )
+        if explicitly_revoked:
+            revoked.setdefault(member_iri, []).append(row)
+            continue
+
+        acceptance_is_current = bool(
+            is_current_source and row.get("status") == "accepted"
+            and resolution.get("fingerprint") == row.get("current_fingerprint")
+        )
+        if acceptance_is_current:
+            current.setdefault(member_iri, []).extend(
+                _resolution_records(key, resolution, retained=False))
+        else:
+            retained.setdefault(member_iri, []).append(row)
+    return current, retained, revoked
+
+
+def _office_holding_iri(member_iri: str, occurrence_key: str, office_iri_value: str) -> URIRef:
+    digest = hashlib.sha256(canonical_json({
+        "kind": "office-holding-occurrence-v1",
+        "occurrence_key": occurrence_key,
+        "office_iri": office_iri_value,
+    }).encode("utf-8")).hexdigest()
+    return URIRef(f"{member_iri}#office-holding-{digest}")
+
+
+def _prior_office_holding_matches(graph: Graph, member_iri: str, holding: URIRef,
+                                 office: str, date_range: dict) -> bool:
+    """Verify the prior accepted holding is exactly the ledger snapshot we reuse."""
+    member = URIRef(member_iri)
+    periods = list(graph.objects(holding, MEMBERS.hasMembershipDateRange))
+    if ((holding, RDF.type, MEMBERS.OfficeHolding) not in graph
+            or list(graph.objects(holding, MEMBERS.heldOffice)) != [URIRef(office)]
+            or list(graph.objects(holding, MEMBERS.officeHolder)) != [member]
+            or (member, MEMBERS.hasOfficeHolding, holding) not in graph
+            or (member, MEMBERS.hasMembersMembership, holding) not in graph
+            or len(periods) != 1):
+        return False
+    period = periods[0]
+    starts = list(graph.objects(period, MEMBERS.StartDate))
+    ends = list(graph.objects(period, MEMBERS.EndDate))
+    expected_start = datetime_literal(date_range["start"])
+    expected_ends = ([datetime_literal(date_range["end"])]
+                     if date_range.get("end") is not None else [])
+    return (len(starts) == 1 and starts[0] == expected_start
+            and ends == expected_ends)
+
+
+def _office_acceptance_history(office_store: OfficeOccurrenceStore,
+                               row: dict) -> list[dict]:
+    history = [attempt.get("last_accepted_resolution")
+               for attempt in office_store.attempts(row["occurrence_key"])]
+    history.append(row.get("last_accepted_resolution"))
+    unique = {}
+    for resolution in history:
+        if isinstance(resolution, dict):
+            unique[canonical_json(resolution)] = resolution
+    return list(unique.values())
+
+
+def _prepare_member_office_resolutions(
+        member_iri: str, prior: dict | None, office_store: OfficeOccurrenceStore,
+        member_ledger_rows: list[dict], accepted_records: list[dict],
+        retained_rows: list[dict], revoked_rows: list[dict]
+        ) -> tuple[list[dict], Graph | None, str | None]:
+    """Compose retained holdings only from the verified last accepted Member graph."""
+    output = list(accepted_records)
+    contract_version = prior.get("contract_version") if isinstance(prior, dict) else None
+    has_publication = bool(prior and (
+        prior.get("published_source_hash") or prior.get("published_payload") is not None
+        or prior.get("last_published_at")))
+
+    # Contract-2 Member graphs predate OfficeHolding. Their old nested office
+    # role assertions are intentionally retired by the contract-version bump;
+    # a ledger-only acceptance was not yet published as a holding.
+    if not (type(contract_version) is int and contract_version >= 3 and has_publication):
+        return output, None, None
+
+    has_accepted_evidence = bool(
+        accepted_records or retained_rows or revoked_rows
+        or any(isinstance(row.get("last_accepted_resolution"), dict)
+               for row in member_ledger_rows))
+    if not has_accepted_evidence:
+        # No office assertion for this Member has been accepted by the local
+        # occurrence ledger. Unrelated Member/party changes do not need office
+        # payload recovery.
+        return output, None, None
+
+    graph_iri = prior.get("graph_iri")
+    try:
+        previous = _verified_previous_member_graph(prior, graph_iri)
+    except Exception as error:
+        return output, None, (
+            f"{type(error).__name__}: {error}; prior OfficeHolding state cannot be verified")
+
+    prior_holding_ids = set(previous.subjects(RDF.type, MEMBERS.OfficeHolding))
+    active_ids = {
+        _office_holding_iri(member_iri, item["occurrence_key"], str(item["office_iri"]))
+        for item in output
+    }
+    authorized_replacements: set[URIRef] = set()
+
+    for row in retained_rows:
+        key = row["occurrence_key"]
+        retention_status = ("missing_retained" if row.get("source_presence") == "missing"
+                            else "conflict_retained")
+        matched_by_holding: dict[URIRef, dict] = {}
+        for resolution in reversed(_office_acceptance_history(office_store, row)):
+            snapshot = resolution.get("snapshot")
+            if not isinstance(snapshot, dict):
+                continue
+            for office in resolution.get("office_iris", []):
+                holding = _office_holding_iri(member_iri, key, office)
+                if (holding not in matched_by_holding and holding in prior_holding_ids
+                        and _prior_office_holding_matches(
+                            previous, member_iri, holding, office,
+                            snapshot.get("date_range", {}))):
+                    matched_by_holding[holding] = _resolution_records(
+                        key, {**resolution, "office_iris": [office]}, retained=True,
+                        retention_status=retention_status)[0]
+        # The stored acceptance is not enough to publish a holding which was
+        # never in the last accepted Member graph.
+        output.extend(matched_by_holding.values())
+        active_ids.update(matched_by_holding)
+
+    # A newly reviewed accepted target or explicit revocation is the only
+    # evidence that can authorize retiring a previous target for that source
+    # occurrence. Ordinary rejection, absence and conflict never do so.
+    current_keys = {item["occurrence_key"] for item in accepted_records}
+    current_keys.update(row["occurrence_key"] for row in revoked_rows)
+    for row in [*retained_rows, *revoked_rows]:
+        if row["occurrence_key"] not in current_keys:
+            continue
+        for resolution in _office_acceptance_history(office_store, row):
+            for office in resolution.get("office_iris", []):
+                authorized_replacements.add(
+                    _office_holding_iri(member_iri, row["occurrence_key"], office))
+    # Current accepted rows can supersede an older reviewed target as well.
+    accepted_keys = {item["occurrence_key"] for item in accepted_records}
+    for row in member_ledger_rows:
+        if row.get("occurrence_key") not in accepted_keys:
+            continue
+        for resolution in _office_acceptance_history(office_store, row):
+            for office in resolution.get("office_iris", []):
+                authorized_replacements.add(
+                    _office_holding_iri(member_iri, row["occurrence_key"], office))
+
+    unaccounted = prior_holding_ids - active_ids - authorized_replacements
+    if unaccounted:
+        return output, previous, (
+            "verified prior Member graph contains OfficeHolding resources without "
+            "current accepted, retained, or explicitly reviewed revocation evidence: "
+            + ", ".join(sorted(map(str, unaccounted))))
+    return output, previous, None
+
+
+def _missing_office_membership_context(wrapper: dict,
+                                       resolutions: list[dict]) -> list[str]:
+    """Find accepted records whose containing House membership is no longer in source."""
+    member = wrapper.get("member", {}) if isinstance(wrapper, dict) else {}
+    memberships = member.get("memberships", []) if isinstance(member, dict) else []
+    current = {
+        wrapped.get("membership", {}).get("uri")
+        for wrapped in memberships
+        if isinstance(wrapped, dict) and isinstance(wrapped.get("membership"), dict)
+    }
+    return sorted({
+        str(item.get("membership_iri"))
+        for item in resolutions
+        if isinstance(item, dict)
+        and item.get("membership_iri") not in current
+    })
+
+
+def _unregistered_office_targets(resolutions: list[dict],
+                                 office_types: dict[str, str]) -> list[str]:
+    """Return accepted or retained office targets absent from the active registry."""
+    return sorted({
+        str(item.get("office_iri"))
+        for item in resolutions
+        if isinstance(item, dict)
+        and item.get("office_iri") not in office_types
+    })
+
+
 def _deduplicate_members(records: list[dict], advertised: int | None) -> list[dict]:
     if not records: raise ValueError("Members harvest must not be empty")
     unique: dict[str, dict] = {}
@@ -387,19 +835,45 @@ def _replay_missing_dirty(endpoint: str, resource: dict, store: CoreStateStore,
 
 def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = None,
                       run_id: str | None = None,
-                      reconciliation_store: ReconciliationStore | None = None) -> int:
+                      reconciliation_store: ReconciliationStore | None = None,
+                      office_store: OfficeOccurrenceStore | None = None) -> int:
+    ephemeral = OfficeOccurrenceStore(":memory:") if args.offline or office_store is None else None
+    try:
+        return _run_members_impl_body(
+            args, store, run_id, reconciliation_store, office_store, ephemeral)
+    finally:
+        if ephemeral is not None:
+            ephemeral.close()
+
+
+def _run_members_impl_body(args: argparse.Namespace, store: CoreStateStore | None,
+                           run_id: str | None,
+                           reconciliation_store: ReconciliationStore | None,
+                           office_store: OfficeOccurrenceStore | None,
+                           ephemeral_office_store: OfficeOccurrenceStore | None) -> int:
     settings = Settings.from_environment()
     settings = Settings(**{**settings.__dict__, "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir})
+    raw_root = settings.raw_dir.expanduser().resolve()
+    extraction_id = run_id or str(uuid.uuid4())
+    records_with_pointers: list[tuple[dict, dict]] = []
     if args.fixture:
-        records, body, advertised = _members_fixture_records(Path(args.fixture))
-        persist_raw(root=settings.raw_dir, endpoint=str(Path(args.fixture)), params={"skip": 0, "limit": len(records)}, body=body, status=200,
+        fixture = Path(args.fixture)
+        records, body, advertised, shape = _office_fixture_records(fixture)
+        raw_path, _ = persist_raw(root=raw_root, endpoint=str(fixture.resolve()),
+                    params={"skip": 0, "limit": len(records)}, body=body, status=200,
                     retrieved_at=datetime.now(timezone.utc), ontology_version=REFERENCE_ONTOLOGY_VERSION,
-                    mapping_version="member_mapping.csv@phase-3-members-2026", endpoint_name="members", extraction_id=run_id)
+                     mapping_version=MEMBER_MAPPING_VERSION,
+                    endpoint_name="members", extraction_id=extraction_id)
+        for index, wrapper in enumerate(records):
+            pointer = "" if shape == "single" else (
+                f"/results/{index}" if shape == "results" else f"/{index}")
+            records_with_pointers.append((
+                wrapper, _office_raw_pointer(raw_path, raw_root, body, pointer)))
     else:
         records, advertised = [], None
         for page in ApiClient(settings.members_api_url, retries=settings.retries, timeout=settings.timeout).harvest(limit=settings.limit):
-            persist_raw(root=settings.raw_dir, endpoint=settings.members_api_url, params=page.params, body=page.body, status=page.status,
-                        ontology_version=REFERENCE_ONTOLOGY_VERSION, mapping_version="member_mapping.csv@phase-3-members-2026", endpoint_name="members", extraction_id=run_id)
+            raw_path, _ = persist_raw(root=raw_root, endpoint=settings.members_api_url, params=page.params, body=page.body, status=page.status,
+                        ontology_version=REFERENCE_ONTOLOGY_VERSION, mapping_version=MEMBER_MAPPING_VERSION, endpoint_name="members", extraction_id=extraction_id)
             decoded = json.loads(page.body)
             if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list):
                 raise ValueError("every Members API page must be an object envelope with a results list")
@@ -409,9 +883,87 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
                 raise ValueError("every Members API page must contain a nonnegative integer head.counts.memberCount")
             page_records = decoded["results"]
             records.extend(page_records)
+            for index, wrapper in enumerate(page_records):
+                records_with_pointers.append((
+                    wrapper, _office_raw_pointer(
+                        raw_path, raw_root, page.body, f"/results/{index}")))
             if advertised is None: advertised = count
             elif count != advertised: raise ValueError("Members advertised count changed during scan")
     records = _deduplicate_members(records, advertised)
+    complete_scan = (not args.fixture or
+                     (advertised is not None and advertised == len(records)))
+    observations = extract_office_observations(records_with_pointers)
+    registry, decisions, review_hash, office_types = _member_office_policy(args)
+
+    # An offline run is reproducible from only its supplied source and reviewed
+    # files. Incomplete online fixtures may inspect durable accepted evidence,
+    # but only a complete live/fixture scan is allowed to update that ledger.
+    reconcile_persistent = bool(
+        office_store is not None and complete_scan and not args.offline)
+    prior_office_rows = office_store.occurrences() if reconcile_persistent else []
+    active_office_store = office_store
+    if not reconcile_persistent and (args.offline or office_store is None):
+        active_office_store = ephemeral_office_store
+    if active_office_store is None:
+        raise RuntimeError("Member office reconciliation requires an occurrence store")
+    if reconcile_persistent or ephemeral_office_store is not None:
+        office_result = active_office_store.reconcile(
+            observations, registry, decisions, review_hash, run_id=extraction_id)
+        ledger_rows = office_result["records"]
+    else:
+        office_result = None
+        ledger_rows = active_office_store.occurrences()
+
+    current_office, retained_office, revoked_office = _accepted_office_ledger_rows(
+        ledger_rows, observations, decisions,
+        allow_revocation=bool(args.offline or complete_scan))
+    office_rows_by_member: dict[str, list[dict]] = {}
+    for row in ledger_rows:
+        if isinstance(row.get("member_iri"), str):
+            office_rows_by_member.setdefault(row["member_iri"], []).append(row)
+    # Only accepted/current or previously accepted outcomes can change RDF.
+    # Unresolved observations remain report-only and preserve the hash skip.
+    office_related_members = set(current_office) | set(retained_office) | set(revoked_office)
+    office_related_members.update(
+        row["member_iri"] for row in ledger_rows
+        if isinstance(row.get("member_iri"), str)
+        and isinstance(row.get("last_accepted_resolution"), dict))
+    office_config_changed_members: set[str] = set()
+    if reconcile_persistent:
+        prior_by_key = {row["occurrence_key"]: row for row in prior_office_rows}
+        current_registry_hash = json_hash(registry)
+        for row in ledger_rows:
+            previous = prior_by_key.get(row["occurrence_key"])
+            if (previous is None or previous.get("registry_hash") != current_registry_hash
+                    or previous.get("review_hash") != review_hash):
+                if isinstance(row.get("member_iri"), str):
+                    office_config_changed_members.add(row["member_iri"])
+
+    known = store.resources("members") if store is not None else []
+    migration_inventory = None
+    migration_inventory_summary = None
+    migration_inventory_blocked: dict[str, str] = {}
+    if store is not None and not args.offline:
+        migration_inventory, migration_inventory_blocked = _member_migration_inventory(
+            store, ledger_rows, extraction_id)
+        if migration_inventory is not None:
+            inventory_path = Path(
+                getattr(args, "migration_inventory_file", None)
+                or store.path.with_name(
+                    f"{store.path.name}.member-migration-{extraction_id}.json"))
+            inventory_digest = _write_member_migration_inventory(
+                migration_inventory, inventory_path)
+            migration_inventory_summary = {
+                "path": str(inventory_path),
+                "sha256": inventory_digest,
+                "legacy_member_graphs": len(migration_inventory["member_graphs"]),
+                "missing_observations": len(migration_inventory["missing_observations"]),
+                "blocked_members": sorted(migration_inventory_blocked),
+                "inventory_gaps": sorted(
+                    item["member_iri"] for item in migration_inventory["member_graphs"]
+                    if not item["published_payload"].get("verified", False)),
+            }
+
     graphs: list[tuple[dict, object | None, str, str, list[dict], str]] = []
     for wrapper in records:
         member = wrapper["member"]; identity, digest, graph_iri = str(__import__("oireachtas_etl.transforms.common", fromlist=["iri"]).iri(member["uri"])), source_hash(member), member_graph_iri(member)
@@ -419,22 +971,73 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
         old = (store.observe_resource("members", identity, graph_iri, digest, run_id)
                if store is not None and run_id is not None else {})
         # Hash-first: unchanged published records do not enter transformation.
-        omissions = validate_member_source(wrapper)
+        office_resolutions = list(current_office.get(identity, []))
+        omissions = validate_member_source(
+            wrapper, office_resolutions=office_resolutions, office_types=office_types)
+        if identity in migration_inventory_blocked:
+            omissions.append({
+                "path": "member",
+                "context": identity,
+                "reason": migration_inventory_blocked[identity],
+                "category": "migration_inventory_blocked",
+                "preservation_status": "previous_member_graph_retained",
+            })
+            graphs.append((wrapper, None, identity, digest, omissions, "skipped"))
+            continue
         if (not args.offline and old.get("publication_state", "clean") == "clean"
-                and old.get("contract_version") == 2
-                and old.get("published_source_hash") == digest and old.get("graph_iri") == graph_iri):
+                and old.get("contract_version") == 3
+                and old.get("published_source_hash") == digest and old.get("graph_iri") == graph_iri
+                and identity not in office_config_changed_members
+                and identity not in office_related_members):
             for item in omissions:
                 if (item.get("category") == "source_quarantine"
                         and ".parties[" in item.get("path", "")):
                     item["preservation_status"] = "unchanged_published_graph_retained"
             graphs.append((wrapper, None, identity, digest, omissions, "skipped")); continue
-        graph, exclusions = transform_member_with_report(wrapper)
-        validate_member(wrapper, graph)
+        office_resolutions, _previous_office_graph, office_preservation_error = (
+            _prepare_member_office_resolutions(
+                identity, prior, active_office_store,
+                office_rows_by_member.get(identity, []), office_resolutions,
+                retained_office.get(identity, []), revoked_office.get(identity, [])))
+        missing_memberships = _missing_office_membership_context(
+            wrapper, office_resolutions)
+        if missing_memberships and office_preservation_error is None:
+            office_preservation_error = (
+                "accepted or retained OfficeHolding requires a containing House membership "
+                "that is absent from the current Member source; preserving the prior Member "
+                "graph rather than dropping the holding: "
+                + ", ".join(missing_memberships))
+        unregistered_targets = _unregistered_office_targets(
+            office_resolutions, office_types)
+        if unregistered_targets and office_preservation_error is None:
+            office_preservation_error = (
+                "accepted or retained office target is absent from the currently registered "
+                "office_types; preserving the prior Member graph: "
+                + ", ".join(unregistered_targets))
+        status = "changed" if prior else "new"
+        if office_preservation_error is not None:
+            omissions.append({
+                "path": "member.memberships[].membership.offices[]",
+                "context": identity,
+                "reason": office_preservation_error,
+                "category": "office_preservation_blocked",
+                "preservation_status": "previous_member_graph_retained",
+            })
+            graphs.append((wrapper, None, identity, digest, omissions, "skipped"))
+            continue
+        # Run the source gate with the complete effective accepted set before
+        # transformation; retained records are checked again by the independent
+        # RDF acceptance builder below.
+        omissions = validate_member_source(
+            wrapper, office_resolutions=office_resolutions, office_types=office_types)
+        graph, exclusions = transform_member_with_report(
+            wrapper, office_resolutions=office_resolutions, office_types=office_types)
+        validate_member(wrapper, graph, office_resolutions=office_resolutions,
+                        office_types=office_types)
         malformed_parties = [item for item in exclusions
                              if item.get("category") == "source_quarantine"
                              and ".parties[" in item.get("path", "")]
-        status = "changed" if prior else "new"
-        if malformed_parties and not args.offline:
+        if graph is not None and malformed_parties and not args.offline:
             affected_memberships = {item["context"] for item in malformed_parties}
             previous_payload = prior.get("published_payload") if prior else None
             has_published_state = bool(prior and (
@@ -469,7 +1072,10 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
             else:
                 if preserved:
                     graph += preserved
-                    validate_member(wrapper, graph, preserved_party_graph=preserved)
+                    validate_member(
+                        wrapper, graph, preserved_party_graph=preserved,
+                        office_resolutions=office_resolutions,
+                        office_types=office_types)
                 for item in malformed_parties:
                     has_old_party_data = bool(preserved_by_membership.get(item["context"]))
                     item["preservation_status"] = (
@@ -479,9 +1085,26 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
                         if has_published_state else
                         "no_previous_accepted_member_graph"
                     )
-        elif malformed_parties:
+        elif graph is not None and malformed_parties:
             for item in malformed_parties:
                 item["preservation_status"] = "not_applicable_offline"
+        if (graph is not None and not args.offline
+                and not malformed_parties
+                and old.get("publication_state", "clean") == "clean"
+                and old.get("contract_version") == 3
+                and old.get("published_source_hash") == digest
+                and old.get("graph_iri") == graph_iri
+                and identity in office_related_members):
+            try:
+                previous_graph = _verified_previous_member_graph(prior, graph_iri)
+            except Exception:
+                # No trustworthy prior RDF means equality cannot authorize a
+                # hash skip; the validated current graph is published instead.
+                pass
+            else:
+                if set(graph) == set(previous_graph):
+                    graph = None
+                    status = "skipped"
         graphs.append((wrapper, graph, identity, digest, exclusions, status))
     if args.output_nq:
         Path(args.output_nq).write_text("".join(nquads(graph, graph_iri) for wrapper, graph, identity, digest, exclusions, _ in graphs if graph is not None for graph_iri in [member_graph_iri(wrapper["member"])]), encoding="utf-8")
@@ -489,11 +1112,12 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
         Path(args.output_ttl).write_text("\n".join(turtle(graph) for _, graph, _, _, _, _ in graphs if graph is not None), encoding="utf-8")
     endpoint = None if args.offline else (args.fuseki_gsp_url or settings.fuseki_gsp_url)
     query_endpoint = None if args.offline else (args.fuseki_sparql_url or settings.fuseki_sparql_url)
-    if endpoint and not query_endpoint: raise ValueError("Fuseki SPARQL endpoint is required for post-load competency verification")
+    if endpoint and not query_endpoint:
+        raise ValueError("Fuseki SPARQL endpoint is required for post-load competency verification")
     published = skipped = 0
+    deferred_dirty: list[dict] = []
     repaired: list[str] = []
     seen = {identity for _, _, identity, _, _, _ in graphs}
-    known = store.resources("members") if store is not None else []
     missing = sorted(row["resource_iri"] for row in known if row["resource_iri"] not in seen)
     if endpoint:
         if store is None:
@@ -503,10 +1127,34 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
         for wrapper, graph, identity, digest, exclusions, status in graphs:
             if graph is None:
                 prior = store.get_resource("members", identity)
+                if any(item.get("category") == "office_preservation_blocked"
+                       or item.get("category") == "migration_inventory_blocked"
+                       for item in exclusions):
+                    # The office-preservation or migration-inventory gate says
+                    # this Member must keep its prior graph untouched.
+                    skipped += 1
+                    continue
                 if any(item.get("preservation_status") == "blocked_previous_graph_retained"
                        for item in exclusions):
                     # Current evidence cannot safely replace the accepted graph
                     # because its party payload is unavailable or unverifiable.
+                    skipped += 1
+                    continue
+                effective_offices, _prior_offices, office_error = (
+                    _prepare_member_office_resolutions(
+                        identity, prior, active_office_store,
+                        office_rows_by_member.get(identity, []),
+                        current_office.get(identity, []),
+                        retained_office.get(identity, []),
+                        revoked_office.get(identity, [])))
+                if office_error is not None:
+                    exclusions.append({
+                        "path": "member.memberships[].membership.offices[]",
+                        "context": identity,
+                        "reason": office_error,
+                        "category": "office_preservation_blocked",
+                        "preservation_status": "previous_member_graph_retained",
+                    })
                     skipped += 1
                     continue
                 malformed_parties = [item for item in exclusions
@@ -528,7 +1176,9 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
                         previous_graph, URIRef(wrapper["member"]["uri"]),
                         {item["context"] for item in malformed_parties})
                     validate_member(wrapper, previous_graph,
-                                    preserved_party_graph=preserved)
+                                    preserved_party_graph=preserved,
+                                    office_resolutions=effective_offices,
+                                    office_types=office_types)
                     try:
                         verify_core_graph(client, prior["graph_iri"], prior["published_payload"])
                     except ValueError:
@@ -554,22 +1204,39 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
                                           force=status == "new")
                             skipped += 1
                             continue
-                    graph, exclusions = transform_member_with_report(wrapper); validate_member(wrapper, graph)
+                    # The malformed-party branch can reach this repair only for
+                    # the legacy unchanged-graph check above. Recreate the
+                    # current graph with the same office resolution contract.
+                    graph, exclusions = transform_member_with_report(
+                        wrapper, office_resolutions=effective_offices,
+                        office_types=office_types)
+                    validate_member(wrapper, graph,
+                                    office_resolutions=effective_offices,
+                                    office_types=office_types)
                     repaired.append(identity)
             graph_iri = member_graph_iri(wrapper["member"])
             payload = ntriples(graph)
             payload_hash = store.mark_publication_dirty("members", identity, source_hash=digest,
                                                         graph_iri=graph_iri, payload=payload,
-                                                        contract_version=2)
+                                                        contract_version=3)
             loader.replace(graph_iri, payload, content_type="application/n-triples")
             verify_member_competency(client, graph_iri, identity, len(graph))
             verify_core_graph(client, graph_iri, payload)
             store.complete_publication("members", identity, source_hash=digest, graph_iri=graph_iri,
-                                       payload_hash=payload_hash, contract_version=2)
+                                       payload_hash=payload_hash, contract_version=3)
             _try_mark_due(reconciliation_store, "member", wrapper, force=status == "new")
             published += 1
         for row in known:
             if row["resource_iri"] in seen or row["publication_state"] != "dirty":
+                continue
+            if row.get("contract_version") != 3:
+                skipped += 1
+                deferred_dirty.append({
+                    "resource_iri": row["resource_iri"],
+                    "contract_version": row.get("contract_version"),
+                    "reason": "legacy dirty Member payload is not replayed while absent from the source scan; "
+                             "retain its current graph and retry after the Member reappears for contract-3 validation",
+                })
                 continue
             _replay_missing_dirty("members", row, store, loader, client,
                                   verify_member_competency)
@@ -583,20 +1250,45 @@ def _run_members_impl(args: argparse.Namespace, store: CoreStateStore | None = N
     print(json.dumps({"records": len(records), "published": published, "skipped": skipped,
                       "new": identities["new"], "changed": identities["changed"],
                       "skipped_identities": identities["skipped"], "missing_retained": missing,
-                      "future_work_omitted": [item for item in report
-                                              if item["category"] != "source_quarantine"],
+                       "future_work_omitted": [item for item in report
+                                               if item["category"] not in {
+                                                   "source_quarantine",
+                                                    "office_preservation_blocked",
+                                                    "migration_inventory_blocked"}],
                       "malformed_offices": [item for item in report
                                             if item["category"] == "source_quarantine"
                                             and ".offices[" in item.get("path", "")],
-                      "malformed_parties": [item for item in report
-                                            if item["category"] == "source_quarantine"
-                                            and ".parties[" in item.get("path", "")]},
-                     sort_keys=True))
+                        "malformed_parties": [item for item in report
+                                              if item["category"] == "source_quarantine"
+                                              and ".parties[" in item.get("path", "")],
+                       "office_reconciliation": {
+                           "complete_scan": complete_scan,
+                           "observations": len(observations),
+                           "ledger_updated": reconcile_persistent,
+                           "accepted": (office_result["accepted"]
+                                        if office_result is not None else None),
+                           "rejected": (office_result["rejected"]
+                                        if office_result is not None else None),
+                           "unresolved": (office_result["unresolved"]
+                                          if office_result is not None else None),
+                           "review_required": (office_result["review_required"]
+                                               if office_result is not None else None),
+                           "revocations_applied": sum(len(rows) for rows in revoked_office.values()),
+                           "retained_holding_records": sum(len(rows) for rows in retained_office.values()),
+                       },
+                        "office_preservation_blocked": [item for item in report
+                                                         if item["category"] == "office_preservation_blocked"],
+                        "migration_inventory": migration_inventory_summary,
+                        "migration_inventory_blocked": [item for item in report
+                                                         if item["category"] == "migration_inventory_blocked"],
+                        "legacy_dirty_deferred": deferred_dirty,
+                        }, sort_keys=True))
     return 0
 
 
 def _run_members(args: argparse.Namespace, store: CoreStateStore | None = None,
-                 reconciliation_store: ReconciliationStore | None = None) -> int:
+                 reconciliation_store: ReconciliationStore | None = None,
+                 office_store: OfficeOccurrenceStore | None = None) -> int:
     if store is None:
         return _run_members_impl(args)
     settings = Settings.from_environment()
@@ -606,7 +1298,8 @@ def _run_members(args: argparse.Namespace, store: CoreStateStore | None = None,
                                          "api_url": None if args.fixture else settings.members_api_url,
                                          "limit": settings.limit})
     try:
-        result = _run_members_impl(args, store, run_id, reconciliation_store)
+        result = _run_members_impl(args, store, run_id, reconciliation_store,
+                                   office_store)
     except Exception as error:
         store.finish_run(run_id, success=False, error=f"{type(error).__name__}: {error}")
         raise
@@ -621,24 +1314,28 @@ def run_members(args: argparse.Namespace) -> int:
     settings = Settings.from_environment()
     state_db = Path(getattr(args, "state_db", None) or settings.core_state_db_file).expanduser()
     legacy_members = _legacy_override(args) or settings.members_legacy_state_file
+    office_state = Path(getattr(args, "office_state_file", None)
+                        or OFFICE_OCCURRENCE_STATE_DB_FILE).expanduser()
     with state_lock(state_db):
         with CoreStateStore(state_db, legacy_members=legacy_members,
                             legacy_bills=settings.bills_legacy_state_file) as store:
-            endpoint = args.fuseki_gsp_url or settings.fuseki_gsp_url
-            if not endpoint:
-                return _run_members(args, store)
-            try:
-                reconciliation_store = ReconciliationStore(_reconciliation_state_path(args, settings))
-            except Exception as error:
-                _handoff_warning("member", error)
-                return _run_members(args, store)
-            try:
-                return _run_members(args, store, reconciliation_store)
-            finally:
+            with OfficeOccurrenceStore(office_state) as office_occurrences:
+                endpoint = args.fuseki_gsp_url or settings.fuseki_gsp_url
+                if not endpoint:
+                    return _run_members(args, store, office_store=office_occurrences)
                 try:
-                    reconciliation_store.close()
+                    reconciliation_store = ReconciliationStore(_reconciliation_state_path(args, settings))
                 except Exception as error:
                     _handoff_warning("member", error)
+                    return _run_members(args, store, office_store=office_occurrences)
+                try:
+                    return _run_members(args, store, reconciliation_store,
+                                        office_occurrences)
+                finally:
+                    try:
+                        reconciliation_store.close()
+                    except Exception as error:
+                        _handoff_warning("member", error)
 
 
 def _bills_fixture_records(path: Path) -> tuple[list[dict], bytes, int | None]:
@@ -1329,7 +2026,7 @@ def run_reconcile_offices(args: argparse.Namespace) -> int:
             root=raw_root, endpoint=str(fixture.resolve()),
             params={"skip": 0, "limit": len(records)}, body=body, status=200,
             retrieved_at=datetime.now(timezone.utc), ontology_version=REFERENCE_ONTOLOGY_VERSION,
-            mapping_version="member_mapping.csv@phase-3-members-2026", endpoint_name="members",
+            mapping_version=MEMBER_MAPPING_VERSION, endpoint_name="members",
             extraction_id=run_id)
         for index, wrapper in enumerate(records):
             if shape == "single":
@@ -1345,7 +2042,7 @@ def run_reconcile_offices(args: argparse.Namespace) -> int:
             raw_path, _ = persist_raw(
                 root=raw_root, endpoint=settings.members_api_url, params=page.params,
                 body=page.body, status=page.status, ontology_version=REFERENCE_ONTOLOGY_VERSION,
-                mapping_version="member_mapping.csv@phase-3-members-2026", endpoint_name="members",
+                mapping_version=MEMBER_MAPPING_VERSION, endpoint_name="members",
                 extraction_id=run_id)
             decoded = json.loads(page.body)
             if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list):
@@ -1399,6 +2096,10 @@ def main(argv: list[str] | None = None) -> int:
     run = sub.add_parser("run"); run.add_argument("endpoint", choices=["houses", "parties", "constituencies", "administrative-units", "offices", "members", "bills"])
     run.add_argument("--fixture"); run.add_argument("--offline", action="store_true"); run.add_argument("--raw-dir")
     run.add_argument("--registry-file", help="version-controlled office/unit registry JSON")
+    run.add_argument("--review-file", help="version-controlled local office observation decisions JSON")
+    run.add_argument("--office-state-file", help="durable local office observation/evidence ledger")
+    run.add_argument("--migration-inventory-file",
+                     help="write the pre-publication Member office migration inventory (default: next to core state)")
     run.add_argument("--state-db", help="shared authoritative core ETL SQLite database")
     run.add_argument("--reconciliation-state-file",
                      help="existing external-reconciliation SQLite database (shared with reconcile commands)")

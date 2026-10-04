@@ -1,6 +1,7 @@
 import json
 import fcntl
 import multiprocessing
+import csv
 from argparse import Namespace
 from pathlib import Path
 
@@ -23,6 +24,38 @@ def copied():
     return json.loads(json.dumps(WRAPPER))
 
 
+def _office_case(specs):
+    changed = copied()
+    for wrapped in changed["member"]["memberships"]:
+        wrapped["membership"]["offices"] = []
+    membership = changed["member"]["memberships"][0]["membership"]
+    resolutions = []
+    office_types = {}
+    for number, spec in enumerate(specs, start=1):
+        office_iri = f"https://data.oireachtas.ie/office/{spec['office_key']}"
+        dates = dict(spec["date_range"])
+        membership["offices"].append({"office": {
+            "officeName": {"showAs": spec.get("label", f"Source office {number}")},
+            "dateRange": dates,
+        }})
+        for target in spec.get("targets", [spec["office_key"]]):
+            target_iri = f"https://data.oireachtas.ie/office/{target}"
+            resolution = {
+                "occurrence_key": f"occ-{spec.get('occurrence', number):064x}",
+                "member_iri": changed["member"]["uri"],
+                "membership_iri": membership["uri"],
+                "office_iri": target_iri,
+                "date_range": dates,
+            }
+            if spec.get("retained"):
+                resolution["missing_retained"] = True
+            resolutions.append(resolution)
+            category = spec.get("office_type")
+            if category is not None:
+                office_types[target_iri] = category
+    return changed, resolutions, office_types
+
+
 def test_member_graph_is_deterministic_owned_and_valid():
     graph, report = transform_member_with_report(WRAPPER)
     golden = Graph().parse(ROOT / "tests/expected/members.ttl")
@@ -38,8 +71,28 @@ def test_member_graph_is_deterministic_owned_and_valid():
 def test_member_golden_pins_full_sha_generated_iri_hierarchy():
     graph, _ = transform_member_with_report(WRAPPER)
     root = "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34"
-    assert URIRef(root + "#minister-of-state-membership-681ed4c802b1acbb81a375404a6e076cd53901371313c501a8f7e77c9422b1a3#role") in set(graph.subjects())
+    assert not any("#minister-of-state-membership-" in str(subject)
+                   for subject in graph.subjects())
     assert URIRef(root + "#party-membership-a0db44ca23cb7ed5129ed071ca4d545fee362c5137db08325cfebf43b296d273#date-range") in set(graph.subjects())
+
+
+def test_member_office_mapping_uses_approved_holdings_and_derived_cabinet_contract():
+    with (ROOT / "mappings/member_mapping.csv").open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    office_rows = [row for row in rows if ".offices[]" in row["json_path"]]
+    active_terms = {row["ontology_term"] for row in office_rows
+                    if row["mapping_status"] in {"mapped", "new"}}
+    assert {"members:OfficeHolding", "members:heldOffice", "members:officeHolder",
+            "members:hasOfficeHolding", "members:CabinetMembership",
+            "members:hasCabinetRole", "members:CabinetMember",
+            "members:supportedByOfficeHolding"}.issubset(active_terms)
+    assert not {"members:MinisterOfStateMembership",
+                "members:hasMinisterOfStateRole", "members:officeNameUri"} & active_terms
+    evidence_only = [row for row in office_rows
+                     if row["json_path"].endswith("officeName.showAs")
+                     or row["json_path"].endswith("officeName.uri")]
+    assert evidence_only and all(row["mapping_status"] == "implicit"
+                                 and not row["ontology_term"] for row in evidence_only)
 
 
 def test_party_membership_requires_date_even_without_explicit_collection_membership_type():
@@ -126,7 +179,8 @@ def test_member_synthetic_roles_and_office_uri_are_member_terms():
     from oireachtas_etl.transforms.common import MEMBERS
     assert len(list(graph.subjects(RDF.type, MEMBERS.Chair))) == 1
     assert len(list(graph.subjects(RDF.type, MEMBERS.DeputyChair))) == 1
-    assert (None, MEMBERS.officeNameUri, URIRef(office["officeName"]["uri"])) in graph
+    assert (None, MEMBERS.officeNameUri, URIRef(office["officeName"]["uri"])) not in graph
+    assert not list(graph.subjects(RDF.type, MEMBERS.OfficeHolding))
     validate_member(changed, graph)
 
 
@@ -307,13 +361,9 @@ def test_malformed_nested_office_is_quarantined_while_valid_sibling_and_member_c
     source_report = validate_member_source(changed)
 
     assert source_before == json.dumps(changed, sort_keys=True)
-    assert len(list(graph.subjects(RDF.type, MEMBERS.MinisterOfStateMembership))) == 1
-    valid_label = offices[1]["office"]["officeName"]["showAs"]
-    valid_office = next(graph.subjects(RDF.type, MEMBERS.MinisterOfStateMembership))
-    role = next(graph.objects(valid_office, MEMBERS.hasMinisterOfStateRole), None)
-    # The office-membership has a generated role carrying the valid source label.
-    assert role is not None
-    assert str(next(graph.objects(role, SKOS.prefLabel))) == valid_label
+    assert not list(graph.subjects(RDF.type, MEMBERS.OfficeHolding))
+    assert not list(graph.subjects(RDF.type, MEMBERS.MinisterOfStateMembership))
+    assert not list(graph.triples((None, SKOS.prefLabel, None)))
     malformed = [item for item in transform_report if item["category"] == "source_quarantine"]
     assert len(malformed) == 1
     assert malformed[0]["path"] == "member.memberships[3].membership.offices[0]"
@@ -321,6 +371,312 @@ def test_malformed_nested_office_is_quarantined_while_valid_sibling_and_member_c
     assert malformed[0]["status"] == "review_required"
     assert source_report == transform_report
     assert validate_member(changed, graph) == transform_report
+
+
+def test_office_resolution_emits_member_owned_holding_with_both_holder_links_and_no_source_label():
+    from oireachtas_etl.validation.members import expected_member_graph
+
+    changed, resolutions, office_types = _office_case([{
+        "office_key": "o-000101", "office_type": "MinisterOfficeType",
+        "date_range": {"start": "2020-01-01", "end": "2020-01-31"},
+        "label": "Current source wording",
+    }])
+    graph, report = transform_member_with_report(
+        changed, office_resolutions=resolutions, office_types=office_types)
+    expected, expected_report = expected_member_graph(
+        changed, office_resolutions=resolutions, office_types=office_types)
+    assert set(graph) == set(expected)
+    assert report == expected_report
+    assert not [item for item in report if item["category"] == "reconciliation_pending"]
+    assert validate_member(
+        changed, graph, office_resolutions=resolutions,
+        office_types=office_types) == report
+
+    member = URIRef(changed["member"]["uri"])
+    holding = next(graph.subjects(RDF.type, MEMBERS.OfficeHolding))
+    office = URIRef("https://data.oireachtas.ie/office/o-000101")
+    assert (holding, MEMBERS.heldOffice, office) in graph
+    assert (holding, MEMBERS.officeHolder, member) in graph
+    assert (member, MEMBERS.hasOfficeHolding, holding) in graph
+    assert (member, MEMBERS.hasMembersMembership, holding) in graph
+    assert "Current source wording" not in graph.serialize(format="nt")
+    assert not list(graph.triples((None, MEMBERS.officeNameUri, None)))
+    assert not list(graph.subjects(RDF.type, MEMBERS.MinisterOfStateMembership))
+
+
+def test_unresolved_offices_are_reported_and_never_create_a_holding():
+    from oireachtas_etl.validation.members import validate_member_source
+
+    changed, _, _ = _office_case([{
+        "office_key": "o-000102", "office_type": "MinisterOfficeType",
+        "date_range": {"start": "2020-01-01", "end": None},
+    }])
+    graph, report = transform_member_with_report(changed)
+    assert not list(graph.subjects(RDF.type, MEMBERS.OfficeHolding))
+    pending = [item for item in report if item["category"] == "reconciliation_pending"]
+    assert len(pending) == 1
+    assert pending[0]["path"].endswith("offices[0]")
+    assert pending[0]["context"] == changed["member"]["memberships"][0]["membership"]["uri"]
+    assert validate_member_source(changed) == report
+    assert validate_member(changed, graph) == report
+
+
+def test_office_holding_iri_is_stable_on_date_correction_and_cabinet_uri_uses_start_only():
+    changed, resolutions, office_types = _office_case([{
+        "office_key": "o-000103", "office_type": "MinisterOfficeType",
+        "date_range": {"start": "2020-01-01", "end": "2020-01-31"},
+        "occurrence": 303,
+    }])
+    first, _ = transform_member_with_report(
+        changed, office_resolutions=resolutions, office_types=office_types)
+    original_holding = next(first.subjects(RDF.type, MEMBERS.OfficeHolding))
+    original_cabinet = next(first.subjects(RDF.type, MEMBERS.CabinetMembership))
+
+    end_corrected = json.loads(json.dumps(changed))
+    end_corrected["member"]["memberships"][0]["membership"]["offices"][0]["office"]["dateRange"]["end"] = "2020-02-01"
+    end_resolution = [dict(resolutions[0], date_range={"start": "2020-01-01", "end": "2020-02-01"})]
+    second, _ = transform_member_with_report(
+        end_corrected, office_resolutions=end_resolution, office_types=office_types)
+    assert next(second.subjects(RDF.type, MEMBERS.OfficeHolding)) == original_holding
+    assert next(second.subjects(RDF.type, MEMBERS.CabinetMembership)) == original_cabinet
+
+    start_corrected = json.loads(json.dumps(end_corrected))
+    start_corrected["member"]["memberships"][0]["membership"]["offices"][0]["office"]["dateRange"]["start"] = "2020-01-02"
+    start_resolution = [dict(end_resolution[0], date_range={"start": "2020-01-02", "end": "2020-02-01"})]
+    third, _ = transform_member_with_report(
+        start_corrected, office_resolutions=start_resolution, office_types=office_types)
+    assert next(third.subjects(RDF.type, MEMBERS.OfficeHolding)) == original_holding
+    assert next(third.subjects(RDF.type, MEMBERS.CabinetMembership)) != original_cabinet
+    validate_member(start_corrected, third, office_resolutions=start_resolution,
+                    office_types=office_types)
+
+
+def test_cabinet_episodes_merge_inclusive_consecutive_days_split_gaps_and_record_coverage():
+    changed, resolutions, office_types = _office_case([
+        {"office_key": "o-000111", "office_type": "MinisterOfficeType",
+         "date_range": {"start": "2020-01-01", "end": "2020-01-01"}},
+        {"office_key": "o-000112", "office_type": "TaoiseachOfficeType",
+         "date_range": {"start": "2020-01-02", "end": "2020-01-03"}},
+        {"office_key": "o-000113", "office_type": "MinisterOfficeType",
+         "date_range": {"start": "2020-01-05", "end": "2020-01-05"}},
+    ])
+    graph, _ = transform_member_with_report(
+        changed, office_resolutions=resolutions, office_types=office_types)
+    cabinets = sorted(graph.subjects(RDF.type, MEMBERS.CabinetMembership), key=str)
+    assert len(cabinets) == 2
+    ranges = {cabinet: next(graph.objects(cabinet, MEMBERS.hasMembershipDateRange))
+              for cabinet in cabinets}
+    emitted_ranges = sorted(
+        (str(next(graph.objects(ranges[cabinet], MEMBERS.StartDate))),
+         str(next(graph.objects(ranges[cabinet], MEMBERS.EndDate))))
+        for cabinet in cabinets)
+    assert emitted_ranges == [
+        ("2020-01-01T00:00:00", "2020-01-03T00:00:00"),
+        ("2020-01-05T00:00:00", "2020-01-05T00:00:00"),
+    ]
+    first_episode = min(cabinets, key=lambda cabinet: str(next(
+        graph.objects(ranges[cabinet], MEMBERS.StartDate))))
+    supports = set(graph.objects(first_episode, MEMBERS.supportedByOfficeHolding))
+    assert len(supports) == 2
+    assert len(list(graph.objects(first_episode, MEMBERS.hasCabinetRole))) == 1
+    all_qualifying = set(graph.subjects(RDF.type, MEMBERS.OfficeHolding))
+    assert all_qualifying == supports | set(graph.objects(cabinets[1], MEMBERS.supportedByOfficeHolding))
+    for cabinet in cabinets:
+        role = next(graph.objects(cabinet, MEMBERS.hasCabinetRole))
+        assert (role, RDF.type, MEMBERS.CabinetMember) in graph
+        assert len(list(graph.objects(role, RDF.type))) == 1
+    validate_member(changed, graph, office_resolutions=resolutions,
+                    office_types=office_types)
+
+
+def test_simultaneous_offices_merge_once_and_one_observation_can_resolve_to_multiple_offices():
+    changed, resolutions, office_types = _office_case([
+        {"office_key": "o-000121", "targets": ["o-000121", "o-000122"],
+         "office_type": "MinisterOfficeType", "occurrence": 121,
+         "date_range": {"start": "2020-01-01", "end": "2020-03-01"}},
+        {"office_key": "o-000123", "office_type": "TanaisteOfficeType",
+         "date_range": {"start": "2020-02-01", "end": "2020-04-01"}},
+    ])
+    # Two target offices from one source occurrence must receive distinct,
+    # deterministic holding IRIs and jointly support a single Cabinet episode.
+    graph, _ = transform_member_with_report(
+        changed, office_resolutions=resolutions, office_types=office_types)
+    assert len(list(graph.subjects(RDF.type, MEMBERS.OfficeHolding))) == 3
+    assert len(list(graph.subjects(RDF.type, MEMBERS.CabinetMembership))) == 1
+    cabinet = next(graph.subjects(RDF.type, MEMBERS.CabinetMembership))
+    supports = set(graph.objects(cabinet, MEMBERS.supportedByOfficeHolding))
+    assert len(supports) == 3
+    assert len({str(value) for value in supports}) == 3
+    repeated, _ = transform_member_with_report(
+        changed, office_resolutions=resolutions, office_types=office_types)
+    assert set(repeated) == set(graph)
+    validate_member(changed, graph, office_resolutions=resolutions,
+                    office_types=office_types)
+
+
+def test_timestamp_gaps_use_actual_instants_while_date_only_end_is_inclusive():
+    actual_gap, resolutions, office_types = _office_case([
+        {"office_key": "o-000131", "office_type": "MinisterOfficeType",
+         "date_range": {"start": "2020-01-01 00:00:00+00:00",
+                        "end": "2020-01-01 23:59:59+00:00"}},
+        {"office_key": "o-000132", "office_type": "MinisterOfficeType",
+         "date_range": {"start": "2020-01-02 00:00:00+00:00",
+                        "end": "2020-01-02 12:00:00+00:00"}},
+    ])
+    graph, _ = transform_member_with_report(
+        actual_gap, office_resolutions=resolutions, office_types=office_types)
+    assert len(list(graph.subjects(RDF.type, MEMBERS.CabinetMembership))) == 2
+
+    consecutive, resolutions, office_types = _office_case([
+        {"office_key": "o-000133", "office_type": "MinisterOfficeType",
+         "date_range": {"start": "2020-01-01", "end": "2020-01-01"}},
+        {"office_key": "o-000134", "office_type": "MinisterOfficeType",
+         "date_range": {"start": "2020-01-02 00:00:00+00:00",
+                        "end": "2020-01-02 12:00:00+00:00"}},
+    ])
+    graph, _ = transform_member_with_report(
+        consecutive, office_resolutions=resolutions, office_types=office_types)
+    assert len(list(graph.subjects(RDF.type, MEMBERS.CabinetMembership))) == 1
+    validate_member(consecutive, graph, office_resolutions=resolutions,
+                    office_types=office_types)
+
+    overlapping, resolutions, office_types = _office_case([
+        {"office_key": "o-000135", "office_type": "MinisterOfficeType",
+         "date_range": {"start": "2020-01-01", "end": "2020-01-02"}},
+        {"office_key": "o-000136", "office_type": "TanaisteOfficeType",
+         "date_range": {"start": "2020-01-02 12:00:00+00:00",
+                        "end": "2020-01-02 18:00:00+00:00"}},
+    ])
+    graph, _ = transform_member_with_report(
+        overlapping, office_resolutions=resolutions, office_types=office_types)
+    assert len(list(graph.subjects(RDF.type, MEMBERS.CabinetMembership))) == 1
+    validate_member(overlapping, graph, office_resolutions=resolutions,
+                    office_types=office_types)
+
+
+def test_open_ranges_continue_episode_and_nonqualifying_office_types_never_create_cabinet():
+    changed, resolutions, office_types = _office_case([
+        {"office_key": "o-000141", "office_type": "MinisterOfficeType",
+         "date_range": {"start": "2020-01-01", "end": None}},
+        {"office_key": "o-000142", "office_type": "MinisterOfficeType",
+         "date_range": {"start": "2020-02-01", "end": "2020-03-01"}},
+    ])
+    graph, _ = transform_member_with_report(
+        changed, office_resolutions=resolutions, office_types=office_types)
+    cabinets = list(graph.subjects(RDF.type, MEMBERS.CabinetMembership))
+    assert len(cabinets) == 1
+    cabinet_range = next(graph.objects(cabinets[0], MEMBERS.hasMembershipDateRange))
+    assert not list(graph.objects(cabinet_range, MEMBERS.EndDate))
+    assert len(list(graph.objects(cabinets[0], MEMBERS.supportedByOfficeHolding))) == 2
+    validate_member(changed, graph, office_resolutions=resolutions,
+                    office_types=office_types)
+
+    only_mos, resolutions, office_types = _office_case([{
+        "office_key": "o-000143", "office_type": "MinisterOfStateOfficeType",
+        "date_range": {"start": "2020-01-01", "end": None},
+    }])
+    mos_graph, _ = transform_member_with_report(
+        only_mos, office_resolutions=resolutions, office_types=office_types)
+    assert len(list(mos_graph.subjects(RDF.type, MEMBERS.OfficeHolding))) == 1
+    assert not list(mos_graph.subjects(RDF.type, MEMBERS.CabinetMembership))
+    with pytest.raises(ValueError, match="registered OfficeType concept key"):
+        transform_member_with_report(
+            only_mos, office_resolutions=resolutions,
+            office_types={"https://data.oireachtas.ie/office/o-000143": "MinisterRole"})
+
+
+def test_exact_duplicate_source_reports_and_resolutions_emit_only_one_holding():
+    changed, resolutions, office_types = _office_case([{
+        "office_key": "o-000151", "office_type": "MinisterOfficeType",
+        "date_range": {"start": "2020-01-01", "end": "2020-12-31"},
+        "label": "Exact same source report",
+    }])
+    office_array = changed["member"]["memberships"][0]["membership"]["offices"]
+    office_array.append(json.loads(json.dumps(office_array[0])))
+    resolutions.append(dict(resolutions[0]))
+    graph, report = transform_member_with_report(
+        changed, office_resolutions=resolutions, office_types=office_types)
+    assert len(list(graph.subjects(RDF.type, MEMBERS.OfficeHolding))) == 1
+    assert not [item for item in report if item["category"] == "reconciliation_pending"]
+    validate_member(changed, graph, office_resolutions=resolutions,
+                    office_types=office_types)
+
+
+def test_resolution_without_source_requires_explicit_retention_and_foreign_targets_are_rejected():
+    changed, resolutions, office_types = _office_case([{
+        "office_key": "o-000161", "office_type": "MinisterOfficeType",
+        "date_range": {"start": "2020-01-01", "end": None},
+    }])
+    changed["member"]["memberships"][0]["membership"]["offices"] = []
+    with pytest.raises(ValueError, match="does not match a valid current office observation"):
+        transform_member_with_report(
+            changed, office_resolutions=resolutions, office_types=office_types)
+
+    resolutions[0]["missing_retained"] = True
+    retained, report = transform_member_with_report(
+        changed, office_resolutions=resolutions, office_types=office_types)
+    assert len(list(retained.subjects(RDF.type, MEMBERS.OfficeHolding))) == 1
+    assert not [item for item in report if item["category"] == "reconciliation_pending"]
+    validate_member(changed, retained, office_resolutions=resolutions,
+                    office_types=office_types)
+
+    invalid = dict(resolutions[0], office_iri="https://evil.example/office/o-000161")
+    with pytest.raises(ValueError, match="canonical Oireachtas HTTPS origin"):
+        transform_member_with_report(
+            changed, office_resolutions=[invalid], office_types=office_types)
+    unresolved = dict(resolutions[0], status="review_required")
+    with pytest.raises(ValueError, match="only accepted office resolutions"):
+        transform_member_with_report(
+            changed, office_resolutions=[unresolved], office_types=office_types)
+
+
+def test_member_validator_rejects_missing_links_legacy_rdf_and_cabinet_supported_by_nonqualifier():
+    changed, resolutions, office_types = _office_case([{
+        "office_key": "o-000171", "office_type": "MinisterOfficeType",
+        "date_range": {"start": "2020-01-01", "end": "2020-12-31"},
+    }])
+    graph, _ = transform_member_with_report(
+        changed, office_resolutions=resolutions, office_types=office_types)
+    holding = next(graph.subjects(RDF.type, MEMBERS.OfficeHolding))
+    member = URIRef(changed["member"]["uri"])
+    graph.remove((member, MEMBERS.hasOfficeHolding, holding))
+    with pytest.raises(ValueError, match="source-to-RDF correspondence failed: missing"):
+        validate_member(changed, graph, office_resolutions=resolutions,
+                        office_types=office_types)
+
+    legacy, _ = transform_member_with_report(
+        changed, office_resolutions=resolutions, office_types=office_types)
+    legacy.add((URIRef(str(member) + "#legacy-office"), RDF.type,
+                MEMBERS.MinisterOfStateMembership))
+    with pytest.raises(ValueError, match="source-to-RDF correspondence failed: unexpected"):
+        validate_member(changed, legacy, office_resolutions=resolutions,
+                        office_types=office_types)
+
+    # Cabinet temporal/support coverage is closed-world: every qualifying
+    # holding used to construct the episode must remain linked to it.
+    incomplete, _ = transform_member_with_report(
+        changed, office_resolutions=resolutions, office_types=office_types)
+    cabinet = next(incomplete.subjects(RDF.type, MEMBERS.CabinetMembership))
+    supporting_holding = next(incomplete.objects(cabinet, MEMBERS.supportedByOfficeHolding))
+    incomplete.remove((cabinet, MEMBERS.supportedByOfficeHolding, supporting_holding))
+    with pytest.raises(ValueError, match="source-to-RDF correspondence failed: missing"):
+        validate_member(changed, incomplete, office_resolutions=resolutions,
+                        office_types=office_types)
+
+    from pyshacl import validate as validate_shacl
+    shacl_conforms, _, shacl_report = validate_shacl(
+        incomplete,
+        shacl_graph=(ROOT / "src/oireachtas_etl/validation/resources/members.ttl").read_text(),
+        shacl_graph_format="turtle", inference="none", abort_on_first=False)
+    assert not shacl_conforms
+    assert "supportedByOfficeHolding" in str(shacl_report)
+
+    nonqualifying_types = {"https://data.oireachtas.ie/office/o-000171": "MinisterOfStateOfficeType"}
+    qualifying_graph, _ = transform_member_with_report(
+        changed, office_resolutions=resolutions, office_types=office_types)
+    with pytest.raises(ValueError, match="source-to-RDF correspondence failed: unexpected"):
+        validate_member(changed, qualifying_graph,
+            office_resolutions=resolutions, office_types=nonqualifying_types)
 
 
 def test_unsafe_member_level_source_errors_remain_fail_closed():
@@ -655,7 +1011,7 @@ def test_members_cli_surfaces_malformed_office_and_serializes_valid_member_conte
     assert report["malformed_offices"][0]["reason"] == "office.dateRange has reverse dates"
     assert report["malformed_offices"][0]["status"] == "review_required"
     serialized = output.read_text(encoding="utf-8")
-    assert valid_label in serialized
+    assert valid_label not in serialized
     assert invalid_label not in serialized
 
 
@@ -679,7 +1035,7 @@ def test_online_member_publication_continues_with_valid_sibling_office(tmp_path,
     assert len(report["malformed_offices"]) == 1
     assert len(calls) == 1
     published_payload = calls[0][1]
-    assert valid_label in published_payload
+    assert valid_label not in published_payload
     assert invalid_label not in published_payload
 
 
@@ -700,8 +1056,9 @@ def test_failed_member_publication_never_writes_published_state(tmp_path, monkey
         def replace(self, *args, **kwargs): raise RuntimeError("PUT failed")
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
     args = Namespace(fixture=str(ROOT / "data/api_examples/member.json"), offline=False, raw_dir=str(tmp_path / "raw"),
-                     output_nq=None, fuseki_gsp_url="http://example.test/data", fuseki_sparql_url="http://example.test/query", state_db=str(tmp_path / "state.sqlite"),
-                     reconciliation_state_file=str(tmp_path / "reconciliation.sqlite"))
+                      output_nq=None, fuseki_gsp_url="http://example.test/data", fuseki_sparql_url="http://example.test/query", state_db=str(tmp_path / "state.sqlite"),
+                      reconciliation_state_file=str(tmp_path / "reconciliation.sqlite"),
+                      office_state_file=str(tmp_path / "offices.sqlite"))
     with pytest.raises(RuntimeError, match="PUT failed"):
         cli.run_members(args)
     from oireachtas_etl.state import CoreStateStore
@@ -731,9 +1088,10 @@ def test_member_competency_resources_execute_against_fixture_named_graph():
 
 def _online_args(tmp_path, fixture=ROOT / "data/api_examples/member.json"):
     return Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), output_nq=None,
-                     output_ttl=None, fuseki_gsp_url="http://example.test/data", fuseki_sparql_url="http://example.test/query",
-                     state_db=str(tmp_path / "state.sqlite"),
-                     reconciliation_state_file=str(tmp_path / "reconciliation.sqlite"))
+                      output_ttl=None, fuseki_gsp_url="http://example.test/data", fuseki_sparql_url="http://example.test/query",
+                      state_db=str(tmp_path / "state.sqlite"),
+                      reconciliation_state_file=str(tmp_path / "reconciliation.sqlite"),
+                      office_state_file=str(tmp_path / "offices.sqlite"))
 
 
 def _member_state(tmp_path, identity=WRAPPER["member"]["uri"]):
@@ -1036,7 +1394,7 @@ def test_members_true_skip_calls_source_validation_only_and_reports_omissions(tm
     cli.run_members(_online_args(tmp_path)); capsys.readouterr()
     source_calls = []
     original_source_validation = cli.validate_member_source
-    monkeypatch.setattr(cli, "validate_member_source", lambda value: (source_calls.append(value) or original_source_validation(value)))
+    monkeypatch.setattr(cli, "validate_member_source", lambda value, **kwargs: (source_calls.append(value) or original_source_validation(value, **kwargs)))
     monkeypatch.setattr(cli, "transform_member_with_report", lambda value: (_ for _ in ()).throw(AssertionError("production transformer called")))
     monkeypatch.setattr(member_validation, "expected_member_graph", lambda value: (_ for _ in ()).throw(AssertionError("independent builder called")))
     calls.clear()
@@ -1066,7 +1424,9 @@ def test_members_online_retains_manifest_only_absent_member(tmp_path, monkeypatc
     assert json.loads(legacy.read_text()) == state
 
 
-def test_members_full_scan_replays_durable_dirty_payload_when_source_omits_resource(tmp_path, monkeypatch, capsys):
+@pytest.mark.parametrize("contract_version,should_replay", [(2, False), (3, True)])
+def test_members_full_scan_handles_dirty_payload_when_source_omits_resource(
+        tmp_path, monkeypatch, capsys, contract_version, should_replay):
     from oireachtas_etl import cli
     from oireachtas_etl.serialization import ntriples
     from oireachtas_etl.state import CoreStateStore
@@ -1081,7 +1441,8 @@ def test_members_full_scan_replays_durable_dirty_payload_when_source_omits_resou
         run_id = store.start_run("members", "full_refresh", is_complete=True, parameters={"seed": True})
         store.observe_resource("members", absent, graph_iri, "a" * 64, run_id)
         store.mark_publication_dirty("members", absent, source_hash="a" * 64,
-                                     graph_iri=graph_iri, payload=payload, contract_version=2)
+                                     graph_iri=graph_iri, payload=payload,
+                                     contract_version=contract_version)
         store.finish_run(run_id, success=False, error="interrupted after pending state")
 
     calls = []; _mock_online(monkeypatch, calls)
@@ -1089,10 +1450,20 @@ def test_members_full_scan_replays_durable_dirty_payload_when_source_omits_resou
     assert cli.run_members(args) == 0
     result = _report(capsys)
     assert result["missing_retained"] == [absent]
-    assert result["published"] == 2  # current Member plus recovered prior payload
-    assert (graph_iri, payload) in calls
     with CoreStateStore(database) as store:
         recovered = store.get_resource("members", absent)
-        assert recovered["publication_state"] == "clean"
-        assert recovered["published_payload_hash"] == __import__("hashlib").sha256(payload.encode()).hexdigest()
-        assert recovered["pending_payload"] is None
+        if should_replay:
+            assert result["published"] == 2  # current Member plus exact contract-3 replay
+            assert (graph_iri, payload) in calls
+            assert recovered["publication_state"] == "clean"
+            assert recovered["published_payload_hash"] == __import__("hashlib").sha256(payload.encode()).hexdigest()
+            assert recovered["pending_payload"] is None
+            assert result["legacy_dirty_deferred"] == []
+        else:
+            assert result["published"] == 1  # current Member only; legacy retry waits for source
+            assert all(graph != graph_iri for graph, _ in calls)
+            assert recovered["publication_state"] == "dirty"
+            assert recovered["contract_version"] == 2
+            assert recovered["pending_payload"] == payload
+            assert result["legacy_dirty_deferred"][0]["resource_iri"] == absent
+            assert "not replayed" in result["legacy_dirty_deferred"][0]["reason"]

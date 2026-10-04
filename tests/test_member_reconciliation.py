@@ -540,8 +540,9 @@ def test_member_manifest_contract_bump_republishes_unchanged_graph(tmp_path, mon
     monkeypatch.setattr(cli, "verify_core_graph", lambda *args, **kwargs: None)
     state_db = tmp_path / "core-state.sqlite"
     assert cli.main(["run", "members", "--fixture", str(fixture), "--state-db", str(state_db),
-                     "--reconciliation-state-file", str(tmp_path / "reconciliation.sqlite"),
-                     "--legacy-state-file", str(manifest),
+                         "--reconciliation-state-file", str(tmp_path / "reconciliation.sqlite"),
+                         "--office-state-file", str(tmp_path / "offices.sqlite"),
+                         "--legacy-state-file", str(manifest),
                      "--raw-dir", str(tmp_path / "raw"), "--fuseki-gsp-url", "https://example.test/gsp",
                      "--fuseki-sparql-url", "https://example.test/sparql"]) == 0
     result = json.loads(capsys.readouterr().out)
@@ -550,7 +551,7 @@ def test_member_manifest_contract_bump_republishes_unchanged_graph(tmp_path, mon
         saved = state.get_resource("members", identity)
     assert result["changed"] == [identity] and len(puts) == 1
     assert saved["published_source_hash"] == source_hash(wrapper["member"])
-    assert saved["contract_version"] == 2 and saved["publication_state"] == "clean"
+    assert saved["contract_version"] == 3 and saved["publication_state"] == "clean"
     assert json.loads(manifest.read_text())["members"][identity]["contract_version"] == 1
 
 

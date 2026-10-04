@@ -3,6 +3,8 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix oir: <https://data.oireachtas.ie/ontology#> .
 @prefix members: <https://data.oireachtas.ie/ontology/members#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix org: <http://www.w3.org/ns/org#> .
 
 oir:MemberShape a sh:NodeShape ; sh:targetClass oir:Member ;
   sh:property [ sh:path oir:memberCode ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
@@ -32,10 +34,27 @@ members:CommitteeMembershipShape a sh:NodeShape ; sh:targetClass members:Committ
   sh:property [ sh:path members:hasMembershipDateRange ; sh:minCount 1 ; sh:maxCount 1 ; sh:class members:DateRange ] ;
   sh:property [ sh:path members:hasCommitteeRole ; sh:or ( [ sh:class members:Chair ] [ sh:class members:DeputyChair ] ) ] .
 
-members:MinisterOfStateMembershipShape a sh:NodeShape ; sh:targetClass members:MinisterOfStateMembership ;
-  sh:property [ sh:path members:hasMinisterOfStateRole ; sh:minCount 1 ; sh:maxCount 1 ; sh:class members:MinisterOfStateRole ] ;
+members:OfficeHoldingShape a sh:NodeShape ; sh:targetClass members:OfficeHolding ;
+  sh:closed true ; sh:ignoredProperties ( rdf:type ) ;
+  sh:property [ sh:path members:heldOffice ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+  sh:property [ sh:path members:officeHolder ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
   sh:property [ sh:path members:hasMembershipDateRange ; sh:minCount 1 ; sh:maxCount 1 ; sh:class members:DateRange ] ;
-  sh:property [ sh:path members:officeNameUri ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] .
+  sh:sparql [ sh:message "OfficeHolding holder must explicitly link back through hasOfficeHolding and hasMembersMembership" ;
+    sh:select "PREFIX members: <https://data.oireachtas.ie/ontology/members#> SELECT $this WHERE { $this members:officeHolder ?person . FILTER NOT EXISTS { ?person members:hasOfficeHolding $this ; members:hasMembersMembership $this } }" ] .
+
+members:CabinetMembershipShape a sh:NodeShape ; sh:targetClass members:CabinetMembership ;
+  sh:closed true ; sh:ignoredProperties ( rdf:type ) ;
+  sh:property [ sh:path members:hasCabinetRole ; sh:minCount 1 ; sh:maxCount 1 ; sh:class members:CabinetMember ; sh:nodeKind sh:IRI ] ;
+  sh:property [ sh:path members:isCabinetMembershipOf ; sh:minCount 1 ; sh:maxCount 1 ; sh:hasValue <https://data.oireachtas.ie/government> ; sh:nodeKind sh:IRI ] ;
+  sh:property [ sh:path members:supportedByOfficeHolding ; sh:minCount 1 ; sh:class members:OfficeHolding ; sh:nodeKind sh:IRI ] ;
+  sh:property [ sh:path members:hasMembershipDateRange ; sh:minCount 1 ; sh:maxCount 1 ; sh:class members:DateRange ] ;
+  sh:sparql [ sh:message "Cabinet role holder must be the Member linked to the CabinetMembership" ;
+    sh:select "PREFIX members: <https://data.oireachtas.ie/ontology/members#> PREFIX org: <http://www.w3.org/ns/org#> SELECT $this WHERE { $this members:hasCabinetRole ?role . ?role org:heldBy ?person . FILTER NOT EXISTS { ?person members:hasMembersMembership $this } }" ] .
+
+members:CabinetMemberRoleShape a sh:NodeShape ; sh:targetObjectsOf members:hasCabinetRole ;
+  sh:closed true ; sh:ignoredProperties ( rdf:type ) ;
+  sh:class members:CabinetMember ;
+  sh:property [ sh:path org:heldBy ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] .
 
 members:MembershipDateRangeShape a sh:NodeShape ; sh:targetClass members:DateRange ;
   sh:property [ sh:path members:StartDate ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:dateTime ] ;

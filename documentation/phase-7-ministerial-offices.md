@@ -2,23 +2,23 @@
 
 ## Status and scope
 
-**Design approved; Tranches 1 and 2 are implemented; Tranches 3–6 have not
+**Design approved; Tranches 1–3 are implemented; Tranches 4–6 have not
 started.** This document records the first Phase 7 vertical slice. Tranche 1
 introduced its ontology vocabulary and office/unit registry publication path;
 Tranche 2 added source-observation review and occurrence correspondence. The
 small reviewed bootstrap is recorded in
 `registries/ministerial-office-registry.json` and
-`reconciliation/office-decisions.json`. Member holdings, Cabinet membership,
-and Bill reconciliation remain unimplemented; the active Member mapping and
-published Member/Bill RDF behavior are not changed by these tranches. The
+`reconciliation/office-decisions.json`. Tranche 3 switches the Member mapping
+and transformation to accepted OfficeHolding records and derived Cabinet
+episodes. Bill reconciliation remains unimplemented; Bill RDF behavior is
+unchanged. The
 broader Phase 7 debates, votes and questions slices remain separate.
 
-The existing Member transformer currently interprets every
-`membership.offices[]` observation as a `MinisterOfStateMembership` and creates
-an occurrence-specific `MinisterOfStateRole`. That interpretation is not valid
-for the generic source collection; it must be migrated, not treated as the new
-contract. See `mappings/member_mapping.csv:72-78`,
-`src/oireachtas_etl/transforms/members.py:_office` and
+Before Tranche 3 the Member transformer interpreted every
+`membership.offices[]` observation as a `MinisterOfStateMembership` and created
+an occurrence-specific `MinisterOfStateRole`. The validated Member graph
+replacement now retires that legacy behavior. See `mappings/member_mapping.csv`,
+`src/oireachtas_etl/transforms/members.py` and
 `documentation/etl-plan.md` (Phase 7). The example has null
 `officeName.uri` values and an observation naming two departments
 (`data/api_examples/member.json`); an office label or external identifier is
@@ -317,7 +317,7 @@ weaken acceptance. Run `.venv/bin/python tests/validate.py` and
 
 ## 8. Six implementation tranches
 
-Tranches 1 and 2 are **implemented**; Tranches 3–6 are **not started**. Keep
+Tranches 1–3 are **implemented**; Tranches 4–6 are **not started**. Keep
 intermediate commits valid; switch active mappings, transformer, independent
 validator, SHACL, contract version and approved goldens together rather than
 temporarily disabling a gate.
@@ -326,7 +326,7 @@ temporarily disabling a gate.
 |---|---|---|---|
 | 1. Semantic contract and reference bootstrap | Implemented | Approved design; ontology/mapping contract, distinct `OfficeType` concepts, reviewed office/unit registry, shared-graph transforms, state, CLI and validation. Introduce vocabulary before replacing legacy Member mapping. | Reasoner and active-mapping integrity pass; independently validated office/unit graphs publish without changing existing Member behavior yet. |
 | 2. Observation resolution and OfficeHolding correspondence | Implemented | Published registries; local review loader, occurrence/evidence ledger, candidate generation, source checks and tests. **No Cabinet ledger.** The initial reviewed dataset is intentionally narrow. | Every source office observation is accepted, explicitly unresolved or review-required; identifiable changes preserve holding occurrence keys. |
-| 3. Member holdings and Cabinet migration | Not started | Accepted decisions and migration inventory; Member transform, independent acceptance, SHACL/joined checks, missing-observation composition, contract bump and complete validated republish. | Correct concurrent holdings and nonduplicated, deterministically derived Cabinet episodes; legacy erroneous triples absent, missing nested offices retained, recovery verified. |
+| 3. Member holdings and Cabinet migration | Implemented | Accepted decisions and pre-PUT migration inventory; Member transform, independent acceptance, SHACL/temporal checks, missing-observation composition, contract bump and complete validated republish. | Correct concurrent holdings and nonduplicated, deterministically derived Cabinet episodes; legacy erroneous triples absent, missing nested offices retained, recovery verified. |
 | 4. External office reconciliation | Not started | Stable office registry; new external entity policy, review file, CLI and isolation/retry tests. May follow tranche 5 if external services are unavailable. | Reviewed same-office external links replace independently without altering authoritative graphs. |
 | 5. Bill local sponsor reconciliation | Not started | Published office registry and Member holdings; separate per-Bill graph, review/state, change invalidation, validation and tests. | Supported office-only/holding links; original label and Bill core graph unchanged; stale Participation links removed on local graph replacement. |
 | 6. End-to-end acceptance | Not started | Core tranches; joined competency, migration, URI, missing/conflict and graph-isolation integration checks and operator documentation. | Phase 0 validation and full test suite pass; graph-scoped publication/recovery and review boundaries are exercised end to end. |

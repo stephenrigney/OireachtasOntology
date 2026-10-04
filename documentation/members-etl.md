@@ -5,13 +5,14 @@ Member graphs are named `https://data.oireachtas.ie/graph/member/{percent-encode
 Nested records with no source IRI use a parent-scoped IRI with a SHA-256 digest of canonical, identity-bearing JSON. Canonical JSON sorts object keys and treats only the full approved schema paths (`memberships.membership.*`) as unordered; unknown arrays retain source order. Date ranges use stable fragments of their parent membership IRI. Exact duplicate Member records coalesce; divergent records with the same `member.uri` fail. The party-membership IRI continues to hash the same containing OireachtasMembership IRI, term-scoped collection IRI and source date range; the Tranche 2 type and relationship additions do not change that deterministic identifier.
 
 An invalid office observation is quarantined at its individual
-`membership.offices[]` entry: it is reported with a source path/reason and is
-not transformed into the legacy office-role triples. Other independently
-valid Member content and sibling office observations continue through
-validation. Member identity, membership/House context, and a malformed
-non-array office collection remain fail-closed. The separate Phase 7 office
-occurrence ledger retains any earlier accepted resolution for malformed
-current evidence; this behavior does not introduce `OfficeHolding` RDF.
+`membership.offices[]` entry: it is reported with a source path/reason and
+cannot become new RDF. Other independently valid Member content and sibling
+office observations continue through validation. Member identity,
+membership/House context, and a malformed non-array office collection remain
+fail-closed. Phase 7's office occurrence ledger retains earlier accepted
+holdings from the verified published Member payload when current nested
+office evidence is missing, malformed or in conflict; see
+`documentation/office-observation-reconciliation.md`.
 
 Committee special roles have two observed Members API encodings: the existing
 array form (including `[]` when there is no special role), and an object form
@@ -56,11 +57,11 @@ The complete captured Members evidence review and immutable response hashes for
 the 12 reversed party ranges are recorded in
 `documentation/member-nested-evidence-audit.md`.
 
-Members own only Member, membership, generated role, and generated date-range descriptions. House/HouseTerm, ParliamentaryMemberCollection, constituency/panel and Committee IRIs are references. Historical reference acquisition remains follow-up work: current reference endpoints do not cover the historical IRIs in Member history.
+Members own only Member, membership, OfficeHolding, derived CabinetMembership, generated role, and generated date-range descriptions. NamedOffice, House/HouseTerm, ParliamentaryMemberCollection, constituency/panel and Committee IRIs are references. Historical reference acquisition remains follow-up work: current reference endpoints do not cover the historical IRIs in Member history.
 
 Member roots and agent terms use `https://data.oireachtas.ie/ontology#`; every membership, ParliamentaryMemberCollection, constituency/panel, role and DateRange term uses `https://data.oireachtas.ie/ontology/members#`. Each Members API party record is represented as a `members:ParliamentaryCollectionMembership` linked to its containing `members:OireachtasMembership` with `members:inOireachtasMembership`, and to its source collection with `members:memberOfCollection`. A non-`Independent` target additionally uses `members:PartyMembership` and `members:isPartyMembershipOf` (range `members:ParliamentaryParty`); an `Independent` target uses only the general collection membership class and relationship. Parties endpoint resources remain the authoritative descriptions of both collection types. Member graphs do not assert ParliamentaryGroup or TechnicalGroup membership or any party-side/reconciliation assertions.
 
-Member publication state is held in the shared core ETL SQLite database, defaulting to `~/.local/share/oireachtas-etl/core-state.sqlite`; select another database with `--state-db` or `OIR_ETL_STATE_DB`. The former `members-state.json` manifest is a read-only, one-time migration input. Its old path remains configurable with `OIR_MEMBERS_STATE_FILE`, or can be supplied explicitly with `--legacy-state-file` (`--state-file` remains a deprecated alias for that JSON input). Successful import makes SQLite authoritative; the legacy file is never updated. SQLite records observed/published source hashes, the publication payload hash, and dirty pending state. Because this RDF contract changes existing Member graphs without changing source hashes, the Member `contract_version` remains `2` so previously clean graphs are republished under the current model.
+Member publication state is held in the shared core ETL SQLite database, defaulting to `~/.local/share/oireachtas-etl/core-state.sqlite`; select another database with `--state-db` or `OIR_ETL_STATE_DB`. The former `members-state.json` manifest is a read-only, one-time migration input. Its old path remains configurable with `OIR_MEMBERS_STATE_FILE`, or can be supplied explicitly with `--legacy-state-file` (`--state-file` remains a deprecated alias for that JSON input). Successful import makes SQLite authoritative; the legacy file is never updated. SQLite records observed/published source hashes, the publication payload hash, and dirty pending state. The Phase 7 office migration raises the Member `contract_version` from 2 to 3 so previously clean graphs are republished even without a source-hash change. Contract-2 dirty payloads for absent Members are deferred rather than replayed under the retired office model.
 
 Online runs take an advisory exclusive lock on `<state-db>.lock` for extraction, publication, and state updates. Members are still completely scanned; an absent Member is retained and reported, never deleted automatically. `oir-etl state status` inspects recent run, endpoint and resource state.
 

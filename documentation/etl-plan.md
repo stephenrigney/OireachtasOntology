@@ -1594,16 +1594,16 @@ publishing a graph from one Expression alone. The full rules are in
 - [ ] Add Debates SHACL/quality validation and competency queries.
 - [ ] Add deterministic graph replacement and replay/idempotency tests.
 
-### Ministerial office/tenure slice — approved design; Tranches 1–2 implemented
+### Ministerial office/tenure slice — approved design; Tranches 1–3 implemented
 
 The first ministerial office/tenure vertical slice has a complete approved
 implementation design in [phase-7-ministerial-offices.md](phase-7-ministerial-offices.md).
-Tranches 1 and 2 are implemented, including the new ontology vocabulary,
+Tranches 1–3 are implemented, including the new ontology vocabulary,
 reviewed office/unit registry publication, local source-observation review and
 the occurrence/evidence ledger. The initial registry and decisions are a small,
-high-confidence bootstrap, not comprehensive coverage. Tranche 3 Member
-holdings/Cabinet migration has not started: the active Member mapping and
-Member/Bill RDF behavior remain unchanged until that migration. This status
+high-confidence bootstrap, not comprehensive coverage. Tranche 3 migrates the
+active Member mapping and graph publication to accepted holdings and derived
+Cabinet episodes; Bill RDF behavior remains unchanged. This status
 does not change the completion/history of earlier phases or other Phase 7
 slices.
 
@@ -1654,13 +1654,13 @@ Settled semantics and ownership for this slice:
   and active `officeNameUri` use through a versioned, validated Member
   republish, not generic triple deletion.
 
-Tranches 1 and 2 are **implemented**; Tranches 3–6 are **not started**:
+Tranches 1–3 are **implemented**; Tranches 4–6 are **not started**:
 
 | Tranche | Status | Prerequisite/work | Exit criterion |
 |---|---|---|---|
 | 1. Semantic contract and reference bootstrap | Implemented | Approved design; revised ontology/mapping, distinct category concepts, reviewed office/unit registries, validated shared-graph publication. | Reasoner and mapping checks pass; office/unit graphs publish independently without prematurely changing Member behavior. |
 | 2. Observation resolution and holding correspondence | Implemented | Published registries; local review decisions, source-occurrence/evidence ledger, candidate generation and source validation. | Every observation accepted, unresolved or review-required; identifiable corrections retain OfficeHolding keys; no Cabinet ledger. |
-| 3. Member holdings and Cabinet migration | Not started | Reviewed resolutions and migration inventory; Member transform, independent validation, non-destructive nested absence, contract bump and full republish. | Correct concurrent holdings and deduplicated Cabinet episodes; legacy erroneous RDF removed, missing holdings retained and recovery tested. |
+| 3. Member holdings and Cabinet migration | Implemented | Reviewed resolutions and migration inventory; Member transform, independent validation, non-destructive nested absence, contract bump and full republish. | Correct concurrent holdings and deduplicated Cabinet episodes; legacy erroneous RDF removed, missing holdings retained and recovery tested. |
 | 4. External office identities | Not started | Stable local offices; policy, reviewed external links, independent graphs and retry/recheck tests. May follow tranche 5 if needed. | External links replace independently without rewriting authoritative RDF. |
 | 5. Bill local sponsor links | Not started | Published offices/holdings; per-Bill local graph, decisions and change invalidation. | Correct office-only/person-and-time-qualified holding links, unchanged Bill evidence, stale local links cleared. |
 | 6. End-to-end acceptance | Not started | Earlier core tranches; joined competency, migration, URI, absence/conflict, publication/isolation tests and operations notes. | Phase 0 validation and full tests pass; graph-scoped recovery and review boundaries verified. |

@@ -67,6 +67,7 @@ def _member_args(tmp_path, fixture=None):
         fuseki_gsp_url="http://local.test/data", fuseki_sparql_url="http://local.test/query",
         state_db=str(tmp_path / "core.sqlite"),
         reconciliation_state_file=str(tmp_path / "reconciliation.sqlite"),
+        office_state_file=str(tmp_path / "offices.sqlite"),
     )
 
 

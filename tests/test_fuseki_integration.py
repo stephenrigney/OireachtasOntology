@@ -105,7 +105,8 @@ def test_members_workflow_gsp_replacement_removes_stale_content_and_retains_abse
     legacy_state.write_text(json.dumps({"version": 1, "members": {absent: {"published_hash": "retained", "graph_iri": "https://data.oireachtas.ie/graph/member/Absent", "contract_version": 1}}}))
     args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(state), legacy_state_file=str(legacy_state), output_nq=None,
                      output_ttl=None, fuseki_gsp_url=GSP, fuseki_sparql_url=SPARQL,
-                     reconciliation_state_file=str(tmp_path / "reconciliation.sqlite"))
+                     reconciliation_state_file=str(tmp_path / "reconciliation.sqlite"),
+                     office_state_file=str(tmp_path / "offices.sqlite"))
     graph_iri = member_graph_iri(wrapper["member"])
     loader = FusekiGraphStoreLoader(GSP, user=FUSEKI_USER, password=FUSEKI_PASSWORD)
     client = FusekiSparqlClient(SPARQL, user=FUSEKI_USER, password=FUSEKI_PASSWORD)
@@ -144,6 +145,92 @@ def test_members_workflow_gsp_replacement_removes_stale_content_and_retains_abse
     assert third["new"] == [] and third["changed"] == [] and third["skipped_identities"] == [wrapper["member"]["uri"]]
     assert _count(client, graph_iri) == len(transform_member(changed))
     verify_members_competency(client)
+
+
+def test_member_contract3_migration_replaces_legacy_office_graph_exactly(tmp_path, capsys):
+    from oireachtas_etl.office_observations import extract_office_observations
+    from oireachtas_etl.office_reconciliation import OfficeOccurrenceStore
+    from oireachtas_etl.state import CoreStateStore
+    from oireachtas_etl.transforms.common import MEMBERS
+    from rdflib.namespace import RDF
+
+    root = Path(__file__).resolve().parents[1]
+    wrapper = json.loads((root / "data/api_examples/member.json").read_text())
+    # Give the complete source exactly one registered office observation.
+    member = wrapper["member"]
+    for item in member["memberships"]:
+        item["membership"]["offices"] = []
+    membership = next(item["membership"] for item in member["memberships"]
+                      if item["membership"]["house"].get("houseNo") == "34")
+    membership["offices"] = [{"office": {
+        "dateRange": {"start": "2025-01-23", "end": None},
+        "officeName": {"showAs": "Taoiseach", "uri": None},
+    }}]
+    registry_path = root / "registries/ministerial-office-registry.json"
+    registry = json.loads(registry_path.read_text())
+    observations = extract_office_observations([(
+        wrapper, {"path": "integration/member.json", "sha256": "a" * 64,
+                  "json_pointer": "/results/0"})])
+    with OfficeOccurrenceStore(":memory:") as occurrence_store:
+        reconciled = occurrence_store.reconcile(observations, registry, {}, "b" * 64,
+                                                 run_id="integration-bootstrap")
+    occurrence_key = reconciled["records"][0]["occurrence_key"]
+    office_iri = "https://data.oireachtas.ie/office/o-000001"
+    review = tmp_path / "office-review.json"
+    review.write_text(json.dumps({"version": 1, "decisions": {occurrence_key: {
+        "status": "accepted", "office_iris": [office_iri],
+        "evidence": ["reviewed integration fixture"], "reason": "Reviewed test identity.",
+        "observation_fingerprint": observations[0]["fingerprint"],
+    }}}))
+    fixture = tmp_path / "members.json"
+    fixture.write_text(json.dumps({"head": {"counts": {"memberCount": 1}}, "results": [wrapper]}))
+    args = Namespace(
+        fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"),
+        state_db=str(tmp_path / "core.sqlite"), reconciliation_state_file=str(tmp_path / "reconciliation.sqlite"),
+        office_state_file=str(tmp_path / "offices.sqlite"), registry_file=str(registry_path),
+        review_file=str(review), legacy_state_file=str(tmp_path / "legacy.json"),
+        output_nq=None, output_ttl=None, fuseki_gsp_url=GSP, fuseki_sparql_url=SPARQL,
+    )
+    graph_iri = member_graph_iri(member)
+    unrelated = "https://data.oireachtas.ie/graph/member-migration-unrelated"
+    loader = FusekiGraphStoreLoader(GSP, user=FUSEKI_USER, password=FUSEKI_PASSWORD)
+    client = FusekiSparqlClient(SPARQL, user=FUSEKI_USER, password=FUSEKI_PASSWORD)
+    assert run_members(args) == 0
+    capsys.readouterr()
+    with CoreStateStore(args.state_db) as state:
+        prior = state.get_resource("members", member["uri"])
+        expected = Graph().parse(data=prior["published_payload"], format="nt")
+        legacy = Graph().parse(data=prior["published_payload"], format="nt")
+        legacy.add((URIRef(member["uri"]), RDF.type, MEMBERS.MinisterOfStateMembership))
+        legacy.add((URIRef(member["uri"]), MEMBERS.hasMinisterOfStateRole,
+                    URIRef("https://example.test/legacy-role")))
+        legacy.add((URIRef(member["uri"]), MEMBERS.officeNameUri, URIRef(office_iri)))
+        payload = ntriples(legacy)
+        import hashlib
+        state.connection.execute(
+            "UPDATE resource_state SET contract_version=2,published_payload=?,published_payload_hash=? "
+            "WHERE endpoint='members' AND resource_iri=?",
+            (payload, hashlib.sha256(payload.encode()).hexdigest(), member["uri"]))
+    loader.replace(graph_iri, payload, content_type="application/n-triples")
+    other_payload = "<https://example.test/untouched> <https://example.test/p> <https://example.test/o> ."
+    loader.replace(unrelated, other_payload, content_type="application/n-triples")
+
+    assert run_members(args) == 0
+    capsys.readouterr()
+    published = _graph_from_gsp(GSP, graph_iri)
+    assert set(_canonical_triples(published)) == set(_canonical_triples(expected))
+    assert not set(published) & set(legacy) - set(expected)
+    assert set(published.subjects(RDF.type, MEMBERS.OfficeHolding))
+    assert set(published.subjects(RDF.type, MEMBERS.CabinetMembership))
+    assert all((holding, MEMBERS.heldOffice, URIRef(office_iri)) in published
+               for holding in published.subjects(RDF.type, MEMBERS.OfficeHolding))
+    assert set(_canonical_triples(_graph_from_gsp(GSP, unrelated))) == set(
+        _canonical_triples(Graph().parse(data=other_payload, format="nt")))
+
+    assert run_members(args) == 0
+    skipped = json.loads(capsys.readouterr().out)
+    assert skipped["skipped"] == 1
+    assert set(_canonical_triples(_graph_from_gsp(GSP, graph_iri))) == set(_canonical_triples(expected))
 
 
 def test_member_external_links_are_isolated_verified_and_cleared_by_review(tmp_path):

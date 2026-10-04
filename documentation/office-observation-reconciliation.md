@@ -31,6 +31,127 @@ fail closed. Raw responses are persisted before source validation; the
 occurrence ledger uses one SQLite transaction per completed source scan. The
 CLI never writes the review file.
 
+## Member publication integration
+
+The approved Phase 7 Tranche 3 contract migration updates the Member RDF golden
+for `data/api_examples/member.json` to the exact graph emitted from that source
+without office resolutions. The fixture's office observations remain unresolved
+and therefore have no local office identity or legacy office RDF until accepted
+through review. This golden intentionally removes the two legacy occurrence
+records and their Member links, role assertions and date ranges; the exact graph
+assertion preserves all other fixture triples. Dedicated approved-resolution
+tests continue to pin OfficeHolding and derived Cabinet output.
+
+Tranche 3 verification on 2026-10-04 used the complete hash-verified captured
+Members fixture (1,928 unique Members). The offline run processed 1,142 office
+observations: 22 accepted, two explicitly unresolved and 1,118 requiring
+review (including two malformed, quarantined ranges); it emitted 22
+OfficeHoldings and 22 derived CabinetMembership episodes. Twelve malformed
+party ranges remained explicitly quarantined. A second run produced byte-for-
+byte identical N-Quads (SHA-256
+`345899ca9f8494799b1b8d8fce593aca24b96290ba1058b867d56862b0995be2`).
+The pinned-Java ontology reasoner, mapping-integrity validator, and focused
+Member/office tests passed. The full suite, including nine tests against an
+isolated, disposable Fuseki 5.1.0 dataset, passed (462 tests and 23 subtests).
+The isolated migration test confirmed validated whole-graph replacement
+removes legacy office triples, preserves another graph, and retains exact
+published graph equality on a deterministic rerun. These results exercise
+Tranche 3, not external office or Bill-local reconciliation or the deferred
+final Tranche 6 acceptance.
+
+`oir-etl run members` performs the same registry/decision reconciliation before
+transforming a complete current Member scan. Each office observation is linked
+to its immutable raw response path, response SHA-256 and JSON pointer. The
+effective accepted local office IRIs and their registered OfficeType concepts
+are passed to both the Member transformer and its independent validator.
+Unresolved or malformed office reports create no OfficeHolding.
+
+Only a complete live scan, or a fixture envelope whose advertised
+`memberCount` matches the deduplicated records, updates the durable occurrence
+ledger. An offline run uses a fresh in-memory ledger and the supplied reviewed
+registry/decisions only; it can exercise an initial reviewed bootstrap without
+creating persistent occurrence state. An incomplete online fixture reads
+existing accepted evidence without marking any observation absent or updating
+the durable ledger.
+
+Missing or conflicted observations do not revoke an accepted holding. For
+contract-3 Member graphs, the ETL composes only holding records that can be
+matched exactly to the hash-verified last accepted Member payload. If an
+accepted ledger record requires retention but that payload is unavailable,
+unparseable or inconsistent, the Member graph is left untouched. Contract-2
+graphs predate OfficeHolding publication and are rebuilt under the new Member
+contract rather than being treated as prior accepted holdings.
+
+An unchanged Member source hash is not sufficient to skip an office-related
+Member. When the ledger has accepted office evidence, the CLI builds and
+independently validates the effective graph, then compares its triples with
+the hash-verified last published payload. This detects reviewed outcomes
+already reconciled by a separate `reconcile offices` invocation (including a
+retry after an aborted publication) without relying on an in-process ledger
+change marker. An equal validated graph can still skip its PUT; a changed
+outcome is published through the ordinary dirty-state and exact-verification
+path.
+
+Before any contract-3 PUT that migrates a previously published legacy Member,
+the CLI writes a JSON inventory beside the core state file named
+`<state-db>.member-migration-<run-id>.json`. Override the destination with
+`--migration-inventory-file`. The artifact counts legacy
+`MinisterOfStateMembership`, `MinisterOfStateRole`, `hasMinisterOfStateRole`
+and `officeNameUri` triples from verified local publication payloads and lists
+ledger observations marked missing, including exact prior OfficeHolding matches
+where applicable. Its SHA-256 and path are included in the run report. This
+inventory uses only CoreStateStore's last verified payload and the local office
+ledger; it never queries a live triple store. If an imported legacy manifest
+did not retain the RDF payload, the artifact records that inventory gap and the
+run reports it in `inventory_gaps`; no production query is attempted. The
+contract-bump republish still follows the approved current-source validation
+path. A payload that is present but fails its stored hash or parsing checks
+blocks only that Member as `migration_inventory_blocked`.
+
+Two conservative publication limits are explicit. If an accepted holding's
+containing House membership disappears from the current Member source, the CLI
+does not try to synthesize missing membership RDF: it retains that Member's
+last published graph, reports `office_preservation_blocked` with the missing
+membership IRI, and continues with other Members. This can also defer unrelated
+changes to that Member until the accepted context returns or a separately
+reviewed implementation supplies safe composition and independent validation.
+Likewise, if a retained accepted office target has been removed from the current
+registry, the Member graph is not republished with a dangling target; restore or
+review the registry entry before retrying. Neither condition aborts the full
+Member scan.
+
+An absent dirty contract-3 Member can be replayed only from its exact validated
+pending payload. An absent dirty Member from an older contract is instead
+reported in `legacy_dirty_deferred` and left dirty with its current graph
+untouched; it must reappear in a Member source scan so the current contract can
+be transformed and independently validated before replacement. Member and
+office-observation raw-response metadata both identify the active mapping as
+`member_mapping.csv@phase-7-ministerial-offices-2026`.
+
+### Explicit reviewed revocation
+
+An ordinary `rejected` decision never clears a prior accepted resolution. To
+remove a previously published holding as an erroneous/revoked assertion, a
+reviewer may use the following explicit extension to a version-1 decision:
+
+```json
+{
+  "status": "rejected",
+  "action": "revoke",
+  "observation_fingerprint": "<exact-current-sha256>",
+  "office_iris": [],
+  "evidence": ["<reviewed evidence reference>"],
+  "reason": "<why the prior assertion must be removed>"
+}
+```
+
+The current source fingerprint is mandatory for revocation, and the action is
+applied only to that present observation. Absence, a stale fingerprint, a
+plain rejection, or a removed review entry retains the last accepted holding
+when it was previously published. The ledger keeps historical acceptance
+evidence even after a reviewed revocation; only the Member-owned graph is
+replaced without the explicitly revoked holding.
+
 ## Reviewed alias scope
 
 The Tranche 1 registry remains version 1 and existing `{language, label}` aliases

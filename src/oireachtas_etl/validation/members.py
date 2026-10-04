@@ -4,12 +4,14 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from collections.abc import Mapping
+from datetime import timedelta
 from importlib.resources import files
-from urllib.parse import quote, unquote, urlsplit
+from urllib.parse import unquote, urlsplit
 
 from pyshacl import validate
-from rdflib import Graph, Literal, URIRef
-from rdflib.namespace import FOAF, RDF, SKOS, XSD
+from rdflib import Graph, Literal, Namespace, URIRef
+from rdflib.namespace import FOAF, RDF, XSD
 
 from ..committee_roles import normalize_committee_roles
 from ..office_observations import parse_office_observation
@@ -22,6 +24,18 @@ from .reference import assert_expected
 RESOURCES = files("oireachtas_etl.validation.resources")
 HOUSE_RE = re.compile(r"^https://data\.oireachtas\.ie/ie/oireachtas/house/(dail|seanad)/([1-9][0-9]*)$")
 HOUSES = {"dail": URIRef("https://data.oireachtas.ie/house/dail"), "seanad": URIRef("https://data.oireachtas.ie/house/seanad")}
+ORG = Namespace("http://www.w3.org/ns/org#")
+GOVERNMENT = URIRef("https://data.oireachtas.ie/government")
+OFFICE_TYPE_KEYS = {
+    "TaoiseachOfficeType", "TanaisteOfficeType", "MinisterOfficeType",
+    "MinisterOfStateOfficeType", "CeannComhairleOfficeType",
+    "CathaoirleachOfficeType", "AttorneyGeneralOfficeType",
+}
+CABINET_OFFICE_TYPES = {
+    "TaoiseachOfficeType", "TanaisteOfficeType", "MinisterOfficeType",
+}
+OCCURRENCE_KEY_RE = re.compile(r"^occ-[0-9a-f]{64}$")
+OFFICE_IRI_RE = re.compile(r"^https://data\.oireachtas\.ie/office/[A-Za-z0-9][A-Za-z0-9-]*$")
 
 
 def extract_member_omissions(wrapper: dict) -> list[dict]:
@@ -113,8 +127,230 @@ def _range(graph, parent, fragment, value):
     graph.add((parent, MEMBERS.hasMembershipDateRange, subject))
 
 
-def expected_member_graph(wrapper: dict, *, preserved_party_graph: Graph | None = None) -> tuple[Graph, list[dict]]:
-    """Independent source-to-RDF acceptance contract for Member-owned triples."""
+def _local_office(value, label):
+    office = _source(value, label)
+    if not OFFICE_IRI_RE.fullmatch(str(office)):
+        raise ValueError(f"{label} must be a registered local /office/{{key}} IRI")
+    return office
+
+
+def _office_dates(value):
+    if not isinstance(value, dict) or set(value) - {"start", "end"} or "start" not in value:
+        raise ValueError("office resolution date_range must contain start and optional end")
+    start, end = value.get("start"), value.get("end")
+    start_value = datetime_literal(start)
+    if end is not None and datetime_literal(end).toPython() < start_value.toPython():
+        raise ValueError("office resolution date_range has reverse dates")
+    return {"start": start, "end": end}
+
+
+def _office_is_retained(record):
+    flag = record.get("retained", record.get("missing_retained", False))
+    if not isinstance(flag, bool):
+        raise ValueError("office resolution retained metadata must be boolean")
+    status = record.get("retention_status")
+    if status is not None and status not in {"missing_retained", "conflict_retained", "accepted"}:
+        raise ValueError("office resolution has an unsupported retention_status")
+    return flag or status in {"missing_retained", "conflict_retained"}
+
+
+def _accepted_office_records(member, observations, office_resolutions, office_types,
+                             member_memberships):
+    """Independent resolution contract for this expected-RDF builder."""
+    records = [] if office_resolutions is None else office_resolutions
+    if not isinstance(records, list):
+        raise ValueError("office_resolutions must be a list")
+    categories = {} if office_types is None else office_types
+    if not isinstance(categories, Mapping):
+        raise ValueError("office_types must map full office IRIs to category concept keys")
+    categories_by_iri = {}
+    for key, category in categories.items():
+        office = _local_office(key, "office_types key")
+        if category not in OFFICE_TYPE_KEYS:
+            raise ValueError(f"office_types value is not a registered OfficeType concept key: {category!r}")
+        categories_by_iri[str(office)] = category
+
+    source_ranges = {}
+    for observation in observations:
+        membership = str(observation["membership_iri"])
+        source_ranges.setdefault((membership, _canonical(observation["date_range"])), []).append(observation)
+
+    by_occurrence = {}
+    accepted = {}
+    present_counts = {}
+    for record in records:
+        if not isinstance(record, dict):
+            raise ValueError("each office resolution must be an object")
+        key = record.get("occurrence_key")
+        if not isinstance(key, str) or not OCCURRENCE_KEY_RE.fullmatch(key):
+            raise ValueError("office resolution occurrence_key must be an occ- SHA-256 key")
+        status = record.get("status")
+        if status is not None and status != "accepted":
+            raise ValueError("only accepted office resolutions may create an OfficeHolding")
+        holder = _source(record.get("member_iri"), "office resolution member_iri")
+        membership = _source(record.get("membership_iri"), "office resolution membership_iri")
+        office = _local_office(record.get("office_iri"), "office resolution office_iri")
+        dates = _office_dates(record.get("date_range"))
+        retained = _office_is_retained(record)
+        if holder != member:
+            raise ValueError("office resolution member_iri does not match this Member")
+        if str(membership) not in member_memberships:
+            raise ValueError("office resolution membership_iri is not owned by this Member")
+        date_key = _canonical(dates)
+        scope = (str(holder), str(membership), date_key)
+        if key in by_occurrence and by_occurrence[key] != scope:
+            raise ValueError("one office occurrence_key cannot identify different Member, membership, or dates")
+        by_occurrence[key] = scope
+        if not retained and (str(membership), date_key) not in source_ranges:
+            raise ValueError("office resolution does not match a valid current office observation")
+        pair = (key, str(office))
+        item = {"occurrence_key": key, "member_iri": holder,
+                "membership_iri": membership, "office_iri": office,
+                "date_range": dates, "retained": retained,
+                "office_type": categories_by_iri.get(str(office))}
+        if pair in accepted:
+            old = accepted[pair]
+            if old["date_range"] != dates:
+                raise ValueError("duplicate office resolution identity has conflicting data")
+            if old["retained"] and not retained:
+                accepted[pair] = item
+                present_counts.setdefault((str(membership), date_key), set()).add(key)
+            continue
+        accepted[pair] = item
+        if not retained:
+            present_counts.setdefault((str(membership), date_key), set()).add(key)
+
+    for scope, keys in present_counts.items():
+        distinct_source_reports = {_canonical(report["raw_office"])
+                                   for report in source_ranges[scope] }
+        if len(keys) > len(distinct_source_reports):
+            raise ValueError("accepted office occurrences exceed distinct current source reports")
+
+    holdings = []
+    for item in accepted.values():
+        # The office component distinguishes multiple targets of one occurrence.
+        seed = json.dumps({"kind": "office-holding-occurrence-v1",
+                           "occurrence_key": item["occurrence_key"],
+                           "office_iri": str(item["office_iri"])},
+                          ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+        identity = hashlib.sha256(seed).hexdigest()
+        item["holding_iri"] = URIRef(f"{member}#office-holding-{identity}")
+        holdings.append(item)
+    holdings.sort(key=lambda item: (item["occurrence_key"], str(item["office_iri"])))
+
+    pending = []
+    for (membership_text, range_key), reports in sorted(source_ranges.items()):
+        distinct = {}
+        for report in reports:
+            distinct.setdefault(_canonical(report["raw_office"]), report)
+        matched_count = len(present_counts.get((membership_text, range_key), set()))
+        for _, report in sorted(distinct.items())[matched_count:]:
+            pending.append({"path": report["path"], "context": membership_text,
+                            "reason": "No accepted office resolution was supplied; no OfficeHolding or role is emitted.",
+                            "category": "reconciliation_pending", "status": "unresolved"})
+    return holdings, pending
+
+
+def _calendar_date_only(value):
+    return isinstance(value, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", value) is not None
+
+
+def _inclusive_end(value):
+    if value is None:
+        return None
+    instant = datetime_literal(value).toPython()
+    if _calendar_date_only(value):
+        try:
+            return instant + timedelta(days=1)
+        except OverflowError as error:
+            raise ValueError("office date-only end cannot be advanced for inclusive continuity") from error
+    return instant
+
+
+def _expected_cabinet_episodes(holdings):
+    candidates = [record for record in holdings
+                  if record["office_type"] in CABINET_OFFICE_TYPES]
+    spans = []
+    for record in candidates:
+        dates = record["date_range"]
+        start = datetime_literal(dates["start"])
+        end = datetime_literal(dates["end"]) if dates["end"] is not None else None
+        spans.append({"start": start.toPython(), "start_literal": start,
+                      "end": end, "raw_end": dates["end"],
+                      "through": _inclusive_end(dates["end"]),
+                      "holding": record["holding_iri"]})
+    spans.sort(key=lambda span: (span["start"], str(span["holding"])))
+    result = []
+    for span in spans:
+        new_episode = (not result or
+                       (result[-1]["through"] is not None
+                        and span["start"] > result[-1]["through"]))
+        if new_episode:
+            result.append({"start": span["start"],
+                           "start_literal": span["start_literal"],
+                           "end": span["end"], "raw_end": span["raw_end"],
+                           "through": span["through"],
+                           "support": {span["holding"]}})
+            continue
+        episode = result[-1]
+        episode["support"].add(span["holding"])
+        if episode["through"] is None:
+            continue
+        later = (span["through"] is None or span["through"] > episode["through"])
+        equal_but_precise = (span["through"] == episode["through"]
+                             and span["end"] is not None and episode["end"] is not None
+                             and not _calendar_date_only(span["raw_end"])
+                             and _calendar_date_only(episode["raw_end"]))
+        if later or equal_but_precise:
+            episode["end"] = span["end"]
+            episode["raw_end"] = span["raw_end"]
+            episode["through"] = span["through"]
+    return result
+
+
+def _expected_cabinet_iri(member, start_literal):
+    data = {"kind": "cabinet-membership-v1", "member_iri": str(member),
+            "government_iri": str(GOVERNMENT), "start": str(start_literal)}
+    digest = hashlib.sha256(json.dumps(
+        data, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    return URIRef(f"{member}#cabinet-membership-{digest}")
+
+
+def _expected_office_triples(graph, member, holdings):
+    for item in holdings:
+        holding, office = item["holding_iri"], item["office_iri"]
+        graph.add((holding, RDF.type, MEMBERS.OfficeHolding))
+        graph.add((member, MEMBERS.hasMembersMembership, holding))
+        graph.add((holding, MEMBERS.heldOffice, office))
+        graph.add((holding, MEMBERS.officeHolder, member))
+        graph.add((member, MEMBERS.hasOfficeHolding, holding))
+        _range(graph, holding, "date-range", item["date_range"])
+
+    for episode in _expected_cabinet_episodes(holdings):
+        cabinet = _expected_cabinet_iri(member, episode["start_literal"])
+        role = URIRef(f"{cabinet}#role")
+        graph.add((cabinet, RDF.type, MEMBERS.CabinetMembership))
+        graph.add((member, MEMBERS.hasMembersMembership, cabinet))
+        graph.add((cabinet, MEMBERS.isCabinetMembershipOf, GOVERNMENT))
+        graph.add((cabinet, MEMBERS.hasCabinetRole, role))
+        graph.add((role, RDF.type, MEMBERS.CabinetMember))
+        graph.add((role, ORG.heldBy, member))
+        for holding in episode["support"]:
+            graph.add((cabinet, MEMBERS.supportedByOfficeHolding, holding))
+        _range(graph, cabinet, "date-range", {
+            "start": str(episode["start_literal"]),
+            "end": str(episode["end"]) if episode["end"] is not None else None})
+
+
+def expected_member_graph(wrapper: dict, *, preserved_party_graph: Graph | None = None,
+                          office_resolutions: list[dict] | None = None,
+                          office_types: Mapping[str, str] | None = None) -> tuple[Graph, list[dict]]:
+    """Independent source-to-RDF acceptance contract for Member-owned triples.
+
+    Office resolutions and OfficeType categories have the same public data
+    contract as ``transform_member_with_report`` but are validated and expanded
+    here without importing or invoking that production transform.
+    """
     if not isinstance(wrapper, dict) or not isinstance(wrapper.get("member"), dict): raise ValueError("each Members record must contain a member object")
     data = wrapper["member"]
     code = _required_text(data.get("memberCode"), "member.memberCode")
@@ -134,9 +370,12 @@ def expected_member_graph(wrapper: dict, *, preserved_party_graph: Graph | None 
     graph.add((subject, OIR.hasImage, Literal(data["image"], datatype=XSD.boolean)))
     memberships = data.get("memberships")
     if not isinstance(memberships, list): raise ValueError("member.memberships must be an array")
+    valid_offices = []
+    member_membership_iris = set()
     for membership_index, wrapped in enumerate(memberships):
         if not isinstance(wrapped, dict) or not isinstance(wrapped.get("membership"), dict): raise ValueError("membership wrapper must contain a membership object")
         record = wrapped["membership"]; membership = _source(record.get("uri"), "membership.uri"); house = record.get("house")
+        member_membership_iris.add(str(membership))
         if not isinstance(house, dict) or house.get("houseCode") not in HOUSES: raise ValueError("house must be a supported object")
         term = _source(house.get("uri"), "house.uri"); match = HOUSE_RE.fullmatch(str(term)); house_code = house["houseCode"]
         if not match or match.group(1) != house_code or match.group(2) != str(house.get("houseNo")): raise ValueError("house.uri must be the direct IRI for its houseCode and houseNo")
@@ -211,7 +450,7 @@ def expected_member_graph(wrapper: dict, *, preserved_party_graph: Graph | None 
         if not isinstance(offices, list): raise ValueError("membership.offices must be an array")
         for office_index, wrapped_office in enumerate(offices):
             try:
-                parse_office_observation(wrapped_office)
+                office_data, _name, _label, _source_uri, dates = parse_office_observation(wrapped_office)
             except ValueError as error:
                 exclusions.append({
                     "path": f"member.memberships[{membership_index}].membership.offices[{office_index}]",
@@ -221,33 +460,42 @@ def expected_member_graph(wrapper: dict, *, preserved_party_graph: Graph | None 
                     "status": "review_required",
                 })
                 continue
-            if not isinstance(wrapped_office, dict) or not isinstance(wrapped_office.get("office"), dict): raise ValueError("office wrapper must contain an office object")
-            office = wrapped_office["office"]; name = office.get("officeName")
-            if not isinstance(name, dict): raise ValueError("office.officeName must be an object")
-            om = _generated(membership, "minister-of-state-membership", {"membership": str(membership), "office": office}); role = URIRef(f"{om}#role")
-            graph.add((om, RDF.type, MEMBERS.MinisterOfStateMembership)); graph.add((subject, MEMBERS.hasMembersMembership, om)); graph.add((role, RDF.type, MEMBERS.MinisterOfStateRole)); graph.add((role, SKOS.prefLabel, Literal(_required_text(name.get("showAs"), "office.officeName.showAs")))); graph.add((om, MEMBERS.hasMinisterOfStateRole, role)); _range(graph, om, "date-range", office.get("dateRange"))
-            if name.get("uri") is not None: graph.add((om, MEMBERS.officeNameUri, _source(name["uri"], "officeName.uri")))
+            valid_offices.append({
+                "membership_iri": membership,
+                "raw_office": office_data,
+                "date_range": {"start": dates["start"], "end": dates.get("end")},
+                "path": f"member.memberships[{membership_index}].membership.offices[{office_index}]",
+            })
+    holdings, pending = _accepted_office_records(
+        subject, valid_offices, office_resolutions, office_types,
+        member_membership_iris)
+    _expected_office_triples(graph, subject, holdings)
+    exclusions.extend(pending)
     exclusions.extend(extract_member_omissions(wrapper))
     if preserved_party_graph is not None:
         graph += preserved_party_graph
     return graph, sorted(exclusions, key=lambda value: (value["category"], value["path"], value["context"], value["reason"]))
 
 
-def validate_member_source(wrapper: dict) -> list[dict]:
+def validate_member_source(wrapper: dict, *, office_resolutions: list[dict] | None = None,
+                           office_types: Mapping[str, str] | None = None) -> list[dict]:
     """Cheap source-only skip gate; it deliberately never constructs RDF."""
     if not isinstance(wrapper, dict) or not isinstance(wrapper.get("member"), dict):
         raise ValueError("each Members record must contain a member object")
     member = wrapper["member"]
     _required_text(member.get("memberCode"), "member.memberCode")
-    _source(member.get("uri"), "member.uri")
+    member_iri = _source(member.get("uri"), "member.uri")
     if not isinstance(member.get("image"), bool): raise ValueError("member.image must be boolean")
     if not isinstance(member.get("memberships"), list): raise ValueError("member.memberships must be an array")
     malformed_offices = []
     malformed_parties = []
+    valid_offices = []
+    member_membership_iris = set()
     for membership_index, wrapped in enumerate(member["memberships"]):
         if not isinstance(wrapped, dict) or not isinstance(wrapped.get("membership"), dict): raise ValueError("membership wrapper must contain a membership object")
         record = wrapped["membership"]
-        _source(record.get("uri"), "membership.uri")
+        membership_iri = _source(record.get("uri"), "membership.uri")
+        member_membership_iris.add(str(membership_iri))
         if not isinstance(record.get("house"), dict): raise ValueError("house must be an object")
         _source(record["house"].get("uri"), "house.uri")
         date = record.get("dateRange")
@@ -282,7 +530,7 @@ def validate_member_source(wrapper: dict) -> list[dict]:
         if not isinstance(offices, list): raise ValueError("membership.offices must be an array")
         for office_index, wrapped_office in enumerate(offices):
             try:
-                parse_office_observation(wrapped_office)
+                office_data, _name, _label, _source_uri, office_dates = parse_office_observation(wrapped_office)
             except ValueError as error:
                 malformed_offices.append({
                     "path": f"member.memberships[{membership_index}].membership.offices[{office_index}]",
@@ -291,16 +539,101 @@ def validate_member_source(wrapper: dict) -> list[dict]:
                     "category": "source_quarantine",
                     "status": "review_required",
                 })
-    return sorted([*extract_member_omissions(wrapper), *malformed_offices, *malformed_parties],
+                continue
+            valid_offices.append({
+                "membership_iri": membership_iri,
+                "raw_office": office_data,
+                "date_range": {"start": office_dates["start"], "end": office_dates.get("end")},
+                "path": f"member.memberships[{membership_index}].membership.offices[{office_index}]",
+            })
+    _, pending_offices = _accepted_office_records(
+        member_iri, valid_offices, office_resolutions, office_types,
+        member_membership_iris)
+    return sorted([*extract_member_omissions(wrapper), *malformed_offices,
+                   *malformed_parties, *pending_offices],
                   key=lambda value: (value["category"], value["path"], value["context"], value["reason"]))
 
 
-def validate_member(wrapper: dict, graph: Graph, *, preserved_party_graph: Graph | None = None) -> list[dict]:
+def _validate_office_closed_world(graph: Graph,
+                                  office_types: Mapping[str, str] | None) -> None:
+    """Check Member-owned office structures beyond ontology inference."""
+    forbidden = {
+        (None, RDF.type, MEMBERS.MinisterOfStateMembership),
+        (None, RDF.type, MEMBERS.MinisterOfStateRole),
+        (None, MEMBERS.hasMinisterOfStateRole, None),
+        (None, MEMBERS.officeNameUri, None),
+    }
+    if any(next(graph.triples(pattern), None) is not None for pattern in forbidden):
+        raise ValueError("deprecated legacy office RDF is forbidden in Member graphs")
+
+    type_map = {str(office): category
+                for office, category in (office_types or {}).items()}
+    qualifying_holdings = set()
+    for holding in graph.subjects(RDF.type, MEMBERS.OfficeHolding):
+        offices = list(graph.objects(holding, MEMBERS.heldOffice))
+        holders = list(graph.objects(holding, MEMBERS.officeHolder))
+        periods = list(graph.objects(holding, MEMBERS.hasMembershipDateRange))
+        if len(offices) != 1 or len(holders) != 1 or len(periods) != 1:
+            raise ValueError("OfficeHolding must have exactly one office, holder, and date range")
+        person = holders[0]
+        if ((person, MEMBERS.hasOfficeHolding, holding) not in graph
+                or (person, MEMBERS.hasMembersMembership, holding) not in graph):
+            raise ValueError("OfficeHolding holder links must be emitted in both directions")
+        if type_map.get(str(offices[0])) in CABINET_OFFICE_TYPES:
+            qualifying_holdings.add(holding)
+
+    covered_holdings = {}
+    cabinet_periods = []
+    for cabinet in graph.subjects(RDF.type, MEMBERS.CabinetMembership):
+        roles = list(graph.objects(cabinet, MEMBERS.hasCabinetRole))
+        governments = list(graph.objects(cabinet, MEMBERS.isCabinetMembershipOf))
+        supports = list(graph.objects(cabinet, MEMBERS.supportedByOfficeHolding))
+        periods = list(graph.objects(cabinet, MEMBERS.hasMembershipDateRange))
+        if (len(roles) != 1 or governments != [GOVERNMENT]
+                or not supports or len(periods) != 1):
+            raise ValueError("CabinetMembership requires one role, Government, date range, and supporting holding")
+        role = roles[0]
+        holders = list(graph.objects(role, ORG.heldBy))
+        role_types = set(graph.objects(role, RDF.type))
+        if (role_types != {MEMBERS.CabinetMember} or len(holders) != 1
+                or (holders and (holders[0], MEMBERS.hasMembersMembership, cabinet) not in graph)):
+            raise ValueError("CabinetMembership must have one generic CabinetMember role held by its Member")
+        for holding in supports:
+            if holding not in qualifying_holdings:
+                raise ValueError("CabinetMembership may only be supported by qualifying office types")
+            covered_holdings[holding] = covered_holdings.get(holding, 0) + 1
+        period = periods[0]
+        start_values = list(graph.objects(period, MEMBERS.StartDate))
+        end_values = list(graph.objects(period, MEMBERS.EndDate))
+        if len(start_values) != 1 or len(end_values) > 1:
+            raise ValueError("invalid CabinetMembership date range")
+        cabinet_periods.append((start_values[0].toPython(),
+                                end_values[0].toPython() if end_values else None))
+
+    if set(covered_holdings) != qualifying_holdings or any(
+            count != 1 for count in covered_holdings.values()):
+        raise ValueError("each qualifying OfficeHolding must support exactly one Cabinet episode")
+    cabinet_periods.sort(key=lambda value: value[0])
+    previous_end = None
+    for index, (start, end) in enumerate(cabinet_periods):
+        if index and previous_end is None:
+            raise ValueError("Cabinet episodes cannot follow an open-ended episode")
+        if index and start <= previous_end:
+            raise ValueError("Cabinet episodes for one Member must not overlap")
+        previous_end = end
+
+
+def validate_member(wrapper: dict, graph: Graph, *, preserved_party_graph: Graph | None = None,
+                    office_resolutions: list[dict] | None = None,
+                    office_types: Mapping[str, str] | None = None) -> list[dict]:
     """Validate source shape, exact owned triples, SHACL, and temporal quality."""
     # The expected member graph is constructed from source by the independent
     # acceptance contract, never by the production transformer.
-    expected, exclusions = expected_member_graph(wrapper, preserved_party_graph=preserved_party_graph)
+    expected, exclusions = expected_member_graph(
+        wrapper, preserved_party_graph=preserved_party_graph,
+        office_resolutions=office_resolutions, office_types=office_types)
     assert_expected(graph, set(expected))
+    _validate_office_closed_world(graph, office_types)
     validate_rdf(graph)
     conforms, _, report = validate(
         graph, shacl_graph=RESOURCES.joinpath("members.ttl").read_text(),

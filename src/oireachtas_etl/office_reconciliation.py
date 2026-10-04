@@ -267,13 +267,20 @@ def _validate_office_decisions(decisions: object, offices: dict[str, dict]) -> d
         if not isinstance(occurrence_key, str) or not OCCURRENCE_KEY_RE.fullmatch(occurrence_key):
             raise OfficeReviewError(f"invalid office occurrence key: {occurrence_key!r}")
         required = {"status", "office_iris", "evidence", "reason"}
-        optional = {"observation_fingerprint"}
+        optional = {"observation_fingerprint", "action"}
         if (not isinstance(decision, dict) or not required <= set(decision)
                 or set(decision) - required - optional):
             raise OfficeReviewError(f"invalid decision fields for {occurrence_key}")
         status = decision["status"]
         if not isinstance(status, str) or status not in {"accepted", "rejected", "unresolved"}:
             raise OfficeReviewError(f"invalid status for {occurrence_key}")
+        action = decision.get("action")
+        if action is not None and action != "revoke":
+            raise OfficeReviewError(f"invalid action for {occurrence_key}")
+        if action == "revoke" and (status != "rejected"
+                                    or decision.get("observation_fingerprint") is None):
+            raise OfficeReviewError(
+                f"revocation for {occurrence_key} must be rejected and bound to an observation_fingerprint")
         targets = decision["office_iris"]
         if (not isinstance(targets, list) or any(not isinstance(target, str) for target in targets)
                 or len(targets) != len(set(targets))):
@@ -416,14 +423,17 @@ def _accepted_resolution(observation: dict, candidates: list[dict], targets: lis
 class OfficeOccurrenceStore:
     """Atomic durable evidence and correspondence ledger for office reports."""
 
-    def __init__(self, path: Path):
-        self.path = Path(path).expanduser()
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        if self.path.exists() and self.path.stat().st_size:
+    def __init__(self, path: Path | str):
+        self._in_memory = str(path) == ":memory:"
+        self.path = Path(path).expanduser() if not self._in_memory else Path(":memory:")
+        if not self._in_memory:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+        if not self._in_memory and self.path.exists() and self.path.stat().st_size:
             with self.path.open("rb") as handle:
                 if handle.read(16) != b"SQLite format 3\x00":
                     raise ValueError(f"office occurrence state path is not SQLite: {self.path}")
-        self.connection = sqlite3.connect(self.path, timeout=30, isolation_level=None)
+        database = ":memory:" if self._in_memory else self.path
+        self.connection = sqlite3.connect(database, timeout=30, isolation_level=None)
         self.connection.row_factory = sqlite3.Row
         self.connection.execute("PRAGMA foreign_keys=ON")
         self.connection.execute("PRAGMA busy_timeout=30000")
