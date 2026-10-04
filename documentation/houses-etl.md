@@ -19,10 +19,12 @@ validation succeeds. Publication is one Graph Store Protocol `PUT` with
 graph, rather than delete/insert. Credentials are accepted only from
 `OIR_FUSEKI_USER` and `OIR_FUSEKI_PASSWORD`; do not place credentials in files.
 `OIR_FUSEKI_SPARQL_URL` (or `--fuseki-sparql-url`) is also required for a
-publishing run: the CLI checks the packaged, graph-scoped competency queries
-before reporting success. The run summary includes every excluded combined-house
-record. Only `houseCode == "dail & seanad"` is excluded; other unknown codes
-remain errors.
+publishing run: after the `PUT`, the CLI verifies that the remote Houses graph
+exactly matches the validated payload it just published (whole-graph
+verification) before reporting success. `scripts/dev-nlq.sh` sets this endpoint
+automatically for local development. The run summary includes every excluded
+combined-house record. Only `houseCode == "dail & seanad"` is excluded; other
+unknown codes remain errors.
 
 Raw JSON and its sidecar metadata are immutable. A path collision with different
 bytes fails. Metadata records endpoint, exact parameters, retrieval timestamp,

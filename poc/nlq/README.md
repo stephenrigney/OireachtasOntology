@@ -114,6 +114,11 @@ password so an existing Fuseki volume keeps working. The launcher populates
 `OIR_FUSEKI_USER` (default `admin`) and `OIR_FUSEKI_PASSWORD` for the
 application and does not print credentials.
 
+For `--load-data`, the launcher also exports `OIR_FUSEKI_GSP_URL` and
+`OIR_FUSEKI_SPARQL_URL` so the ETL can publish and then verify each graph.
+`OIR_FUSEKI_SPARQL_URL` defaults to the resolved `NLQ_FUSEKI_QUERY_URL`, so no
+manual export is needed.
+
 These credentials are for local development only and must not be treated as
 production credentials. Do not use `docker compose down -v` as a refresh step:
 it deletes the persistent local Fuseki volume.
@@ -190,7 +195,8 @@ uv run --locked uvicorn poc.nlq.app:app --reload
 
 ### Load data with the existing ETL
 
-Set the ETL write and verification endpoints:
+The launcher sets these endpoints automatically; export them yourself only when
+running the ETL manually. Set the ETL write and verification endpoints:
 
 ```bash
 export OIR_FUSEKI_GSP_URL=http://localhost:3030/houses/data

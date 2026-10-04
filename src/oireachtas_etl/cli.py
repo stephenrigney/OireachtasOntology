@@ -10,7 +10,7 @@ from .config import (ADMINISTRATIVE_UNITS_GRAPH, CONSTITUENCIES_GRAPH, HOUSES_GR
                      REFERENCE_ONTOLOGY_VERSION, Settings)
 from .loader import FusekiGraphStoreLoader
 from .loader import FusekiSparqlClient
-from .competency import verify_constituencies_competency, verify_houses_competency, verify_parties_competency, verify_member_competency, verify_bill_competency
+from .competency import verify_member_competency, verify_bill_competency
 from .competency import verify_core_graph
 from .raw import persist_raw
 from .serialization import nquads, ntriples, turtle
@@ -108,12 +108,12 @@ def _run_houses_impl(args: argparse.Namespace, store: CoreStateStore | None = No
     endpoint = None if args.offline else (args.fuseki_gsp_url or settings.fuseki_gsp_url)
     query_endpoint = None if args.offline else (args.fuseki_sparql_url or settings.fuseki_sparql_url)
     if endpoint:
-        if not query_endpoint: raise ValueError("Fuseki SPARQL endpoint is required for post-load competency verification")
+        if not query_endpoint: raise ValueError("Fuseki SPARQL endpoint is required for post-load whole-graph verification")
         payload = ntriples(graph)
         if store is None: raise RuntimeError("online Houses publication requires durable core ETL state")
         digest = store.mark_endpoint_dirty("houses", HOUSES_GRAPH, payload)
         FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout).replace(HOUSES_GRAPH, payload, content_type="application/n-triples")
-        verify_houses_competency(FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout))
+        verify_core_graph(FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout), HOUSES_GRAPH, payload)
         store.complete_endpoint_publication("houses", HOUSES_GRAPH, digest)
     elif not args.offline:
         raise ValueError("no Fuseki GSP endpoint configured; use --offline for fixture/developer runs")
@@ -152,8 +152,8 @@ def run_houses(args: argparse.Namespace) -> int:
 
 
 REFERENCE_ENDPOINTS = {
-    "parties": (PARTIES_GRAPH, "parties_api_url", transform_parties, validate_parties, verify_parties_competency, "party_mapping.csv@phase-2-reference-data-2026"),
-    "constituencies": (CONSTITUENCIES_GRAPH, "constituencies_api_url", transform_constituencies, validate_constituencies, verify_constituencies_competency, "constituencies_mapping.csv@phase-2-reference-data-2026"),
+    "parties": (PARTIES_GRAPH, "parties_api_url", transform_parties, validate_parties, "party_mapping.csv@phase-2-reference-data-2026"),
+    "constituencies": (CONSTITUENCIES_GRAPH, "constituencies_api_url", transform_constituencies, validate_constituencies, "constituencies_mapping.csv@phase-2-reference-data-2026"),
 }
 
 
@@ -169,7 +169,7 @@ def _reference_fixture_records(path: Path, endpoint: str) -> tuple[list[dict], b
 def _run_reference_impl(args: argparse.Namespace, store: CoreStateStore | None = None,
                         run_id: str | None = None) -> int:
     endpoint_name = args.endpoint
-    graph_iri, url_attr, transform, validator, competency, mapping_version = REFERENCE_ENDPOINTS[endpoint_name]
+    graph_iri, url_attr, transform, validator, mapping_version = REFERENCE_ENDPOINTS[endpoint_name]
     settings = Settings.from_environment()
     settings = Settings(**{**settings.__dict__, "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir})
     if args.fixture:
@@ -198,12 +198,12 @@ def _run_reference_impl(args: argparse.Namespace, store: CoreStateStore | None =
     query_endpoint = None if args.offline else (args.fuseki_sparql_url or settings.fuseki_sparql_url)
     if endpoint:
         if not query_endpoint:
-            raise ValueError("Fuseki SPARQL endpoint is required for post-load competency verification")
+            raise ValueError("Fuseki SPARQL endpoint is required for post-load whole-graph verification")
         payload = ntriples(graph)
         if store is None: raise RuntimeError("online reference publication requires durable core ETL state")
         digest = store.mark_endpoint_dirty(endpoint_name, graph_iri, payload)
         FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout).replace(graph_iri, payload, content_type="application/n-triples")
-        competency(FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout))
+        verify_core_graph(FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout), graph_iri, payload)
         store.complete_endpoint_publication(endpoint_name, graph_iri, digest)
         if endpoint_name == "parties":
             # Core state is already clean. The existing reconciliation store is

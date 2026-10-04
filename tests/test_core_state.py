@@ -431,17 +431,13 @@ def test_shared_graph_cli_verification_failure_recovers_without_clean_state(
             pass
 
     check = {"fail": True}
-    def verify(client):
+    def verify(client, graph_iri, payload):
         if check["fail"]:
             raise RuntimeError("post-PUT check failed")
 
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
     monkeypatch.setattr(cli, "FusekiSparqlClient", Client)
-    monkeypatch.setattr(cli, "verify_" + endpoint + "_competency", verify)
-    if endpoint != "houses":
-        graph_iri, url_attr, transform, validator, _, mapping = cli.REFERENCE_ENDPOINTS[endpoint]
-        monkeypatch.setitem(cli.REFERENCE_ENDPOINTS, endpoint,
-                            (graph_iri, url_attr, transform, validator, verify, mapping))
+    monkeypatch.setattr(cli, "verify_core_graph", verify)
     database = tmp_path / "core.sqlite"
     args = Namespace(endpoint=endpoint, fixture=str(ROOT / "data/api_examples" / fixture),
                      offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(database),

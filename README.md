@@ -99,8 +99,8 @@ records immutable raw responses and metadata in `data/raw/`. The transformers
 validate their RDF before publication. Reference endpoints replace their
 owned named graph; Members and Bills use per-resource named graphs and refresh
 manifests. A successful publish also requires the configured SPARQL query URL
-for post-load competency checks. The CLI reads `OIR_*` settings from the shell
-environment; it does not automatically load the NLQ POC's `.env` file.
+for post-load whole-graph verification. The CLI reads `OIR_*` settings from the
+shell environment; it does not automatically load the NLQ POC's `.env` file.
 
 The ETL owns distinct graphs:
 

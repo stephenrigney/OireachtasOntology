@@ -349,7 +349,7 @@ def test_reference_cli_offline_ignores_configured_fuseki_endpoints(tmp_path, mon
     class Loader:
         def __init__(self, *args, **kwargs): called.append("constructed")
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
-    monkeypatch.setattr(cli, f"verify_{endpoint}_competency", lambda client: called.append("competency"))
+    monkeypatch.setattr(cli, "verify_core_graph", lambda client, graph_iri, payload: called.append("verified"))
     monkeypatch.setenv("OIR_FUSEKI_GSP_URL", "http://local.test/data")
     monkeypatch.setenv("OIR_FUSEKI_SPARQL_URL", "http://local.test/query")
     args = Namespace(endpoint=endpoint, fixture=str(ROOT / "data/api_examples" / fixture_name), offline=True,

@@ -53,11 +53,7 @@ def _mock_core_publication(monkeypatch, calls):
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", lambda *a, **k: _FusekiLoader(calls))
     monkeypatch.setattr(cli, "FusekiSparqlClient", _NoopClient)
     monkeypatch.setattr(cli, "verify_member_competency", lambda *_: None)
-    monkeypatch.setattr(cli, "verify_parties_competency", lambda *_: None)
     monkeypatch.setattr(cli, "verify_core_graph", lambda *_: None)
-    party_policy = cli.REFERENCE_ENDPOINTS["parties"]
-    monkeypatch.setitem(cli.REFERENCE_ENDPOINTS, "parties",
-                        (*party_policy[:4], lambda *_: None, *party_policy[5:]))
 
 
 def _member_args(tmp_path, fixture=None):

@@ -111,6 +111,10 @@ load_env_local "$ROOT/.env.local"
 : "${NLQ_LLM_MODEL:=$DEFAULT_NLQ_LLM_MODEL}"
 : "${NLQ_FUSEKI_QUERY_URL:=$DEFAULT_NLQ_FUSEKI_QUERY_URL}"
 : "${OIR_FUSEKI_GSP_URL:=$DEFAULT_OIR_FUSEKI_GSP_URL}"
+# The ETL requires an explicit SPARQL endpoint for post-load whole-graph
+# verification. It defaults to the resolved NLQ query URL so the ETL reads the
+# same local Fuseki dataset the POC queries, while remaining overridable.
+: "${OIR_FUSEKI_SPARQL_URL:=$NLQ_FUSEKI_QUERY_URL}"
 : "${OIR_FUSEKI_USER:=$DEFAULT_OIR_FUSEKI_USER}"
 # The local Compose Fuseki admin password. An OIR_FUSEKI_PASSWORD supplied by
 # the environment or .env.local is reused as the local password so an existing
@@ -119,7 +123,7 @@ load_env_local "$ROOT/.env.local"
 : "${OIR_FUSEKI_PASSWORD:=$FUSEKI_ADMIN_PASSWORD}"
 
 export NLQ_LLM_BASE_URL NLQ_LLM_MODEL NLQ_FUSEKI_QUERY_URL
-export OIR_FUSEKI_GSP_URL OIR_FUSEKI_USER OIR_FUSEKI_PASSWORD FUSEKI_ADMIN_PASSWORD
+export OIR_FUSEKI_GSP_URL OIR_FUSEKI_SPARQL_URL OIR_FUSEKI_USER OIR_FUSEKI_PASSWORD FUSEKI_ADMIN_PASSWORD
 
 # --- Required configuration -------------------------------------------------
 if [[ -z "${NLQ_LLM_API_KEY:-}" ]]; then

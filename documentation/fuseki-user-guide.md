@@ -97,8 +97,9 @@ The ETL:
 1. transforms the JSON to RDF;
 2. validates the RDF;
 3. replaces the Houses named graph in Fuseki;
-4. runs competency queries against the loaded graph;
-5. reports success only when those checks pass.
+4. verifies that the published graph exactly matches the validated payload
+   (whole-graph verification);
+5. reports success only when that check passes.
 
 The graph URI is:
 

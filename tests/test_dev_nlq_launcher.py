@@ -21,6 +21,7 @@ DEFAULT_BASE_URL = "https://opencode.ai/inference/openai/v1"
 DEFAULT_MODEL = "gpt-6-luna"
 DEFAULT_QUERY_URL = "http://localhost:3030/houses/query"
 DEFAULT_GSP_URL = "http://localhost:3030/houses/data"
+DEFAULT_SPARQL_URL = "http://localhost:3030/houses/query"
 DEFAULT_FUSEKI_PASSWORD = "oireachtas-dev"
 
 UV_STUB = """\
@@ -82,6 +83,8 @@ exit "${STUB_CURL_EXIT:-0}"
 OIR_ETL_STUB = """\
 #!/usr/bin/env bash
 printf 'ETL:%s\\n' "$*"
+printf 'ETL_ENV_OIR_FUSEKI_GSP_URL:%s\\n' "${OIR_FUSEKI_GSP_URL:-}"
+printf 'ETL_ENV_OIR_FUSEKI_SPARQL_URL:%s\\n' "${OIR_FUSEKI_SPARQL_URL:-}"
 endpoint="${2:-}"
 if [[ -n "${STUB_ETL_FAIL_ENDPOINT:-}" && "$endpoint" == "$STUB_ETL_FAIL_ENDPOINT" ]]; then
   echo "simulated ETL failure for $endpoint" >&2
@@ -94,8 +97,8 @@ UVICORN_STUB = """\
 #!/usr/bin/env bash
 printf 'UVICORN:%s\\n' "$*"
 for name in NLQ_LLM_API_KEY NLQ_LLM_BASE_URL NLQ_LLM_MODEL NLQ_FUSEKI_QUERY_URL \
-            OIR_FUSEKI_GSP_URL OIR_FUSEKI_USER OIR_FUSEKI_PASSWORD \
-            FUSEKI_ADMIN_PASSWORD PYTHONPATH; do
+            OIR_FUSEKI_GSP_URL OIR_FUSEKI_SPARQL_URL OIR_FUSEKI_USER \
+            OIR_FUSEKI_PASSWORD FUSEKI_ADMIN_PASSWORD PYTHONPATH; do
   printf 'ENV_%s:%s\\n' "$name" "${!name:-}"
 done
 exit "${STUB_UVICORN_EXIT_CODE:-0}"
@@ -161,6 +164,11 @@ def _uvicorn_env(stdout: str, name: str) -> str:
     raise AssertionError(f"missing {prefix} in launcher output:\n{stdout}")
 
 
+def _etl_env_values(stdout: str, name: str) -> list[str]:
+    prefix = f"ETL_ENV_{name}:"
+    return [line[len(prefix):] for line in stdout.splitlines() if line.startswith(prefix)]
+
+
 def test_launcher_defaults_and_starts_uvicorn_with_reload(tmp_path):
     launcher = _launcher_tree(tmp_path, "NLQ_LLM_API_KEY=file-key\n")
 
@@ -174,6 +182,7 @@ def test_launcher_defaults_and_starts_uvicorn_with_reload(tmp_path):
     assert _uvicorn_env(result.stdout, "NLQ_LLM_MODEL") == DEFAULT_MODEL
     assert _uvicorn_env(result.stdout, "NLQ_FUSEKI_QUERY_URL") == DEFAULT_QUERY_URL
     assert _uvicorn_env(result.stdout, "OIR_FUSEKI_GSP_URL") == DEFAULT_GSP_URL
+    assert _uvicorn_env(result.stdout, "OIR_FUSEKI_SPARQL_URL") == DEFAULT_SPARQL_URL
     assert _uvicorn_env(result.stdout, "OIR_FUSEKI_USER") == "admin"
     assert _uvicorn_env(result.stdout, "OIR_FUSEKI_PASSWORD") == DEFAULT_FUSEKI_PASSWORD
     assert _uvicorn_env(result.stdout, "FUSEKI_ADMIN_PASSWORD") == DEFAULT_FUSEKI_PASSWORD
@@ -292,6 +301,71 @@ def test_load_data_invokes_only_the_intended_etl_endpoints(tmp_path):
         assert f"ETL:run {endpoint}" in result.stdout
     assert "ETL:run bills" not in result.stdout
     assert "UVICORN:poc.nlq.app:app" in result.stdout
+
+
+def test_load_data_exports_both_etl_endpoints_to_every_subprocess(tmp_path):
+    launcher = _launcher_tree(tmp_path, "NLQ_LLM_API_KEY=file-key\n")
+
+    result = _run_launcher(launcher, "--load-data")
+
+    assert result.returncode == 0, result.stderr
+    # The ETL requires an explicit SPARQL endpoint for post-load verification;
+    # every loaded endpoint must receive both endpoints, not just the GSP URL.
+    assert _etl_env_values(result.stdout, "OIR_FUSEKI_GSP_URL") == [DEFAULT_GSP_URL] * 4
+    assert _etl_env_values(result.stdout, "OIR_FUSEKI_SPARQL_URL") == [DEFAULT_SPARQL_URL] * 4
+
+
+def test_etl_sparql_url_defaults_to_the_resolved_nlq_query_url(tmp_path):
+    launcher = _launcher_tree(
+        tmp_path,
+        "NLQ_LLM_API_KEY=file-key\n"
+        "NLQ_FUSEKI_QUERY_URL=http://custom.example:3030/houses/query\n",
+    )
+
+    result = _run_launcher(launcher, "--load-data")
+
+    assert result.returncode == 0, result.stderr
+    assert _uvicorn_env(result.stdout, "OIR_FUSEKI_SPARQL_URL") == "http://custom.example:3030/houses/query"
+    assert _etl_env_values(result.stdout, "OIR_FUSEKI_SPARQL_URL") == [
+        "http://custom.example:3030/houses/query"
+    ] * 4
+
+
+def test_env_local_can_override_the_etl_sparql_url(tmp_path):
+    launcher = _launcher_tree(
+        tmp_path,
+        "NLQ_LLM_API_KEY=file-key\n"
+        "NLQ_FUSEKI_QUERY_URL=http://custom.example:3030/houses/query\n"
+        "OIR_FUSEKI_SPARQL_URL=http://from-file:3030/houses/query\n",
+    )
+
+    result = _run_launcher(launcher, "--load-data")
+
+    assert result.returncode == 0, result.stderr
+    assert _uvicorn_env(result.stdout, "OIR_FUSEKI_SPARQL_URL") == "http://from-file:3030/houses/query"
+    assert _etl_env_values(result.stdout, "OIR_FUSEKI_SPARQL_URL") == [
+        "http://from-file:3030/houses/query"
+    ] * 4
+
+
+def test_explicit_environment_overrides_env_local_etl_sparql_url(tmp_path):
+    launcher = _launcher_tree(
+        tmp_path,
+        "NLQ_LLM_API_KEY=file-key\n"
+        "OIR_FUSEKI_SPARQL_URL=http://from-file:3030/houses/query\n",
+    )
+
+    result = _run_launcher(
+        launcher,
+        "--load-data",
+        extra_env={"OIR_FUSEKI_SPARQL_URL": "http://from-env:3030/houses/query"},
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert _uvicorn_env(result.stdout, "OIR_FUSEKI_SPARQL_URL") == "http://from-env:3030/houses/query"
+    assert _etl_env_values(result.stdout, "OIR_FUSEKI_SPARQL_URL") == [
+        "http://from-env:3030/houses/query"
+    ] * 4
 
 
 def test_etl_failure_stops_before_starting_the_poc(tmp_path):
