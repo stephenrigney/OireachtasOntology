@@ -1,8 +1,8 @@
 # Debates Ontology — High-Level Outline
 
 **Status: approved semantic/source contract; the Debates ontology/mapping
-additions and static contract checks are verified. The Tranche 1 exit awaits
-orchestrator confirmation; no runtime Debates transformer is implemented.**
+additions and static contract checks are verified. Tranches 1–2 are complete;
+cross-dataset validation and publication remain later work.**
 The exact approved decisions are in
 [`debates-semantic-review.md`](debates-semantic-review.md) and
 [`debates-identity-contract.md`](debates-identity-contract.md). This outline

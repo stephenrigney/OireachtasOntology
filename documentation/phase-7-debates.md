@@ -2,9 +2,10 @@
 
 ## Status
 
-Tranche 1 semantic/source contract is complete and verified. Tranche 2 may
-start against representative fixtures; no runtime Debates transformer is
-implemented yet.
+Tranches 1 and 2 are complete. The deterministic representative-fixture
+transformer and independent RDF acceptance are verified; Tranche 3 may start.
+This does not claim broad cross-dataset reconciliation, SHACL/competency
+acceptance, ingestion or graph publication.
 
 This note records the approved Phase 7 design for the Debates vertical slice.
 It complements the ontology-specific material in
@@ -234,8 +235,28 @@ output and required absences, including no `#declared` carried/lost outcome, no
 placeholder/link for unresolved references, no Division/vote/participation from
 committee `rollCall` attendance, and no transcript literals.
 
+**Clarified 2026-10-04:** the committee `rollCall/summary[@eId='sum_2']` is
+source-only too: emit no Summary or `:sourceOrdinal` for that node. The active
+CSV class selector `debateBody//summary` is broader than this reviewed
+source-only exception; do not silently treat that selector as permission to
+emit an orphan Summary. A protected mapping-selector correction remains a
+separate semantic-contract follow-up; the Tranche 2 RDF golden pins the
+clarified exclusion without editing the CSV.
+
 **Exit:** representative AKN records transform deterministically into the agreed
 Debates structure without transcript text.
+
+The Tranche 2 transformer, non-RDF source-hash/reference report, RDF-only
+structural validator and independent expected-RDF subset goldens cover all five
+preserved Dáil, Seanad, committee and written-answer records. Fixture tests
+compare complete structural containment and order, fixed class/count/outcome
+expectations, explicit source-only/unsupported absences and repeated sorted
+named-graph output. Owner-link tests use checked-in Member/House owner evidence
+and leave unsupported historical terms, the Committee author and question
+recipients unresolved. Neither the limited example owner set nor one fetched
+AKN file proves general owner or Expression-set completeness. The production
+resource gate remains open before broad ingestion; Tranche 3 owns broader
+cross-dataset resolution, SHACL and competency acceptance.
 
 The census/benchmark for the full-corpus versus Bill-debates-first production
 choice is run after the core transformer exists and before broad production

@@ -1,0 +1,43 @@
+@prefix eli-dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#> .
+@prefix oir: <https://data.oireachtas.ie/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2015-07-02/debate>
+    a oir:DebateRecord ;
+    oir:debateDate "2015-07-02T00:00:00"^^xsd:dateTime ;
+    oir:debateType "debate"^^xsd:string ;
+    oir:hasExpression <https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2015-07-02/debate/mul%40> ;
+    oir:hasSection <https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2015-07-02/debate/mul%40/eid/e-dbsect_1> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2015-07-02/debate/mul%40>
+    a oir:DebateExpression ;
+    oir:expressionLanguageCode "eng"^^xsd:string ;
+    oir:expressionHasSection <https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2015-07-02/debate/mul%40/eid/e-dbsect_1> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2015-07-02/debate#sitting>
+    a oir:DebateSitting ;
+    oir:producedRecord <https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2015-07-02/debate> ;
+    eli-dl:activity_date "2015-07-02"^^xsd:date .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2015-07-02/debate/mul%40/eid/e-dbsect_1>
+    a oir:DebateSection ;
+    oir:sectionName "prelude"^^xsd:string ;
+    oir:sourceOrdinal 1 .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2015-07-02/debate/mul%40/eid/e-dbsect_8>
+    a oir:DebateSection ;
+    oir:hasDivision <https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2015-07-02/debate/mul%40/eid/e-dbsect_9>,
+                    <https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2015-07-02/debate/mul%40/eid/e-dbsect_12> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2015-07-02/debate/mul%40/eid/e-dbsect_9>
+    a oir:DebateSection, oir:Division ;
+    oir:sourceOrdinal 123 ;
+    oir:taCount 21 ;
+    oir:nilCount 22 .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2015-07-02/debate/mul%40/eid/e-dbsect_12>
+    a oir:DebateSection, oir:Division ;
+    oir:sourceOrdinal 124 ;
+    oir:taCount 21 ;
+    oir:nilCount 18 ;
+    oir:divisionOutcome oir:DeclaredCarried .

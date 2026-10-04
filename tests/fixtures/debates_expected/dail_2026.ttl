@@ -1,0 +1,44 @@
+@prefix eli-dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#> .
+@prefix oir: <https://data.oireachtas.ie/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-02-25/debate>
+    a oir:DebateRecord ;
+    oir:debateDate "2026-02-25T00:00:00"^^xsd:dateTime ;
+    oir:debateType "debate"^^xsd:string ;
+    oir:hasExpression <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-02-25/debate/mul%40> ;
+    oir:hasSection <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-02-25/debate/mul%40/eid/e-dbsect_1>,
+                   <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-02-25/debate/mul%40/eid/e-dbsect_2> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-02-25/debate/mul%40>
+    a oir:DebateExpression ;
+    oir:expressionLanguageCode "eng"^^xsd:string ;
+    oir:expressionHasSection <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-02-25/debate/mul%40/eid/e-dbsect_1>,
+                             <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-02-25/debate/mul%40/eid/e-dbsect_2> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-02-25/debate#sitting>
+    a oir:DebateSitting ;
+    oir:producedRecord <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-02-25/debate> ;
+    eli-dl:activity_date "2026-02-25"^^xsd:date .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-02-25/debate/mul%40/eid/e-dbsect_1>
+    a oir:DebateSection ;
+    oir:sectionName "prelude"^^xsd:string ;
+    oir:sourceOrdinal 1 .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-02-25/debate/mul%40/eid/e-dbsect_2>
+    a oir:DebateSection ;
+    oir:sectionName "topical"^^xsd:string ;
+    oir:sourceOrdinal 2 .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-02-25/debate/mul%40/eid/e-dbsect_16>
+    a oir:DebateSection ;
+    oir:hasDivision <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-02-25/debate/mul%40/eid/e-dbsect_17> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-02-25/debate/mul%40/eid/e-dbsect_17>
+    a oir:DebateSection, oir:Division ;
+    oir:sourceOrdinal 72 ;
+    oir:taCount 53 ;
+    oir:nilCount 88 ;
+    oir:staonCount 0 ;
+    oir:divisionOutcome oir:DeclaredLost .

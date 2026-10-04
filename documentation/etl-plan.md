@@ -1511,9 +1511,9 @@ The approved Debates design is recorded in
 remains `documentation/debates_ontology_outline.md` and
 `ontology/debates.owl.ttl`.
 
-**Status:** Debates Tranche 1 semantic/source contract is complete and verified;
-Tranche 2 may start on representative fixtures. No runtime Debates transformer
-is implemented yet.
+**Status:** Debates Tranches 1–2 are complete and verified against preserved
+representative fixtures. Tranche 3 cross-dataset integration and validation may
+start; ingestion, broad-corpus scope and publication remain pending.
 
 Settled boundaries include:
 
@@ -1589,8 +1589,8 @@ publishing a graph from one Expression alone. The full rules are in
   volume (including written answers), runtime and RDF output/working storage;
   choose full-corpus or Bill-debates-first production ingestion before broad
   production ingestion.
-- [ ] Implement the remaining Debates tranches (2–4) above; Tranche 1's
-  semantic/source contract is complete.
+- [ ] Implement the remaining Debates tranches (3–4) above; Tranches 1–2 are
+  complete.
 - [ ] Add Debates SHACL/quality validation and competency queries.
 - [ ] Add deterministic graph replacement and replay/idempotency tests.
 

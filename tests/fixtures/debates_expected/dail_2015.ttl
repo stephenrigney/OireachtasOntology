@@ -1,0 +1,42 @@
+@prefix eli-dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#> .
+@prefix oir: <https://data.oireachtas.ie/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02>
+    a oir:DebateRecord ;
+    oir:debateDate "2015-07-02T00:00:00"^^xsd:dateTime ;
+    oir:hasExpression <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/eng%40> ;
+    oir:hasSection <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/eng%40/eid/e-dbsect_1>,
+                   <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/eng%40/eid/e-dbsect_2> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/eng%40>
+    a oir:DebateExpression ;
+    oir:expressionLanguageCode "eng"^^xsd:string ;
+    oir:expressionHasSection <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/eng%40/eid/e-dbsect_1>,
+                             <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/eng%40/eid/e-dbsect_2> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02#sitting>
+    a oir:DebateSitting ;
+    oir:producedRecord <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02> ;
+    eli-dl:activity_date "2015-07-02"^^xsd:date .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/eng%40/eid/e-dbsect_1>
+    a oir:DebateSection ;
+    oir:sectionName "prelude"^^xsd:string ;
+    oir:sourceOrdinal 1 .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/eng%40/eid/e-dbsect_2>
+    a oir:DebateSection ;
+    oir:sectionName "debate"^^xsd:string ;
+    oir:sourceOrdinal 2 .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/eng%40/eid/e-dbsect_18>
+    a oir:DebateSection ;
+    oir:hasDivision <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/eng%40/eid/e-dbsect_19> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/eng%40/eid/e-dbsect_19>
+    a oir:DebateSection, oir:Division ;
+    oir:sourceOrdinal 13 ;
+    oir:taCount 65 ;
+    oir:nilCount 39 ;
+    oir:divisionOutcome oir:DeclaredCarried .

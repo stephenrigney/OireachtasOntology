@@ -1,0 +1,48 @@
+@prefix eli-dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#> .
+@prefix oir: <https://data.oireachtas.ie/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens>
+    a oir:DebateRecord ;
+    oir:debateDate "2015-07-02T00:00:00"^^xsd:dateTime ;
+    oir:debateType "writtens"^^xsd:string ;
+    oir:hasExpression <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens/mul%40> ;
+    oir:hasSection <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens/mul%40/eid/e-dbsect_55>,
+                   <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens/mul%40/eid/e-dbsect_69> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens/mul%40>
+    a oir:DebateExpression ;
+    oir:expressionLanguageCode "eng"^^xsd:string ;
+    oir:expressionHasSection <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens/mul%40/eid/e-dbsect_55>,
+                             <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens/mul%40/eid/e-dbsect_69> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens/mul%40/eid/e-dbsect_55>
+    a oir:DebateSection ;
+    oir:sectionName "writtenAnswers"^^xsd:string ;
+    oir:sourceOrdinal 1 .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens/mul%40/eid/e-dbsect_69>
+    a oir:DebateSection ;
+    oir:sectionName "writtenAnswers"^^xsd:string ;
+    oir:sourceOrdinal 2 ;
+    oir:hasSubSection <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens/mul%40/eid/e-dbsect_83> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens/mul%40/eid/e-dbsect_83>
+    a oir:DebateSection ;
+    oir:sectionName "writtenAnswer"^^xsd:string ;
+    oir:sourceOrdinal 14 ;
+    oir:hasQuestion <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens/mul%40/eid/e-pq_38>,
+                    <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens/mul%40/eid/e-pq_57> ;
+    oir:hasSpeech <https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens/mul%40/eid/e-spk_1033> .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens/mul%40/eid/e-pq_38>
+    a oir:ParliamentaryQuestion ;
+    oir:sourceOrdinal 1 .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens/mul%40/eid/e-pq_57>
+    a oir:ParliamentaryQuestion ;
+    oir:sourceOrdinal 2 .
+
+<https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/writtens/mul%40/eid/e-spk_1033>
+    a oir:Speech ;
+    oir:sourceOrdinal 3 .

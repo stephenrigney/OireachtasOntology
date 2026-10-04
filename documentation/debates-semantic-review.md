@@ -1,9 +1,10 @@
 # Phase 7 Debates — approved semantic contract
 
 **Status: I1, I2 and O1–O8 decisions implemented and verified for the Tranche 1
-semantic/source contract; Tranche 1 complete and Tranche 2 may start.** This note
-records the approved semantic contract and implementation checklist; it does
-not claim a runtime Debates transformer, resolver or publisher is complete.
+semantic/source contract; Tranche 2 representative transformation is complete.**
+This note records the approved semantic contract and its historical Tranche 1
+implementation checklist; it does not claim that Tranche 3 cross-dataset
+resolution or Tranche 4 ingestion/publication is complete.
 The governing design is
 [`phase-7-debates.md`](phase-7-debates.md); source evidence, mapping status and
 exact identity examples are in the other `debates-*` documents. No Debates
@@ -390,7 +391,8 @@ ontology validation, active mapping-term resolution and static Debates
 contract tests. Rows remain non-active where the approved boundary says so or
 until their conditional owner-resolution requirements are met; active rows
 remain conditional on resolving references to their established owners.
-Runtime reference resolution and RDF output remain unimplemented. In
+Tranche 2 implements conditional reference resolution and RDF output against
+representative fixtures; broad owner integration remains Tranche 3 work. In
 particular, do not use `:inHouse` on DebateRecord,
 `eli-dl:had_participation` on Speech, or map `#declared` to carried/lost.
 
