@@ -69,23 +69,52 @@ passed; the focused Debates suite had 87 passing tests (23 subtests), and the
 full repository suite had 512 passing tests, 9 skips (23 subtests). These
 results verify representative output, not a production-corpus resource gate.
 
-## Tranche 3 checkpoint (2026-10-05)
+## Tranche 3 bounded closure (2026-10-05)
 
 Exact owner-RDF resolution for Member, House/HouseTerm and Committee identities,
 joined SHACL/quality and source-hash report validation, executable competency
 queries, and disposable graph-boundary tests are implemented. See the Tranche 3
-checkpoint in `phase-7-debates.md` for the accepted scope and blockers. The
-limited checked-in Committee owner example does not establish the Dáil 34
-Public Accounts author; do not create that owner from the AKN href. Bill/event
-section and question-recipient links remain inactive pending reviewed source
-identity crosswalks and mapping approvals. The roll-call Summary is excluded
-in RDF while its CSV selector still awaits a protected correction. Thus the
-Tranche 3 exit and full competency acceptance are **not** claimed.
+evidence review and bounded closure in `phase-7-debates.md` for exact outcomes.
+All links supported by reviewed source/owner evidence are validated; the two
+unsupported competencies remain explicitly deferred, not marked as successful
+query results.
 
-For a future Tranche 4, use exact preserved AKN bytes and the validated owner
-snapshot with the source-aware integration gate before staging any Work graph.
-Carry the source-hash-linked reference report alongside transformation results;
-do not mistake one fetched Expression for a complete Work. Add ingestion,
-change detection, atomic publication and replay only after Tranche 3 exit is
-resolved; do not fold production scanning, scheduling, corpus quarantine or
-the separate production-resource gate into that implementation.
+The section-reference review found 16 `@refersTo` values across the five
+preserved AKNs: eight target only a local `TLCEvent`, and eight 2026 Dáil
+fragments have no local eId target. The local AKN targets are not Bill-owned
+owners. Six distinct source `@href` strings contain Bill year/number path text
+for 2013/23, 2014/86, 2015/1, 2015/67, 2024/25 and 2026/6; this inventory is
+not an accepted identity crosswalk. Of the eight locally unmatched fragments,
+six are `#bill.2026.6.dail.` and two are `#bill.2024.25.dail.`. The only
+checked-in Bill owner is 2025/60. The per-section
+hash-linked unresolved outcomes are checked against
+the joined owner graphs; there is no exact reviewed AKN `TLCEvent`-to-Bill owner
+crosswalk. The bill-event query contract is preserved and its no-row result is
+not treated as positive competency acceptance.
+
+The question-recipient review found 239 `@to` values, all resolving only to
+source-local `TLCRole`s: ten in the Dáil 2015 record and 229 in written answers.
+The checked-in office registry has three `NamedOffice` identities (Taoiseach,
+Tánaiste, Minister for Finance) and the joined owner examples provide no typed
+`eli-dl:ParticipationRole` individuals. In particular, the source references
+`akn/ontology/role/ie/oireachtas/minister/public`,
+`/ie/oireachtas/role/office/public` and
+`/ie/oireachtas/role/office/social` and
+`/ie/oireachtas/role/office/finance` have no reviewed crosswalk. All 239
+reports remain unresolved and neither recipient predicate is emitted; the
+query contract remains intact and unanswered.
+
+The limited checked-in Committee owner example still does not establish the
+Dáil 34 Public Accounts author; do not create that owner from the AKN href.
+Committee rollCall attendance and its nested `sum_2` remain source-only and are
+excluded by the transformer and golden. The broad CSV `debateBody//summary`
+selector still includes `sum_2`; its protected correction requires separate
+explicit mapping approval. No mapping, ontology, source fixture or golden was
+changed for this closure. Tranche 3 is closed only under this evidence-backed
+deferral rule; this is not full Phase 7 completion or production-corpus
+acceptance.
+
+No Tranche 4 ingestion, state, graph-replacement or publication work is claimed
+or started. The production resource/scope gate, historical duplicate-eId and
+written-answer fragmentation dispositions, and eventual positive acceptance
+of the two deferred competencies remain open separately.

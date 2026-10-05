@@ -2,14 +2,17 @@
 
 ## Status
 
-Tranches 1 and 2 are complete. The deterministic representative-fixture
-transformer and independent RDF acceptance are verified; Tranche 3 may start.
-The production-corpus resource benchmark required before broad ingestion has
-been measured and is reported in
+Tranches 1–3 are complete for the bounded representative scope. All links with
+reviewed source/owner support are validated; the Bill-event section and
+question-recipient competencies remain explicitly deferred because the checked
+evidence does not support their joins. Their query contracts remain in place,
+and the unanswered queries are not claimed as successful competency results.
+Tranche 4 has not started. The production-corpus resource benchmark required
+before broad ingestion has been measured and is reported in
 [`debates-production-benchmark.md`](debates-production-benchmark.md); the
 production-scope choice and gate remain open pending an operational
 acceptability threshold. This does not claim broad cross-dataset
-reconciliation, SHACL/competency acceptance, ingestion or graph publication.
+reconciliation, full Phase 7 completion, ingestion or graph publication.
 
 This note records the approved Phase 7 design for the Debates vertical slice.
 It complements the ontology-specific material in
@@ -262,7 +265,8 @@ and leave unsupported historical terms, the Committee author and question
 recipients unresolved. Neither the limited example owner set nor one fetched
 AKN file proves general owner or Expression-set completeness. The production
 resource gate remains open before broad ingestion; Tranche 3 owns broader
-cross-dataset resolution, SHACL and competency acceptance.
+cross-dataset resolution, SHACL and competency checks, with the bounded
+evidence review and explicit deferrals recorded below.
 
 The census/benchmark for the full-corpus versus Bill-debates-first production
 choice was run after the core transformer existed and is recorded in
@@ -288,7 +292,7 @@ scheduling and reconciliation policy remain unchanged.
 **Exit:** debate graphs integrate safely with the existing dataset and pass the
 agreed structural, semantic and ownership checks.
 
-#### Tranche 3 integration checkpoint (2026-10-05; not the exit)
+#### Tranche 3 integration checkpoint (2026-10-05)
 
 The exact-reference resolver can now index source-validated Member, Houses and
 Committee owner RDF. It requires an existing, correctly typed owner subject,
@@ -313,21 +317,77 @@ exclude transcript text hidden in permitted strings and roll-call-derived RDF.
 These checks do not implement Tranche 4 publication or a production owner
 snapshot, and the separate historical-corpus/resource gate remains open.
 
-**Blocked exit criteria:** The currently inactive section `@refersTo` mapping
-has no approved exact AKN TLCEvent-to-Bill-owned event/Work identity crosswalk;
-the Bill/event section competency query therefore returns no supported links.
-Question `@to` likewise has no approved TLCRole-to-ParticipationRole or
-TLCRole-to-NamedOffice reconciliation, so the directed-role competency remains
-unanswered even though Member askers and existing office holdings are queryable.
-Neither an office label nor a Bill stage/date/path similarity authorizes these
-links. Changing mapping status or identity rules requires separate semantic
-approval. The CSV `debateBody//summary` selector also still includes the
-`rollCall`-nested `sum_2`, contrary to the approved source-only exception;
-the executable transformer, source-aware golden and RDF checks exclude it.
-A protected CSV selector correction still needs explicit approval. These
-blocked criteria mean **Tranche 3 is not complete and Tranche 4 should not
-start as an accepted follow-on**. The 2004–2007 duplicate-eId cases, empty
-section names and pre-2013 fragmented written answers are separate corpus work.
+#### Tranche 3 evidence review and bounded closure (2026-10-05)
+
+The earlier checkpoint treated the two unsupported joins below as blocked
+Tranche 3 exit criteria. The subsequent evidence review confirms that these are
+not missing implementations of already-resolvable links: the checked-in source
+and owner examples do not establish either crosswalk. Under the bounded closure
+rule for this tranche, supported links are validated and both unsupported
+competencies are explicitly deferred. This closes Tranche 3 without asserting
+that either query produced its intended positive result.
+
+**Section-to-Bill evidence.** Across the five preserved AKN records there are
+16 section `@refersTo` values: eight resolve only to a local AKN `TLCEvent`
+element, while eight 2026 Dáil fragments have no local target. The local
+`TLCEvent` nodes are source evidence, not Bill-owned RDF owners. Their six
+distinct source `@href` strings contain Bill year/number path text for 2013/23,
+2014/86, 2015/1, 2015/67, 2024/25 and 2026/6; this inventory is not an accepted
+owner crosswalk. Of the eight locally unmatched fragments, six are
+`#bill.2026.6.dail.` and two are `#bill.2024.25.dail.`. The checked-in
+Bill owner example (`data/api_examples/bill.json`) is only Bill 2025/60 and
+describes its own lifecycle events. No exact reviewed AKN
+`TLCEvent`-to-Bill-owned event/Work identity crosswalk is present. The new
+independent acceptance checks one hash-linked unresolved report row per source
+section against that joined owner graph, including local-target evidence, and
+asserts no `:refersToEvent` triple. The `debate-bill-event-sections.rq` query
+remains unchanged; it returns no matching rows against this example dataset,
+which is an explicit evidence gap, not a passing positive competency.
+
+**Question-recipient evidence.** The five preserved AKN records contain 239
+question `@to` values: ten in the 2015 Dáil record and 229 in its written-answer
+record; the other three records contain no question recipients. Each present
+reference resolves only to its source-local `TLCRole`. The evidence includes
+`akn/ontology/role/ie/oireachtas/minister/public` and the written-answer role
+hrefs `/ie/oireachtas/role/office/public`,
+`/ie/oireachtas/role/office/social`, and
+`/ie/oireachtas/role/office/finance`. The joined
+owner examples contain only three reviewed `NamedOffice` individuals
+(Taoiseach, Tánaiste and Minister for Finance) and no typed
+`eli-dl:ParticipationRole` individuals. No reviewed source-reference
+crosswalk connects these `TLCRole`s to either target type. Independent tests
+assert a hash-linked unresolved row for each present `@to` and the absence of
+both `:directedTo` and `:directedToOffice` in the five debate graphs. The
+`debate-question-recipients.rq` contract remains unchanged; its directed-role
+competency remains unanswered rather than being inferred from labels or
+slugs.
+
+The mapping statuses remain unchanged: section `@refersTo` (row 16) and
+question `@to` (rows 30 and 56) remain `future_work`. All links supported by the
+reviewed owner evidence continue to be checked by joined SHACL/quality,
+source-aware report validation, competency and graph-boundary tests.
+
+Committee `rollCall` attendance remains source-only, and the transformer,
+source-aware golden and RDF checks exclude both attendance-derived RDF and the
+`rollCall`-nested `sum_2` Summary/ordinal. The broad active CSV
+`debateBody//summary` selector still includes that source-only node; correcting
+this protected selector remains separate work requiring explicit mapping
+approval. The mechanically scoped proposal is to restrict the class selector
+in CSV row 25 from `debateBody//summary` to
+`debateBody//summary[not(ancestor::rollCall)]`, with the same exclusion applied
+to the eId selector in row 26 and the Summary portion of the ordinal rule in
+row 49. This is a proposal, **not** an approved CSV edit: the active CSV still
+overselects and the executable exclusion is independently pinned by the golden.
+No mapping or fixture was changed for this closure.
+
+This is **Tranche 3 closure only**. It is not full Phase 7 acceptance: the
+production-scope/resource gate, corpus quarantine and fragmentation issues,
+Tranche 4 ingestion/state/publication, and eventual positive acceptance of the
+two deferred competencies remain open. **Tranche 4 may start as a separate
+bounded implementation; no Tranche 4 work is started or claimed here, and broad
+ingestion remains subject to the production-scope/resource gate.** The
+2004–2007 duplicate-eId cases, empty section names and pre-2013 fragmented
+written answers remain separate corpus work.
 
 ### Tranche 4 — Source ingestion, state and publication mechanics
 

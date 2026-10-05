@@ -15,14 +15,14 @@ from xml.sax.saxutils import quoteattr
 
 import pytest
 from rdflib import Dataset, URIRef
-from rdflib.namespace import RDF
+from rdflib.namespace import RDF, SKOS
 
 from oireachtas_etl.competency import render_debate_competency_query
 from oireachtas_etl.config import COMMITTEES_GRAPH, HOUSES_GRAPH, OFFICES_GRAPH
 from oireachtas_etl.office_observations import extract_office_observations
 from oireachtas_etl.office_reconciliation import OfficeOccurrenceStore
 from oireachtas_etl.transforms.bills import bill_graph_iri, transform_bill_with_report
-from oireachtas_etl.transforms.common import MEMBERS, OIR
+from oireachtas_etl.transforms.common import ELIDL, MEMBERS, OIR
 from oireachtas_etl.transforms.committees import transform_committees
 from oireachtas_etl.transforms.debates import DebateReferenceRegistry, transform_debate
 from oireachtas_etl.transforms.houses import transform_houses
@@ -31,6 +31,7 @@ from oireachtas_etl.transforms.members import (
     transform_member_with_report,
 )
 from oireachtas_etl.transforms.offices import office_iri, transform_offices
+from oireachtas_etl.validation.bills import validate_bill
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -216,6 +217,7 @@ def joined_dataset():
         "results"
     ][0]
     bill_graph, _bill_report = transform_bill_with_report(bill_source)
+    validate_bill(bill_source, bill_graph)
     bill_graph_name = bill_graph_iri(bill_source["bill"])
     _add_graph(dataset, bill_graph_name, bill_graph)
 
@@ -634,35 +636,219 @@ def test_bill_event_section_empty_result_remains_an_explicit_competency_gap(
         bill_graph=joined_dataset["bill_graph_name"],
     )
     # Rendering and executing the query with no rows does not fulfill the
-    # competency: the active AKN evidence includes resolved section targets,
-    # but the link mapping remains inactive and emits no cross-graph rows.
+    # competency: source-local AKN target evidence is not a reviewed Bill-owner
+    # join, so the inactive link mapping emits no cross-graph rows.
     assert actual == []
-    bill_events = set(joined_dataset["bill_graph"].subjects(RDF.type, OIR.BillEvent))
-    assert len(bill_events) >= 10
-
-    # Independently count preserved AKN evidence, not transformer triples. The
-    # checked-in sources contain 16 section @refersTo values: eight resolve to
-    # local TLCEvent eIds and eight 2026 Dáil fragments do not name an eId.
-    referenced_sections = []
-    resolved_tlc_events = []
-    unresolved_fragments = []
-    for case in WORKS.values():
-        root = ET.fromstring((DEBATE_DIR / case["file"]).read_bytes())
+    # Independently inventory the preserved source, then require one exact
+    # hash-linked unresolved report row for every referenced section. A local
+    # AKN TLCEvent is evidence in that Expression, not a Bill-owner identity.
+    referenced_sections = 0
+    resolved_tlc_events = 0
+    unresolved_fragments = 0
+    unmatched_by_fragment = {}
+    local_event_hrefs = set()
+    for record_key, case in WORKS.items():
+        source = (DEBATE_DIR / case["file"]).read_bytes()
+        source_hash = hashlib.sha256(source).hexdigest()
+        root = ET.fromstring(source)
         eids = {node.get("eId"): node for node in root.iter() if node.get("eId")}
-        for section in root.findall(".//akn:debateBody//akn:debateSection[@refersTo]", NS):
-            referenced_sections.append(section)
-            fragment = section.get("refersTo", "").removeprefix("#")
-            target = eids.get(fragment)
-            if target is not None and target.tag.rsplit("}", 1)[-1] == "TLCEvent":
-                resolved_tlc_events.append(target)
-            elif target is None:
-                unresolved_fragments.append(fragment)
-    assert len(referenced_sections) == 16
-    assert len(resolved_tlc_events) == 8
-    assert len(unresolved_fragments) == 8
+        source_sections = root.findall(
+            ".//akn:debateBody//akn:debateSection[@refersTo]", NS
+        )
+        result = joined_dataset["debates"][record_key]
+        assert result.source_sha256 == source_hash
+        slot_rows = [
+            row for row in result.reference_report["reference_outcomes"]
+            if row["slot"] == "debateSection/@refersTo->refersToEvent"
+        ]
+        present_rows = [row for row in slot_rows if row["status"] != "absent"]
+        assert len(present_rows) == len(source_sections)
+        rows_by_node = {row["source_node_iri"]: row for row in present_rows}
+        assert len(rows_by_node) == len(present_rows)
 
-    for result in joined_dataset["debates"].values():
-        assert not list(result.graph.triples((None, OIR.refersToEvent, None)))
+        for section in source_sections:
+            referenced_sections += 1
+            section_eid = section.get("eId")
+            assert section_eid
+            section_iri = f'{case["expression"]}/eid/e-{section_eid}'
+            raw_reference = section.get("refersTo")
+            fragment = raw_reference.removeprefix("#")
+            local_target = eids.get(fragment)
+            row = rows_by_node[section_iri]
+            evidence = row["resolution_evidence"]
+
+            assert row["source_sha256"] == source_hash
+            assert row["source_eid"] == section_eid
+            assert row["raw_reference"] == raw_reference
+            assert row["status"] == "unresolved"
+            assert row["reason"] == "Bill-event-owner-resolution-deferred"
+            assert "target_iri" not in row
+            assert evidence["target_eid"] == fragment
+            assert evidence["resolution_rule"] == (
+                "exact-existing-Bill-owner-identity-required"
+            )
+
+            if local_target is None:
+                unresolved_fragments += 1
+                unmatched_by_fragment[raw_reference] = (
+                    unmatched_by_fragment.get(raw_reference, 0) + 1
+                )
+                assert evidence["local_target_pointer"] is None
+                assert evidence["local_target_qname"] is None
+            else:
+                assert local_target.tag.rsplit("}", 1)[-1] == "TLCEvent"
+                resolved_tlc_events += 1
+                assert evidence["local_target_pointer"]
+                assert evidence["local_target_qname"] == f"{{{AKN}}}TLCEvent"
+                assert local_target.get("href")
+                local_event_hrefs.add(local_target.get("href"))
+
+            assert not list(
+                result.graph.triples((URIRef(section_iri), OIR.refersToEvent, None))
+            )
+
+    assert referenced_sections == 16
+    assert resolved_tlc_events == 8
+    assert unresolved_fragments == 8
+    assert unmatched_by_fragment == {
+        "#bill.2026.6.dail.": 6,
+        "#bill.2024.25.dail.": 2,
+    }
+    # The eight local event nodes expose six distinct source @href strings
+    # whose path text carries Bill identifiers. This inventories source evidence
+    # only; none is rewritten or accepted as an owner IRI here.
+    assert len(local_event_hrefs) == 6
+
+    # The only checked-in Bill owner is Finance Bill 2025/60. It has valid
+    # BillEvent owners, but none of the source-only AKN fragments is promoted
+    # to one of them by label, slug, stage, or date resemblance.
+    bill_iri = joined_dataset["bill_iri"]
+    assert bill_iri == "https://data.oireachtas.ie/ie/oireachtas/bill/2025/60"
+    bill_events = set(
+        joined_dataset["bill_graph"].subjects(RDF.type, OIR.BillEvent)
+    )
+    assert len(bill_events) == 12
+    assert {
+        "/".join(str(event).split("/")[:8]) for event in bill_events
+    } == {bill_iri}
+    for record_key, case in WORKS.items():
+        graph = joined_dataset["dataset"].graph(URIRef(case["graph"]))
+        assert not list(graph.triples((None, OIR.refersToEvent, None)))
+
+
+def test_all_preserved_question_recipient_references_stay_unresolved(
+    joined_dataset,
+):
+    """Every preserved @to has source evidence, but no reviewed owner join."""
+    all_recipient_hrefs = set()
+    total_questions = 0
+    total_recipients = 0
+    questions_by_record = {}
+    owner_graphs = (
+        joined_dataset["member_graph"],
+        joined_dataset["houses_graph"],
+        joined_dataset["committee_graph"],
+        joined_dataset["offices_graph"],
+        joined_dataset["bill_graph"],
+    )
+    named_offices = set(
+        joined_dataset["offices_graph"].subjects(RDF.type, MEMBERS.NamedOffice)
+    )
+    assert named_offices == {
+        URIRef("https://data.oireachtas.ie/office/o-000001"),
+        URIRef("https://data.oireachtas.ie/office/o-000002"),
+        URIRef("https://data.oireachtas.ie/office/o-000003"),
+    }
+    assert {
+        str(label)
+        for office in named_offices
+        for label in joined_dataset["offices_graph"].objects(office, SKOS.prefLabel)
+    } == {"Taoiseach", "Tánaiste", "Minister for Finance"}
+    assert not {
+        role
+        for graph in owner_graphs
+        for role in graph.subjects(RDF.type, ELIDL.ParticipationRole)
+    }
+
+    for record_key, case in WORKS.items():
+        source = (DEBATE_DIR / case["file"]).read_bytes()
+        source_hash = hashlib.sha256(source).hexdigest()
+        root = ET.fromstring(source)
+        questions = root.findall(".//akn:debateBody//akn:question", NS)
+        questions_by_record[record_key] = len(questions)
+        roles = {
+            role.get("eId"): role
+            for role in root.findall(".//akn:references/akn:TLCRole", NS)
+        }
+        result = joined_dataset["debates"][record_key]
+        assert result.source_sha256 == source_hash
+        rows = [
+            row for row in result.reference_report["reference_outcomes"]
+            if row["slot"] == "question/@to->directedTo/directedToOffice"
+        ]
+        assert len(rows) == len(questions)
+        rows_by_node = {row["source_node_iri"]: row for row in rows}
+        assert len(rows_by_node) == len(rows)
+
+        for question in questions:
+            total_questions += 1
+            question_eid = question.get("eId")
+            assert question_eid
+            question_iri = f'{case["expression"]}/eid/e-{question_eid}'
+            row = rows_by_node[question_iri]
+            raw_reference = question.get("to")
+            assert row["source_sha256"] == source_hash
+            assert row["source_eid"] == question_eid
+            assert row["raw_reference"] == raw_reference
+
+            if raw_reference is None:
+                assert row["status"] == "absent"
+                assert row["reason"] == "optional-attribute-absent"
+                continue
+
+            total_recipients += 1
+            target_eid = raw_reference.removeprefix("#")
+            source_role = roles[target_eid]
+            assert source_role.tag.rsplit("}", 1)[-1] == "TLCRole"
+            href = source_role.get("href")
+            assert href
+            all_recipient_hrefs.add(href)
+            evidence = row["resolution_evidence"]
+            assert row["status"] == "unresolved"
+            assert row["reason"] == "question-recipient-resolution-deferred"
+            assert "target_iri" not in row
+            assert evidence["target_eid"] == target_eid
+            assert evidence["target_qname"] == f"{{{AKN}}}TLCRole"
+            assert evidence["target_pointer"]
+            assert evidence["tlc_role_href"] == href
+            assert evidence["resolution_rule"] == "recipient-owner-crosswalk-deferred"
+            assert not list(result.graph.triples((URIRef(question_iri), OIR.directedTo, None)))
+            assert not list(
+                result.graph.triples((URIRef(question_iri), OIR.directedToOffice, None))
+            )
+
+        assert not list(result.graph.triples((None, OIR.directedTo, None)))
+        assert not list(result.graph.triples((None, OIR.directedToOffice, None)))
+        joined_graph = joined_dataset["dataset"].graph(URIRef(case["graph"]))
+        assert not list(joined_graph.triples((None, OIR.directedTo, None)))
+        assert not list(joined_graph.triples((None, OIR.directedToOffice, None)))
+
+    assert total_questions == 239
+    assert total_recipients == 239
+    assert questions_by_record == {
+        "dail_2015": 10,
+        "dail_2026": 0,
+        "seanad": 0,
+        "committee": 0,
+        "written": 229,
+    }
+    assert len(all_recipient_hrefs) == 16
+    assert {
+        "akn/ontology/role/ie/oireachtas/minister/public",
+        "/ie/oireachtas/role/office/public",
+        "/ie/oireachtas/role/office/social",
+        "/ie/oireachtas/role/office/finance",
+    } <= all_recipient_hrefs
 
 
 def test_query_renderer_rejects_unknown_or_unfilled_query_parameters():

@@ -2036,13 +2036,16 @@ The approved Debates design is recorded in
 remains `documentation/debates_ontology_outline.md` and
 `ontology/debates.owl.ttl`.
 
-**Status:** Debates Tranches 1–2 are complete and verified against preserved
-representative fixtures. The production-corpus census/benchmark has been
+**Status:** Debates Tranches 1–3 are complete for the bounded representative
+scope. The Tranche 3 evidence review in `documentation/phase-7-debates.md`
+explicitly defers the unsupported legislative-section and question-recipient
+positive competencies; their mappings remain inactive and their source
+references remain auditable. This does not claim those queries return positive
+joined results. The production-corpus census/benchmark has been
 measured (see `documentation/debates-production-benchmark.md`); the
 full-corpus-versus-Bill-debates-first scope choice and gate remain pending an
-operational acceptability threshold. Tranche 3 cross-dataset integration and
-validation may start; ingestion, broad-corpus scope and publication remain
-pending.
+operational acceptability threshold. Tranche 4 ingestion, broad-corpus scope
+and publication remain pending.
 
 Settled boundaries include:
 
@@ -2092,8 +2095,12 @@ publishing a graph from one Expression alone. The full rules are in
    types. Tranche 1 static contract tests do not prove RDF non-emission;
    Tranche 2 goldens must inspect actual RDF for the approved negative cases.
 3. **Cross-dataset integration and validation** — resolve existing Member,
-   House/HouseTerm/committee, ministerial and legislative resources; add SHACL,
-   quality checks, competency queries and graph-boundary tests.
+   House/HouseTerm/committee and any ministerial or legislative resources with
+   reviewed exact source-to-owner evidence; otherwise defer the link explicitly
+   and retain auditable unresolved evidence. Add SHACL, quality checks,
+   competency queries and graph-boundary tests. The bounded representative
+   acceptance and deferred competencies are recorded in
+   `documentation/phase-7-debates.md`.
 4. **Source ingestion, state and publication mechanics** — preserve AKN input,
    persist source identity/hashes, add replay/idempotency and per-record graph
    replacement through the normal ETL path. The census/benchmark of all
@@ -2123,9 +2130,11 @@ publishing a graph from one Expression alone. The full rules are in
   Bill-debates-first choice itself remains open pending an operational resource
   threshold and a disposition for the measured quarantine and pre-2013
   written-answer fragmentation findings.
-- [ ] Implement the remaining Debates tranches (3–4) above; Tranches 1–2 are
-  complete.
-- [ ] Add Debates SHACL/quality validation and competency queries.
+- [ ] Implement the remaining Debates tranche 4 above; Tranches 1–3 are
+  complete for the bounded representative scope with explicit deferred
+  competencies.
+- [x] Add Debates SHACL/quality validation and competency queries; positive
+  legislative-section and question-recipient owner results remain deferred.
 - [ ] Add deterministic graph replacement and replay/idempotency tests.
 
 ### Ministerial office/tenure slice — approved design; Tranches 1–3 implemented
