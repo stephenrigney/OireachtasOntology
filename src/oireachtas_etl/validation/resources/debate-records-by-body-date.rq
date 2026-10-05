@@ -1,0 +1,20 @@
+# Parameters: body, body_graph, body_type, date (an xsd:dateTime).
+PREFIX oir: <https://data.oireachtas.ie/ontology#>
+PREFIX eli-dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>
+SELECT ?record ?sitting ?recordDate ?sittingDate ?graph WHERE {
+  VALUES ?body { {{body}} }
+  VALUES ?recordDate { {{date}} }
+  GRAPH {{body_graph}} { ?body a {{body_type}} }
+  GRAPH ?graph {
+    ?record a oir:DebateRecord ;
+      oir:recordOfBody ?body ;
+      oir:debateDate ?recordDate .
+    OPTIONAL {
+      ?sitting a oir:DebateSitting ;
+        oir:producedRecord ?record ;
+        eli-dl:activity_date ?sittingDate .
+    }
+  }
+  FILTER(STRSTARTS(STR(?graph), "https://data.oireachtas.ie/graph/debate/"))
+}
+ORDER BY ?record

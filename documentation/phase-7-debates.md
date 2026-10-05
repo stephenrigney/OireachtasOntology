@@ -288,6 +288,47 @@ scheduling and reconciliation policy remain unchanged.
 **Exit:** debate graphs integrate safely with the existing dataset and pass the
 agreed structural, semantic and ownership checks.
 
+#### Tranche 3 integration checkpoint (2026-10-05; not the exit)
+
+The exact-reference resolver can now index source-validated Member, Houses and
+Committee owner RDF. It requires an existing, correctly typed owner subject,
+uses exact AKN href/owner URI agreement, and takes a House from its HouseTerm's
+owner `termOf` assertion. The Committee identity is the consolidated Members
+source URI `/ie/oireachtas/committee/{houseCode}/{houseNo}/{slug}`; the former
+wiki `{slug}/{term-no}` template was erroneous, not an alias. The checked-in
+Committee owner example is a Dáil 33 Finance Committee, **not** the Dáil 34
+Public Accounts author in the checked-in AKN example. That author remains
+unresolved against this limited example owner set; only a validated owner
+record of the exact identity can activate its host link.
+
+Independent SHACL, joined-owner semantic checks and optional exact-AKN-byte
+reference-inventory verification now check the Work graph, structural ordering,
+owners and report/RDF coherence. Disposable named-graph tests check that
+Debates-owned descriptions and complete graph replacement remain isolated from
+Member, Houses, Committee, Bill and office graphs. Parameterized SPARQL
+competency resources execute against loaded owner-transformer output, including
+a reviewed office-holding/NamedOffice owner traversal; this does **not** imply
+question-recipient reconciliation. Source-aware goldens remain necessary to
+exclude transcript text hidden in permitted strings and roll-call-derived RDF.
+These checks do not implement Tranche 4 publication or a production owner
+snapshot, and the separate historical-corpus/resource gate remains open.
+
+**Blocked exit criteria:** The currently inactive section `@refersTo` mapping
+has no approved exact AKN TLCEvent-to-Bill-owned event/Work identity crosswalk;
+the Bill/event section competency query therefore returns no supported links.
+Question `@to` likewise has no approved TLCRole-to-ParticipationRole or
+TLCRole-to-NamedOffice reconciliation, so the directed-role competency remains
+unanswered even though Member askers and existing office holdings are queryable.
+Neither an office label nor a Bill stage/date/path similarity authorizes these
+links. Changing mapping status or identity rules requires separate semantic
+approval. The CSV `debateBody//summary` selector also still includes the
+`rollCall`-nested `sum_2`, contrary to the approved source-only exception;
+the executable transformer, source-aware golden and RDF checks exclude it.
+A protected CSV selector correction still needs explicit approval. These
+blocked criteria mean **Tranche 3 is not complete and Tranche 4 should not
+start as an accepted follow-on**. The 2004–2007 duplicate-eId cases, empty
+section names and pre-2013 fragmented written answers are separate corpus work.
+
 ### Tranche 4 — Source ingestion, state and publication mechanics
 
 - Add AKN acquisition/raw preservation through the normal ETL path.

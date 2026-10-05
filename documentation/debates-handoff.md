@@ -41,10 +41,11 @@ source-hash outcome/evidence boundary, add SHACL and semantic-quality checks,
 competency queries and graph-boundary tests. Historical HouseTerms and the
 Committee owner are not established by the small checked-in owner examples;
 do not normalize Committee URI patterns or guess identities from slugs. The
-AKN committee author uses `/committee/dail/34/{slug}`, while the agents
-ontology comment describes `/committee/{slug}/{term-no}`; treat this as an
-owner-identity documentation discrepancy for separate review, not an alias
-rule. The approved Tranche 2 exclusion of the `rollCall`-nested `sum_2`
+AKN committee author uses `/committee/dail/34/{slug}`. The consolidated
+Members Committee owner uses `/committee/{houseCode}/{houseNo}/{slug}`;
+the old `/committee/{slug}/{term-no}` template was a wiki documentation
+error, not an owner alias. Link only after exact validated owner resolution.
+The approved Tranche 2 exclusion of the `rollCall`-nested `sum_2`
 Summary/ordinal is recorded in `phase-7-debates.md`; the broader active CSV
 selector needs a separately approved correction. No broad production ingestion,
 publication mechanics or corpus-scope selection was done in Tranche 2.
@@ -67,3 +68,24 @@ At Tranche 2 acceptance, ontology/HermiT and active mapping-term validation
 passed; the focused Debates suite had 87 passing tests (23 subtests), and the
 full repository suite had 512 passing tests, 9 skips (23 subtests). These
 results verify representative output, not a production-corpus resource gate.
+
+## Tranche 3 checkpoint (2026-10-05)
+
+Exact owner-RDF resolution for Member, House/HouseTerm and Committee identities,
+joined SHACL/quality and source-hash report validation, executable competency
+queries, and disposable graph-boundary tests are implemented. See the Tranche 3
+checkpoint in `phase-7-debates.md` for the accepted scope and blockers. The
+limited checked-in Committee owner example does not establish the Dáil 34
+Public Accounts author; do not create that owner from the AKN href. Bill/event
+section and question-recipient links remain inactive pending reviewed source
+identity crosswalks and mapping approvals. The roll-call Summary is excluded
+in RDF while its CSV selector still awaits a protected correction. Thus the
+Tranche 3 exit and full competency acceptance are **not** claimed.
+
+For a future Tranche 4, use exact preserved AKN bytes and the validated owner
+snapshot with the source-aware integration gate before staging any Work graph.
+Carry the source-hash-linked reference report alongside transformation results;
+do not mistake one fetched Expression for a complete Work. Add ingestion,
+change detection, atomic publication and replay only after Tranche 3 exit is
+resolved; do not fold production scanning, scheduling, corpus quarantine or
+the separate production-resource gate into that implementation.

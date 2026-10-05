@@ -1,0 +1,26 @@
+# Parameters: record, Member and Member owner graph. The optional vote group is
+# a recorded individual Member vote, not an inference from aggregate counts.
+PREFIX oir: <https://data.oireachtas.ie/ontology#>
+SELECT ?division ?outcome ?ta ?nil ?staon ?voteGroup WHERE {
+  VALUES ?record { {{record}} }
+  VALUES ?member { {{member}} }
+  GRAPH {{member_graph}} { ?member a oir:Member }
+  GRAPH ?debateGraph {
+    ?record oir:hasSection ?root .
+    ?root (oir:hasSubSection|oir:hasDivision)* ?division .
+    ?division a oir:Division .
+    OPTIONAL { ?division oir:divisionOutcome ?outcome }
+    OPTIONAL { ?division oir:taCount ?ta }
+    OPTIONAL { ?division oir:nilCount ?nil }
+    OPTIONAL { ?division oir:staonCount ?staon }
+    OPTIONAL {
+      { ?division oir:votedFor ?member . BIND("ta" AS ?voteGroup) }
+      UNION
+      { ?division oir:votedAgainst ?member . BIND("nil" AS ?voteGroup) }
+      UNION
+      { ?division oir:abstained ?member . BIND("staon" AS ?voteGroup) }
+    }
+  }
+  FILTER(STRSTARTS(STR(?debateGraph), "https://data.oireachtas.ie/graph/debate/"))
+}
+ORDER BY ?division

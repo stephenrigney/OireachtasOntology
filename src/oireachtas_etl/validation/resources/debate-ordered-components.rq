@@ -1,0 +1,25 @@
+# Parameters: record and containing resource (an Expression or DebateSection).
+# sourceOrdinal is scoped to that container; ordering is not resource identity.
+PREFIX oir: <https://data.oireachtas.ie/ontology#>
+SELECT ?container ?component ?ordinal WHERE {
+  VALUES ?record { {{record}} }
+  VALUES ?requestedContainer { {{container}} }
+  GRAPH ?graph {
+    {
+      ?record oir:hasExpression ?requestedContainer .
+      BIND(?requestedContainer AS ?container)
+      ?container oir:expressionHasSection ?component .
+      ?component oir:sourceOrdinal ?ordinal .
+    }
+    UNION
+    {
+      ?record oir:hasSection ?root .
+      ?root (oir:hasSubSection|oir:hasDivision)* ?requestedContainer .
+      BIND(?requestedContainer AS ?container)
+      ?requestedContainer (oir:hasSubSection|oir:hasDivision|oir:hasSpeech|oir:hasSummary|oir:hasQuestion) ?component .
+      ?component oir:sourceOrdinal ?ordinal .
+    }
+  }
+  FILTER(STRSTARTS(STR(?graph), "https://data.oireachtas.ie/graph/debate/"))
+}
+ORDER BY ?ordinal ?component
