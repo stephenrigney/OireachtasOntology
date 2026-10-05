@@ -37,14 +37,20 @@ from rdflib.namespace import RDF
 from .transforms.common import ELIDL, OIR
 from .reconciliation import (DbpediaClient, ReconciliationStore, WikidataClient,
                               FixtureResponseError, external_graph_iri, party_external_graph_iri,
-                              load_party_review, load_review, normalize_party_candidate,
-                              deduplicate_party_records, reconcile_party_records, reconcile_records, valid_qid,
-                              _enwiki, _fetch_wikidata_target,
-                              _institution_candidate_negative_evidence,
-                              _normalize_institution_candidate_for, deduplicate_institution_records,
-                              institution_external_graph_iri, institution_records,
-                              load_institution_review,
-                              reconcile_institution_records, reconciliation_identity)
+                               load_party_review, load_review, normalize_party_candidate,
+                               deduplicate_party_records, reconcile_party_records, reconcile_records, valid_qid,
+                               _enwiki, _fetch_wikidata_target,
+                               _institution_candidate_negative_evidence,
+                               _normalize_institution_candidate_for, deduplicate_institution_records,
+                               institution_external_graph_iri, institution_records,
+                               load_institution_review,
+                               reconcile_institution_records, reconciliation_identity,
+                               _office_candidate_negative_evidence,
+                               _normalize_office_candidate_for,
+                               deduplicate_external_office_records,
+                               load_external_office_review,
+                               office_external_graph_iri, office_external_records,
+                               reconcile_external_office_records)
 from .office_observations import canonical_json, extract_office_observations, json_hash
 from .office_reconciliation import OfficeOccurrenceStore, load_office_review
 from .reference_coverage import build_reference_census, summary as reference_census_summary
@@ -2354,6 +2360,251 @@ def run_reconcile_institutions(args: argparse.Namespace) -> int:
         store.close()
 
 
+def _external_office_local_iri(record: dict) -> str:
+    """Read a policy record's registered local identity without using its label."""
+    containers = [record]
+    containers.extend(record.get(name) for name in ("office", "named_office", "entity")
+                      if isinstance(record.get(name), dict))
+    for value in containers:
+        for name in ("uri", "local_iri", "office_iri"):
+            iri = value.get(name)
+            if isinstance(iri, str):
+                return iri
+        key = value.get("key")
+        if isinstance(key, str):
+            return str(office_iri(key))
+    raise ValueError("external office record has no registered local office identity")
+
+
+def _unique_json_object(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError(f"duplicate JSON object key: {key}")
+        value[key] = item
+    return value
+
+
+def _office_external_fixture_scope(path: Path, registry: dict) -> tuple[dict, list[dict]]:
+    """Select registered offices from a strict v1 local-identity fixture."""
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"),
+                           object_pairs_hook=_unique_json_object)
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("invalid external office identity fixture: " + str(error)) from error
+    if (not isinstance(value, dict) or set(value) != {"version", "offices"}
+            or type(value.get("version")) is not int or value["version"] != 1
+            or not isinstance(value.get("offices"), list)
+            or not value["offices"]
+            or any(not isinstance(iri, str) for iri in value["offices"])):
+        raise ValueError("external office identity fixture must contain only version 1 and a non-empty offices array of full local IRIs")
+
+    by_iri = {str(office_iri(office["key"])): office
+              for office in registry["offices"]}
+    requested = value["offices"]
+    if len(requested) != len(set(requested)):
+        raise ValueError("external office identity fixture contains duplicate local IRIs")
+    unknown = sorted(set(requested) - set(by_iri))
+    if unknown:
+        raise ValueError("external office identity fixture contains unregistered local IRI: "
+                         + ", ".join(unknown))
+
+    selected = {**registry,
+                "offices": [office for office in registry["offices"]
+                            if str(office_iri(office["key"])) in set(requested)]}
+    return selected, deduplicate_external_office_records(
+        office_external_records(selected))
+
+
+class _FixtureExternalOfficeWikidataClient:
+    """Strict offline candidate/accepted-target fixtures for registered offices."""
+    def __init__(self, data):
+        try:
+            if (not isinstance(data, dict) or set(data) != {"wikidata"}
+                    or not isinstance(data["wikidata"], dict)
+                    or set(data["wikidata"]) != {"office_candidates", "entities"}
+                    or not isinstance(data["wikidata"]["office_candidates"], dict)
+                    or not isinstance(data["wikidata"]["entities"], dict)):
+                raise ValueError
+            candidates = data["wikidata"]["office_candidates"]
+            entities = data["wikidata"]["entities"]
+            if (any(not isinstance(local_iri, str) for local_iri in candidates)
+                    or any(not valid_qid(qid) for qid in entities)):
+                raise ValueError
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError("invalid external office reconciliation response fixture schema") from error
+        self.candidates = candidates
+        self.entities = entities
+
+    def lookup_office_candidates(self, record, registry):
+        del registry  # records were validated against the same scoped registry before use
+        local_iri = _external_office_local_iri(record)
+        if local_iri not in self.candidates:
+            raise FixtureResponseError(
+                "response fixture lacks office candidate entry for " + local_iri)
+        return self.candidates[local_iri]
+
+    def entity(self, qid):
+        if qid not in self.entities:
+            raise FixtureResponseError(
+                "response fixture lacks Wikidata entity for reviewed office QID " + qid)
+        return self.entities[qid]
+
+
+def _validate_external_office_fixture_responses(
+        data: object, records: list[dict], decisions: dict[str, dict],
+        registered_office_iris: set[str], registry: dict) -> None:
+    """Fail closed on incomplete, out-of-scope or malformed offline evidence."""
+    client = _FixtureExternalOfficeWikidataClient(data)
+    local_iris = {_external_office_local_iri(record) for record in records}
+    stale = sorted(set(decisions) - registered_office_iris)
+    if stale:
+        raise ValueError("external office review decisions do not match the current registry: "
+                         + ", ".join(stale))
+    candidate_scope = {local_iri for local_iri in local_iris
+                       if local_iri not in decisions}
+    unrequested = sorted(set(client.candidates) - candidate_scope)
+    if unrequested:
+        raise ValueError("response fixture contains unknown, out-of-scope or unrequested office candidate IRI: "
+                         + ", ".join(unrequested))
+
+    entities_required: set[str] = set()
+    for local_iri in sorted(local_iris):
+        decision = decisions.get(local_iri)
+        if decision is not None:
+            if decision["status"] == "accepted":
+                external_iri = decision["external_iri"]
+                qid = external_iri.removeprefix("https://www.wikidata.org/entity/")
+                if not valid_qid(qid):
+                    raise ValueError("reviewed external office identity is not a Wikidata entity IRI")
+                entities_required.add(qid)
+                if qid not in client.entities:
+                    raise ValueError("response fixture lacks Wikidata entity for reviewed office QID " + qid)
+                _entity, target_error = _fetch_wikidata_target(client, qid)
+                if target_error is not None:
+                    raise ValueError("response fixture has invalid Wikidata entity for reviewed office QID " + qid)
+            continue
+
+        candidates = client.candidates.get(local_iri)
+        if not isinstance(candidates, list):
+            raise ValueError("response fixture lacks valid office candidate entry for " + local_iri)
+        seen: set[str] = set()
+        for raw in candidates:
+            candidate = _normalize_office_candidate_for(local_iri, raw, registry)
+            if candidate["qid"] in seen:
+                raise ValueError("response fixture contains duplicate office candidate QID for " + local_iri)
+            _office_candidate_negative_evidence(candidate)
+            seen.add(candidate["qid"])
+
+    unknown_entities = sorted(set(client.entities) - entities_required)
+    if unknown_entities:
+        raise ValueError("response fixture contains unrequested Wikidata entities: "
+                         + ", ".join(unknown_entities))
+
+
+def run_reconcile_office_external(args: argparse.Namespace) -> int:
+    """Reconcile only registry-owned enduring offices to reviewed external identities."""
+    if args.offline:
+        if not args.fixture or not args.responses_file:
+            raise ValueError("--offline external office reconciliation requires --fixture and --responses-file")
+        if args.publish:
+            raise ValueError("--offline external office reconciliation forbids --publish")
+
+    registry_path = Path(args.registry_file or OFFICE_REGISTRY_FILE)
+    try:
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"invalid office registry: {error}") from error
+    validate_registry_source(registry)
+    registered_office_iris = {
+        str(office_iri(office["key"])) for office in registry["offices"]
+    }
+
+    if args.fixture:
+        scoped_registry, records = _office_external_fixture_scope(
+            Path(args.fixture), registry)
+    else:
+        scoped_registry = registry
+        records = deduplicate_external_office_records(
+            office_external_records(scoped_registry))
+    scoped_iris = {_external_office_local_iri(record) for record in records}
+    if not scoped_iris <= registered_office_iris:
+        raise ValueError("external office policy returned an identity outside the reviewed registry")
+
+    decisions, review_hash = load_external_office_review(
+        Path(args.review_file or "reconciliation/office-external-decisions.json"), registry)
+    stale = sorted(set(decisions) - registered_office_iris)
+    if stale:
+        raise ValueError("external office review decisions do not match the current registry: "
+                         + ", ".join(stale))
+    if args.responses_file:
+        data = json.loads(Path(args.responses_file).read_text(encoding="utf-8"),
+                          object_pairs_hook=_unique_json_object)
+        _validate_external_office_fixture_responses(
+            data, records, decisions, registered_office_iris, registry)
+        wikidata = _FixtureExternalOfficeWikidataClient(data)
+    elif args.offline:
+        raise ValueError("--offline external office reconciliation requires --responses-file")
+    else:
+        wikidata = WikidataClient(timeout=Settings.from_environment().timeout)
+
+    settings = Settings.from_environment()
+    store = ReconciliationStore(_reconciliation_state_path(args, settings))
+    try:
+        loader = None
+        publication_count = 0
+        competency_client = None
+        if args.publish:
+            endpoint = args.fuseki_gsp_url or settings.fuseki_gsp_url
+            if not endpoint:
+                raise ValueError("--publish requires a Fuseki GSP endpoint")
+            query_endpoint = args.fuseki_sparql_url or settings.fuseki_sparql_url
+            if not query_endpoint:
+                raise ValueError("--publish requires a Fuseki SPARQL endpoint for whole-graph verification")
+            upstream_loader = FusekiGraphStoreLoader(
+                endpoint, user=settings.fuseki_user, password=settings.fuseki_password,
+                timeout=settings.timeout)
+
+            class CountingLoader:
+                def replace(self, *replace_args, **replace_kwargs):
+                    nonlocal publication_count
+                    publication_count += 1
+                    return upstream_loader.replace(*replace_args, **replace_kwargs)
+
+            loader = CountingLoader()
+            competency_client = FusekiSparqlClient(
+                query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password,
+                timeout=settings.timeout)
+
+        results = reconcile_external_office_records(
+            records, store, {iri: decision for iri, decision in decisions.items()
+                             if iri in scoped_iris}, review_hash, wikidata,
+            all_records=args.all, publish=loader,
+            competency_client=competency_client)
+        if args.output_nq:
+            Path(args.output_nq).write_text("".join(
+                nquads(graph, office_external_graph_iri(record, registry))
+                for record, _result, graph in results), encoding="utf-8")
+        summary = {state: sum(result.state == state for _, result, _ in results)
+                   for state in ("accepted", "rejected", "ambiguous", "pending")}
+        unresolved = sorted(
+            _external_office_local_iri(record)
+            for record, result, _ in results
+            if result.state in {"pending", "ambiguous"}
+            or result.enrichment_status in {"retry", "ambiguous", "unresolved"})
+        excluded_candidates = sum(
+            len(result.evidence.get("excluded_candidates", []))
+            for _, result, _ in results if isinstance(result.evidence, dict))
+        print(json.dumps({"processed": len(results), "published": publication_count,
+                          "unresolved": len(unresolved),
+                          "unresolved_offices": unresolved,
+                          "excluded_candidates": excluded_candidates,
+                          "scope": sorted(scoped_iris), **summary}, sort_keys=True))
+        return 1 if unresolved else 0
+    finally:
+        store.close()
+
+
 def _office_fixture_records(path: Path) -> tuple[list[dict], bytes, int | None, str]:
     """Read one fixture page and identify the wrapper-level JSON pointers."""
     body = path.read_bytes()
@@ -2493,7 +2744,7 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--coverage-report", help="write deterministic reference census JSON")
     state = sub.add_parser("state"); state_sub = state.add_subparsers(dest="state_command", required=True)
     state_status = state_sub.add_parser("status"); state_status.add_argument("--state-db")
-    reconcile = sub.add_parser("reconcile"); reconcile.add_argument("endpoint", choices=["members", "parties", "institutions", "offices"])
+    reconcile = sub.add_parser("reconcile"); reconcile.add_argument("endpoint", choices=["members", "parties", "institutions", "offices", "office-external"])
     reconcile.add_argument("--fixture"); reconcile.add_argument("--responses-file"); reconcile.add_argument("--offline", action="store_true"); reconcile.add_argument("--all", action="store_true"); reconcile.add_argument("--publish", action="store_true"); reconcile.add_argument("--output-nq"); reconcile.add_argument("--fuseki-gsp-url"); reconcile.add_argument("--fuseki-sparql-url")
     reconcile.add_argument("--review-file", help="review JSON (defaults to the endpoint-specific version-controlled review file)")
     reconcile.add_argument("--reconciliation-state-file", help="shared reconciliation SQLite path (defaults to the Phase 3.5 state file)")
@@ -2504,6 +2755,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "state": return run_state_status(args)
     if args.command == "reconcile":
         if args.endpoint == "offices": return run_reconcile_offices(args)
+        if args.endpoint == "office-external": return run_reconcile_office_external(args)
         if args.endpoint == "parties": return run_reconcile_parties(args)
         if args.endpoint == "institutions": return run_reconcile_institutions(args)
         return run_reconcile_members(args)
