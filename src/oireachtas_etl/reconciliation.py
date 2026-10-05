@@ -579,11 +579,8 @@ def normalize_office_candidate(value: object) -> dict:
     return result
 
 
-def _office_candidate_negative_evidence(local_iri: str | dict, candidate: dict | None = None,
-                                       registry: object | None = None) -> list[dict]:
+def _office_candidate_negative_evidence(candidate: dict) -> list[dict]:
     """Record concrete candidate-level mismatches without deciding local identity."""
-    if candidate is None:
-        candidate = local_iri
     negatives = list(candidate["negative_evidence"])
     for item in candidate["positive_evidence"]["entity_types"]:
         label = (item["label"] or "").casefold()
@@ -2250,10 +2247,7 @@ def _previous_office_context(previous) -> tuple[list, dict | None]:
 
 def _office_decision_iri(decision: dict) -> str:
     """Return the canonical external IRI represented by one strict decision."""
-    if isinstance(decision.get("external_iri"), str):
-        return decision["external_iri"]
-    qid = decision.get("wikidata")
-    return wikidata_iri(qid)
+    return decision["external_iri"]
 
 
 def _normalize_office_candidate_for(local_iri: str, raw: object,
@@ -2327,7 +2321,7 @@ def resolve_office(value: dict, review: dict[str, dict], wikidata_client, regist
             candidate = _normalize_office_candidate_for(local_iri, raw, registry)
             if candidate["qid"] in by_qid:
                 raise ReconciliationError("duplicate Wikidata office candidate QID")
-            candidate["negative_evidence"] = _office_candidate_negative_evidence(local_iri, candidate, registry)
+            candidate["negative_evidence"] = _office_candidate_negative_evidence(candidate)
             by_qid[candidate["qid"]] = candidate
         all_candidates = [by_qid[qid] for qid in sorted(by_qid)]
     except FixtureResponseError:
