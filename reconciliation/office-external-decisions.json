@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "decisions": {
+    "https://data.oireachtas.ie/office/o-000001": {
+      "status": "accepted",
+      "external_iri": "https://www.wikidata.org/entity/Q191827",
+      "evidence": [
+        "https://www.irishstatutebook.ie/eli/cons/en/html",
+        "https://www.wikidata.org/wiki/Q191827"
+      ],
+      "reason": "The reviewed Wikidata item denotes the enduring constitutional public office of Taoiseach, not a holder, term, Department or its distinct pre-1937 predecessor.",
+      "note": "Explicit human approval for this local office and QID on 2026-10-05. The Wikidata predecessor relationship is evidence of historical distinction, not an imported local succession assertion."
+    },
+    "https://data.oireachtas.ie/office/o-000002": {
+      "status": "accepted",
+      "external_iri": "https://www.wikidata.org/entity/Q1146214",
+      "evidence": [
+        "https://www.irishstatutebook.ie/eli/cons/en/html",
+        "https://www.wikidata.org/wiki/Q1146214"
+      ],
+      "reason": "The reviewed Wikidata item denotes the enduring public office of Tánaiste in the Government of Ireland, not its holder or an appointment period.",
+      "note": "Explicit human approval for this local office and QID on 2026-10-05."
+    },
+    "https://data.oireachtas.ie/office/o-000003": {
+      "status": "accepted",
+      "external_iri": "https://www.wikidata.org/entity/Q4294945",
+      "evidence": [
+        "https://www.irishstatutebook.ie/eli/1924/act/16/section/1/enacted/en/html",
+        "https://www.wikidata.org/wiki/Q4294945",
+        "https://www.wikidata.org/wiki/Q731336"
+      ],
+      "reason": "The reviewed Wikidata item denotes the enduring Minister for Finance public office, while its linked Department of Finance item denotes a distinct administrative unit; it is not a person or tenure.",
+      "note": "Explicit human approval for this local office and QID on 2026-10-05."
+    }
+  }
+}

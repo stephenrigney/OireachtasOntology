@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-**Design approved; Tranches 1–3 are implemented; Tranches 4–6 have not
+**Design approved; Tranches 1–4 are implemented; Tranches 5–6 have not
 started.** This document records the first Phase 7 vertical slice. Tranche 1
 introduced its ontology vocabulary and office/unit registry publication path;
 Tranche 2 added source-observation review and occurrence correspondence. The
@@ -19,8 +19,10 @@ migration/replacement removes legacy office RDF. The captured full Member run
 completed deterministically; malformed nested office/party evidence remains
 quarantined. Verification did not mutate production graphs. The conservative
 House-membership-loss publication block remains as documented in
-`documentation/office-observation-reconciliation.md`. Tranches 4–6 remain
-pending; this is status only, not a change to the approved design below.
+`documentation/office-observation-reconciliation.md`. Tranche 4 adds the
+independent reviewed external-identity policy and per-office link graphs; see
+`documentation/office-external-reconciliation.md`. Tranches 5–6 remain pending;
+this is status only, not a change to the approved design below.
 
 Before Tranche 3 the Member transformer interpreted every
 `membership.offices[]` observation as a `MinisterOfStateMembership` and created
@@ -325,7 +327,7 @@ weaken acceptance. Run `.venv/bin/python tests/validate.py` and
 
 ## 8. Six implementation tranches
 
-Tranches 1–3 are **implemented**; Tranches 4–6 are **not started**. Keep
+Tranches 1–4 are **implemented**; Tranches 5–6 are **not started**. Keep
 intermediate commits valid; switch active mappings, transformer, independent
 validator, SHACL, contract version and approved goldens together rather than
 temporarily disabling a gate.
@@ -335,9 +337,22 @@ temporarily disabling a gate.
 | 1. Semantic contract and reference bootstrap | Implemented | Approved design; ontology/mapping contract, distinct `OfficeType` concepts, reviewed office/unit registry, shared-graph transforms, state, CLI and validation. Introduce vocabulary before replacing legacy Member mapping. | Reasoner and active-mapping integrity pass; independently validated office/unit graphs publish without changing existing Member behavior yet. |
 | 2. Observation resolution and OfficeHolding correspondence | Implemented | Published registries; local review loader, occurrence/evidence ledger, candidate generation, source checks and tests. **No Cabinet ledger.** The initial reviewed dataset is intentionally narrow. | Every source office observation is accepted, explicitly unresolved or review-required; identifiable changes preserve holding occurrence keys. |
 | 3. Member holdings and Cabinet migration | Implemented | Accepted decisions and pre-PUT migration inventory; Member transform, independent acceptance, SHACL/temporal checks, missing-observation composition, contract bump and complete validated republish. | Correct concurrent holdings and nonduplicated, deterministically derived Cabinet episodes; legacy erroneous triples absent, missing nested offices retained, recovery verified. |
-| 4. External office reconciliation | Not started | Stable office registry; new external entity policy, review file, CLI and isolation/retry tests. May follow tranche 5 if external services are unavailable. | Reviewed same-office external links replace independently without altering authoritative graphs. |
+| 4. External office reconciliation | Implemented | Stable office registry; new external entity policy, review file, CLI and isolation/retry tests. | Reviewed same-office external links replace independently without altering authoritative graphs. |
 | 5. Bill local sponsor reconciliation | Not started | Published office registry and Member holdings; separate per-Bill graph, review/state, change invalidation, validation and tests. | Supported office-only/holding links; original label and Bill core graph unchanged; stale Participation links removed on local graph replacement. |
 | 6. End-to-end acceptance | Not started | Core tranches; joined competency, migration, URI, missing/conflict and graph-isolation integration checks and operator documentation. | Phase 0 validation and full test suite pass; graph-scoped publication/recovery and review boundaries are exercised end to end. |
+
+Tranche 4's explicitly approved external office identities are Taoiseach
+Q191827, Tánaiste Q1146214 and Minister for Finance Q4294945. An isolated,
+disposable Fuseki dataset verified the exact one-assertion graph for each and
+unchanged office, unit, Member, Bill, Debate and other-entity graphs; nothing
+was published to production. Fixture-backed tests and CLI runs do not depend
+on external service availability. With pinned Java, ontology and active-mapping
+validation passed, and the full test suite passed (599 passed, 10 optional
+Fuseki tests skipped); the focused office suite against isolated Fuseki passed
+(20 tests) and the related reconciliation/Fuseki integration selection passed
+(60 tests). No ISAD office identity was accepted: the registry contains no
+reviewed ISAD office identifier, and unit/event identifiers cannot determine
+local office identity.
 
 Expected implementation components: `ontology/members.owl.ttl`,
 `ontology/README.md`, `mappings/member_mapping.csv`, reviewed registry and

@@ -6,6 +6,7 @@ manifest.  Its SQLite database is operational evidence, not RDF provenance.
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import re
 import sqlite3
@@ -21,11 +22,14 @@ from rdflib.namespace import FOAF, OWL
 from .serialization import ntriples
 from .transforms.common import MEMBERS, iri as source_iri
 from .transforms.members import member_graph_iri
+from .transforms.offices import office_iri
 from .validation.reference import house_term_iri, validate_party_iri
+from .validation.offices import validate_registry_source
 
 WIKIDATA = "https://www.wikidata.org/entity/"
 WIKIPEDIA = "https://en.wikipedia.org/wiki/"
 DBPEDIA = "https://dbpedia.org/resource/"
+OFFICE_BASE = "https://data.oireachtas.ie/office/"
 STATES = frozenset(("accepted", "rejected", "ambiguous", "pending"))
 
 # This allow-list is the complete initial institutional scope.  In particular,
@@ -66,6 +70,20 @@ INSTITUTION_JURISDICTION_PROPERTIES = frozenset({"P17", "P1001"})
 INSTITUTION_RELATION_PROPERTIES = frozenset({"P361", "P527", "P749", "P1365", "P1366"})
 _NON_INSTITUTION_TYPE_QIDS = frozenset({"Q4167410", "Q4167836", "Q13406463"})
 
+OFFICE_TYPE_PROPERTIES = frozenset({"P31", "P279"})
+OFFICE_JURISDICTION_PROPERTIES = frozenset({"P17", "P1001"})
+OFFICE_RELATION_PROPERTIES = frozenset({"P1365", "P1366", "P361", "P749"})
+OFFICE_NEGATIVE_REASONS = frozenset({
+    "wrong-entity-level", "wrong-jurisdiction", "historical-successor",
+})
+_NON_OFFICE_ENTITY_TYPE_QIDS = frozenset({
+    "Q5",          # human / office-holder
+    "Q4167410",    # Wikimedia disambiguation page
+    "Q4167836",    # Wikimedia category
+    "Q13406463",   # Wikimedia list article
+    "Q43229",      # organization; a unit is not a NamedOffice
+})
+
 
 class ReconciliationError(RuntimeError): pass
 class ReviewError(ReconciliationError): pass
@@ -75,6 +93,15 @@ class FixtureResponseError(ReconciliationError): pass
 def _now() -> str: return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 def _json(value: object) -> str: return json.dumps(value, sort_keys=True, separators=(",", ":"))
 def _hash(value: object) -> str: return hashlib.sha256(_json(value).encode()).hexdigest()
+
+
+def _json_object_no_duplicate_keys(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ReviewError(f"duplicate JSON object key: {key!r}")
+        result[key] = value
+    return result
 
 
 def valid_qid(value: object) -> bool:
@@ -108,6 +135,96 @@ def _valid_iri(value: object, prefix: str) -> bool:
     if not suffix or "/" in suffix or suffix in {".", ".."}: return False
     if prefix == WIKIDATA: return valid_qid(suffix)
     return True
+
+
+def _office_registry_specs(registry: object) -> dict[str, dict]:
+    """Index only office identities present in the independently validated registry."""
+    validated = validate_registry_source(registry)
+    units = {unit["key"]: unit for unit in validated["administrative_units"]}
+    specs = {}
+    for office in validated["offices"]:
+        local_iri = str(office_iri(office["key"]))
+        if local_iri in specs:
+            raise ValueError("office registry contains colliding local office IRIs")
+        referenced_units = {
+            relation["unit_key"]: units[relation["unit_key"]]
+            for relation in office["unit_relationships"]
+        }
+        for alias in office["aliases"]:
+            for unit_key in alias.get("unit_keys", []):
+                referenced_units[unit_key] = units[unit_key]
+        specs[local_iri] = {
+            "key": office["key"],
+            "office": office,
+            "units": referenced_units,
+        }
+    return specs
+
+
+def _office_spec(local_iri: object, registry: object) -> tuple[str, dict]:
+    if (not isinstance(local_iri, str) or local_iri != local_iri.strip()
+            or any(char.isspace() for char in local_iri)):
+        raise ValueError("office identity must be a complete local IRI")
+    try:
+        return local_iri, _office_registry_specs(registry)[local_iri]
+    except KeyError as error:
+        raise ValueError("office identity is outside the validated office registry") from error
+
+
+def _office_entity(value: object, registry: object | None = None) -> dict:
+    """Extract a complete registered NamedOffice IRI from a policy record."""
+    if not isinstance(value, dict):
+        raise ValueError("each office record must be an object")
+    entity = value.get("office") if "office" in value else value
+    if not isinstance(entity, dict) or not isinstance(entity.get("uri"), str):
+        raise ValueError("office records must contain the complete local uri")
+    effective_registry = registry if registry is not None else value.get("_registry")
+    if effective_registry is None:
+        effective_registry = entity.get("_registry")
+    if effective_registry is None:
+        raise ValueError("office records require their validated registry context")
+    _office_spec(entity.get("uri"), effective_registry)
+    return {"uri": entity["uri"]}
+
+
+def office_records(registry: object) -> list[dict]:
+    """Return the deterministic complete set of locally registered offices."""
+    validated = validate_registry_source(registry)
+    specs = _office_registry_specs(validated)
+    return [{"office": {"uri": local_iri, **specs[local_iri]["office"]},
+             "_registry": validated} for local_iri in sorted(specs)]
+
+
+office_external_records = office_records
+
+
+def deduplicate_external_office_records(records: list[dict]) -> list[dict]:
+    """Validate office identities and collapse only identical duplicate records."""
+    if not isinstance(records, list) or not records:
+        raise ValueError("external office reconciliation input must be a non-empty list")
+    unique: dict[str, dict] = {}
+    graphs: dict[str, str] = {}
+    for record in records:
+        entity = _office_entity(record)
+        local_iri = entity["uri"]
+        graph_iri = office_external_graph_iri(record)
+        if graph_iri in graphs and graphs[graph_iri] != local_iri:
+            raise ValueError(f"external office graph IRI collision: {graph_iri}")
+        graphs[graph_iri] = local_iri
+        if local_iri in unique:
+            if _hash(unique[local_iri]) != _hash(record):
+                raise ValueError(f"conflicting duplicate external office identity: {local_iri}")
+            continue
+        unique[local_iri] = record
+    return [unique[key] for key in sorted(unique)]
+
+
+def office_external_graph_iri(value: object, registry: object | None = None) -> str:
+    """Return the independently owned graph for one registered enduring office."""
+    entity = _office_entity(value, registry)
+    effective_registry = registry if registry is not None else value.get("_registry")
+    _, spec = _office_spec(entity["uri"], effective_registry)
+    return f"https://data.oireachtas.ie/graph/office/{spec['key']}/external-links"
 
 
 def wikidata_iri(qid: str) -> str:
@@ -350,6 +467,132 @@ def _institution_candidate_negative_evidence(local_iri: str, candidate: dict) ->
     return sorted({ _json(item): item for item in negatives }.values(), key=_json)
 
 
+def normalize_office_candidate(value: object) -> dict:
+    """Validate deterministic Wikidata office candidate evidence.
+
+    Candidate data is review evidence only. In particular, labels, office-like
+    types, jurisdiction and succession relationships never accept an identity.
+    """
+    keys = {"qid", "labels", "descriptions", "matched_on", "discovery_methods",
+            "positive_evidence", "negative_evidence"}
+    if not isinstance(value, dict) or set(value) != keys or not valid_qid(value.get("qid")):
+        raise ReconciliationError("malformed Wikidata office candidate")
+    result = {"qid": value["qid"]}
+    for field in ("labels", "descriptions", "matched_on"):
+        values = value[field]
+        if (not isinstance(values, list)
+                or any(not isinstance(item, str) or not item or item != item.strip() for item in values)):
+            raise ReconciliationError("malformed Wikidata office candidate " + field)
+        result[field] = sorted(set(values), key=lambda item: (item.casefold(), item))
+    methods = value["discovery_methods"]
+    if (not isinstance(methods, list) or not methods
+            or any(not isinstance(item, str) or item != "exact-label" for item in methods)):
+        raise ReconciliationError("malformed Wikidata office candidate discovery methods")
+    result["discovery_methods"] = sorted(set(methods))
+    if not result["labels"] or not result["matched_on"]:
+        raise ReconciliationError("Wikidata office candidate lacks exact-label evidence")
+    label_set = {item.casefold() for item in result["labels"]}
+    if any(item.casefold() not in label_set for item in result["matched_on"]):
+        raise ReconciliationError("Wikidata office candidate lacks its matched label")
+
+    evidence = value["positive_evidence"]
+    evidence_keys = {"entity_types", "jurisdictions", "relationships", "official_sites",
+                     "inception", "dissolution"}
+    if not isinstance(evidence, dict) or set(evidence) != evidence_keys:
+        raise ReconciliationError("malformed Wikidata office candidate positive evidence")
+    positive = {
+        "entity_types": _institution_evidence_descriptors(
+            evidence["entity_types"], "office entity_types", {"qid", "label"}, OFFICE_TYPE_PROPERTIES),
+        "jurisdictions": _institution_evidence_descriptors(
+            evidence["jurisdictions"], "office jurisdictions", {"property", "qid", "label"},
+            OFFICE_JURISDICTION_PROPERTIES),
+        "relationships": _institution_evidence_descriptors(
+            evidence["relationships"], "office relationships", {"property", "qid", "label"},
+            OFFICE_RELATION_PROPERTIES),
+        "official_sites": [],
+        "inception": [],
+        "dissolution": [],
+    }
+    for site in evidence["official_sites"]:
+        if not isinstance(site, str) or not site.startswith(("https://", "http://")):
+            raise ReconciliationError("malformed Wikidata office official-site evidence")
+        parsed = urlsplit(site)
+        if not parsed.netloc or parsed.username or parsed.password or any(char.isspace() for char in site):
+            raise ReconciliationError("malformed Wikidata office official-site evidence")
+        positive["official_sites"].append(site)
+    positive["official_sites"] = sorted(set(positive["official_sites"]))
+    for field in ("inception", "dissolution"):
+        values = evidence[field]
+        if (not isinstance(values, list)
+                or any(_wikidata_year_or_date(item) != item for item in values)):
+            raise ReconciliationError("malformed Wikidata office historical evidence")
+        positive[field] = sorted(set(values))
+    result["positive_evidence"] = positive
+
+    negative = value["negative_evidence"]
+    if not isinstance(negative, list):
+        raise ReconciliationError("malformed Wikidata office candidate negative evidence")
+    allowed_properties = {
+        "wrong-entity-level": OFFICE_TYPE_PROPERTIES | {"label"},
+        "wrong-jurisdiction": OFFICE_JURISDICTION_PROPERTIES,
+        "historical-successor": {"P1365", "description"},
+        "historical-predecessor": {"P1366", "description"},
+    }
+    normalized_negative = []
+    for item in negative:
+        if not isinstance(item, dict) or set(item) != {"reason", "property", "value"}:
+            raise ReconciliationError("malformed Wikidata office candidate negative evidence")
+        reason, prop, fact = item["reason"], item["property"], item["value"]
+        if (not isinstance(reason, str) or reason not in OFFICE_NEGATIVE_REASONS | {"historical-predecessor"}
+                or not isinstance(prop, str) or prop not in allowed_properties[reason]
+                or not isinstance(fact, str) or not fact or fact != fact.strip()):
+            raise ReconciliationError("malformed Wikidata office candidate negative evidence")
+        if prop in OFFICE_TYPE_PROPERTIES | OFFICE_JURISDICTION_PROPERTIES | OFFICE_RELATION_PROPERTIES:
+            if not valid_qid(fact):
+                raise ReconciliationError("malformed Wikidata office candidate negative-evidence QID")
+        if prop in OFFICE_TYPE_PROPERTIES and not any(
+                evidence_item["qid"] == fact for evidence_item in positive["entity_types"]):
+            raise ReconciliationError("office negative type evidence is absent from positive evidence")
+        if prop in OFFICE_JURISDICTION_PROPERTIES and not any(
+                evidence_item["property"] == prop and evidence_item["qid"] == fact
+                for evidence_item in positive["jurisdictions"]):
+            raise ReconciliationError("office negative jurisdiction evidence is absent from positive evidence")
+        if prop in OFFICE_RELATION_PROPERTIES and not any(
+                evidence_item["property"] == prop and evidence_item["qid"] == fact
+                for evidence_item in positive["relationships"]):
+            raise ReconciliationError("office negative succession evidence is absent from positive evidence")
+        if prop == "label" and fact not in result["labels"]:
+            raise ReconciliationError("office negative label evidence is absent from candidate labels")
+        if prop == "description" and fact not in result["descriptions"]:
+            raise ReconciliationError("office negative description evidence is absent from candidate descriptions")
+        normalized_negative.append({"reason": reason, "property": prop, "value": fact})
+    result["negative_evidence"] = sorted(
+        {_json(item): item for item in normalized_negative}.values(), key=_json)
+    return result
+
+
+def _office_candidate_negative_evidence(local_iri: str | dict, candidate: dict | None = None,
+                                       registry: object | None = None) -> list[dict]:
+    """Record concrete candidate-level mismatches without deciding local identity."""
+    if candidate is None:
+        candidate = local_iri
+    negatives = list(candidate["negative_evidence"])
+    for item in candidate["positive_evidence"]["entity_types"]:
+        label = (item["label"] or "").casefold()
+        if (item["qid"] in _NON_OFFICE_ENTITY_TYPE_QIDS
+                or re.search(r"\b(human|person|office[- ]holder|office holding|holding|membership|administrative unit|department|organization|organisation|category|list article|disambiguation page|class|concept)\b", label)):
+            negatives.append({"reason": "wrong-entity-level", "property": "P31", "value": item["qid"]})
+    jurisdictions = candidate["positive_evidence"]["jurisdictions"]
+    if jurisdictions and not any(item["qid"] == "Q27" for item in jurisdictions):
+        negatives.extend({"reason": "wrong-jurisdiction", "property": item["property"], "value": item["qid"]}
+                         for item in jurisdictions)
+    # A predecessor/successor *of the candidate* need not be a predecessor or
+    # successor *of the local office*. Taoiseach Q191827, for example, has a
+    # distinct pre-1937 predecessor. Keep such facts as positive review evidence;
+    # exclude only a specifically evidenced mismatch supplied as negative evidence.
+    return sorted({_json(item): item for item in negatives}.values(), key=_json)
+
+
 def institutional_external_graph_iri(value: object) -> str:
     entity = _institution_entity(value)
     return INSTITUTIONS[entity["uri"]]["graph"]
@@ -410,6 +653,59 @@ def load_institution_review(path: Path) -> tuple[dict[str, dict], str]:
         if set(decision) - {"status", "wikidata", "wikipedia", "note"}:
             raise ReviewError(f"unknown institutional decision fields for {local_iri!r}")
     return decisions, _hash(value)
+
+
+def load_office_external_review(path: Path, registry: object | None = None) -> tuple[dict[str, dict], str]:
+    """Load strict version-1 external-office decisions keyed by full local IRI.
+
+    The only publishable authority is an explicitly reviewed Wikidata item;
+    ISAD units/events may be cited as review evidence but are not office targets.
+    """
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"),
+                           object_pairs_hook=_json_object_no_duplicate_keys)
+    except (OSError, UnicodeError, json.JSONDecodeError, ReviewError) as error:
+        raise ReviewError(f"invalid external office review file: {error}") from error
+    if (not isinstance(value, dict) or set(value) != {"version", "decisions"}
+            or type(value.get("version")) is not int or value["version"] != 1
+            or not isinstance(value.get("decisions"), dict)):
+        raise ReviewError("external office review file must contain only version 1 and a decisions object")
+    review_hash = _hash(value)
+    specs = _office_registry_specs(registry) if registry is not None else None
+    decisions = value["decisions"]
+    for local_iri, decision in decisions.items():
+        if (not isinstance(local_iri, str)
+                or re.fullmatch(re.escape(OFFICE_BASE) + r"o-[0-9]{6}", local_iri) is None
+                or (specs is not None and local_iri not in specs)):
+            raise ReviewError("external office review keys must be full registered local office IRIs")
+        if (not isinstance(decision, dict) or not isinstance(decision.get("status"), str)
+                or decision["status"] not in {"accepted", "rejected"}):
+            raise ReviewError(f"invalid external office decision for {local_iri!r}")
+        status = decision["status"]
+        if status == "accepted":
+            if not _valid_iri(decision.get("external_iri"), WIKIDATA):
+                raise ReviewError(f"accepted external office decision for {local_iri!r} needs a canonical full Wikidata IRI")
+            allowed = {"status", "external_iri", "evidence", "reason", "note"}
+        else:
+            if "external_iri" in decision or "wikidata" in decision:
+                raise ReviewError(f"rejected external office decision for {local_iri!r} must not contain an external identity")
+            allowed = {"status", "evidence", "reason", "note"}
+        if set(decision) - allowed or not {"status"} <= set(decision):
+            raise ReviewError(f"invalid external office decision fields for {local_iri!r}")
+        evidence = decision.get("evidence")
+        if (not isinstance(evidence, list) or not evidence
+                or any(not isinstance(item, str) or not item.strip() for item in evidence)
+                or len(evidence) != len(set(evidence))):
+            raise ReviewError(f"external office decision for {local_iri!r} needs unique evidence references")
+        reason = decision.get("reason")
+        if not isinstance(reason, str) or not reason.strip():
+            raise ReviewError(f"external office decision for {local_iri!r} needs a reason")
+        if "note" in decision and not isinstance(decision["note"], str):
+            raise ReviewError(f"external office review note for {local_iri!r} must be a string")
+    return decisions, review_hash
+
+
+load_external_office_review = load_office_external_review
 
 
 def external_graph_iri(member: dict) -> str:
@@ -844,7 +1140,7 @@ class ReconciliationStore:
         source observation invalidates freshness; otherwise the current
         periodic/retry deadline is left untouched.
         """
-        if entity_kind not in {"member", "party", "institution"}:
+        if entity_kind not in {"member", "party", "institution", "office"}:
             raise ValueError("unsupported reconciliation entity kind")
         if any(not isinstance(value, str) or not value for value in
                (local_iri, entity_key, identity_hash)):
@@ -1223,6 +1519,144 @@ SELECT DISTINCT ?item ?label ?matchedOn ?discoveryMethod ?description ?instanceT
             normalized_candidates.append(candidate)
         return normalized_candidates
 
+    def lookup_office_candidates(self, value: dict, registry: object | None = None) -> list[dict]:
+        """Discover exact-label Wikidata candidates as evidence, never decisions."""
+        registry = registry if registry is not None else value.get("_registry")
+        if registry is None:
+            raise ValueError("Wikidata office candidate lookup requires validated registry context")
+        entity = _office_entity(value, registry)
+        local_iri, spec = _office_spec(entity["uri"], registry)
+        office = spec["office"]
+        label_pairs = {(office["label_en"], "en")}
+        if office.get("label_ga"):
+            label_pairs.add((office["label_ga"], "ga"))
+        label_pairs.update((alias["label"], alias["language"]) for alias in office["aliases"])
+        wanted = sorted(label_pairs, key=lambda item: (item[0].casefold(), item[1], item[0]))
+        values = " ".join(json.dumps(label, ensure_ascii=False) + "@" + language
+                          for label, language in wanted)
+        query = """PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX schema: <http://schema.org/>
+SELECT DISTINCT ?item ?label ?matchedOn ?description ?instanceType ?instanceTypeLabel
+                ?jurisdiction ?jurisdictionProperty ?jurisdictionLabel ?relation ?relationProperty
+                ?relatedItem ?relatedLabel ?officialSite ?inception ?dissolution WHERE {
+  VALUES ?wantedLabel { %s }
+  ?item (rdfs:label|skos:altLabel) ?label .
+  FILTER(LCASE(STR(?label)) = LCASE(STR(?wantedLabel)))
+  BIND(STR(?wantedLabel) AS ?matchedOn)
+  OPTIONAL { ?item schema:description ?description . FILTER(LANG(?description) IN ("en", "ga")) }
+  OPTIONAL {
+    ?item wdt:P31 ?instanceType .
+    OPTIONAL { ?instanceType rdfs:label ?instanceTypeLabel . FILTER(LANG(?instanceTypeLabel) = "en") }
+  }
+  OPTIONAL {
+    { ?item wdt:P17 ?jurisdiction . BIND("P17" AS ?jurisdictionProperty) }
+    UNION
+    { ?item wdt:P1001 ?jurisdiction . BIND("P1001" AS ?jurisdictionProperty) }
+    OPTIONAL { ?jurisdiction rdfs:label ?jurisdictionLabel . FILTER(LANG(?jurisdictionLabel) = "en") }
+  }
+  OPTIONAL {
+    { ?item wdt:P1365 ?relatedItem . BIND("P1365" AS ?relationProperty) }
+    UNION { ?item wdt:P1366 ?relatedItem . BIND("P1366" AS ?relationProperty) }
+    UNION { ?item wdt:P361 ?relatedItem . BIND("P361" AS ?relationProperty) }
+    UNION { ?item wdt:P749 ?relatedItem . BIND("P749" AS ?relationProperty) }
+    OPTIONAL { ?relatedItem rdfs:label ?relatedLabel . FILTER(LANG(?relatedLabel) = "en") }
+  }
+  OPTIONAL { ?item wdt:P856 ?officialSite }
+  OPTIONAL { ?item wdt:P571 ?inception }
+  OPTIONAL { ?item wdt:P576 ?dissolution }
+}""" % values
+        from urllib.parse import urlencode
+        request = Request(self.lookup_endpoint + "?" + urlencode({"query": query, "format": "json"}),
+                          headers={"Accept": "application/sparql-results+json",
+                                   "User-Agent": "oireachtas-etl/phase-7"})
+        with urlopen(request, timeout=self.timeout) as response:
+            payload = json.loads(response.read())
+        try:
+            rows = payload["results"]["bindings"]
+        except (KeyError, TypeError) as error:
+            raise ReconciliationError("malformed Wikidata office candidate response") from error
+        if not isinstance(rows, list):
+            raise ReconciliationError("malformed Wikidata office candidate response")
+        known_labels = {label.casefold(): label for label, _language in wanted}
+        candidates: dict[str, dict] = {}
+
+        def literal(row, name, *, required=False):
+            binding = row.get(name)
+            if binding is None and not required:
+                return None
+            if (not isinstance(binding, dict) or binding.get("type") != "literal"
+                    or not isinstance(binding.get("value"), str)):
+                raise ReconciliationError("malformed Wikidata office candidate " + name + " binding")
+            return binding["value"]
+
+        def qid(row, name, *, required=False):
+            binding = row.get(name)
+            if binding is None and not required:
+                return None
+            result = _wikidata_qid_from_sparql_binding(binding)
+            if result is None:
+                raise ReconciliationError("malformed Wikidata office candidate " + name + " binding")
+            return result
+
+        for row in rows:
+            if not isinstance(row, dict):
+                raise ReconciliationError("malformed Wikidata office candidate binding")
+            candidate_qid = qid(row, "item", required=True)
+            label = literal(row, "label", required=True)
+            matched = literal(row, "matchedOn", required=True)
+            if matched.casefold() not in known_labels:
+                raise ReconciliationError("Wikidata office candidate matched an unknown local office label")
+            candidate = candidates.setdefault(candidate_qid, {
+                "qid": candidate_qid, "labels": [], "descriptions": [], "matched_on": [],
+                "discovery_methods": ["exact-label"],
+                "positive_evidence": {"entity_types": [], "jurisdictions": [], "relationships": [],
+                                      "official_sites": [], "inception": [], "dissolution": []},
+                "negative_evidence": [],
+            })
+            candidate["labels"].append(label)
+            candidate["matched_on"].append(known_labels[matched.casefold()])
+            description = literal(row, "description")
+            if description:
+                candidate["descriptions"].append(description)
+
+            instance_qid = qid(row, "instanceType")
+            if instance_qid:
+                candidate["positive_evidence"]["entity_types"].append(
+                    {"qid": instance_qid, "label": literal(row, "instanceTypeLabel")})
+            jurisdiction_qid = qid(row, "jurisdiction")
+            if jurisdiction_qid:
+                candidate["positive_evidence"]["jurisdictions"].append({
+                    "property": literal(row, "jurisdictionProperty", required=True),
+                    "qid": jurisdiction_qid, "label": literal(row, "jurisdictionLabel")})
+            related_qid = qid(row, "relatedItem")
+            if related_qid:
+                candidate["positive_evidence"]["relationships"].append({
+                    "property": literal(row, "relationProperty", required=True),
+                    "qid": related_qid, "label": literal(row, "relatedLabel")})
+            site = row.get("officialSite")
+            if site is not None:
+                if (not isinstance(site, dict) or site.get("type") != "uri"
+                        or not isinstance(site.get("value"), str)):
+                    raise ReconciliationError("malformed Wikidata office official-site binding")
+                candidate["positive_evidence"]["official_sites"].append(site["value"])
+            for field in ("inception", "dissolution"):
+                date = literal(row, field)
+                if date:
+                    normalized = _wikidata_year_or_date(date)
+                    if normalized is None:
+                        raise ReconciliationError("malformed Wikidata office historical date")
+                    candidate["positive_evidence"][field].append(normalized)
+
+        result = []
+        for qid_value, raw in sorted(candidates.items()):
+            candidate = normalize_office_candidate(raw)
+            candidate["negative_evidence"] = _office_candidate_negative_evidence(candidate)
+            result.append(candidate)
+        return result
+
     def entity(self, qid: str) -> dict: return self._get({"action":"wbgetentities", "ids":qid, "format":"json"})
 
 
@@ -1588,6 +2022,134 @@ def resolve_institution(value: dict, review: dict[str, dict], wikidata_client, *
                       enrichment_status="unresolved", enrichment_reason="human-review-required")
 
 
+def _previous_office_context(previous) -> tuple[list, dict | None]:
+    if previous is None:
+        return [], None
+    try:
+        evidence = json.loads(previous["evidence_json"])
+    except (TypeError, json.JSONDecodeError):
+        return [], None
+    if not isinstance(evidence, dict):
+        return [], None
+    candidates = []
+    for field in ("candidates", "excluded_candidates"):
+        values = evidence.get(field)
+        if isinstance(values, list):
+            candidates.extend(values)
+    decision = evidence.get("decision")
+    if not isinstance(decision, dict):
+        decision = evidence.get("previous_review_decision")
+    return candidates, decision if isinstance(decision, dict) else None
+
+
+def _office_decision_iri(decision: dict) -> str:
+    """Return the canonical external IRI represented by one strict decision."""
+    if isinstance(decision.get("external_iri"), str):
+        return decision["external_iri"]
+    qid = decision.get("wikidata")
+    return wikidata_iri(qid)
+
+
+def _normalize_office_candidate_for(local_iri: str, raw: object,
+                                    registry: object | None = None) -> dict:
+    candidate = normalize_office_candidate(raw)
+    if registry is not None:
+        _, spec = _office_spec(local_iri, registry)
+        office = spec["office"]
+        labels = {office["label_en"].casefold()}
+        if office.get("label_ga"):
+            labels.add(office["label_ga"].casefold())
+        labels.update(alias["label"].casefold() for alias in office["aliases"])
+        if any(value.casefold() not in labels for value in candidate["matched_on"]):
+            raise ReconciliationError("Wikidata office candidate matched an unknown registered office label")
+    return candidate
+
+
+def resolve_office(value: dict, review: dict[str, dict], wikidata_client, registry: object | None = None,
+                   *, previous=None) -> Resolution:
+    """Resolve one registered enduring office; external candidates never auto-accept."""
+    registry = registry if registry is not None else value.get("_registry")
+    if registry is None:
+        raise ValueError("office reconciliation requires validated registry context")
+    entity = _office_entity(value, registry)
+    local_iri, spec = _office_spec(entity["uri"], registry)
+    decision = review.get(local_iri)
+    previous_candidates, previous_decision = _previous_office_context(previous)
+    base = {"local_iri": local_iri, "office_key": spec["key"]}
+    if decision and decision["status"] == "rejected":
+        return Resolution("rejected", "manual-review", {
+            **base, "decision": decision, "previous_candidates": previous_candidates,
+            "previous_review_decision": previous_decision,
+        }, review_applied=True)
+    if decision:
+        external_iri = _office_decision_iri(decision)
+        qid = external_iri[len(WIKIDATA):]
+        evidence = {**base, "external_iri": external_iri, "decision": decision,
+                    "previous_candidates": previous_candidates,
+                    "previous_review_decision": previous_decision}
+        _, target_error = _fetch_wikidata_target(wikidata_client, qid)
+        if target_error is not None:
+            _record_target_error(evidence, target_error)
+            return Resolution("accepted", "manual-review", evidence, external_iri,
+                              review_applied=True, enrichment_status="retry",
+                              enrichment_reason="wikidata-target-unavailable")
+        _record_target_verified(evidence, qid)
+        return Resolution("accepted", "manual-review", evidence, external_iri,
+                          review_applied=True)
+
+    office = spec["office"]
+    query_terms = sorted({office["label_en"], *([office["label_ga"]] if office.get("label_ga") else []),
+                          *(alias["label"] for alias in office["aliases"])},
+                         key=lambda label: (label.casefold(), label))
+    try:
+        lookup_record = {"office": {"uri": local_iri, **office}, "_registry": registry}
+        lookup = wikidata_client.lookup_office_candidates
+        try:
+            parameters = inspect.signature(lookup).parameters.values()
+            accepts_registry = any(parameter.kind == inspect.Parameter.VAR_POSITIONAL
+                                   for parameter in parameters) or sum(
+                parameter.kind in (inspect.Parameter.POSITIONAL_ONLY,
+                                   inspect.Parameter.POSITIONAL_OR_KEYWORD)
+                for parameter in parameters) >= 2
+        except (TypeError, ValueError):
+            accepts_registry = True
+        raw_candidates = lookup(lookup_record, registry) if accepts_registry else lookup(lookup_record)
+        if not isinstance(raw_candidates, list):
+            raise ReconciliationError("malformed Wikidata office candidate response")
+        by_qid = {}
+        for raw in raw_candidates:
+            candidate = _normalize_office_candidate_for(local_iri, raw, registry)
+            if candidate["qid"] in by_qid:
+                raise ReconciliationError("duplicate Wikidata office candidate QID")
+            candidate["negative_evidence"] = _office_candidate_negative_evidence(local_iri, candidate, registry)
+            by_qid[candidate["qid"]] = candidate
+        all_candidates = [by_qid[qid] for qid in sorted(by_qid)]
+    except FixtureResponseError:
+        raise
+    except Exception as error:
+        evidence = {**base, "query_terms": query_terms, "candidates": [], "excluded_candidates": [],
+                    "previous_candidates": previous_candidates,
+                    "previous_review_decision": previous_decision,
+                    "errors": [str(error)], "reason": "lookup-error"}
+        return Resolution("pending", "wikidata-office-candidate-outage", evidence,
+                          enrichment_status="unresolved", enrichment_reason="lookup-error")
+
+    candidates = [candidate for candidate in all_candidates if not candidate["negative_evidence"]]
+    excluded = [candidate for candidate in all_candidates if candidate["negative_evidence"]]
+    evidence = {**base, "query_terms": query_terms, "candidates": candidates,
+                "excluded_candidates": excluded, "previous_candidates": previous_candidates,
+                "previous_review_decision": previous_decision,
+                "candidate_policy": "exact-label Wikidata discovery; structural conflict evidence; human review required"}
+    if not candidates:
+        evidence["reason"] = "candidates-excluded-by-contradictory-evidence" if excluded else "no-wikidata-candidate"
+        return Resolution("pending", "wikidata-office-no-candidate", evidence,
+                          enrichment_status="unresolved", enrichment_reason=evidence["reason"])
+    evidence["reason"] = "human-review-required" if len(candidates) == 1 else "multiple-review-candidates"
+    state = "pending" if len(candidates) == 1 else "ambiguous"
+    return Resolution(state, "wikidata-office-candidate-review", evidence,
+                      enrichment_status="unresolved", enrichment_reason="human-review-required")
+
+
 def party_links_graph(record: dict, resolution: Resolution) -> Graph:
     party, _, local_iri = _party_entity(record)
     graph = Graph()
@@ -1615,6 +2177,40 @@ def _validate_institution_graph(local_iri: str, graph: Graph) -> None:
             raise ReconciliationError("institution external graph boundary violation")
     if len(same_as) > 1 or len(wikipedia) > 1 or (wikipedia and not same_as):
         raise ReconciliationError("institution external graph contains unsupported identity links")
+
+
+def _validate_office_graph(local_iri: str, registry: object, graph: Graph) -> None:
+    _office_spec(local_iri, registry)
+    subject = URIRef(local_iri)
+    for s, p, o in graph:
+        if (not isinstance(s, URIRef) or not isinstance(p, URIRef) or not isinstance(o, URIRef)
+                or s != subject or p != OWL.sameAs or not _valid_iri(str(o), WIKIDATA)):
+            raise ReconciliationError("office external graph boundary violation")
+    if len(graph) > 1:
+        raise ReconciliationError("office external graph may contain only one reviewed same-office link")
+
+
+def office_links_graph(value: dict, resolution: Resolution, registry: object | None = None) -> Graph:
+    """Build only the reviewed enduring-office identity assertion, if any."""
+    registry = registry if registry is not None else value.get("_registry")
+    if registry is None:
+        raise ValueError("office links graph requires validated registry context")
+    entity = _office_entity(value, registry)
+    local_iri = entity["uri"]
+    if resolution.wikipedia is not None or resolution.dbpedia is not None:
+        raise ReconciliationError("office external graph permits only a reviewed Wikidata same-office link")
+    graph = Graph()
+    if resolution.state == "accepted":
+        decision = resolution.evidence.get("decision") if isinstance(resolution.evidence, dict) else None
+        if (not resolution.review_applied or not resolution.wikidata
+                or not _valid_iri(resolution.wikidata, WIKIDATA)
+                or not isinstance(decision, dict) or decision.get("status") != "accepted"
+                or _office_decision_iri(decision) != resolution.wikidata
+                or resolution.evidence.get("local_iri") != local_iri):
+            raise ReconciliationError("accepted office identity requires its explicit full-IRI review decision")
+        graph.add((URIRef(local_iri), OWL.sameAs, URIRef(resolution.wikidata)))
+    _validate_office_graph(local_iri, registry, graph)
+    return graph
 
 
 def institution_links_graph(value: dict, resolution: Resolution) -> Graph:
@@ -1868,14 +2464,89 @@ class _InstitutionPolicy:
             raise ReconciliationError("institution dirty payload does not match its saved reconciliation outcome")
 
 
+class _OfficePolicy:
+    entity_kind = "office"
+    review_input_name = "offices"
+
+    def __init__(self, registry: object):
+        self.registry = validate_registry_source(registry)
+        self.specs = _office_registry_specs(self.registry)
+
+    def extract(self, wrapper):
+        entity = _office_entity(wrapper, self.registry)
+        spec = self.specs[entity["uri"]]
+        return {"uri": entity["uri"], "_registry": self.registry,
+                "_office": spec["office"], "_units": spec["units"]}
+
+    def validate(self, entity):
+        _office_entity(entity, self.registry)
+
+    def local_iri(self, entity):
+        return entity["uri"]
+
+    def entity_key(self, entity):
+        return self.specs[entity["uri"]]["key"]
+
+    def review_key(self, entity):
+        return self.local_iri(entity)
+
+    def fingerprint(self, entity):
+        """Fingerprint identity-relevant registry facts for this one office."""
+        local_iri, spec = _office_spec(entity["uri"], self.registry)
+        office = spec["office"]
+        identity = {
+            "local_iri": local_iri,
+            "key": spec["key"],
+            "label_en": office["label_en"],
+            "label_ga": office.get("label_ga"),
+            "aliases": office["aliases"],
+            "office_type": office["office_type"],
+            "unit_relationships": office["unit_relationships"],
+            "units": {
+                key: {"label_en": unit["label_en"], "label_ga": unit.get("label_ga"),
+                      "aliases": unit["aliases"]}
+                for key, unit in sorted(spec["units"].items())
+            },
+        }
+        return _hash(identity)
+
+    def eligible(self, entity):
+        return True
+
+    def graph_iri(self, entity):
+        return office_external_graph_iri(entity, self.registry)
+
+    def stored_graph_iri(self, local_iri, entity_key):
+        _, spec = _office_spec(local_iri, self.registry)
+        if entity_key != spec["key"]:
+            raise ReconciliationError("stored office key does not match its complete local IRI")
+        return f"https://data.oireachtas.ie/graph/office/{spec['key']}/external-links"
+
+    def resolve(self, entity, review, wikidata_client, dbpedia_client, previous):
+        return resolve_office(entity, review, wikidata_client, self.registry, previous=previous)
+
+    def links_graph(self, entity, resolution):
+        return office_links_graph(entity, resolution, self.registry)
+
+    def validate_stored_graph(self, local_iri, entity_key, graph, resolution):
+        self.stored_graph_iri(local_iri, entity_key)
+        _validate_office_graph(local_iri, self.registry, graph)
+        entity = {"uri": local_iri}
+        expected = office_links_graph(entity, resolution, self.registry) if resolution.state == "accepted" else Graph()
+        if set(graph) != set(expected):
+            raise ReconciliationError("office dirty payload does not match its saved reconciliation outcome")
+
+
 _ENTITY_POLICIES = {
     "member": _MemberPolicy,
     "party": _PartyPolicy,
     "institution": _InstitutionPolicy,
+    "office": _OfficePolicy,
 }
 
 
-def reconciliation_identity(entity_kind: str, wrapper: dict) -> tuple[str, str, str] | None:
+def reconciliation_identity(entity_kind: str, wrapper: dict, *,
+                            registry: object | None = None) -> tuple[str, str, str] | None:
     """Return the existing policy's local IRI, key and identity fingerprint.
 
     Returning ``None`` means the entity is deliberately outside that policy's
@@ -1883,7 +2554,16 @@ def reconciliation_identity(entity_kind: str, wrapper: dict) -> tuple[str, str, 
     Core ETL must not duplicate or approximate policy fingerprint fields.
     """
     try:
-        policy = _ENTITY_POLICIES[entity_kind]()
+        if entity_kind == "office":
+            if registry is None and isinstance(wrapper, dict):
+                registry = wrapper.get("_registry")
+                if registry is None and isinstance(wrapper.get("office"), dict):
+                    registry = wrapper["office"].get("_registry")
+            if registry is None:
+                raise ValueError("office reconciliation identity requires the validated office registry")
+            policy = _ENTITY_POLICIES[entity_kind](registry)
+        else:
+            policy = _ENTITY_POLICIES[entity_kind]()
     except KeyError as error:
         raise ValueError("unsupported reconciliation entity kind") from error
     entity = policy.extract(wrapper)
@@ -2031,3 +2711,40 @@ def reconcile_institution_records(records: list[dict], store: ReconciliationStor
     return reconcile_entities(validated, store, review, review_hash, wikidata_client,
                               policy=_InstitutionPolicy(), all_records=all_records, publish=publish,
                               competency_client=competency_client)
+
+
+def reconcile_office_records(records: list[dict], store: ReconciliationStore, review: dict[str, dict],
+                              review_hash: str, wikidata_client, *, registry: object,
+                              all_records=False, publish=None, competency_client=None
+                              ) -> list[tuple[dict, Resolution, Graph]]:
+    """Reconcile registered NamedOffice identities through the shared engine.
+
+    The office registry controls local subject validation, review-key
+    membership, identity fingerprints and per-office graph ownership.
+    Candidate lookup remains enrichment only.
+    """
+    policy = _OfficePolicy(registry)
+    if not isinstance(records, list) or not records:
+        raise ValueError("office reconciliation input must be a non-empty list")
+    return reconcile_entities(records, store, review, review_hash, wikidata_client,
+                              policy=policy, all_records=all_records, publish=publish,
+                              competency_client=competency_client)
+
+
+def reconcile_external_office_records(records: list[dict], store: ReconciliationStore,
+                                      review: dict[str, dict], review_hash: str,
+                                      wikidata_client, *, all_records=False, publish=None,
+                                      competency_client=None
+                                      ) -> list[tuple[dict, Resolution, Graph]]:
+    """Registry-record convenience entry point used by CLI and fixture callers."""
+    validated_records = deduplicate_external_office_records(records)
+    registries = [record.get("_registry") for record in validated_records]
+    if any(registry is None for registry in registries):
+        raise ValueError("external office records must carry validated registry context")
+    registry_hashes = {_hash(registry) for registry in registries}
+    if len(registry_hashes) != 1:
+        raise ValueError("external office records do not share one registry snapshot")
+    registry = registries[0]
+    return reconcile_office_records(validated_records, store, review, review_hash, wikidata_client,
+                                    registry=registry, all_records=all_records,
+                                    publish=publish, competency_client=competency_client)
