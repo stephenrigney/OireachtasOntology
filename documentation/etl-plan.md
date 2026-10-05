@@ -1068,30 +1068,32 @@ Wikipedia link is asserted. Nothing was published to production.
 
 ### Status and purpose
 
-**Implementation complete; authoritative coverage acceptance blocked.** The
-deterministic census, historical-owner transforms, Committee vertical,
-pre-publication and remote closure checks, capture provenance and Core State
-publication/recovery handling are implemented and regression-tested. Repository
-validation now passes through the Java version pinned in `mise.toml`. However,
-the complete Members capture contains one material Committee identity conflict.
-Fail-closed behavior blocks candidate publication, and the current all-owner
-preflight also blocks otherwise unaffected reference graphs and Member updates;
-that blast radius is a documented design question below, not an accepted
-resolution of the source conflict. No production Graph Store publication has
-been performed.
+**Implementation complete; technical validation complete; authoritative
+reference census complete; authoritative coverage acceptance blocked by one
+source conflict.** The deterministic census, historical-owner transforms,
+Committee vertical, pre-publication and remote closure checks, capture
+provenance, and Core State publication/recovery handling are implemented and
+regression-tested. Repository validation passed with the Java runtime pinned in
+`mise.toml`. The exact-IRI Committee conflict remains fail-closed. The global
+all-or-nothing conflict gate is deliberately retained; affected-graph/partial
+publication is deferred to a separate operational-design task. No production
+Graph Store publication has been performed.
 
-The three acceptance statuses are distinct:
+The acceptance statuses are distinct:
 
 - **Implementation:** complete for the approved contracts and explicitly
   documented limitations.
-- **Validation:** repository ontology validation, mapping integrity, focused
-  ETL/SHACL/golden/recovery checks and the full test suite pass under `mise`.
-  The authoritative census itself validates raw capture integrity and reports
-  the conflicting identity; candidate construction correctly fails closed on
-  that conflict before closure can be evaluated.
-- **Authoritative coverage acceptance:** not complete. The exact-IRI Committee
-  conflict remains unresolved and the human decision on conflict blast radius
-  is outstanding.
+- **Technical validation:** complete. Ontology and mapping-integrity
+  validation, synthetic closure, publication/recovery, deterministic/golden,
+  SHACL, and full-suite checks passed under `mise`. The real-capture candidate
+  preflight correctly stops on the Committee conflict before closure
+  evaluation; authoritative graph-level closure has therefore **not** passed.
+- **Authoritative reference census:** complete. The integrity-checked complete
+  source captures were inventoried and the counts are recorded below.
+- **Authoritative coverage acceptance:** blocked by the one unresolved
+  Committee source conflict. Candidate owner graphs are not published from
+  that conflicting census.
+- **Production publication:** not performed.
 
 This corrective tranche closes a source-coverage assumption in the implemented
 Phase 2/3 boundary; it does not reopen the Member semantic model or redesign the
@@ -1456,13 +1458,74 @@ Although the name interval and `Deleted` status suggest a stale or superseded
 record, both Committee objects occur simultaneously in one Member membership,
 and the disputed operational range supplies no dates by which to model code/ID
 as temporal values. Under the approved exact-IRI owner contract this is a
-demonstrable source-data inconsistency; the raw evidence cannot distinguish an
-upstream duplicate/error from two underlying Committee records being assigned
-one IRI. The Committee identity contract is therefore not safely resolvable
-from this capture. No majority vote, observation precedence, label similarity,
-IRI rewrite or ID/code selection is applied.
+demonstrable source-data inconsistency; the raw evidence alone cannot distinguish
+an upstream duplicate/error from two underlying Committee records being
+assigned one IRI. No majority vote, observation precedence, deleted-status or
+dated-record preference, label similarity, IRI rewrite or ID/code selection is
+applied.
 
-#### Independent audit dispositions and remaining design issue
+#### Follow-up review of first-party Oireachtas evidence
+
+A narrowly scoped source review on 2026-10-05 did not resolve the conflict:
+
+- **Preserved Members API captures in this project:** each of the three
+  successful, complete 1,928-Member runs on 2026-10-04
+  (`run-ea875759-12ef-4fd0-8e0c-fce050f0725f`,
+  `run-53f4ded0-c074-46f9-8cf3-490b05ca19d2`, and
+  `run-d2c089d0-5203-40f1-97b8-ae0d8285e74d`) passed the capture hash,
+  pagination, advertised-count, endpoint and Core State provenance checks.
+  Each contains the same 14 observations for this IRI. Their `skip-001400.json`
+  bodies have the same SHA-256
+  `c702d32887456df3a4eb4293e1e2b2054550496f514b214a3cab40cdf4e9dd31`.
+  Each reproduces thirteen observations with code/ID `115` and one with
+  code/ID `156`, `Deleted` status, null Committee dates and the additional
+  `Policy` purpose. These repeated captures establish persistence of the API
+  response, not an independent resolution.
+- **Current first-party Members API response:**
+  `GET https://api.oireachtas.ie/v1/members?skip=1400&limit=100` reported
+  `memberCount: 1928`. In `/results/98/member/memberships/5/membership`,
+  `committees/4` again has the exact disputed IRI, code/ID `115`, `Archived`,
+  `Shadow Department`, and Committee dates 2020-07-23–2024-11-08; `committees/5`
+  has the same exact IRI, code/ID `156`, `Deleted`, `Shadow Department` plus
+  `Policy`, and null Committee dates. Its Member-role range ends 2020-09-18.
+  Thus the live first-party API still publishes both alternatives together.
+- **Published Oireachtas API specification:**
+  `https://api.oireachtas.ie/swagger.json` identifies API version 1.1.0 and
+  documents `/v1/members`, `/v1/parties`, `/v1/constituencies`, Houses,
+  legislation, debates, questions and votes, but no dedicated Committee
+  endpoint. `/v1/committees` returned 404 during this review. No separate
+  first-party structured Committee record with code/ID was found through the
+  documented API.
+- **Official 33rd Dáil Committee page:**
+  [Committee on the Implementation of the Good Friday Agreement — 33rd Dáil,
+  26th Seanad](https://www.oireachtas.ie/en/committees/33/committee-on-the-implementation-of-the-good-friday-agreement/)
+  identifies the named Committee, its House context, establishment on
+  2020-07-23 and dissolution on 2024-11-08. Its
+  [membership history](https://www.oireachtas.ie/en/committees/33/committee-on-the-implementation-of-the-good-friday-agreement/membership/)
+  lists Fergus O'Dowd as a member from September 2020 to November 2024. This
+  corroborates the real-world Committee and the long membership/operational
+  interval reflected by the `115` observation, but the pages expose neither
+  Committee code nor Committee ID and do not explain the `156` row.
+- **Official 23 July 2020 establishment motion:**
+  [Dáil Éireann debate, Establishment of Joint Committee on the Implementation
+  of the Good Friday Agreement](https://www.oireachtas.ie/en/debates/debate/dail/2020-07-23/21)
+  records the motion establishing the joint Committee; it contains no API
+  code/ID correspondence. The similarly named
+  [34th Dáil / 27th Seanad Committee page](https://www.oireachtas.ie/en/committees/34/committee-on-the-implementation-of-the-good-friday-agreement/)
+  describes a later committee established 2025-05-12. This supports
+  term-scoped/reconstituted committees as a general temporal pattern, but does
+  not establish that the two 33rd-term API rows are distinct temporal versions:
+  those rows coexist under one exact IRI in one Member membership, and the
+  `156` row has no Committee operational dates.
+
+The first-party API therefore exposes **both** IDs for the exact IRI; the
+official pages expose **neither** numeric ID. The official evidence identifies
+the named 33rd-term Committee, but does not establish that either Members
+observation is erroneous or authorize temporal/version interpretation of the
+same-IRI rows. No defensible resolution is established. The conflict remains an
+upstream/source-data blocker; authoritative publication remains fail-closed.
+
+#### Independent audit dispositions and retained contract decisions
 
 - A malformed Committee observation can no longer hide other comparable
   owner-field disagreements: normalized partial evidence participates only in
@@ -1488,17 +1551,17 @@ IRI rewrite or ID/code selection is applied.
   across HouseTerms. `committeeID` uniqueness is also not an approved identity
   rule. The IRI remains the only consolidation key; no cross-IRI merge is
   performed.
-- **Conflict blast radius is unresolved.** `build_reference_candidates`
-  currently rejects the full candidate set when any identity conflicts. A
-  conflict in the Committee census therefore blocks publication of the
-  unconflicted Party/Constituency candidates and current Member graphs as well
-  as the Committee graph; it also defers their normal dirty-resource retry
-  until the preflight can pass. This is more conservative than the plan's
-  “affected shared graph” wording. Narrowing it would require an agreed policy
-  for partial owner-graph publication, closure exceptions and Phase 5 recovery
-  ordering. No such policy is introduced here. Human review must decide whether
-  to accept the all-or-nothing preflight or approve a narrowly scoped policy;
-  until then, authoritative coverage acceptance remains blocked.
+- **Global conflict gate deliberately retained.** Per the accepted tranche
+  decision, `build_reference_candidates` rejects the full candidate set when
+  any identity conflicts. This Committee conflict therefore blocks publication
+  of unconflicted Party/Constituency candidates and current Member graphs as
+  well as the Committee graph, and defers their normal dirty-resource retry
+  until the preflight passes. Affected-graph/partial publication is not part of
+  this tranche. It is deferred to a separate operational-design task if needed,
+  because it would create a new contract for mixed source epochs, Member
+  publication against partially refreshed references, closure exceptions,
+  recovery ordering and authoritative-state semantics. The global
+  all-or-nothing behavior is intentional, not an unresolved policy decision.
 - The audit's proposed cross-IRI `committeeCode` guard is not added because
   code reuse is present in the authoritative capture and the mapping contract
   defines exact IRI—not code—as identity. Duplicate `committeeID` values are
@@ -1511,16 +1574,19 @@ IRI rewrite or ID/code selection is applied.
   literal named-graph IRI, following the repository's existing query-resource
   pattern; it is not used as runtime publication configuration.
 
-Automated validation is run using the pinned `temurin-8.0.504+1` runtime via
-`mise exec`. The current run passed ontology validation (2,504 triples),
-mapping-integrity validation, and the full suite (580 passed, 9 expected
-skips). The authoritative census command passed raw Members/Parties/
-Constituencies hash, pagination, endpoint-URL, advertised-count and state-run
-provenance checks, then reported the counts above. The Committee conflict causes
-candidate construction to abort before closure evaluation; therefore full
-candidate/closure/publication acceptance cannot complete. No production Graph
-Store was contacted. Implementation and repository validation are complete;
-authoritative coverage acceptance is not.
+Automated technical validation passed using pinned `temurin-8.0.504+1` through
+`mise exec`: ontology validation reported 2,504 triples; mapping-integrity
+validation passed; the full suite passed with 580 passed and 9 expected skips.
+Synthetic closure, publication/recovery, deterministic/golden and SHACL tests
+also passed. The authoritative census was rerun after source review; its raw
+capture hash, pagination, endpoint-URL, advertised-count and state-run
+provenance checks passed and its counts remain as recorded above. Real-capture
+candidate construction correctly stops on the Committee conflict before
+closure evaluation. Accordingly, authoritative graph-level closure and
+coverage acceptance are not claimed as passing. No production Graph Store was
+contacted. Implementation and technical validation are complete; the
+authoritative census is complete; authoritative coverage acceptance remains
+blocked by this one conflict.
 
 
 ## Phase 5 — Incremental refresh and ETL state
