@@ -2213,8 +2213,17 @@ The ETL runs unattended with validation, provenance, quarantine, monitoring and 
 # 10. Immediate implementation backlog
 
 Phases 0-5 are implemented. Phase 5 completion and its final verification
-baseline are recorded above. ParliamentaryGroup and TechnicalGroup instances
-remain out of scope without authoritative API evidence.
+baseline are recorded above.
+
+The **reference-coverage corrective tranche (Phase 2/3 closure)** above is
+pending implementation. It is the focused next step for closing historical
+Party/Independent-collection, constituency/panel and Committee owner coverage
+from the complete Members source before dependent Phase 7 cross-dataset
+integration is treated as closed. It does not redesign the Member model or the
+NLQ tool.
+
+ParliamentaryGroup and TechnicalGroup instances remain out of scope without
+authoritative API evidence.
 
 Remaining Phase 3.5 evaluation work—`wikiTitle` comparison, coverage metrics
 and sampled false-match measurement—remains deferred unless directly required
