@@ -4,7 +4,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import hashlib
 from .api import ApiClient, HousesApiClient
-from .config import (ADMINISTRATIVE_UNITS_GRAPH, CONSTITUENCIES_GRAPH, HOUSES_GRAPH,
+from .config import (ADMINISTRATIVE_UNITS_GRAPH, COMMITTEES_GRAPH,
+                     CONSTITUENCIES_GRAPH, HOUSES_GRAPH,
                      OFFICES_GRAPH, OFFICE_REGISTRY_FILE, OFFICE_DECISIONS_FILE,
                      OFFICE_OCCURRENCE_STATE_DB_FILE, PARTIES_GRAPH,
                      REFERENCE_ONTOLOGY_VERSION, Settings)
@@ -17,10 +18,12 @@ from .serialization import nquads, ntriples, turtle
 from .transforms.houses import transform_houses_with_report
 from .transforms.parties import transform_parties
 from .transforms.constituencies import transform_constituencies
+from .transforms.committees import transform_committees
 from .transforms.offices import transform_administrative_units, transform_offices
 from .validation import validate_constituencies, validate_houses, validate_parties
 from .validation import validate_administrative_units, validate_offices, validate_registry_source
 from .validation import validate_member, validate_bill
+from .validation.committees import validate_committees
 from .validation.members import validate_member_source
 from .transforms.members import (member_graph_iri, prior_party_membership_evidence,
                                  source_hash, transform_member_with_report)
@@ -44,9 +47,14 @@ from .reconciliation import (DbpediaClient, ReconciliationStore, WikidataClient,
                               reconcile_institution_records, reconciliation_identity)
 from .office_observations import canonical_json, extract_office_observations, json_hash
 from .office_reconciliation import OfficeOccurrenceStore, load_office_review
+from .reference_coverage import build_reference_census, summary as reference_census_summary
+from .reference_closure import (candidate_member_dataset,
+                                verify_reference_closure)
+from .reference_publication import build_reference_candidates
+from .raw_captures import load_latest_complete_capture
 
 
-MEMBER_MAPPING_VERSION = "member_mapping.csv@phase-7-ministerial-offices-2026"
+MEMBER_MAPPING_VERSION = "member_mapping.csv@reference-coverage-2026"
 
 
 def _reconciliation_state_path(args: argparse.Namespace, settings: Settings) -> Path:
@@ -130,13 +138,22 @@ def _run_shared(args: argparse.Namespace, endpoint_name: str, operation) -> int:
         with CoreStateStore(database, legacy_members=settings.members_legacy_state_file,
                             legacy_bills=settings.bills_legacy_state_file) as store:
             registry_run = endpoint_name in {"administrative-units", "offices"}
+            derived_run = endpoint_name == "committees"
+            fixture_run = bool(args.fixture)
+            member_source_run = (
+                store.last_successful_complete_run("members")
+                if derived_run and not fixture_run else None)
             run_id = store.start_run(endpoint_name, "full_refresh", is_complete=True,
-                                     parameters={"source": "registry" if registry_run else ("fixture" if args.fixture else "api"),
+                                     parameters={"source": "fixture" if fixture_run else
+                                                 "registry" if registry_run else
+                                                 "members" if derived_run else "api",
                                                   "fixture": str(Path(args.fixture).resolve()) if args.fixture else None,
+                                                  "source_run_id": (member_source_run["run_id"]
+                                                                    if member_source_run else None),
                                                   "registry_file": str(Path(args.registry_file or OFFICE_REGISTRY_FILE).resolve()) if registry_run else None,
-                                                  "api_url": None if registry_run or args.fixture else getattr(settings, {
-                                                      "houses": "api_url", "parties": "parties_api_url",
-                                                      "constituencies": "constituencies_api_url"}[endpoint_name]),
+                                                  "api_url": None if registry_run or derived_run or args.fixture else getattr(settings, {
+                                                       "houses": "api_url", "parties": "parties_api_url",
+                                                       "constituencies": "constituencies_api_url"}[endpoint_name]),
                                                   "limit": settings.limit})
             try:
                 result = operation(args, store, run_id)
@@ -155,6 +172,190 @@ REFERENCE_ENDPOINTS = {
     "parties": (PARTIES_GRAPH, "parties_api_url", transform_parties, validate_parties, "party_mapping.csv@phase-2-reference-data-2026"),
     "constituencies": (CONSTITUENCIES_GRAPH, "constituencies_api_url", transform_constituencies, validate_constituencies, "constituencies_mapping.csv@phase-2-reference-data-2026"),
 }
+REFERENCE_GRAPHS = {
+    "parties": PARTIES_GRAPH,
+    "constituencies": CONSTITUENCIES_GRAPH,
+    "committees": COMMITTEES_GRAPH,
+}
+
+
+def _assert_reference_source_not_older(store: CoreStateStore,
+                                       endpoints: tuple[str, ...],
+                                       source_run_id: str | None) -> None:
+    """Prevent older Members captures from rolling back owner descriptions."""
+    if source_run_id is None:
+        return
+    candidate_started = datetime.fromisoformat(
+        store.member_source_run_started_at(source_run_id))
+    for endpoint_name in endpoints:
+        metadata = store.endpoint_publication(endpoint_name) or {}
+        prior_run_id = (
+            metadata.get("pending_member_source_run_id")
+            if metadata.get("publication_state") == "dirty"
+            else metadata.get("member_source_run_id"))
+        if not prior_run_id or prior_run_id == source_run_id:
+            continue
+        prior_started = datetime.fromisoformat(
+            store.member_source_run_started_at(prior_run_id))
+        if candidate_started <= prior_started:
+            raise ValueError(
+                f"refusing to replace {endpoint_name} owner graph from older Members run "
+                f"{source_run_id}; graph already contains evidence from {prior_run_id}")
+
+
+def _write_reference_report(args: argparse.Namespace, report: dict) -> None:
+    destination = getattr(args, "coverage_report", None)
+    if destination:
+        path = Path(destination).expanduser()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True,
+                                   indent=2) + "\n", encoding="utf-8")
+
+
+def _reference_inputs(*, endpoint_name: str, endpoint_records: list[dict] | None,
+                      member_records: list[dict] | None, store: CoreStateStore | None,
+                      raw_root: Path, endpoint_is_authoritative: bool,
+                      member_is_authoritative: bool) -> tuple[dict, dict]:
+    """Assemble current and latest complete source observations deterministically."""
+    member_evidence = None
+    if member_records is None and store is not None:
+        loaded = load_latest_complete_capture(raw_root, store, "members")
+        if loaded is not None:
+            member_records, member_evidence = loaded
+            member_is_authoritative = True
+    member_records = member_records or []
+
+    sources: dict[str, tuple[list[dict], bool]] = {}
+    for endpoint in ("parties", "constituencies"):
+        if endpoint == endpoint_name and endpoint_records is not None:
+            sources[endpoint] = (endpoint_records, endpoint_is_authoritative)
+            continue
+        loaded = (load_latest_complete_capture(raw_root, store, endpoint)
+                  if store is not None else None)
+        sources[endpoint] = ((loaded[0], True) if loaded is not None else ([], False))
+    result = build_reference_census(
+        member_records=member_records,
+        party_records=sources["parties"][0],
+        constituency_records=sources["constituencies"][0],
+        member_capture_complete=member_is_authoritative,
+        party_capture_complete=sources["parties"][1],
+        constituency_capture_complete=sources["constituencies"][1],
+    )
+    provenance = {
+        "members": member_evidence,
+        "parties": sources["parties"][1],
+        "constituencies": sources["constituencies"][1],
+    }
+    return result, provenance
+
+
+def _shared_graph_from_payload(payload: str, expected_hash: str | None,
+                               endpoint: str) -> Graph:
+    if hashlib.sha256(payload.encode("utf-8")).hexdigest() != expected_hash:
+        raise ValueError(f"stored {endpoint} graph payload hash is invalid")
+    graph = Graph()
+    try:
+        graph.parse(data=payload, format="nt")
+    except Exception as error:
+        raise ValueError(f"stored {endpoint} graph payload is invalid N-Triples") from error
+    return graph
+
+
+def _previous_reference_graphs(store: CoreStateStore, client,
+                               loader: FusekiGraphStoreLoader) -> dict[str, Graph]:
+    """Recover dirty shared graphs and load their exact last accepted payloads."""
+    previous = {}
+    for endpoint_name, graph_iri in REFERENCE_GRAPHS.items():
+        metadata = store.endpoint_publication(endpoint_name)
+        if metadata and metadata.get("publication_state") == "dirty":
+            pending = metadata.get("pending_payload")
+            pending_hash = metadata.get("pending_payload_hash")
+            if (not isinstance(pending, str)
+                    or hashlib.sha256(pending.encode("utf-8")).hexdigest() != pending_hash):
+                raise ValueError(
+                    f"dirty {endpoint_name} graph has no hash-verified pending payload; "
+                    "refusing to replace it")
+            loader.replace(graph_iri, pending, content_type="application/n-triples")
+            verify_core_graph(client, graph_iri, pending)
+            store.complete_endpoint_publication(
+                endpoint_name, graph_iri, pending_hash,
+                coverage_authoritative=metadata.get("pending_coverage_authoritative"))
+            metadata = store.endpoint_publication(endpoint_name)
+
+        if metadata and metadata.get("publication_state") not in {"clean", None}:
+            raise ValueError(f"shared {endpoint_name} graph is not clean")
+        payload = metadata.get("published_payload") if metadata else None
+        payload_hash = metadata.get("published_payload_hash") if metadata else None
+        if isinstance(payload, str):
+            previous[endpoint_name] = _shared_graph_from_payload(
+                payload, payload_hash, endpoint_name)
+            continue
+
+        construct = getattr(client, "construct_graph", None)
+        if construct is None:
+            if payload_hash:
+                raise ValueError(
+                    f"the last {endpoint_name} graph payload is unavailable and the SPARQL client "
+                    "cannot recover it safely")
+            previous[endpoint_name] = Graph()
+            continue
+        graph = construct(graph_iri)
+        if payload_hash and hashlib.sha256(ntriples(graph).encode("utf-8")).hexdigest() != payload_hash:
+            raise ValueError(
+                f"remote {endpoint_name} graph differs from its last clean state payload hash")
+        previous[endpoint_name] = graph
+    return previous
+
+
+def _publish_reference_graphs(graphs: dict[str, Graph], *, store: CoreStateStore,
+                              loader: FusekiGraphStoreLoader, client,
+                              coverage_authoritative: bool | None,
+                              endpoints: tuple[str, ...] = ("parties", "constituencies", "committees"),
+                              member_source_run_id: str | None = None) -> int:
+    _assert_reference_source_not_older(store, endpoints, member_source_run_id)
+    published = 0
+    for endpoint_name in endpoints:
+        graph_iri = REFERENCE_GRAPHS[endpoint_name]
+        payload = ntriples(graphs[endpoint_name])
+        payload_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        prior = store.endpoint_publication(endpoint_name)
+        if (coverage_authoritative is False and prior
+                and prior.get("graph_iri") == graph_iri
+                and prior.get("coverage_authoritative") is True):
+            # A fixture may exercise publication against an empty/non-authoritative
+            # graph, but it must not replace a graph established by a complete
+            # authoritative scan.
+            continue
+        authority_already_recorded = (
+            coverage_authoritative is not True
+            or bool(prior and prior.get("coverage_authoritative") is True))
+        if (prior and prior.get("publication_state") == "clean"
+                and prior.get("graph_iri") == graph_iri
+                and prior.get("published_payload_hash") == payload_hash
+                and prior.get("published_payload") == payload
+                and authority_already_recorded):
+            try:
+                verify_core_graph(client, graph_iri, payload)
+            except ValueError:
+                # Exact verification found a mismatch; persist and replay the
+                # same validated candidate through the normal dirty boundary.
+                pass
+            else:
+                if member_source_run_id is not None:
+                    store.record_endpoint_member_source_run(
+                        endpoint_name, member_source_run_id)
+                continue
+        digest = store.mark_endpoint_dirty(
+            endpoint_name, graph_iri, payload,
+            coverage_authoritative=coverage_authoritative,
+            member_source_run_id=member_source_run_id)
+        loader.replace(graph_iri, payload, content_type="application/n-triples")
+        verify_core_graph(client, graph_iri, payload)
+        store.complete_endpoint_publication(
+            endpoint_name, graph_iri, digest,
+            coverage_authoritative=coverage_authoritative)
+        published += 1
+    return published
 
 
 def _reference_fixture_records(path: Path, endpoint: str) -> tuple[list[dict], bytes]:
@@ -169,6 +370,8 @@ def _reference_fixture_records(path: Path, endpoint: str) -> tuple[list[dict], b
 def _run_reference_impl(args: argparse.Namespace, store: CoreStateStore | None = None,
                         run_id: str | None = None) -> int:
     endpoint_name = args.endpoint
+    if endpoint_name == "committees":
+        return _run_committees_impl(args, store, run_id)
     graph_iri, url_attr, transform, validator, mapping_version = REFERENCE_ENDPOINTS[endpoint_name]
     settings = Settings.from_environment()
     settings = Settings(**{**settings.__dict__, "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir})
@@ -180,31 +383,77 @@ def _run_reference_impl(args: argparse.Namespace, store: CoreStateStore | None =
     else:
         records = []
         api_url = getattr(settings, url_attr)
+        count_field = {"parties": "partyCount",
+                       "constituencies": "constituencyCount"}[endpoint_name]
+        advertised = None
         for page in ApiClient(api_url, retries=settings.retries, timeout=settings.timeout).harvest(limit=settings.limit):
             persist_raw(root=settings.raw_dir, endpoint=api_url, params=page.params, body=page.body, status=page.status,
                     ontology_version=REFERENCE_ONTOLOGY_VERSION, mapping_version=mapping_version, endpoint_name=endpoint_name,
                     extraction_id=run_id)
             decoded = json.loads(page.body)
+            if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list):
+                raise ValueError(f"every {endpoint_name} API page must contain a results list")
+            counts = decoded.get("head", {}).get("counts") if isinstance(decoded.get("head"), dict) else None
+            count = counts.get(count_field) if isinstance(counts, dict) else None
+            if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+                raise ValueError(f"every {endpoint_name} API page must contain a nonnegative integer {count_field}")
+            if advertised is None:
+                advertised = count
+            elif count != advertised:
+                raise ValueError(f"{endpoint_name} advertised count changed during scan")
             page_records = decoded.get("results", decoded) if isinstance(decoded, dict) else decoded
             records.extend(page_records)
-    graph = transform(records)
-    validator(records, graph)  # deliberately before any loader construction/invocation
-    if args.output_ttl:
-        Path(args.output_ttl).write_text(turtle(graph), encoding="utf-8")
-    payload = nquads(graph, graph_iri)
-    if args.output_nq:
-        Path(args.output_nq).write_text(payload, encoding="utf-8")
+        if advertised is None or advertised != len(records):
+            raise ValueError(
+                f"{endpoint_name} capture contains {len(records)} records, not its advertised {advertised}")
+    source_graph = transform(records)
+    validator(records, source_graph)  # source gate precedes any loader construction
+
+    census, provenance = _reference_inputs(
+        endpoint_name=endpoint_name, endpoint_records=records, member_records=None,
+        store=store, raw_root=settings.raw_dir,
+        endpoint_is_authoritative=not bool(args.fixture),
+        member_is_authoritative=False,
+    )
+    member_source_run_id = (provenance["members"]["run_id"]
+                            if provenance["members"] is not None else None)
+    member_records = []
+    if provenance["members"] is not None:
+        loaded = load_latest_complete_capture(settings.raw_dir, store, "members") if store else None
+        member_records = loaded[0] if loaded is not None else []
+    member_graph = candidate_member_dataset(member_records) if member_records else Graph()
+    # Preflight all newly observed source graphs and conflict/closure gates
+    # before constructing a publisher or changing a shared graph.
+    _write_reference_report(args, census["report"])
+    candidates = build_reference_candidates(census, member_graph=member_graph)
+
     endpoint = None if args.offline else (args.fuseki_gsp_url or settings.fuseki_gsp_url)
     query_endpoint = None if args.offline else (args.fuseki_sparql_url or settings.fuseki_sparql_url)
+    published_graphs = 0
     if endpoint:
         if not query_endpoint:
             raise ValueError("Fuseki SPARQL endpoint is required for post-load whole-graph verification")
-        payload = ntriples(graph)
         if store is None: raise RuntimeError("online reference publication requires durable core ETL state")
-        digest = store.mark_endpoint_dirty(endpoint_name, graph_iri, payload)
-        FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout).replace(graph_iri, payload, content_type="application/n-triples")
-        verify_core_graph(FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout), graph_iri, payload)
-        store.complete_endpoint_publication(endpoint_name, graph_iri, digest)
+        client = FusekiSparqlClient(query_endpoint, user=settings.fuseki_user,
+                                    password=settings.fuseki_password,
+                                    timeout=settings.timeout)
+        loader = FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user,
+                                       password=settings.fuseki_password,
+                                       timeout=settings.timeout)
+        previous = _previous_reference_graphs(store, client, loader)
+        candidates = build_reference_candidates(
+            census, member_graph=member_graph, previous_graphs=previous)
+        publish_all = bool(not args.fixture and provenance["members"] is not None)
+        publish_set = (("parties", "constituencies", "committees") if publish_all
+                       else (endpoint_name,))
+        published_graphs = _publish_reference_graphs(
+            candidates["graphs"], store=store, loader=loader, client=client,
+            coverage_authoritative=(True if publish_all else
+                                    False if args.fixture else None),
+            endpoints=publish_set,
+            member_source_run_id=member_source_run_id)
+        if hasattr(client, "query"):
+            verify_reference_closure(client)
         if endpoint_name == "parties":
             # Core state is already clean. The existing reconciliation store is
             # the sole due authority; if it is unavailable, the next complete
@@ -222,9 +471,108 @@ def _run_reference_impl(args: argparse.Namespace, store: CoreStateStore | None =
                         reconciliation_store.close()
                     except Exception as error:
                         _handoff_warning("party", error)
+    elif not args.offline and not args.fixture:
+        raise ValueError("no Fuseki GSP endpoint configured; use --offline for fixture/developer runs")
+    if args.output_ttl:
+        Path(args.output_ttl).write_text(
+            turtle(candidates["graphs"][endpoint_name]), encoding="utf-8")
+    if args.output_nq:
+        Path(args.output_nq).write_text("".join(
+            nquads(candidates["graphs"][name], REFERENCE_GRAPHS[name])
+            for name in ("parties", "constituencies", "committees")
+            if len(candidates["graphs"][name])), encoding="utf-8")
+    print(json.dumps({"records": len(records), "published": bool(endpoint),
+                      "published_graphs": published_graphs,
+                      "reference_census": reference_census_summary(census["report"]),
+                      "reference_closure": candidates["closure"]}, sort_keys=True))
+    return 0
+
+
+def _run_committees_impl(args: argparse.Namespace, store: CoreStateStore | None = None,
+                         run_id: str | None = None) -> int:
+    settings = Settings.from_environment()
+    settings = Settings(**{**settings.__dict__,
+                            "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir})
+    if args.fixture:
+        body = Path(args.fixture).read_bytes()
+        value = json.loads(body)
+        if (isinstance(value, list) and value
+                and all(isinstance(item, dict) and isinstance(item.get("uri"), str)
+                        for item in value)):
+            records = value
+            graph = transform_committees(records)
+            validate_committees(records, graph)
+            if args.output_ttl:
+                Path(args.output_ttl).write_text(turtle(graph), encoding="utf-8")
+            if args.output_nq:
+                Path(args.output_nq).write_text(nquads(graph, COMMITTEES_GRAPH),
+                                                encoding="utf-8")
+            print(json.dumps({"records": len(records), "published": False,
+                              "fixture": True}, sort_keys=True))
+            return 0
+        member_records, _, advertised = _members_fixture_records(Path(args.fixture))
+        complete_fixture = advertised is not None and advertised == len(member_records)
+        member_source_run_id = None
+    else:
+        if store is None:
+            raise ValueError("Committee owner generation requires a complete Members capture")
+        loaded = load_latest_complete_capture(settings.raw_dir, store, "members")
+        if loaded is None:
+            raise ValueError("Committee owner generation requires a successful complete Members API run")
+        member_records = loaded[0]
+        member_source_run_id = loaded[1]["run_id"]
+        complete_fixture = False
+
+    census, provenance = _reference_inputs(
+        endpoint_name="committees", endpoint_records=None,
+        member_records=member_records, store=store, raw_root=settings.raw_dir,
+        endpoint_is_authoritative=False,
+        member_is_authoritative=not bool(args.fixture),
+    )
+    member_graph = candidate_member_dataset(member_records)
+    _write_reference_report(args, census["report"])
+    candidates = build_reference_candidates(census, member_graph=member_graph)
+    graph = candidates["graphs"]["committees"]
+    if args.output_ttl:
+        Path(args.output_ttl).write_text(turtle(graph), encoding="utf-8")
+    if args.output_nq:
+        Path(args.output_nq).write_text(nquads(graph, COMMITTEES_GRAPH),
+                                        encoding="utf-8")
+
+    endpoint = None if args.offline else (args.fuseki_gsp_url or settings.fuseki_gsp_url)
+    query_endpoint = None if args.offline else (args.fuseki_sparql_url or settings.fuseki_sparql_url)
+    published = 0
+    if endpoint and not args.fixture:
+        if not query_endpoint:
+            raise ValueError("Fuseki SPARQL endpoint is required for post-load whole-graph verification")
+        if store is None:
+            raise RuntimeError("online Committee publication requires durable core ETL state")
+        client = FusekiSparqlClient(query_endpoint, user=settings.fuseki_user,
+                                    password=settings.fuseki_password,
+                                    timeout=settings.timeout)
+        loader = FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user,
+                                       password=settings.fuseki_password,
+                                       timeout=settings.timeout)
+        previous = _previous_reference_graphs(store, client, loader)
+        candidates = build_reference_candidates(
+            census, member_graph=member_graph, previous_graphs=previous)
+        published = _publish_reference_graphs(
+            candidates["graphs"], store=store, loader=loader, client=client,
+            coverage_authoritative=True,
+            member_source_run_id=member_source_run_id,
+        )
+        verify_reference_closure(client)
+    elif endpoint and args.fixture:
+        # Fixture observations can validate and serialize candidate RDF, but
+        # they never become authoritative shared owner-graph publication.
+        published = 0
     elif not args.offline:
         raise ValueError("no Fuseki GSP endpoint configured; use --offline for fixture/developer runs")
-    print(json.dumps({"records": len(records), "published": bool(endpoint)}, sort_keys=True))
+    print(json.dumps({"records": len(census["records"]["committees"]),
+                      "published": bool(published), "published_graphs": published,
+                      "fixture_complete": complete_fixture,
+                      "reference_census": reference_census_summary(census["report"]),
+                      "reference_closure": candidates["closure"]}, sort_keys=True))
     return 0
 
 
@@ -1106,6 +1454,24 @@ def _run_members_impl_body(args: argparse.Namespace, store: CoreStateStore | Non
                     graph = None
                     status = "skipped"
         graphs.append((wrapper, graph, identity, digest, exclusions, status))
+
+    reference_census = None
+    reference_candidates = None
+    member_candidate_graph = None
+    if not args.fixture and complete_scan:
+        reference_census, _reference_provenance = _reference_inputs(
+            endpoint_name="members", endpoint_records=None,
+            member_records=records, store=store, raw_root=raw_root,
+            endpoint_is_authoritative=False,
+            member_is_authoritative=True,
+        )
+        _write_reference_report(args, reference_census["report"])
+        member_candidate_graph = candidate_member_dataset(records)
+        # Fail closed on census conflicts and candidate closure before any
+        # owner or Member graph is mutated.
+        reference_candidates = build_reference_candidates(
+            reference_census, member_graph=member_candidate_graph)
+
     if args.output_nq:
         Path(args.output_nq).write_text("".join(nquads(graph, graph_iri) for wrapper, graph, identity, digest, exclusions, _ in graphs if graph is not None for graph_iri in [member_graph_iri(wrapper["member"])]), encoding="utf-8")
     if getattr(args, "output_ttl", None):
@@ -1124,6 +1490,20 @@ def _run_members_impl_body(args: argparse.Namespace, store: CoreStateStore | Non
             raise RuntimeError("online Member publication requires durable core ETL state")
         loader = FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
         client = FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
+        if reference_candidates is not None:
+            if store is None:
+                raise RuntimeError("authoritative Member reference publication requires durable core ETL state")
+            previous = _previous_reference_graphs(store, client, loader)
+            reference_candidates = build_reference_candidates(
+                reference_census, member_graph=member_candidate_graph,
+                previous_graphs=previous)
+            _publish_reference_graphs(
+                reference_candidates["graphs"], store=store, loader=loader,
+                client=client, coverage_authoritative=True,
+                member_source_run_id=(extraction_id if store is not None
+                                      and complete_scan and not args.fixture else None))
+            if hasattr(client, "query"):
+                verify_reference_closure(client)
         for wrapper, graph, identity, digest, exclusions, status in graphs:
             if graph is None:
                 prior = store.get_resource("members", identity)
@@ -1226,6 +1606,8 @@ def _run_members_impl_body(args: argparse.Namespace, store: CoreStateStore | Non
                                        payload_hash=payload_hash, contract_version=3)
             _try_mark_due(reconciliation_store, "member", wrapper, force=status == "new")
             published += 1
+        if reference_candidates is not None and hasattr(client, "query"):
+            verify_reference_closure(client)
         for row in known:
             if row["resource_iri"] in seen or row["publication_state"] != "dirty":
                 continue
@@ -2093,7 +2475,7 @@ def run_state_status(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="oir-etl")
     sub = parser.add_subparsers(dest="command", required=True)
-    run = sub.add_parser("run"); run.add_argument("endpoint", choices=["houses", "parties", "constituencies", "administrative-units", "offices", "members", "bills"])
+    run = sub.add_parser("run"); run.add_argument("endpoint", choices=["houses", "parties", "constituencies", "committees", "administrative-units", "offices", "members", "bills"])
     run.add_argument("--fixture"); run.add_argument("--offline", action="store_true"); run.add_argument("--raw-dir")
     run.add_argument("--registry-file", help="version-controlled office/unit registry JSON")
     run.add_argument("--review-file", help="version-controlled local office observation decisions JSON")
@@ -2108,6 +2490,7 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--legacy-state-file", "--state-file", dest="legacy_state_file",
                      help="read-only legacy Member/Bill JSON manifest to import once")
     run.add_argument("--output-ttl"); run.add_argument("--output-nq"); run.add_argument("--fuseki-gsp-url"); run.add_argument("--fuseki-sparql-url")
+    run.add_argument("--coverage-report", help="write deterministic reference census JSON")
     state = sub.add_parser("state"); state_sub = state.add_subparsers(dest="state_command", required=True)
     state_status = state_sub.add_parser("status"); state_status.add_argument("--state-db")
     reconcile = sub.add_parser("reconcile"); reconcile.add_argument("endpoint", choices=["members", "parties", "institutions", "offices"])

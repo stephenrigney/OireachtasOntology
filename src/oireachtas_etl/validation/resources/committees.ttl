@@ -1,0 +1,29 @@
+@prefix : <https://data.oireachtas.ie/ontology/members#> .
+@prefix agents: <https://data.oireachtas.ie/ontology#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:CommitteeShape a sh:NodeShape ;
+  sh:targetClass :Committee ;
+  sh:property [ sh:path :committeeInHouseTerm ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+  sh:property [ sh:path :committeeCode ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path :committeeID ; sh:maxCount 1 ; sh:datatype xsd:integer ] ;
+  sh:property [ sh:path :hasCommitteeDateRange ; sh:maxCount 1 ; sh:class :DateRange ] ;
+  sh:property [ sh:path skos:prefLabel ; sh:maxCount 2 ; sh:languageIn ( "en" "ga" ) ] ;
+  sh:property [ sh:path agents:hasCommitteeType ; sh:in ( agents:SelectCommitteeType agents:JointCommitteeType agents:SpecialCommitteeType ) ] ;
+  sh:property [ sh:path agents:hasCommitteePurpose ; sh:in ( agents:PolicyPurpose agents:ShadowDepartmentPurpose ) ] ;
+  sh:sparql [
+    sh:message "Committee must not use OireachtasMembership.inHouseTerm or membership tenure dates" ;
+    sh:select "PREFIX : <https://data.oireachtas.ie/ontology/members#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> SELECT $this WHERE { { $this :inHouseTerm ?term } UNION { $this :hasMembershipDateRange ?range } }"
+  ] ;
+  sh:sparql [
+    sh:message "Committee preferred labels must be unique per language" ;
+    sh:select "PREFIX : <https://data.oireachtas.ie/ontology/members#> PREFIX skos: <http://www.w3.org/2004/02/skos/core#> SELECT $this WHERE { $this skos:prefLabel ?left, ?right . FILTER (?left != ?right && LANG(?left) = LANG(?right)) }"
+  ] .
+
+:CommitteeDateRangeShape a sh:NodeShape ;
+  sh:targetClass :DateRange ;
+  sh:property [ sh:path :StartDate ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:dateTime ] ;
+  sh:property [ sh:path :EndDate ; sh:maxCount 1 ; sh:datatype xsd:dateTime ] .

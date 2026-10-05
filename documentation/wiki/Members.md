@@ -43,7 +43,7 @@ https://data.oireachtas.ie/ie/oireachtas/house/seanad/{no}     — a numbered Se
 | `members:House` | `agents:House` | The two plenary houses as membership containers (`equivalentClass Dail ∪ Seanad`); excludes committees |
 | `members:Dail` | `members:House` | Dáil membership-container class; not a Dáil term |
 | `members:Seanad` | `members:House` | Seanad membership-container class; not a Seanad term |
-| `members:Committee` | `org:Organization` | A parliamentary committee. URI pattern: `<https://data.oireachtas.ie/ie/oireachtas/committee/{slug}/{term-no}>` |
+| `members:Committee` | `org:Organization` | A parliamentary committee. Members API URI pattern: `<https://data.oireachtas.ie/ie/oireachtas/committee/{houseCode}/{houseNo}/{slug}>`; its HouseTerm is derived from its own source IRI and descriptions belong to `https://data.oireachtas.ie/graph/committees`. |
 
 #### [House properties](#house-property)
 

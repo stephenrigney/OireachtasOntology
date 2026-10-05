@@ -70,7 +70,8 @@ def assert_expected(graph: Graph, expected: set[tuple]) -> None:
         raise ValueError("source-to-RDF correspondence failed: " + " | ".join(details))
 
 
-def validate_parties_correspondence(records: list[dict], graph: Graph | None) -> None:
+def validate_parties_correspondence(records: list[dict], graph: Graph | None,
+                                   retained_graph: Graph | None = None) -> None:
     expected = set()
     for wrapper in records:
         if not isinstance(wrapper, dict) or not isinstance(wrapper.get("party"), dict) or not isinstance(wrapper.get("house"), dict):
@@ -86,11 +87,15 @@ def validate_parties_correspondence(records: list[dict], graph: Graph | None) ->
             (subject, MEMBERS.activeDuringTerm, term),
         })
         expected.add((subject, RDF.type, MEMBERS.IndependentMemberCollection if code == "Independent" else MEMBERS.ParliamentaryParty))
+    if retained_graph is not None:
+        expected.update(retained_graph)
     if graph is not None:
         assert_expected(graph, expected)
 
 
-def validate_constituencies_correspondence(records: list[dict], graph: Graph | None, represent_types: dict) -> None:
+def validate_constituencies_correspondence(records: list[dict], graph: Graph | None,
+                                           represent_types: dict,
+                                           retained_graph: Graph | None = None) -> None:
     expected = set()
     for wrapper in records:
         if not isinstance(wrapper, dict) or not isinstance(wrapper.get("constituencyOrPanel"), dict) or not isinstance(wrapper.get("house"), dict):
@@ -109,5 +114,7 @@ def validate_constituencies_correspondence(records: list[dict], graph: Graph | N
             (subject, SKOS.prefLabel, english(representation.get("showAs"))),
             (subject, MEMBERS.constituencyInHouseTerm, term),
         })
+    if retained_graph is not None:
+        expected.update(retained_graph)
     if graph is not None:
         assert_expected(graph, expected)

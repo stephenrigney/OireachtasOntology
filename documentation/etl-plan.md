@@ -1068,9 +1068,34 @@ Wikipedia link is asserted. Nothing was published to production.
 
 ### Status and purpose
 
-**Planned corrective tranche.** This work was identified after Phase 5 and
-closes a source-coverage assumption in the implemented Phase 2/3 boundary; it
-does not reopen the Member semantic model or the Phase 5 state architecture.
+**Implementation complete; authoritative coverage acceptance blocked.** The
+deterministic census, historical-owner transforms, Committee vertical,
+pre-publication and remote closure checks, capture provenance and Core State
+publication/recovery handling are implemented and regression-tested. Repository
+validation now passes through the Java version pinned in `mise.toml`. However,
+the complete Members capture contains one material Committee identity conflict.
+Fail-closed behavior blocks candidate publication, and the current all-owner
+preflight also blocks otherwise unaffected reference graphs and Member updates;
+that blast radius is a documented design question below, not an accepted
+resolution of the source conflict. No production Graph Store publication has
+been performed.
+
+The three acceptance statuses are distinct:
+
+- **Implementation:** complete for the approved contracts and explicitly
+  documented limitations.
+- **Validation:** repository ontology validation, mapping integrity, focused
+  ETL/SHACL/golden/recovery checks and the full test suite pass under `mise`.
+  The authoritative census itself validates raw capture integrity and reports
+  the conflicting identity; candidate construction correctly fails closed on
+  that conflict before closure can be evaluated.
+- **Authoritative coverage acceptance:** not complete. The exact-IRI Committee
+  conflict remains unresolved and the human decision on conflict blast radius
+  is outstanding.
+
+This corrective tranche closes a source-coverage assumption in the implemented
+Phase 2/3 boundary; it does not reopen the Member semantic model or redesign the
+Phase 5 state architecture.
 
 Phase 2 treats `/v1/parties` and `/v1/constituencies` as the owner sources
 for parliamentary collections and constituencies/panels. Those endpoints are
@@ -1236,6 +1261,13 @@ The first owner contract should map:
 - English/Irish preferred labels from the latest unambiguous supplied
   Committee-name observation.
 
+Committee names are the intentional temporal exception to all-observation
+field concordance: the latest valid open-ended name interval (or latest valid
+historical interval if none is open-ended) is selected independently per
+language; a tie with different lexical values is reported ambiguous and omitted.
+This does not alter the exact-IRI identity rule or the agreement requirement
+for Committee codes, IDs, classification, term and operational date range.
+
 Do not infer Select/Joint/Special type from a label or URI slug when the source
 does not supply that classification.
 
@@ -1329,6 +1361,166 @@ Implementation is complete only when:
 - ontology consistency, mapping integrity, SHACL, deterministic/golden tests,
   closure queries and the full existing test suite pass; and
 - no NLQ behavior or Member semantic contract is changed.
+
+### Deterministic census checkpoint
+
+The repeatable audit command is `tools/reference_census.py`; it verifies raw
+page hashes, pagination, advertised totals and the Members unique-record count
+before emitting the full deterministic JSON observation report. Against the
+complete 1,928-Member API capture `run-d2c089d0-5203-40f1-97b8-ae0d8285e74d`
+and the captured standalone Parties and Constituencies runs from 2026-10-04,
+the census found:
+
+| Kind | Distinct IRIs | Members-only | Endpoint overlap/concordant | Conflicting |
+|---|---:|---:|---:|---:|
+| Party/Independent collection | 378 | 367 | 11 | 0 |
+| Dáil constituency/Seanad panel | 1,529 | 1,521 | 8 | 0 |
+| Committee | 268 | 267 | 0 | 1 |
+
+The report contains 17,557 observations: 7,329 Party, 7,174 representation and
+3,054 Committee observations. It identifies 2,174 closable identities, zero
+minimum-contract insufficient-evidence identities, one conflicting identity,
+18 malformed observations and 24 Committee-name ambiguity diagnostics. No
+placeholder owner is emitted. The census consolidates 367 historical
+Party/Independent owners absent from the standalone Parties capture and 1,521
+historical constituency/panel owners absent from the standalone Constituencies
+capture; 11 Party and 8 representation IRIs overlap concordantly with their
+standalone captures. It also consolidates 267 closable Committee owners. These
+are source-grounded candidate records, not evidence that a shared graph was
+published: the material Committee conflict currently blocks candidate graph
+construction and authoritative coverage acceptance.
+
+#### Raw evidence for the single Committee conflict
+
+The evidence below was inspected directly in the immutable, hash-verified raw
+Members pages from run
+`run-d2c089d0-5203-40f1-97b8-ae0d8285e74d`, not inferred from RDF. All 14
+observations use this exact Committee IRI:
+
+```text
+https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/select_committee_on_the_implementation_of_the_good_friday_agreement
+```
+
+The IRI itself derives Committee HouseTerm
+`https://data.oireachtas.ie/ie/oireachtas/house/dail/33`. All 14 containing
+Member membership objects also identify HouseTerm
+`https://data.oireachtas.ie/ie/oireachtas/house/dail/33`. No nested Committee
+object supplies explicit `houseCode` or `houseNo`; the source IRI supplies the
+Committee term independently of Member context.
+
+Thirteen observations have the same Committee-owned evidence: code `"115"`,
+ID `115`, type/purpose `Shadow Department`, operational range
+2020-07-23–2024-11-08, `status`/`mainStatus` `Archived`, `expiryType`
+`Sessional`, and `serviceUnit` `Committees' Secretariat`. Their name interval
+starts 2020-07-23 and is open-ended; English is “Select Committee on the
+Implementation of the Good Friday Agreement ” (the source value has a trailing
+space) and Irish is “An Roghchoiste um Fhorfheidhmiú Chomhaontú Aoine an
+Chéasta”. The trailing English space is harmless under the documented
+comparison normalization. The individual raw locations and Member relationship
+date ranges are:
+
+| Source Member IRI | Raw page and JSON Pointer | Member's Committee-membership range |
+|---|---|---|
+| `https://data.oireachtas.ie/ie/oireachtas/member/id/Jennifer-Carroll-MacNeill.D.2020-02-08` | `skip-000200.json` `/results/77/member/memberships/0/membership/committees/2` | 2020-09-08–2022-12-21 |
+| `https://data.oireachtas.ie/ie/oireachtas/member/id/Rose-Conway-Walsh.S.2016-04-25` | `skip-000300.json` `/results/82/member/memberships/1/membership/committees/8` | 2020-09-08–2024-11-08 |
+| `https://data.oireachtas.ie/ie/oireachtas/member/id/Patrick-Costello.D.2020-02-08` | `skip-000400.json` `/results/14/member/memberships/0/membership/committees/0` | 2020-09-08–2024-11-08 |
+| `https://data.oireachtas.ie/ie/oireachtas/member/id/Frank-Feighan.S.2002-09-12` | `skip-000600.json` `/results/62/member/memberships/4/membership/committees/4` | 2023-03-07–2024-11-08 |
+| `https://data.oireachtas.ie/ie/oireachtas/member/id/James-Lawless.D.2016-10-03` | `skip-001000.json` `/results/72/member/memberships/1/membership/committees/1` | 2020-09-08–2024-06-27 |
+| `https://data.oireachtas.ie/ie/oireachtas/member/id/Pádraig-MacLochlainn.D.2011-03-09` | `skip-001100.json` `/results/42/member/memberships/2/membership/committees/6` | 2020-09-08–2021-09-28 |
+| `https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08` | `skip-001200.json` `/results/7/member/memberships/0/membership/committees/2` | 2024-09-25–2024-11-08 |
+| `https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-McNamara.D.2011-03-09` | `skip-001300.json` `/results/0/member/memberships/1/membership/committees/3` | 2020-09-08–2022-10-25 |
+| `https://data.oireachtas.ie/ie/oireachtas/member/id/Fergus-O'Dowd.S.1997-09-17` | `skip-001400.json` `/results/98/member/memberships/5/membership/committees/4` | 2020-09-08–2024-11-08 |
+| `https://data.oireachtas.ie/ie/oireachtas/member/id/Brendan-Smith.D.1992-12-14` | `skip-001700.json` `/results/60/member/memberships/6/membership/committees/0` | 2020-09-08–2024-11-08 |
+| `https://data.oireachtas.ie/ie/oireachtas/member/id/Pauline-Tully.D.2020-02-08` | `skip-001800.json` `/results/19/member/memberships/0/membership/committees/0` | 2021-09-28–2024-11-08 |
+| `https://data.oireachtas.ie/ie/oireachtas/member/id/Peadar-Tóibín.D.2011-03-09` | `skip-001800.json` `/results/25/member/memberships/2/membership/committees/1` | 2020-09-08–2024-11-08 |
+| `https://data.oireachtas.ie/ie/oireachtas/member/id/Violet-Anne-Wynne.D.2020-02-08` | `skip-001800.json` `/results/85/member/memberships/0/membership/committees/0` | 2022-11-22–2024-11-08 |
+
+At the adjacent `/results/98/member/memberships/5` location for Fergus
+O'Dowd, the same membership simultaneously contains a second Committee object
+at `skip-001400.json` `/results/98/member/memberships/5/membership/committees/5`.
+It repeats the exact Committee IRI but supplies code `"156"`, ID `156`,
+`committeeType` `["Shadow Department", "Policy"]`, a
+`committeeDateRange` whose `start` and `end` are both null, and
+`status`/`mainStatus` `Deleted`. Its English name has the same normalized
+lexical value but no trailing space, its name interval starts 2020-09-09 and
+is open-ended, and its Irish name is null. `expiryType` and `serviceUnit` match
+the other observations. Its containing Committee-membership range is
+2020-09-08–2020-09-18 and its Member role is `Cathaoirleach`; these are
+Member-owned relationship facts, not Committee-owner tenure. The matching
+`committeeCode` 115 observation for the same Member carries a role with an
+open-ended date range.
+
+This is not a harmless normalization difference. It is direct same-snapshot
+contradiction of the mapped code, ID, classification and operational range.
+Although the name interval and `Deleted` status suggest a stale or superseded
+record, both Committee objects occur simultaneously in one Member membership,
+and the disputed operational range supplies no dates by which to model code/ID
+as temporal values. Under the approved exact-IRI owner contract this is a
+demonstrable source-data inconsistency; the raw evidence cannot distinguish an
+upstream duplicate/error from two underlying Committee records being assigned
+one IRI. The Committee identity contract is therefore not safely resolvable
+from this capture. No majority vote, observation precedence, label similarity,
+IRI rewrite or ID/code selection is applied.
+
+#### Independent audit dispositions and remaining design issue
+
+- A malformed Committee observation can no longer hide other comparable
+  owner-field disagreements: normalized partial evidence participates only in
+  conflict detection, never RDF record selection. Invalid optional code/ID
+  values are withheld and reported while a valid IRI/HouseTerm may still form
+  a closable minimal owner. If a malformed value competes with a comparable
+  value for the same mapped field, the identity fails closed. There is no
+  invented completeness-ratio threshold; the current contract maps code/ID
+  “where supplied” and the census exposes malformed-field counts.
+- Online fixtures cannot replace an already authoritative shared graph or
+  establish authoritative coverage; they may still exercise non-authoritative
+  publication against an empty/non-authoritative graph. The direct online
+  Committee publication path now has a regression test covering candidate
+  validation, dirty-state publication, graph verification and graph-scoped
+  closure-query calls.
+- Shared graph publication records the exact Members source-run ID used. A
+  later command refuses to rebuild an owner graph from an older complete
+  Members capture, preventing a failed newer Member run from causing a
+  subsequent standalone refresh to roll owner data back. Identical verified
+  payloads can advance this provenance without a redundant PUT.
+- No global `committeeCode` uniqueness constraint is added: the preserved
+  capture has 35 Committee codes reused across distinct exact IRIs, including
+  across HouseTerms. `committeeID` uniqueness is also not an approved identity
+  rule. The IRI remains the only consolidation key; no cross-IRI merge is
+  performed.
+- **Conflict blast radius is unresolved.** `build_reference_candidates`
+  currently rejects the full candidate set when any identity conflicts. A
+  conflict in the Committee census therefore blocks publication of the
+  unconflicted Party/Constituency candidates and current Member graphs as well
+  as the Committee graph; it also defers their normal dirty-resource retry
+  until the preflight can pass. This is more conservative than the plan's
+  “affected shared graph” wording. Narrowing it would require an agreed policy
+  for partial owner-graph publication, closure exceptions and Phase 5 recovery
+  ordering. No such policy is introduced here. Human review must decide whether
+  to accept the all-or-nothing preflight or approve a narrowly scoped policy;
+  until then, authoritative coverage acceptance remains blocked.
+- The audit's proposed cross-IRI `committeeCode` guard is not added because
+  code reuse is present in the authoritative capture and the mapping contract
+  defines exact IRI—not code—as identity. Duplicate `committeeID` values are
+  not present in this capture, but uniqueness is not specified by the existing
+  mapping/ontology contract. Raw-capture integrity now applies the same Member
+  graph-code collision checks as Member ETL ingestion, so distinct source IRIs
+  cannot pass the completeness boundary and later alias one Member owner graph.
+- The Python closure validator uses the shared graph-IRI configuration. The
+  graph-specific competency `.rq` remains a static acceptance query with the
+  literal named-graph IRI, following the repository's existing query-resource
+  pattern; it is not used as runtime publication configuration.
+
+Automated validation is run using the pinned `temurin-8.0.504+1` runtime via
+`mise exec`. The current run passed ontology validation (2,504 triples),
+mapping-integrity validation, and the full suite (580 passed, 9 expected
+skips). The authoritative census command passed raw Members/Parties/
+Constituencies hash, pagination, endpoint-URL, advertised-count and state-run
+provenance checks, then reported the counts above. The Committee conflict causes
+candidate construction to abort before closure evaluation; therefore full
+candidate/closure/publication acceptance cannot complete. No production Graph
+Store was contacted. Implementation and repository validation are complete;
+authoritative coverage acceptance is not.
 
 
 ## Phase 5 — Incremental refresh and ETL state

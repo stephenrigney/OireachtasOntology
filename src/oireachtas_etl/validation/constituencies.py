@@ -35,9 +35,11 @@ def validate_quality(graph: Graph) -> None:
         raise ValueError("quality checks failed: " + "; ".join(str(row) for row in failures))
 
 
-def validate_constituencies(records: list[dict], graph: Graph) -> None:
+def validate_constituencies(records: list[dict], graph: Graph, *,
+                            retained_graph: Graph | None = None) -> None:
     validate_source(records)
-    validate_constituencies_correspondence(records, graph, EXPECTED_REPRESENT_TYPES)
+    validate_constituencies_correspondence(records, graph, EXPECTED_REPRESENT_TYPES,
+                                           retained_graph)
     validate_rdf(graph)
     validate_shacl(graph)
     validate_quality(graph)

@@ -154,7 +154,7 @@ def test_core_schema_v1_upgrades_resources_and_reopens(tmp_path):
             hashlib.sha256(pending_payload.encode()).hexdigest(), 1))
 
     with CoreStateStore(database) as store:
-        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 4
         clean = store.get_resource("members", member_identity)
         dirty = store.get_resource("legislation", bill_identity)
         assert clean["publication_state"] == "clean"
@@ -175,7 +175,7 @@ def test_core_schema_v1_upgrades_resources_and_reopens(tmp_path):
         assert store.incremental_cursor() is None
 
     with CoreStateStore(database) as reopened:
-        assert reopened.connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert reopened.connection.execute("PRAGMA user_version").fetchone()[0] == 4
         assert reopened.get_resource("members", member_identity)["published_source_hash"] == "b" * 64
         assert reopened.get_resource("legislation", bill_identity)["pending_source_hash"] == "e" * 64
 
@@ -224,7 +224,7 @@ def test_core_schema_v2_migration_preserves_runs_and_adds_registry_endpoints(tmp
           VALUES ('houses','prior-run','prior-run',NULL,NULL,'2026-01-01T00:00:01+00:00')""")
 
     with CoreStateStore(database) as store:
-        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 4
         prior = store.connection.execute("SELECT endpoint,status FROM etl_run WHERE run_id='prior-run'").fetchone()
         assert (prior["endpoint"], prior["status"]) == ("houses", "succeeded")
         assert store.endpoint_publication("houses") is None
@@ -370,7 +370,7 @@ def test_core_state_cli_status_reports_database_without_reconciliation_state(tmp
     database = tmp_path / "core.sqlite"
     assert main(["state", "status", "--state-db", str(database)]) == 0
     output = json.loads(capsys.readouterr().out)
-    assert output["schema_version"] == 3 and output["database"] == str(database)
+    assert output["schema_version"] == 4 and output["database"] == str(database)
     assert output["endpoints"] == [] and output["recent_runs"] == []
 
 
@@ -399,6 +399,7 @@ def test_shared_graph_run_and_durable_publication_state(tmp_path, endpoint, grap
     with CoreStateStore(database) as store:
         assert store.endpoint_publication(endpoint)["publication_state"] == "dirty"
         assert store.endpoint_publication(endpoint)["pending_payload_hash"] == digest
+        assert store.endpoint_publication(endpoint)["pending_payload"] == "validated payload"
         with pytest.raises(CoreStateError, match="does not match pending"):
             store.complete_endpoint_publication(endpoint, graph, "bad")
         store.complete_endpoint_publication(endpoint, graph, digest)
@@ -406,9 +407,33 @@ def test_shared_graph_run_and_durable_publication_state(tmp_path, endpoint, grap
                                   parameters={"source": "fixture"})
         store.finish_run(success, success=True)
         status = store.status()["endpoints"][0]
-        assert status["last_successful_complete_run_id"] == success
+        assert status["last_successful_complete_run_id"] is None
         assert status["publication"]["published_payload_hash"] == digest
+        assert status["publication"]["published_payload"] == "validated payload"
         assert status["publication"]["publication_state"] == "clean"
+        assert status["publication"]["coverage_authoritative"] is False
+
+
+@pytest.mark.parametrize(("endpoint", "source"), [
+    ("houses", "api"), ("parties", "api"), ("constituencies", "api"),
+    ("members", "api"), ("legislation", "api"),
+    ("committees", "members"),
+    ("administrative-units", "registry"), ("offices", "registry"),
+])
+def test_only_endpoint_authoritative_complete_runs_are_selectable(tmp_path, endpoint, source):
+    database = tmp_path / "core.sqlite"
+    with CoreStateStore(database) as store:
+        fixture = store.start_run(endpoint, "full_refresh", is_complete=True,
+                                  parameters={"source": "fixture"})
+        store.finish_run(fixture, success=True)
+        assert store.successful_complete_run(endpoint, fixture) is None
+
+        authoritative = store.start_run(endpoint, "full_refresh", is_complete=True,
+                                         parameters={"source": source,
+                                                     "api_url": "https://api.oireachtas.ie/v1/" + endpoint})
+        store.finish_run(authoritative, success=True)
+        assert store.last_successful_complete_run(endpoint)["run_id"] == authoritative
+        assert store.successful_complete_run(endpoint, authoritative)["run_id"] == authoritative
 
 
 @pytest.mark.parametrize("endpoint,fixture", [
@@ -438,8 +463,30 @@ def test_shared_graph_cli_verification_failure_recovers_without_clean_state(
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
     monkeypatch.setattr(cli, "FusekiSparqlClient", Client)
     monkeypatch.setattr(cli, "verify_core_graph", verify)
+    fixture_path = ROOT / "data/api_examples" / fixture
+    use_fixture = endpoint == "houses"
+    if not use_fixture:
+        from oireachtas_etl.api import ApiPage
+
+        envelope = json.loads(fixture_path.read_text(encoding="utf-8"))
+        if isinstance(envelope, list):
+            count_field = ("partyCount" if endpoint == "parties"
+                           else "constituencyCount")
+            envelope = {"head": {"counts": {count_field: len(envelope)}},
+                        "results": envelope}
+
+        class Api:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def harvest(self, *, limit):
+                yield ApiPage(json.dumps(envelope).encode("utf-8"), 200,
+                              {"skip": 0, "limit": limit})
+
+        monkeypatch.setattr(cli, "ApiClient", Api)
     database = tmp_path / "core.sqlite"
-    args = Namespace(endpoint=endpoint, fixture=str(ROOT / "data/api_examples" / fixture),
+    args = Namespace(endpoint=endpoint,
+                     fixture=str(fixture_path) if use_fixture else None,
                      offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(database),
                      output_ttl=None, output_nq=None, fuseki_gsp_url="http://local.test/data",
                      fuseki_sparql_url="http://local.test/query",

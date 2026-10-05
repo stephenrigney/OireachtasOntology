@@ -25,9 +25,10 @@ def validate_quality(graph: Graph) -> None:
         raise ValueError("quality checks failed: " + "; ".join(str(row) for row in failures))
 
 
-def validate_parties(records: list[dict], graph: Graph) -> None:
+def validate_parties(records: list[dict], graph: Graph, *,
+                     retained_graph: Graph | None = None) -> None:
     validate_source(records)
-    validate_parties_correspondence(records, graph)
+    validate_parties_correspondence(records, graph, retained_graph)
     validate_rdf(graph)
     validate_shacl(graph)
     validate_quality(graph)

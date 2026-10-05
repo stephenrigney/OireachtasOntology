@@ -109,6 +109,35 @@ def _run(endpoint: str, fixture: Path, state_db: Path, raw_dir: Path) -> int:
     ])
 
 
+def _run_live(endpoint: str, records: list[dict], state_db: Path,
+              raw_dir: Path, monkeypatch) -> int:
+    """Exercise the authoritative API branch without making network calls."""
+    from oireachtas_etl.api import ApiPage
+
+    count_field = {"parties": "partyCount",
+                   "constituencies": "constituencyCount"}[endpoint]
+    envelope = {"head": {"counts": {count_field: len(records)}},
+                "results": records}
+
+    class Api:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def harvest(self, *, limit):
+            yield ApiPage(json.dumps(envelope).encode("utf-8"), 200,
+                          {"skip": 0, "limit": limit})
+
+    monkeypatch.setattr(cli, "ApiClient", Api)
+    return cli.main([
+        "run", endpoint,
+        "--state-db", str(state_db),
+        "--raw-dir", str(raw_dir),
+        "--reconciliation-state-file", str(state_db.parent / "reconciliation.sqlite"),
+        "--fuseki-gsp-url", "http://fuseki.test/houses/data",
+        "--fuseki-sparql-url", "http://fuseki.test/houses/query",
+    ])
+
+
 def _published(dataset: Dataset, graph_iri: str) -> Graph:
     return _copy_graph(dataset.graph(URIRef(graph_iri)))
 
@@ -159,12 +188,11 @@ def test_live_houses_publication_verifies_exact_validated_payload(tmp_path, monk
 
 
 def test_live_parties_publication_verifies_exact_validated_payload(tmp_path, monkeypatch):
-    fixture = _write(tmp_path, "parties.json", {"results": PARTIES})
     dataset = Dataset()
     _patch_online_publication(monkeypatch, dataset)
     state_db = tmp_path / "state.sqlite"
 
-    assert _run("parties", fixture, state_db, tmp_path / "raw") == 0
+    assert _run_live("parties", PARTIES, state_db, tmp_path / "raw", monkeypatch) == 0
 
     expected = Graph().parse(data=ntriples(transform_parties(PARTIES)), format="nt")
     assert set(_published(dataset, PARTIES_GRAPH)) == set(expected)
@@ -173,12 +201,12 @@ def test_live_parties_publication_verifies_exact_validated_payload(tmp_path, mon
 
 
 def test_live_constituencies_publication_verifies_exact_validated_payload(tmp_path, monkeypatch):
-    fixture = _write(tmp_path, "constituencies.json", CONSTITUENCIES)
     dataset = Dataset()
     _patch_online_publication(monkeypatch, dataset)
     state_db = tmp_path / "state.sqlite"
 
-    assert _run("constituencies", fixture, state_db, tmp_path / "raw") == 0
+    assert _run_live("constituencies", CONSTITUENCIES, state_db,
+                     tmp_path / "raw", monkeypatch) == 0
 
     expected = Graph().parse(data=ntriples(transform_constituencies(CONSTITUENCIES)), format="nt")
     assert set(_published(dataset, CONSTITUENCIES_GRAPH)) == set(expected)
@@ -195,12 +223,12 @@ def test_pinned_fixture_expectations_are_not_required_for_live_source_data(tmp_p
     # live source response need not contain Dublin Mid-West or the Agricultural
     # Panel, so the exact fixture expectation must not gate publication.
     source = [CONSTITUENCIES[0]]
-    fixture = _write(tmp_path, "constituencies.json", source)
     dataset = Dataset()
     _patch_online_publication(monkeypatch, dataset)
     state_db = tmp_path / "state.sqlite"
 
-    assert _run("constituencies", fixture, state_db, tmp_path / "raw") == 0
+    assert _run_live("constituencies", source, state_db,
+                     tmp_path / "raw", monkeypatch) == 0
 
     # The exact fixture query still runs and simply finds none of its examples.
     assert list(dataset.query(QUERIES.joinpath("representation-details.rq").read_text())) == []
@@ -214,7 +242,6 @@ def test_pinned_fixture_expectations_are_not_required_for_live_source_data(tmp_p
 
 
 def test_failed_live_verification_keeps_state_dirty_and_rerun_repairs(tmp_path, monkeypatch):
-    fixture = _write(tmp_path, "constituencies.json", CONSTITUENCIES)
     dataset = Dataset()
     _patch_online_publication(monkeypatch, dataset)
     real_verify = cli.verify_core_graph
@@ -230,11 +257,13 @@ def test_failed_live_verification_keeps_state_dirty_and_rerun_repairs(tmp_path, 
     state_db = tmp_path / "state.sqlite"
 
     with pytest.raises(ValueError, match="core graph/state mismatch"):
-        _run("constituencies", fixture, state_db, tmp_path / "raw")
+        _run_live("constituencies", CONSTITUENCIES, state_db,
+                  tmp_path / "raw", monkeypatch)
     with CoreStateStore(state_db) as state:
         # The failed publication leaves the graph dirty; it is never marked clean.
         assert state.endpoint_publication("constituencies")["publication_state"] == "dirty"
 
-    assert _run("constituencies", fixture, state_db, tmp_path / "raw-2") == 0
+    assert _run_live("constituencies", CONSTITUENCIES, state_db,
+                     tmp_path / "raw-2", monkeypatch) == 0
     with CoreStateStore(state_db) as state:
         assert state.endpoint_publication("constituencies")["publication_state"] == "clean"

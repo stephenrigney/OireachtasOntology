@@ -8,7 +8,7 @@ from rdflib.namespace import DCTERMS, RDF, SKOS, XSD
 
 from oireachtas_etl.competency import CONSTITUENCIES_EXPECTED, PARTIES_EXPECTED, QUERIES
 from oireachtas_etl.config import CONSTITUENCIES_GRAPH, PARTIES_GRAPH
-from oireachtas_etl.serialization import nquads
+from oireachtas_etl.serialization import nquads, ntriples
 from oireachtas_etl.transforms.common import MEMBERS, OIR
 from oireachtas_etl.transforms.constituencies import transform_constituencies
 from oireachtas_etl.transforms.parties import transform_parties
@@ -336,7 +336,7 @@ def test_raw_metadata_versions_are_endpoint_specific_and_houses_remain_phase_one
     assert metadata["houses"]["ontology_version"] == "agents.owl.ttl@phase-1-houses-2026"
     assert metadata["houses"]["mapping_version"] == "houses_mapping.csv@phase-1-houses-2026"
     for endpoint, mapping in (("parties", "party_mapping.csv@phase-2-reference-data-2026"), ("constituencies", "constituencies_mapping.csv@phase-2-reference-data-2026")):
-        assert metadata[endpoint]["ontology_version"] == "agents.owl.ttl+members.owl.ttl@phase-2-reference-data-2026"
+        assert metadata[endpoint]["ontology_version"] == "agents.owl.ttl+members.owl.ttl@reference-coverage-2026"
         assert metadata[endpoint]["mapping_version"] == mapping
 
 
@@ -357,3 +357,157 @@ def test_reference_cli_offline_ignores_configured_fuseki_endpoints(tmp_path, mon
                      fuseki_gsp_url=None, fuseki_sparql_url=None)
     assert cli.run_reference(args) == 0
     assert called == []
+
+
+def test_online_fixture_owner_run_cannot_replace_authoritative_shared_graph(
+        tmp_path, monkeypatch):
+    from argparse import Namespace
+    from oireachtas_etl import cli
+    from oireachtas_etl.state import CoreStateStore
+
+    published = []
+
+    class Loader:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def replace(self, graph_iri, payload, **kwargs):
+            published.append(graph_iri)
+
+    class Client:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def construct_graph(self, _graph_iri):
+            return Graph()
+
+        def query(self, _query):
+            return []
+
+    monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
+    monkeypatch.setattr(cli, "FusekiSparqlClient", Client)
+    monkeypatch.setattr(cli, "verify_core_graph", lambda *_args: None)
+    database = tmp_path / "core.sqlite"
+    authoritative_payload = ntriples(transform_parties(PARTIES))
+    with CoreStateStore(database) as store:
+        digest = store.mark_endpoint_dirty(
+            "parties", PARTIES_GRAPH, authoritative_payload,
+            coverage_authoritative=True)
+        store.complete_endpoint_publication(
+            "parties", PARTIES_GRAPH, digest, coverage_authoritative=True)
+    args = Namespace(
+        endpoint="parties", fixture=str(ROOT / "data/api_examples/parties.json"),
+        offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(database),
+        output_ttl=None, output_nq=None, coverage_report=None,
+        fuseki_gsp_url="http://local.test/data", fuseki_sparql_url="http://local.test/query",
+        reconciliation_state_file=str(tmp_path / "reconciliation.sqlite"),
+        registry_file=None,
+    )
+    assert cli.run_reference(args) == 0
+    assert published == []
+    with CoreStateStore(database) as store:
+        publication = store.endpoint_publication("parties")
+        assert publication["coverage_authoritative"] is True
+        assert publication["publication_state"] == "clean"
+        assert publication["published_payload"] == authoritative_payload
+        assert store.last_successful_complete_run("parties") is None
+
+
+def test_committee_fixture_run_is_recorded_as_non_authoritative(tmp_path):
+    from oireachtas_etl.cli import main
+    from oireachtas_etl.state import CoreStateStore
+
+    database = tmp_path / "core.sqlite"
+    assert main([
+        "run", "committees", "--fixture",
+        str(ROOT / "tests/fixtures/committee-owner.json"),
+        "--state-db", str(database), "--raw-dir", str(tmp_path / "raw"),
+    ]) == 0
+    with CoreStateStore(database) as store:
+        assert store.last_successful_complete_run("committees") is None
+        recent = store.connection.execute(
+            "SELECT parameters_json FROM etl_run WHERE endpoint='committees'").fetchone()
+        assert json.loads(recent[0])["source"] == "fixture"
+
+
+def test_committee_authoritative_run_records_its_exact_member_capture(tmp_path):
+    from argparse import Namespace
+    from oireachtas_etl import cli
+    from oireachtas_etl.state import CoreStateStore
+
+    database = tmp_path / "core.sqlite"
+    with CoreStateStore(database) as store:
+        members_run = store.start_run(
+            "members", "full_refresh", is_complete=True,
+            parameters={"source": "api", "api_url": "https://api.oireachtas.ie/v1/members"})
+        store.finish_run(members_run, success=True)
+
+    args = Namespace(endpoint="committees", fixture=None, offline=False,
+                      state_db=str(database), registry_file=None)
+    assert cli._run_shared(args, "committees",
+                           lambda _args, _store, _run_id: 0) == 0
+    with CoreStateStore(database) as store:
+        committee_run = store.last_successful_complete_run("committees")
+        assert committee_run["parameters"]["source"] == "members"
+        assert committee_run["parameters"]["source_run_id"] == members_run
+
+
+def test_online_committee_path_publishes_and_verifies_shared_owner_graphs(
+        tmp_path, monkeypatch, capsys):
+    from argparse import Namespace
+    from oireachtas_etl import cli
+    from oireachtas_etl.config import COMMITTEES_GRAPH
+    from oireachtas_etl.state import CoreStateStore
+
+    member_record = json.loads((ROOT / "data/api_examples/member.json").read_text())
+    calls = []
+    closure_queries = []
+
+    class Loader:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def replace(self, graph_iri, payload, **kwargs):
+            calls.append((graph_iri, payload))
+
+    class Client:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def construct_graph(self, _graph_iri):
+            return Graph()
+
+        def query(self, query):
+            closure_queries.append(query)
+            return []
+
+    monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
+    monkeypatch.setattr(cli, "FusekiSparqlClient", Client)
+    monkeypatch.setattr(cli, "verify_core_graph", lambda *_args: None)
+    database = tmp_path / "core.sqlite"
+    with CoreStateStore(database) as store:
+        member_run = store.start_run(
+            "members", "full_refresh", is_complete=True,
+            parameters={"source": "api", "api_url": "https://api.oireachtas.ie/v1/members"},
+            started_at="2026-10-01T00:00:00+00:00")
+        store.finish_run(member_run, success=True)
+        monkeypatch.setattr(
+            cli, "load_latest_complete_capture",
+            lambda _root, _store, endpoint: (
+                ([member_record], {"run_id": member_run})
+                if endpoint == "members" else None))
+        args = Namespace(
+            fixture=None, offline=False, raw_dir=str(tmp_path / "raw"),
+            output_ttl=None, output_nq=None, coverage_report=None,
+            fuseki_gsp_url="http://local.test/data",
+            fuseki_sparql_url="http://local.test/query",
+        )
+        assert cli._run_committees_impl(args, store, "committee-run") == 0
+        publication = store.endpoint_publication("committees")
+        assert publication["publication_state"] == "clean"
+        assert publication["coverage_authoritative"] is True
+        assert publication["member_source_run_id"] == member_run
+    assert any(graph_iri == COMMITTEES_GRAPH for graph_iri, _ in calls)
+    assert len(closure_queries) == 5
+    report = json.loads(capsys.readouterr().out)
+    assert report["published_graphs"] == 3

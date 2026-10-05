@@ -1,0 +1,18 @@
+[
+  {
+    "uri": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/select_committee_on_finance",
+    "committeeCode": "FC",
+    "committeeID": 123,
+    "committeeType": ["Policy", "Select"],
+    "committeeDateRange": {
+      "start": "2020-01-01",
+      "end": "2024-12-31"
+    },
+    "committeeName": [
+      {
+        "nameEn": "Select Committee on Finance",
+        "nameGa": "An Roghchoiste um Airgeadas"
+      }
+    ]
+  }
+]

@@ -1,0 +1,14 @@
+PREFIX members: <https://data.oireachtas.ie/ontology/members#>
+PREFIX agents: <https://data.oireachtas.ie/ontology#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+SELECT ?committee ?term ?code ?en ?ga WHERE {
+  GRAPH <https://data.oireachtas.ie/graph/committees> {
+    ?committee a members:Committee ;
+               members:committeeInHouseTerm ?term ;
+               members:committeeCode ?code ;
+               skos:prefLabel ?en, ?ga .
+    ?committee agents:hasCommitteeType agents:SelectCommitteeType ;
+               agents:hasCommitteePurpose agents:PolicyPurpose .
+    FILTER (LANG(?en) = "en" && LANG(?ga) = "ga")
+  }
+}

@@ -259,7 +259,7 @@ dct:temporal
 ###  members:Committee — URI pattern for individual committee instances
 
 <https://data.oireachtas.ie/ontology/members#Committee>
-    rdfs:comment "Individual committee instances use the URI pattern <https://data.oireachtas.ie/ie/oireachtas/committee/{slug}/{term-no}>, e.g. <https://data.oireachtas.ie/ie/oireachtas/committee/select_committee_on_finance/34>. The {slug} matches the segment used in debates[].uri in the bill API response, enabling the IRI to be derived directly from existing data. Committee structural type (Select/Joint/Special) is expressed via :hasCommitteeType with members from :CommitteeTypeTable. Functional purpose (Policy/Shadow Department) is expressed via :hasCommitteePurpose with members from :CommitteePurposeTable."@en .
+    rdfs:comment "Individual committee instances use the Members API URI pattern <https://data.oireachtas.ie/ie/oireachtas/committee/{houseCode}/{houseNo}/{slug}>, e.g. <https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/select_committee_on_finance>. The HouseTerm is derived from the Committee's own source IRI. Committee structural type (Select/Joint/Special) is expressed via :hasCommitteeType with members from :CommitteeTypeTable. Functional purpose (Policy/Shadow Department) is expressed via :hasCommitteePurpose with members from :CommitteePurposeTable."@en .
 
 
 #################################################################

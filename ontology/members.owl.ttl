@@ -470,7 +470,7 @@ org:Membership rdfs:subClassOf [ a owl:Restriction ;
 
 :DateRange a owl:Class ;
     rdfs:subClassOf :Temporal ;
-    rdfs:comment "A date range for a membership or role, providing start and end date extents for org:Membership subclasses (the W3C org ontology defines no temporal properties). ELI-DL alignment: eli-dl:LegislativeActivity uses eli-dl:activity_start_date / eli-dl:activity_end_date (xsd:date) directly on activities; :DateRange fills the same need for organisational memberships. Note: :StartDate and :EndDate use xsd:dateTime rather than xsd:date for OWL 2 DL compatibility — xsd:date is not in the OWL 2 datatype map and is not supported by the HermiT reasoner."@en .
+    rdfs:comment "A date range for a membership, role, or Committee operational interval, providing start and optional end date extents. Membership tenure uses :hasMembershipDateRange; Committee operational lifespan uses :hasCommitteeDateRange. ELI-DL alignment: eli-dl:LegislativeActivity uses eli-dl:activity_start_date / eli-dl:activity_end_date (xsd:date) directly on activities. Note: :StartDate and :EndDate use xsd:dateTime rather than xsd:date for OWL 2 DL compatibility — xsd:date is not in the OWL 2 datatype map and is not supported by the HermiT reasoner."@en .
 
 :GovernmentBenches a owl:Class ;
     rdfs:subClassOf :SidesOfHouse ;
@@ -544,7 +544,20 @@ org:Membership rdfs:subClassOf [ a owl:Restriction ;
     rdfs:comment "The plenary Houses of the Oireachtas (Dáil or Seanad) as membership containers. Equivalent to the union of :Dail and :Seanad. The one-way rdfs:subClassOf bridge to agents:House expresses that every plenary house is a continuous agents:House instance; committee chambers (agents:House instances outside the members:House extension) are excluded."@en .
 
 :Committee a owl:Class ;
-    rdfs:subClassOf org:Organization .
+    rdfs:subClassOf org:Organization ;
+    rdfs:comment "An Oireachtas committee individual whose source IRI identifies its own HouseTerm. Committee descriptions are owned by the shared Committee graph; Member graphs contain only CommitteeMembership records and references."@en .
+
+:committeeInHouseTerm a owl:ObjectProperty ;
+    rdfs:domain :Committee ;
+    rdfs:range agents:HouseTerm ;
+    skos:prefLabel "committee in HouseTerm"@en ;
+    rdfs:comment "Links a Committee to the HouseTerm encoded by the Committee's own Oireachtas source IRI. This is independent of :inHouseTerm, whose domain is OireachtasMembership."@en .
+
+:hasCommitteeDateRange a owl:ObjectProperty ;
+    rdfs:domain :Committee ;
+    rdfs:range :DateRange ;
+    skos:prefLabel "has Committee operational date range"@en ;
+    rdfs:comment "Links a Committee to its own operational DateRange. This is distinct from :hasMembershipDateRange, which applies to org:Membership records and carries a Member's relationship tenure."@en .
 
 :isOireachtasMembershipOf a owl:ObjectProperty ;
     rdfs:domain :OireachtasMembership ;

@@ -6,6 +6,7 @@ from pathlib import Path
 HOUSES_GRAPH = "https://data.oireachtas.ie/graph/houses"
 PARTIES_GRAPH = "https://data.oireachtas.ie/graph/parties"
 CONSTITUENCIES_GRAPH = "https://data.oireachtas.ie/graph/constituencies"
+COMMITTEES_GRAPH = "https://data.oireachtas.ie/graph/committees"
 OFFICES_GRAPH = "https://data.oireachtas.ie/graph/offices"
 ADMINISTRATIVE_UNITS_GRAPH = "https://data.oireachtas.ie/graph/administrative-units"
 OFFICE_REGISTRY_FILE = Path("registries/ministerial-office-registry.json")
@@ -21,7 +22,7 @@ BILLS_LEGACY_STATE_FILE = Path.home() / ".local" / "share" / "oireachtas-etl" / 
 # identify one-time JSON migration inputs, not SQLite databases.
 MEMBERS_STATE_FILE = MEMBERS_LEGACY_STATE_FILE
 BILLS_STATE_FILE = BILLS_LEGACY_STATE_FILE
-REFERENCE_ONTOLOGY_VERSION = "agents.owl.ttl+members.owl.ttl@phase-2-reference-data-2026"
+REFERENCE_ONTOLOGY_VERSION = "agents.owl.ttl+members.owl.ttl@reference-coverage-2026"
 
 @dataclass(frozen=True)
 class Settings:

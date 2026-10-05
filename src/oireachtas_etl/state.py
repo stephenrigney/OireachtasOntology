@@ -17,14 +17,20 @@ import uuid
 from urllib.parse import quote, unquote, urlsplit
 
 
-SCHEMA_VERSION = 3
-ENDPOINTS = ("houses", "parties", "constituencies", "members", "legislation",
+SCHEMA_VERSION = 4
+ENDPOINTS = ("houses", "parties", "constituencies", "committees", "members", "legislation",
              "administrative-units", "offices")
 RESOURCE_ENDPOINTS = ("members", "legislation")
+AUTHORITATIVE_COMPLETE_SOURCES = {
+    "houses": "api", "parties": "api", "constituencies": "api",
+    "members": "api", "legislation": "api", "committees": "members",
+    "administrative-units": "registry", "offices": "registry",
+}
 SHARED_GRAPHS = {
     "houses": "https://data.oireachtas.ie/graph/houses",
     "parties": "https://data.oireachtas.ie/graph/parties",
     "constituencies": "https://data.oireachtas.ie/graph/constituencies",
+    "committees": "https://data.oireachtas.ie/graph/committees",
     "administrative-units": "https://data.oireachtas.ie/graph/administrative-units",
     "offices": "https://data.oireachtas.ie/graph/offices",
 }
@@ -202,7 +208,7 @@ class CoreStateStore:
         connection.execute("BEGIN IMMEDIATE")
         try:
             version = connection.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, 1, 2, SCHEMA_VERSION):
+            if version not in (0, 1, 2, 3, SCHEMA_VERSION):
                 raise CoreStateError(f"unsupported core ETL state schema version: {version}")
             if version == 0:
                 # ``executescript`` implicitly commits an open transaction.
@@ -254,6 +260,35 @@ class CoreStateStore:
                     incremental_cursor,publication_metadata_json,updated_at FROM endpoint_state_v2""")
                 connection.execute("DROP TABLE etl_run_v2")
                 connection.execute("DROP TABLE endpoint_state_v2")
+                connection.execute("CREATE INDEX etl_run_endpoint_started ON etl_run(endpoint,started_at)")
+                connection.execute("PRAGMA user_version=3")
+                version = 3
+            if version == 3:
+                # Add the shared Committee owner graph to the existing core
+                # run/publication registry without creating another state DB.
+                connection.execute("DROP INDEX IF EXISTS etl_run_endpoint_started")
+                connection.execute("ALTER TABLE etl_run RENAME TO etl_run_v3")
+                connection.execute("ALTER TABLE endpoint_state RENAME TO endpoint_state_v3")
+                connection.execute("""CREATE TABLE etl_run (
+                  run_id TEXT PRIMARY KEY,
+                  endpoint TEXT NOT NULL CHECK(endpoint IN ('houses','parties','constituencies','committees','members','legislation','administrative-units','offices')),
+                  run_kind TEXT NOT NULL CHECK(run_kind IN ('full_refresh','incremental_refresh','complete_source_reconciliation')),
+                  is_complete INTEGER NOT NULL CHECK(is_complete IN (0,1)),
+                  started_at TEXT NOT NULL, completed_at TEXT,
+                  status TEXT NOT NULL CHECK(status IN ('running','succeeded','failed')),
+                  error TEXT, parameters_json TEXT NOT NULL)""")
+                connection.execute("""CREATE TABLE endpoint_state (
+                  endpoint TEXT PRIMARY KEY CHECK(endpoint IN ('houses','parties','constituencies','committees','members','legislation','administrative-units','offices')),
+                  last_successful_run_id TEXT, last_successful_complete_run_id TEXT,
+                  incremental_cursor TEXT, publication_metadata_json TEXT, updated_at TEXT NOT NULL)""")
+                connection.execute("""INSERT INTO etl_run
+                  SELECT run_id,endpoint,run_kind,is_complete,started_at,completed_at,status,error,parameters_json
+                  FROM etl_run_v3""")
+                connection.execute("""INSERT INTO endpoint_state
+                  SELECT endpoint,last_successful_run_id,last_successful_complete_run_id,
+                    incremental_cursor,publication_metadata_json,updated_at FROM endpoint_state_v3""")
+                connection.execute("DROP TABLE etl_run_v3")
+                connection.execute("DROP TABLE endpoint_state_v3")
                 connection.execute("CREATE INDEX etl_run_endpoint_started ON etl_run(endpoint,started_at)")
                 connection.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
                 version = SCHEMA_VERSION
@@ -387,7 +422,11 @@ class CoreStateStore:
             self.connection.execute("UPDATE etl_run SET completed_at=?,status=?,error=? WHERE run_id=?",
                                     (when, status, None if success else error, run_id))
             if success:
-                complete_run_id = run_id if row["is_complete"] else None
+                source = json.loads(row["parameters_json"]).get("source")
+                complete_run_id = (
+                    run_id if row["is_complete"] and
+                    source == AUTHORITATIVE_COMPLETE_SOURCES[row["endpoint"]]
+                    else None)
                 self.connection.execute("""INSERT INTO endpoint_state
                   (endpoint,last_successful_run_id,last_successful_complete_run_id,incremental_cursor,updated_at)
                   VALUES (?,?,?,?,?) ON CONFLICT(endpoint) DO UPDATE SET
@@ -418,16 +457,83 @@ class CoreStateStore:
         ).fetchone()
         return json.loads(row[0]) if row and row[0] else None
 
-    def mark_endpoint_dirty(self, endpoint: str, graph_iri: str, payload: str) -> str:
+    def last_successful_complete_run(self, endpoint: str) -> dict | None:
+        """Return only a successful complete run from the endpoint's authority."""
+        if endpoint not in ENDPOINTS:
+            raise CoreStateError(f"unsupported core ETL endpoint: {endpoint}")
+        row = self.connection.execute("""SELECT run.* FROM endpoint_state state
+          JOIN etl_run run ON run.run_id=state.last_successful_complete_run_id
+          WHERE state.endpoint=? AND run.status='succeeded' AND run.is_complete=1""",
+                                     (endpoint,)).fetchone()
+        if row is None:
+            return None
+        result = dict(row)
+        result["parameters"] = json.loads(result.pop("parameters_json"))
+        if result["parameters"].get("source") != AUTHORITATIVE_COMPLETE_SOURCES[endpoint]:
+            return None
+        return result
+
+    def successful_complete_run(self, endpoint: str, run_id: str) -> dict | None:
+        """Look up one exact successful complete run from its authority."""
+        if endpoint not in ENDPOINTS:
+            raise CoreStateError(f"unsupported core ETL endpoint: {endpoint}")
+        row = self.connection.execute(
+            "SELECT * FROM etl_run WHERE run_id=? AND endpoint=? "
+            "AND status='succeeded' AND is_complete=1", (run_id, endpoint),
+        ).fetchone()
+        if row is None:
+            return None
+        result = dict(row)
+        result["parameters"] = json.loads(result.pop("parameters_json"))
+        if result["parameters"].get("source") != AUTHORITATIVE_COMPLETE_SOURCES[endpoint]:
+            return None
+        return result
+
+    def member_source_run_started_at(self, run_id: str) -> str:
+        """Return the timestamp for one complete API Members source run.
+
+        A reference owner graph may be published before its enclosing ETL run
+        is finalized, so running and subsequently failed runs remain valid
+        provenance evidence here. This does not make them authoritative input
+        for a later scan; it only orders evidence already used for publication.
+        """
+        row = self.connection.execute(
+            "SELECT endpoint,is_complete,started_at,parameters_json FROM etl_run WHERE run_id=?",
+            (run_id,),
+        ).fetchone()
+        if row is None:
+            raise CoreStateError(f"reference owner source Members run is unknown: {run_id}")
+        parameters = json.loads(row["parameters_json"])
+        if (row["endpoint"] != "members" or row["is_complete"] != 1
+                or parameters.get("source") != "api"):
+            raise CoreStateError(
+                f"reference owner source is not a complete Members API run: {run_id}")
+        return row["started_at"]
+
+    def mark_endpoint_dirty(self, endpoint: str, graph_iri: str, payload: str,
+                            *, coverage_authoritative: bool | None = None,
+                            member_source_run_id: str | None = None) -> str:
         if SHARED_GRAPHS.get(endpoint) != graph_iri:
             raise CoreStateError(f"shared graph identity does not match {endpoint}")
+        if member_source_run_id is not None:
+            self.member_source_run_started_at(member_source_run_id)
         digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
         with self._transaction():
             old = self.endpoint_publication(endpoint) or {}
             metadata = {"graph_iri": graph_iri, "publication_state": "dirty",
                         "published_payload_hash": old.get("published_payload_hash"),
+                        "published_payload": old.get("published_payload"),
+                        "coverage_authoritative": old.get("coverage_authoritative", False),
                         "last_published_at": old.get("last_published_at"),
-                        "pending_payload_hash": digest}
+                        "member_source_run_id": old.get("member_source_run_id"),
+                        "pending_payload_hash": digest,
+                        "pending_payload": payload,
+                        "pending_member_source_run_id": (
+                            member_source_run_id or old.get("member_source_run_id")),
+                        "pending_coverage_authoritative": (
+                            old.get("coverage_authoritative", False)
+                            if coverage_authoritative is None
+                            else bool(coverage_authoritative))}
             self.connection.execute("""INSERT INTO endpoint_state
                 (endpoint,publication_metadata_json,updated_at) VALUES (?,?,?)
                 ON CONFLICT(endpoint) DO UPDATE SET
@@ -435,7 +541,8 @@ class CoreStateStore:
                 updated_at=excluded.updated_at""", (endpoint, _json(metadata), _now()))
         return digest
 
-    def complete_endpoint_publication(self, endpoint: str, graph_iri: str, payload_hash: str) -> None:
+    def complete_endpoint_publication(self, endpoint: str, graph_iri: str, payload_hash: str,
+                                      *, coverage_authoritative: bool | None = None) -> None:
         with self._transaction():
             metadata = self.endpoint_publication(endpoint)
             if (metadata is None or metadata.get("graph_iri") != SHARED_GRAPHS.get(endpoint)
@@ -443,11 +550,42 @@ class CoreStateStore:
                     or metadata.get("publication_state") != "dirty"
                     or metadata.get("pending_payload_hash") != payload_hash):
                 raise CoreStateError(f"shared graph publication does not match pending state: {endpoint}")
+            published_payload = metadata.get("pending_payload")
+            if (not isinstance(published_payload, str)
+                    or hashlib.sha256(published_payload.encode("utf-8")).hexdigest() != payload_hash):
+                raise CoreStateError(f"shared graph pending payload is missing or corrupt: {endpoint}")
+            authoritative = (metadata.get("pending_coverage_authoritative",
+                                           metadata.get("coverage_authoritative", False))
+                             if coverage_authoritative is None
+                             else bool(coverage_authoritative))
             self.connection.execute("""UPDATE endpoint_state SET
                 publication_metadata_json=?,updated_at=? WHERE endpoint=?""",
                 (_json({"graph_iri": graph_iri, "publication_state": "clean",
-                        "published_payload_hash": payload_hash, "last_published_at": _now()}),
+                        "published_payload_hash": payload_hash,
+                        "published_payload": published_payload,
+                        "coverage_authoritative": authoritative,
+                        "member_source_run_id": metadata.get(
+                            "pending_member_source_run_id",
+                            metadata.get("member_source_run_id")),
+                        "last_published_at": _now()}),
                  _now(), endpoint))
+
+    def record_endpoint_member_source_run(self, endpoint: str, run_id: str) -> None:
+        """Advance source provenance after an identical clean graph verifies."""
+        if endpoint not in SHARED_GRAPHS:
+            raise CoreStateError(f"endpoint does not own a shared graph: {endpoint}")
+        self.member_source_run_started_at(run_id)
+        with self._transaction():
+            metadata = self.endpoint_publication(endpoint)
+            if (metadata is None or metadata.get("graph_iri") != SHARED_GRAPHS[endpoint]
+                    or metadata.get("publication_state") != "clean"):
+                raise CoreStateError(
+                    f"cannot advance Member source provenance for a non-clean graph: {endpoint}")
+            metadata["member_source_run_id"] = run_id
+            self.connection.execute(
+                "UPDATE endpoint_state SET publication_metadata_json=?,updated_at=? WHERE endpoint=?",
+                (_json(metadata), _now(), endpoint),
+            )
 
     def observe_resource(self, endpoint: str, resource_iri: str, graph_iri: str,
                          source_hash: str, run_id: str, *, observed_at: str | None = None) -> dict:
@@ -591,7 +729,7 @@ CREATE TABLE core_metadata (
 );
 CREATE TABLE etl_run (
   run_id TEXT PRIMARY KEY,
-   endpoint TEXT NOT NULL CHECK(endpoint IN ('houses','parties','constituencies','members','legislation','administrative-units','offices')),
+   endpoint TEXT NOT NULL CHECK(endpoint IN ('houses','parties','constituencies','committees','members','legislation','administrative-units','offices')),
   run_kind TEXT NOT NULL CHECK(run_kind IN ('full_refresh','incremental_refresh','complete_source_reconciliation')),
   is_complete INTEGER NOT NULL CHECK(is_complete IN (0,1)),
   started_at TEXT NOT NULL,
@@ -602,7 +740,7 @@ CREATE TABLE etl_run (
 );
 CREATE INDEX etl_run_endpoint_started ON etl_run(endpoint,started_at);
 CREATE TABLE endpoint_state (
-    endpoint TEXT PRIMARY KEY CHECK(endpoint IN ('houses','parties','constituencies','members','legislation','administrative-units','offices')),
+    endpoint TEXT PRIMARY KEY CHECK(endpoint IN ('houses','parties','constituencies','committees','members','legislation','administrative-units','offices')),
   last_successful_run_id TEXT,
   last_successful_complete_run_id TEXT,
   incremental_cursor TEXT,

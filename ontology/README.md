@@ -127,7 +127,7 @@ Defines the organisations, roles and persons involved in the legislative process
 | `eli:passed_by` | Range restricted to `:ParliamentaryBody` |
 | `eli-dl:was_submitted_by` | Documents mapped submitters `:GovernmentBillSource`, `:PrivateMember`, `:PrivateSponsor`; GovernmentBillSource is distinct from the constitutional Government |
 | `eli-dl:had_participation` | Documents use with `:MoverRole` / `:RapporteurRole` on `:JournalEvent` activities; replaces `:Mover` |
-| `members:Committee` | URI pattern for instances: `<https://data.oireachtas.ie/ie/oireachtas/committee/{slug}/{term-no}>`; `{slug}` matches the segment in `debates[].uri` in the bill API. Structural type via `:hasCommitteeType`; functional purpose via `:hasCommitteePurpose` |
+| `members:Committee` | Members API URI pattern: `<https://data.oireachtas.ie/ie/oireachtas/committee/{houseCode}/{houseNo}/{slug}>`; its HouseTerm is derived from that Committee IRI. Committee descriptions belong to the shared Committee owner graph. Structural type via `:hasCommitteeType`; functional purpose via `:hasCommitteePurpose` |
 | `dct:temporal` | Use on `:HouseTerm` instances to link to a `dct:PeriodOfTime` node representing the term's sitting date range. On the node use `dcat:startDate` (commencement) and `dcat:endDate` (dissolution; absent for the current term). Corresponds to `house.dateRange` in the houses API. |
 
 #### Named Individuals

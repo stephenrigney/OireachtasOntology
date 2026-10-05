@@ -1,0 +1,18 @@
+@prefix agents: <https://data.oireachtas.ie/ontology#> .
+@prefix members: <https://data.oireachtas.ie/ontology/members#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/select_committee_on_finance> a members:Committee ;
+    skos:prefLabel "Select Committee on Finance"@en,
+        "An Roghchoiste um Airgeadas"@ga ;
+    agents:hasCommitteePurpose agents:PolicyPurpose ;
+    agents:hasCommitteeType agents:SelectCommitteeType ;
+    members:committeeCode "FC"^^xsd:string ;
+    members:committeeID 123 ;
+    members:committeeInHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/33> ;
+    members:hasCommitteeDateRange <https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/select_committee_on_finance#committee-date-range> .
+
+<https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/select_committee_on_finance#committee-date-range> a members:DateRange ;
+    members:EndDate "2024-12-31T00:00:00"^^xsd:dateTime ;
+    members:StartDate "2020-01-01T00:00:00"^^xsd:dateTime .

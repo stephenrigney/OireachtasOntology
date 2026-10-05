@@ -30,6 +30,14 @@ CONSTITUENCIES_EXPECTED = {
         {"representation": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/9/panel/Agricultural-Panel", "kind": "SeanadPanel", "term": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/9"},
     ],
 }
+COMMITTEES_EXPECTED = {
+    "committee-details.rq": [
+        {"committee": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/select_committee_on_finance",
+         "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33",
+         "code": "FC", "en": "Select Committee on Finance",
+         "ga": "An Roghchoiste um Airgeadas"},
+    ],
+}
 
 
 def _verify(client: FusekiSparqlClient, expected_queries: dict[str, list[dict]]) -> None:
@@ -45,6 +53,10 @@ def verify_parties_competency(client: FusekiSparqlClient) -> None:
 
 def verify_constituencies_competency(client: FusekiSparqlClient) -> None:
     _verify(client, CONSTITUENCIES_EXPECTED)
+
+
+def verify_committees_competency(client: FusekiSparqlClient) -> None:
+    _verify(client, COMMITTEES_EXPECTED)
 
 
 def verify_member_competency(client: FusekiSparqlClient, graph_iri: str, member_iri: str, expected_triples: int | None = None) -> None:

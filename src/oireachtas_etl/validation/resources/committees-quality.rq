@@ -1,0 +1,18 @@
+PREFIX members: <https://data.oireachtas.ie/ontology/members#>
+PREFIX agents: <https://data.oireachtas.ie/ontology#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+SELECT ?committee ?problem WHERE {
+  { ?committee a members:Committee ; members:inHouseTerm ?term .
+    BIND("Committee must use its Committee-specific HouseTerm relation" AS ?problem) }
+  UNION
+  { ?committee a members:Committee ; members:hasMembershipDateRange ?range .
+    BIND("Committee owner graph must not emit Member relationship tenure" AS ?problem) }
+  UNION
+  { ?committee a members:Committee ; members:isCommitteeMembershipOf ?target .
+    BIND("Committee owner graph must not emit CommitteeMembership relationships" AS ?problem) }
+  UNION
+  { ?committee a members:Committee ; skos:prefLabel ?left, ?right .
+    FILTER (?left != ?right && LANG(?left) = LANG(?right))
+    BIND("Committee must have at most one preferred label per language" AS ?problem) }
+}
