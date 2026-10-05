@@ -98,8 +98,8 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
         try:
             translator = ResponsesTranslator(
                 os.getenv("NLQ_LLM_API_KEY", ""),
-                os.getenv("NLQ_LLM_BASE_URL", "https://api.openai.com/v1"),
-                os.getenv("NLQ_LLM_MODEL", "gpt-5.6-luna"),
+                os.getenv("NLQ_LLM_BASE_URL", ""),
+                os.getenv("NLQ_LLM_MODEL", ""),
             )
             translation = translator.translate(question, schema_context)
             phase = "SPARQL validation"
