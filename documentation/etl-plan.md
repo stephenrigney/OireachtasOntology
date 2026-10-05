@@ -2128,7 +2128,7 @@ publishing a graph from one Expression alone. The full rules are in
 - [ ] Add Debates SHACL/quality validation and competency queries.
 - [ ] Add deterministic graph replacement and replay/idempotency tests.
 
-### Ministerial office/tenure slice — approved design; Tranches 1–3 implemented
+### Ministerial office/tenure slice — approved design; Tranches 1–4 implemented
 
 The first ministerial office/tenure vertical slice has a complete approved
 implementation design in [phase-7-ministerial-offices.md](phase-7-ministerial-offices.md).
@@ -2141,12 +2141,16 @@ Cabinet episodes; the Member contract is now version 3. Its validated
 migration/whole-graph replacement removes legacy office RDF. The captured full
 Member run completed deterministically; malformed nested office and party
 evidence remains quarantined under the existing non-destructive policy.
-Production graphs were not mutated during Tranche 3 verification. A known
+Production graphs were not mutated during Tranche 3 verification. Tranche 4
+implemented reviewed external office identity reconciliation with independently
+replaceable per-office link graphs; see
+`documentation/office-external-reconciliation.md` for its contract and
+verification record. A known
 conservative limitation remains: if an accepted holding loses its entire
 containing House membership, the prior Member graph is retained and publication
 for that Member is blocked pending review. See
 `documentation/office-observation-reconciliation.md` for verification evidence
-and operational details. Bill RDF behavior remains unchanged. Tranches 4–6
+and operational details. Bill RDF behavior remains unchanged. Tranches 5–6
 remain pending. This status does not change the completion/history of earlier
 phases or other Phase 7 slices.
 
@@ -2197,14 +2201,14 @@ Settled semantics and ownership for this slice:
   and active `officeNameUri` use through a versioned, validated Member
   republish, not generic triple deletion.
 
-Tranches 1–3 are **implemented**; Tranches 4–6 are **not started**:
+Tranches 1–4 are **implemented**; Tranches 5–6 are **not started**:
 
 | Tranche | Status | Prerequisite/work | Exit criterion |
 |---|---|---|---|
 | 1. Semantic contract and reference bootstrap | Implemented | Approved design; revised ontology/mapping, distinct category concepts, reviewed office/unit registries, validated shared-graph publication. | Reasoner and mapping checks pass; office/unit graphs publish independently without prematurely changing Member behavior. |
 | 2. Observation resolution and holding correspondence | Implemented | Published registries; local review decisions, source-occurrence/evidence ledger, candidate generation and source validation. | Every observation accepted, unresolved or review-required; identifiable corrections retain OfficeHolding keys; no Cabinet ledger. |
 | 3. Member holdings and Cabinet migration | Implemented | Reviewed resolutions and migration inventory; Member transform, independent validation, non-destructive nested absence, contract bump and full republish. | Correct concurrent holdings and deduplicated Cabinet episodes; legacy erroneous RDF removed, missing holdings retained and recovery tested. |
-| 4. External office identities | Not started | Stable local offices; policy, reviewed external links, independent graphs and retry/recheck tests. May follow tranche 5 if needed. | External links replace independently without rewriting authoritative RDF. |
+| 4. External office identities | Implemented | Stable local offices; policy, reviewed external links, independent graphs and retry/recheck tests. | Reviewed external links replace independently without rewriting authoritative RDF. |
 | 5. Bill local sponsor links | Not started | Published offices/holdings; per-Bill local graph, decisions and change invalidation. | Correct office-only/person-and-time-qualified holding links, unchanged Bill evidence, stale local links cleared. |
 | 6. End-to-end acceptance | Not started | Earlier core tranches; joined competency, migration, URI, absence/conflict, publication/isolation tests and operations notes. | Phase 0 validation and full tests pass; graph-scoped recovery and review boundaries verified. |
 
