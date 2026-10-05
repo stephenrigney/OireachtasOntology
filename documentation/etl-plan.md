@@ -1064,6 +1064,273 @@ Wikipedia link is asserted. Nothing was published to production.
 - The institutional ontology distinguishes class/type, enduring institution, organisational/constitutional relationship and temporally bounded term.
 - All Phase 0–4 regression and integration suites continue to pass after the institutional refactor.
 
+## Reference-coverage corrective tranche — Phase 2/3 closure
+
+### Status and purpose
+
+**Planned corrective tranche.** This work was identified after Phase 5 and
+closes a source-coverage assumption in the implemented Phase 2/3 boundary; it
+does not reopen the Member semantic model or the Phase 5 state architecture.
+
+Phase 2 treats `/v1/parties` and `/v1/constituencies` as the owner sources
+for parliamentary collections and constituencies/panels. Those endpoints are
+valid authoritative observations, but their default responses are not a
+complete historical inventory. The complete Members source contains additional
+historical Party/Independent-collection, constituency/panel and Committee IRIs.
+Member graphs correctly reference those resources without describing them, so
+the RDF ownership rule is sound but owner-graph coverage is incomplete.
+
+The outcome of this tranche is a deterministic, source-grounded reference
+coverage layer in which every Member reference that carries enough Oireachtas
+source evidence resolves to an owner description, while Member graphs remain
+reference-only for those resources.
+
+This tranche is also a prerequisite for Phase 7 Debates cross-dataset
+integration where debate records resolve Committee references. It does not
+change the NLQ tool.
+
+### Ownership and authoritative-source contract
+
+Retain the existing ownership boundaries:
+
+| Resource | Owner graph | Authoritative observations |
+|---|---|---|
+| House / HouseTerm | `https://data.oireachtas.ie/graph/houses` | Houses endpoint |
+| ParliamentaryParty / IndependentMemberCollection | `https://data.oireachtas.ie/graph/parties` | Parties endpoint plus nested complete-Members observations |
+| Dáil constituency / Seanad panel | `https://data.oireachtas.ie/graph/constituencies` | Constituencies endpoint plus nested complete-Members observations |
+| Committee | `https://data.oireachtas.ie/graph/committees` | nested complete-Members observations |
+| Member and membership records | per-Member graph | Members endpoint |
+
+The standalone Parties and Constituencies endpoints remain preferred
+owner-source observations when they contain a resource. A resource missing
+from those endpoint responses is **not** negative evidence: a valid nested
+Member observation may supply the historical owner description. Member
+transformers still emit only references and Member-owned membership records;
+they must not start emitting Party, constituency/panel or Committee
+descriptions.
+
+The complete Members scan is the completeness boundary for member-derived
+reference evidence. Fixture-backed or otherwise incomplete scans may exercise
+the logic but must not advance authoritative coverage/missing-resource state or
+justify removal of an existing owner description.
+
+### Work package 1 — Deterministic reference census
+
+Add a reference-observation extractor over the complete preserved Members
+capture. It is separate from the Member RDF transformer and does not change the
+Member contract.
+
+Inventory every distinct canonical reference IRI found in:
+
+- `membership.parties[].party`;
+- `membership.represents[].represent`; and
+- `membership.committees[]`.
+
+For each IRI record, deterministically, at least:
+
+- reference kind;
+- canonical IRI;
+- containing Member and source JSON pointer;
+- HouseTerm/context needed to validate the source identity;
+- all owner-relevant fields supplied by each observation;
+- observation source (`members`, `parties`, or `constituencies`);
+- evidence completeness;
+- normalized comparison values; and
+- consolidation status.
+
+The census report must distinguish:
+
+- endpoint-only;
+- Members-only;
+- overlap/concordant;
+- overlap/conflicting; and
+- insufficient-evidence references.
+
+The report is reproducible audit output, not a second operational-state store
+and not semantic RDF. Record aggregate counts by reference kind and coverage
+class so a future source regression is visible.
+
+### Work package 2 — Consolidation rules and historical owner coverage
+
+Use the exact validated Oireachtas IRI as the identity key. Never merge
+different IRIs because codes or labels look similar, and do not use Wikidata,
+DBpedia, fuzzy matching or other external evidence for authoritative
+consolidation.
+
+Normalize only comparison-safe lexical differences (for example Unicode
+normalization, surrounding whitespace and equivalent numeric representation).
+Preserve the selected authoritative source lexical value in emitted RDF.
+
+For an IRI observed in both its standalone owner endpoint and Members:
+
+1. validate independently that both observations identify the same resource
+   and HouseTerm/type encoded by the IRI;
+2. require all non-null mapped semantic values to agree after permitted
+   normalization;
+3. use the standalone endpoint value for serialization when the normalized
+   values agree but harmless source formatting differs; and
+4. allow nested Members evidence to fill an owner field that the standalone
+   record genuinely omits.
+
+For an IRI observed only in Members, require all non-null normalized
+observations of each mapped owner field to agree. Identical repetition across
+Members is corroborating evidence, not duplicate RDF.
+
+A material conflict is never resolved by majority vote or source-order
+accident. Record the competing source observations and fail the affected
+candidate owner-graph build before publication. The last clean published graph
+therefore remains intact. A later reviewed source correction or explicit
+policy change may resolve the conflict; this tranche does not add a generic
+manual identity-merging mechanism.
+
+Re-use the existing Party and Constituency source-to-RDF contracts by
+normalizing accepted Member observations into their existing logical record
+shape before transformation. This must cover historical
+`ParliamentaryParty`, `IndependentMemberCollection`, `DailConstituency`
+and `SeanadPanel` instances without altering Member-owned membership dates.
+
+Member-only fields that describe a relationship rather than the referenced
+resource remain Member-owned. In particular, party membership `dateRange`,
+Committee `memberDateRange`, and Committee role/role tenure must never be
+copied into owner graphs.
+
+### Work package 3 — Committee owner vertical
+
+Add:
+
+```text
+https://data.oireachtas.ie/graph/committees
+```
+
+as a shared replaceable authoritative graph with the same validate-before-PUT,
+dirty-state and post-PUT exact-verification behavior as the other core
+reference graphs.
+
+The Committee vertical is sourced initially from nested observations in a
+**complete** Members capture. It must validate the source IRI form actually
+used by the API:
+
+```text
+https://data.oireachtas.ie/ie/oireachtas/committee/{houseCode}/{houseNo}/{slug}
+```
+
+where `houseCode` is `dail` or `seanad`. Derive the Committee's term
+context from its own IRI. Do not infer it from the containing Member's House
+membership: a Seanad Member may legitimately reference a Committee whose
+source IRI is anchored under a Dáil term. If `houseCode` or `houseNo` is
+also supplied as fields, require it to agree with the IRI.
+
+The first owner contract should map:
+
+- the source IRI as a `members:Committee`;
+- `members:committeeCode` where supplied;
+- `members:committeeID` where supplied;
+- a new explicit Committee-to-HouseTerm relation, without reusing
+  `members:inHouseTerm` (whose domain is OireachtasMembership);
+- `agents:hasCommitteeType` for supported structural values already present
+  in the controlled vocabulary;
+- `agents:hasCommitteePurpose` for supported purpose values already present
+  in the controlled vocabulary;
+- the Committee operational date range through a Committee-specific relation
+  to the existing date-range pattern; and
+- English/Irish preferred labels from the latest unambiguous supplied
+  Committee-name observation.
+
+Do not infer Select/Joint/Special type from a label or URI slug when the source
+does not supply that classification.
+
+Keep temporally qualified historical Committee-name intervals, `expiryType`,
+`mainStatus`/`status`, and `serviceUnit` explicitly deferred unless the
+implementation can add them without widening this tranche. The raw source
+evidence remains preserved, and the coverage contract must not pretend those
+fields have been semantically represented.
+
+Correct the existing ontology/documentation annotation for Committee source URI
+shape if it still documents an older non-source pattern. Add a Committee
+mapping/source contract, transformer, independent source-to-RDF validator,
+SHACL, deterministic golden fixture and competency queries.
+
+### Work package 4 — Coverage-closure validation and publication gate
+
+Add a graph-independent closure validator over the complete Member candidate
+dataset plus the candidate owner graphs. At minimum it must check these Member
+reference edges:
+
+- `members:memberOfCollection` /
+  `members:isPartyMembershipOf` -> Parties owner graph;
+- `members:isRepresentativeFrom` -> Constituencies owner graph; and
+- `members:isCommitteeMembershipOf` -> Committees owner graph.
+
+For every referenced IRI whose source observation satisfies the minimum owner
+contract, require an owner description with the expected class, source key and
+term/context relation. A malformed or genuinely insufficient observation is
+reported explicitly as `insufficient_evidence`; it must not cause creation of
+a placeholder resource. A contradictory observation is a conflict, not
+insufficient evidence, and fails the candidate reference publication.
+
+Run closure validation before shared reference graphs are replaced. After
+publication, run a graph-scoped SPARQL closure check against Fuseki as an
+integration/acceptance check. Normal full-load ordering should publish and
+verify the consolidated reference graphs before publishing Member graphs that
+depend on them.
+
+A successful complete reference run must report zero unresolved **closable**
+Member references. It may report insufficient-evidence references separately,
+with their source paths and reasons.
+
+### Refresh, state and deletion semantics
+
+Re-use the Phase 5 core SQLite state and publication-recovery boundary; do not
+create a second scheduler or reference-state database.
+
+- A complete Members scan may add or update historical owner descriptions.
+- The consolidated owner graph is the union of accepted standalone endpoint
+  observations and accepted complete-Members observations.
+- Absence from the standalone Parties/Constituencies response alone never
+  deletes historical owner data.
+- Missing-resource removal requires complete-source evidence and the existing
+  Phase 5 non-destructive confirmation policy.
+- Any incomplete/quarantined Members scan that prevents a trustworthy
+  reference census must not be used to replace a supposedly complete shared
+  owner graph.
+- Fixture runs remain non-authoritative and do not advance missing/coverage
+  evidence.
+- Newly covered ParliamentaryParty resources may flow into the existing
+  reconciliation due/recheck mechanism; no new external-reconciliation
+  architecture is introduced.
+- Committee external reconciliation is outside this tranche.
+
+### Required tests and exit criteria
+
+Implementation is complete only when:
+
+- a deterministic census over the complete Members capture reports every
+  distinct Party/Independent-collection, constituency/panel and Committee
+  reference and its source observations;
+- the census comparison shows exactly which references were absent from the
+  standalone Phase 2 owner inputs;
+- historical Member-only ParliamentaryParty and IndependentMemberCollection
+  records appear in the Parties owner graph with the existing collection
+  semantics;
+- historical Dáil constituencies and Seanad panels appear in the
+  Constituencies owner graph;
+- every closable Committee reference has a description in the new Committee
+  owner graph;
+- repeated identical Member observations deduplicate deterministically;
+- a material cross-observation conflict prevents the affected shared graph
+  replacement and preserves the previous clean graph;
+- a Committee's term context is taken from its own source IRI rather than from
+  the Member who references it;
+- Member graphs still contain no descriptive triples for Party,
+  constituency/panel or Committee resources;
+- closure validation reports zero unresolved closable Member references;
+- graph replacement, dirty-state recovery, fixture/non-authoritative behavior
+  and complete-source missing semantics are regression-tested;
+- ontology consistency, mapping integrity, SHACL, deterministic/golden tests,
+  closure queries and the full existing test suite pass; and
+- no NLQ behavior or Member semantic contract is changed.
+
+
 ## Phase 5 — Incremental refresh and ETL state
 
 ### Outcome
