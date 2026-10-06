@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-**Design approved; Tranches 1–4 are implemented; Tranches 5–6 have not
+**Design approved; Tranches 1–5 are implemented; Tranche 6 has not
 started.** This document records the first Phase 7 vertical slice. Tranche 1
 introduced its ontology vocabulary and office/unit registry publication path;
 Tranche 2 added source-observation review and occurrence correspondence. The
@@ -10,8 +10,8 @@ small reviewed bootstrap is recorded in
 `registries/ministerial-office-registry.json` and
 `reconciliation/office-decisions.json`. Tranche 3 switches the Member mapping
 and transformation to accepted OfficeHolding records and derived Cabinet
-episodes. Bill reconciliation remains unimplemented; Bill RDF behavior is
-unchanged. The
+episodes. Bill core RDF behavior remains unchanged; Tranche 5 adds separately
+owned local sponsor links. The
 broader Phase 7 debates, votes and questions slices remain separate.
 
 Tranche 3 is complete: the Member contract is version 3, and whole-graph
@@ -21,7 +21,9 @@ quarantined. Verification did not mutate production graphs. The conservative
 House-membership-loss publication block remains as documented in
 `documentation/office-observation-reconciliation.md`. Tranche 4 adds the
 independent reviewed external-identity policy and per-office link graphs; see
-`documentation/office-external-reconciliation.md`. Tranches 5–6 remain pending;
+`documentation/office-external-reconciliation.md`. Tranche 5 implements the
+independent per-Bill local link graph and review/recovery path described in
+`documentation/bill-sponsor-reconciliation.md`. Tranche 6 remains pending;
 this is status only, not a change to the approved design below.
 
 Before Tranche 3 the Member transformer interpreted every
@@ -327,7 +329,7 @@ weaken acceptance. Run `.venv/bin/python tests/validate.py` and
 
 ## 8. Six implementation tranches
 
-Tranches 1–4 are **implemented**; Tranches 5–6 are **not started**. Keep
+Tranches 1–5 are **implemented**; Tranche 6 is **not started**. Keep
 intermediate commits valid; switch active mappings, transformer, independent
 validator, SHACL, contract version and approved goldens together rather than
 temporarily disabling a gate.
@@ -338,7 +340,7 @@ temporarily disabling a gate.
 | 2. Observation resolution and OfficeHolding correspondence | Implemented | Published registries; local review loader, occurrence/evidence ledger, candidate generation, source checks and tests. **No Cabinet ledger.** The initial reviewed dataset is intentionally narrow. | Every source office observation is accepted, explicitly unresolved or review-required; identifiable changes preserve holding occurrence keys. |
 | 3. Member holdings and Cabinet migration | Implemented | Accepted decisions and pre-PUT migration inventory; Member transform, independent acceptance, SHACL/temporal checks, missing-observation composition, contract bump and complete validated republish. | Correct concurrent holdings and nonduplicated, deterministically derived Cabinet episodes; legacy erroneous triples absent, missing nested offices retained, recovery verified. |
 | 4. External office reconciliation | Implemented | Stable office registry; new external entity policy, review file, CLI and isolation/retry tests. | Reviewed same-office external links replace independently without altering authoritative graphs. |
-| 5. Bill local sponsor reconciliation | Not started | Published office registry and Member holdings; separate per-Bill graph, review/state, change invalidation, validation and tests. | Supported office-only/holding links; original label and Bill core graph unchanged; stale Participation links removed on local graph replacement. |
+| 5. Bill local sponsor reconciliation | Implemented | Published office registry and Member holdings; separate per-Bill graph, review/state, change invalidation, validation and tests. | Supported office-only/holding links; original label and Bill core graph unchanged; stale Participation links removed on local graph replacement. |
 | 6. End-to-end acceptance | Not started | Core tranches; joined competency, migration, URI, missing/conflict and graph-isolation integration checks and operator documentation. | Phase 0 validation and full test suite pass; graph-scoped publication/recovery and review boundaries are exercised end to end. |
 
 Tranche 4's explicitly approved external office identities are Taoiseach

@@ -2137,7 +2137,7 @@ publishing a graph from one Expression alone. The full rules are in
   legislative-section and question-recipient owner results remain deferred.
 - [ ] Add deterministic graph replacement and replay/idempotency tests.
 
-### Ministerial office/tenure slice — approved design; Tranches 1–4 implemented
+### Ministerial office/tenure slice — approved design; Tranches 1–5 implemented
 
 The first ministerial office/tenure vertical slice has a complete approved
 implementation design in [phase-7-ministerial-offices.md](phase-7-ministerial-offices.md).
@@ -2154,13 +2154,15 @@ Production graphs were not mutated during Tranche 3 verification. Tranche 4
 implemented reviewed external office identity reconciliation with independently
 replaceable per-office link graphs; see
 `documentation/office-external-reconciliation.md` for its contract and
-verification record. A known
+verification record. Tranche 5 adds independently replaceable local Bill
+sponsor office/holding links with source Bill evidence unchanged; see
+`documentation/bill-sponsor-reconciliation.md`. A known
 conservative limitation remains: if an accepted holding loses its entire
 containing House membership, the prior Member graph is retained and publication
 for that Member is blocked pending review. See
 `documentation/office-observation-reconciliation.md` for verification evidence
-and operational details. Bill RDF behavior remains unchanged. Tranches 5–6
-remain pending. This status does not change the completion/history of earlier
+and operational details. Bill **core** RDF behavior remains unchanged. Tranche 6
+remains pending. This status does not change the completion/history of earlier
 phases or other Phase 7 slices.
 
 Settled semantics and ownership for this slice:
@@ -2210,7 +2212,7 @@ Settled semantics and ownership for this slice:
   and active `officeNameUri` use through a versioned, validated Member
   republish, not generic triple deletion.
 
-Tranches 1–4 are **implemented**; Tranches 5–6 are **not started**:
+Tranches 1–5 are **implemented**; Tranche 6 is **not started**:
 
 | Tranche | Status | Prerequisite/work | Exit criterion |
 |---|---|---|---|
@@ -2218,7 +2220,7 @@ Tranches 1–4 are **implemented**; Tranches 5–6 are **not started**:
 | 2. Observation resolution and holding correspondence | Implemented | Published registries; local review decisions, source-occurrence/evidence ledger, candidate generation and source validation. | Every observation accepted, unresolved or review-required; identifiable corrections retain OfficeHolding keys; no Cabinet ledger. |
 | 3. Member holdings and Cabinet migration | Implemented | Reviewed resolutions and migration inventory; Member transform, independent validation, non-destructive nested absence, contract bump and full republish. | Correct concurrent holdings and deduplicated Cabinet episodes; legacy erroneous RDF removed, missing holdings retained and recovery tested. |
 | 4. External office identities | Implemented | Stable local offices; policy, reviewed external links, independent graphs and retry/recheck tests. | Reviewed external links replace independently without rewriting authoritative RDF. |
-| 5. Bill local sponsor links | Not started | Published offices/holdings; per-Bill local graph, decisions and change invalidation. | Correct office-only/person-and-time-qualified holding links, unchanged Bill evidence, stale local links cleared. |
+| 5. Bill local sponsor links | Implemented | Published offices/holdings; per-Bill local graph, decisions and change invalidation. | Correct office-only/person-and-time-qualified holding links, unchanged Bill evidence, stale local links cleared. |
 | 6. End-to-end acceptance | Not started | Earlier core tranches; joined competency, migration, URI, absence/conflict, publication/isolation tests and operations notes. | Phase 0 validation and full tests pass; graph-scoped recovery and review boundaries verified. |
 
 Deferred beyond this slice: detailed delegated functions, responsibilities
