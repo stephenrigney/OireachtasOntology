@@ -50,7 +50,10 @@ Open:
 
 <http://127.0.0.1:8000/>
 
-The home page performs a read-only readiness check against Fuseki and reports whether the expected graph families are present.
+The home page performs a read-only, presence-only readiness check for Houses,
+Parties, Constituencies and Members; Bills are detected as optional. This check
+does not identify the source captures or establish reference closure, and it
+does not currently probe the Committee graph family.
 
 Try questions such as:
 
@@ -69,15 +72,89 @@ The application shows:
 ### Other launcher commands
 
 ```bash
-scripts/dev-nlq.sh --load-data   # publish Houses/Parties/Constituencies/Members first
+scripts/dev-nlq.sh --load-data   # bootstrap local data from preserved API captures
 scripts/dev-nlq.sh --no-reload   # start without the Uvicorn autoreload watcher
 ```
 
-Ordinary startup never fetches or republishes source data. `--load-data`
-explicitly runs the existing ETL for the graph families the member-oriented POC
-needs — houses, parties, constituencies and members — and then starts the POC.
-Bills are not loaded because the current example queries do not need them. If
-the ETL load fails, the POC is not started.
+Ordinary startup never loads source data. `--load-data` explicitly invokes
+`oir-etl dev bootstrap`, which reads the latest successful complete API captures
+already preserved and indexed in Core State, validates them, and loads the
+non-authoritative local-development graphs into loopback Fuseki. It does not
+fetch current API data, run the authoritative `oir-etl run` publication path,
+or advance Core State coverage/publication or external-reconciliation state.
+Materially conflicted reference identities remain quarantined, and the bootstrap
+reports unresolved references and labels reference closure **NOT authoritative
+/ not complete**. If the bootstrap fails, the POC is not started.
+
+The bootstrap prints a stable dataset identity. To save its full machine-readable
+baseline for later evaluation tooling, invoke the same development-only command
+with an output path:
+
+```bash
+uv run --locked oir-etl dev bootstrap \
+  --fuseki-gsp-url http://localhost:3030/houses/data \
+  --fuseki-sparql-url http://localhost:3030/houses/query \
+  --dataset-baseline-output /tmp/oireachtas-nlq-dataset-baseline.json
+```
+
+The baseline records the selected source capture run IDs, graph families and
+resource counts, quarantined identities, unresolved references, and the
+non-authoritative closure status. Its identity is derived from the source URLs
+and run IDs, so reusing the same preserved captures produces the same identity.
+It describes graph payloads written by the bootstrap; it is not a live census
+of other or stale graphs already in a persistent Fuseki dataset.
+
+## NLQ evaluation benchmark
+
+The version-1 question set is `poc/nlq/benchmarks/benchmark-v1.json`; its
+format is defined by `poc/specs/nlq-benchmark.schema.json`. Each case records its
+category, support expectation, interpretation target, semantic result
+invariants, graph/resource prerequisites, and optional independent coverage
+probes. Ambiguous and unsupported questions are retained for measured/manual
+review rather than assigned invented facts.
+
+Run the deterministic ten-case subset without an external LLM:
+
+```bash
+uv run --locked --extra nlq python scripts/run-nlq-benchmark.py --tier regression
+```
+
+Run all 42 cases using the configured Responses-compatible LLM:
+
+```bash
+uv run --locked --extra nlq python scripts/run-nlq-benchmark.py --tier measured
+```
+
+Both automation tiers require Docker and the preserved complete API captures
+and Core State index used by `oir-etl dev bootstrap`. Override their locations
+with `--raw-dir` / `--state-db` or the existing `OIR_RAW_DIR` /
+`OIR_ETL_STATE_DB` environment settings. The runner starts a new
+`stain/jena-fuseki:5.1.0` container for each run, publishes a random port only
+on loopback, attaches no host or named data volume, bootstraps that instance
+from the preserved captures, and stops/removes it after evaluation. It never
+targets the ordinary persistent Compose dataset. Result JSON is written beneath
+the ignored `var/nlq-benchmark/runs/` directory by default.
+
+Every result embeds the exact Phase 0A dataset-baseline JSON and its stable
+`sha256:` dataset ID, plus the disposable container ID for that particular run.
+Before an NLQ case is scored, the runner checks its required graph families,
+known quarantined/unresolved resources, and (where defined) curated read-only
+coverage probes. A missing prerequisite is recorded as
+`source_data_coverage` / `coverage_unavailable`, not as an NLQ failure. Once
+coverage is established, the shared browser/benchmark pipeline translates,
+validates and executes the question. Scoring inspects result kinds, row counts,
+literal values, row-level co-occurrence and aggregate invariants; it does not
+compare generated SPARQL strings. Translation, validation, execution and
+semantic mismatches retain their failure class and diagnostic candidates.
+
+The Phase 0A bootstrap remains explicitly non-authoritative and labels reference
+closure **NOT authoritative / not complete**. A passing case-level probe only
+establishes the exact prerequisite facts for that case; it does not promote the
+whole development dataset to complete or authoritative coverage.
+
+The automated regression tests use deterministic translation inputs and
+mocked Fuseki responses, so they run offline. Running the script against the
+capture-backed disposable dataset remains a separate integration/baseline run.
 
 ## Configuration precedence
 
@@ -115,7 +192,8 @@ password so an existing Fuseki volume keeps working. The launcher populates
 application and does not print credentials.
 
 For `--load-data`, the launcher also exports `OIR_FUSEKI_GSP_URL` and
-`OIR_FUSEKI_SPARQL_URL` so the ETL can publish and then verify each graph.
+`OIR_FUSEKI_SPARQL_URL` so the development bootstrap can load and verify each
+graph.
 `OIR_FUSEKI_SPARQL_URL` defaults to the resolved `NLQ_FUSEKI_QUERY_URL`, so no
 manual export is needed.
 
@@ -159,8 +237,9 @@ that an explicit process environment value wins over `.env.local`.
 
 Starting Fuseki does not populate it. Data loading is deliberately an ETL
 operation, not an application startup side effect. Run
-`scripts/dev-nlq.sh --load-data` when you intentionally want to fetch and publish
-current Oireachtas API data for the reference and Member graphs.
+`scripts/dev-nlq.sh --load-data` when you intentionally want the local
+development bootstrap to load preserved complete API captures for the
+reference and Member graphs.
 
 ## Manual commands (advanced / troubleshooting)
 
@@ -193,10 +272,11 @@ Write endpoint: http://localhost:3030/houses/data
 uv run --locked uvicorn poc.nlq.app:app --reload
 ```
 
-### Load data with the existing ETL
+### Run the local NLQ development bootstrap
 
-The launcher sets these endpoints automatically; export them yourself only when
-running the ETL manually. Set the ETL write and verification endpoints:
+The launcher sets these endpoints automatically. To invoke the same local,
+non-authoritative bootstrap manually (including writing a dataset baseline),
+set the loopback Fuseki write and verification endpoints:
 
 ```bash
 export OIR_FUSEKI_GSP_URL=http://localhost:3030/houses/data
@@ -207,29 +287,36 @@ For authenticated Fuseki, also export `OIR_FUSEKI_USER` and
 `OIR_FUSEKI_PASSWORD`.
 
 ```bash
+uv run --locked oir-etl dev bootstrap \
+  --dataset-baseline-output /tmp/oireachtas-nlq-dataset-baseline.json
+```
+
+This selects preserved captures; it does not fetch source data. The separate
+`oir-etl run <endpoint>` commands are authoritative ETL operations and are not
+the workflow used by `scripts/dev-nlq.sh --load-data`.
+
+For independent authoritative ETL operation, the following commands remain
+available:
+
+```bash
 uv run --locked oir-etl run houses
 uv run --locked oir-etl run parties
 uv run --locked oir-etl run constituencies
 uv run --locked oir-etl run members
-```
-
-Bills are optional for the member-oriented example queries:
-
-```bash
 uv run --locked oir-etl run bills
 ```
 
-The POC never invokes these commands itself.
+The POC launcher does not invoke these authoritative commands.
 
 Do not use `docker compose down -v` as a refresh step: it deletes Fuseki's persistent volume.
 
 ## How it works
 
 ```text
-Question in browser
+Question in browser / benchmark runner
   -> OpenAI Responses-compatible LLM
-       - repository-derived schema context
-       - dataset graph conventions
+       - query-contract-scoped schema context
+       - dataset graph conventions from the contract
        - user question
   -> structured { interpretation, sparql }
   -> RDFLib SPARQL parsing and safety checks
@@ -238,63 +325,112 @@ Question in browser
   -> result table / ASK answer in browser
 ```
 
-At startup, the POC reads the repository's `ontology/*.owl.ttl` modules with RDFLib.
+The repository-owned machine-readable query contract is
+`poc/specs/query-schema-contract.json` (contract version `1.0.0`, schema
+version `1`). Its JSON Schema is `poc/specs/query-schema-contract.schema.json`.
+The contract defines the queryable class/property scope, named-graph families
+and owners, emitted RDF patterns, entity-specific label predicates,
+cross-graph joins, optional reviewed external identity links, reasoning
+assumptions, known unavailable patterns, and the local safety policy.
 
-It derives model-facing context from:
+At startup, RDFLib reads the repository's `ontology/*.owl.ttl` modules and the
+pinned ELI/ELI-DL vocabularies to add ontology descriptions, domains, ranges,
+and comments for terms selected by the contract. Active mapping files still
+provide the external-predicate definitions and safety allowlist entries. The
+contract is not a dump of every OWL declaration: a term's ontology declaration
+alone does not make it queryable. In particular, emitted `dct:temporal`,
+`eli:has_part`, and `eli:is_realized_by` triples are recorded as not executable
+through the current local NLQ predicate allowlist. The NLQ grounding path does
+not import private `oireachtas_etl.config` constants.
 
-- local classes;
-- object and datatype properties;
-- direct named superclass relationships;
-- asserted property domains and ranges;
-- useful labels and comments;
-- the repository-pinned ELI and ELI-DL schemas;
-- active mapping CSV rows for reused external predicates;
-- the ETL's actual named-graph conventions.
+The contract distinguishes emitted data from ontology-only or currently
+unavailable patterns. For example, Dáil and Seanad terms are explicitly typed
+as `agents:DailTerm` or `agents:SeanadTerm`, not as `agents:HouseTerm`; the
+store does not infer superclass types. Member records and their membership
+resources live in per-Member graphs, while HouseTerm, collection,
+constituency/panel, and Committee descriptions are owned by other graph
+families. Cross-graph joins use the same RDF resource IRI. The contract also
+marks office holdings as conditional on reviewed office resolution and states
+that Debate/Act descriptions are not currently published.
 
-The prompt distinguishes important concepts such as:
+The `labelsByEntityType` entries are intentionally distinct: Member
+`foaf:name` values are plain literals, HouseTerm/collection/constituency labels
+use English `skos:prefLabel`, Committees may have English or Irish
+`skos:prefLabel`, and Bill primary titles use language-tagged `eli:title`.
+Those predicates are not interchangeable.
 
-- `agents:Member`;
-- `members:OireachtasMembership`;
-- `agents:HouseTerm`;
-- `members:ParliamentaryParty`;
-- `members:IndependentMemberCollection`.
+Reviewed external join identifiers are represented without enabling remote
+execution: accepted Member-to-Wikidata links use `owl:sameAs` in the separately
+owned Member external-links graph; Party-to-Wikidata links use
+`members:recognisedAsParty` and do **not** assert identity; reviewed Wikipedia
+links use `foaf:isPrimaryTopicOf`. These graph patterns are optional and no
+Wikidata query or federation is performed.
+
+### Contract compatibility
+
+- `schemaVersion` identifies the JSON shape. This consumer supports schema
+  version `1` and fails clearly on any other value.
+- `contractVersion` is semantic versioning. Additive classes, properties,
+  graph families, emitted patterns, or descriptive metadata that preserve all
+  existing meanings may use a `1.x` minor/patch release. A removal, renamed
+  term, changed graph owner or IRI pattern, changed label/pattern semantics,
+  changed identity meaning, or incompatible entailment/safety change requires a
+  new contract major. This consumer supports major `1` and rejects others.
+- Consumers of a compatible minor version should ignore unknown optional
+  fields while retaining the meaning of known fields. A new safety behavior is
+  not an additive schema-only change: a change to accepted query capability or
+  an enforced safety limit requires a `localSafety` major and contract major
+  bump, plus a consumer implementation/test update. This consumer rejects
+  unsupported local-safety major versions.
+- The contract is consumed from this repository. Cross-repository packaging or
+  distribution is deferred; no extraction mechanism is implied here.
 
 No RDF instance dataset is sent to the LLM. Fuseki remains the factual source.
 
 ## Named graph expectations
 
-The POC uses the same graph conventions as the ETL:
+The contract is the service-facing source for exact graph IRIs/templates,
+owner names, availability and owned descriptions. It lists Houses, Parties,
+Constituencies, Committees, per-Member and per-Bill graphs, currently empty
+Office/Administrative-unit registries, and separately owned reviewed external
+link graphs. Member and Bill graph families are per-resource patterns; the
+external-link families are not part of the authoritative owner graphs.
 
-| Data | Named graph |
-|---|---|
-| Houses | `https://data.oireachtas.ie/graph/houses` |
-| Parties | `https://data.oireachtas.ie/graph/parties` |
-| Constituencies | `https://data.oireachtas.ie/graph/constituencies` |
-| Offices | `https://data.oireachtas.ie/graph/offices` |
-| Administrative units | `https://data.oireachtas.ie/graph/administrative-units` |
-| Members | `https://data.oireachtas.ie/graph/member/{memberCode}` |
-| Bills | `https://data.oireachtas.ie/graph/bill/{year}/{number}` |
-
-Descriptions and references may live in different named graphs. Queries should join them using the same RDF resource IRI rather than assuming all related triples are co-located.
+Descriptions and references may live in different named graphs. Queries join
+them using the same RDF resource IRI rather than assuming that all related
+triples are co-located. The contract's `crossGraphJoins` enumerates the current
+supported joins.
 
 ## Query safety
 
 Model-generated SPARQL is treated as untrusted input.
 
-The POC currently:
+The versioned `localSafety` section records and supplies the current local
+policy. The shared browser/benchmark pipeline:
 
-- accepts only RDFLib-parseable `SELECT` and `ASK` queries;
-- rejects SPARQL Update operations;
-- rejects `SERVICE`;
-- rejects `FROM` and `FROM NAMED`;
-- rejects subqueries;
-- rejects property paths;
-- rejects variable predicates;
-- validates predicates against ontology declarations and active mappings;
-- caps SELECT results at 100 rows;
-- caps OFFSET at 10,000 rows;
-- applies a 15-second Fuseki timeout;
-- uses only the configured Fuseki `/query` endpoint.
+- accepts RDFLib-parseable `SELECT` and `ASK` queries only; SPARQL Update and
+  other query forms are rejected;
+- rejects `SERVICE`, `FROM`, and `FROM NAMED`;
+- rejects subqueries and variable predicates;
+- permits only direct predicates, not SPARQL property paths;
+- checks predicates against the contract-defined allowlist policy, whose terms
+  are resolved from local ontology declarations, locally annotated external
+  properties, active (`mapped`/`new`) property mappings, and the listed
+  unconditional predicates;
+- rejects query strings longer than 32,000 characters;
+- appends `LIMIT 100` to a `SELECT` without a limit and rejects explicit limits
+  over 100 (also when an explicit ASK limit is present);
+- rejects offsets over 10,000; and
+- uses a 15-second Fuseki request timeout.
+
+Execution uses only the configured `NLQ_FUSEKI_QUERY_URL` Fuseki query endpoint
+(default `http://localhost:3030/houses/query`), with a `/query` path. The
+contract records local deployment as the expectation, but the current client
+does not enforce a loopback hostname; deployment configuration must keep this
+endpoint local. The POC has no federation mode. Any later controlled federation
+must deliberately extend and version the safety contract, configure allowed
+remote endpoints, and add remote-pattern, timeout, and complexity controls; it
+must not bypass this local boundary silently.
 
 The fixed readiness probes are also read-only.
 
@@ -307,6 +443,10 @@ A syntactically valid and safe SPARQL query can still be semantically wrong.
 In particular:
 
 - the store does not provide general OWL entailment;
+- a few current ETL-emitted predicates (`dct:temporal`, `eli:has_part`, and
+  `eli:is_realized_by`) are not in the current active property mappings or
+  predicate allowlist, so the contract marks those patterns as emitted but not
+  executable in local NLQ rather than expanding the safety policy implicitly;
 - people, memberships, House terms and parliamentary collections are distinct resources;
 - party and independent collection membership use related but not identical graph patterns;
 - some ontology vocabulary is defined before corresponding instance data is populated;
@@ -330,6 +470,12 @@ Run the tests:
 
 ```bash
 uv run --locked pytest tests
+```
+
+Focused contract, safety, NLQ grounding, and Phase 0B benchmark-path tests:
+
+```bash
+uv run --locked pytest tests/test_nlq_contract.py tests/test_nlq_poc.py tests/test_nlq_benchmark.py
 ```
 
 Run ontology validation, with the repository's pinned Java runtime available through `mise`:

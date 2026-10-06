@@ -404,17 +404,14 @@ def test_home_page_reports_unavailable_fuseki_without_claiming_graphs_are_missin
 def test_schema_context_comes_from_real_member_and_agent_ontology():
     context = build_schema_context(ROOT / "ontology")
     assert "agents:Member" in context
+    assert "agents:House" in context
     assert "members:OireachtasMembership" in context
-    assert "members:House" in context
     assert "members:ParliamentaryParty" in context
     assert "members:IndependentMemberCollection" in context
-    assert "members:ParliamentaryGroup" in context
     assert "members:memberOfCollection" in context
     assert "members:inOireachtasMembership" in context
-    assert "members:NamedOffice" in context
     assert "members:OfficeHolding" in context
-    assert "members:OfficeType" in context
-    assert "members:hasRoleType" in context
+    assert "office-type-vocabulary [ontology-only-not-queryable]" in context
     assert "members:hasMinisterOfStateRole (" not in context
     assert "members:officeNameUri (" not in context
     assert "foaf:name" in context and "skos:prefLabel" in context
@@ -422,7 +419,7 @@ def test_schema_context_comes_from_real_member_and_agent_ontology():
     assert "eli-dl:LegislativeProcess" in context
     assert "agents:DailTerm" in context
     assert "agents:HouseTerm" in context
-    assert "agents:PublicBill" in context
+    assert "eli-dl:DraftLegislationWork" in context
     assert "eli:title (DatatypeProperty)" in context
     assert "eli-dl:process_status (ObjectProperty)" in context
     assert "eli-dl:forms_part_of" in context
@@ -430,14 +427,17 @@ def test_schema_context_comes_from_real_member_and_agent_ontology():
     assert "graph/houses" in context
     assert "graph/parties" in context
     assert "graph/constituencies" in context
+    assert "graph/committees" in context
     assert "graph/administrative-units" in context and "graph/offices" in context
     assert "graph/member/{percent-encoded-memberCode}" in context
-    assert "Optional Member reconciliation links" in context
-    assert "The store does not entail OWL subclass types" in context
-    assert "skos:prefLabel as an English-language (@en) literal" in context
-    assert "must not be queried only through that party-specific property" in context
-    assert "may omit the explicit members:ParliamentaryCollectionMembership superclass type" in context
-    assert "does not emit CabinetMembership, TaoiseachRole or MinisterRole instances" in context
+    assert "member-external-links" in context and "optional-reviewed-links" in context
+    assert "OWL entailment=none" in context
+    assert "DailTerm: skos:prefLabel (language: en)" in context
+    assert "Independent records must use members:memberOfCollection" in context
+    assert "older published Member graphs may omit that explicit type" in context
+    assert "require accepted office resolution" in context
+    assert "not executable through the current local NLQ predicate allowlist" in context
+    assert "Reviewed Wikidata Q-item" in context
     assert "ns1:" not in context
     assert len(context) < 48_000
 

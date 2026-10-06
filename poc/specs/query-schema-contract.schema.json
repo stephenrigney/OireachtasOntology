@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://data.oireachtas.ie/specs/query-schema-contract.schema.json",
+  "title": "Oireachtas Query/Schema Contract",
+  "description": "Structural schema for the repository-owned query-schema contract. Contract and schema compatibility policy is documented in poc/nlq/README.md.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "contractId",
+    "contractSchema",
+    "schemaVersion",
+    "contractVersion",
+    "namespaces",
+    "queryableClasses",
+    "queryableProperties",
+    "graphFamilies",
+    "labelsByEntityType",
+    "emittedRdfPatterns",
+    "crossGraphJoins",
+    "externalIdentityPredicates",
+    "reasoning",
+    "unsupportedPatterns",
+    "localSafety"
+  ],
+  "properties": {
+    "$schema": {"const": "https://json-schema.org/draft/2020-12/schema"},
+    "contractId": {"type": "string", "format": "uri"},
+    "contractSchema": {"type": "string", "minLength": 1},
+    "schemaVersion": {"const": 1},
+    "contractVersion": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "description": {"type": "string"},
+    "namespaces": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": "string", "format": "uri"}
+    },
+    "queryableClasses": {"$ref": "#/$defs/qnameList"},
+    "queryableProperties": {"$ref": "#/$defs/qnameList"},
+    "graphFamilies": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "graph", "owner", "availability", "owns"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "graph": {"type": "object", "required": ["kind"], "properties": {
+            "kind": {"enum": ["fixed", "fixed-set", "resource-pattern"]},
+            "iri": {"type": "string", "format": "uri"},
+            "iris": {"type": "array", "minItems": 1, "items": {"type": "string", "format": "uri"}},
+            "iriTemplate": {"type": "string", "minLength": 1}
+          }},
+          "owner": {"type": "string", "minLength": 1},
+          "availability": {"type": "string", "minLength": 1},
+          "owns": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "labelsByEntityType": {"type": "object", "minProperties": 1},
+    "emittedRdfPatterns": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "object", "required": ["id", "graphFamily", "availability", "triples"], "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "graphFamily": {"type": "string", "minLength": 1},
+        "availability": {"type": "string", "minLength": 1},
+        "queryableInLocalNlq": {"type": "boolean"},
+        "triples": {"type": "array", "minItems": 1, "items": {"type": "array", "prefixItems": [{"type": "string"}, {"type": "string"}, {"type": "string"}], "minItems": 3, "maxItems": 3}},
+        "note": {"type": "string"}
+      }}
+    },
+    "crossGraphJoins": {"type": "array", "items": {"type": "object", "required": ["fromGraphFamily", "predicate", "toGraphFamily", "joinKey"], "properties": {
+      "fromGraphFamily": {"type": "string"}, "predicate": {"type": "string"}, "toGraphFamily": {"type": "string"}, "joinKey": {"type": "string"}, "appliesTo": {"type": "string"}
+    }}},
+    "externalIdentityPredicates": {"type": "array", "items": {"type": "object", "required": ["entityType", "predicate", "target", "graphFamily", "wikidataJoin", "identityAssertion"], "properties": {
+      "entityType": {"type": "string"}, "predicate": {"type": "string"}, "target": {"type": "string"}, "graphFamily": {"type": "string"}, "wikidataJoin": {"type": "boolean"}, "identityAssertion": {"type": "boolean"}, "note": {"type": "string"}
+    }}},
+    "reasoning": {"type": "object", "required": ["owlEntailment", "rdfsSubclassInference", "owlSameAsExpansion", "queryRule"], "properties": {
+      "owlEntailment": {"type": "string"}, "rdfsSubclassInference": {"type": "boolean"}, "owlSameAsExpansion": {"type": "boolean"}, "queryRule": {"type": "string"}
+    }},
+    "unsupportedPatterns": {"type": "array", "items": {"type": "object", "required": ["id", "status", "detail"], "properties": {
+      "id": {"type": "string"}, "status": {"type": "string"}, "detail": {"type": "string"}
+    }}},
+    "localSafety": {"type": "object", "required": ["version", "mode", "allowedOperations", "rejectedFeatures", "propertyPaths", "predicateAllowlist", "limits", "endpoint", "federation"], "properties": {
+      "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+      "mode": {"type": "string"},
+      "allowedOperations": {"type": "array", "items": {"enum": ["SELECT", "ASK"]}},
+      "rejectedFeatures": {"type": "array", "items": {"type": "string"}},
+      "propertyPaths": {"type": "string"},
+      "predicateAllowlist": {"type": "object"},
+      "limits": {"type": "object"},
+      "endpoint": {"type": "object"},
+      "federation": {"type": "object"}
+    }}
+  },
+  "$defs": {
+    "qnameList": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*:[^\\s]+$"}
+    }
+  }
+}

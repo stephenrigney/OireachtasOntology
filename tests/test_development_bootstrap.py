@@ -172,6 +172,7 @@ def test_local_development_bootstrap_is_read_only_to_authoritative_state(
         raw_dir=str(raw_root), state_db=str(state_path),
         fuseki_gsp_url="http://127.0.0.1:3030/houses/data",
         fuseki_sparql_url="http://127.0.0.1:3030/houses/query",
+        dataset_baseline_output=str(tmp_path / "baseline-1.json"),
     )
     assert cli._run_development_bootstrap(args) == 0
     output = capsys.readouterr().out
@@ -179,7 +180,33 @@ def test_local_development_bootstrap_is_read_only_to_authoritative_state(
     assert "Quarantined conflicts: 1" in output
     assert "Unresolved development references: 1" in output
     assert "Reference closure: NOT authoritative / not complete" in output
+    assert "Dataset identity: sha256:" in output
     assert KNOWN_CONFLICT_COMMITTEE in output
+    baseline_path = Path(args.dataset_baseline_output)
+    baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+    assert baseline["schema_version"] == 1
+    assert baseline["dataset"]["id"].startswith("sha256:")
+    assert baseline["dataset"]["authority"] == "non-authoritative development dataset"
+    assert baseline["dataset"]["authoritative_reference_closure_complete"] is False
+    assert set(baseline["source_captures"]) == {
+        "houses", "parties", "constituencies", "members",
+    }
+    assert all(item["run_id"] and item["source_url"]
+               for item in baseline["source_captures"].values())
+    assert baseline["source_record_counts"] == {
+        endpoint: len(captures[endpoint])
+        for endpoint in ("houses", "parties", "constituencies", "members")
+    }
+    assert [item["name"] for item in baseline["graph_families_loaded"]] == [
+        "houses", "parties", "constituencies", "committees", "members",
+    ]
+    assert baseline["rdf_resource_counts"]["members"] == 1
+    assert baseline["quarantined_conflict_count"] == 1
+    assert baseline["quarantined_conflicted_identities"][0]["canonical_iri"] == (
+        KNOWN_CONFLICT_COMMITTEE)
+    assert baseline["unresolved_reference_count"] == 1
+    assert baseline["reference_closure"] == "NOT authoritative / not complete"
+    assert "not a live census" in baseline["scope_note"]
     assert len(census_reports) == 1
     assert census_reports[0]["capture_completeness"] == {
         "members": False, "parties": False, "constituencies": False,
@@ -215,6 +242,18 @@ def test_local_development_bootstrap_is_read_only_to_authoritative_state(
         assert state.endpoint_publication("parties") == accepted_publication
         assert state.endpoint_publication("parties")["coverage_authoritative"] is True
 
+    # Repeating the bootstrap over exactly the same preserved capture runs
+    # produces byte-for-byte identical machine-readable evaluation metadata.
+    repeated_args = Namespace(**{
+        **vars(args),
+        "dataset_baseline_output": str(tmp_path / "baseline-2.json"),
+    })
+    assert cli._run_development_bootstrap(repeated_args) == 0
+    assert baseline_path.read_bytes() == Path(
+        repeated_args.dataset_baseline_output).read_bytes()
+    assert _hash(state_path) == state_hash
+    assert _hash(reconciliation_path) == reconciliation_hash
+
 
 def test_local_development_bootstrap_refuses_non_loopback_fuseki():
     args = Namespace(
@@ -228,6 +267,52 @@ def test_local_development_bootstrap_refuses_non_loopback_fuseki():
         assert "may write only to a loopback" in str(error)
     else:
         raise AssertionError("development bootstrap accepted a non-local Fuseki URL")
+
+
+@pytest.mark.parametrize("protected_location", ["core", "raw", "reconciliation"])
+def test_development_baseline_cannot_overwrite_source_or_authority_state(
+        tmp_path, monkeypatch, protected_location):
+    raw_root = tmp_path / "raw"
+    state_db = tmp_path / "core.sqlite"
+    reconciliation_db = tmp_path / "reconciliation.sqlite"
+    settings = Settings(
+        raw_dir=raw_root,
+        core_state_db_file=state_db,
+        reconciliation_state_db_file=reconciliation_db,
+    )
+    monkeypatch.setattr(cli.Settings, "from_environment", lambda: settings)
+    baseline_target = {
+        "core": state_db,
+        "raw": raw_root / "baseline.json",
+        "reconciliation": reconciliation_db,
+    }[protected_location]
+    args = Namespace(
+        raw_dir=None, state_db=None,
+        fuseki_gsp_url="http://127.0.0.1:3030/houses/data",
+        fuseki_sparql_url="http://127.0.0.1:3030/houses/query",
+        dataset_baseline_output=str(baseline_target),
+    )
+
+    with pytest.raises(ValueError, match="outside preserved raw captures"):
+        cli._run_development_bootstrap(args)
+    assert not state_db.exists()
+    assert not reconciliation_db.exists()
+    assert not raw_root.exists()
+
+
+def test_development_bootstrap_cli_accepts_dataset_baseline_output(tmp_path, monkeypatch):
+    output_path = tmp_path / "dataset-baseline.json"
+    received = {}
+
+    def capture_args(args):
+        received["path"] = args.dataset_baseline_output
+        return 0
+
+    monkeypatch.setattr(cli, "_run_development_bootstrap", capture_args)
+    assert cli.main([
+        "dev", "bootstrap", "--dataset-baseline-output", str(output_path),
+    ]) == 0
+    assert received["path"] == str(output_path)
 
 
 def test_development_capture_selector_does_not_promote_a_fixture_or_partial_run(

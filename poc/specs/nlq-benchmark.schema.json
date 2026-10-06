@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://data.oireachtas.ie/specs/nlq-benchmark.schema.json",
+  "title": "Oireachtas NLQ semantic benchmark v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "benchmark_id", "benchmark_version", "cases"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "benchmark_id": {"type": "string", "minLength": 1},
+    "benchmark_version": {"type": "string", "minLength": 1},
+    "cases": {
+      "type": "array",
+      "minItems": 30,
+      "maxItems": 50,
+      "items": {"$ref": "#/$defs/case"}
+    }
+  },
+  "$defs": {
+    "family": {
+      "enum": ["houses", "parties", "constituencies", "committees", "members", "bills", "debates"]
+    },
+    "failureClass": {
+      "enum": [
+        "question_interpretation", "schema_grounding", "entity_resolution",
+        "temporal_interpretation", "query_planning", "source_selection",
+        "sparql_generation", "query_safety_validation", "execution",
+        "source_data_coverage", "external_reconciliation_join",
+        "remote_source_failure", "result_provenance_composition",
+        "semantic_result_mismatch"
+      ]
+    },
+    "resultInvariant": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "boolean"],
+          "properties": {"kind": {"const": "ask"}, "boolean": {"type": "boolean"}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "invariants"],
+          "properties": {
+            "kind": {"const": "select"},
+            "invariants": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "row_count": {"type": "integer", "minimum": 0},
+                "min_rows": {"type": "integer", "minimum": 0},
+                "max_rows": {"type": "integer", "minimum": 0},
+                "contains_values": {"type": "array", "items": {"type": "string", "minLength": 1}},
+                "contains_text": {"type": "array", "items": {"type": "string", "minLength": 1}},
+                "required_rows": {"type": "array", "items": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}},
+                "positive_integer_each_row": {"type": "boolean"},
+                "integer_scalar": {"type": "boolean"},
+                "empty": {"type": "boolean"}
+              }
+            }
+          }
+        }
+      ]
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "question", "category", "tiers", "support_expectation",
+        "expected_interpretation", "expected_result", "evaluation_mode",
+        "dataset_prerequisites"
+      ],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "question": {"type": "string", "minLength": 1},
+        "category": {
+          "enum": [
+            "simple_lookup", "house_term_membership", "parliamentary_collections",
+            "constituencies_panels", "committees", "dates_temporal",
+            "counts_aggregates", "joins", "ambiguous_names", "unsupported_requests"
+          ]
+        },
+        "tiers": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["regression", "measured"]}},
+        "support_expectation": {"enum": ["supported", "ambiguous", "unsupported", "unavailable"]},
+        "expected_interpretation": {"type": "string", "minLength": 1},
+        "expected_result": {"oneOf": [{"$ref": "#/$defs/resultInvariant"}, {"type": "null"}]},
+        "evaluation_mode": {"enum": ["semantic_invariants", "manual_review"]},
+        "dataset_prerequisites": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["required_graph_families", "required_resources", "coverage_probes", "unavailable_if"],
+          "properties": {
+            "required_graph_families": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/family"}},
+            "required_resources": {
+              "type": "array",
+              "items": {
+                "type": "object", "additionalProperties": false,
+                "required": ["iri", "graph_family"],
+                "properties": {"iri": {"type": "string", "format": "uri"}, "graph_family": {"$ref": "#/$defs/family"}}
+              }
+            },
+            "coverage_probes": {
+              "type": "array",
+              "items": {
+                "type": "object", "additionalProperties": false,
+                "required": ["sparql", "expected_result"],
+                "properties": {"sparql": {"type": "string", "minLength": 1}, "expected_result": {"$ref": "#/$defs/resultInvariant"}}
+              }
+            },
+            "unavailable_if": {
+              "oneOf": [
+                {"type": "null"},
+                {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["kind", "iri"],
+                  "properties": {"kind": {"const": "quarantined_resource"}, "iri": {"type": "string", "format": "uri"}}
+                },
+                {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["kind", "graph_family"],
+                  "properties": {"kind": {"const": "missing_graph_family"}, "graph_family": {"$ref": "#/$defs/family"}}
+                }
+              ]
+            }
+          }
+        },
+        "failure_classes_on_mismatch": {"type": "array", "items": {"$ref": "#/$defs/failureClass"}},
+        "regression_translation": {
+          "type": "object", "additionalProperties": false,
+          "required": ["interpretation", "sparql"],
+          "properties": {"interpretation": {"type": "string", "minLength": 1}, "sparql": {"type": "string", "minLength": 1}}
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"support_expectation": {"const": "supported"}}, "required": ["support_expectation"]},
+          "then": {"properties": {"evaluation_mode": {"const": "semantic_invariants"}, "expected_result": {"$ref": "#/$defs/resultInvariant"}}}
+        },
+        {
+          "if": {"properties": {"support_expectation": {"enum": ["ambiguous", "unsupported", "unavailable"]}}, "required": ["support_expectation"]},
+          "then": {"properties": {"evaluation_mode": {"const": "manual_review"}, "expected_result": {"type": "null"}}}
+        },
+        {
+          "if": {"properties": {"support_expectation": {"const": "unavailable"}}, "required": ["support_expectation"]},
+          "then": {"properties": {"dataset_prerequisites": {"properties": {"unavailable_if": {"not": {"type": "null"}}}}}}
+        },
+        {
+          "if": {"properties": {"tiers": {"contains": {"const": "regression"}}}, "required": ["tiers"]},
+          "then": {"required": ["regression_translation"]},
+          "else": {"not": {"required": ["regression_translation"]}}
+        }
+      ]
+    }
+  }
+}
