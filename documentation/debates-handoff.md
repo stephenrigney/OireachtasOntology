@@ -46,8 +46,9 @@ Members Committee owner uses `/committee/{houseCode}/{houseNo}/{slug}`;
 the old `/committee/{slug}/{term-no}` template was a wiki documentation
 error, not an owner alias. Link only after exact validated owner resolution.
 The approved Tranche 2 exclusion of the `rollCall`-nested `sum_2`
-Summary/ordinal is recorded in `phase-7-debates.md`; the broader active CSV
-selector needs a separately approved correction. No broad production ingestion,
+Summary/ordinal is recorded in `phase-7-debates.md`, and the active CSV selector
+now matches it (`debateBody//summary[not(ancestor::rollCall)]`, also applied to
+the eId selector and the ordinal rule). No broad production ingestion,
 publication mechanics or corpus-scope selection was done in Tranche 2.
 
 Each Work and Expression IRI comes from its own FRBR URI; the Expression path
@@ -107,12 +108,12 @@ query contract remains intact and unanswered.
 The limited checked-in Committee owner example still does not establish the
 Dáil 34 Public Accounts author; do not create that owner from the AKN href.
 Committee rollCall attendance and its nested `sum_2` remain source-only and are
-excluded by the transformer and golden. The broad CSV `debateBody//summary`
-selector still includes `sum_2`; its protected correction requires separate
-explicit mapping approval. No mapping, ontology, source fixture or golden was
-changed for this closure. Tranche 3 is closed only under this evidence-backed
-deferral rule; this is not full Phase 7 completion or production-corpus
-acceptance.
+excluded by the transformer and golden. The active CSV selector now expresses
+that exclusion (`debateBody//summary[not(ancestor::rollCall)]`, also applied to
+the eId selector and the ordinal rule), so the protected mapping mismatch is
+closed. No ontology, source fixture or golden was changed. Tranche 3 is closed
+only under this evidence-backed deferral rule; this is not full Phase 7
+completion or production-corpus acceptance.
 
 No Tranche 4 ingestion, state, graph-replacement or publication work is claimed
 or started. The production resource/scope gate, historical duplicate-eId and

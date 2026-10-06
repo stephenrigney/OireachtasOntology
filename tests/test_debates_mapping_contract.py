@@ -78,6 +78,12 @@ def _is_text_selector(row):
     )
 
 
+def _selects_roll_call(json_path):
+    """Whether a selector targets rollCall content rather than excluding it."""
+
+    return "rollCall" in json_path.replace("[not(ancestor::rollCall)]", "")
+
+
 def test_debates_csv_is_well_formed_and_local_terms_resolve():
     with MAPPING.open(encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
@@ -184,7 +190,7 @@ def test_known_division_outcomes_are_mapped_but_declared_is_not():
 
 def test_roll_call_remains_source_only_and_cannot_become_votes_or_attendance():
     rows = _mapping_rows()
-    roll_call_rows = [row for row in rows if "rollCall" in row["json_path"]]
+    roll_call_rows = [row for row in rows if _selects_roll_call(row["json_path"])]
     assert len(roll_call_rows) == 1
     roll_call = roll_call_rows[0]
     assert roll_call["mapping_status"] == "future_work"
@@ -199,9 +205,13 @@ def test_roll_call_remains_source_only_and_cannot_become_votes_or_attendance():
     active_roll_call_rows = [
         row for row in rows
         if row["mapping_status"] in ACTIVE_STATUSES
-        and "rollCall" in row["json_path"]
+        and _selects_roll_call(row["json_path"])
     ]
     assert active_roll_call_rows == []
+    # An active selector may name rollCall only to exclude it, never to target it.
+    for row in rows:
+        if row["mapping_status"] in ACTIVE_STATUSES and "rollCall" in row["json_path"]:
+            assert "[not(ancestor::rollCall)]" in row["json_path"]
     assert not {":RollCall", ":Attendance", ":attended", ":hasAttendance"} & {
         row["ontology_term"] for row in rows if row["mapping_status"] in ACTIVE_STATUSES
     }

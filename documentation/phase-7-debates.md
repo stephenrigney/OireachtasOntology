@@ -244,13 +244,13 @@ output and required absences, including no `#declared` carried/lost outcome, no
 placeholder/link for unresolved references, no Division/vote/participation from
 committee `rollCall` attendance, and no transcript literals.
 
-**Clarified 2026-10-04:** the committee `rollCall/summary[@eId='sum_2']` is
-source-only too: emit no Summary or `:sourceOrdinal` for that node. The active
-CSV class selector `debateBody//summary` is broader than this reviewed
-source-only exception; do not silently treat that selector as permission to
-emit an orphan Summary. A protected mapping-selector correction remains a
-separate semantic-contract follow-up; the Tranche 2 RDF golden pins the
-clarified exclusion without editing the CSV.
+**Clarified 2026-10-04; selector corrected 2026-10-06:** the committee
+`rollCall/summary[@eId='sum_2']` is source-only too: emit no Summary or
+`:sourceOrdinal` for that node. The active CSV class selector now matches that
+runtime exclusion: row 25 uses `debateBody//summary[not(ancestor::rollCall)]`,
+with the same exclusion on the eId selector in row 26 and the Summary clause of
+the ordinal rule in row 49. Ordinary summaries remain mapped. The Tranche 2 RDF
+golden independently pins the exclusion.
 
 **Exit:** representative AKN records transform deterministically into the agreed
 Debates structure without transcript text.
@@ -369,16 +369,13 @@ source-aware report validation, competency and graph-boundary tests.
 
 Committee `rollCall` attendance remains source-only, and the transformer,
 source-aware golden and RDF checks exclude both attendance-derived RDF and the
-`rollCall`-nested `sum_2` Summary/ordinal. The broad active CSV
-`debateBody//summary` selector still includes that source-only node; correcting
-this protected selector remains separate work requiring explicit mapping
-approval. The mechanically scoped proposal is to restrict the class selector
-in CSV row 25 from `debateBody//summary` to
+`rollCall`-nested `sum_2` Summary/ordinal. The active CSV now matches that
+runtime exclusion: the class selector in CSV row 25 is
 `debateBody//summary[not(ancestor::rollCall)]`, with the same exclusion applied
-to the eId selector in row 26 and the Summary portion of the ordinal rule in
-row 49. This is a proposal, **not** an approved CSV edit: the active CSV still
-overselects and the executable exclusion is independently pinned by the golden.
-No mapping or fixture was changed for this closure.
+to the eId selector in row 26 and the Summary clause of the ordinal rule in
+row 49. The executable exclusion is independently pinned by the golden. No
+ontology, source fixture or golden was changed; the protected mapping-selector
+correction was applied as a bounded follow-up to this closure.
 
 This is **Tranche 3 closure only**. It is not full Phase 7 acceptance: the
 production-scope/resource gate, corpus quarantine and fragmentation issues,
