@@ -558,6 +558,7 @@ def _binding_graph(client, graph_iri: str) -> Graph:
 )
 def test_external_office_graph_is_exact_and_isolated_on_disposable_fuseki(tmp_path):
     from oireachtas_etl.loader import FusekiGraphStoreLoader, FusekiSparqlClient
+    from oireachtas_etl.transforms.debates import transform_debate
 
     gsp = os.environ["OIR_TEST_FUSEKI_GSP_URL"]
     sparql = os.environ["OIR_TEST_FUSEKI_SPARQL_URL"]
@@ -570,13 +571,19 @@ def test_external_office_graph_is_exact_and_isolated_on_disposable_fuseki(tmp_pa
     registry = synthetic_registry()
     record = record_for(registry=registry)
     local_graph = transform_offices(registry)
+    debate_source = (Path(__file__).resolve().parents[1]
+                     / "data/debates_examples/dail_2015-07-02.akn.xml")
+    debate = transform_debate(debate_source.read_bytes(), resolver=None)
     other_graph = "https://data.oireachtas.ie/graph/office-external-test-unrelated"
     other = Graph()
     other.add((URIRef("https://example.test/untouched"),
                URIRef("https://example.test/p"), URIRef("https://example.test/o")))
     loader.replace(OFFICES_GRAPH, ntriples(local_graph), content_type="application/n-triples")
+    loader.replace(debate.graph_iri, ntriples(debate.graph),
+                   content_type="application/n-triples")
     loader.replace(other_graph, ntriples(other), content_type="application/n-triples")
     local_before = set(_binding_graph(client, OFFICES_GRAPH))
+    debate_before = set(client.construct_graph(debate.graph_iri))
     other_before = set(_binding_graph(client, other_graph))
     expected = Graph()
     expected.add((URIRef(OFFICE_IRI), OWL.sameAs, URIRef(WIKIDATA + QID)))
@@ -592,4 +599,5 @@ def test_external_office_graph_is_exact_and_isolated_on_disposable_fuseki(tmp_pa
     verify_reconciliation_graph(client, external_graph, expected)
     assert set(_binding_graph(client, external_graph)) == set(expected)
     assert set(_binding_graph(client, OFFICES_GRAPH)) == local_before
+    assert set(client.construct_graph(debate.graph_iri)) == debate_before
     assert set(_binding_graph(client, other_graph)) == other_before
