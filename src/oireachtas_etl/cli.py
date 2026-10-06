@@ -7,6 +7,7 @@ from .api import ApiClient, HousesApiClient
 from .config import (ADMINISTRATIVE_UNITS_GRAPH, COMMITTEES_GRAPH,
                      CONSTITUENCIES_GRAPH, HOUSES_GRAPH,
                      OFFICES_GRAPH, OFFICE_REGISTRY_FILE, OFFICE_DECISIONS_FILE,
+                     BILL_SPONSOR_DECISIONS_FILE, BILL_SPONSOR_STATE_DB_FILE,
                      OFFICE_OCCURRENCE_STATE_DB_FILE, PARTIES_GRAPH,
                      REFERENCE_ONTOLOGY_VERSION, Settings)
 from .loader import FusekiGraphStoreLoader
@@ -53,6 +54,12 @@ from .reconciliation import (DbpediaClient, ReconciliationStore, WikidataClient,
                                reconcile_external_office_records)
 from .office_observations import canonical_json, extract_office_observations, json_hash
 from .office_reconciliation import OfficeOccurrenceStore, load_office_review
+from .bill_sponsor_reconciliation import (BillSponsorStore, bill_sponsor_graph_iri,
+                                          extract_bill_sponsor_observations,
+                                          load_bill_sponsor_review, json_hash as sponsor_json_hash)
+from .bill_sponsor_publication import BillSponsorPublication
+from .transforms.bill_sponsors import build_bill_sponsor_graph
+from .validation.bill_sponsors import validate_bill_sponsor_graph
 from .reference_coverage import build_reference_census, summary as reference_census_summary
 from .reference_closure import (candidate_member_dataset,
                                 verify_reference_closure)
@@ -1739,6 +1746,42 @@ def _bills_fixture_records(path: Path) -> tuple[list[dict], bytes, int | None]:
     return records, body, advertised
 
 
+def _local_sponsor_source(args: argparse.Namespace, settings: Settings) -> tuple[list[dict], bool]:
+    """Preserve a complete live Bill scan or a deliberately scoped test fixture."""
+    raw_root = Path(args.raw_dir).expanduser() if args.raw_dir else settings.raw_dir
+    extraction_id = str(uuid.uuid4())
+    if args.fixture:
+        path = Path(args.fixture)
+        records, body, advertised = _bills_fixture_records(path)
+        persist_raw(root=raw_root, endpoint=str(path.resolve()),
+                    params={"skip": 0, "limit": len(records)}, body=body, status=200,
+                    retrieved_at=datetime.now(timezone.utc),
+                    ontology_version="legislation.owl.ttl@phase-4-legislative-lifecycle-2026",
+                    mapping_version="bill_mapping.csv@phase-4-legislative-lifecycle-2026",
+                    endpoint_name="legislation", extraction_id=extraction_id)
+        # A fixture never establishes absence for any Bill outside its scope.
+        return _deduplicate_bills(records, advertised), False
+    records: list[dict] = []
+    advertised = None
+    for page in ApiClient(settings.bills_api_url, retries=settings.retries,
+                          timeout=settings.timeout).harvest(limit=settings.limit):
+        persist_raw(root=raw_root, endpoint=settings.bills_api_url,
+                    params=page.params, body=page.body, status=page.status,
+                    retrieved_at=datetime.now(timezone.utc),
+                    ontology_version="legislation.owl.ttl@phase-4-legislative-lifecycle-2026",
+                    mapping_version="bill_mapping.csv@phase-4-legislative-lifecycle-2026",
+                    endpoint_name="legislation", extraction_id=extraction_id)
+        decoded = json.loads(page.body)
+        if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list):
+            raise ValueError("every Legislation API page must contain a results list")
+        count = decoded.get("head", {}).get("counts", {}).get("billCount")
+        if type(count) is not int or count < 0 or (advertised is not None and count != advertised):
+            raise ValueError("Bills advertised count changed or is invalid during local reconciliation scan")
+        advertised = count
+        records.extend(decoded["results"])
+    return _deduplicate_bills(records, advertised, allow_empty=advertised == 0), True
+
+
 def _deduplicate_bills(records: list[dict], advertised: int | None, *, allow_empty=False) -> list[dict]:
     if not records and not allow_empty: raise ValueError("Bills harvest must not be empty")
     unique, graphs = {}, {}
@@ -1765,6 +1808,115 @@ def _bill_source_time(wrapper: dict) -> datetime:
         return parsed.astimezone(timezone.utc)
     except (KeyError, TypeError, AttributeError, ValueError) as error:
         raise ValueError("Bill lastUpdated must be a timezone-aware ISO timestamp") from error
+
+
+def _published_sponsor_member_graphs(core: CoreStateStore, persons: set[str],
+                                     client: FusekiSparqlClient | None = None) -> Graph:
+    """Only clean, intact published Member payloads may supply holding evidence.
+
+    A Member observation/ledger decision is not a published OfficeHolding. A
+    dirty or pre-migration Member row supplies no tenure for a Bill assertion.
+    """
+    result = Graph()
+    for person in sorted(persons):
+        row = core.get_resource("members", person)
+        if (row is None or row["publication_state"] != "clean"
+                or row["contract_version"] != 3):
+            continue
+        payload = row["published_payload"]
+        expected_hash = row["published_payload_hash"]
+        if (not isinstance(payload, str) or not isinstance(expected_hash, str)
+                or hashlib.sha256(payload.encode("utf-8")).hexdigest() != expected_hash
+                or row["graph_iri"] != expected_graph_iri("members", person)):
+            raise ValueError(f"published Member holding evidence cannot be verified: {person}")
+        graph = Graph().parse(data=payload, format="nt")
+        if client is not None:
+            verify_core_graph(client, row["graph_iri"], payload)
+        for triple in graph:
+            result.add(triple)
+    return result
+
+
+def _accepted_published_sponsor_holdings(core: CoreStateStore,
+                                         office_store: OfficeOccurrenceStore,
+                                         persons: set[str], registry: dict,
+                                         client: FusekiSparqlClient | None = None) -> list[dict]:
+    """Corroborate reviewed source-date precision against published Member RDF.
+
+    Member RDF stores xsd:dateTime; a midnight value alone cannot establish
+    whether the source reported a date or an instant. The occurrence ledger
+    supplies the original precision, but it is never an RDF authority by
+    itself: every selected holding, office, person and interval must match the
+    intact, clean and (online) remotely verified Member graph exactly.
+    """
+    from .bill_sponsor_reconciliation import normalize_accepted_member_holdings
+
+    graph = _published_sponsor_member_graphs(core, persons, client)
+    rows = office_store.occurrences()
+    records: dict[str, dict] = {}
+    for row in rows:
+        member = row.get("member_iri")
+        if member not in persons:
+            continue
+        key = row["occurrence_key"]
+        for resolution in _office_acceptance_history(office_store, row):
+            snapshot = resolution.get("snapshot")
+            dates = snapshot.get("date_range") if isinstance(snapshot, dict) else None
+            if not isinstance(dates, dict):
+                continue
+            for office in resolution.get("office_iris", []):
+                holding = _office_holding_iri(member, key, office)
+                if not _prior_office_holding_matches(graph, member, holding, office, dates):
+                    continue
+                candidate = {"status": "accepted", "member_iri": member,
+                             "holding_iri": str(holding), "office_iri": office,
+                             "date_range": dates, "occurrence_key": key}
+                previous = records.get(str(holding))
+                if previous is not None and previous != candidate:
+                    raise ValueError(f"conflicting source precision for published holding {holding}")
+                records[str(holding)] = candidate
+    # No publication-only holding may silently become a Bill reconciliation
+    # authority without its reviewed source-date correspondence.
+    published = set(graph.subjects(RDF.type, MEMBERS.OfficeHolding))
+    if published != {URIRef(value) for value in records}:
+        raise ValueError("published OfficeHolding is missing verified source correspondence")
+    return normalize_accepted_member_holdings(list(records.values()), registry)
+
+
+def _published_bill_sponsor_graph(core: CoreStateStore, wrapper: dict,
+                                  client: FusekiSparqlClient) -> Graph:
+    """Require the exact current source Participation to exist in verified core RDF."""
+    bill = wrapper["bill"]
+    identity, graph_iri = bill["uri"], bill_graph_iri(bill)
+    row = core.get_resource("legislation", identity)
+    if (row is None or row["publication_state"] != "clean"
+            or row["source_presence"] != "present"
+            or row["graph_iri"] != graph_iri or row["contract_version"] != 1
+            or row["published_source_hash"] != bill_source_hash(bill)):
+        raise ValueError(f"Bill core graph is not published from current source: {identity}")
+    payload = row["published_payload"]
+    if (not isinstance(payload, str) or not isinstance(row["published_payload_hash"], str)
+            or hashlib.sha256(payload.encode("utf-8")).hexdigest() != row["published_payload_hash"]):
+        raise ValueError(f"Bill core publication evidence cannot be verified: {identity}")
+    graph = Graph().parse(data=payload, format="nt")
+    validate_bill(wrapper, graph)
+    verify_core_graph(client, graph_iri, payload)
+    return graph
+
+
+def _require_published_sponsor_offices(core: CoreStateStore, registry: dict,
+                                       client: FusekiSparqlClient) -> None:
+    """Do not link to a reviewed office before its current local owner publishes it."""
+    graph = transform_offices(registry)
+    validate_offices(registry, graph)
+    payload = ntriples(graph)
+    row = core.endpoint_publication("offices")
+    if (not row or row.get("graph_iri") != OFFICES_GRAPH
+            or row.get("publication_state") != "clean"
+            or row.get("published_payload_hash") != hashlib.sha256(payload.encode()).hexdigest()
+            or row.get("published_payload") != payload):
+        raise ValueError("current reviewed office registry must be published before Bill local links")
+    verify_core_graph(client, OFFICES_GRAPH, payload)
 
 
 def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = None,
@@ -2714,6 +2866,109 @@ def run_reconcile_offices(args: argparse.Namespace) -> int:
     return 1 if result["review_required"] or result["unresolved"] else 0
 
 
+def run_reconcile_bills_local(args: argparse.Namespace) -> int:
+    """Rebuild only independently owned per-Bill local sponsor-link graphs."""
+    if args.offline and not args.fixture:
+        raise ValueError("--offline Bill local reconciliation requires --fixture")
+    if args.offline and args.publish:
+        raise ValueError("--offline Bill local reconciliation forbids --publish")
+    if args.responses_file:
+        raise ValueError("Bill local reconciliation never consumes external response fixtures")
+    settings = Settings.from_environment()
+    registry = json.loads(Path(args.registry_file or OFFICE_REGISTRY_FILE).read_text(encoding="utf-8"))
+    validate_registry_source(registry)
+    decisions, review_hash = load_bill_sponsor_review(
+        Path(args.review_file or BILL_SPONSOR_DECISIONS_FILE))
+    records, complete = _local_sponsor_source(args, settings)
+    # Source and review errors must fail before any remote graph replacement.
+    for wrapper in records:
+        validate_bill_source(wrapper)
+    state_path = Path(args.bill_state_file or BILL_SPONSOR_STATE_DB_FILE).expanduser()
+    core_path = Path(args.state_db or settings.core_state_db_file).expanduser()
+    office_path = Path(args.office_state_file or OFFICE_OCCURRENCE_STATE_DB_FILE).expanduser()
+    query_url = args.fuseki_sparql_url or settings.fuseki_sparql_url
+    gsp_url = args.fuseki_gsp_url or settings.fuseki_gsp_url
+    if args.publish and (not query_url or not gsp_url):
+        raise ValueError("Bill local --publish requires Fuseki GSP and SPARQL endpoints")
+    client = (FusekiSparqlClient(query_url, user=settings.fuseki_user,
+                                password=settings.fuseki_password, timeout=settings.timeout)
+              if args.publish else None)
+    loader = (FusekiGraphStoreLoader(gsp_url, user=settings.fuseki_user,
+                                    password=settings.fuseki_password, timeout=settings.timeout)
+              if args.publish else None)
+    # Keep the same ordering as the authoritative and office occurrence paths:
+    # a core refresh cannot change a Bill or Member graph during local PUT.
+    from contextlib import ExitStack
+    with ExitStack() as stack:
+        if args.publish:
+            stack.enter_context(state_lock(core_path))
+            core = stack.enter_context(CoreStateStore(core_path))
+            stack.enter_context(state_lock(office_path))
+            office_store = stack.enter_context(OfficeOccurrenceStore(office_path))
+            _require_published_sponsor_offices(core, registry, client)
+        else:
+            core = office_store = None
+        stack.enter_context(state_lock(state_path))
+        local_store = stack.enter_context(BillSponsorStore(state_path))
+        publication = BillSponsorPublication(local_store)
+        seen = set()
+        graphs, summary = [], []
+        for wrapper in records:
+            bill = wrapper["bill"]
+            bill_iri, local_iri = bill["uri"], bill_sponsor_graph_iri(bill)
+            seen.add(bill_iri)
+            source_graph = (_published_bill_sponsor_graph(core, wrapper, client)
+                            if args.publish else transform_bill_with_report(wrapper)[0])
+            validate_bill(wrapper, source_graph)
+            observations = extract_bill_sponsor_observations(wrapper)
+            observed_by_key = {item["observation_key"]: item for item in observations}
+            persons = {item["person_iri"] for item in observations if item["person_iri"]}
+            holdings = (_accepted_published_sponsor_holdings(
+                core, office_store, persons, registry, client) if args.publish else [])
+            known_keys = {row["observation_key"] for row in local_store.observations(bill_iri)}
+            known_keys.update(item["observation_key"] for item in observations)
+            reviewed = {key: value for key, value in decisions.items() if key in known_keys}
+            result = local_store.reconcile(wrapper, registry, holdings, reviewed, review_hash)
+            graph = build_bill_sponsor_graph(wrapper, result["records"], registry, holdings)
+            validate_bill_sponsor_graph(wrapper, graph, result["records"], registry, holdings)
+            # The local graph's subjects must all be present in the unchanged
+            # current Bill owner graph; its original label remains there.
+            for subject in graph.subjects():
+                if (subject, RDF.type, ELIDL.Participation) not in source_graph:
+                    raise ValueError("local link has no Participation in current Bill core graph")
+            graphs.append((graph, local_iri))
+            evidence_hash = sponsor_json_hash([
+                {key: item.get(key) for key in ("observation_key", "input_fingerprint",
+                                               "status", "office_iri", "holding_iri",
+                                               "participation_iri", "review_hash")}
+                for item in result["records"]])
+            published = publication.publish(bill_iri, local_iri, graph, evidence_hash,
+                                            loader, client) if args.publish else False
+            summary.append({"bill_iri": bill_iri, "graph": local_iri,
+                            "triples": len(graph), "published": published,
+                            "counts": result["counts"],
+                            "stale_decisions": result["stale_decisions"],
+                            "records": [{key: item.get(key) for key in (
+                                "observation_key", "participation_iri", "input_fingerprint",
+                                "status", "resolution_method", "office_iri", "holding_iri",
+                                "time_context", "office_candidates", "holding_candidates", "conflicts")}
+                                | {"bill_time_contexts": observed_by_key.get(
+                                    item["observation_key"], {}).get("bill_time_contexts", [])}
+                                for item in result["records"]]})
+        absent = publication.complete_source_presence(seen) if complete else []
+        replayed = publication.replay_missing(seen, loader, client) if args.publish else []
+        if args.output_nq:
+            Path(args.output_nq).write_text("".join(nquads(graph, iri) for graph, iri in graphs),
+                                            encoding="utf-8")
+        print(json.dumps({"processed": len(records), "published": sum(item["published"] for item in summary),
+                          "replayed": replayed, "missing_retained_review_required": absent,
+                          "state_db": str(state_path), "bills": summary}, sort_keys=True))
+        pending = bool(absent or any(item["counts"]["review_required"]
+                                     or item["counts"]["unresolved"]
+                                     or item["stale_decisions"] for item in summary))
+        return 1 if pending else 0
+
+
 def run_state_status(args: argparse.Namespace) -> int:
     settings = Settings.from_environment()
     state_db = Path(getattr(args, "state_db", None) or settings.core_state_db_file).expanduser()
@@ -2744,17 +2999,20 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--coverage-report", help="write deterministic reference census JSON")
     state = sub.add_parser("state"); state_sub = state.add_subparsers(dest="state_command", required=True)
     state_status = state_sub.add_parser("status"); state_status.add_argument("--state-db")
-    reconcile = sub.add_parser("reconcile"); reconcile.add_argument("endpoint", choices=["members", "parties", "institutions", "offices", "office-external"])
+    reconcile = sub.add_parser("reconcile"); reconcile.add_argument("endpoint", choices=["members", "parties", "institutions", "offices", "office-external", "bills-local"])
     reconcile.add_argument("--fixture"); reconcile.add_argument("--responses-file"); reconcile.add_argument("--offline", action="store_true"); reconcile.add_argument("--all", action="store_true"); reconcile.add_argument("--publish", action="store_true"); reconcile.add_argument("--output-nq"); reconcile.add_argument("--fuseki-gsp-url"); reconcile.add_argument("--fuseki-sparql-url")
     reconcile.add_argument("--review-file", help="review JSON (defaults to the endpoint-specific version-controlled review file)")
     reconcile.add_argument("--reconciliation-state-file", help="shared reconciliation SQLite path (defaults to the Phase 3.5 state file)")
     reconcile.add_argument("--registry-file", help="versioned local office/unit registry JSON")
     reconcile.add_argument("--office-state-file", help="durable SQLite office observation/evidence ledger")
+    reconcile.add_argument("--bill-state-file", help="durable local Bill sponsor reconciliation ledger")
+    reconcile.add_argument("--state-db", help="authoritative core ETL SQLite state for published Bills and Members")
     reconcile.add_argument("--raw-dir", help="immutable raw response root for office source scans")
     args = parser.parse_args(argv)
     if args.command == "state": return run_state_status(args)
     if args.command == "reconcile":
         if args.endpoint == "offices": return run_reconcile_offices(args)
+        if args.endpoint == "bills-local": return run_reconcile_bills_local(args)
         if args.endpoint == "office-external": return run_reconcile_office_external(args)
         if args.endpoint == "parties": return run_reconcile_parties(args)
         if args.endpoint == "institutions": return run_reconcile_institutions(args)
