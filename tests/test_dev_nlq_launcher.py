@@ -85,9 +85,8 @@ OIR_ETL_STUB = """\
 printf 'ETL:%s\\n' "$*"
 printf 'ETL_ENV_OIR_FUSEKI_GSP_URL:%s\\n' "${OIR_FUSEKI_GSP_URL:-}"
 printf 'ETL_ENV_OIR_FUSEKI_SPARQL_URL:%s\\n' "${OIR_FUSEKI_SPARQL_URL:-}"
-endpoint="${2:-}"
-if [[ -n "${STUB_ETL_FAIL_ENDPOINT:-}" && "$endpoint" == "$STUB_ETL_FAIL_ENDPOINT" ]]; then
-  echo "simulated ETL failure for $endpoint" >&2
+if [[ -n "${STUB_ETL_FAIL_ENDPOINT:-}" && "$*" == *"$STUB_ETL_FAIL_ENDPOINT"* ]]; then
+  echo "simulated ETL failure for $STUB_ETL_FAIL_ENDPOINT" >&2
   exit 7
 fi
 exit 0
@@ -291,15 +290,16 @@ def test_ordinary_startup_does_not_load_data(tmp_path):
     assert "ETL:" not in result.stdout
 
 
-def test_load_data_invokes_only_the_intended_etl_endpoints(tmp_path):
+def test_load_data_invokes_explicit_non_authoritative_development_bootstrap(tmp_path):
     launcher = _launcher_tree(tmp_path, "NLQ_LLM_API_KEY=file-key\n")
 
     result = _run_launcher(launcher, "--load-data")
 
     assert result.returncode == 0, result.stderr
-    for endpoint in ("houses", "parties", "constituencies", "members"):
-        assert f"ETL:run {endpoint}" in result.stdout
-    assert "ETL:run bills" not in result.stdout
+    assert "ETL:dev bootstrap" in result.stdout
+    assert "ETL:run " not in result.stdout
+    assert "--fuseki-gsp-url" in result.stdout
+    assert "--fuseki-sparql-url" in result.stdout
     assert "UVICORN:poc.nlq.app:app" in result.stdout
 
 
@@ -309,10 +309,9 @@ def test_load_data_exports_both_etl_endpoints_to_every_subprocess(tmp_path):
     result = _run_launcher(launcher, "--load-data")
 
     assert result.returncode == 0, result.stderr
-    # The ETL requires an explicit SPARQL endpoint for post-load verification;
-    # every loaded endpoint must receive both endpoints, not just the GSP URL.
-    assert _etl_env_values(result.stdout, "OIR_FUSEKI_GSP_URL") == [DEFAULT_GSP_URL] * 4
-    assert _etl_env_values(result.stdout, "OIR_FUSEKI_SPARQL_URL") == [DEFAULT_SPARQL_URL] * 4
+    # The development bootstrap receives the same local GSP and SPARQL target.
+    assert _etl_env_values(result.stdout, "OIR_FUSEKI_GSP_URL") == [DEFAULT_GSP_URL]
+    assert _etl_env_values(result.stdout, "OIR_FUSEKI_SPARQL_URL") == [DEFAULT_SPARQL_URL]
 
 
 def test_etl_sparql_url_defaults_to_the_resolved_nlq_query_url(tmp_path):
@@ -328,7 +327,7 @@ def test_etl_sparql_url_defaults_to_the_resolved_nlq_query_url(tmp_path):
     assert _uvicorn_env(result.stdout, "OIR_FUSEKI_SPARQL_URL") == "http://custom.example:3030/houses/query"
     assert _etl_env_values(result.stdout, "OIR_FUSEKI_SPARQL_URL") == [
         "http://custom.example:3030/houses/query"
-    ] * 4
+    ]
 
 
 def test_env_local_can_override_the_etl_sparql_url(tmp_path):
@@ -345,7 +344,7 @@ def test_env_local_can_override_the_etl_sparql_url(tmp_path):
     assert _uvicorn_env(result.stdout, "OIR_FUSEKI_SPARQL_URL") == "http://from-file:3030/houses/query"
     assert _etl_env_values(result.stdout, "OIR_FUSEKI_SPARQL_URL") == [
         "http://from-file:3030/houses/query"
-    ] * 4
+    ]
 
 
 def test_explicit_environment_overrides_env_local_etl_sparql_url(tmp_path):
@@ -365,7 +364,7 @@ def test_explicit_environment_overrides_env_local_etl_sparql_url(tmp_path):
     assert _uvicorn_env(result.stdout, "OIR_FUSEKI_SPARQL_URL") == "http://from-env:3030/houses/query"
     assert _etl_env_values(result.stdout, "OIR_FUSEKI_SPARQL_URL") == [
         "http://from-env:3030/houses/query"
-    ] * 4
+    ]
 
 
 def test_etl_failure_stops_before_starting_the_poc(tmp_path):
@@ -374,11 +373,11 @@ def test_etl_failure_stops_before_starting_the_poc(tmp_path):
     result = _run_launcher(
         launcher,
         "--load-data",
-        extra_env={"STUB_ETL_FAIL_ENDPOINT": "parties"},
+        extra_env={"STUB_ETL_FAIL_ENDPOINT": "bootstrap"},
     )
 
     assert result.returncode != 0
-    assert "ETL load of 'parties' failed" in result.stderr
+    assert "local development data bootstrap failed" in result.stderr
     assert "the POC was not started" in result.stderr
     assert "UVICORN:" not in result.stdout
 

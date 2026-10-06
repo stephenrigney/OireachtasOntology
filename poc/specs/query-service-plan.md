@@ -35,8 +35,8 @@ The proof of concept currently provides:
 - visible generated SPARQL;
 - result rendering and debug information;
 - a one-command development launcher under `scripts/dev-nlq.sh`;
-- optional loading of Houses, Parties, Constituencies and Members into local
-  Fuseki; and
+- an explicit non-authoritative local bootstrap for Houses, reference owners
+  and Members from preserved complete API captures; and
 - an explicit prohibition on `SERVICE`, `FROM` and `FROM NAMED` in
   generated queries.
 
@@ -112,6 +112,33 @@ The query service should not permanently depend on importing private
 `oireachtas_etl` implementation modules. Before extraction, this repository
 must expose a stable machine-readable query/schema contract that a separate
 service can consume.
+
+### 3.3 Local PoC reference-data bootstrap contract
+
+`scripts/dev-nlq.sh --load-data` invokes the explicitly named
+`oir-etl dev bootstrap` command. This is a development-environment mechanism
+for a disposable, loopback Fuseki dataset, not partial production publication.
+It reads preserved successful complete API captures, validates and loads
+Houses/HouseTerms, Member graphs and valid Party, Independent collection,
+constituency/panel and Committee owner descriptions. It does not fetch source
+data or write Core State or external-reconciliation state.
+
+The local path reuses the source census and owner transformations, but
+materially conflicted identities are quarantined: no observation is selected,
+no vote or placeholder is used, the canonical IRI is unchanged, and the
+conflicted owner description is omitted. Member references may still point to
+that unresolved IRI. The bootstrap reports the conflicted IRIs and reasons,
+quarantined-identity and unresolved-reference counts, and always labels
+reference closure **NOT authoritative / not complete**.
+
+Authoritative reference publication remains globally fail-closed. A material
+conflict in any reference identity still blocks the authoritative candidate set
+and does not advance coverage/publication authority. In particular, the known
+Committee source conflict at
+`https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/select_committee_on_the_implementation_of_the_good_friday_agreement`
+still blocks authoritative reference-coverage acceptance. Local development
+output must not be described or reused as
+authoritative, accepted or production-ready RDF.
 
 ## 4. Development principles
 

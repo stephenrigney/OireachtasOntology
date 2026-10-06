@@ -14,7 +14,7 @@
 #     it to become reachable before starting the web application;
 #   - configures the local Fuseki admin credentials predictably, without
 #     deleting the persistent Fuseki volume or grepping container logs;
-#   - optionally loads reference/Member data through the existing ETL;
+#   - optionally runs the explicitly non-authoritative local-data bootstrap;
 #   - execs the FastAPI application under Uvicorn.
 #
 # Only this launcher reads `.env.local`. The Python application loads `.env`
@@ -24,10 +24,10 @@
 #   scripts/dev-nlq.sh [--no-reload] [--load-data]
 #
 #   --no-reload   Start Uvicorn without its autoreload watcher.
-#   --load-data   Explicitly publish Houses, Parties, Constituencies and
-#                 Members to the local Fuseki dataset through the existing ETL
-#                 before starting the POC. Ordinary startup never loads or
-#                 republishes data.
+#   --load-data   Explicitly bootstrap the local Fuseki from preserved complete
+#                 API captures with 'oir-etl dev bootstrap'. This is a
+#                 non-authoritative development load. Ordinary startup never
+#                 loads or republishes data.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -51,9 +51,9 @@ usage() {
 Usage: scripts/dev-nlq.sh [--no-reload] [--load-data]
 
   --no-reload   Start Uvicorn without its autoreload watcher.
-  --load-data   Explicitly publish Houses, Parties, Constituencies and Members
-                to the local Fuseki dataset through the existing ETL before
-                starting the POC. Ordinary startup never loads or republishes.
+  --load-data   Explicitly run 'oir-etl dev bootstrap' against loopback Fuseki
+                using preserved complete API captures. This local-development
+                dataset is non-authoritative. Ordinary startup does not load.
 EOF
 }
 
@@ -220,21 +220,15 @@ docker compose up -d fuseki
 wait_for_fuseki
 ensure_fuseki_admin_password
 
-# --- Optional explicit ETL load --------------------------------------------
-load_endpoint() {
-  local endpoint="$1"
-  echo "Loading '$endpoint' into $OIR_FUSEKI_GSP_URL ..."
-  if ! "$UV" run --locked oir-etl run "$endpoint"; then
-    echo "ERROR: ETL load of '$endpoint' failed; the POC was not started." >&2
+# --- Optional explicit local development bootstrap -------------------------
+if [[ "$LOAD_DATA" -eq 1 ]]; then
+  echo "Bootstrapping non-authoritative local PoC data from preserved API captures..."
+  if ! "$UV" run --locked oir-etl dev bootstrap \
+    --fuseki-gsp-url "$OIR_FUSEKI_GSP_URL" \
+    --fuseki-sparql-url "$OIR_FUSEKI_SPARQL_URL"; then
+    echo "ERROR: local development data bootstrap failed; the POC was not started." >&2
     exit 1
   fi
-}
-
-if [[ "$LOAD_DATA" -eq 1 ]]; then
-  load_endpoint houses
-  load_endpoint parties
-  load_endpoint constituencies
-  load_endpoint members
 fi
 
 # --- Start the POC ----------------------------------------------------------

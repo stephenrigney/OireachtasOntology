@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import sqlite3
 
 from .transforms.common import iri
 from .transforms.members import member_graph_iri, source_hash
@@ -12,6 +13,7 @@ from .state import AUTHORITATIVE_COMPLETE_SOURCES
 
 
 COUNT_FIELDS = {
+    "houses": "housesCount",
     "members": "memberCount",
     "parties": "partyCount",
     "constituencies": "constituencyCount",
@@ -162,3 +164,76 @@ def load_latest_complete_capture(raw_root: Path, store, endpoint: str) -> tuple[
         raise ValueError(
             f"expected one immutable {endpoint} raw capture for successful run {run_id}; found {len(matches)}")
     return load_authoritative_capture(matches[0], endpoint, store)
+
+
+class _ReadOnlyCoreCaptureIndex:
+    """Minimal, query-only view used by the explicitly non-authoritative path."""
+
+    def __init__(self, connection: sqlite3.Connection):
+        self.connection = connection
+
+    def successful_complete_run(self, endpoint: str, run_id: str) -> dict | None:
+        from .state import AUTHORITATIVE_COMPLETE_SOURCES
+
+        row = self.connection.execute(
+            "SELECT * FROM etl_run WHERE run_id=? AND endpoint=? "
+            "AND status='succeeded' AND is_complete=1", (run_id, endpoint),
+        ).fetchone()
+        if row is None:
+            return None
+        result = dict(row)
+        result["parameters"] = json.loads(result.pop("parameters_json"))
+        if result["parameters"].get("source") != AUTHORITATIVE_COMPLETE_SOURCES.get(endpoint):
+            return None
+        return result
+
+    def last_successful_complete_run(self, endpoint: str) -> dict | None:
+        row = self.connection.execute(
+            "SELECT last_successful_complete_run_id FROM endpoint_state WHERE endpoint=?",
+            (endpoint,),
+        ).fetchone()
+        if row is None or not row[0]:
+            return None
+        return self.successful_complete_run(endpoint, row[0])
+
+
+def load_latest_development_capture(raw_root: Path, state_db: Path,
+                                    endpoint: str) -> tuple[list[dict], dict]:
+    """Read a preserved complete API capture without opening state for writes.
+
+    This selector is intentionally separate from ETL execution. It reads the
+    Core State pointer only to identify the already-recorded successful
+    complete API run, then verifies that immutable capture's pages and hashes.
+    It cannot create state, advance source evidence, or select fixtures/partial
+    captures as authoritative input.
+    """
+    from .state import AUTHORITATIVE_COMPLETE_SOURCES
+
+    if endpoint not in COUNT_FIELDS:
+        raise ValueError(f"unsupported development capture endpoint: {endpoint}")
+    state_path = Path(state_db).expanduser().resolve()
+    try:
+        connection = sqlite3.connect(state_path.as_uri() + "?mode=ro", uri=True)
+        connection.row_factory = sqlite3.Row
+    except sqlite3.Error as error:
+        raise ValueError(
+            f"cannot read existing Core State for the local development capture: {error}") from error
+    try:
+        index = _ReadOnlyCoreCaptureIndex(connection)
+        run = index.last_successful_complete_run(endpoint)
+        if run is None or run.get("parameters", {}).get("source") != \
+                AUTHORITATIVE_COMPLETE_SOURCES[endpoint]:
+            raise ValueError(
+                f"no successful complete API {endpoint} capture is recorded; "
+                "local development bootstrap uses preserved API captures and never fetches source data")
+        run_id = run["run_id"]
+        matches = sorted(Path(raw_root).expanduser().glob(
+            f"{endpoint}/*/run-{run_id}"))
+        if len(matches) != 1:
+            raise ValueError(
+                f"expected one preserved {endpoint} capture for run {run_id}; found {len(matches)}")
+        return load_authoritative_capture(matches[0], endpoint, index)
+    except sqlite3.Error as error:
+        raise ValueError(f"cannot read existing Core State capture index: {error}") from error
+    finally:
+        connection.close()

@@ -2,6 +2,7 @@ from __future__ import annotations
 import argparse, json, sys, uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import urlsplit
 import hashlib
 from .api import ApiClient, HousesApiClient
 from .config import (ADMINISTRATIVE_UNITS_GRAPH, COMMITTEES_GRAPH,
@@ -56,8 +57,10 @@ from .office_reconciliation import OfficeOccurrenceStore, load_office_review
 from .reference_coverage import build_reference_census, summary as reference_census_summary
 from .reference_closure import (candidate_member_dataset,
                                 verify_reference_closure)
-from .reference_publication import build_reference_candidates
-from .raw_captures import load_latest_complete_capture
+from .reference_publication import (build_development_reference_candidates,
+                                    build_reference_candidates)
+from .raw_captures import (load_latest_complete_capture,
+                           load_latest_development_capture)
 
 
 MEMBER_MAPPING_VERSION = "member_mapping.csv@reference-coverage-2026"
@@ -2723,6 +2726,139 @@ def run_state_status(args: argparse.Namespace) -> int:
     return 0
 
 
+LOCAL_DEVELOPMENT_GRAPH_ORDER = (
+    ("houses", HOUSES_GRAPH),
+    ("parties", PARTIES_GRAPH),
+    ("constituencies", CONSTITUENCIES_GRAPH),
+    ("committees", COMMITTEES_GRAPH),
+)
+
+
+def _require_loopback_fuseki_endpoint(label: str, endpoint: str | None) -> str:
+    if not isinstance(endpoint, str) or not endpoint:
+        raise ValueError(f"local development bootstrap requires a {label} Fuseki endpoint")
+    try:
+        parsed = urlsplit(endpoint)
+        hostname = parsed.hostname
+        _port = parsed.port
+    except ValueError as error:
+        raise ValueError(f"invalid {label} Fuseki endpoint: {endpoint!r}") from error
+    if (parsed.scheme not in {"http", "https"}
+            or hostname not in {"localhost", "127.0.0.1", "::1"}
+            or parsed.username or parsed.password or parsed.query or parsed.fragment):
+        raise ValueError(
+            f"the non-authoritative development bootstrap may write only to a loopback "
+            f"{label} endpoint, not {endpoint!r}")
+    return endpoint
+
+
+def _run_development_bootstrap(args: argparse.Namespace) -> int:
+    """Load validated, explicitly non-authoritative data into local Fuseki.
+
+    This path reads existing complete API captures and Core State pointers in
+    read-only mode. It neither opens ETL/reconciliation stores for writing nor
+    calls the authoritative publication helper.
+    """
+    settings = Settings.from_environment()
+    raw_root = Path(getattr(args, "raw_dir", None) or settings.raw_dir).expanduser()
+    state_db = Path(getattr(args, "state_db", None)
+                    or settings.core_state_db_file).expanduser()
+    gsp_url = _require_loopback_fuseki_endpoint(
+        "Graph Store Protocol", getattr(args, "fuseki_gsp_url", None)
+        or settings.fuseki_gsp_url)
+    sparql_url = _require_loopback_fuseki_endpoint(
+        "SPARQL", getattr(args, "fuseki_sparql_url", None)
+        or settings.fuseki_sparql_url)
+
+    # Only successful complete API captures already registered in Core State
+    # are eligible input. The selector opens that database read-only; the
+    # development census below explicitly marks every source incomplete for
+    # authority/coverage purposes.
+    captures = {
+        endpoint: load_latest_development_capture(raw_root, state_db, endpoint)
+        for endpoint in ("houses", "parties", "constituencies", "members")
+    }
+    houses, _houses_capture = captures["houses"]
+    parties, _parties_capture = captures["parties"]
+    constituencies, _constituencies_capture = captures["constituencies"]
+    members, _members_capture = captures["members"]
+
+    houses_graph, _house_exclusions = transform_houses_with_report(houses)
+    validate_houses(houses, houses_graph)
+
+    # Build and validate Member graphs using the ordinary Member mapping, but
+    # without office reconciliation or any Member/Core State publication.
+    member_graphs: list[tuple[str, Graph]] = []
+    member_graph = Graph()
+    for wrapper in members:
+        validate_member_source(wrapper)
+        graph, _diagnostics = transform_member_with_report(wrapper)
+        validate_member(wrapper, graph)
+        member_graph += graph
+        member_graphs.append((member_graph_iri(wrapper["member"]), graph))
+    member_graphs.sort(key=lambda item: item[0])
+
+    census = build_reference_census(
+        member_records=members,
+        party_records=parties,
+        constituency_records=constituencies,
+        member_capture_complete=False,
+        party_capture_complete=False,
+        constituency_capture_complete=False,
+    )
+    candidates = build_development_reference_candidates(
+        census, member_graph=member_graph)
+    development_status = candidates["development_status"]
+
+    # All source and RDF validation finishes before the first local graph PUT.
+    client = FusekiSparqlClient(
+        sparql_url, user=settings.fuseki_user, password=settings.fuseki_password,
+        timeout=settings.timeout)
+    loader = FusekiGraphStoreLoader(
+        gsp_url, user=settings.fuseki_user, password=settings.fuseki_password,
+        timeout=settings.timeout)
+    graphs = {
+        "houses": houses_graph,
+        **candidates["graphs"],
+    }
+    for endpoint, graph_iri in LOCAL_DEVELOPMENT_GRAPH_ORDER:
+        payload = ntriples(graphs[endpoint])
+        loader.replace(graph_iri, payload, content_type="application/n-triples")
+        verify_core_graph(client, graph_iri, payload)
+    for graph_iri, graph in member_graphs:
+        payload = ntriples(graph)
+        loader.replace(graph_iri, payload, content_type="application/n-triples")
+        verify_core_graph(client, graph_iri, payload)
+
+    counts = {
+        "houses_terms": len(
+            set(houses_graph.subjects(RDF.type, OIR.DailTerm))
+            | set(houses_graph.subjects(RDF.type, OIR.SeanadTerm))),
+        "parties": len(census["records"]["parties"]),
+        "constituencies": len(census["records"]["constituencies"]),
+        "committees": len(census["records"]["committees"]),
+        "members": len(member_graphs),
+    }
+    print("Local development reference bootstrap:")
+    print(f"  Houses/HouseTerms: {len(houses)} source records; "
+          f"{counts['houses_terms']} HouseTerms")
+    print(f"  Members: {counts['members']} validated Member graphs")
+    print(f"  Parties: {counts['parties']} owner identities")
+    print(f"  Constituencies/panels: {counts['constituencies']} owner identities")
+    print(f"  Committees: {counts['committees']} owner identities")
+    print(f"  Quarantined conflicts: {development_status['quarantined_conflict_count']}")
+    for conflict in development_status["quarantined_conflicts"]:
+        print(f"    {conflict['reference_kind']} {conflict['canonical_iri']}: "
+              f"{conflict['reason']}")
+    print("  Unresolved development references: "
+          f"{development_status['unresolved_reference_count']}")
+    for reference in development_status["unresolved_references"]:
+        print(f"    {reference['reference_kind']} {reference['canonical_iri']}: "
+              f"{reference['reason']}")
+    print(f"  Reference closure: {development_status['reference_closure']}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="oir-etl")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -2744,6 +2880,15 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--coverage-report", help="write deterministic reference census JSON")
     state = sub.add_parser("state"); state_sub = state.add_subparsers(dest="state_command", required=True)
     state_status = state_sub.add_parser("status"); state_status.add_argument("--state-db")
+    dev = sub.add_parser(
+        "dev", help="explicitly non-authoritative local-development commands")
+    dev_sub = dev.add_subparsers(dest="dev_command", required=True)
+    dev_bootstrap = dev_sub.add_parser(
+        "bootstrap", help="load preserved API captures into loopback Fuseki for local PoC use")
+    dev_bootstrap.add_argument("--raw-dir", help="preserved immutable API capture root")
+    dev_bootstrap.add_argument("--state-db", help="read-only Core State capture index")
+    dev_bootstrap.add_argument("--fuseki-gsp-url", help="loopback Fuseki Graph Store endpoint")
+    dev_bootstrap.add_argument("--fuseki-sparql-url", help="loopback Fuseki SPARQL endpoint")
     reconcile = sub.add_parser("reconcile"); reconcile.add_argument("endpoint", choices=["members", "parties", "institutions", "offices", "office-external"])
     reconcile.add_argument("--fixture"); reconcile.add_argument("--responses-file"); reconcile.add_argument("--offline", action="store_true"); reconcile.add_argument("--all", action="store_true"); reconcile.add_argument("--publish", action="store_true"); reconcile.add_argument("--output-nq"); reconcile.add_argument("--fuseki-gsp-url"); reconcile.add_argument("--fuseki-sparql-url")
     reconcile.add_argument("--review-file", help="review JSON (defaults to the endpoint-specific version-controlled review file)")
@@ -2753,6 +2898,7 @@ def main(argv: list[str] | None = None) -> int:
     reconcile.add_argument("--raw-dir", help="immutable raw response root for office source scans")
     args = parser.parse_args(argv)
     if args.command == "state": return run_state_status(args)
+    if args.command == "dev": return _run_development_bootstrap(args)
     if args.command == "reconcile":
         if args.endpoint == "offices": return run_reconcile_offices(args)
         if args.endpoint == "office-external": return run_reconcile_office_external(args)

@@ -7,6 +7,7 @@ import pytest
 
 from oireachtas_etl.reference_coverage import build_reference_census
 from oireachtas_etl.reference_publication import (ReferencePublicationError,
+                                                  build_development_reference_candidates,
                                                   build_reference_candidates)
 from oireachtas_etl.transforms.common import MEMBERS
 from oireachtas_etl.transforms.committees import transform_committees
@@ -26,16 +27,20 @@ CURRENT_COMMITTEE = {
     "committeeDateRange": {"start": "2020-01-01", "end": None},
     "committeeName": [{"nameEn": "Current Committee"}],
 }
+KNOWN_CONFLICT_COMMITTEE = (
+    "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/"
+    "select_committee_on_the_implementation_of_the_good_friday_agreement"
+)
 
 
-def _member() -> dict:
+def _member(committee: dict | None = None) -> dict:
     return {"member": {"uri": MEMBER_IRI, "memberships": [{"membership": {
         "uri": MEMBER_IRI + "/membership/1",
         "house": {"uri": "https://data.oireachtas.ie/ie/oireachtas/house/dail/35",
                   "houseCode": "dail", "houseNo": "35"},
         "parties": [{"party": dict(CURRENT_PARTY["party"])}],
         "represents": [],
-        "committees": [dict(CURRENT_COMMITTEE)],
+        "committees": [dict(committee or CURRENT_COMMITTEE)],
     }}]}}
 
 
@@ -91,6 +96,70 @@ def test_material_conflict_fails_before_candidate_graphs_are_returned():
     )
     with pytest.raises(ReferencePublicationError, match="census conflicts block publication"):
         build_reference_candidates(census, member_graph=Graph())
+
+
+def test_known_committee_conflict_blocks_authoritative_candidates_but_is_quarantined_for_dev():
+    first_committee = {**CURRENT_COMMITTEE, "uri": KNOWN_CONFLICT_COMMITTEE}
+    second_committee = {**first_committee, "committeeID": 2}
+    source_members = [
+        _member(),
+        _member(committee=first_committee),
+        _member(committee=second_committee),
+    ]
+    party = dict(CURRENT_PARTY)
+    representation = {
+        "constituencyOrPanel": {
+            "uri": "https://data.oireachtas.ie/ie/oireachtas/house/dail/35/constituency/Example",
+            "representType": "constituency", "representCode": "Example",
+            "showAs": "Example constituency",
+        },
+        "house": {"uri": "https://data.oireachtas.ie/ie/oireachtas/house/dail/35",
+                  "houseCode": "dail", "houseNo": "35"},
+    }
+    census = build_reference_census(
+        member_records=source_members, party_records=[party],
+        constituency_records=[representation], member_capture_complete=True,
+        party_capture_complete=True, constituency_capture_complete=True,
+    )
+    # The development boundary independently removes conflicted identities
+    # even if a future/custom census producer accidentally includes a record.
+    census["records"]["committees"].append(first_committee)
+    member_graph = Graph()
+    member_graph.add((URIRef(MEMBER_IRI), MEMBERS.memberOfCollection,
+                      URIRef(CURRENT_PARTY["party"]["uri"])))
+    member_graph.add((URIRef(MEMBER_IRI), MEMBERS.isRepresentativeFrom,
+                      URIRef(representation["constituencyOrPanel"]["uri"])))
+    member_graph.add((URIRef(MEMBER_IRI), MEMBERS.isCommitteeMembershipOf,
+                      URIRef(CURRENT_COMMITTEE["uri"])))
+    member_graph.add((URIRef(MEMBER_IRI), MEMBERS.isCommitteeMembershipOf,
+                      URIRef(KNOWN_CONFLICT_COMMITTEE)))
+
+    # The existing authoritative API remains global fail-closed.
+    with pytest.raises(ReferencePublicationError,
+                       match="reference census conflicts block publication"):
+        build_reference_candidates(census, member_graph=member_graph)
+
+    result = build_development_reference_candidates(census, member_graph=member_graph)
+    parties = result["graphs"]["parties"]
+    constituencies = result["graphs"]["constituencies"]
+    committees = result["graphs"]["committees"]
+    party_iri = URIRef(CURRENT_PARTY["party"]["uri"])
+    representation_iri = URIRef(representation["constituencyOrPanel"]["uri"])
+    assert (party_iri, RDF.type, MEMBERS.ParliamentaryParty) in parties
+    assert (representation_iri, RDF.type, MEMBERS.DailConstituency) in constituencies
+    assert (URIRef(CURRENT_COMMITTEE["uri"]), RDF.type, MEMBERS.Committee) in committees
+    assert not list(committees.triples((URIRef(KNOWN_CONFLICT_COMMITTEE), None, None)))
+    # Quarantine applies only to the owner graph; source Member references remain.
+    assert (URIRef(MEMBER_IRI), MEMBERS.isCommitteeMembershipOf,
+            URIRef(KNOWN_CONFLICT_COMMITTEE)) in member_graph
+    status = result["development_status"]
+    assert status["authoritative"] is False
+    assert status["reference_closure"] == "NOT authoritative / not complete"
+    assert status["quarantined_conflict_count"] == 1
+    assert status["quarantined_conflicts"][0]["canonical_iri"] == KNOWN_CONFLICT_COMMITTEE
+    assert "committeeID" in status["quarantined_conflicts"][0]["reason"]
+    assert status["unresolved_reference_count"] == 1
+    assert status["unresolved_references"][0]["canonical_iri"] == KNOWN_CONFLICT_COMMITTEE
 
 
 def test_dirty_shared_reference_graph_replays_the_exact_hash_verified_payload(
