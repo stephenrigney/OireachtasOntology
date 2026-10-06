@@ -313,10 +313,10 @@ Do not use `docker compose down -v` as a refresh step: it deletes Fuseki's persi
 ## How it works
 
 ```text
-Question in browser
+Question in browser / benchmark runner
   -> OpenAI Responses-compatible LLM
-       - repository-derived schema context
-       - dataset graph conventions
+       - query-contract-scoped schema context
+       - dataset graph conventions from the contract
        - user question
   -> structured { interpretation, sparql }
   -> RDFLib SPARQL parsing and safety checks
@@ -325,63 +325,112 @@ Question in browser
   -> result table / ASK answer in browser
 ```
 
-At startup, the POC reads the repository's `ontology/*.owl.ttl` modules with RDFLib.
+The repository-owned machine-readable query contract is
+`poc/specs/query-schema-contract.json` (contract version `1.0.0`, schema
+version `1`). Its JSON Schema is `poc/specs/query-schema-contract.schema.json`.
+The contract defines the queryable class/property scope, named-graph families
+and owners, emitted RDF patterns, entity-specific label predicates,
+cross-graph joins, optional reviewed external identity links, reasoning
+assumptions, known unavailable patterns, and the local safety policy.
 
-It derives model-facing context from:
+At startup, RDFLib reads the repository's `ontology/*.owl.ttl` modules and the
+pinned ELI/ELI-DL vocabularies to add ontology descriptions, domains, ranges,
+and comments for terms selected by the contract. Active mapping files still
+provide the external-predicate definitions and safety allowlist entries. The
+contract is not a dump of every OWL declaration: a term's ontology declaration
+alone does not make it queryable. In particular, emitted `dct:temporal`,
+`eli:has_part`, and `eli:is_realized_by` triples are recorded as not executable
+through the current local NLQ predicate allowlist. The NLQ grounding path does
+not import private `oireachtas_etl.config` constants.
 
-- local classes;
-- object and datatype properties;
-- direct named superclass relationships;
-- asserted property domains and ranges;
-- useful labels and comments;
-- the repository-pinned ELI and ELI-DL schemas;
-- active mapping CSV rows for reused external predicates;
-- the ETL's actual named-graph conventions.
+The contract distinguishes emitted data from ontology-only or currently
+unavailable patterns. For example, Dáil and Seanad terms are explicitly typed
+as `agents:DailTerm` or `agents:SeanadTerm`, not as `agents:HouseTerm`; the
+store does not infer superclass types. Member records and their membership
+resources live in per-Member graphs, while HouseTerm, collection,
+constituency/panel, and Committee descriptions are owned by other graph
+families. Cross-graph joins use the same RDF resource IRI. The contract also
+marks office holdings as conditional on reviewed office resolution and states
+that Debate/Act descriptions are not currently published.
 
-The prompt distinguishes important concepts such as:
+The `labelsByEntityType` entries are intentionally distinct: Member
+`foaf:name` values are plain literals, HouseTerm/collection/constituency labels
+use English `skos:prefLabel`, Committees may have English or Irish
+`skos:prefLabel`, and Bill primary titles use language-tagged `eli:title`.
+Those predicates are not interchangeable.
 
-- `agents:Member`;
-- `members:OireachtasMembership`;
-- `agents:HouseTerm`;
-- `members:ParliamentaryParty`;
-- `members:IndependentMemberCollection`.
+Reviewed external join identifiers are represented without enabling remote
+execution: accepted Member-to-Wikidata links use `owl:sameAs` in the separately
+owned Member external-links graph; Party-to-Wikidata links use
+`members:recognisedAsParty` and do **not** assert identity; reviewed Wikipedia
+links use `foaf:isPrimaryTopicOf`. These graph patterns are optional and no
+Wikidata query or federation is performed.
+
+### Contract compatibility
+
+- `schemaVersion` identifies the JSON shape. This consumer supports schema
+  version `1` and fails clearly on any other value.
+- `contractVersion` is semantic versioning. Additive classes, properties,
+  graph families, emitted patterns, or descriptive metadata that preserve all
+  existing meanings may use a `1.x` minor/patch release. A removal, renamed
+  term, changed graph owner or IRI pattern, changed label/pattern semantics,
+  changed identity meaning, or incompatible entailment/safety change requires a
+  new contract major. This consumer supports major `1` and rejects others.
+- Consumers of a compatible minor version should ignore unknown optional
+  fields while retaining the meaning of known fields. A new safety behavior is
+  not an additive schema-only change: a change to accepted query capability or
+  an enforced safety limit requires a `localSafety` major and contract major
+  bump, plus a consumer implementation/test update. This consumer rejects
+  unsupported local-safety major versions.
+- The contract is consumed from this repository. Cross-repository packaging or
+  distribution is deferred; no extraction mechanism is implied here.
 
 No RDF instance dataset is sent to the LLM. Fuseki remains the factual source.
 
 ## Named graph expectations
 
-The POC uses the same graph conventions as the ETL:
+The contract is the service-facing source for exact graph IRIs/templates,
+owner names, availability and owned descriptions. It lists Houses, Parties,
+Constituencies, Committees, per-Member and per-Bill graphs, currently empty
+Office/Administrative-unit registries, and separately owned reviewed external
+link graphs. Member and Bill graph families are per-resource patterns; the
+external-link families are not part of the authoritative owner graphs.
 
-| Data | Named graph |
-|---|---|
-| Houses | `https://data.oireachtas.ie/graph/houses` |
-| Parties | `https://data.oireachtas.ie/graph/parties` |
-| Constituencies | `https://data.oireachtas.ie/graph/constituencies` |
-| Offices | `https://data.oireachtas.ie/graph/offices` |
-| Administrative units | `https://data.oireachtas.ie/graph/administrative-units` |
-| Members | `https://data.oireachtas.ie/graph/member/{memberCode}` |
-| Bills | `https://data.oireachtas.ie/graph/bill/{year}/{number}` |
-
-Descriptions and references may live in different named graphs. Queries should join them using the same RDF resource IRI rather than assuming all related triples are co-located.
+Descriptions and references may live in different named graphs. Queries join
+them using the same RDF resource IRI rather than assuming that all related
+triples are co-located. The contract's `crossGraphJoins` enumerates the current
+supported joins.
 
 ## Query safety
 
 Model-generated SPARQL is treated as untrusted input.
 
-The POC currently:
+The versioned `localSafety` section records and supplies the current local
+policy. The shared browser/benchmark pipeline:
 
-- accepts only RDFLib-parseable `SELECT` and `ASK` queries;
-- rejects SPARQL Update operations;
-- rejects `SERVICE`;
-- rejects `FROM` and `FROM NAMED`;
-- rejects subqueries;
-- rejects property paths;
-- rejects variable predicates;
-- validates predicates against ontology declarations and active mappings;
-- caps SELECT results at 100 rows;
-- caps OFFSET at 10,000 rows;
-- applies a 15-second Fuseki timeout;
-- uses only the configured Fuseki `/query` endpoint.
+- accepts RDFLib-parseable `SELECT` and `ASK` queries only; SPARQL Update and
+  other query forms are rejected;
+- rejects `SERVICE`, `FROM`, and `FROM NAMED`;
+- rejects subqueries and variable predicates;
+- permits only direct predicates, not SPARQL property paths;
+- checks predicates against the contract-defined allowlist policy, whose terms
+  are resolved from local ontology declarations, locally annotated external
+  properties, active (`mapped`/`new`) property mappings, and the listed
+  unconditional predicates;
+- rejects query strings longer than 32,000 characters;
+- appends `LIMIT 100` to a `SELECT` without a limit and rejects explicit limits
+  over 100 (also when an explicit ASK limit is present);
+- rejects offsets over 10,000; and
+- uses a 15-second Fuseki request timeout.
+
+Execution uses only the configured `NLQ_FUSEKI_QUERY_URL` Fuseki query endpoint
+(default `http://localhost:3030/houses/query`), with a `/query` path. The
+contract records local deployment as the expectation, but the current client
+does not enforce a loopback hostname; deployment configuration must keep this
+endpoint local. The POC has no federation mode. Any later controlled federation
+must deliberately extend and version the safety contract, configure allowed
+remote endpoints, and add remote-pattern, timeout, and complexity controls; it
+must not bypass this local boundary silently.
 
 The fixed readiness probes are also read-only.
 
@@ -394,6 +443,10 @@ A syntactically valid and safe SPARQL query can still be semantically wrong.
 In particular:
 
 - the store does not provide general OWL entailment;
+- a few current ETL-emitted predicates (`dct:temporal`, `eli:has_part`, and
+  `eli:is_realized_by`) are not in the current active property mappings or
+  predicate allowlist, so the contract marks those patterns as emitted but not
+  executable in local NLQ rather than expanding the safety policy implicitly;
 - people, memberships, House terms and parliamentary collections are distinct resources;
 - party and independent collection membership use related but not identical graph patterns;
 - some ontology vocabulary is defined before corresponding instance data is populated;
@@ -417,6 +470,12 @@ Run the tests:
 
 ```bash
 uv run --locked pytest tests
+```
+
+Focused contract, safety, NLQ grounding, and Phase 0B benchmark-path tests:
+
+```bash
+uv run --locked pytest tests/test_nlq_contract.py tests/test_nlq_poc.py tests/test_nlq_benchmark.py
 ```
 
 Run ontology validation, with the repository's pinned Java runtime available through `mise`:

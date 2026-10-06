@@ -315,14 +315,14 @@ ETL implementation details before changing the query architecture.
 
 #### Query/schema contract
 
-- [ ] Inventory the classes, properties, graph ownership rules and graph
+- [x] Inventory the classes, properties, graph ownership rules and graph
       patterns currently assembled by `poc/nlq/schema.py`.
-- [ ] Define a versioned, machine-readable query/schema contract rather than
+- [x] Define a versioned, machine-readable query/schema contract rather than
       relying indefinitely on imports from `oireachtas_etl.config`.
-- [ ] Include named graph families and ownership information in that contract.
-- [ ] Include externally joinable identity predicates such as reviewed
+- [x] Include named graph families and ownership information in that contract.
+- [x] Include externally joinable identity predicates such as reviewed
       Wikidata links where supported.
-- [ ] Define contract versioning and compatibility rules.
+- [x] Define contract versioning and compatibility rules.
 
 #### Evaluation benchmark
 
@@ -338,11 +338,24 @@ ETL implementation details before changing the query architecture.
 
 #### Safety baseline
 
-- [ ] Preserve read-only SELECT/ASK enforcement.
-- [ ] Preserve endpoint-local restrictions on `SERVICE`, `FROM` and
+- [x] Preserve read-only SELECT/ASK enforcement.
+- [x] Preserve endpoint-local restrictions on `SERVICE`, `FROM` and
       `FROM NAMED`.
-- [ ] Record current LIMIT/OFFSET limits and other query-complexity controls.
-- [ ] Define the safety boundary that later federation must explicitly extend.
+- [x] Record current LIMIT/OFFSET limits and other query-complexity controls.
+- [x] Define the safety boundary that later federation must explicitly extend.
+
+Phase 0C records this baseline in `poc/specs/query-schema-contract.json`
+(contract `1.0.0`, schema `1`) and
+`poc/specs/query-schema-contract.schema.json`. The NLQ grounding path scopes
+ontology detail to the contract and no longer imports private
+`oireachtas_etl.config` graph constants. Contract-compatible additions may use
+the same major; changes to existing graph ownership, query patterns, identity
+meaning, reasoning assumptions, or safety capability require a contract major
+bump. Consumers reject unsupported schema, contract-major, and local-safety
+major versions. The current local safety baseline remains SELECT/ASK only,
+without Update, `SERVICE`, `FROM`/`FROM NAMED`, subqueries, variable predicates,
+or property paths; exact limits and endpoint caveats are in the artifact and
+`poc/nlq/README.md`. Federation remains disabled.
 
 ### Exit criteria
 
@@ -736,7 +749,7 @@ The following should be resolved by the phase that first needs them rather than
 up front:
 
 - exact query-plan JSON schema;
-- exact query/schema contract format and distribution mechanism;
+- cross-repository query/schema contract distribution mechanism;
 - benchmark scoring method and required success thresholds;
 - initial Wikidata property/entity allowlist;
 - provenance representation returned by the service;

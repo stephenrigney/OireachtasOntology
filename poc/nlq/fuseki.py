@@ -7,36 +7,62 @@ from urllib.parse import urlsplit
 
 import httpx
 
+from .contract import load_query_contract
 from .errors import NLQError
 from .results import QueryResult, format_debug_payload, format_debug_text, parse_results
 
+
+_QUERY_CONTRACT = load_query_contract()
+_LOCAL_SAFETY = _QUERY_CONTRACT["localSafety"]
+FUSEKI_QUERY_PATH = _LOCAL_SAFETY["endpoint"]["requiredEndpointPath"].strip("/")
+FUSEKI_TIMEOUT_SECONDS = _LOCAL_SAFETY["limits"]["fusekiTimeoutSeconds"]
+FUSEKI_QUERY_URL_ENV = _LOCAL_SAFETY["endpoint"]["configuration"]
+DEFAULT_FUSEKI_QUERY_URL = _LOCAL_SAFETY["endpoint"]["defaultUrl"]
+_GRAPH_FAMILIES = {
+    family["id"]: family["graph"]
+    for family in _QUERY_CONTRACT["graphFamilies"]
+}
+
+
+def _fixed_graph_iri(family_id: str) -> str:
+    graph = _GRAPH_FAMILIES[family_id]
+    if graph["kind"] != "fixed":
+        raise ValueError(f"Graph family {family_id!r} is not fixed.")
+    return graph["iri"]
+
+
+def _resource_graph_prefix(family_id: str) -> str:
+    graph = _GRAPH_FAMILIES[family_id]
+    if graph["kind"] != "resource-pattern":
+        raise ValueError(f"Graph family {family_id!r} is not a resource pattern.")
+    return graph["iriTemplate"].split("{", 1)[0]
 
 # These two fixed queries are read-only readiness probes, never model output.
 # The wildcard predicate in the ASK is used only to tell a truly empty named
 # dataset from one containing non-instance triples.
 READINESS_EMPTY_QUERY = "ASK { GRAPH ?graph { ?subject ?predicate ?object } }"
 READINESS_SOURCES_QUERY = """\
-PREFIX agents: <https://data.oireachtas.ie/ontology#>
-PREFIX members: <https://data.oireachtas.ie/ontology/members#>
-PREFIX eli-dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX agents: <__AGENTS_NS__>
+PREFIX members: <__MEMBERS_NS__>
+PREFIX eli-dl: <__ELI_DL_NS__>
+PREFIX rdf: <__RDF_NS__>
+PREFIX skos: <__SKOS_NS__>
 SELECT DISTINCT ?source WHERE {
   { BIND("Houses" AS ?source)
-    GRAPH <https://data.oireachtas.ie/graph/houses> {
+    GRAPH <__HOUSES_GRAPH__> {
       ?term rdf:type ?termType ; skos:prefLabel ?label .
       FILTER(?termType = agents:DailTerm || ?termType = agents:SeanadTerm)
     }
   }
   UNION
   { BIND("Parties" AS ?source)
-    GRAPH <https://data.oireachtas.ie/graph/parties> {
+    GRAPH <__PARTIES_GRAPH__> {
       ?collection rdf:type members:ParliamentaryMemberCollection
     }
   }
   UNION
   { BIND("Constituencies" AS ?source)
-    GRAPH <https://data.oireachtas.ie/graph/constituencies> {
+    GRAPH <__CONSTITUENCIES_GRAPH__> {
       ?constituency rdf:type members:Constituencies
     }
   }
@@ -45,19 +71,32 @@ SELECT DISTINCT ?source WHERE {
     GRAPH ?memberGraph {
       ?member rdf:type agents:Member
     }
-    FILTER(STRSTARTS(STR(?memberGraph), "https://data.oireachtas.ie/graph/member/"))
+    FILTER(STRSTARTS(STR(?memberGraph), "__MEMBER_GRAPH_PREFIX__"))
   }
   UNION
   { BIND("Bills" AS ?source)
     GRAPH ?billGraph {
       ?bill rdf:type eli-dl:DraftLegislationWork
     }
-    FILTER(STRSTARTS(STR(?billGraph), "https://data.oireachtas.ie/graph/bill/"))
+    FILTER(STRSTARTS(STR(?billGraph), "__BILL_GRAPH_PREFIX__"))
   }
 }
 ORDER BY ?source
 LIMIT 10
 """
+for _token, _value in (
+    ("__AGENTS_NS__", _QUERY_CONTRACT["namespaces"]["agents"]),
+    ("__MEMBERS_NS__", _QUERY_CONTRACT["namespaces"]["members"]),
+    ("__ELI_DL_NS__", _QUERY_CONTRACT["namespaces"]["eli-dl"]),
+    ("__RDF_NS__", _QUERY_CONTRACT["namespaces"]["rdf"]),
+    ("__SKOS_NS__", _QUERY_CONTRACT["namespaces"]["skos"]),
+    ("__HOUSES_GRAPH__", _fixed_graph_iri("houses")),
+    ("__PARTIES_GRAPH__", _fixed_graph_iri("parties")),
+    ("__CONSTITUENCIES_GRAPH__", _fixed_graph_iri("constituencies")),
+    ("__MEMBER_GRAPH_PREFIX__", _resource_graph_prefix("member-records")),
+    ("__BILL_GRAPH_PREFIX__", _resource_graph_prefix("bill-records")),
+):
+    READINESS_SOURCES_QUERY = READINESS_SOURCES_QUERY.replace(_token, _value)
 REQUIRED_READINESS_SOURCES = ("Houses", "Parties", "Constituencies", "Members")
 
 
@@ -81,15 +120,18 @@ def _response_debug(response: httpx.Response) -> str:
 
 class FusekiQueryClient:
     def __init__(self, query_url: str, *, username: str | None = None,
-                 password: str | None = None, timeout: float = 15.0,
+                 password: str | None = None, timeout: float = FUSEKI_TIMEOUT_SECONDS,
                  transport: httpx.BaseTransport | None = None):
         if not query_url:
-            raise NLQError("Set NLQ_FUSEKI_QUERY_URL to the Fuseki SPARQL query endpoint.")
+            raise NLQError(f"Set {FUSEKI_QUERY_URL_ENV} to the Fuseki SPARQL query endpoint.")
         parsed_url = urlsplit(query_url)
         if (parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc
-                or parsed_url.path.rstrip("/").split("/")[-1] != "query"
+                or parsed_url.path.rstrip("/").split("/")[-1] != FUSEKI_QUERY_PATH
                 or parsed_url.query or parsed_url.fragment or parsed_url.username or parsed_url.password):
-            raise NLQError("NLQ_FUSEKI_QUERY_URL must be a Fuseki /query endpoint URL (not /update or an admin URL).")
+            raise NLQError(
+                f"{FUSEKI_QUERY_URL_ENV} must be a Fuseki /{FUSEKI_QUERY_PATH} endpoint URL "
+                "(not /update or an admin URL)."
+            )
         if bool(username) != bool(password):
             raise NLQError("Set both OIR_FUSEKI_USER and OIR_FUSEKI_PASSWORD, or neither.")
         self.client = httpx.Client(timeout=timeout, auth=(username, password) if username else None,

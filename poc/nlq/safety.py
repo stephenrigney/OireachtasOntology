@@ -9,12 +9,26 @@ from rdflib import URIRef, Variable
 from rdflib.plugins.sparql.parser import parseQuery
 from rdflib.plugins.sparql.parserutils import CompValue
 
+from .contract import QueryContractError, load_query_contract
 from .errors import NLQError
 
 
-MAX_QUERY_CHARS = 32_000
-MAX_RESULT_ROWS = 100
-MAX_RESULT_OFFSET = 10_000
+_LOCAL_SAFETY = load_query_contract()["localSafety"]
+_ENFORCED_REJECTIONS = frozenset({
+    "SPARQL Update", "SERVICE", "FROM", "FROM NAMED", "subqueries",
+    "variable predicates", "property paths",
+})
+if frozenset(_LOCAL_SAFETY["rejectedFeatures"]) != _ENFORCED_REJECTIONS:
+    raise QueryContractError(
+        "The local safety contract's rejected-feature list does not match validate_sparql enforcement."
+    )
+if _LOCAL_SAFETY["propertyPaths"] != "direct-predicates-only":
+    raise QueryContractError("The local safety contract's property-path policy is unsupported.")
+MAX_QUERY_CHARS = _LOCAL_SAFETY["limits"]["maxQueryCharacters"]
+MAX_RESULT_ROWS = _LOCAL_SAFETY["limits"]["maxExplicitLimit"]
+MAX_RESULT_OFFSET = _LOCAL_SAFETY["limits"]["maxOffset"]
+ALLOWED_QUERY_OPERATIONS = frozenset(_LOCAL_SAFETY["allowedOperations"])
+DEFAULT_SELECT_LIMIT = _LOCAL_SAFETY["limits"]["defaultSelectLimit"]
 
 
 def _walk(value) -> Iterator[CompValue]:
@@ -42,7 +56,8 @@ def validate_sparql(sparql: str, *, supported_predicates: frozenset[URIRef] | No
 
     query = parsed[1]
     operation = query.name
-    if operation not in {"SelectQuery", "AskQuery"}:
+    operation_name = operation.split("Query", 1)[0].upper()
+    if operation not in {"SelectQuery", "AskQuery"} or operation_name not in ALLOWED_QUERY_OPERATIONS:
         raise NLQError("Only read-only SPARQL SELECT and ASK queries are allowed.")
 
     nodes = tuple(_walk(parsed))
@@ -111,4 +126,4 @@ def validate_sparql(sparql: str, *, supported_predicates: frozenset[URIRef] | No
         if row_offset > MAX_RESULT_OFFSET:
             raise NLQError(f"Query result offsets may not exceed {MAX_RESULT_OFFSET} rows.")
 
-    return sparql.rstrip() + f"\nLIMIT {MAX_RESULT_ROWS}" if add_default_limit else sparql
+    return sparql.rstrip() + f"\nLIMIT {DEFAULT_SELECT_LIMIT}" if add_default_limit else sparql

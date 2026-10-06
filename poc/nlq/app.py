@@ -12,7 +12,12 @@ from fastapi.templating import Jinja2Templates
 
 from .config import load_local_environment
 from .errors import NLQError
-from .fuseki import FusekiQueryClient, FusekiReadiness
+from .fuseki import (
+    DEFAULT_FUSEKI_QUERY_URL,
+    FUSEKI_QUERY_URL_ENV,
+    FusekiQueryClient,
+    FusekiReadiness,
+)
 from .llm import ResponsesTranslator
 from .pipeline import process_question
 from .results import QueryResult
@@ -36,7 +41,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
         client = None
         try:
             client = FusekiQueryClient(
-                os.getenv("NLQ_FUSEKI_QUERY_URL", "http://localhost:3030/houses/query"),
+                os.getenv(FUSEKI_QUERY_URL_ENV, DEFAULT_FUSEKI_QUERY_URL),
                 username=os.getenv("OIR_FUSEKI_USER"),
                 password=os.getenv("OIR_FUSEKI_PASSWORD"),
             )
@@ -107,7 +112,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
         def remember_fuseki():
             nonlocal fuseki
             fuseki = FusekiQueryClient(
-                os.getenv("NLQ_FUSEKI_QUERY_URL", "http://localhost:3030/houses/query"),
+                os.getenv(FUSEKI_QUERY_URL_ENV, DEFAULT_FUSEKI_QUERY_URL),
                 username=os.getenv("OIR_FUSEKI_USER"),
                 password=os.getenv("OIR_FUSEKI_PASSWORD"),
             )
