@@ -384,10 +384,16 @@ selection and federation can be evaluated independently.
 
 #### Benchmark execution
 
-- [ ] Run the complete benchmark against the reference local dataset.
-- [ ] Record baseline success rates by question category.
-- [ ] Record failures separately for interpretation, grounding, entity
+- [x] Run the complete benchmark against a capture-backed Phase 0A
+      development dataset.
+- [x] Record baseline success rates by question category.
+- [x] Record failures separately for interpretation, grounding, entity
       resolution, SPARQL and source coverage.
+
+Phase 1A measured the complete 42-case benchmark against an isolated,
+capture-backed Phase 0A development dataset. Results, configuration, coverage
+outcomes and diagnostic limitations are recorded in
+[`poc/nlq/benchmarks/phase-1a-baseline.md`](../nlq/benchmarks/phase-1a-baseline.md).
 
 #### Schema grounding
 
