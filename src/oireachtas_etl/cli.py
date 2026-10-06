@@ -16,6 +16,8 @@ from .loader import FusekiSparqlClient
 from .competency import verify_member_competency, verify_bill_competency
 from .competency import verify_core_graph
 from .raw import persist_raw
+from .debates_raw import fetch_main_xml, load_main_xml, persist_main_xml
+from .debates_pipeline import run_debate_batch
 from .serialization import nquads, ntriples, turtle
 from .transforms.houses import transform_houses_with_report
 from .transforms.parties import transform_parties
@@ -2069,6 +2071,109 @@ def run_bills(args: argparse.Namespace) -> int:
             return _run_bills(args, store)
 
 
+def _load_debate_sources(raw_root: Path, source_urls: list[str],
+                         replay_hashes: list[str], settings: Settings):
+    sources = [load_main_xml(raw_root, digest) for digest in replay_hashes]
+    for source_url in source_urls:
+        body, final_url = fetch_main_xml(
+            source_url, retries=settings.retries, timeout=settings.timeout)
+        sources.append(persist_main_xml(raw_root, body, final_url))
+    return sources
+
+
+def _write_debate_outputs(outcomes, args: argparse.Namespace) -> None:
+    if args.output_nq:
+        Path(args.output_nq).write_text(
+            "".join(nquads(item.graph, item.graph_iri) for item in outcomes),
+            encoding="utf-8")
+    if args.output_ttl:
+        Path(args.output_ttl).write_text(
+            "\n".join(turtle(item.graph) for item in outcomes),
+            encoding="utf-8")
+
+
+def _debate_result(outcomes, *, run_id: str | None, published: bool) -> int:
+    summary = {
+        "batch_size": len(outcomes),
+        "changed": sum(item.status == "changed" for item in outcomes),
+        "new": sum(item.status == "new" for item in outcomes),
+        "published": published,
+        "run_id": run_id,
+        "skipped": sum(item.status == "skipped" for item in outcomes),
+        "work_records": [
+            {"graph_iri": item.graph_iri, "source_sha256": item.source_sha256,
+             "status": item.status, "triples": item.triples,
+             "work_iri": item.work_iri}
+            for item in outcomes
+        ],
+    }
+    print(json.dumps(summary, sort_keys=True))
+    return 0
+
+
+def run_debates(args: argparse.Namespace) -> int:
+    """Transform a finite caller-supplied AKN batch; publication is opt-in."""
+    settings = Settings.from_environment()
+    raw_root = Path(args.raw_dir or settings.raw_dir).expanduser()
+    source_urls = list(dict.fromkeys(getattr(args, "source_url", None) or []))
+    replay_hashes = list(dict.fromkeys(getattr(args, "replay", None) or []))
+    if getattr(args, "fixture", None):
+        raise ValueError("Debates use explicit --source-url acquisition or exact --replay hashes, not generic JSON fixtures")
+    if not source_urls and not replay_hashes:
+        raise ValueError("run debates requires at least one --source-url or --replay SHA-256")
+    if args.offline and source_urls:
+        raise ValueError("--offline Debates runs can replay preserved hashes but cannot acquire source URLs")
+    if args.offline and getattr(args, "publish", False):
+        raise ValueError("--offline and --publish are mutually exclusive")
+
+    if not getattr(args, "publish", False):
+        # Default behavior has no access to a GSP loader and does not open Core
+        # State for writing. It can preserve/validate sources and emit local RDF.
+        sources = _load_debate_sources(raw_root, source_urls, replay_hashes, settings)
+        outcomes = run_debate_batch(sources)
+        _write_debate_outputs(outcomes, args)
+        return _debate_result(outcomes, run_id=None, published=False)
+
+    database = Path(getattr(args, "state_db", None) or settings.core_state_db_file).expanduser()
+    gsp_endpoint = getattr(args, "fuseki_gsp_url", None) or settings.fuseki_gsp_url
+    sparql_endpoint = getattr(args, "fuseki_sparql_url", None) or settings.fuseki_sparql_url
+    if not gsp_endpoint or not sparql_endpoint:
+        raise ValueError("--publish requires both Fuseki GSP and SPARQL verification endpoints")
+    with state_lock(database):
+        with CoreStateStore(database, legacy_members=settings.members_legacy_state_file,
+                            legacy_bills=settings.bills_legacy_state_file) as store:
+            run_id = store.start_run(
+                "debates", "incremental_refresh", is_complete=False,
+                parameters={
+                    "source": "explicit-akn-main-xml-batch",
+                    "source_urls": source_urls,
+                    "replay_sha256": replay_hashes,
+                    "raw_root": str(raw_root.resolve()),
+                    "supplied_count": len(source_urls) + len(replay_hashes),
+                },
+            )
+            try:
+                # Evidence is persisted before source validation or RDF work.
+                sources = _load_debate_sources(raw_root, source_urls, replay_hashes, settings)
+                loader = FusekiGraphStoreLoader(
+                    gsp_endpoint, user=settings.fuseki_user,
+                    password=settings.fuseki_password, timeout=settings.timeout)
+                client = FusekiSparqlClient(
+                    sparql_endpoint, user=settings.fuseki_user,
+                    password=settings.fuseki_password, timeout=settings.timeout)
+                outcomes = run_debate_batch(
+                    sources, store=store, run_id=run_id, publish=True,
+                    loader=loader, client=client,
+                )
+                _write_debate_outputs(outcomes, args)
+            except Exception as error:
+                store.finish_run(run_id, success=False,
+                                 error=f"{type(error).__name__}: {error}")
+                raise
+            store.finish_run(run_id, success=True)
+    return _debate_result(outcomes, run_id=run_id, published=True)
+
+
 class _FixtureWikidataClient:
     """Offline, deterministic response adapter for reconciliation tests/runs."""
     def __init__(self, data):
@@ -3117,8 +3222,14 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="oir-etl")
     sub = parser.add_subparsers(dest="command", required=True)
-    run = sub.add_parser("run"); run.add_argument("endpoint", choices=["houses", "parties", "constituencies", "committees", "administrative-units", "offices", "members", "bills"])
+    run = sub.add_parser("run"); run.add_argument("endpoint", choices=["houses", "parties", "constituencies", "committees", "administrative-units", "offices", "members", "bills", "debates"])
     run.add_argument("--fixture"); run.add_argument("--offline", action="store_true"); run.add_argument("--raw-dir")
+    run.add_argument("--source-url", action="append", default=[],
+                     help="explicit official AKN main.xml URL (repeat for a supplied batch)")
+    run.add_argument("--replay", action="append", default=[],
+                     help="exact preserved Debates XML SHA-256 (repeat for a supplied batch)")
+    run.add_argument("--publish", action="store_true",
+                     help="explicitly opt in to validated Debates graph replacement")
     run.add_argument("--registry-file", help="version-controlled office/unit registry JSON")
     run.add_argument("--review-file", help="version-controlled local office observation decisions JSON")
     run.add_argument("--office-state-file", help="durable local office observation/evidence ledger")
@@ -3154,6 +3265,9 @@ def main(argv: list[str] | None = None) -> int:
     reconcile.add_argument("--state-db", help="authoritative core ETL SQLite state for published Bills and Members")
     reconcile.add_argument("--raw-dir", help="immutable raw response root for office source scans")
     args = parser.parse_args(argv)
+    if (args.command == "run" and args.endpoint != "debates"
+            and (args.source_url or args.replay or args.publish)):
+        parser.error("--source-url, --replay, and --publish are only available for run debates")
     if args.command == "state": return run_state_status(args)
     if args.command == "dev": return _run_development_bootstrap(args)
     if args.command == "reconcile":
@@ -3166,6 +3280,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.endpoint == "houses": return run_houses(args)
     if args.endpoint == "members": return run_members(args)
     if args.endpoint == "bills": return run_bills(args)
+    if args.endpoint == "debates": return run_debates(args)
     if args.endpoint in {"administrative-units", "offices"}: return run_office_registry(args)
     return run_reference(args)
 

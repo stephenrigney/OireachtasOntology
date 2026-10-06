@@ -115,7 +115,40 @@ closed. No ontology, source fixture or golden was changed. Tranche 3 is closed
 only under this evidence-backed deferral rule; this is not full Phase 7
 completion or production-corpus acceptance.
 
-No Tranche 4 ingestion, state, graph-replacement or publication work is claimed
-or started. The production resource/scope gate, historical duplicate-eId and
-written-answer fragmentation dispositions, and eventual positive acceptance
-of the two deferred competencies remain open separately.
+At Tranche 3 closure, no Tranche 4 ingestion, state, graph-replacement or
+publication work had started. The Tranche 4 implementation record below
+supersedes that historical status. The production resource/scope gate,
+historical duplicate-eId and written-answer fragmentation dispositions, and
+eventual positive acceptance of the two deferred competencies remain open
+separately.
+
+## Debates Tranche 4 handoff (2026-10-06)
+
+The implementation accepts explicit official AKN `main.xml` URLs or exact
+preserved-object SHA-256 replay keys through `oir-etl run debates`. It does not
+enumerate `/v1/debates`, infer expression completeness, or accept a section
+object as its Work source: after transformation, the official source object
+path must match the exact FRBR Expression path plus `/main.xml`. Exact XML bytes
+are immutable content-addressed files under `{raw-root}/debates/sha256/`; Core
+State schema v5 stores their source hash/path/URL reference with Work-keyed
+publication state and the Expression IRI. Each validated resolution also keeps
+an immutable source-/resolver-/owner-snapshot-linked reference-outcome JSON
+sidecar; Core State tracks its pending/published path and hash and verifies it
+before a clean skip or publication completion.
+
+Publication is opt-in with `--publish`; a default run cannot construct/use a
+Fuseki publisher. Opt-in publication uses the existing deterministic Debates
+transform, exact owner resolver and source-aware integration validation. Core
+State stays dirty until complete Work-graph PUT and exact post-PUT graph
+verification succeed. A skip additionally requires unchanged source and
+transform contract, resolver version, owner snapshot fingerprint, and a
+verified remote graph; owner changes trigger re-resolution. Dirty/failure
+records remain replayable through `--replay <sha256> --publish`.
+
+No ontology, mapping, golden or source fixture was changed. The production
+resource/scope gate, corpus quarantine/fragmentation dispositions, production
+scanning/scheduling, and the two evidence-deferred positive competencies remain
+open. The bounded test run passed Core State/Debates focused checks, including
+the dedicated disposable Fuseki acceptance on loopback port 13035; production
+graphs were not accessed or mutated. See `phase-7-debates.md` for the exact
+acceptance record and run commands.
