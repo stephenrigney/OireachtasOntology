@@ -104,6 +104,58 @@ and run IDs, so reusing the same preserved captures produces the same identity.
 It describes graph payloads written by the bootstrap; it is not a live census
 of other or stale graphs already in a persistent Fuseki dataset.
 
+## NLQ evaluation benchmark
+
+The version-1 question set is `poc/nlq/benchmarks/benchmark-v1.json`; its
+format is defined by `poc/specs/nlq-benchmark.schema.json`. Each case records its
+category, support expectation, interpretation target, semantic result
+invariants, graph/resource prerequisites, and optional independent coverage
+probes. Ambiguous and unsupported questions are retained for measured/manual
+review rather than assigned invented facts.
+
+Run the deterministic ten-case subset without an external LLM:
+
+```bash
+uv run --locked --extra nlq python scripts/run-nlq-benchmark.py --tier regression
+```
+
+Run all 42 cases using the configured Responses-compatible LLM:
+
+```bash
+uv run --locked --extra nlq python scripts/run-nlq-benchmark.py --tier measured
+```
+
+Both automation tiers require Docker and the preserved complete API captures
+and Core State index used by `oir-etl dev bootstrap`. Override their locations
+with `--raw-dir` / `--state-db` or the existing `OIR_RAW_DIR` /
+`OIR_ETL_STATE_DB` environment settings. The runner starts a new
+`stain/jena-fuseki:5.1.0` container for each run, publishes a random port only
+on loopback, attaches no host or named data volume, bootstraps that instance
+from the preserved captures, and stops/removes it after evaluation. It never
+targets the ordinary persistent Compose dataset. Result JSON is written beneath
+the ignored `var/nlq-benchmark/runs/` directory by default.
+
+Every result embeds the exact Phase 0A dataset-baseline JSON and its stable
+`sha256:` dataset ID, plus the disposable container ID for that particular run.
+Before an NLQ case is scored, the runner checks its required graph families,
+known quarantined/unresolved resources, and (where defined) curated read-only
+coverage probes. A missing prerequisite is recorded as
+`source_data_coverage` / `coverage_unavailable`, not as an NLQ failure. Once
+coverage is established, the shared browser/benchmark pipeline translates,
+validates and executes the question. Scoring inspects result kinds, row counts,
+literal values, row-level co-occurrence and aggregate invariants; it does not
+compare generated SPARQL strings. Translation, validation, execution and
+semantic mismatches retain their failure class and diagnostic candidates.
+
+The Phase 0A bootstrap remains explicitly non-authoritative and labels reference
+closure **NOT authoritative / not complete**. A passing case-level probe only
+establishes the exact prerequisite facts for that case; it does not promote the
+whole development dataset to complete or authoritative coverage.
+
+The automated regression tests use deterministic translation inputs and
+mocked Fuseki responses, so they run offline. Running the script against the
+capture-backed disposable dataset remains a separate integration/baseline run.
+
 ## Configuration precedence
 
 The launcher applies one precedence to every value:

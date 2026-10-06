@@ -305,13 +305,13 @@ ETL implementation details before changing the query architecture.
 
 #### Dataset readiness
 
-- [ ] Record which Oireachtas graph families the POC requires for each benchmark
+- [x] Record which Oireachtas graph families the POC requires for each benchmark
       category.
-- [ ] Treat historical reference-coverage closure as an external prerequisite
+- [x] Treat historical reference-coverage closure as an external prerequisite
       for benchmark questions that depend on those references.
-- [ ] Distinguish source-data coverage failures from NLQ failures in all
+- [x] Distinguish source-data coverage failures from NLQ failures in all
       evaluation output.
-- [ ] Define a repeatable local Fuseki test dataset or fixture strategy.
+- [x] Define a repeatable local Fuseki test dataset or fixture strategy.
 
 #### Query/schema contract
 
@@ -326,15 +326,15 @@ ETL implementation details before changing the query architecture.
 
 #### Evaluation benchmark
 
-- [ ] Create an initial benchmark of approximately 30-50 natural-language
+- [x] Create an initial benchmark of approximately 30-50 natural-language
       questions.
-- [ ] Cover simple lookup, HouseTerm membership, parliamentary collections,
+- [x] Cover simple lookup, HouseTerm membership, parliamentary collections,
       constituencies/panels, committees, dates, counts, aggregates, joins,
       ambiguous names and unsupported requests.
-- [ ] Record expected interpretation and expected result or invariant.
-- [ ] Capture generated SPARQL and actual results.
-- [ ] Classify each failure using the agreed taxonomy.
-- [ ] Preserve a regression subset suitable for automated execution.
+- [x] Record expected interpretation and expected result or invariant.
+- [x] Capture generated SPARQL and actual results.
+- [x] Classify each failure using the agreed taxonomy.
+- [x] Preserve a regression subset suitable for automated execution.
 
 #### Safety baseline
 

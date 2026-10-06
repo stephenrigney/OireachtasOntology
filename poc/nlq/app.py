@@ -14,8 +14,8 @@ from .config import load_local_environment
 from .errors import NLQError
 from .fuseki import FusekiQueryClient, FusekiReadiness
 from .llm import ResponsesTranslator
+from .pipeline import process_question
 from .results import QueryResult
-from .safety import validate_sparql
 from .schema import build_schema_context
 from .vocabulary import supported_predicates
 
@@ -95,22 +95,45 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
         translation = None
         translator = fuseki = None
         phase = "LLM translation"
+
+        def set_phase(current: str) -> None:
+            nonlocal phase
+            phase = current
+
+        def remember_translation(current) -> None:
+            nonlocal translation
+            translation = current
+
+        def remember_fuseki():
+            nonlocal fuseki
+            fuseki = FusekiQueryClient(
+                os.getenv("NLQ_FUSEKI_QUERY_URL", "http://localhost:3030/houses/query"),
+                username=os.getenv("OIR_FUSEKI_USER"),
+                password=os.getenv("OIR_FUSEKI_PASSWORD"),
+            )
+            return fuseki
+
         try:
             translator = ResponsesTranslator(
                 os.getenv("NLQ_LLM_API_KEY", ""),
                 os.getenv("NLQ_LLM_BASE_URL", ""),
                 os.getenv("NLQ_LLM_MODEL", ""),
             )
-            translation = translator.translate(question, schema_context)
-            phase = "SPARQL validation"
-            safe_sparql = validate_sparql(translation.sparql, supported_predicates=predicate_vocabulary)
-            phase = "Fuseki query"
-            fuseki = FusekiQueryClient(
-                os.getenv("NLQ_FUSEKI_QUERY_URL", "http://localhost:3030/houses/query"),
-                username=os.getenv("OIR_FUSEKI_USER"),
-                password=os.getenv("OIR_FUSEKI_PASSWORD"),
+            outcome = process_question(
+                question,
+                translator=translator,
+                fuseki_factory=remember_fuseki,
+                schema_context=schema_context,
+                supported_predicates=predicate_vocabulary,
+                on_phase=set_phase,
+                on_translation=remember_translation,
             )
-            result = fuseki.query(safe_sparql)
+            translation = outcome.translation
+            if outcome.error is not None:
+                phase = outcome.error_phase or phase
+                raise outcome.error
+            safe_sparql = outcome.validated_sparql
+            result = outcome.result
             debug_message = None
             if result.kind == "select" and not result.rows:
                 debug_message = (

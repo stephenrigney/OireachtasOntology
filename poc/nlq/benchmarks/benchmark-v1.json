@@ -1,0 +1,606 @@
+{
+  "schema_version": 1,
+  "benchmark_id": "oireachtas-local-nlq",
+  "benchmark_version": "0.1.0",
+  "cases": [
+    {
+      "id": "lookup.aengus-name",
+      "question": "What is the full name of Aengus Ó Snodaigh?",
+      "category": "simple_lookup",
+      "tiers": ["regression", "measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Resolve the Member by name and return the Member's full name.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["Aengus Ó Snodaigh"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {
+        "required_graph_families": ["members"],
+        "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06", "graph_family": "members"}],
+        "coverage_probes": [{"sparql": "PREFIX foaf: <http://xmlns.com/foaf/0.1/> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Aengus-Ó-Snodaigh.D.2002-06-06> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06> foaf:name \"Aengus Ó Snodaigh\" } }", "expected_result": {"kind": "ask", "boolean": true}}],
+        "unavailable_if": null
+      },
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"],
+      "regression_translation": {
+        "interpretation": "Find the exact Member name.",
+        "sparql": "PREFIX foaf: <http://xmlns.com/foaf/0.1/> SELECT ?name WHERE { GRAPH <https://data.oireachtas.ie/graph/member/Aengus-Ó-Snodaigh.D.2002-06-06> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06> foaf:name ?name } } LIMIT 10"
+      }
+    },
+    {
+      "id": "lookup.timmy-name",
+      "question": "What is the full name of Timmy Dooley?",
+      "category": "simple_lookup",
+      "tiers": ["regression", "measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Resolve the Member by name and return the Member's full name.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["Timmy Dooley"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {
+        "required_graph_families": ["members"],
+        "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12", "graph_family": "members"}],
+        "coverage_probes": [{"sparql": "PREFIX foaf: <http://xmlns.com/foaf/0.1/> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12> foaf:name \"Timmy Dooley\" } }", "expected_result": {"kind": "ask", "boolean": true}}],
+        "unavailable_if": null
+      },
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"],
+      "regression_translation": {
+        "interpretation": "Find the exact Member name.",
+        "sparql": "PREFIX foaf: <http://xmlns.com/foaf/0.1/> SELECT ?name WHERE { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12> foaf:name ?name } } LIMIT 10"
+      }
+    },
+    {
+      "id": "lookup.aidan-name",
+      "question": "What is the full name of Aidan Davitt?",
+      "category": "simple_lookup",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Resolve the Member by name and return the Member's full name.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["Aidan Davitt"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {
+        "required_graph_families": ["members"],
+        "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Davitt.S.2016-04-25", "graph_family": "members"}],
+        "coverage_probes": [{"sparql": "PREFIX foaf: <http://xmlns.com/foaf/0.1/> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Aidan-Davitt.S.2016-04-25> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Davitt.S.2016-04-25> foaf:name \"Aidan Davitt\" } }", "expected_result": {"kind": "ask", "boolean": true}}],
+        "unavailable_if": null
+      },
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "lookup.micheal-martin-name",
+      "question": "What is the full name of Micheál Martin?",
+      "category": "simple_lookup",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Resolve the Member by name and return the Member's full name.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["Micheál Martin"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {
+        "required_graph_families": ["members"],
+        "required_resources": [],
+        "coverage_probes": [{"sparql": "PREFIX foaf: <http://xmlns.com/foaf/0.1/> ASK { GRAPH ?memberGraph { ?member foaf:name \"Micheál Martin\" } }", "expected_result": {"kind": "ask", "boolean": true}}],
+        "unavailable_if": null
+      },
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "lookup.favourite-colour-unsupported",
+      "question": "What is Aengus Ó Snodaigh's favourite colour?",
+      "category": "simple_lookup",
+      "tiers": ["measured"],
+      "support_expectation": "unsupported",
+      "expected_interpretation": "The local Oireachtas dataset does not provide a Member's favourite colour.",
+      "expected_result": null,
+      "evaluation_mode": "manual_review",
+      "dataset_prerequisites": {"required_graph_families": ["members"], "required_resources": [], "coverage_probes": [], "unavailable_if": null}
+    },
+    {
+      "id": "term.aengus-dail-33",
+      "question": "Which Dáil term did Aengus Ó Snodaigh serve in?",
+      "category": "house_term_membership",
+      "tiers": ["regression", "measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Find Aengus Ó Snodaigh's Oireachtas membership and identify its Dáil HouseTerm.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["33rd Dáil"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {
+        "required_graph_families": ["houses", "members"],
+        "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06", "graph_family": "members"}],
+        "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Aengus-Ó-Snodaigh.D.2002-06-06> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06> members:hasMembersMembership ?membership . ?membership members:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/33> } }", "expected_result": {"kind": "ask", "boolean": true}}],
+        "unavailable_if": null
+      },
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"],
+      "regression_translation": {
+        "interpretation": "Find the Dáil HouseTerm associated with this Member.",
+        "sparql": "PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX members: <https://data.oireachtas.ie/ontology/members#> PREFIX skos: <http://www.w3.org/2004/02/skos/core#> SELECT DISTINCT ?termLabel WHERE { GRAPH <https://data.oireachtas.ie/graph/member/Aengus-Ó-Snodaigh.D.2002-06-06> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06> foaf:name ?name ; members:hasMembersMembership ?membership . ?membership members:inHouseTerm ?term . } GRAPH <https://data.oireachtas.ie/graph/houses> { ?term skos:prefLabel ?termLabel . } } LIMIT 10"
+      }
+    },
+    {
+      "id": "term.timmy-dail-34",
+      "question": "Which Dáil term did Timmy Dooley serve in after the 33rd Dáil?",
+      "category": "house_term_membership",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Resolve the Member's membership in the 34th Dáil.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["34th Dáil"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {
+        "required_graph_families": ["houses", "members"],
+        "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12", "graph_family": "members"}],
+        "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12> members:hasMembersMembership ?membership . ?membership members:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> } }", "expected_result": {"kind": "ask", "boolean": true}}],
+        "unavailable_if": null
+      },
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "term.timmy-seanad-26",
+      "question": "Was Timmy Dooley a member of the 26th Seanad?",
+      "category": "house_term_membership",
+      "tiers": ["regression", "measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Check whether Timmy Dooley has an OireachtasMembership in the 26th Seanad.",
+      "expected_result": {"kind": "ask", "boolean": true},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {
+        "required_graph_families": ["members"],
+        "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12", "graph_family": "members"}],
+        "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12> members:hasMembersMembership <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26> . } }", "expected_result": {"kind": "ask", "boolean": true}}],
+        "unavailable_if": null
+      },
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"],
+      "regression_translation": {
+        "interpretation": "Check for a specific Seanad membership record.",
+        "sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12> members:hasMembersMembership <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26> } }"
+      }
+    },
+    {
+      "id": "term.dail-34-start-date",
+      "question": "When did the 34th Dáil begin?",
+      "category": "house_term_membership",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Resolve the 34th Dáil HouseTerm and return its temporal start date.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_text": ["2024-11-29"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {
+        "required_graph_families": ["houses"],
+        "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34", "graph_family": "houses"}],
+        "coverage_probes": [{"sparql": "PREFIX dcat: <http://www.w3.org/ns/dcat#> ASK { GRAPH <https://data.oireachtas.ie/graph/houses> { <https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period> dcat:startDate ?date . FILTER(CONTAINS(STR(?date), \"2024-11-29\")) } }", "expected_result": {"kind": "ask", "boolean": true}}],
+        "unavailable_if": null
+      },
+      "failure_classes_on_mismatch": ["temporal_interpretation", "schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "term.number-for-dail-33",
+      "question": "What is the term number of the 33rd Dáil?",
+      "category": "house_term_membership",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Resolve the Dáil HouseTerm and report its numeric termNo value.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["33"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {
+        "required_graph_families": ["houses"],
+        "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33", "graph_family": "houses"}],
+        "coverage_probes": [{"sparql": "PREFIX agents: <https://data.oireachtas.ie/ontology#> ASK { GRAPH <https://data.oireachtas.ie/graph/houses> { <https://data.oireachtas.ie/ie/oireachtas/house/dail/33> agents:termNo 33 } }", "expected_result": {"kind": "ask", "boolean": true}}],
+        "unavailable_if": null
+      },
+      "failure_classes_on_mismatch": ["schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "collection.timmy-dail-34",
+      "question": "Which parliamentary collection did Timmy Dooley belong to in the 34th Dáil?",
+      "category": "parliamentary_collections",
+      "tiers": ["regression", "measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Join Timmy Dooley's Dáil 34 OireachtasMembership to its collection membership and collection label.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["Fianna Fáil"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {
+        "required_graph_families": ["members", "parties"],
+        "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12", "graph_family": "members"}, {"iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil", "graph_family": "parties"}],
+        "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> PREFIX skos: <http://www.w3.org/2004/02/skos/core#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12> members:hasMembersMembership ?membership . ?collectionMembership members:inOireachtasMembership ?membership ; members:memberOfCollection <https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil> . ?membership members:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> . } GRAPH <https://data.oireachtas.ie/graph/parties> { <https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil> skos:prefLabel \"Fianna Fáil\"@en } }", "expected_result": {"kind": "ask", "boolean": true}}],
+        "unavailable_if": null
+      },
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"],
+      "regression_translation": {
+        "interpretation": "Join the Member's membership record to the term-scoped collection.",
+        "sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> PREFIX skos: <http://www.w3.org/2004/02/skos/core#> SELECT DISTINCT ?collectionLabel WHERE { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12> members:hasMembersMembership ?membership . ?collectionMembership members:inOireachtasMembership ?membership ; members:memberOfCollection ?collection . ?membership members:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> . } GRAPH <https://data.oireachtas.ie/graph/parties> { ?collection skos:prefLabel ?collectionLabel . } } LIMIT 10"
+      }
+    },
+    {
+      "id": "collection.aengus-dail-33",
+      "question": "Which parliamentary collection did Aengus Ó Snodaigh belong to in the 33rd Dáil?",
+      "category": "parliamentary_collections",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Join the Member's Dáil 33 membership to the term-scoped parliamentary collection.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["Sinn Féin"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["members", "parties"], "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06", "graph_family": "members"}], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> PREFIX skos: <http://www.w3.org/2004/02/skos/core#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Aengus-Ó-Snodaigh.D.2002-06-06> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06> members:hasMembersMembership ?membership . ?collectionMembership members:inOireachtasMembership ?membership ; members:memberOfCollection ?collection . ?membership members:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/33> . } GRAPH <https://data.oireachtas.ie/graph/parties> { ?collection skos:prefLabel \"Sinn Féin\"@en } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "collection.independent-dail-31",
+      "question": "What is the label of the Independent parliamentary collection for the 31st Dáil?",
+      "category": "parliamentary_collections",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Resolve the term-scoped IndependentMemberCollection and return its label.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["Independent"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["parties"], "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Independent", "graph_family": "parties"}], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> PREFIX skos: <http://www.w3.org/2004/02/skos/core#> ASK { GRAPH <https://data.oireachtas.ie/graph/parties> { <https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Independent> a members:IndependentMemberCollection ; skos:prefLabel \"Independent\"@en } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["schema_grounding", "entity_resolution", "sparql_generation"]
+    },
+    {
+      "id": "collection.dail-31-labels",
+      "question": "Which parliamentary collection labels are present for the 31st Dáil?",
+      "category": "parliamentary_collections",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "List the term-scoped parliamentary collection labels from the Parties owner graph.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 2, "contains_values": ["Fine Gael", "Independent"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["parties"], "required_resources": [], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH <https://data.oireachtas.ie/graph/parties> { ?collection a members:ParliamentaryMemberCollection ; members:activeDuringTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/31> } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "collection.enduring-party-unsupported",
+      "question": "Which enduring political party is the 34th Dáil Fianna Fáil collection recognised as?",
+      "category": "parliamentary_collections",
+      "tiers": ["measured"],
+      "support_expectation": "unsupported",
+      "expected_interpretation": "The development dataset does not promise an accepted link from every term-scoped parliamentary collection to an enduring external political-party identity.",
+      "expected_result": null,
+      "evaluation_mode": "manual_review",
+      "dataset_prerequisites": {"required_graph_families": ["parties"], "required_resources": [], "coverage_probes": [], "unavailable_if": null}
+    },
+    {
+      "id": "representation.timmy-seanad-26-panel",
+      "question": "Which panel did Timmy Dooley represent in the 26th Seanad?",
+      "category": "constituencies_panels",
+      "tiers": ["regression", "measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Join the Member's Seanad 26 OireachtasMembership to its panel owner description.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["Nominated by the Taoiseach"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {
+        "required_graph_families": ["members", "constituencies"],
+        "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/26/panel/Nominated-by-the-Taoiseach", "graph_family": "constituencies"}],
+        "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> PREFIX skos: <http://www.w3.org/2004/02/skos/core#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26> members:isRepresentativeFrom <https://data.oireachtas.ie/ie/oireachtas/house/seanad/26/panel/Nominated-by-the-Taoiseach> } GRAPH <https://data.oireachtas.ie/graph/constituencies> { <https://data.oireachtas.ie/ie/oireachtas/house/seanad/26/panel/Nominated-by-the-Taoiseach> skos:prefLabel \"Nominated by the Taoiseach\"@en } }", "expected_result": {"kind": "ask", "boolean": true}}],
+        "unavailable_if": null
+      },
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"],
+      "regression_translation": {
+        "interpretation": "Resolve the Member's Seanad membership and panel label.",
+        "sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> PREFIX skos: <http://www.w3.org/2004/02/skos/core#> SELECT DISTINCT ?panelLabel WHERE { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26> members:isRepresentativeFrom ?panel . } GRAPH <https://data.oireachtas.ie/graph/constituencies> { ?panel skos:prefLabel ?panelLabel . } } LIMIT 10"
+      }
+    },
+    {
+      "id": "representation.aidan-seanad-26-panel",
+      "question": "Which panel did Aidan Davitt represent in the 26th Seanad?",
+      "category": "constituencies_panels",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Resolve Aidan Davitt's Seanad 26 representation and the panel label.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["Industrial and Commercial Panel"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["members", "constituencies"], "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Davitt.S.2016-04-25", "graph_family": "members"}, {"iri": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/26/panel/Industrial-and-Commercial-Panel", "graph_family": "constituencies"}], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Aidan-Davitt.S.2016-04-25> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Davitt.S.2016-04-25/house/seanad/26> members:isRepresentativeFrom <https://data.oireachtas.ie/ie/oireachtas/house/seanad/26/panel/Industrial-and-Commercial-Panel> } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "representation.dublin-mid-west-owner",
+      "question": "What is the label of the Dublin Mid-West constituency in the 34th Dáil?",
+      "category": "constituencies_panels",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Resolve the Dáil 34 constituency owner and return its preferred label.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["Dublin Mid-West"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["constituencies"], "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Mid-West", "graph_family": "constituencies"}], "coverage_probes": [{"sparql": "PREFIX skos: <http://www.w3.org/2004/02/skos/core#> ASK { GRAPH <https://data.oireachtas.ie/graph/constituencies> { <https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Mid-West> skos:prefLabel \"Dublin Mid-West\"@en } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "representation.timmy-dail-34-constituency",
+      "question": "Which constituency did Timmy Dooley represent in the 34th Dáil?",
+      "category": "constituencies_panels",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Resolve Timmy Dooley's Dáil 34 membership and constituency label.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["Clare"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["members", "constituencies"], "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12", "graph_family": "members"}], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> PREFIX skos: <http://www.w3.org/2004/02/skos/core#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/dail/34> members:isRepresentativeFrom ?constituency . } GRAPH <https://data.oireachtas.ie/graph/constituencies> { ?constituency skos:prefLabel \"Clare\"@en } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "committee.timmy-transport-committee",
+      "question": "Which committee was Timmy Dooley a member of in the 26th Seanad?",
+      "category": "committees",
+      "tiers": ["regression", "measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Join Timmy Dooley's 26th Seanad membership to its committee-membership records and Committee owner labels.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["Joint Committee on Transport and Communications"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {
+        "required_graph_families": ["members", "committees"],
+        "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/joint_committee_on_transport_and_communications", "graph_family": "committees"}],
+        "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> PREFIX skos: <http://www.w3.org/2004/02/skos/core#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26> members:hasMembersMembership ?committeeMembership . ?committeeMembership members:isCommitteeMembershipOf <https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/joint_committee_on_transport_and_communications> } GRAPH <https://data.oireachtas.ie/graph/committees> { <https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/joint_committee_on_transport_and_communications> skos:prefLabel \"Joint Committee on Transport and Communications\"@en } }", "expected_result": {"kind": "ask", "boolean": true}}],
+        "unavailable_if": null
+      },
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"],
+      "regression_translation": {
+        "interpretation": "Return a Committee label linked through the Member's CommitteeMembership.",
+        "sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> PREFIX skos: <http://www.w3.org/2004/02/skos/core#> SELECT DISTINCT ?committeeLabel WHERE { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26> members:hasMembersMembership ?committeeMembership . ?committeeMembership members:isCommitteeMembershipOf ?committee . } GRAPH <https://data.oireachtas.ie/graph/committees> { ?committee skos:prefLabel ?committeeLabel . } } LIMIT 10"
+      }
+    },
+    {
+      "id": "committee.timmy-transport-code",
+      "question": "What is the committee code for the Joint Committee on Transport and Communications?",
+      "category": "committees",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Resolve the Committee by its owner label and return its committeeCode.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["TRJ"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["committees"], "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/joint_committee_on_transport_and_communications", "graph_family": "committees"}], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> PREFIX skos: <http://www.w3.org/2004/02/skos/core#> ASK { GRAPH <https://data.oireachtas.ie/graph/committees> { ?committee skos:prefLabel \"Joint Committee on Transport and Communications\"@en ; members:committeeCode \"TRJ\" } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "committee.timmy-committee-count",
+      "question": "How many committees was Timmy Dooley a member of in the 26th Seanad?",
+      "category": "committees",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Count the distinct CommitteeMembership targets associated with Timmy Dooley's 26th Seanad membership.",
+      "expected_result": {"kind": "select", "invariants": {"row_count": 1, "integer_scalar": true}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["members", "committees"], "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12", "graph_family": "members"}], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26> members:hasMembersMembership ?committeeMembership . ?committeeMembership members:isCommitteeMembershipOf ?committee } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "committee.quarantined-good-friday",
+      "question": "What is the committee code for the Select Committee on the Implementation of the Good Friday Agreement?",
+      "category": "committees",
+      "tiers": ["measured"],
+      "support_expectation": "unavailable",
+      "expected_interpretation": "The exact Committee identity is quarantined because preserved Members observations conflict; no code is selected.",
+      "expected_result": null,
+      "evaluation_mode": "manual_review",
+      "dataset_prerequisites": {
+        "required_graph_families": ["committees"],
+        "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/select_committee_on_the_implementation_of_the_good_friday_agreement", "graph_family": "committees"}],
+        "coverage_probes": [],
+        "unavailable_if": {"kind": "quarantined_resource", "iri": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/select_committee_on_the_implementation_of_the_good_friday_agreement"}
+      }
+    },
+    {
+      "id": "date.dail-34-start",
+      "question": "On what date did the 34th Dáil begin?",
+      "category": "dates_temporal",
+      "tiers": ["regression", "measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Resolve the Dáil 34 period and return its start date, not a related membership date.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_text": ["2024-11-29"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["houses"], "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34", "graph_family": "houses"}], "coverage_probes": [{"sparql": "PREFIX dcat: <http://www.w3.org/ns/dcat#> ASK { GRAPH <https://data.oireachtas.ie/graph/houses> { <https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period> dcat:startDate ?date . FILTER(CONTAINS(STR(?date), \"2024-11-29\")) } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["temporal_interpretation", "schema_grounding", "sparql_generation"],
+      "regression_translation": {
+        "interpretation": "Return the start date linked from the 34th Dáil period.",
+        "sparql": "PREFIX dcat: <http://www.w3.org/ns/dcat#> SELECT ?startDate WHERE { GRAPH <https://data.oireachtas.ie/graph/houses> { <https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period> dcat:startDate ?startDate . } } LIMIT 10"
+      }
+    },
+    {
+      "id": "date.timmy-seanad-26-start",
+      "question": "When did Timmy Dooley's membership of the 26th Seanad begin?",
+      "category": "dates_temporal",
+      "tiers": ["regression", "measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Return the start of Timmy Dooley's OireachtasMembership date range for Seanad 26.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_text": ["2020-06-29"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["members"], "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12", "graph_family": "members"}], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26> members:hasMembershipDateRange ?range . ?range members:StartDate ?date . FILTER(CONTAINS(STR(?date), \"2020-06-29\")) } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["temporal_interpretation", "entity_resolution", "sparql_generation"],
+      "regression_translation": {
+        "interpretation": "Use the membership record's own date range.",
+        "sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> SELECT ?startDate WHERE { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26> members:hasMembershipDateRange ?range . ?range members:StartDate ?startDate . } } LIMIT 10"
+      }
+    },
+    {
+      "id": "date.timmy-seanad-26-end",
+      "question": "When did Timmy Dooley's membership of the 26th Seanad end?",
+      "category": "dates_temporal",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Return the end of Timmy Dooley's OireachtasMembership date range for Seanad 26.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_text": ["2024-11-29"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["members"], "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12", "graph_family": "members"}], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26> members:hasMembershipDateRange ?range . ?range members:EndDate ?date . FILTER(CONTAINS(STR(?date), \"2024-11-29\")) } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["temporal_interpretation", "entity_resolution", "sparql_generation"]
+    },
+    {
+      "id": "date.aengus-active-mid-2023",
+      "question": "Was Aengus Ó Snodaigh a member of the 33rd Dáil on 1 June 2023?",
+      "category": "dates_temporal",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Resolve the Member's Dáil 33 membership and determine whether its date interval contains 2023-06-01.",
+      "expected_result": {"kind": "ask", "boolean": true},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["members"], "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06", "graph_family": "members"}], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Aengus-Ó-Snodaigh.D.2002-06-06> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06> members:hasMembersMembership ?membership . ?membership members:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/33> ; members:hasMembershipDateRange ?range . ?range members:StartDate ?start ; members:EndDate ?end . FILTER(?start <= \"2023-06-01T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> && ?end >= \"2023-06-01T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime>) } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["temporal_interpretation", "entity_resolution", "sparql_generation"]
+    },
+    {
+      "id": "aggregate.dail-term-count",
+      "question": "How many Dáil HouseTerms are described in the Houses graph?",
+      "category": "counts_aggregates",
+      "tiers": ["regression", "measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Count distinct Dáil HouseTerm instances; return one integer scalar.",
+      "expected_result": {"kind": "select", "invariants": {"row_count": 1, "integer_scalar": true}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["houses"], "required_resources": [], "coverage_probes": [{"sparql": "PREFIX agents: <https://data.oireachtas.ie/ontology#> ASK { GRAPH <https://data.oireachtas.ie/graph/houses> { ?term a agents:DailTerm } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["schema_grounding", "sparql_generation"],
+      "regression_translation": {
+        "interpretation": "Count distinct Dáil term resources.",
+        "sparql": "PREFIX agents: <https://data.oireachtas.ie/ontology#> SELECT (COUNT(DISTINCT ?term) AS ?count) WHERE { GRAPH <https://data.oireachtas.ie/graph/houses> { ?term a agents:DailTerm } } LIMIT 1"
+      }
+    },
+    {
+      "id": "aggregate.dail-33-member-count",
+      "question": "How many distinct Members served in the 33rd Dáil?",
+      "category": "counts_aggregates",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Count distinct Member resources linked to the Dáil 33 membership record; do not count membership triples as people.",
+      "expected_result": {"kind": "select", "invariants": {"row_count": 1, "integer_scalar": true}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["members"], "required_resources": [], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH ?memberGraph { ?member members:hasMembersMembership ?membership . ?membership members:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/33> } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "aggregate.dail-34-collection-counts",
+      "question": "How many Members belonged to each parliamentary collection in the 34th Dáil?",
+      "category": "counts_aggregates",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Group distinct Member counts by term-scoped collection in Dáil 34.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "positive_integer_each_row": true}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["members", "parties"], "required_resources": [], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH <https://data.oireachtas.ie/graph/parties> { ?collection a members:ParliamentaryMemberCollection ; members:activeDuringTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "aggregate.dail-33-collection-counts",
+      "question": "How many Members belonged to each parliamentary collection in the 33rd Dáil?",
+      "category": "counts_aggregates",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Group distinct Member counts by term-scoped collection in Dáil 33.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "positive_integer_each_row": true}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["members", "parties"], "required_resources": [], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH <https://data.oireachtas.ie/graph/parties> { ?collection a members:ParliamentaryMemberCollection ; members:activeDuringTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/33> } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "join.aengus-dail-33-collection",
+      "question": "Which collection was Aengus Ó Snodaigh a member of while serving in the 33rd Dáil?",
+      "category": "joins",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Join Member, OireachtasMembership, collection-membership record and ParliamentaryMemberCollection label.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["Sinn Féin"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["members", "parties"], "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06", "graph_family": "members"}], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Aengus-Ó-Snodaigh.D.2002-06-06> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06> members:hasMembersMembership ?membership . ?collectionMembership members:inOireachtasMembership ?membership ; members:memberOfCollection ?collection . ?membership members:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/33> . } GRAPH <https://data.oireachtas.ie/graph/parties> { ?collection <http://www.w3.org/2004/02/skos/core#prefLabel> \"Sinn Féin\"@en } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "join.aengus-dail-33-constituency",
+      "question": "Which constituency did Aengus Ó Snodaigh represent in the 33rd Dáil?",
+      "category": "joins",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Join the Member's Dáil 33 membership to the constituency owner label.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["Dublin South-Central"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["members", "constituencies"], "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06", "graph_family": "members"}], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Aengus-Ó-Snodaigh.D.2002-06-06> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06/house/dail/33> members:isRepresentativeFrom ?constituency } GRAPH <https://data.oireachtas.ie/graph/constituencies> { ?constituency <http://www.w3.org/2004/02/skos/core#prefLabel> \"Dublin South-Central\"@en } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "join.aidan-seanad-26-panel-label",
+      "question": "What panel label is associated with Aidan Davitt's 26th Seanad membership?",
+      "category": "joins",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Join the Member-owned representation reference to the separate constituency/panel owner graph.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["Industrial and Commercial Panel"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["members", "constituencies"], "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Davitt.S.2016-04-25", "graph_family": "members"}], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Aidan-Davitt.S.2016-04-25> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Davitt.S.2016-04-25/house/seanad/26> members:isRepresentativeFrom ?panel } GRAPH <https://data.oireachtas.ie/graph/constituencies> { ?panel <http://www.w3.org/2004/02/skos/core#prefLabel> \"Industrial and Commercial Panel\"@en } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "join.timmy-committee-owner",
+      "question": "Which Committee owner description is linked to Timmy Dooley's 26th Seanad committee memberships?",
+      "category": "joins",
+      "tiers": ["measured"],
+      "support_expectation": "supported",
+      "expected_interpretation": "Join Member graph CommitteeMembership references to separately owned Committee labels.",
+      "expected_result": {"kind": "select", "invariants": {"min_rows": 1, "contains_values": ["Joint Committee on Transport and Communications"]}},
+      "evaluation_mode": "semantic_invariants",
+      "dataset_prerequisites": {"required_graph_families": ["members", "committees"], "required_resources": [{"iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12", "graph_family": "members"}], "coverage_probes": [{"sparql": "PREFIX members: <https://data.oireachtas.ie/ontology/members#> ASK { GRAPH <https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12> { <https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26> members:hasMembersMembership ?committeeMembership . ?committeeMembership members:isCommitteeMembershipOf <https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/joint_committee_on_transport_and_communications> } GRAPH <https://data.oireachtas.ie/graph/committees> { <https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/joint_committee_on_transport_and_communications> <http://www.w3.org/2004/02/skos/core#prefLabel> \"Joint Committee on Transport and Communications\"@en } }", "expected_result": {"kind": "ask", "boolean": true}}], "unavailable_if": null},
+      "failure_classes_on_mismatch": ["entity_resolution", "schema_grounding", "sparql_generation"]
+    },
+    {
+      "id": "ambiguous.john-obrien",
+      "question": "Who is John O'Brien?",
+      "category": "ambiguous_names",
+      "tiers": ["measured"],
+      "support_expectation": "ambiguous",
+      "expected_interpretation": "The name may identify multiple people; do not silently select one without disambiguating evidence.",
+      "expected_result": null,
+      "evaluation_mode": "manual_review",
+      "dataset_prerequisites": {"required_graph_families": ["members"], "required_resources": [], "coverage_probes": [], "unavailable_if": null}
+    },
+    {
+      "id": "ambiguous.martin",
+      "question": "Which Martin served in the Dáil?",
+      "category": "ambiguous_names",
+      "tiers": ["measured"],
+      "support_expectation": "ambiguous",
+      "expected_interpretation": "The surname and chamber alone do not uniquely identify a Member; clarify or expose multiple candidates.",
+      "expected_result": null,
+      "evaluation_mode": "manual_review",
+      "dataset_prerequisites": {"required_graph_families": ["members"], "required_resources": [], "coverage_probes": [], "unavailable_if": null}
+    },
+    {
+      "id": "ambiguous.mary-byrne",
+      "question": "What did Mary Byrne do in Parliament?",
+      "category": "ambiguous_names",
+      "tiers": ["measured"],
+      "support_expectation": "ambiguous",
+      "expected_interpretation": "A common name and broad request require candidate disambiguation and a clearer requested fact.",
+      "expected_result": null,
+      "evaluation_mode": "manual_review",
+      "dataset_prerequisites": {"required_graph_families": ["members"], "required_resources": [], "coverage_probes": [], "unavailable_if": null}
+    },
+    {
+      "id": "unsupported.member-birthplace",
+      "question": "Where was Micheál Martin born?",
+      "category": "unsupported_requests",
+      "tiers": ["measured"],
+      "support_expectation": "unsupported",
+      "expected_interpretation": "The local Oireachtas query dataset does not provide birthplace facts; do not compensate with an external source.",
+      "expected_result": null,
+      "evaluation_mode": "manual_review",
+      "dataset_prerequisites": {"required_graph_families": ["members"], "required_resources": [], "coverage_probes": [], "unavailable_if": null}
+    },
+    {
+      "id": "unsupported.member-home-address",
+      "question": "What is Timmy Dooley's home address?",
+      "category": "unsupported_requests",
+      "tiers": ["measured"],
+      "support_expectation": "unsupported",
+      "expected_interpretation": "The local Oireachtas dataset does not provide private home-address data.",
+      "expected_result": null,
+      "evaluation_mode": "manual_review",
+      "dataset_prerequisites": {"required_graph_families": ["members"], "required_resources": [], "coverage_probes": [], "unavailable_if": null}
+    },
+    {
+      "id": "unavailable.bill-status",
+      "question": "What is the current status of the 2024 Finance Bill?",
+      "category": "unsupported_requests",
+      "tiers": ["measured"],
+      "support_expectation": "unavailable",
+      "expected_interpretation": "Bills graphs are not part of the Phase 0A NLQ development bootstrap dataset.",
+      "expected_result": null,
+      "evaluation_mode": "manual_review",
+      "dataset_prerequisites": {"required_graph_families": ["bills"], "required_resources": [], "coverage_probes": [], "unavailable_if": {"kind": "missing_graph_family", "graph_family": "bills"}}
+    },
+    {
+      "id": "unavailable.debate-contribution",
+      "question": "What did Timmy Dooley say during a Dáil debate?",
+      "category": "unsupported_requests",
+      "tiers": ["measured"],
+      "support_expectation": "unavailable",
+      "expected_interpretation": "Debate transcripts are outside the Phase 0A NLQ development bootstrap dataset.",
+      "expected_result": null,
+      "evaluation_mode": "manual_review",
+      "dataset_prerequisites": {"required_graph_families": ["debates"], "required_resources": [], "coverage_probes": [], "unavailable_if": {"kind": "missing_graph_family", "graph_family": "debates"}}
+    }
+  ]
+}
