@@ -23,8 +23,9 @@ House-membership-loss publication block remains as documented in
 independent reviewed external-identity policy and per-office link graphs; see
 `documentation/office-external-reconciliation.md`. Tranche 5 implements the
 independent per-Bill local link graph and review/recovery path described in
-`documentation/bill-sponsor-reconciliation.md`. Tranche 6 remains pending;
-this is status only, not a change to the approved design below.
+`documentation/bill-sponsor-reconciliation.md`. Tranches 1–5 are implemented and
+merged on master; Tranche 6 remains pending; this is status only, not a change
+to the approved design below.
 
 Before Tranche 3 the Member transformer interpreted every
 `membership.offices[]` observation as a `MinisterOfStateMembership` and created

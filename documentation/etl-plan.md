@@ -2161,9 +2161,9 @@ conservative limitation remains: if an accepted holding loses its entire
 containing House membership, the prior Member graph is retained and publication
 for that Member is blocked pending review. See
 `documentation/office-observation-reconciliation.md` for verification evidence
-and operational details. Bill **core** RDF behavior remains unchanged. Tranche 6
-remains pending. This status does not change the completion/history of earlier
-phases or other Phase 7 slices.
+and operational details. Bill **core** RDF behavior remains unchanged. Tranches 1–5 are
+implemented and merged on master; Tranche 6 remains pending. This status does
+not change the completion/history of earlier phases or other Phase 7 slices.
 
 Settled semantics and ownership for this slice:
 
