@@ -154,7 +154,7 @@ def test_core_schema_v1_upgrades_resources_and_reopens(tmp_path):
             hashlib.sha256(pending_payload.encode()).hexdigest(), 1))
 
     with CoreStateStore(database) as store:
-        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 5
         clean = store.get_resource("members", member_identity)
         dirty = store.get_resource("legislation", bill_identity)
         assert clean["publication_state"] == "clean"
@@ -175,7 +175,7 @@ def test_core_schema_v1_upgrades_resources_and_reopens(tmp_path):
         assert store.incremental_cursor() is None
 
     with CoreStateStore(database) as reopened:
-        assert reopened.connection.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert reopened.connection.execute("PRAGMA user_version").fetchone()[0] == 5
         assert reopened.get_resource("members", member_identity)["published_source_hash"] == "b" * 64
         assert reopened.get_resource("legislation", bill_identity)["pending_source_hash"] == "e" * 64
 
@@ -224,7 +224,7 @@ def test_core_schema_v2_migration_preserves_runs_and_adds_registry_endpoints(tmp
           VALUES ('houses','prior-run','prior-run',NULL,NULL,'2026-01-01T00:00:01+00:00')""")
 
     with CoreStateStore(database) as store:
-        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 5
         prior = store.connection.execute("SELECT endpoint,status FROM etl_run WHERE run_id='prior-run'").fetchone()
         assert (prior["endpoint"], prior["status"]) == ("houses", "succeeded")
         assert store.endpoint_publication("houses") is None
@@ -370,8 +370,22 @@ def test_core_state_cli_status_reports_database_without_reconciliation_state(tmp
     database = tmp_path / "core.sqlite"
     assert main(["state", "status", "--state-db", str(database)]) == 0
     output = json.loads(capsys.readouterr().out)
-    assert output["schema_version"] == 4 and output["database"] == str(database)
+    assert output["schema_version"] == 5 and output["database"] == str(database)
     assert output["endpoints"] == [] and output["recent_runs"] == []
+
+
+def test_fresh_v5_schema_has_reference_report_columns_and_pair_checks(tmp_path):
+    with CoreStateStore(tmp_path / "fresh.sqlite") as store:
+        columns = {row[1] for row in store.connection.execute(
+            "PRAGMA table_info(resource_state)")}
+        assert {
+            "published_reference_report_path", "published_reference_report_hash",
+            "pending_reference_report_path", "pending_reference_report_hash",
+        } <= columns
+        schema = store.connection.execute(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='resource_state'").fetchone()[0]
+        assert "published_reference_report_path IS NULL) = (published_reference_report_hash IS NULL" in schema
+        assert "pending_reference_report_path IS NULL) = (pending_reference_report_hash IS NULL" in schema
 
 
 def test_json_legacy_path_is_never_silently_opened_as_sqlite(tmp_path):

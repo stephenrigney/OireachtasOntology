@@ -157,9 +157,16 @@ not silently mark an unverified graph clean.
 | Members | complete scan with per-resource hashing |
 | Legislation/Bills | `last_updated` incremental refresh with overlap, plus periodic complete source reconciliation |
 | External identity links | existing reconciliation due/new/identity-change selection plus periodic re-verification |
-| Debates | deferred |
+| Debates | explicit supplied main.xml batches use resource publication state; routine scanning/reconciliation remains deferred |
 | Votes | deferred |
 | Questions | deferred |
+
+The bounded Phase 7 Tranche 4 Debates command is not a complete or incremental
+corpus scan: each publishing run records `is_complete=false`, accepts only
+explicit main.xml source URLs or exact preserved-object hashes, and has no
+cursor or absence/deletion behavior. Non-publishing transformations do not open
+Core State. The publish path reuses this resource-publication ordering without
+changing Phase 6 production refresh policy.
 
 The Bills CLI continues to represent Bill-resource ETL over the Legislation API.
 

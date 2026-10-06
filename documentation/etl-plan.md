@@ -2036,7 +2036,7 @@ The approved Debates design is recorded in
 remains `documentation/debates_ontology_outline.md` and
 `ontology/debates.owl.ttl`.
 
-**Status:** Debates Tranches 1–3 are complete for the bounded representative
+**Status:** Debates Tranches 1–4 are complete for the bounded representative
 scope. The Tranche 3 evidence review in `documentation/phase-7-debates.md`
 explicitly defers the unsupported legislative-section and question-recipient
 positive competencies; their mappings remain inactive and their source
@@ -2044,8 +2044,9 @@ references remain auditable. This does not claim those queries return positive
 joined results. The production-corpus census/benchmark has been
 measured (see `documentation/debates-production-benchmark.md`); the
 full-corpus-versus-Bill-debates-first scope choice and gate remain pending an
-operational acceptability threshold. Tranche 4 ingestion, broad-corpus scope
-and publication remain pending.
+operational acceptability threshold. Tranche 4 now supports explicit main.xml
+acquisition/replay and opt-in supplied-batch publication; it does not start
+broad-corpus scanning or close the production-scope gate.
 
 Settled boundaries include:
 
@@ -2130,12 +2131,13 @@ publishing a graph from one Expression alone. The full rules are in
   Bill-debates-first choice itself remains open pending an operational resource
   threshold and a disposition for the measured quarantine and pre-2013
   written-answer fragmentation findings.
-- [ ] Implement the remaining Debates tranche 4 above; Tranches 1–3 are
-  complete for the bounded representative scope with explicit deferred
-  competencies.
+- [x] Implement Debates Tranche 4 explicit source preservation, Core State,
+  validated supplied-batch transformation, opt-in graph replacement, exact
+  verification, and replay/retry acceptance; production enumeration remains
+  outside this tranche.
 - [x] Add Debates SHACL/quality validation and competency queries; positive
   legislative-section and question-recipient owner results remain deferred.
-- [ ] Add deterministic graph replacement and replay/idempotency tests.
+- [x] Add deterministic graph replacement and replay/idempotency tests.
 
 ### Ministerial office/tenure slice — approved design; Tranches 1–4 implemented
 

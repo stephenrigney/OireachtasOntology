@@ -12,15 +12,17 @@ import fcntl
 import hashlib
 import json
 from pathlib import Path
+import re
 import sqlite3
 import uuid
 from urllib.parse import quote, unquote, urlsplit
 
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 ENDPOINTS = ("houses", "parties", "constituencies", "committees", "members", "legislation",
+             "debates",
              "administrative-units", "offices")
-RESOURCE_ENDPOINTS = ("members", "legislation")
+RESOURCE_ENDPOINTS = ("members", "legislation", "debates")
 AUTHORITATIVE_COMPLETE_SOURCES = {
     "houses": "api", "parties": "api", "constituencies": "api",
     "members": "api", "legislation": "api", "committees": "members",
@@ -38,6 +40,35 @@ SHARED_GRAPHS = {
 
 class CoreStateError(ValueError):
     """Invalid or internally inconsistent authoritative ETL state."""
+
+
+def _validate_debate_source_evidence(source_hash: str, raw_source_path: object,
+                                    source_url: object,
+                                    expression_iri: object) -> str:
+    if (not isinstance(raw_source_path, str) or not raw_source_path
+            or not isinstance(source_url, str) or not source_url
+            or not isinstance(expression_iri, str) or not expression_iri):
+        raise CoreStateError(
+            "Debates observations require raw evidence path, source URL, and Expression IRI")
+    raw_path = Path(raw_source_path).expanduser()
+    if (not raw_path.is_absolute() or re.fullmatch(r"[0-9a-f]{64}", source_hash) is None
+            or raw_path.name != f"{source_hash}.xml"):
+        raise CoreStateError(
+            "Debates raw evidence path must be an absolute SHA-256-addressed XML object")
+    try:
+        raw_bytes = raw_path.read_bytes()
+    except OSError as error:
+        raise CoreStateError(f"Debates raw evidence object is unavailable: {raw_path}") from error
+    if hashlib.sha256(raw_bytes).hexdigest() != source_hash:
+        raise CoreStateError("Debates raw evidence object does not match its source hash")
+    from .debates_raw import DebateSourceError, validate_source_expression_url
+
+    try:
+        validate_source_expression_url(source_url, expression_iri)
+    except DebateSourceError as error:
+        raise CoreStateError(
+            "Debates source evidence URL must identify the exact official AKN main.xml") from error
+    return str(raw_path)
 
 
 def _now() -> str:
@@ -60,6 +91,26 @@ def _json(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+def _verify_debates_report(path: object, digest: object, *, source_hash: str,
+                           resolver_version: object,
+                           owner_snapshot_hash: object) -> None:
+    """Require the exact canonical report before recording or completing publication."""
+    from .debates_raw import DebateSourceError, verify_reference_report
+
+    if not isinstance(path, str) or not isinstance(digest, str):
+        raise CoreStateError("Debates publication requires a reference report path and hash")
+    if (not isinstance(resolver_version, str) or not resolver_version
+            or not isinstance(owner_snapshot_hash, str)
+            or re.fullmatch(r"[0-9a-f]{64}", owner_snapshot_hash) is None):
+        raise CoreStateError("Debates reference report requires resolver/owner-snapshot evidence")
+    try:
+        verify_reference_report(path, digest, source_sha256=source_hash,
+                                resolver_version=resolver_version,
+                                owner_snapshot_hash=owner_snapshot_hash)
+    except DebateSourceError as error:
+        raise CoreStateError(f"Debates reference report verification failed: {error}") from error
+
+
 def _manifest(path: Path, endpoint: str) -> dict:
     key = "members" if endpoint == "members" else "bills"
     label = "Members" if endpoint == "members" else "Bills"
@@ -74,18 +125,18 @@ def _manifest(path: Path, endpoint: str) -> dict:
 
 
 def expected_graph_iri(endpoint: str, resource_iri: str) -> str:
-    """Validate a legacy resource IRI and derive its already-settled graph."""
+    """Validate a resource IRI and derive its already-settled graph identity."""
     if endpoint not in RESOURCE_ENDPOINTS or not isinstance(resource_iri, str):
         raise CoreStateError(f"invalid core resource identity for {endpoint!r}: {resource_iri!r}")
     try:
         parsed = urlsplit(resource_iri)
         port = parsed.port
     except ValueError as error:
-        raise CoreStateError(f"invalid legacy {endpoint} resource IRI: {resource_iri!r}") from error
+        raise CoreStateError(f"invalid {endpoint} resource IRI: {resource_iri!r}") from error
     if (parsed.scheme != "https" or parsed.netloc != "data.oireachtas.ie"
             or parsed.query or parsed.fragment or parsed.username or parsed.password
             or port):
-        raise CoreStateError(f"invalid legacy {endpoint} resource IRI: {resource_iri!r}")
+        raise CoreStateError(f"invalid {endpoint} resource IRI: {resource_iri!r}")
     path = [part for part in parsed.path.split("/") if part]
     try:
         if endpoint == "members":
@@ -95,15 +146,26 @@ def expected_graph_iri(endpoint: str, resource_iri: str) -> str:
             if not code:
                 raise ValueError
             return "https://data.oireachtas.ie/graph/member/" + quote(code, safe="")
-        if len(path) != 5 or path[:3] != ["ie", "oireachtas", "bill"]:
+        if endpoint == "legislation":
+            if len(path) != 5 or path[:3] != ["ie", "oireachtas", "bill"]:
+                raise ValueError
+            year, number = path[3], unquote(path[4])
+            if not year.isdigit() or int(year) < 1 or not number:
+                raise ValueError
+            return ("https://data.oireachtas.ie/graph/bill/" + quote(year, safe="")
+                    + "/" + quote(number, safe=""))
+        if len(path) < 4 or path[:3] != ["akn", "ie", "debateRecord"]:
             raise ValueError
-        year, number = path[3], unquote(path[4])
-        if not year.isdigit() or int(year) < 1 or not number:
+        # The Work IRI has already been component-encoded by the approved
+        # Debates identity contract.  Do not decode or encode it a second time.
+        raw_segments = parsed.path[1:].split("/")
+        if (any(not segment or segment in {".", ".."} for segment in raw_segments)
+                or any(quote(unquote(segment), safe="-._~") != segment
+                       for segment in raw_segments)):
             raise ValueError
-        return ("https://data.oireachtas.ie/graph/bill/" + quote(year, safe="")
-                + "/" + quote(number, safe=""))
+        return "https://data.oireachtas.ie/graph/debate/" + parsed.path[len("/akn/ie/debateRecord/"):]
     except (TypeError, ValueError) as error:
-        raise CoreStateError(f"invalid legacy {endpoint} resource IRI: {resource_iri!r}") from error
+        raise CoreStateError(f"invalid {endpoint} resource IRI: {resource_iri!r}") from error
 
 
 def _validate_legacy_row(endpoint: str, identity: object, row: object) -> dict:
@@ -170,7 +232,7 @@ def state_lock(path: Path):
 
 
 class CoreStateStore:
-    """SQLite operational state for authoritative Members and Bills refreshes."""
+    """SQLite operational state for authoritative resource publication and runs."""
 
     def __init__(self, path: Path, *, legacy_members: Path | None = None,
                  legacy_bills: Path | None = None):
@@ -208,7 +270,7 @@ class CoreStateStore:
         connection.execute("BEGIN IMMEDIATE")
         try:
             version = connection.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, 1, 2, 3, SCHEMA_VERSION):
+            if version not in (0, 1, 2, 3, 4, SCHEMA_VERSION):
                 raise CoreStateError(f"unsupported core ETL state schema version: {version}")
             if version == 0:
                 # ``executescript`` implicitly commits an open transaction.
@@ -290,8 +352,76 @@ class CoreStateStore:
                 connection.execute("DROP TABLE etl_run_v3")
                 connection.execute("DROP TABLE endpoint_state_v3")
                 connection.execute("CREATE INDEX etl_run_endpoint_started ON etl_run(endpoint,started_at)")
-                connection.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
-                version = SCHEMA_VERSION
+                connection.execute("PRAGMA user_version=4")
+                version = 4
+            if version == 4:
+                # Debates use the same authoritative resource-publication
+                # machinery as Members/Bills, with a content-addressed raw
+                # evidence reference.  Rebuild the constrained tables in one
+                # transaction so existing histories and publication payloads
+                # remain intact while adding the endpoint and evidence fields.
+                for index in ("etl_run_endpoint_started", "resource_state_publication"):
+                    connection.execute(f"DROP INDEX IF EXISTS {index}")
+                connection.execute("ALTER TABLE etl_run RENAME TO etl_run_v4")
+                connection.execute("ALTER TABLE endpoint_state RENAME TO endpoint_state_v4")
+                connection.execute("ALTER TABLE resource_state RENAME TO resource_state_v4")
+                connection.execute("""CREATE TABLE etl_run (
+                  run_id TEXT PRIMARY KEY,
+                  endpoint TEXT NOT NULL CHECK(endpoint IN ('houses','parties','constituencies','committees','members','legislation','debates','administrative-units','offices')),
+                  run_kind TEXT NOT NULL CHECK(run_kind IN ('full_refresh','incremental_refresh','complete_source_reconciliation')),
+                  is_complete INTEGER NOT NULL CHECK(is_complete IN (0,1)),
+                  started_at TEXT NOT NULL, completed_at TEXT,
+                  status TEXT NOT NULL CHECK(status IN ('running','succeeded','failed')),
+                  error TEXT, parameters_json TEXT NOT NULL)""")
+                connection.execute("""CREATE TABLE endpoint_state (
+                  endpoint TEXT PRIMARY KEY CHECK(endpoint IN ('houses','parties','constituencies','committees','members','legislation','debates','administrative-units','offices')),
+                  last_successful_run_id TEXT, last_successful_complete_run_id TEXT,
+                  incremental_cursor TEXT, publication_metadata_json TEXT, updated_at TEXT NOT NULL)""")
+                connection.execute("""CREATE TABLE resource_state (
+                  endpoint TEXT NOT NULL CHECK(endpoint IN ('members','legislation','debates')),
+                  resource_iri TEXT NOT NULL, graph_iri TEXT NOT NULL,
+                  observed_source_hash TEXT, published_source_hash TEXT,
+                  published_payload_hash TEXT, published_payload TEXT,
+                  last_seen_at TEXT, last_seen_run_id TEXT, last_published_at TEXT,
+                  last_missing_run_id TEXT, last_missing_at TEXT,
+                  missing_scan_count INTEGER NOT NULL DEFAULT 0 CHECK(missing_scan_count >= 0),
+                  publication_state TEXT NOT NULL CHECK(publication_state IN ('clean','dirty')),
+                  pending_source_hash TEXT, pending_graph_iri TEXT, pending_payload TEXT,
+                  pending_payload_hash TEXT,
+                  source_presence TEXT NOT NULL DEFAULT 'present' CHECK(source_presence IN ('present','missing','confirmed_missing')),
+                  contract_version INTEGER,
+                  raw_source_path TEXT, source_url TEXT, expression_iri TEXT,
+                  published_resolver_version TEXT, pending_resolver_version TEXT,
+                  published_owner_snapshot_hash TEXT, pending_owner_snapshot_hash TEXT,
+                  published_reference_report_path TEXT, published_reference_report_hash TEXT,
+                  pending_reference_report_path TEXT, pending_reference_report_hash TEXT,
+                  PRIMARY KEY(endpoint,resource_iri),
+                   CHECK(publication_state='dirty' OR
+                         (pending_source_hash IS NULL AND pending_graph_iri IS NULL AND pending_payload_hash IS NULL
+                          AND pending_resolver_version IS NULL AND pending_owner_snapshot_hash IS NULL
+                          AND pending_reference_report_path IS NULL AND pending_reference_report_hash IS NULL)),
+                   CHECK((published_reference_report_path IS NULL) = (published_reference_report_hash IS NULL)),
+                   CHECK((pending_reference_report_path IS NULL) = (pending_reference_report_hash IS NULL)))""")
+                connection.execute("INSERT INTO etl_run SELECT * FROM etl_run_v4")
+                connection.execute("INSERT INTO endpoint_state SELECT * FROM endpoint_state_v4")
+                connection.execute("""INSERT INTO resource_state (
+                  endpoint,resource_iri,graph_iri,observed_source_hash,published_source_hash,
+                  published_payload_hash,published_payload,last_seen_at,last_seen_run_id,
+                  last_published_at,last_missing_run_id,last_missing_at,missing_scan_count,
+                  publication_state,pending_source_hash,pending_graph_iri,pending_payload,
+                  pending_payload_hash,source_presence,contract_version)
+                  SELECT endpoint,resource_iri,graph_iri,observed_source_hash,published_source_hash,
+                  published_payload_hash,published_payload,last_seen_at,last_seen_run_id,
+                  last_published_at,last_missing_run_id,last_missing_at,missing_scan_count,
+                  publication_state,pending_source_hash,pending_graph_iri,pending_payload,
+                  pending_payload_hash,source_presence,contract_version FROM resource_state_v4""")
+                connection.execute("DROP TABLE resource_state_v4")
+                connection.execute("DROP TABLE endpoint_state_v4")
+                connection.execute("DROP TABLE etl_run_v4")
+                connection.execute("CREATE INDEX etl_run_endpoint_started ON etl_run(endpoint,started_at)")
+                connection.execute("CREATE INDEX resource_state_publication ON resource_state(endpoint,publication_state)")
+                connection.execute("PRAGMA user_version=5")
+                version = 5
             if version == SCHEMA_VERSION:
                 tables = {row[0] for row in connection.execute(
                     "SELECT name FROM sqlite_master WHERE type='table'")}
@@ -302,7 +432,12 @@ class CoreStateStore:
                 required = {
                     "endpoint_state": {"incremental_cursor"},
                     "resource_state": {"published_payload", "last_missing_run_id",
-                                       "last_missing_at", "missing_scan_count"},
+                                       "last_missing_at", "missing_scan_count",
+                                        "raw_source_path", "source_url", "expression_iri",
+                                        "published_resolver_version", "pending_resolver_version",
+                                        "published_owner_snapshot_hash", "pending_owner_snapshot_hash",
+                                        "published_reference_report_path", "published_reference_report_hash",
+                                        "pending_reference_report_path", "pending_reference_report_hash"},
                 }
                 if any(not names <= columns[table] for table, names in required.items()):
                     raise CoreStateError("core ETL SQLite schema is incomplete")
@@ -367,6 +502,9 @@ class CoreStateStore:
             raise CoreStateError(f"unsupported core ETL run kind: {run_kind}")
         if type(is_complete) is not bool or not isinstance(parameters, dict):
             raise CoreStateError("run completeness and source parameters must be explicit")
+        if endpoint == "debates" and (is_complete or run_kind != "incremental_refresh"):
+            raise CoreStateError(
+                "Debates accepts only incomplete explicit-batch incremental runs")
         run_id = str(uuid.uuid4())
         with self._transaction():
             # Online callers hold the database's advisory scan lock. Any old
@@ -588,12 +726,20 @@ class CoreStateStore:
             )
 
     def observe_resource(self, endpoint: str, resource_iri: str, graph_iri: str,
-                         source_hash: str, run_id: str, *, observed_at: str | None = None) -> dict:
+                         source_hash: str, run_id: str, *, observed_at: str | None = None,
+                         raw_source_path: str | None = None,
+                         source_url: str | None = None,
+                         expression_iri: str | None = None) -> dict:
         expected = expected_graph_iri(endpoint, resource_iri)
         if graph_iri != expected:
             raise CoreStateError(f"graph IRI does not match {endpoint} resource identity: {resource_iri}")
         if not isinstance(source_hash, str) or not source_hash:
             raise CoreStateError("observed source hash must be non-empty")
+        if endpoint == "debates":
+            raw_source_path = _validate_debate_source_evidence(
+                source_hash, raw_source_path, source_url, expression_iri)
+        elif any(value is not None for value in (raw_source_path, source_url, expression_iri)):
+            raise CoreStateError("raw AKN evidence fields are only defined for Debates resources")
         when = observed_at or _now()
         with self._transaction():
             existing = self.connection.execute("""SELECT graph_iri FROM resource_state
@@ -602,33 +748,110 @@ class CoreStateStore:
                 raise CoreStateError(f"stored graph IRI changed for {endpoint} resource {resource_iri}")
             self.connection.execute("""INSERT INTO resource_state
               (endpoint,resource_iri,graph_iri,observed_source_hash,last_seen_at,last_seen_run_id,
-               publication_state,source_presence)
-              VALUES (?,?,?,?,?,?, 'clean','present') ON CONFLICT(endpoint,resource_iri) DO UPDATE SET
+               publication_state,source_presence,raw_source_path,source_url,expression_iri)
+              VALUES (?,?,?,?,?,?, 'clean','present',?,?,?) ON CONFLICT(endpoint,resource_iri) DO UPDATE SET
               observed_source_hash=excluded.observed_source_hash,last_seen_at=excluded.last_seen_at,
               last_seen_run_id=excluded.last_seen_run_id,source_presence='present',
+              raw_source_path=COALESCE(excluded.raw_source_path,resource_state.raw_source_path),
+              source_url=COALESCE(excluded.source_url,resource_state.source_url),
+              expression_iri=COALESCE(excluded.expression_iri,resource_state.expression_iri),
               last_missing_run_id=NULL,last_missing_at=NULL,missing_scan_count=0""",
-              (endpoint, resource_iri, graph_iri, source_hash, when, run_id))
+              (endpoint, resource_iri, graph_iri, source_hash, when, run_id,
+               raw_source_path, source_url, expression_iri))
         return self.get_resource(endpoint, resource_iri)  # type: ignore[return-value]
 
     def mark_publication_dirty(self, endpoint: str, resource_iri: str, *, source_hash: str,
-                               graph_iri: str, payload: str, contract_version: int) -> str:
+                               graph_iri: str, payload: str, contract_version: int,
+                               resolver_version: str | None = None,
+                               owner_snapshot_hash: str | None = None,
+                               reference_report_path: str | None = None,
+                               reference_report_hash: str | None = None,
+                               raw_source_path: str | None = None,
+                               source_url: str | None = None,
+                               expression_iri: str | None = None,
+                               run_id: str | None = None) -> str:
         if graph_iri != expected_graph_iri(endpoint, resource_iri):
             raise CoreStateError(f"pending graph IRI does not match resource identity: {resource_iri}")
         if type(contract_version) is not int or contract_version < 1:
             raise CoreStateError("publication contract version must be a positive integer")
         payload_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        debate_raw_path = None
+        if endpoint == "debates":
+            debate_raw_path = _validate_debate_source_evidence(
+                source_hash, raw_source_path, source_url, expression_iri)
+            if not isinstance(run_id, str) or not run_id:
+                raise CoreStateError("Debates publication requires its active observation run")
+        elif any(value is not None for value in
+                 (reference_report_path, reference_report_hash, raw_source_path,
+                  source_url, expression_iri, run_id)):
+            raise CoreStateError(
+                "Debates report/source evidence is only defined for Debates publication")
         with self._transaction():
-            row = self.connection.execute("SELECT graph_iri FROM resource_state WHERE endpoint=? AND resource_iri=?",
+            row = self.connection.execute("SELECT graph_iri,observed_source_hash,expression_iri FROM resource_state WHERE endpoint=? AND resource_iri=?",
                                           (endpoint, resource_iri)).fetchone()
-            if row is None:
+            if row is None and endpoint != "debates":
                 raise CoreStateError(f"resource must be observed before publication: {resource_iri}")
-            if row["graph_iri"] != graph_iri:
+            if row is not None and row["graph_iri"] != graph_iri:
                 raise CoreStateError(f"pending graph differs from stored graph identity: {resource_iri}")
+            if endpoint != "debates" and row["observed_source_hash"] != source_hash:
+                raise CoreStateError(f"publication source hash differs from the most recently observed source: {resource_iri}")
+            if (endpoint == "debates" and row is not None
+                    and row["expression_iri"] is not None
+                    and row["expression_iri"] != expression_iri):
+                raise CoreStateError(
+                    f"stored Debate Expression identity changed for Work {resource_iri}")
+            if endpoint == "debates" and (
+                    not isinstance(resolver_version, str) or not resolver_version
+                    or not isinstance(owner_snapshot_hash, str) or not owner_snapshot_hash):
+                raise CoreStateError("Debates publication requires resolver and owner snapshot evidence")
+            if endpoint == "debates":
+                _verify_debates_report(
+                    reference_report_path, reference_report_hash,
+                    source_hash=source_hash, resolver_version=resolver_version,
+                    owner_snapshot_hash=owner_snapshot_hash)
+            elif reference_report_path is not None or reference_report_hash is not None:
+                raise CoreStateError("reference report state is only defined for Debates publication")
+            if endpoint == "debates":
+                active_run = self.connection.execute(
+                    "SELECT endpoint,status FROM etl_run WHERE run_id=?", (run_id,)).fetchone()
+                if (active_run is None or active_run["endpoint"] != "debates"
+                        or active_run["status"] != "running"):
+                    raise CoreStateError("Debates publication run is not active in Core State")
+                self.connection.execute("""INSERT INTO resource_state (
+                  endpoint,resource_iri,graph_iri,observed_source_hash,last_seen_at,last_seen_run_id,
+                  publication_state,pending_source_hash,pending_graph_iri,pending_payload,
+                  pending_payload_hash,source_presence,contract_version,raw_source_path,
+                  source_url,expression_iri,pending_resolver_version,pending_owner_snapshot_hash,
+                  pending_reference_report_path,pending_reference_report_hash)
+                  VALUES ('debates',?,?,?,?,?,'dirty',?,?,?,?, 'present',?,?,?,?,?,?,?,?)
+                  ON CONFLICT(endpoint,resource_iri) DO UPDATE SET
+                    graph_iri=excluded.graph_iri,
+                    observed_source_hash=excluded.observed_source_hash,
+                    last_seen_at=excluded.last_seen_at,last_seen_run_id=excluded.last_seen_run_id,
+                    publication_state='dirty',pending_source_hash=excluded.pending_source_hash,
+                    pending_graph_iri=excluded.pending_graph_iri,pending_payload=excluded.pending_payload,
+                    pending_payload_hash=excluded.pending_payload_hash,
+                    source_presence='present',contract_version=excluded.contract_version,
+                    raw_source_path=excluded.raw_source_path,source_url=excluded.source_url,
+                    expression_iri=excluded.expression_iri,
+                    pending_resolver_version=excluded.pending_resolver_version,
+                    pending_owner_snapshot_hash=excluded.pending_owner_snapshot_hash,
+                    pending_reference_report_path=excluded.pending_reference_report_path,
+                    pending_reference_report_hash=excluded.pending_reference_report_hash,
+                    last_missing_run_id=NULL,last_missing_at=NULL,missing_scan_count=0""",
+                  (resource_iri, graph_iri, source_hash, _now(), run_id,
+                   source_hash, graph_iri, payload, payload_hash, contract_version,
+                   debate_raw_path, source_url, expression_iri, resolver_version,
+                   owner_snapshot_hash, reference_report_path, reference_report_hash))
+                return payload_hash
             self.connection.execute("""UPDATE resource_state SET graph_iri=?,observed_source_hash=?,
               publication_state='dirty',pending_source_hash=?,pending_graph_iri=?,pending_payload=?,
-              pending_payload_hash=?,contract_version=? WHERE endpoint=? AND resource_iri=?""",
+              pending_payload_hash=?,contract_version=?,pending_resolver_version=?,
+              pending_owner_snapshot_hash=?,pending_reference_report_path=?,pending_reference_report_hash=?
+              WHERE endpoint=? AND resource_iri=?""",
               (graph_iri, source_hash, source_hash, graph_iri, payload, payload_hash,
-               contract_version, endpoint, resource_iri))
+               contract_version, resolver_version, owner_snapshot_hash,
+               reference_report_path, reference_report_hash, endpoint, resource_iri))
         return payload_hash
 
     def complete_publication(self, endpoint: str, resource_iri: str, *, source_hash: str,
@@ -640,7 +863,9 @@ class CoreStateStore:
             raise CoreStateError("publication contract version must be a positive integer")
         with self._transaction():
             row = self.connection.execute("""SELECT publication_state,pending_source_hash,
-              pending_graph_iri,pending_payload_hash,pending_payload FROM resource_state
+              pending_graph_iri,pending_payload_hash,pending_payload,pending_resolver_version,
+              pending_owner_snapshot_hash,pending_reference_report_path,
+              pending_reference_report_hash FROM resource_state
               WHERE endpoint=? AND resource_iri=?""", (endpoint, resource_iri)).fetchone()
             if (row is None or row["publication_state"] != "dirty"
                     or row["pending_source_hash"] != source_hash
@@ -649,12 +874,24 @@ class CoreStateStore:
                     or not isinstance(row["pending_payload"], str)
                     or hashlib.sha256(row["pending_payload"].encode("utf-8")).hexdigest() != payload_hash):
                 raise CoreStateError(f"publication completion does not match durable pending state: {resource_iri}")
+            if endpoint == "debates":
+                _verify_debates_report(
+                    row["pending_reference_report_path"],
+                    row["pending_reference_report_hash"], source_hash=source_hash,
+                    resolver_version=row["pending_resolver_version"],
+                    owner_snapshot_hash=row["pending_owner_snapshot_hash"])
             self.connection.execute("""UPDATE resource_state SET graph_iri=?,observed_source_hash=?,
               published_source_hash=?,published_payload_hash=?,published_payload=?,last_published_at=?,
+              published_resolver_version=?,published_owner_snapshot_hash=?,
+              published_reference_report_path=?,published_reference_report_hash=?,
               publication_state='clean',pending_source_hash=NULL,pending_graph_iri=NULL,
-              pending_payload=NULL,pending_payload_hash=NULL,contract_version=?
+              pending_payload=NULL,pending_payload_hash=NULL,pending_resolver_version=NULL,
+              pending_owner_snapshot_hash=NULL,pending_reference_report_path=NULL,
+              pending_reference_report_hash=NULL,contract_version=?
               WHERE endpoint=? AND resource_iri=?""",
               (graph_iri, source_hash, source_hash, payload_hash, row["pending_payload"], published_at or _now(),
+               row["pending_resolver_version"], row["pending_owner_snapshot_hash"],
+               row["pending_reference_report_path"], row["pending_reference_report_hash"],
                contract_version, endpoint, resource_iri))
 
     def get_resource(self, endpoint: str, resource_iri: str) -> dict | None:
@@ -665,6 +902,17 @@ class CoreStateStore:
     def resources(self, endpoint: str) -> list[dict]:
         return [dict(row) for row in self.connection.execute(
             "SELECT * FROM resource_state WHERE endpoint=? ORDER BY resource_iri", (endpoint,))]
+
+    def resource_for_observed_hash(self, endpoint: str, source_hash: str) -> dict | None:
+        """Return a unique resource identity observed with an exact source hash."""
+        rows = self.connection.execute(
+            "SELECT * FROM resource_state WHERE endpoint=? AND observed_source_hash=? ORDER BY resource_iri",
+            (endpoint, source_hash),
+        ).fetchall()
+        if len(rows) > 1:
+            raise CoreStateError(
+                f"source hash is associated with multiple {endpoint} resources: {source_hash}")
+        return dict(rows[0]) if rows else None
 
     def status(self) -> dict:
         endpoints = []
@@ -693,8 +941,12 @@ class CoreStateStore:
                               "confirmed_missing_resources": presence.get("confirmed_missing", 0)})
         dirty_resources = [dict(row) for row in self.connection.execute("""SELECT
             endpoint,resource_iri,graph_iri,observed_source_hash,published_source_hash,
-           pending_source_hash,pending_graph_iri,pending_payload_hash,last_seen_at,
-           source_presence,last_missing_run_id,last_missing_at,missing_scan_count
+            pending_source_hash,pending_graph_iri,pending_payload_hash,last_seen_at,
+            source_presence,last_missing_run_id,last_missing_at,missing_scan_count,
+            raw_source_path,source_url,expression_iri,published_resolver_version,
+            pending_resolver_version,published_owner_snapshot_hash,pending_owner_snapshot_hash,
+            published_reference_report_path,published_reference_report_hash,
+            pending_reference_report_path,pending_reference_report_hash
            FROM resource_state WHERE publication_state='dirty' ORDER BY endpoint,resource_iri""")]
         missing_resources = [dict(row) for row in self.connection.execute("""SELECT
             endpoint,resource_iri,graph_iri,source_presence,last_missing_run_id,last_missing_at,missing_scan_count
@@ -729,7 +981,7 @@ CREATE TABLE core_metadata (
 );
 CREATE TABLE etl_run (
   run_id TEXT PRIMARY KEY,
-   endpoint TEXT NOT NULL CHECK(endpoint IN ('houses','parties','constituencies','committees','members','legislation','administrative-units','offices')),
+   endpoint TEXT NOT NULL CHECK(endpoint IN ('houses','parties','constituencies','committees','members','legislation','debates','administrative-units','offices')),
   run_kind TEXT NOT NULL CHECK(run_kind IN ('full_refresh','incremental_refresh','complete_source_reconciliation')),
   is_complete INTEGER NOT NULL CHECK(is_complete IN (0,1)),
   started_at TEXT NOT NULL,
@@ -740,7 +992,7 @@ CREATE TABLE etl_run (
 );
 CREATE INDEX etl_run_endpoint_started ON etl_run(endpoint,started_at);
 CREATE TABLE endpoint_state (
-    endpoint TEXT PRIMARY KEY CHECK(endpoint IN ('houses','parties','constituencies','committees','members','legislation','administrative-units','offices')),
+    endpoint TEXT PRIMARY KEY CHECK(endpoint IN ('houses','parties','constituencies','committees','members','legislation','debates','administrative-units','offices')),
   last_successful_run_id TEXT,
   last_successful_complete_run_id TEXT,
   incremental_cursor TEXT,
@@ -748,7 +1000,7 @@ CREATE TABLE endpoint_state (
   updated_at TEXT NOT NULL
 );
 CREATE TABLE resource_state (
-  endpoint TEXT NOT NULL CHECK(endpoint IN ('members','legislation')),
+  endpoint TEXT NOT NULL CHECK(endpoint IN ('members','legislation','debates')),
   resource_iri TEXT NOT NULL,
   graph_iri TEXT NOT NULL,
   observed_source_hash TEXT,
@@ -768,9 +1020,24 @@ CREATE TABLE resource_state (
   pending_payload_hash TEXT,
   source_presence TEXT NOT NULL DEFAULT 'present' CHECK(source_presence IN ('present','missing','confirmed_missing')),
   contract_version INTEGER,
+  raw_source_path TEXT,
+  source_url TEXT,
+  expression_iri TEXT,
+  published_resolver_version TEXT,
+  pending_resolver_version TEXT,
+  published_owner_snapshot_hash TEXT,
+  pending_owner_snapshot_hash TEXT,
+  published_reference_report_path TEXT,
+  published_reference_report_hash TEXT,
+  pending_reference_report_path TEXT,
+  pending_reference_report_hash TEXT,
   PRIMARY KEY(endpoint,resource_iri),
   CHECK(publication_state='dirty' OR
-        (pending_source_hash IS NULL AND pending_graph_iri IS NULL AND pending_payload_hash IS NULL))
+        (pending_source_hash IS NULL AND pending_graph_iri IS NULL AND pending_payload_hash IS NULL
+         AND pending_resolver_version IS NULL AND pending_owner_snapshot_hash IS NULL
+         AND pending_reference_report_path IS NULL AND pending_reference_report_hash IS NULL)),
+  CHECK((published_reference_report_path IS NULL) = (published_reference_report_hash IS NULL)),
+  CHECK((pending_reference_report_path IS NULL) = (pending_reference_report_hash IS NULL))
 );
 CREATE INDEX resource_state_publication ON resource_state(endpoint,publication_state);
 """

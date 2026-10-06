@@ -2,13 +2,15 @@
 
 ## Status
 
-Tranches 1–3 are complete for the bounded representative scope. All links with
+Tranches 1–4 are complete for the bounded representative scope. All links with
 reviewed source/owner support are validated; the Bill-event section and
 question-recipient competencies remain explicitly deferred because the checked
 evidence does not support their joins. Their query contracts remain in place,
 and the unanswered queries are not claimed as successful competency results.
-Tranche 4 has not started. The production-corpus resource benchmark required
-before broad ingestion has been measured and is reported in
+Tranche 4 supplies explicit main.xml acquisition/replay, immutable raw storage,
+Core State tracking and opt-in per-Work graph publication; it does not enumerate
+or schedule the production corpus. The production-corpus resource benchmark
+required before broad ingestion has been measured and is reported in
 [`debates-production-benchmark.md`](debates-production-benchmark.md); the
 production-scope choice and gate remain open pending an operational
 acceptability threshold. This does not claim broad cross-dataset
@@ -377,14 +379,15 @@ row 49. The executable exclusion is independently pinned by the golden. No
 ontology, source fixture or golden was changed; the protected mapping-selector
 correction was applied as a bounded follow-up to this closure.
 
-This is **Tranche 3 closure only**. It is not full Phase 7 acceptance: the
-production-scope/resource gate, corpus quarantine and fragmentation issues,
-Tranche 4 ingestion/state/publication, and eventual positive acceptance of the
-two deferred competencies remain open. **Tranche 4 may start as a separate
-bounded implementation; no Tranche 4 work is started or claimed here, and broad
-ingestion remains subject to the production-scope/resource gate.** The
-2004–2007 duplicate-eId cases, empty section names and pre-2013 fragmented
-written answers remain separate corpus work.
+This paragraph records **Tranche 3 closure before the bounded Tranche 4
+implementation recorded below**. At that earlier point Tranche 4 ingestion,
+state and publication had not started. The supplied-batch mechanics are now
+complete, but this is not full Phase 7 acceptance: the production-scope/resource
+gate, corpus quarantine and fragmentation issues, and eventual positive
+acceptance of the two deferred competencies remain open. Broad ingestion remains
+subject to the production-scope/resource gate. The 2004–2007 duplicate-eId
+cases, empty section names and pre-2013 fragmented written answers remain
+separate corpus work.
 
 ### Tranche 4 — Source ingestion, state and publication mechanics
 
@@ -399,6 +402,72 @@ written answers remain separate corpus work.
 atomically republished through the normal ETL path. Phase 6 can later apply
 production scanning/scheduling policy without changing the Debates semantic
 model.
+
+#### Tranche 4 implementation and acceptance record (2026-10-06)
+
+`oir-etl run debates` accepts only a finite caller-supplied list of official
+`https://data.oireachtas.ie/akn/ie/debateRecord/.../main.xml` URLs and/or
+lowercase SHA-256 replay keys for previously preserved objects. It has no
+debates-listing client, pagination, broad enumeration, completeness inference,
+or scheduling policy. The fetched object URL must match the exact canonical
+FRBRExpression path followed by `/main.xml`; section-object URLs therefore
+cannot be published as Work records. A supplied batch containing multiple
+known Expressions for one Work fails closed, as does a later attempt to publish
+a different Expression for a Work already recorded in Core State. A single
+supplied Expression does not assert global Expression-set completeness.
+
+Exact XML bytes are stored outside SQLite at
+`{raw-root}/debates/sha256/{hash-prefix}/{sha256}.xml`; immutable metadata ties
+the content object to its official main.xml URL. Core State schema v5 adds the
+Debates endpoint to the existing run/resource state and records the graph,
+source hash, raw-object path, source URL, Expression IRI, publication state,
+resolver version and owner-snapshot fingerprint. Each validated resolution
+also persists its canonical UTF-8 reference-outcome JSON as an immutable
+sidecar beside the raw object, keyed by source hash, resolver/owner snapshot and
+report content hash, at
+`{raw-root}/debates/sha256/{hash-prefix}/{source-hash}.{resolution-key}.{report-hash}.reference-report.json`.
+Core State stores the report path/hash in pending and published state; it
+verifies the report before a clean skip and again before marking a PUT clean.
+The RDF bytes remain in the existing durable
+pending/published payload fields, and XML blobs are never stored in SQLite. No
+ontology, mapping, golden or source fixture was changed.
+
+Publication is explicitly opt-in:
+
+```text
+oir-etl run debates --source-url https://data.oireachtas.ie/akn/.../main.xml
+oir-etl run debates --replay <sha256> --offline
+oir-etl run debates --replay <sha256> --publish
+```
+
+Without `--publish`, the command has no GSP loader, does not create/update Core
+State, and may only preserve/acquire, transform, validate and write local output.
+An opt-in publish requires both configured Fuseki Graph Store and SPARQL
+verification endpoints. Changed records use the existing validated Debates
+transformer, exact owner resolver and source-aware integration validator, then
+durably mark publication dirty, PUT the complete Work graph, verify the entire
+named graph, and only then mark Core State clean. Exact-source skipping requires
+matching source/transform contract, resolver version and owner-snapshot hash,
+plus a hash-verified reference-report sidecar and fresh whole-graph
+verification. A changed owner snapshot therefore re-resolves the same source,
+persists a new report version and republishes rather than silently skipping it.
+Failed report verification, PUT or post-PUT graph verification never advances
+dirty state to clean. Changed-source replacement removes stale Debate-owned
+triples; absence from a supplied batch never marks another Work missing or
+deletes its graph.
+
+Focused acceptance covers exact-byte content addressing/replay, immutable
+hash-linked reports across close/reopen and owner-snapshot changes, main.xml
+versus section-object rejection, malformed XML, duplicate eIds in mixed batches,
+multiple known Expressions, publication opt-in, first publish, exact replay
+skip, remote-corruption repair, dirty source-revert recovery with exact repeated
+PUT payloads, changed-source stale-triple removal, Core State migration, dirty
+report/PUT/verification failure and retry, and owner-graph isolation. The
+optional Fuseki acceptance requires both endpoints to be the same disposable
+loopback dataset `/debates_t4` at `127.0.0.1:13035` before any owner graph PUT;
+production graphs were not accessed or mutated. This closes the supplied-batch
+publication tranche only, not the separate production resource/scope gate or
+broad-ingestion acceptance.
 
 ## Phase 7 Debates exit criteria
 

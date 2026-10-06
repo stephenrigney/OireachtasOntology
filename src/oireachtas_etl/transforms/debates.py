@@ -605,6 +605,53 @@ def _sort_report(report: dict) -> None:
     report["diagnostics"].sort(key=lambda row: (row.get("code", ""), _canonical_json(row.get("evidence", {}))))
 
 
+def inspect_debate_source_identity(source_xml: bytes) -> dict[str, str]:
+    """Read only the approved Work/Expression identity fields from exact bytes.
+
+    This small preflight supports supplied-batch duplicate and Expression-set
+    checks, and permits Core State's exact-hash skip gate to identify its row.
+    It is not source or RDF validation: every non-skipped input still passes
+    through :func:`transform_debate` and the Tranche 2/3 validators.
+    """
+    if not isinstance(source_xml, bytes):
+        raise TypeError("source_xml must be the exact AKN XML bytes")
+    root = ET.fromstring(source_xml)
+    if _local_name(root) != "akomaNtoso":
+        raise ValueError("AKN XML root must be akomaNtoso")
+    debates = _children_named(root, "debate")
+    if len(debates) != 1:
+        raise ValueError("AKN source must contain exactly one direct debate element")
+    metas = _children_named(debates[0], "meta")
+    if len(metas) != 1:
+        raise ValueError("AKN debate must contain exactly one meta element")
+    identifications = _children_named(metas[0], "identification")
+    if len(identifications) != 1:
+        raise ValueError("AKN meta must contain exactly one identification element")
+    works = _children_named(identifications[0], "FRBRWork")
+    expressions = _children_named(identifications[0], "FRBRExpression")
+    if len(works) != 1 or len(expressions) != 1:
+        raise ValueError("AKN identification must contain exactly one FRBRWork and FRBRExpression")
+    work_uris = _children_named(works[0], "FRBRuri")
+    expression_uris = _children_named(expressions[0], "FRBRuri")
+    if len(work_uris) != 1 or len(expression_uris) != 1:
+        raise ValueError("each FRBR level must contain exactly one FRBRuri")
+    source_work_uri = _required_value_attribute(work_uris[0], "FRBRWork/FRBRuri")
+    source_expression_uri = _required_value_attribute(
+        expression_uris[0], "FRBRExpression/FRBRuri")
+    work_iri, _work_path, _work_segments = _canonical_akn_iri(
+        source_work_uri, "FRBRWork/FRBRuri/@value")
+    expression_iri, _expression_path, _expression_segments = _canonical_akn_iri(
+        source_expression_uri, "FRBRExpression/FRBRuri/@value")
+    if work_iri == expression_iri:
+        raise ValueError("FRBRWork and FRBRExpression canonicalize to the same public IRI")
+    return {
+        "work_iri": work_iri,
+        "expression_iri": expression_iri,
+        "source_work_uri": source_work_uri,
+        "source_expression_uri": source_expression_uri,
+    }
+
+
 def transform_debate(
     source_xml: bytes,
     *,
