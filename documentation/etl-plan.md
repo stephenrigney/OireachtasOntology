@@ -2137,7 +2137,7 @@ publishing a graph from one Expression alone. The full rules are in
   legislative-section and question-recipient owner results remain deferred.
 - [ ] Add deterministic graph replacement and replay/idempotency tests.
 
-### Ministerial office/tenure slice — approved design; Tranches 1–5 implemented
+### Ministerial office/tenure slice — approved design; Tranches 1–6 complete
 
 The first ministerial office/tenure vertical slice has a complete approved
 implementation design in [phase-7-ministerial-offices.md](phase-7-ministerial-offices.md).
@@ -2161,9 +2161,11 @@ conservative limitation remains: if an accepted holding loses its entire
 containing House membership, the prior Member graph is retained and publication
 for that Member is blocked pending review. See
 `documentation/office-observation-reconciliation.md` for verification evidence
-and operational details. Bill **core** RDF behavior remains unchanged. Tranches 1–5 are
-implemented and merged on master; Tranche 6 remains pending. This status does
-not change the completion/history of earlier phases or other Phase 7 slices.
+and operational details. Bill **core** RDF behavior remains unchanged.
+Tranches 1–5 were implemented and merged on master; Tranche 6 acceptance is
+complete as recorded below. This closes only the ministerial office/tenure
+vertical slice; it does not change the separate Debates status above or claim
+that all Phase 7 work is complete.
 
 Settled semantics and ownership for this slice:
 
@@ -2212,7 +2214,7 @@ Settled semantics and ownership for this slice:
   and active `officeNameUri` use through a versioned, validated Member
   republish, not generic triple deletion.
 
-Tranches 1–5 are **implemented**; Tranche 6 is **not started**:
+Tranches 1–6 are **complete**:
 
 | Tranche | Status | Prerequisite/work | Exit criterion |
 |---|---|---|---|
@@ -2221,7 +2223,21 @@ Tranches 1–5 are **implemented**; Tranche 6 is **not started**:
 | 3. Member holdings and Cabinet migration | Implemented | Reviewed resolutions and migration inventory; Member transform, independent validation, non-destructive nested absence, contract bump and full republish. | Correct concurrent holdings and deduplicated Cabinet episodes; legacy erroneous RDF removed, missing holdings retained and recovery tested. |
 | 4. External office identities | Implemented | Stable local offices; policy, reviewed external links, independent graphs and retry/recheck tests. | Reviewed external links replace independently without rewriting authoritative RDF. |
 | 5. Bill local sponsor links | Implemented | Published offices/holdings; per-Bill local graph, decisions and change invalidation. | Correct office-only/person-and-time-qualified holding links, unchanged Bill evidence, stale local links cleared. |
-| 6. End-to-end acceptance | Not started | Earlier core tranches; joined competency, migration, URI, absence/conflict, publication/isolation tests and operations notes. | Phase 0 validation and full tests pass; graph-scoped recovery and review boundaries verified. |
+| 6. End-to-end acceptance | Complete | Earlier core tranches; joined competency, migration, URI, absence/conflict, publication/isolation tests and operations notes. | Phase 0 validation and full tests pass; graph-scoped recovery and review boundaries verified. |
+
+#### Tranche 6 final verification record (2026-10-06)
+
+Pinned-Java ontology validation passed (2,504 triples); active mapping integrity
+passed. The complete test suite passed against an isolated disposable Fuseki
+5.1.0 dataset (685 tests, 23 subtests, no optional Fuseki skips), including
+graph replacement/recovery, Member contract-v3 migration, office external-link
+and Bill-local publication, and exact graph equality proving reviewed office
+reconciliation left an actual transformed Debate graph unchanged. The
+2026-10-04 captured Members corpus was hash-verified and rerun offline twice;
+both N-Quads outputs match the accepted Tranche 3 SHA-256
+`345899ca9f8494799b1b8d8fce593aca24b96290ba1058b867d56862b0995be2`.
+Malformed office/party evidence remains quarantined; no source bytes were
+repaired. No production service or graph was contacted or mutated.
 
 Deferred beyond this slice: detailed delegated functions, responsibilities
 and portfolios; temporally qualified office–unit assignments; ISAD
