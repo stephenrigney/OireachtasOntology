@@ -1,5 +1,13 @@
 # Phase 7 Debates production resource benchmark
 
+> **Superseded for the initial-production gate by the Tranche 4 assessment.**
+> This 2026-10-04 census/benchmark used the Tranche 2 `transform_debate` path
+> (no Tranche 3 integration validation, no Tranche 4 preservation/publication).
+> The initial-production scope measurements through the completed Tranche 4 path
+> are in
+> [`debates-production-resource-assessment.md`](debates-production-resource-assessment.md).
+> The exact source census here remains a useful cross-check.
+
 Measurement date: 2026-10-04. Transformer: committed `transform_debate` at
 `master` `88ba310` (`src/oireachtas_etl/transforms/debates.py`, SHA-256
 `b459649e27721be976729b6d65fab370a8dcf6e404d8b9b2c591d2047951a30b`).

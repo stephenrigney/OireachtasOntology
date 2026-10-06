@@ -20,6 +20,15 @@ configurable operational limits, an exact in-scope quarantine inventory,
 Phase 6 execution policy and staged operational acceptance remain pending.
 No broad production ingestion or graph publication is claimed.
 
+The Tranche 4 scoped resource measurement (2011+ debates only versus adding
+2013+ whole-record written answers) is recorded in
+[`debates-production-resource-assessment.md`](debates-production-resource-assessment.md).
+Its resource measurements informed the approved scope; the exact quarantine
+inventory, approved operational limits, Phase 6 execution policy and staged
+operational acceptance remain open. See the
+[`Debates production-readiness report`](debates-production-readiness.md) for
+the verified inventory and remaining gate decisions.
+
 This note records the approved Phase 7 design for the Debates vertical slice.
 It complements the ontology-specific material in
 `documentation/debates_ontology_outline.md` and `ontology/debates.owl.ttl`.
