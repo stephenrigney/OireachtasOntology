@@ -50,7 +50,10 @@ Open:
 
 <http://127.0.0.1:8000/>
 
-The home page performs a read-only readiness check against Fuseki and reports whether the expected graph families are present.
+The home page performs a read-only, presence-only readiness check for Houses,
+Parties, Constituencies and Members; Bills are detected as optional. This check
+does not identify the source captures or establish reference closure, and it
+does not currently probe the Committee graph family.
 
 Try questions such as:
 
@@ -69,15 +72,37 @@ The application shows:
 ### Other launcher commands
 
 ```bash
-scripts/dev-nlq.sh --load-data   # publish Houses/Parties/Constituencies/Members first
+scripts/dev-nlq.sh --load-data   # bootstrap local data from preserved API captures
 scripts/dev-nlq.sh --no-reload   # start without the Uvicorn autoreload watcher
 ```
 
-Ordinary startup never fetches or republishes source data. `--load-data`
-explicitly runs the existing ETL for the graph families the member-oriented POC
-needs — houses, parties, constituencies and members — and then starts the POC.
-Bills are not loaded because the current example queries do not need them. If
-the ETL load fails, the POC is not started.
+Ordinary startup never loads source data. `--load-data` explicitly invokes
+`oir-etl dev bootstrap`, which reads the latest successful complete API captures
+already preserved and indexed in Core State, validates them, and loads the
+non-authoritative local-development graphs into loopback Fuseki. It does not
+fetch current API data, run the authoritative `oir-etl run` publication path,
+or advance Core State coverage/publication or external-reconciliation state.
+Materially conflicted reference identities remain quarantined, and the bootstrap
+reports unresolved references and labels reference closure **NOT authoritative
+/ not complete**. If the bootstrap fails, the POC is not started.
+
+The bootstrap prints a stable dataset identity. To save its full machine-readable
+baseline for later evaluation tooling, invoke the same development-only command
+with an output path:
+
+```bash
+uv run --locked oir-etl dev bootstrap \
+  --fuseki-gsp-url http://localhost:3030/houses/data \
+  --fuseki-sparql-url http://localhost:3030/houses/query \
+  --dataset-baseline-output /tmp/oireachtas-nlq-dataset-baseline.json
+```
+
+The baseline records the selected source capture run IDs, graph families and
+resource counts, quarantined identities, unresolved references, and the
+non-authoritative closure status. Its identity is derived from the source URLs
+and run IDs, so reusing the same preserved captures produces the same identity.
+It describes graph payloads written by the bootstrap; it is not a live census
+of other or stale graphs already in a persistent Fuseki dataset.
 
 ## Configuration precedence
 
@@ -115,7 +140,8 @@ password so an existing Fuseki volume keeps working. The launcher populates
 application and does not print credentials.
 
 For `--load-data`, the launcher also exports `OIR_FUSEKI_GSP_URL` and
-`OIR_FUSEKI_SPARQL_URL` so the ETL can publish and then verify each graph.
+`OIR_FUSEKI_SPARQL_URL` so the development bootstrap can load and verify each
+graph.
 `OIR_FUSEKI_SPARQL_URL` defaults to the resolved `NLQ_FUSEKI_QUERY_URL`, so no
 manual export is needed.
 
@@ -159,8 +185,9 @@ that an explicit process environment value wins over `.env.local`.
 
 Starting Fuseki does not populate it. Data loading is deliberately an ETL
 operation, not an application startup side effect. Run
-`scripts/dev-nlq.sh --load-data` when you intentionally want to fetch and publish
-current Oireachtas API data for the reference and Member graphs.
+`scripts/dev-nlq.sh --load-data` when you intentionally want the local
+development bootstrap to load preserved complete API captures for the
+reference and Member graphs.
 
 ## Manual commands (advanced / troubleshooting)
 
@@ -193,10 +220,11 @@ Write endpoint: http://localhost:3030/houses/data
 uv run --locked uvicorn poc.nlq.app:app --reload
 ```
 
-### Load data with the existing ETL
+### Run the local NLQ development bootstrap
 
-The launcher sets these endpoints automatically; export them yourself only when
-running the ETL manually. Set the ETL write and verification endpoints:
+The launcher sets these endpoints automatically. To invoke the same local,
+non-authoritative bootstrap manually (including writing a dataset baseline),
+set the loopback Fuseki write and verification endpoints:
 
 ```bash
 export OIR_FUSEKI_GSP_URL=http://localhost:3030/houses/data
@@ -207,19 +235,26 @@ For authenticated Fuseki, also export `OIR_FUSEKI_USER` and
 `OIR_FUSEKI_PASSWORD`.
 
 ```bash
+uv run --locked oir-etl dev bootstrap \
+  --dataset-baseline-output /tmp/oireachtas-nlq-dataset-baseline.json
+```
+
+This selects preserved captures; it does not fetch source data. The separate
+`oir-etl run <endpoint>` commands are authoritative ETL operations and are not
+the workflow used by `scripts/dev-nlq.sh --load-data`.
+
+For independent authoritative ETL operation, the following commands remain
+available:
+
+```bash
 uv run --locked oir-etl run houses
 uv run --locked oir-etl run parties
 uv run --locked oir-etl run constituencies
 uv run --locked oir-etl run members
-```
-
-Bills are optional for the member-oriented example queries:
-
-```bash
 uv run --locked oir-etl run bills
 ```
 
-The POC never invokes these commands itself.
+The POC launcher does not invoke these authoritative commands.
 
 Do not use `docker compose down -v` as a refresh step: it deletes Fuseki's persistent volume.
 

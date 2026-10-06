@@ -2989,6 +2989,118 @@ LOCAL_DEVELOPMENT_GRAPH_ORDER = (
 )
 
 
+def _development_dataset_baseline(captures: dict, counts: dict,
+                                  development_status: dict) -> dict:
+    """Describe the capture-backed dataset written by the local bootstrap.
+
+    The stable identity is based on source run IDs and URLs, not local paths,
+    timestamps, or the Fuseki endpoint. The bootstrap has already
+    integrity-checked each preserved capture before this summary is built.
+    """
+    source_captures = {}
+    identity_captures = {}
+    for endpoint in sorted(captures):
+        _records, capture = captures[endpoint]
+        parameters = capture["parameters"]
+        source_url = parameters["api_url"]
+        run_id = capture["run_id"]
+        source_captures[endpoint] = {
+            "run_id": run_id,
+            "source": parameters["source"],
+            "source_url": source_url,
+            "record_count": capture["advertised_count"],
+        }
+        identity_captures[endpoint] = {
+            "run_id": run_id,
+            "source_url": source_url,
+        }
+
+    identity_material = {
+        "identity_version": 1,
+        "source_captures": identity_captures,
+    }
+    identity_json = json.dumps(
+        identity_material, ensure_ascii=False, sort_keys=True,
+        separators=(",", ":"),
+    )
+    dataset_id = "sha256:" + hashlib.sha256(identity_json.encode("utf-8")).hexdigest()
+
+    return {
+        "schema_version": 1,
+        "dataset": {
+            "id": dataset_id,
+            "identity_method": (
+                "SHA-256 of canonical JSON containing each selected endpoint's "
+                "source URL and successful complete Core State run ID"
+            ),
+            "authority": "non-authoritative development dataset",
+            "authoritative_reference_closure_complete": False,
+        },
+        "source_captures": source_captures,
+        "graph_families_loaded": [
+            {"name": "houses", "graph_iri": HOUSES_GRAPH, "graph_count": 1},
+            {"name": "parties", "graph_iri": PARTIES_GRAPH, "graph_count": 1},
+            {"name": "constituencies", "graph_iri": CONSTITUENCIES_GRAPH,
+             "graph_count": 1},
+            {"name": "committees", "graph_iri": COMMITTEES_GRAPH,
+             "graph_count": 1},
+            {"name": "members",
+             "graph_iri_pattern": "https://data.oireachtas.ie/graph/member/{memberCode}",
+             "graph_count": counts["members"]},
+        ],
+        "source_record_counts": {
+            endpoint: capture["advertised_count"]
+            for endpoint, (_records, capture) in sorted(captures.items())
+        },
+        "rdf_resource_counts": {
+            "house_terms": counts["houses_terms"],
+            "members": counts["members"],
+            "party_owner_identities": counts["parties"],
+            "constituency_panel_owner_identities": counts["constituencies"],
+            "committee_owner_identities": counts["committees"],
+        },
+        "quarantined_conflict_count": development_status[
+            "quarantined_conflict_count"],
+        "quarantined_conflicted_identities": development_status[
+            "quarantined_conflicts"],
+        "unresolved_reference_count": development_status[
+            "unresolved_reference_count"],
+        "unresolved_references": development_status["unresolved_references"],
+        "reference_closure": development_status["reference_closure"],
+        "scope_note": (
+            "Counts describe the graph payloads written by this bootstrap. "
+            "This is not a live census of other or stale graphs already present "
+            "in a persistent Fuseki dataset."
+        ),
+    }
+
+
+def _development_baseline_output_path(output: str | None, *, raw_root: Path,
+                                      state_db: Path,
+                                      reconciliation_db: Path) -> Path | None:
+    """Keep a requested report from overwriting preserved or authority state."""
+    if not output:
+        return None
+    output_path = Path(output).expanduser().resolve()
+    raw_path = raw_root.resolve()
+    protected_files = set()
+    for database in (state_db, reconciliation_db):
+        resolved_database = database.resolve()
+        protected_files.update({
+            resolved_database,
+            Path(str(resolved_database) + ".lock"),
+            Path(str(resolved_database) + "-wal"),
+            Path(str(resolved_database) + "-shm"),
+        })
+    if (output_path == raw_path or raw_path in output_path.parents
+            or output_path in protected_files):
+        raise ValueError(
+            "dataset baseline output must be outside preserved raw captures, "
+            "Core State, and external-reconciliation state"
+        )
+    return output_path
+
+
 def _require_loopback_fuseki_endpoint(label: str, endpoint: str | None) -> str:
     if not isinstance(endpoint, str) or not endpoint:
         raise ValueError(f"local development bootstrap requires a {label} Fuseki endpoint")
@@ -3018,6 +3130,12 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
     raw_root = Path(getattr(args, "raw_dir", None) or settings.raw_dir).expanduser()
     state_db = Path(getattr(args, "state_db", None)
                     or settings.core_state_db_file).expanduser()
+    baseline_output_path = _development_baseline_output_path(
+        getattr(args, "dataset_baseline_output", None),
+        raw_root=raw_root,
+        state_db=state_db,
+        reconciliation_db=settings.reconciliation_state_db_file,
+    )
     gsp_url = _require_loopback_fuseki_endpoint(
         "Graph Store Protocol", getattr(args, "fuseki_gsp_url", None)
         or settings.fuseki_gsp_url)
@@ -3111,6 +3229,15 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
         print(f"    {reference['reference_kind']} {reference['canonical_iri']}: "
               f"{reference['reason']}")
     print(f"  Reference closure: {development_status['reference_closure']}")
+    baseline = _development_dataset_baseline(captures, counts, development_status)
+    print(f"  Dataset identity: {baseline['dataset']['id']}")
+    if baseline_output_path:
+        baseline_output_path.parent.mkdir(parents=True, exist_ok=True)
+        baseline_output_path.write_text(
+            json.dumps(baseline, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        print(f"  Dataset baseline JSON: {baseline_output_path}")
     return 0
 
 
@@ -3144,6 +3271,10 @@ def main(argv: list[str] | None = None) -> int:
     dev_bootstrap.add_argument("--state-db", help="read-only Core State capture index")
     dev_bootstrap.add_argument("--fuseki-gsp-url", help="loopback Fuseki Graph Store endpoint")
     dev_bootstrap.add_argument("--fuseki-sparql-url", help="loopback Fuseki SPARQL endpoint")
+    dev_bootstrap.add_argument(
+        "--dataset-baseline-output",
+        help="write deterministic JSON describing the capture-backed development dataset",
+    )
     reconcile = sub.add_parser("reconcile"); reconcile.add_argument("endpoint", choices=["members", "parties", "institutions", "offices", "office-external", "bills-local"])
     reconcile.add_argument("--fixture"); reconcile.add_argument("--responses-file"); reconcile.add_argument("--offline", action="store_true"); reconcile.add_argument("--all", action="store_true"); reconcile.add_argument("--publish", action="store_true"); reconcile.add_argument("--output-nq"); reconcile.add_argument("--fuseki-gsp-url"); reconcile.add_argument("--fuseki-sparql-url")
     reconcile.add_argument("--review-file", help="review JSON (defaults to the endpoint-specific version-controlled review file)")
