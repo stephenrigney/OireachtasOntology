@@ -366,6 +366,13 @@ or property paths; exact limits and endpoint caveats are in the artifact and
   internals.
 - The local read-only safety contract is documented and tested.
 
+### Status
+
+Phase 0 is complete and has passed its completion gate. Dataset readiness, the
+evaluation benchmark/framework, the query/schema contract, and the local safety
+baseline are all complete. The measured local NLQ quality baseline remains
+Phase 1 work.
+
 ## 7. Phase 1 — Local NLQ quality
 
 ### Outcome
