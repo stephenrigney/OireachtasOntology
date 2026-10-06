@@ -1,0 +1,20 @@
+# Parameters: Bill and its Bill-owned graph. Only an active Debate-owned
+# refersToEvent edge to a concrete owner BillEvent can produce a row.
+PREFIX oir: <https://data.oireachtas.ie/ontology#>
+PREFIX eli-dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>
+SELECT ?record ?section ?event WHERE {
+  VALUES ?bill { {{bill}} }
+  GRAPH {{bill_graph}} {
+    ?bill a <http://data.europa.eu/eli/eli-draft-legislation-ontology#DraftLegislationWork> .
+    BIND(IRI(CONCAT(STR(?bill), "#process")) AS ?process)
+    ?event a oir:BillEvent, eli-dl:LegislativeActivity ;
+      eli-dl:forms_part_of ?process .
+  }
+  GRAPH ?debateGraph {
+    ?record oir:hasSection ?root .
+    ?root (oir:hasSubSection|oir:hasDivision)* ?section .
+    ?section oir:refersToEvent ?event .
+  }
+  FILTER(STRSTARTS(STR(?debateGraph), "https://data.oireachtas.ie/graph/debate/"))
+}
+ORDER BY ?record ?section ?event

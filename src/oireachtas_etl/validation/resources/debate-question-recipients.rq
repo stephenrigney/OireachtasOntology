@@ -1,0 +1,13 @@
+# Parameters: Member and that Member's owner graph. Directed recipients
+# remain optional; an AKN TLCRole spelling is not an owner identity crosswalk.
+PREFIX oir: <https://data.oireachtas.ie/ontology#>
+SELECT ?question ?member ?role ?office WHERE {
+  VALUES ?member { {{member}} }
+  GRAPH ?debateGraph {
+    ?question a oir:ParliamentaryQuestion ; oir:askedBy ?member .
+    OPTIONAL { ?question oir:directedTo ?role }
+    OPTIONAL { ?question oir:directedToOffice ?office }
+  }
+  GRAPH {{member_graph}} { ?member a oir:Member }
+  FILTER(STRSTARTS(STR(?debateGraph), "https://data.oireachtas.ie/graph/debate/"))
+}

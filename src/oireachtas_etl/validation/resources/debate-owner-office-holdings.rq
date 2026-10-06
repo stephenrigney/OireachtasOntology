@@ -1,0 +1,20 @@
+# Parameters: Member graph and Office registry graph. This is a genuine owner
+# traversal; it does not imply that any NamedOffice is a question recipient.
+PREFIX oir: <https://data.oireachtas.ie/ontology#>
+PREFIX members: <https://data.oireachtas.ie/ontology/members#>
+SELECT ?member ?holding ?office ?officeType ?start ?end WHERE {
+  VALUES ?member { {{member}} }
+  GRAPH {{member_graph}} {
+    ?member a oir:Member ; members:hasOfficeHolding ?holding .
+    ?holding a members:OfficeHolding ;
+      members:officeHolder ?member ;
+      members:heldOffice ?office ;
+      members:hasMembershipDateRange ?range .
+    ?range members:StartDate ?start .
+    OPTIONAL { ?range members:EndDate ?end }
+  }
+  GRAPH {{office_graph}} {
+    ?office a members:NamedOffice ; members:hasRoleType ?officeType .
+  }
+}
+ORDER BY ?start ?office

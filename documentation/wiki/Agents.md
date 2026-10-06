@@ -118,10 +118,15 @@ Committees have two orthogonal classifications:
 ### Committee URIs
 
 ```
-https://data.oireachtas.ie/ie/oireachtas/committee/{slug}/{term-no}
+https://data.oireachtas.ie/ie/oireachtas/committee/{houseCode}/{houseNo}/{slug}
 ```
 
-Where `{slug}` matches the segment in `debates[].uri` in the bill API and `{term-no}` is the Dáil/Seanad term number.
+This is the authoritative Committee `uri` from consolidated Members evidence, retained
+as the Committee owner's subject by `transform_committees`. Its `houseCode` and
+`houseNo` must agree with the URI and identify the Committee's HouseTerm.
+An AKN Committee author can refer to this existing owner only after exact
+identity and owner-graph validation; the former `{slug}/{term-no}` template
+is not an alias or a normalization rule.
 
 ### Committee Role Classes
 

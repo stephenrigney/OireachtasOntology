@@ -170,3 +170,51 @@ def verify_core_graph(client, graph_iri: str, payload: str) -> None:
         raise ValueError("malformed core graph verification response") from error
     if actual != {normalise(triple) for triple in expected}:
         raise ValueError(f"core graph/state mismatch for {graph_iri}; retry verified whole-graph replacement")
+
+
+# These public Debates query resources are parameterized with RDF terms rather
+# than interpolated SPARQL text. They are exercised against disposable joined
+# Debates/owner datasets by tests/test_debates_competency.py; no production
+# publication path is changed here.
+DEBATES_COMPETENCY_PARAMETER_TYPES = {
+    "debate-records-by-body-date.rq": {
+        "body": "iri", "body_graph": "iri", "body_type": "iri", "date": "dateTime",
+    },
+    "debate-record-sittings.rq": {"record": "iri"},
+    "debate-ordered-components.rq": {"record": "iri", "container": "iri"},
+    "debate-member-contributions.rq": {"member": "iri", "member_graph": "iri"},
+    "debate-question-recipients.rq": {"member": "iri", "member_graph": "iri"},
+    "debate-divisions-and-votes.rq": {
+        "record": "iri", "member": "iri", "member_graph": "iri",
+    },
+    "debate-bill-event-sections.rq": {"bill": "iri", "bill_graph": "iri"},
+    "debate-owner-office-holdings.rq": {
+        "member": "iri", "member_graph": "iri", "office_graph": "iri",
+    },
+}
+
+
+def render_debate_competency_query(filename: str, parameters: dict[str, str]) -> str:
+    """Render a public Debates competency resource using RDF-term parameters."""
+    parameter_types = DEBATES_COMPETENCY_PARAMETER_TYPES.get(filename)
+    if parameter_types is None:
+        raise ValueError(f"unknown Debates competency query: {filename}")
+    if set(parameters) != set(parameter_types):
+        raise ValueError(
+            f"Debates competency parameters for {filename} must be "
+            f"{sorted(parameter_types)!r}, got {sorted(parameters)!r}"
+        )
+
+    query = QUERIES.joinpath(filename).read_text()
+    for name, parameter_type in parameter_types.items():
+        value = parameters[name]
+        if not isinstance(value, str) or not value:
+            raise ValueError(f"Debates competency parameter {name} must be a non-empty string")
+        if parameter_type == "dateTime":
+            rendered = Literal(value, datatype=XSD.dateTime).n3()
+        else:
+            rendered = URIRef(value).n3()
+        query = query.replace("{{" + name + "}}", rendered)
+    if "{{" in query or "}}" in query:
+        raise ValueError(f"unrendered Debates competency parameter in {filename}")
+    return query

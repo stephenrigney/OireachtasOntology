@@ -1,0 +1,19 @@
+# Parameters: member and that Member's owner graph.
+PREFIX oir: <https://data.oireachtas.ie/ontology#>
+SELECT ?member ?contribution ?kind WHERE {
+  VALUES ?member { {{member}} }
+  GRAPH {{member_graph}} { ?member a oir:Member }
+  GRAPH ?debateGraph {
+    {
+      ?contribution a oir:Speech ; oir:speaker ?member .
+      BIND("speech" AS ?kind)
+    }
+    UNION
+    {
+      ?contribution a oir:ParliamentaryQuestion ; oir:askedBy ?member .
+      BIND("question" AS ?kind)
+    }
+  }
+  FILTER(STRSTARTS(STR(?debateGraph), "https://data.oireachtas.ie/graph/debate/"))
+}
+ORDER BY ?kind ?contribution

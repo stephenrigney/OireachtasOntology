@@ -106,14 +106,18 @@ def test_committee_roll_call_and_people_remain_source_only_not_votes_or_attendan
     assert table.findall(".//akn:person[@refersTo]", NS)
 
     rows = _mapping_rows()
-    roll_call_rows = [row for row in rows if "rollCall" in row["json_path"]]
+    roll_call_rows = [
+        row for row in rows
+        if "rollCall" in row["json_path"].replace("[not(ancestor::rollCall)]", "")
+    ]
     assert len(roll_call_rows) == 1
     row = roll_call_rows[0]
     assert row["mapping_status"] == "future_work"
     assert row["ontology_term"] in {"—", "-"}
     assert "do not treat attendance as a Division, vote, speech, or participation assertion" in row["notes"]
     assert not any(
-        "rollCall" in row["json_path"] and row["mapping_status"] in {"mapped", "new"}
+        "rollCall" in row["json_path"].replace("[not(ancestor::rollCall)]", "")
+        and row["mapping_status"] in {"mapped", "new"}
         for row in rows
     )
 

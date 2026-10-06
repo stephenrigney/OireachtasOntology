@@ -1,0 +1,17 @@
+# Parameter: record (a DebateRecord IRI). Body and sitting are optional because
+# unresolved hosts and written-answer Works must not be guessed into activities.
+PREFIX oir: <https://data.oireachtas.ie/ontology#>
+PREFIX eli-dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>
+SELECT ?record ?recordDate ?body ?sitting ?sittingDate ?graph WHERE {
+  VALUES ?record { {{record}} }
+  GRAPH ?graph {
+    ?record a oir:DebateRecord ; oir:debateDate ?recordDate .
+    OPTIONAL { ?record oir:recordOfBody ?body }
+    OPTIONAL {
+      ?sitting a oir:DebateSitting ;
+        oir:producedRecord ?record ;
+        eli-dl:activity_date ?sittingDate .
+    }
+  }
+  FILTER(STRSTARTS(STR(?graph), "https://data.oireachtas.ie/graph/debate/"))
+}

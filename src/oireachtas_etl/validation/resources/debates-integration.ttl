@@ -1,0 +1,101 @@
+@prefix agents: <https://data.oireachtas.ie/ontology#> .
+@prefix eli-dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#> .
+@prefix members: <https://data.oireachtas.ie/ontology/members#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# These are RDF integration constraints, not an attempt to encode the AKN XML
+# grammar.  Source ordering/completeness and reference-report correspondence
+# are checked independently in debates_integration.py.
+agents:DebateRecordIntegrationShape a sh:NodeShape ;
+  sh:targetClass agents:DebateRecord ;
+  sh:property [ sh:path agents:hasExpression ; sh:minCount 1 ; sh:maxCount 1 ;
+                sh:nodeKind sh:IRI ; sh:class agents:DebateExpression ] ;
+  sh:property [ sh:path agents:debateDate ; sh:minCount 1 ; sh:maxCount 1 ;
+                sh:datatype xsd:dateTime ] ;
+  sh:property [ sh:path agents:debateType ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path agents:recordOfBody ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+                sh:node [ sh:or ( [ sh:class agents:House ]
+                                  [ sh:class members:Committee ] ) ] ] ;
+  sh:property [ sh:path agents:recordOfHouseTerm ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+                sh:node [ sh:or ( [ sh:class agents:DailTerm ]
+                                  [ sh:class agents:SeanadTerm ] ) ] ] .
+
+agents:DebateExpressionIntegrationShape a sh:NodeShape ;
+  sh:targetClass agents:DebateExpression ;
+  sh:property [ sh:path agents:expressionLanguageCode ; sh:maxCount 1 ;
+                sh:datatype xsd:string ] ;
+  sh:property [ sh:path agents:expressionHasSection ; sh:nodeKind sh:IRI ;
+                sh:class agents:DebateSection ] .
+
+agents:DebateSittingIntegrationShape a sh:NodeShape ;
+  sh:targetClass agents:DebateSitting ;
+  sh:property [ sh:path agents:producedRecord ; sh:minCount 1 ; sh:maxCount 1 ;
+                sh:nodeKind sh:IRI ; sh:class agents:DebateRecord ] ;
+  sh:property [ sh:path eli-dl:activity_date ; sh:minCount 1 ; sh:maxCount 1 ;
+                sh:or ( [ sh:datatype xsd:date ] [ sh:datatype xsd:dateTime ] ) ] .
+
+agents:DebateSectionIntegrationShape a sh:NodeShape ;
+  sh:targetClass agents:DebateSection ;
+  sh:property [ sh:path agents:sectionName ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path agents:sourceOrdinal ; sh:minCount 1 ; sh:maxCount 1 ;
+                sh:datatype xsd:integer ; sh:minInclusive 1 ] ;
+  sh:property [ sh:path agents:hasSubSection ; sh:nodeKind sh:IRI ;
+                sh:class agents:DebateSection ] ;
+  sh:property [ sh:path agents:hasDivision ; sh:nodeKind sh:IRI ;
+                sh:class agents:Division ] ;
+  sh:property [ sh:path agents:hasSpeech ; sh:nodeKind sh:IRI ; sh:class agents:Speech ] ;
+  sh:property [ sh:path agents:hasSummary ; sh:nodeKind sh:IRI ; sh:class agents:Summary ] ;
+  sh:property [ sh:path agents:hasQuestion ; sh:nodeKind sh:IRI ;
+                sh:class agents:ParliamentaryQuestion ] .
+
+agents:SpeechIntegrationShape a sh:NodeShape ;
+  sh:targetClass agents:Speech ;
+  sh:property [ sh:path agents:sourceOrdinal ; sh:minCount 1 ; sh:maxCount 1 ;
+                sh:datatype xsd:integer ; sh:minInclusive 1 ] ;
+  sh:property [ sh:path agents:recordedTime ; sh:maxCount 1 ; sh:datatype xsd:dateTime ] ;
+  sh:property [ sh:path agents:speaker ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+                sh:class agents:Member ] ;
+  sh:property [ sh:path agents:hasSpeechParticipation ; sh:maxCount 1 ;
+                sh:nodeKind sh:IRI ; sh:class eli-dl:Participation ] .
+
+agents:SummaryIntegrationShape a sh:NodeShape ;
+  sh:targetClass agents:Summary ;
+  sh:property [ sh:path agents:sourceOrdinal ; sh:minCount 1 ; sh:maxCount 1 ;
+                sh:datatype xsd:integer ; sh:minInclusive 1 ] .
+
+agents:QuestionIntegrationShape a sh:NodeShape ;
+  sh:targetClass agents:ParliamentaryQuestion ;
+  sh:property [ sh:path agents:sourceOrdinal ; sh:minCount 1 ; sh:maxCount 1 ;
+                sh:datatype xsd:integer ; sh:minInclusive 1 ] ;
+  sh:property [ sh:path agents:askedBy ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+                sh:class agents:Member ] .
+
+agents:DivisionIntegrationShape a sh:NodeShape ;
+  sh:targetClass agents:Division ;
+  sh:property [ sh:path agents:sectionName ; sh:hasValue "division"^^xsd:string ] ;
+  sh:property [ sh:path agents:sourceOrdinal ; sh:minCount 1 ; sh:maxCount 1 ;
+                sh:datatype xsd:integer ; sh:minInclusive 1 ] ;
+  sh:property [ sh:path agents:divisionOutcome ; sh:maxCount 1 ;
+                sh:in ( agents:DeclaredCarried agents:DeclaredLost ) ] ;
+  sh:property [ sh:path agents:taCount ; sh:maxCount 1 ; sh:datatype xsd:integer ;
+                sh:minInclusive 0 ] ;
+  sh:property [ sh:path agents:nilCount ; sh:maxCount 1 ; sh:datatype xsd:integer ;
+                sh:minInclusive 0 ] ;
+  sh:property [ sh:path agents:staonCount ; sh:maxCount 1 ; sh:datatype xsd:integer ;
+                sh:minInclusive 0 ] ;
+  sh:property [ sh:path agents:votedFor ; sh:nodeKind sh:IRI ; sh:class agents:Member ] ;
+  sh:property [ sh:path agents:votedAgainst ; sh:nodeKind sh:IRI ;
+                sh:class agents:Member ] ;
+  sh:property [ sh:path agents:abstained ; sh:nodeKind sh:IRI ;
+                sh:class agents:Member ] .
+
+eli-dl:DebateParticipationIntegrationShape a sh:NodeShape ;
+  sh:targetClass eli-dl:Participation ;
+  sh:property [ sh:path eli-dl:had_participant_person ; sh:maxCount 1 ;
+                sh:nodeKind sh:IRI ; sh:class agents:Member ] ;
+  sh:property [ sh:path eli-dl:participation_role ; sh:maxCount 1 ;
+                sh:nodeKind sh:IRI ; sh:class eli-dl:ParticipationRole ] ;
+  sh:or ( [ sh:property [ sh:path eli-dl:had_participant_person ; sh:minCount 1 ] ]
+         [ sh:property [ sh:path eli-dl:participation_role ; sh:minCount 1 ] ] ) .

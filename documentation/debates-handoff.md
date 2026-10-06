@@ -41,12 +41,14 @@ source-hash outcome/evidence boundary, add SHACL and semantic-quality checks,
 competency queries and graph-boundary tests. Historical HouseTerms and the
 Committee owner are not established by the small checked-in owner examples;
 do not normalize Committee URI patterns or guess identities from slugs. The
-AKN committee author uses `/committee/dail/34/{slug}`, while the agents
-ontology comment describes `/committee/{slug}/{term-no}`; treat this as an
-owner-identity documentation discrepancy for separate review, not an alias
-rule. The approved Tranche 2 exclusion of the `rollCall`-nested `sum_2`
-Summary/ordinal is recorded in `phase-7-debates.md`; the broader active CSV
-selector needs a separately approved correction. No broad production ingestion,
+AKN committee author uses `/committee/dail/34/{slug}`. The consolidated
+Members Committee owner uses `/committee/{houseCode}/{houseNo}/{slug}`;
+the old `/committee/{slug}/{term-no}` template was a wiki documentation
+error, not an owner alias. Link only after exact validated owner resolution.
+The approved Tranche 2 exclusion of the `rollCall`-nested `sum_2`
+Summary/ordinal is recorded in `phase-7-debates.md`, and the active CSV selector
+now matches it (`debateBody//summary[not(ancestor::rollCall)]`, also applied to
+the eId selector and the ordinal rule). No broad production ingestion,
 publication mechanics or corpus-scope selection was done in Tranche 2.
 
 Each Work and Expression IRI comes from its own FRBR URI; the Expression path
@@ -67,3 +69,53 @@ At Tranche 2 acceptance, ontology/HermiT and active mapping-term validation
 passed; the focused Debates suite had 87 passing tests (23 subtests), and the
 full repository suite had 512 passing tests, 9 skips (23 subtests). These
 results verify representative output, not a production-corpus resource gate.
+
+## Tranche 3 bounded closure (2026-10-05)
+
+Exact owner-RDF resolution for Member, House/HouseTerm and Committee identities,
+joined SHACL/quality and source-hash report validation, executable competency
+queries, and disposable graph-boundary tests are implemented. See the Tranche 3
+evidence review and bounded closure in `phase-7-debates.md` for exact outcomes.
+All links supported by reviewed source/owner evidence are validated; the two
+unsupported competencies remain explicitly deferred, not marked as successful
+query results.
+
+The section-reference review found 16 `@refersTo` values across the five
+preserved AKNs: eight target only a local `TLCEvent`, and eight 2026 Dáil
+fragments have no local eId target. The local AKN targets are not Bill-owned
+owners. Six distinct source `@href` strings contain Bill year/number path text
+for 2013/23, 2014/86, 2015/1, 2015/67, 2024/25 and 2026/6; this inventory is
+not an accepted identity crosswalk. Of the eight locally unmatched fragments,
+six are `#bill.2026.6.dail.` and two are `#bill.2024.25.dail.`. The only
+checked-in Bill owner is 2025/60. The per-section
+hash-linked unresolved outcomes are checked against
+the joined owner graphs; there is no exact reviewed AKN `TLCEvent`-to-Bill owner
+crosswalk. The bill-event query contract is preserved and its no-row result is
+not treated as positive competency acceptance.
+
+The question-recipient review found 239 `@to` values, all resolving only to
+source-local `TLCRole`s: ten in the Dáil 2015 record and 229 in written answers.
+The checked-in office registry has three `NamedOffice` identities (Taoiseach,
+Tánaiste, Minister for Finance) and the joined owner examples provide no typed
+`eli-dl:ParticipationRole` individuals. In particular, the source references
+`akn/ontology/role/ie/oireachtas/minister/public`,
+`/ie/oireachtas/role/office/public` and
+`/ie/oireachtas/role/office/social` and
+`/ie/oireachtas/role/office/finance` have no reviewed crosswalk. All 239
+reports remain unresolved and neither recipient predicate is emitted; the
+query contract remains intact and unanswered.
+
+The limited checked-in Committee owner example still does not establish the
+Dáil 34 Public Accounts author; do not create that owner from the AKN href.
+Committee rollCall attendance and its nested `sum_2` remain source-only and are
+excluded by the transformer and golden. The active CSV selector now expresses
+that exclusion (`debateBody//summary[not(ancestor::rollCall)]`, also applied to
+the eId selector and the ordinal rule), so the protected mapping mismatch is
+closed. No ontology, source fixture or golden was changed. Tranche 3 is closed
+only under this evidence-backed deferral rule; this is not full Phase 7
+completion or production-corpus acceptance.
+
+No Tranche 4 ingestion, state, graph-replacement or publication work is claimed
+or started. The production resource/scope gate, historical duplicate-eId and
+written-answer fragmentation dispositions, and eventual positive acceptance
+of the two deferred competencies remain open separately.
