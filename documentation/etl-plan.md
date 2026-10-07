@@ -1893,12 +1893,17 @@ The release gate must exercise at least:
 
 ### Delivery tranches
 
-Implementation is dependency-ordered. Each tranche must satisfy its exit checks
-before the next tranche begins.
+Implementation is grouped into three dependency-ordered tranches. The detailed
+Phase 6 requirements above remain the acceptance contract; this grouping avoids
+artificial implementation gates between tightly coupled operational concerns.
+Each tranche must satisfy its exit checks before the next tranche begins.
 
-#### Tranche 1 — Failure model, run records and observability
+#### Tranche A — Operational ETL foundation
 
-Implement the operational contract on which later production behaviour depends.
+Combine the former failure/observability and provenance/publication-safety work
+into one coherent operational execution model. These concerns share run
+identity, durable state, source evidence and recovery boundaries and should not
+be implemented as separate intermediate architectures.
 
 - Add explicit record/source/run failure classification.
 - Add quarantine persistence, inspection and retry support.
@@ -1906,18 +1911,6 @@ Implement the operational contract on which later production behaviour depends.
 - Add structured logging and agreed run-summary counters/timings.
 - Add source-contract/schema-drift classification and reports.
 - Ensure incomplete/failed source views cannot trigger authoritative deletion.
-- Add tests for record quarantine, source failure, fatal run failure and schema
-  drift.
-
-**Exit:** failures are classified and diagnosable; recoverable records can be
-quarantined without unsafe deletion; every run has a persisted outcome and
-useful structured summary; contract-breaking drift fails closed.
-
-#### Tranche 2 — Provenance, publication safety and deterministic recovery
-
-Make successful publication traceable and failed/interrupted publication
-recoverable.
-
 - Define provenance vocabulary usage and ETL-run resources.
 - Add provenance/catalog graph publication at run and graph/entity/source
   evidence granularity.
@@ -1925,38 +1918,40 @@ recoverable.
 - Enforce complete validation before production graph replacement.
 - Exercise dirty/pending Phase 5 publication state through failure/replay tests.
 - Add deterministic replay and targeted quarantine-retry tests.
-- Verify a rerun converges on the same published state.
+- Verify reruns converge on the same published state.
 - Keep provenance required for reproducibility independent of Fuseki internal
   storage.
+- Add regression tests covering record quarantine, source failure, fatal run
+  failure, schema drift, invalid publication candidates and interrupted
+  publication.
 
-**Exit:** each published graph can be traced to its producing run and source
-evidence; invalid candidates cannot replace valid production graphs;
-interrupted publication is detectable and deterministic replay restores a
-consistent result.
+**Exit:** failures are classified and diagnosable; recoverable records can be
+quarantined without unsafe deletion; every run has a persisted outcome and
+structured summary; contract-breaking drift fails closed; each published graph
+can be traced to its producing run and source evidence; invalid candidates
+cannot replace valid production graphs; and interrupted publication is
+detectable and deterministic replay restores a consistent result.
 
-#### Tranche 3 — External-enrichment operational hardening
+This is the next Phase 6 implementation gate. Once complete, reassess the
+Debates production-readiness gate using this shared quarantine, observability,
+provenance and recovery machinery rather than introducing Debate-specific
+operational infrastructure.
 
-Operationalise the independent external-reconciliation lifecycle established in
-Phases 3.5, 4.5 and 5.
+#### Tranche B — Production operations
+
+Operationalise external-service resilience and establish the initial
+single-host production deployment and recovery model.
 
 - Add configurable per-service caching, rate limiting and bounded
   exponential-backoff-with-jitter retry.
-- Persist/report due, stale, degraded and recovery state using the existing
-  reconciliation store rather than a second queue.
+- Persist/report external due, stale, degraded and recovery state using the
+  existing reconciliation store rather than a second queue.
 - Complete reconciliation coverage/review metrics in run summaries.
 - Exercise external authority and reconciliation-store outages.
 - Verify reviewed targets that disappear/redirect remain retryable and are not
   silently replaced.
 - Verify external-link graphs remain independently rebuildable and cannot
   mutate authoritative graphs.
-
-**Exit:** external services can fail, recover and be rebuilt independently while
-authoritative publication remains correct and observable.
-
-#### Tranche 4 — Production packaging, scheduling and recovery
-
-Establish the initial single-host production operating model.
-
 - Containerise the ETL application and maintain Fuseki/TDB2 Compose
   configuration with explicit durable-volume boundaries.
 - Keep the triple-store publisher boundary replaceable.
@@ -1969,13 +1964,15 @@ Establish the initial single-host production operating model.
 - Protect production update endpoints and document operating/recovery
   procedures.
 
-**Exit:** a clean host can be configured from documented deployment inputs,
-durable state can be restored, Fuseki can be rebuilt as a projection, scheduled
-and manual ETL use the same path, and backup age/integrity is observable.
+**Exit:** external services can fail, recover and be rebuilt independently
+while authoritative publication remains correct and observable; a clean host
+can be configured from documented deployment inputs; durable state can be
+restored; Fuseki can be rebuilt as a projection; scheduled and manual ETL use
+the same path; and backup age/integrity is observable.
 
-#### Tranche 5 — Layered CI and production release gate
+#### Tranche C — Production acceptance and release gate
 
-Turn the Phase 6 operating contract into a repeatable deployment gate.
+Turn the complete Phase 6 operating contract into a repeatable deployment gate.
 
 - Retain fast checks for normal development.
 - Add disposable full-stack production-simulation CI.
@@ -1984,6 +1981,8 @@ Turn the Phase 6 operating contract into a repeatable deployment gate.
 - Exercise interrupted publication and deterministic replay.
 - Restore a retained test backup into disposable infrastructure and rebuild a
   fresh triple store.
+- Exercise the configured scheduling/operational path sufficiently to prove it
+  invokes the same application behaviour as manual execution.
 - Document the release-gate command/workflow and failure diagnostics.
 
 **Exit:** the complete release gate passes from a clean environment and
