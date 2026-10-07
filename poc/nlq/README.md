@@ -146,6 +146,12 @@ v0.1.0 case sets. Result JSON is written beneath the ignored
 
 Every result embeds the exact Phase 0A dataset-baseline JSON and its stable
 `sha256:` dataset ID, plus the disposable container ID for that particular run.
+Measured results also record the resolved non-secret translator model, base
+endpoint, request timeout, output-token cap, and whether configurable
+model/endpoint values came from
+the process environment, repository `.env`, or defaults. API keys and
+authorization material are never recorded. This is provenance for that run,
+not a repeatability guarantee for model output.
 Before an NLQ case is scored, the runner checks its required graph families,
 known quarantined/unresolved resources, and (where defined) curated read-only
 coverage probes. A missing prerequisite is recorded as
@@ -164,6 +170,17 @@ whole development dataset to complete or authoritative coverage.
 The automated regression tests use deterministic translation inputs and
 mocked Fuseki responses, so they run offline. Running the script against the
 capture-backed disposable dataset remains a separate integration/baseline run.
+For ordinary CI, run the repository test suite (including
+`tests/test_nlq_benchmark.py`, `tests/test_nlq_prefixes.py`,
+`tests/test_nlq_ambiguity.py`, and the NLQ safety/pipeline tests); this tier needs
+no live LLM. The ten-case `--tier regression` runner additionally replays the
+same frozen benchmark translations against disposable Fuseki and capture-backed
+data. The `--tier measured` run invokes the configured LLM and is
+nondeterministic: retain and inspect its run artifact, but do not use generated
+SPARQL or measured JSON bytes as a byte-for-byte CI gate. Future planner or
+federation work must preserve the deterministic local behaviours, fail-closed
+safety, exact duplicate-name ambiguity handling, and source-coverage/NLQ
+failure separation documented in the Phase 1 completion report.
 
 ## Configuration precedence
 

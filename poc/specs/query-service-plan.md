@@ -402,33 +402,75 @@ validity decisions are recorded in
 
 #### Schema grounding
 
-- [ ] Remove redundant or misleading schema context.
-- [ ] Ensure every supported query pattern is grounded in actual emitted RDF,
+- [x] Remove redundant or misleading schema context.
+- [x] Ensure every supported query pattern is grounded in actual emitted RDF,
       not ontology-only possibilities.
-- [ ] Add concise graph-ownership guidance where cross-graph joins are needed.
-- [ ] Add targeted examples only where benchmark failures demonstrate value.
-- [ ] Prevent prompt growth from becoming the default response to every failure.
+- [x] Add concise graph-ownership guidance where cross-graph joins are needed.
+- [x] Add targeted examples only where benchmark failures demonstrate value.
+- [x] Prevent prompt growth from becoming the default response to every failure.
+
+Phase 1E audit: the translator guidance distinguishes the Member-owned graphs
+from HouseTerm and owner graphs and describes their shared-resource joins; the
+machine-readable contract and capture-backed v0.3.0 probes cover emitted local
+patterns. Phase 1C addressed the measured prefix defect through contract-known
+prefix completion, and Phase 1D added local duplicate-name context. The v0.3.0
+benchmark has adequate temporal, aggregation, join and ambiguity evidence for
+this phase. No redundant context or further prompt change was justified by the
+remaining evidence; prompt growth is not the default remedy.
 
 #### Entity resolution
 
-- [ ] Measure name-resolution failures independently from query-generation
+- [x] Measure name-resolution failures independently from query-generation
       failures.
-- [ ] Support label/code matching appropriate to each local entity type.
-- [ ] Define behaviour for ambiguous names and multiple historical identities.
-- [ ] Prefer query-time resolution over manufactured instance IRIs.
+- [x] Support label/code matching appropriate to each local entity type.
+- [x] Define behaviour for ambiguous names and multiple historical identities.
+- [x] Prefer query-time resolution over manufactured instance IRIs.
+
+Phase 1E audit: the measured result retains failure stage/class and semantic
+mismatches separately, while source-data coverage is assessed before NLQ
+scoring. Current query patterns use local labels and contract predicates;
+deterministic regression queries do not manufacture instance IRIs. This is
+sufficient for the benchmarked Phase 1 patterns, not a general label/code
+resolver: the local pre-translation Member resolver uses exact names, and
+code-driven resolution is not independently benchmarked. Exact duplicate Member
+names produce a local clarification outcome with distinct captured candidate
+IRIs and contextual narrowing. Broad/set-valued cases remain manual review.
+**Context-resolved Member IRIs are not mechanically bound into the generated
+answer SPARQL; defer this explicitly to Phase 2 validated structured query
+planning/entity binding.** This is an accepted Phase 1 limitation, not a reason
+for ad-hoc SPARQL rewriting or broader resolver work here.
 
 #### Temporal and aggregation behaviour
 
-- [ ] Add benchmark coverage for "at a date", "during a term", "current",
+- [x] Add benchmark coverage for "at a date", "during a term", "current",
       counts and grouped results.
-- [ ] Ensure temporal semantics are explicit rather than inferred from labels.
-- [ ] Validate aggregate queries and LIMIT behaviour.
+- [x] Ensure temporal semantics are explicit rather than inferred from labels.
+- [x] Validate aggregate queries and LIMIT behaviour.
+
+Phase 1E audit: benchmark v0.3.0 supplies supported interval/current and term
+membership/date evidence, count and grouped-result cases, plus an explicit
+manual-review/unsupported HouseTerm start-date case because its temporal link is
+not queryable under the current contract. Aggregate shape, result invariants,
+and SELECT row limits are covered by safety tests and benchmark execution. This
+is sufficient Phase 1 coverage; it does not broaden the schema contract or
+claim unsupported temporal predicates.
 
 #### Regression gate
 
-- [ ] Promote stable benchmark cases to automated tests where practical.
-- [ ] Require future planner/federation changes not to regress the agreed local
+- [x] Promote stable benchmark cases to automated tests where practical.
+- [x] Require future planner/federation changes not to regress the agreed local
       baseline without an explicit contract change.
+
+The Phase 1E gate is the deterministic v0.3.0 regression tier and offline
+pipeline/safety/entity-resolution tests described in
+[`poc/nlq/README.md`](../nlq/README.md) and
+[`poc/nlq/benchmarks/phase-1-completion.md`](../nlq/benchmarks/phase-1-completion.md).
+Measured full-benchmark LLM runs are diagnostic evidence, not byte-for-byte CI
+fixtures; missing source prerequisites stay separately classified as coverage.
+Planner/federation work must preserve this local deterministic tier, known-prefix
+completion, fail-closed read-only safety, exact duplicate-name ambiguity, and
+case-level source-coverage separation unless an explicit contract change is
+approved and documented.
 
 ### Exit criteria
 
@@ -436,6 +478,14 @@ validity decisions are recorded in
 - Major failure categories are understood.
 - The service can resolve the common supported local entity/query patterns.
 - A regression gate exists for subsequent architectural work.
+
+### Phase 1 status
+
+Phase 1 is complete and passes its exit gate as of Phase 1E. The durable audit,
+measured v0.3.0 result, known limitations, and regression policy are recorded in
+[`poc/nlq/benchmarks/phase-1-completion.md`](../nlq/benchmarks/phase-1-completion.md).
+The direct NL-to-SPARQL path remains in place until Phase 2. Mechanical binding
+of context-resolved entities is explicitly deferred to Phase 2 query planning.
 
 ## 8. Phase 2 — Explicit query planning
 

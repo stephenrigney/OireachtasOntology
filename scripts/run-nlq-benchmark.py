@@ -25,7 +25,7 @@ from poc.nlq.benchmark import (  # noqa: E402
     summarize_results,
 )
 from poc.nlq.benchmark_isolation import DisposableFuseki  # noqa: E402
-from poc.nlq.config import load_local_environment  # noqa: E402
+from poc.nlq.config import load_local_environment, resolved_llm_configuration  # noqa: E402
 from poc.nlq.fuseki import FusekiQueryClient  # noqa: E402
 
 
@@ -90,7 +90,11 @@ def _run_bootstrap(args, instance: DisposableFuseki, baseline_path: Path) -> dic
 
 def main(argv: list[str] | None = None) -> int:
     args = _args(argv)
+    process_environment = os.environ.copy()
     load_local_environment(ROOT)
+    llm_configuration = resolved_llm_configuration(
+        ROOT, process_environment=process_environment,
+    )
     benchmark = load_benchmark(args.benchmark)
     if args.tier == "measured" and not os.getenv("NLQ_LLM_API_KEY"):
         raise SystemExit("NLQ_LLM_API_KEY is required for the measured LLM benchmark")
@@ -129,6 +133,9 @@ def main(argv: list[str] | None = None) -> int:
                     "sha256": hashlib.sha256(args.benchmark.read_bytes()).hexdigest(),
                 },
                 "tier": args.tier,
+                "translator_configuration": (
+                    llm_configuration if args.tier == "measured" else None
+                ),
                 "dataset_association": dataset_association(
                     baseline, instance.isolation_metadata(),
                 ),

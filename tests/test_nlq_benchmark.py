@@ -22,6 +22,7 @@ from poc.nlq.benchmark import (
     summarize_results,
 )
 from poc.nlq import benchmark_isolation
+from poc.nlq.config import resolved_llm_configuration
 from poc.nlq.llm import Translation
 from poc.nlq import pipeline as pipeline_module
 from poc.nlq.pipeline import process_question
@@ -32,6 +33,52 @@ ROOT = Path(__file__).resolve().parents[1]
 BENCHMARK_PATH = ROOT / "poc/nlq/benchmarks/benchmark-v3.json"
 PREVIOUS_BENCHMARK_PATH = ROOT / "poc/nlq/benchmarks/benchmark-v2.json"
 HISTORICAL_BENCHMARK_PATH = ROOT / "poc/nlq/benchmarks/benchmark-v1.json"
+
+
+def test_measured_translator_configuration_records_resolved_values_and_provenance(tmp_path):
+    (tmp_path / ".env").write_text(
+        "NLQ_LLM_MODEL=dotenv-model\n"
+        "NLQ_LLM_BASE_URL=https://dotenv.example/v1/\n"
+        "NLQ_LLM_API_KEY=dotenv-secret\n",
+        encoding="utf-8",
+    )
+
+    dotenv_config = resolved_llm_configuration(tmp_path, process_environment={})
+    assert dotenv_config == {
+        "model": {"value": "dotenv-model", "source": "repository_dotenv"},
+        "base_endpoint": {
+            "value": "https://dotenv.example/v1", "source": "repository_dotenv",
+        },
+        "request_timeout_seconds": {"value": 45.0, "source": "default"},
+        "max_output_tokens": {"value": 2000, "source": "default"},
+    }
+    defaults = tmp_path / "defaults"
+    defaults.mkdir()
+    default_config = resolved_llm_configuration(
+        defaults, process_environment={"NLQ_LLM_API_KEY": "process-secret"},
+    )
+    assert default_config["model"] == {"value": "gpt-6-luna", "source": "default"}
+    assert default_config["base_endpoint"] == {
+        "value": "https://opencode.ai/inference/openai/v1", "source": "default",
+    }
+
+    override = resolved_llm_configuration(tmp_path, process_environment={
+        "NLQ_LLM_MODEL": "override-model",
+        "NLQ_LLM_BASE_URL": "https://url-secret@override.example/responses/?token=query-secret",
+        "NLQ_LLM_API_KEY": "process-secret",
+    })
+    assert override["model"] == {
+        "value": "override-model", "source": "process_environment",
+    }
+    assert override["base_endpoint"] == {
+        "value": "https://override.example/responses", "source": "process_environment",
+    }
+    serialized = json.dumps([dotenv_config, default_config, override])
+    assert "dotenv-secret" not in serialized
+    assert "process-secret" not in serialized
+    assert "url-secret" not in serialized
+    assert "query-secret" not in serialized
+    assert "API_KEY" not in serialized
 
 
 def _baseline(*, quarantined=(), unresolved=(), missing=()) -> dict:

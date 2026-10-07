@@ -574,11 +574,15 @@ def run_cases(
             if translator_factory is None:
                 from .llm import ResponsesTranslator
                 import os
+                from .config import (
+                    DEFAULT_LLM_BASE_URL, DEFAULT_LLM_MODEL, LLM_TIMEOUT_SECONDS,
+                )
 
                 selected_translator_factory = lambda _case: ResponsesTranslator(
                     os.getenv("NLQ_LLM_API_KEY", ""),
-                    os.getenv("NLQ_LLM_BASE_URL", "https://opencode.ai/inference/openai/v1"),
-                    os.getenv("NLQ_LLM_MODEL", "gpt-6-luna"),
+                    os.getenv("NLQ_LLM_BASE_URL", DEFAULT_LLM_BASE_URL),
+                    os.getenv("NLQ_LLM_MODEL", DEFAULT_LLM_MODEL),
+                    timeout=LLM_TIMEOUT_SECONDS,
                 )
             else:
                 selected_translator_factory = translator_factory
