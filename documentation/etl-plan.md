@@ -2038,24 +2038,26 @@ remains `documentation/debates_ontology_outline.md` and
 
 **Status:** Debates Tranches 1–4 are complete for the bounded representative
 scope. The Tranche 3 evidence review in `documentation/phase-7-debates.md`
-explicitly defers the unsupported legislative-section and question-recipient
-positive competencies; their mappings remain inactive and their source
-references remain auditable. This does not claim those queries return positive
-joined results. The production-corpus census/benchmark has been
-measured (see `documentation/debates-production-benchmark.md`); the
-full-corpus-versus-Bill-debates-first scope choice and gate remain pending an
-operational acceptability threshold. Tranche 4 now supports explicit main.xml
-acquisition/replay and opt-in supplied-batch publication; it does not start
-broad-corpus scanning or close the production-scope gate.
+explicitly defers unsupported legislative-section and question-recipient
+positive competencies; their mappings remain inactive and source references
+auditable. The **initial production scope is approved**: all Dáil, Seanad and
+committee debate Works dated **2011-01-01 onward**, with written answers
+excluded, irrespective of Bill linkage. This is a scope decision, **not**
+authorization for broad ingestion. The production-readiness gate remains open
+pending configurable Phase 6 operational limits, an exact inventory/disposition
+of in-scope malformed sources, and operational acceptance. Tranche 4 supports
+explicit AKN acquisition/replay and opt-in supplied-batch publication; it
+does not implement production enumeration or scheduling.
 
 Settled boundaries include:
 
-- intended source scope for representative transformation is Dáil, Seanad,
-  committees and written answers. The production-scope gate does not block
-  Tranche 1 or Tranche 2; after the core transformer, the measured
-  census/benchmark is recorded in `documentation/debates-production-benchmark.md`
-  and selects full-corpus or Bill-debates-first ingestion once an operational
-  resource threshold exists;
+- representative transformation includes Dáil, Seanad, committees and
+  written answers, but the approved **initial production load** covers only
+  Dáil, Seanad and committee debates dated 2011-01-01 or later. The all-years
+  census/benchmark is recorded in `documentation/debates-production-benchmark.md`;
+  the separate 2026-10-06 scoped resource assessment informed this decision.
+  Neither written answers nor Bill-only filtering belong to the first load.
+  Earlier debates and written answers remain explicit expansion work;
 - AKN XML is authoritative source evidence;
 - Debates owns its questions and divisions/votes;
 - transcript text is not copied into RDF; future topic/keyword extraction is
@@ -2107,11 +2109,10 @@ publishing a graph from one Expression alone. The full rules are in
    replacement through the normal ETL path. The census/benchmark of all
    in-scope XML (including `writtens`), runtime and RDF output/working storage
    required before broad ingestion has been measured and is recorded in
-   `documentation/debates-production-benchmark.md`; the full-corpus versus
-   Bill-debates-first choice still awaits an operational resource threshold and
-   a disposition for its quarantine/fragment findings. This gate does not block
-   Tranche 1 or Tranche 2. Production scanning cadence and scheduling policy
-   remain Phase 6 work.
+   `documentation/debates-production-benchmark.md`. The initial 2011+
+   debates-only scope is now selected; operational limits, exact quarantine
+   inventory and production-scale acceptance remain outstanding. Production
+   scanning cadence and scheduling policy remain Phase 6 work.
 
 #### Debates backlog
 
@@ -2124,13 +2125,50 @@ publishing a graph from one Expression alone. The full rules are in
   the ontology and semantic-review contract.
 - [x] Audit representative Dáil, Seanad, committee and written-answer source
   structures and preserve byte-checked fixtures.
-- [ ] Production-scope choice after the core transformer: the census/benchmark
-  of total in-scope XML volume (including written answers), runtime and RDF
-  output/working storage has been measured and is recorded in
-  `documentation/debates-production-benchmark.md`. The full-corpus versus
-  Bill-debates-first choice itself remains open pending an operational resource
-  threshold and a disposition for the measured quarantine and pre-2013
-  written-answer fragmentation findings.
+- [x] Choose the initial production scope using the corpus census and scoped
+  resource assessment: **Dáil, Seanad and committee debate Works from
+  2011-01-01 onward, excluding written answers**; no Bill-only filter.
+  This decision does not close the production-readiness gate.
+- [ ] **Before initial ingestion — exact quarantine inventory:** inspect every
+  in-scope Work and record affected source URL, Work/Expression IRI, preserved
+  SHA-256, failure category, source evidence, review status and decision.
+  Quarantine without modifying source or publishing partial RDF. The
+  2026-10-06 scoped assessment estimated approximately 301 exceptions, not
+  301 confirmed records: reconcile the earlier seven 2011–2012 failures with
+  the later eight exact pre-2013 exceptions (including a URL/Expression mismatch)
+  and determine the exact post-2012 committee count. Preserve the inventory
+  and link its report here when available.
+- [ ] **Before initial ingestion — operational limits:** approve configurable
+  Phase 6 warning/stop thresholds and space headroom for Fuseki/TDB2, raw XML,
+  immutable reference-report sidecars, Core State, temporary data and backups.
+  Values suggested by the scoped assessment are proposals, not yet approved.
+- [ ] **Before initial ingestion — production readiness:** complete safe
+  enumeration/selection of the approved period through the Phase 6 operational
+  pathway and staged acceptance of publication, verification, quarantine and
+  recovery. Tranche 4's explicit-record CLI is not a production census or
+  scheduling facility.
+
+**Deferred beyond the initial 2011+ debates-only load (not prerequisites
+unless new evidence affects its safety):**
+
+- [ ] **Earlier Dáil/Seanad/committee debates (1919–2010):** reassess historical
+  scope and resource limits when expanding coverage; investigate the
+  concentrated 2004–2007 duplicate-eId problem and other historical failures
+  with reviewed, deterministic compatibility rules, not silent normalization.
+- [ ] **Written answers from 2013 onward:** reconsider as a separately scoped
+  ingestion tranche once their additional RDF, TDB2, sidecar and Core State
+  footprint is worthwhile and operationally acceptable.
+- [ ] **Written answers before 2013:** resolve the section-fragmented AKN
+  source problem with an explicitly approved complete-Work/reconstruction
+  design; never publish a section fragment as the full Work graph.
+- [ ] **Legislative-section → Bill/Event crosswalk:** revisit only with
+  reviewed source-to-owner identity evidence and a demonstrable use case.
+  Until then, retain auditable unresolved outcomes and inactive mappings.
+- [ ] **Question-recipient → office/role crosswalk:** revisit only with a
+  reviewed AKN TLCRole-to-NamedOffice/ParticipationRole mapping that respects
+  historical identity. Do not infer links from labels.
+- [ ] **Optional semantic enrichment:** topic/keyword extraction and
+  committee rollCall attendance RDF remain separate future work.
 - [x] Implement Debates Tranche 4 explicit source preservation, Core State,
   validated supplied-batch transformation, opt-in graph replacement, exact
   verification, and replay/retry acceptance; production enumeration remains
