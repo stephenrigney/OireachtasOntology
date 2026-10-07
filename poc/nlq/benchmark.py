@@ -17,7 +17,7 @@ from .safety import validate_sparql
 
 BENCHMARK_SCHEMA_VERSION = 1
 DEFAULT_BENCHMARK_PATH = (
-    Path(__file__).resolve().parent / "benchmarks" / "benchmark-v1.json"
+    Path(__file__).resolve().parent / "benchmarks" / "benchmark-v3.json"
 )
 GRAPH_FAMILIES = {
     "houses", "parties", "constituencies", "committees", "members", "bills", "debates",
@@ -136,13 +136,42 @@ def _validate_case(case: Any, index: int) -> None:
     _require(case["support_expectation"] in SUPPORT_EXPECTATIONS,
              f"{where}.support_expectation is invalid")
     expectation = case["support_expectation"]
-    _require(case["evaluation_mode"] in {"semantic_invariants", "manual_review"},
+    _require(case["evaluation_mode"] in {
+        "semantic_invariants", "manual_review", "ambiguity_handling",
+    },
              f"{where}.evaluation_mode is invalid")
     if expectation == "supported":
-        _require(case["evaluation_mode"] == "semantic_invariants"
-                 and case["expected_result"] is not None,
-                 f"{where} supported cases need a semantic expected_result")
-        _validate_result_invariant(case["expected_result"], f"{where}.expected_result")
+        if case["evaluation_mode"] == "semantic_invariants":
+            _require(case["expected_result"] is not None,
+                     f"{where} scored supported cases need an expected_result")
+            _validate_result_invariant(case["expected_result"], f"{where}.expected_result")
+        else:
+            _require(case["evaluation_mode"] == "manual_review"
+                     and case["expected_result"] is None,
+                     f"{where} supported manual-review cases cannot assert result facts")
+    elif expectation == "ambiguous":
+        _require(case["expected_result"] is None,
+                 f"{where} ambiguous cases cannot assert answer-result facts")
+        if case["evaluation_mode"] == "ambiguity_handling":
+            prerequisites = case.get("dataset_prerequisites", {})
+            _require(isinstance(prerequisites, dict)
+                     and case["category"] == "ambiguous_names"
+                     and isinstance(prerequisites.get("required_graph_families"), list)
+                     and "members" in prerequisites.get("required_graph_families", [])
+                     and isinstance(prerequisites.get("coverage_probes"), list)
+                     and any(
+                         isinstance(probe, dict)
+                         and isinstance(probe.get("sparql"), str)
+                         and re.search(
+                             r"\bSELECT\s+DISTINCT\s+\?member\b",
+                             probe["sparql"], re.IGNORECASE,
+                         )
+                         for probe in prerequisites.get("coverage_probes", [])
+                     ),
+                     f"{where} ambiguity-handling cases need capture-backed Member coverage")
+        else:
+            _require(case["evaluation_mode"] == "manual_review",
+                     f"{where} ambiguous cases need ambiguity_handling or manual_review")
     else:
         _require(case["evaluation_mode"] == "manual_review",
                  f"{where} non-supported cases must use manual_review")
@@ -434,6 +463,10 @@ def _serialize_result(result: QueryResult | None) -> dict | None:
     }
 
 
+def _serialize_ambiguity(ambiguity) -> dict | None:
+    return ambiguity.as_dict() if ambiguity is not None else None
+
+
 def _fixture_translator(case: dict):
     from .llm import Translation
 
@@ -490,6 +523,7 @@ def run_cases(
             "generated_sparql": None,
             "validated_sparql": None,
             "execution_result": None,
+            "ambiguity_outcome": None,
             "evaluation": "not_scored",
             "passed": None,
             "failure_class": None,
@@ -523,17 +557,32 @@ def run_cases(
             outcomes.append(record)
             continue
 
-        if tier == "regression":
+        if case["evaluation_mode"] == "ambiguity_handling":
+            class LocalOnlyTranslator:
+                def translate(self, _question: str, _schema: str):
+                    raise AssertionError(
+                        "capture-backed local ambiguity must stop before translation"
+                    )
+
+                def close(self) -> None:
+                    pass
+
+            selected_translator_factory = lambda _case: LocalOnlyTranslator()
+        elif tier == "regression":
             selected_translator_factory = translator_factory or _fixture_translator
         else:
             if translator_factory is None:
                 from .llm import ResponsesTranslator
                 import os
+                from .config import (
+                    DEFAULT_LLM_BASE_URL, DEFAULT_LLM_MODEL, LLM_TIMEOUT_SECONDS,
+                )
 
                 selected_translator_factory = lambda _case: ResponsesTranslator(
                     os.getenv("NLQ_LLM_API_KEY", ""),
-                    os.getenv("NLQ_LLM_BASE_URL", "https://opencode.ai/inference/openai/v1"),
-                    os.getenv("NLQ_LLM_MODEL", "gpt-6-luna"),
+                    os.getenv("NLQ_LLM_BASE_URL", DEFAULT_LLM_BASE_URL),
+                    os.getenv("NLQ_LLM_MODEL", DEFAULT_LLM_MODEL),
+                    timeout=LLM_TIMEOUT_SECONDS,
                 )
             else:
                 selected_translator_factory = translator_factory
@@ -555,15 +604,18 @@ def run_cases(
                 on_phase=set_current_phase,
             )
         except Exception as error:
+            scored_mode = case["evaluation_mode"] in {
+                "semantic_invariants", "ambiguity_handling",
+            }
             record.update(
-                evaluation="failed" if case["evaluation_mode"] == "semantic_invariants"
+                evaluation="failed" if scored_mode
                 else "manual_review",
                 observed_outcome=(
                     "translation_failed" if current_phase == "LLM translation" else
                     "query_rejected" if current_phase == "SPARQL validation" else
                     "execution_failed"
                 ),
-                passed=False if case["evaluation_mode"] == "semantic_invariants" else None,
+                passed=False if scored_mode else None,
                 failure_class=_failure_for_phase(current_phase, error),
                 failure_reason=str(error),
             )
@@ -581,6 +633,7 @@ def run_cases(
         )
         record["validated_sparql"] = outcome.validated_sparql
         record["execution_result"] = _serialize_result(outcome.result)
+        record["ambiguity_outcome"] = _serialize_ambiguity(outcome.ambiguity)
         if outcome.error is not None:
             record["observed_outcome"] = (
                 "translation_failed" if outcome.error_phase == "LLM translation" else
@@ -591,8 +644,54 @@ def run_cases(
             record["failure_class"] = _failure_for_phase(outcome.error_phase, outcome.error)
             record["error_debug"] = outcome.error.debug_output
             record["error_debug_source"] = outcome.error.debug_source
-            if case["evaluation_mode"] == "semantic_invariants":
+            if case["evaluation_mode"] in {"semantic_invariants", "ambiguity_handling"}:
                 record.update(evaluation="failed", passed=False)
+            else:
+                record["evaluation"] = "manual_review"
+        elif outcome.ambiguity is not None:
+            record["observed_outcome"] = "ambiguous_member_reference"
+            if case["evaluation_mode"] == "ambiguity_handling":
+                candidate_iris = {
+                    candidate.member_iri
+                    for candidate in outcome.ambiguity.candidates
+                }
+                minimum_candidates = 2
+                for probe in case["dataset_prerequisites"]["coverage_probes"]:
+                    if re.search(r"\bSELECT\s+DISTINCT\s+\?member\b", probe["sparql"], re.IGNORECASE):
+                        invariants = probe["expected_result"].get("invariants", {})
+                        minimum_candidates = max(
+                            minimum_candidates,
+                            invariants.get("min_rows", invariants.get("row_count", 0)),
+                        )
+                question_has_reference = (
+                    outcome.ambiguity.entity_reference.casefold()
+                    in case["question"].casefold()
+                )
+                passed = bool(
+                    question_has_reference and len(candidate_iris) >= minimum_candidates
+                )
+                record.update(
+                    evaluation="passed" if passed else "failed",
+                    passed=passed,
+                    score_reason=(
+                        f"local Member ambiguity detected with at least {minimum_candidates} "
+                        "distinct capture-backed resources"
+                        if passed else (
+                            "ambiguity outcome did not preserve the expected distinct candidates "
+                            f"(expected at least {minimum_candidates}, received {len(candidate_iris)})"
+                        )
+                    ),
+                )
+                if not passed:
+                    record["failure_class"] = "entity_resolution"
+                    record["failure_reason"] = record["score_reason"]
+            elif case["evaluation_mode"] == "semantic_invariants":
+                record.update(
+                    evaluation="failed",
+                    passed=False,
+                    failure_class="entity_resolution",
+                    failure_reason="The question resolved to an ambiguous local Member reference.",
+                )
             else:
                 record["evaluation"] = "manual_review"
         elif case["evaluation_mode"] == "semantic_invariants":
@@ -607,6 +706,17 @@ def run_cases(
                     "failure_classes_on_mismatch", []
                 )
                 record["failure_reason"] = score.reason
+        elif case["evaluation_mode"] == "ambiguity_handling":
+            record.update(
+                observed_outcome="query_result",
+                evaluation="failed",
+                passed=False,
+                failure_class="entity_resolution",
+                failure_reason=(
+                    "Expected local Member ambiguity, but the shared pipeline continued "
+                    "to an answer query."
+                ),
+            )
         else:
             record["observed_outcome"] = "query_result"
             record["evaluation"] = "manual_review"

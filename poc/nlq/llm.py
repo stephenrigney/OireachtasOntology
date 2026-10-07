@@ -9,6 +9,7 @@ from uuid import uuid4
 import httpx
 
 from .errors import NLQError
+from .config import LLM_MAX_OUTPUT_TOKENS
 from .results import format_debug_payload, format_debug_text
 
 
@@ -131,7 +132,7 @@ class ResponsesTranslator:
                 "strict": True,
                 "schema": OUTPUT_SCHEMA,
             }},
-            "max_output_tokens": 2000,
+            "max_output_tokens": LLM_MAX_OUTPUT_TOKENS,
         }
         try:
             response = self.client.post(self.url, headers=self.headers, json=body)

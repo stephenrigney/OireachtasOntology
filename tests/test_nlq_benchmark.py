@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -8,8 +9,10 @@ import subprocess
 
 import httpx
 import pytest
+from jsonschema import Draft202012Validator
 
 from poc.nlq.benchmark import (
+    DEFAULT_BENCHMARK_PATH,
     BenchmarkFormatError,
     assess_dataset_prerequisites,
     dataset_association,
@@ -19,6 +22,7 @@ from poc.nlq.benchmark import (
     summarize_results,
 )
 from poc.nlq import benchmark_isolation
+from poc.nlq.config import resolved_llm_configuration
 from poc.nlq.llm import Translation
 from poc.nlq import pipeline as pipeline_module
 from poc.nlq.pipeline import process_question
@@ -26,7 +30,55 @@ from poc.nlq.results import QueryResult, parse_results
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BENCHMARK_PATH = ROOT / "poc/nlq/benchmarks/benchmark-v1.json"
+BENCHMARK_PATH = ROOT / "poc/nlq/benchmarks/benchmark-v3.json"
+PREVIOUS_BENCHMARK_PATH = ROOT / "poc/nlq/benchmarks/benchmark-v2.json"
+HISTORICAL_BENCHMARK_PATH = ROOT / "poc/nlq/benchmarks/benchmark-v1.json"
+
+
+def test_measured_translator_configuration_records_resolved_values_and_provenance(tmp_path):
+    (tmp_path / ".env").write_text(
+        "NLQ_LLM_MODEL=dotenv-model\n"
+        "NLQ_LLM_BASE_URL=https://dotenv.example/v1/\n"
+        "NLQ_LLM_API_KEY=dotenv-secret\n",
+        encoding="utf-8",
+    )
+
+    dotenv_config = resolved_llm_configuration(tmp_path, process_environment={})
+    assert dotenv_config == {
+        "model": {"value": "dotenv-model", "source": "repository_dotenv"},
+        "base_endpoint": {
+            "value": "https://dotenv.example/v1", "source": "repository_dotenv",
+        },
+        "request_timeout_seconds": {"value": 45.0, "source": "default"},
+        "max_output_tokens": {"value": 2000, "source": "default"},
+    }
+    defaults = tmp_path / "defaults"
+    defaults.mkdir()
+    default_config = resolved_llm_configuration(
+        defaults, process_environment={"NLQ_LLM_API_KEY": "process-secret"},
+    )
+    assert default_config["model"] == {"value": "gpt-6-luna", "source": "default"}
+    assert default_config["base_endpoint"] == {
+        "value": "https://opencode.ai/inference/openai/v1", "source": "default",
+    }
+
+    override = resolved_llm_configuration(tmp_path, process_environment={
+        "NLQ_LLM_MODEL": "override-model",
+        "NLQ_LLM_BASE_URL": "https://url-secret@override.example/responses/?token=query-secret",
+        "NLQ_LLM_API_KEY": "process-secret",
+    })
+    assert override["model"] == {
+        "value": "override-model", "source": "process_environment",
+    }
+    assert override["base_endpoint"] == {
+        "value": "https://override.example/responses", "source": "process_environment",
+    }
+    serialized = json.dumps([dotenv_config, default_config, override])
+    assert "dotenv-secret" not in serialized
+    assert "process-secret" not in serialized
+    assert "url-secret" not in serialized
+    assert "query-secret" not in serialized
+    assert "API_KEY" not in serialized
 
 
 def _baseline(*, quarantined=(), unresolved=(), missing=()) -> dict:
@@ -70,24 +122,60 @@ class _FakeFuseki:
 
     def query(self, sparql: str) -> QueryResult:
         self.queries.append(sparql)
+        if "?question" in sparql and "foaf:name ?name" in sparql:
+            return parse_results({
+                "head": {"vars": ["member", "name", "memberCode"]},
+                "results": {"bindings": []},
+            })
         if "ASK {" in sparql:
             return parse_results({"head": {}, "boolean": True})
-        if "?termLabel" in sparql:
-            value = "33rd Dáil"
-        elif "foaf:name" in sparql and "Aengus" in sparql:
-            value = "Aengus Ó Snodaigh"
-        elif "foaf:name" in sparql and "Timmy" in sparql:
-            value = "Timmy Dooley"
-        elif "?collectionLabel" in sparql:
+        if "?committeeLabel" in sparql and "26th Seanad" in sparql:
+            return parse_results({
+                "head": {"vars": ["committeeLabel"]},
+                "results": {"bindings": [
+                    {"committeeLabel": {"type": "literal", "value":
+                     "Select Committee on Transport and Communications"}},
+                    {"committeeLabel": {"type": "literal", "value":
+                     "Select Committee on Environment and Climate Action"}},
+                ]},
+            })
+        if "?collectionLabel" in sparql:
             value = "Fianna Fáil"
         elif "?panelLabel" in sparql:
             value = "Nominated by the Taoiseach"
         elif "?committeeLabel" in sparql:
             value = "Joint Committee on Transport and Communications"
-        elif "?startDate" in sparql and "Timmy-Dooley" in sparql:
+        elif "?startDate" in sparql and "26th Seanad" in sparql:
             value = "2020-06-29T00:00:00"
         elif "?startDate" in sparql:
             value = "2024-11-29T00:00:00"
+        elif "?termLabel" in sparql and '"Micheál Martin"' in sparql:
+            labels = (
+                "26th Dáil", "27th Dáil", "28th Dáil", "29th Dáil", "30th Dáil",
+                "31st Dáil", "32nd Dáil", "33rd Dáil", "34th Dáil",
+            )
+            return parse_results({
+                "head": {"vars": ["termLabel"]},
+                "results": {"bindings": [
+                    {"termLabel": {"type": "literal", "value": label}}
+                    for label in labels
+                ]},
+            })
+        elif ("?termLabel" in sparql and '"Timmy Dooley"' in sparql
+              and "SeanadMembership" in sparql):
+            return parse_results({
+                "head": {"vars": ["termLabel"]},
+                "results": {"bindings": [
+                    {"termLabel": {"type": "literal", "value": label}}
+                    for label in ("22nd Seanad", "26th Seanad")
+                ]},
+            })
+        elif "?termLabel" in sparql:
+            value = "33rd Dáil"
+        elif "foaf:name" in sparql and "Aengus" in sparql:
+            value = "Aengus Ó Snodaigh"
+        elif "foaf:name" in sparql and "Timmy" in sparql:
+            value = "Timmy Dooley"
         elif "COUNT(" in sparql:
             value = "19"
         else:
@@ -96,6 +184,104 @@ class _FakeFuseki:
             "head": {"vars": ["arbitrary_answer_variable"]},
             "results": {"bindings": [
                 {"arbitrary_answer_variable": {"type": "literal", "value": value}},
+            ]},
+        })
+
+
+class _CapturedAmbiguityFuseki(_FakeFuseki):
+    """The exact duplicate names and context are copied from Phase 0A RDF."""
+
+    MEMBERS = {
+        "Michael Collins": (
+            (
+                "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.1919-01-21",
+                "Michael-Collins.D.1919-01-21",
+                ("1st Dáil", "2nd Dáil", "3rd Dáil"),
+                ("Armagh", "Cork Mid, North, South, South East and West", "Cork South"),
+            ),
+            (
+                "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.1997-06-26",
+                "Michael-Collins.D.1997-06-26",
+                ("28th Dáil", "29th Dáil"),
+                ("Limerick West",),
+            ),
+            (
+                "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.2016-10-03",
+                "Michael-Collins.D.2016-10-03",
+                ("32nd Dáil", "33rd Dáil", "34th Dáil"),
+                ("Cork South-West",),
+            ),
+        ),
+        "Cathy Honan": (
+            (
+                "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Honan.S.1965-06-23",
+                "Cathy-Honan.S.1965-06-23",
+                ("11th Seanad", "12th Seanad"),
+                ("Industrial and Commercial Panel",),
+            ),
+            (
+                "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Honan.S.1982-05-13",
+                "Cathy-Honan.S.1982-05-13",
+                ("16th Seanad",),
+                ("Administrative Panel",),
+            ),
+            (
+                "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Honan.S.1997-01-28",
+                "Cathy-Honan.S.1997-01-28",
+                ("20th Seanad",),
+                ("Industrial and Commercial Panel",),
+            ),
+        ),
+    }
+
+    def query(self, sparql: str) -> QueryResult:
+        self.queries.append(sparql)
+        if "?question" in sparql and "foaf:name ?name" in sparql:
+            label = next((name for name in self.MEMBERS if name in sparql), None)
+            candidates = self.MEMBERS.get(label, ())
+            return parse_results({
+                "head": {"vars": ["member", "name", "memberCode"]},
+                "results": {"bindings": [
+                    {
+                        "member": {"type": "uri", "value": iri},
+                        "name": {"type": "literal", "value": label},
+                        "memberCode": {"type": "literal", "value": code},
+                    }
+                    for iri, code, _terms, _representations in candidates
+                ]},
+            })
+        if "VALUES ?member" in sparql:
+            iri = next((candidate[0] for values in self.MEMBERS.values()
+                        for candidate in values if f"<{candidate[0]}>" in sparql), None)
+            candidate = next((candidate for values in self.MEMBERS.values()
+                              for candidate in values if candidate[0] == iri), None)
+            if candidate is None:
+                raise AssertionError("unexpected local Member IRI in context query")
+            terms, representations = candidate[2], candidate[3]
+            rows = [
+                {"contextType": {"type": "literal", "value": "house_term"},
+                 "contextLabel": {"type": "literal", "xml:lang": "en", "value": label}}
+                for label in terms
+            ] + [
+                {"contextType": {"type": "literal", "value": "representation"},
+                 "contextLabel": {"type": "literal", "xml:lang": "en", "value": label}}
+                for label in representations
+            ]
+            return parse_results({
+                "head": {"vars": ["contextType", "contextLabel"]},
+                "results": {"bindings": rows},
+            })
+        if "SELECT DISTINCT ?member WHERE" in sparql and 'foaf:name "Michael Collins"' in sparql:
+            members = self.MEMBERS["Michael Collins"]
+        elif "SELECT DISTINCT ?member WHERE" in sparql and 'foaf:name "Cathy Honan"' in sparql:
+            members = self.MEMBERS["Cathy Honan"]
+        else:
+            return super().query(sparql)
+        return parse_results({
+            "head": {"vars": ["member"]},
+            "results": {"bindings": [
+                {"member": {"type": "uri", "value": candidate[0]}}
+                for candidate in members
             ]},
         })
 
@@ -117,6 +303,129 @@ def test_benchmark_json_is_versioned_and_contains_representative_categories():
         "supported", "ambiguous", "unsupported", "unavailable",
     }
     assert sum("regression" in case["tiers"] for case in benchmark["cases"]) == 10
+
+
+def test_benchmark_history_and_default_version_are_preserved():
+    historical = load_benchmark(HISTORICAL_BENCHMARK_PATH)
+    previous = load_benchmark(PREVIOUS_BENCHMARK_PATH)
+    current = load_benchmark(BENCHMARK_PATH)
+
+    assert historical["benchmark_version"] == "0.1.0"
+    assert previous["benchmark_version"] == "0.2.0"
+    assert current["benchmark_version"] == "0.3.0"
+    assert DEFAULT_BENCHMARK_PATH == BENCHMARK_PATH
+    assert hashlib.sha256(
+        HISTORICAL_BENCHMARK_PATH.read_bytes()
+    ).hexdigest() == "afaebc738c86e150e73d1bf997c2fe739df3e22226e566e4416508bdf48885c3"
+    assert hashlib.sha256(
+        PREVIOUS_BENCHMARK_PATH.read_bytes()
+    ).hexdigest() == "f5a5b9d50d6a534360a727ebc73ae321142ace41404228e4e6b098cb67475692"
+
+
+def test_benchmark_versions_validate_against_the_published_json_schema():
+    schema = json.loads((ROOT / "poc/specs/nlq-benchmark.schema.json").read_text())
+    Draft202012Validator.check_schema(schema)
+    validator = Draft202012Validator(schema)
+
+    for path in (HISTORICAL_BENCHMARK_PATH, PREVIOUS_BENCHMARK_PATH, BENCHMARK_PATH):
+        validator.validate(json.loads(path.read_text(encoding="utf-8")))
+
+
+def test_v03_support_expectations_match_contract_scope_and_dataset_evidence():
+    benchmark = load_benchmark(BENCHMARK_PATH)
+    contract = json.loads((ROOT / "poc/specs/query-schema-contract.json").read_text())
+    by_id = {case["id"]: case for case in benchmark["cases"]}
+
+    assert "dct:temporal" not in contract["queryableProperties"]
+    house_start = by_id["date.dail-34-start"]
+    assert house_start["support_expectation"] == "unsupported"
+    assert house_start["evaluation_mode"] == "manual_review"
+    assert house_start["expected_result"] is None
+    assert "regression" not in house_start["tiers"]
+    interval_case = by_id["date.aengus-active-mid-2023"]
+    assert interval_case["expected_result"]["kind"] == "select"
+    assert interval_case["expected_result"]["invariants"]["required_rows"] == [[
+        "2020-02-08T00:00:00", "2024-11-08T00:00:00",
+    ]]
+    assert "term.dail-34-start-date" not in by_id
+    assert "term.micheal-dail-34-membership" in by_id
+    assert "collection.enduring-party-unsupported" not in by_id
+    assert by_id["collection.micheal-dail-34"]["support_expectation"] == "supported"
+
+    for case in benchmark["cases"]:
+        if "regression" in case["tiers"]:
+            query = case["regression_translation"]["sparql"]
+            assert "#term-period" not in query
+            assert "dct:temporal" not in query
+            assert "/ie/oireachtas/member/id/" not in query
+            assert "/ie/oireachtas/house/" not in query
+            assert "/graph/member/" not in query
+
+
+def test_duplicate_name_cases_have_capture_backed_automated_ambiguity_assertions():
+    benchmark = load_benchmark(BENCHMARK_PATH)
+    by_id = {case["id"]: case for case in benchmark["cases"]}
+
+    for case_id, minimum in (
+        ("ambiguous.duplicate-michael-collins", 3),
+        ("ambiguous.duplicate-cathy-honan", 3),
+    ):
+        case = by_id[case_id]
+        assert case["support_expectation"] == "ambiguous"
+        assert case["evaluation_mode"] == "ambiguity_handling"
+        assert case["expected_result"] is None
+        assert case["dataset_prerequisites"]["coverage_probes"]
+        invariant = case["dataset_prerequisites"]["coverage_probes"][0]["expected_result"]["invariants"]
+        assert invariant["min_rows"] >= minimum
+
+    martin = by_id["ambiguous.martin"]
+    assert martin["support_expectation"] == "supported"
+    assert martin["evaluation_mode"] == "manual_review"
+    assert martin["expected_result"] is None
+    assert "set-valued" in martin["expected_interpretation"]
+
+
+def test_aengus_coverage_uses_member_graph_discovery_not_unicode_graph_iri_literals():
+    benchmark = load_benchmark(BENCHMARK_PATH)
+    selected = {
+        "lookup.aengus-name", "term.aengus-dail-33", "collection.aengus-dail-33",
+        "date.aengus-active-mid-2023", "join.aengus-dail-33-collection",
+        "join.aengus-dail-33-constituency",
+    }
+    for case in benchmark["cases"]:
+        if case["id"] not in selected:
+            continue
+        for probe in case["dataset_prerequisites"]["coverage_probes"]:
+            assert "GRAPH ?memberGraph" in probe["sparql"]
+            assert "Aengus Ó Snodaigh" in probe["sparql"]
+            assert "GRAPH <https://data.oireachtas.ie/graph/member/Aengus" not in probe["sparql"]
+
+
+def test_committee_cases_follow_member_committee_owner_join_in_contract():
+    benchmark = load_benchmark(BENCHMARK_PATH)
+    by_id = {case["id"]: case for case in benchmark["cases"]}
+    expected_labels = {
+        "Select Committee on Transport and Communications",
+        "Select Committee on Environment and Climate Action",
+    }
+    for case_id in (
+        "committee.timmy-transport-committee", "committee.timmy-committee-count",
+        "join.timmy-committee-owner",
+    ):
+        case = by_id[case_id]
+        assert "26th Seanad" in case["expected_interpretation"]
+        probes = "\n".join(
+            probe["sparql"]
+            for probe in case["dataset_prerequisites"]["coverage_probes"]
+        )
+        assert "members:CommitteeMembership" in probes
+        assert "members:isCommitteeMembershipOf" in probes
+        assert "members:committeeInHouseTerm" in probes
+        if case_id != "committee.timmy-committee-count":
+            assert all(label in probes for label in expected_labels)
+        else:
+            assert case["expected_result"]["invariants"]["contains_values"] == ["2"]
+        assert "/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26" not in probes
 
 
 @pytest.mark.parametrize("mutation, message", [
@@ -156,6 +465,27 @@ def test_semantic_scoring_ignores_variable_names_and_binding_order():
 
     assert score.passed
     assert score.reason == "all semantic result invariants matched"
+
+
+def test_date_range_semantics_match_selected_values_without_rdf_datatype_suffixes():
+    benchmark = load_benchmark(BENCHMARK_PATH)
+    case = next(item for item in benchmark["cases"]
+                if item["id"] == "date.aengus-active-mid-2023")
+    actual = parse_results({
+        "head": {"vars": ["startDate", "endDate"]},
+        "results": {"bindings": [{
+            "startDate": {
+                "type": "literal", "value": "2020-02-08T00:00:00",
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            },
+            "endDate": {
+                "type": "literal", "value": "2024-11-08T00:00:00",
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            },
+        }]},
+    })
+
+    assert score_semantic_result(case["expected_result"], actual).passed
 
 
 def test_semantic_scoring_checks_aggregate_and_ask_invariants():
@@ -224,6 +554,69 @@ def test_deterministic_regression_runs_shared_pipeline_without_an_llm():
     assert summarize_results(results)["passed"] == 10
 
 
+@pytest.mark.parametrize("case_id", [
+    "ambiguous.duplicate-michael-collins",
+    "ambiguous.duplicate-cathy-honan",
+])
+def test_benchmark_scores_capture_backed_ambiguity_through_shared_pipeline(case_id):
+    benchmark = load_benchmark(BENCHMARK_PATH)
+    case = next(item for item in benchmark["cases"] if item["id"] == case_id)
+    fuseki = _CapturedAmbiguityFuseki()
+
+    result = run_cases(
+        {**benchmark, "cases": [case]},
+        _baseline(),
+        fuseki=fuseki,
+        tier="measured",
+        repository_root=ROOT,
+        translator_factory=lambda _case: (_ for _ in ()).throw(
+            AssertionError("ambiguity cases must stop before translation")
+        ),
+    )[0]
+
+    assert result["evaluation"] == "passed"
+    assert result["passed"] is True
+    assert result["observed_outcome"] == "ambiguous_member_reference"
+    assert result["generated_sparql"] is None
+    assert result["execution_result"] is None
+    ambiguity = result["ambiguity_outcome"]
+    assert ambiguity["status"] == "ambiguous"
+    assert ambiguity["candidate_count"] == 3
+    assert len({candidate["member_iri"] for candidate in ambiguity["candidates"]}) == 3
+    assert all(candidate["house_terms"] for candidate in ambiguity["candidates"])
+
+
+def test_benchmark_pipeline_completes_missing_prefix_before_shared_validation():
+    benchmark = load_benchmark(BENCHMARK_PATH)
+    case = next(item for item in benchmark["cases"] if item["id"] == "lookup.aengus-name")
+    single_case = {**benchmark, "cases": [case]}
+    translation = Translation(
+        "Find the exact Member name.",
+        'SELECT ?name WHERE { GRAPH ?memberGraph { ?member foaf:name ?name . '
+        'FILTER(?name = "Aengus Ó Snodaigh") } } LIMIT 10',
+    )
+
+    class MissingPrefixTranslator:
+        def translate(self, _question, _schema):
+            return translation
+
+        def close(self):
+            pass
+
+    fuseki = _FakeFuseki()
+    result = run_cases(
+        single_case, _baseline(), fuseki=fuseki, tier="measured",
+        repository_root=ROOT, translator_factory=lambda _case: MissingPrefixTranslator(),
+    )[0]
+
+    assert result["evaluation"] == "passed"
+    assert result["generated_sparql"] == translation.sparql
+    assert result["validated_sparql"].startswith(
+        "PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n"
+    )
+    assert fuseki.queries[-1] == result["validated_sparql"]
+
+
 def test_known_unavailable_case_does_not_invoke_translation():
     benchmark = load_benchmark(BENCHMARK_PATH)
     case = next(item for item in benchmark["cases"]
@@ -262,6 +655,11 @@ def test_result_mismatch_retains_failure_candidates_and_semantic_result():
         def query(self, sparql):
             if "ASK {" in sparql:
                 return parse_results({"head": {}, "boolean": True})
+            if "?question" in sparql and "foaf:name ?name" in sparql:
+                return parse_results({
+                    "head": {"vars": ["member", "name", "memberCode"]},
+                    "results": {"bindings": []},
+                })
             self.queries.append(sparql)
             return parse_results({"head": {"vars": ["x"]}, "results": {"bindings": [
                 {"x": {"type": "literal", "value": "Not the expected person"}},
@@ -307,7 +705,7 @@ def test_benchmark_classifies_unsafe_generated_sparql_and_records_it():
     assert result["failure_class"] == "query_safety_validation"
 
 
-def test_pipeline_is_lazy_and_reports_controlled_validation_failure():
+def test_pipeline_runs_local_member_resolution_then_reports_controlled_validation_failure():
     phases = []
 
     class Translator:
@@ -315,19 +713,26 @@ def test_pipeline_is_lazy_and_reports_controlled_validation_failure():
             assert question == "question"
             return Translation("unsafe", "INSERT DATA { <urn:s> <urn:p> <urn:o> }")
 
-    def forbidden_fuseki_factory():
-        raise AssertionError("validation failure must not instantiate Fuseki")
+    class ResolutionOnlyFuseki:
+        def query(self, sparql):
+            assert "?question" in sparql
+            return parse_results({
+                "head": {"vars": ["member", "name", "memberCode"]},
+                "results": {"bindings": []},
+            })
+
+    fuseki = ResolutionOnlyFuseki()
 
     outcome = process_question(
-        "question", translator=Translator(), fuseki_factory=forbidden_fuseki_factory,
-        schema_context="schema", supported_predicates=frozenset(), on_phase=phases.append,
+        "question", translator=Translator(), fuseki_factory=lambda: fuseki,
+        schema_context="schema", supported_predicates=None, on_phase=phases.append,
     )
 
     assert outcome.error is not None
     assert outcome.error_phase == "SPARQL validation"
     assert outcome.translation.interpretation == "unsafe"
     assert outcome.result is None
-    assert phases == ["LLM translation", "SPARQL validation"]
+    assert phases == ["Member name resolution", "LLM translation", "SPARQL validation"]
 
 
 def test_pipeline_publishes_translation_before_unexpected_later_failure(monkeypatch):
@@ -342,10 +747,17 @@ def test_pipeline_publishes_translation_before_unexpected_later_failure(monkeypa
         raise RuntimeError("unexpected local validator error")
 
     monkeypatch.setattr(pipeline_module, "validate_sparql", unexpected_validation_failure)
+    class ResolutionOnlyFuseki:
+        def query(self, _sparql):
+            return parse_results({
+                "head": {"vars": ["member", "name", "memberCode"]},
+                "results": {"bindings": []},
+            })
+
     with pytest.raises(RuntimeError, match="unexpected local validator error"):
         process_question(
-            "question", translator=Translator(), fuseki_factory=lambda: None,
-            schema_context="schema", supported_predicates=frozenset(),
+            "question", translator=Translator(), fuseki_factory=ResolutionOnlyFuseki,
+            schema_context="schema", supported_predicates=None,
             on_translation=captured.append,
         )
     assert captured == [translation]

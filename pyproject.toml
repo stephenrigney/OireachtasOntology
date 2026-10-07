@@ -25,6 +25,7 @@ where = ["src"]
 
 [project.optional-dependencies]
 test = [
+  "jsonschema>=4.23,<5",
   "pytest>=9.1,<10",
   "fastapi>=0.115,<1",
   "httpx>=0.27,<1",

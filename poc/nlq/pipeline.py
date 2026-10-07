@@ -7,8 +7,9 @@ from typing import Callable
 
 from .errors import NLQError
 from .llm import Translation
+from .member_resolution import MemberAmbiguity, resolve_member_ambiguity
 from .results import QueryResult
-from .safety import validate_sparql
+from .safety import complete_known_prefixes, validate_sparql
 
 
 @dataclass(frozen=True)
@@ -20,10 +21,11 @@ class PipelineOutcome:
     result: QueryResult | None
     error: NLQError | None
     error_phase: str | None
+    ambiguity: MemberAmbiguity | None = None
 
     @property
     def succeeded(self) -> bool:
-        return self.error is None and self.result is not None
+        return self.error is None and (self.result is not None or self.ambiguity is not None)
 
 
 def process_question(
@@ -36,12 +38,14 @@ def process_question(
     on_phase: Callable[[str], None] | None = None,
     on_translation: Callable[[Translation], None] | None = None,
 ) -> PipelineOutcome:
-    """Run the existing direct-translation pipeline without changing its policy.
+    """Run direct translation behind the bounded local Member-resolution gate.
 
-    The Fuseki client is created lazily, after translation and local validation,
-    matching the browser's current behaviour.  ``on_phase`` is intentionally a
-    small observation hook so the browser can preserve its existing unexpected
-    error diagnostics while non-UI callers can use the same boundary.
+    A bounded read-only Member-label lookup runs before translation. If an exact
+    local name remains ambiguous, the pipeline returns that outcome without
+    producing or executing answer SPARQL. Otherwise the existing direct
+    translation, validation and query flow continues. ``on_phase`` lets the
+    browser preserve actionable diagnostics while non-UI callers use the same
+    boundary.
     """
 
     def set_phase(value: str) -> None:
@@ -50,6 +54,20 @@ def process_question(
 
     translation = None
     safe_sparql = None
+    fuseki = None
+    set_phase("Member name resolution")
+    try:
+        # This bounded local lookup is deliberately tied to complete Member
+        # foaf:name labels in the question, not to answer-row cardinality.
+        fuseki = fuseki_factory()
+        ambiguity = resolve_member_ambiguity(
+            question, fuseki, supported_predicates=supported_predicates,
+        )
+        if ambiguity is not None:
+            return PipelineOutcome(None, None, None, None, None, ambiguity)
+    except NLQError as error:
+        return PipelineOutcome(translation, safe_sparql, None, error, "Member name resolution")
+
     set_phase("LLM translation")
     try:
         translation = translator.translate(question, schema_context)
@@ -61,14 +79,14 @@ def process_question(
     set_phase("SPARQL validation")
     try:
         safe_sparql = validate_sparql(
-            translation.sparql, supported_predicates=supported_predicates
+            complete_known_prefixes(translation.sparql),
+            supported_predicates=supported_predicates,
         )
     except NLQError as error:
         return PipelineOutcome(translation, safe_sparql, None, error, "SPARQL validation")
 
     set_phase("Fuseki query")
     try:
-        fuseki = fuseki_factory()
         result = fuseki.query(safe_sparql)
     except NLQError as error:
         return PipelineOutcome(translation, safe_sparql, None, error, "Fuseki query")

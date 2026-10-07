@@ -28,6 +28,12 @@ from poc.nlq.vocabulary import supported_predicates
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _empty_member_resolution(sparql: str) -> QueryResult | None:
+    if "?question" in sparql and "foaf:name ?name" in sparql:
+        return QueryResult(kind="select", columns=("member", "name", "memberCode"), rows=())
+    return None
+
+
 def test_local_dotenv_loads_nlq_settings_and_process_environment_wins(tmp_path, monkeypatch):
     dotenv = tmp_path / ".env"
     dotenv.write_text(
@@ -458,7 +464,7 @@ def test_browser_renders_result_and_exact_sparql(monkeypatch):
             pass
 
         def translate(self, question, schema):
-            return Translation("Find the requested member", "PREFIX foaf: <http://xmlns.com/foaf/0.1/> SELECT ?name WHERE { ?m foaf:name ?name }")
+            return Translation("Find the requested member", "SELECT ?name WHERE { ?m foaf:name ?name }")
 
         def close(self):
             pass
@@ -473,6 +479,10 @@ def test_browser_renders_result_and_exact_sparql(monkeypatch):
                                    "Required graph families present.")
 
         def query(self, sparql):
+            resolved = _empty_member_resolution(sparql)
+            if resolved is not None:
+                return resolved
+            assert sparql.startswith("PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n")
             assert sparql.endswith("LIMIT 100")
             return QueryResult(
                 kind="select", columns=("name",), rows=(("A Member",),),
@@ -499,7 +509,10 @@ def test_browser_renders_result_and_exact_sparql(monkeypatch):
     assert "<th scope=\"col\">name</th>" in response.text
     assert "A Member" in response.text
     assert "Generated SPARQL" in response.text
-    assert "SELECT ?name WHERE { ?m foaf:name ?name }\nLIMIT 100" in unescape(response.text)
+    assert (
+        "PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n"
+        "SELECT ?name WHERE { ?m foaf:name ?name }\nLIMIT 100"
+    ) in unescape(response.text)
     assert "Raw Fuseki response payload" in response.text
     assert '"vars": [' in unescape(response.text)
     assert "Fuseki readiness" in response.text
@@ -529,6 +542,9 @@ def test_browser_shows_fuseki_error_payload_in_debug_output(monkeypatch):
                                    "Missing Parties and Constituencies.")
 
         def query(self, sparql):
+            resolved = _empty_member_resolution(sparql)
+            if resolved is not None:
+                return resolved
             raise NLQError("Fuseki returned HTTP 400 while querying.", debug_output=payload)
 
         def close(self):
@@ -574,6 +590,9 @@ def test_browser_shows_llm_error_payload_when_translation_fails(monkeypatch):
             return FusekiReadiness("empty", False, (), "Fuseki is empty.")
 
         def query(self, sparql):
+            resolved = _empty_member_resolution(sparql)
+            if resolved is not None:
+                return resolved
             raise AssertionError("Generated SPARQL must not be sent to Fuseki when the LLM request fails")
 
         def close(self):
@@ -617,6 +636,9 @@ def test_browser_opens_debugger_for_empty_select_results(monkeypatch):
                                    "Ready.")
 
         def query(self, sparql):
+            resolved = _empty_member_resolution(sparql)
+            if resolved is not None:
+                return resolved
             return parse_results({"head": {"vars": ["name"]}, "results": {"bindings": []}})
 
         def close(self):
@@ -656,6 +678,9 @@ def test_browser_identifies_safety_rejection_as_not_sent_to_fuseki(monkeypatch):
             return FusekiReadiness("ready", True, (), "Ready.")
 
         def query(self, sparql):
+            resolved = _empty_member_resolution(sparql)
+            if resolved is not None:
+                return resolved
             raise AssertionError("Unsafe SPARQL must not be sent to Fuseki")
 
         def close(self):
