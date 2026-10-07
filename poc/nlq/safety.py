@@ -29,6 +29,7 @@ MAX_RESULT_ROWS = _LOCAL_SAFETY["limits"]["maxExplicitLimit"]
 MAX_RESULT_OFFSET = _LOCAL_SAFETY["limits"]["maxOffset"]
 ALLOWED_QUERY_OPERATIONS = frozenset(_LOCAL_SAFETY["allowedOperations"])
 DEFAULT_SELECT_LIMIT = _LOCAL_SAFETY["limits"]["defaultSelectLimit"]
+_CONTRACT_NAMESPACES = load_query_contract()["namespaces"]
 
 
 def _walk(value) -> Iterator[CompValue]:
@@ -39,6 +40,44 @@ def _walk(value) -> Iterator[CompValue]:
     elif isinstance(value, (list, tuple, ParseResults)):
         for child in value:
             yield from _walk(child)
+
+
+def complete_known_prefixes(sparql: str) -> str:
+    """Declare used, undeclared QNames only from the versioned query contract.
+
+    RDFLib's SPARQL parser distinguishes QName nodes from literals, comments,
+    variables, and absolute IRIs. If parsing fails, or a used prefix is not in
+    the contract, leave the query untouched so normal safety validation fails
+    closed. Oversized input is likewise left for the existing length check.
+    """
+    if not isinstance(sparql, str) or len(sparql) > MAX_QUERY_CHARS:
+        return sparql
+
+    try:
+        parsed = parseQuery(sparql)
+    except Exception:
+        return sparql
+
+    nodes = tuple(_walk(parsed))
+    declared_prefixes = {
+        str(node["prefix"] if "prefix" in node else "")
+        for node in nodes if node.name == "PrefixDecl"
+    }
+    used_prefixes = {
+        str(node["prefix"] if "prefix" in node else "")
+        for node in nodes if node.name == "pname"
+    }
+    missing_prefixes = sorted(
+        (used_prefixes - declared_prefixes) & _CONTRACT_NAMESPACES.keys()
+    )
+    if not missing_prefixes:
+        return sparql
+
+    declarations = "\n".join(
+        f"PREFIX {prefix}: <{_CONTRACT_NAMESPACES[prefix]}>"
+        for prefix in missing_prefixes
+    )
+    return declarations + "\n" + sparql
 
 
 def validate_sparql(sparql: str, *, supported_predicates: frozenset[URIRef] | None = None) -> str:
@@ -66,6 +105,11 @@ def validate_sparql(sparql: str, *, supported_predicates: frozenset[URIRef] | No
         if node.name == "PrefixDecl" and "iri" in node:
             prefix = node["prefix"] if "prefix" in node else ""
             query_prefixes[prefix] = node["iri"]
+    for node in nodes:
+        if node.name == "pname":
+            prefix = node["prefix"] if "prefix" in node else ""
+            if prefix not in query_prefixes:
+                raise NLQError(f"SPARQL prefix {prefix!r} is undeclared.")
     if any(node.name == "ServiceGraphPattern" for node in nodes):
         raise NLQError("SPARQL SERVICE clauses are not allowed.")
 

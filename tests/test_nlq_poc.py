@@ -458,7 +458,7 @@ def test_browser_renders_result_and_exact_sparql(monkeypatch):
             pass
 
         def translate(self, question, schema):
-            return Translation("Find the requested member", "PREFIX foaf: <http://xmlns.com/foaf/0.1/> SELECT ?name WHERE { ?m foaf:name ?name }")
+            return Translation("Find the requested member", "SELECT ?name WHERE { ?m foaf:name ?name }")
 
         def close(self):
             pass
@@ -473,6 +473,7 @@ def test_browser_renders_result_and_exact_sparql(monkeypatch):
                                    "Required graph families present.")
 
         def query(self, sparql):
+            assert sparql.startswith("PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n")
             assert sparql.endswith("LIMIT 100")
             return QueryResult(
                 kind="select", columns=("name",), rows=(("A Member",),),
@@ -499,7 +500,10 @@ def test_browser_renders_result_and_exact_sparql(monkeypatch):
     assert "<th scope=\"col\">name</th>" in response.text
     assert "A Member" in response.text
     assert "Generated SPARQL" in response.text
-    assert "SELECT ?name WHERE { ?m foaf:name ?name }\nLIMIT 100" in unescape(response.text)
+    assert (
+        "PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n"
+        "SELECT ?name WHERE { ?m foaf:name ?name }\nLIMIT 100"
+    ) in unescape(response.text)
     assert "Raw Fuseki response payload" in response.text
     assert '"vars": [' in unescape(response.text)
     assert "Fuseki readiness" in response.text

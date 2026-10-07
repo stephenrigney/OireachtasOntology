@@ -8,7 +8,7 @@ from typing import Callable
 from .errors import NLQError
 from .llm import Translation
 from .results import QueryResult
-from .safety import validate_sparql
+from .safety import complete_known_prefixes, validate_sparql
 
 
 @dataclass(frozen=True)
@@ -61,7 +61,8 @@ def process_question(
     set_phase("SPARQL validation")
     try:
         safe_sparql = validate_sparql(
-            translation.sparql, supported_predicates=supported_predicates
+            complete_known_prefixes(translation.sparql),
+            supported_predicates=supported_predicates,
         )
     except NLQError as error:
         return PipelineOutcome(translation, safe_sparql, None, error, "SPARQL validation")

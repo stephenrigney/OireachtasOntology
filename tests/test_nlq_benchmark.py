@@ -393,6 +393,37 @@ def test_deterministic_regression_runs_shared_pipeline_without_an_llm():
     assert summarize_results(results)["passed"] == 10
 
 
+def test_benchmark_pipeline_completes_missing_prefix_before_shared_validation():
+    benchmark = load_benchmark(BENCHMARK_PATH)
+    case = next(item for item in benchmark["cases"] if item["id"] == "lookup.aengus-name")
+    single_case = {**benchmark, "cases": [case]}
+    translation = Translation(
+        "Find the exact Member name.",
+        'SELECT ?name WHERE { GRAPH ?memberGraph { ?member foaf:name ?name . '
+        'FILTER(?name = "Aengus Ó Snodaigh") } } LIMIT 10',
+    )
+
+    class MissingPrefixTranslator:
+        def translate(self, _question, _schema):
+            return translation
+
+        def close(self):
+            pass
+
+    fuseki = _FakeFuseki()
+    result = run_cases(
+        single_case, _baseline(), fuseki=fuseki, tier="measured",
+        repository_root=ROOT, translator_factory=lambda _case: MissingPrefixTranslator(),
+    )[0]
+
+    assert result["evaluation"] == "passed"
+    assert result["generated_sparql"] == translation.sparql
+    assert result["validated_sparql"].startswith(
+        "PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n"
+    )
+    assert fuseki.queries[-1] == result["validated_sparql"]
+
+
 def test_known_unavailable_case_does_not_invoke_translation():
     benchmark = load_benchmark(BENCHMARK_PATH)
     case = next(item for item in benchmark["cases"]
