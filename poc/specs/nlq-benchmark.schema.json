@@ -85,7 +85,7 @@
         "support_expectation": {"enum": ["supported", "ambiguous", "unsupported", "unavailable"]},
         "expected_interpretation": {"type": "string", "minLength": 1},
         "expected_result": {"oneOf": [{"$ref": "#/$defs/resultInvariant"}, {"type": "null"}]},
-        "evaluation_mode": {"enum": ["semantic_invariants", "manual_review"]},
+        "evaluation_mode": {"enum": ["semantic_invariants", "ambiguity_handling", "manual_review"]},
         "dataset_prerequisites": {
           "type": "object",
           "additionalProperties": false,
@@ -135,10 +135,24 @@
       "allOf": [
         {
           "if": {"properties": {"support_expectation": {"const": "supported"}}, "required": ["support_expectation"]},
-          "then": {"properties": {"evaluation_mode": {"const": "semantic_invariants"}, "expected_result": {"$ref": "#/$defs/resultInvariant"}}}
+          "then": {
+            "oneOf": [
+              {"properties": {"evaluation_mode": {"const": "semantic_invariants"}, "expected_result": {"$ref": "#/$defs/resultInvariant"}}},
+              {"properties": {"evaluation_mode": {"const": "manual_review"}, "expected_result": {"type": "null"}}}
+            ]
+          }
         },
         {
-          "if": {"properties": {"support_expectation": {"enum": ["ambiguous", "unsupported", "unavailable"]}}, "required": ["support_expectation"]},
+          "if": {"properties": {"support_expectation": {"const": "ambiguous"}}, "required": ["support_expectation"]},
+          "then": {
+            "oneOf": [
+              {"properties": {"evaluation_mode": {"const": "ambiguity_handling"}, "expected_result": {"type": "null"}}},
+              {"properties": {"evaluation_mode": {"const": "manual_review"}, "expected_result": {"type": "null"}}}
+            ]
+          }
+        },
+        {
+          "if": {"properties": {"support_expectation": {"enum": ["unsupported", "unavailable"]}}, "required": ["support_expectation"]},
           "then": {"properties": {"evaluation_mode": {"const": "manual_review"}, "expected_result": {"type": "null"}}}
         },
         {

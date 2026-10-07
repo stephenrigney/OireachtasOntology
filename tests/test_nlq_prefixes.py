@@ -11,6 +11,7 @@ from rdflib.plugins.sparql.parserutils import CompValue
 from poc.nlq.contract import load_query_contract
 from poc.nlq.errors import NLQError
 from poc.nlq.llm import Translation
+from poc.nlq.results import QueryResult
 from poc.nlq.pipeline import process_question
 from poc.nlq import pipeline as pipeline_module
 from poc.nlq.safety import complete_known_prefixes, validate_sparql
@@ -163,11 +164,15 @@ def test_completed_query_still_goes_through_normal_safety_rejections(
         def translate(self, _question, _schema):
             return Translation("Run a local query", query)
 
-    def forbidden_fuseki_factory():
-        raise AssertionError("safety-rejected SPARQL must not reach Fuseki")
+    class ResolutionOnlyFuseki:
+        def query(self, sparql):
+            assert "?question" in sparql
+            return QueryResult(
+                kind="select", columns=("member", "name", "memberCode"), rows=(),
+            )
 
     outcome = process_question(
-        "question", translator=Translator(), fuseki_factory=forbidden_fuseki_factory,
+        "question", translator=Translator(), fuseki_factory=ResolutionOnlyFuseki,
         schema_context="schema", supported_predicates=PREDICATES,
     )
 

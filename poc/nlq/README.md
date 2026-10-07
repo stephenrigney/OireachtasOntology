@@ -2,7 +2,7 @@
 
 This proof of concept lets you ask questions about the Oireachtas RDF dataset in plain English.
 
-The application sends the question, together with schema context derived from the repository ontology, to an OpenAI Responses-compatible LLM. The model returns read-only SPARQL, the application validates it, runs it against Fuseki, and shows both the result and the generated SPARQL.
+The application first checks exact local Member-name references against Member `foaf:name` labels in Fuseki. If multiple local Member records remain without distinguishing context, it returns a clarification outcome and does not send an answer query. Otherwise, it sends the question with schema context derived from the repository ontology to an OpenAI Responses-compatible LLM; the application validates the model's read-only SPARQL, runs it against Fuseki, and shows both the result and the generated SPARQL.
 
 This is an experimental query interface. It is separate from the deterministic ETL pipeline and never writes to Fuseki.
 
@@ -106,14 +106,16 @@ of other or stale graphs already in a persistent Fuseki dataset.
 
 ## NLQ evaluation benchmark
 
-The current question set is benchmark v0.2.0 at
-`poc/nlq/benchmarks/benchmark-v2.json`; the historical v0.1.0 set is preserved
-as `poc/nlq/benchmarks/benchmark-v1.json`. Both use the format defined by
+The current question set is benchmark v0.3.0 at
+`poc/nlq/benchmarks/benchmark-v3.json`; historical v0.1.0 and v0.2.0 sets are
+preserved as `poc/nlq/benchmarks/benchmark-v1.json` and
+`poc/nlq/benchmarks/benchmark-v2.json`. All use the format defined by
 `poc/specs/nlq-benchmark.schema.json`. Each case records its
 category, support expectation, interpretation target, semantic result
 invariants, graph/resource prerequisites, and optional independent coverage
-probes. Ambiguous and unsupported questions are retained for measured/manual
-review rather than assigned invented facts.
+probes. Exact duplicate Member-name cases use a deterministic
+`ambiguity_handling` evaluation mode; broad set-valued Member questions remain
+manual review when their precise answer set is not yet stable enough to score.
 
 Run the deterministic ten-case subset without an external LLM:
 
@@ -121,7 +123,8 @@ Run the deterministic ten-case subset without an external LLM:
 uv run --locked --extra nlq python scripts/run-nlq-benchmark.py --tier regression
 ```
 
-Run all 42 v0.2.0 cases using the configured Responses-compatible LLM:
+Run all 42 v0.3.0 cases using the configured Responses-compatible LLM where
+translation is required:
 
 ```bash
 uv run --locked --extra nlq python scripts/run-nlq-benchmark.py --tier measured
@@ -135,9 +138,10 @@ with `--raw-dir` / `--state-db` or the existing `OIR_RAW_DIR` /
 on loopback, attaches no host or named data volume, bootstraps that instance
 from the preserved captures, and stops/removes it after evaluation. It never
 targets the ordinary persistent Compose dataset. The runner defaults to
-benchmark v0.2.0; use `--benchmark
-poc/nlq/benchmarks/benchmark-v1.json` only to reproduce the historical v0.1.0
-case set. Result JSON is written beneath the ignored
+benchmark v0.3.0; use `--benchmark
+poc/nlq/benchmarks/benchmark-v2.json` or `--benchmark
+poc/nlq/benchmarks/benchmark-v1.json` to reproduce the historical v0.2.0 or
+v0.1.0 case sets. Result JSON is written beneath the ignored
 `var/nlq-benchmark/runs/` directory by default.
 
 Every result embeds the exact Phase 0A dataset-baseline JSON and its stable
@@ -319,7 +323,10 @@ Do not use `docker compose down -v` as a refresh step: it deletes Fuseki's persi
 
 ```text
 Question in browser / benchmark runner
-  -> OpenAI Responses-compatible LLM
+  -> bounded local exact Member-label resolution
+       - explicit ambiguity outcome for unresolved duplicate labels
+       - local HouseTerm / constituency context for disambiguation
+  -> OpenAI Responses-compatible LLM (when resolution is unique or set-valued)
        - query-contract-scoped schema context
        - dataset graph conventions from the contract
        - user question
@@ -456,7 +463,13 @@ In particular:
 - party and independent collection membership use related but not identical graph patterns;
 - some ontology vocabulary is defined before corresponding instance data is populated;
 - historic facts can only be returned when the required source data has been loaded;
-- there is no dedicated entity-resolution subsystem;
+- exact local Member-label ambiguity handling is bounded to the shared NLQ
+  pipeline; it does not provide general fuzzy search or same-person merging;
+- a matching local HouseTerm or constituency/panel label can narrow duplicate
+  Member candidates enough to continue, but the selected Member IRI is not
+  mechanically bound into the later LLM-generated answer query. That query must
+  still apply the context correctly; inspect its generated SPARQL before relying
+  on a context-disambiguated answer;
 - there is no conversational follow-up state;
 - there is no authentication or production hardening;
 - the schema grounding is not a full reasoner or query planner.

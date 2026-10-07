@@ -11,6 +11,7 @@
     section { margin-top: 1.5rem; }
     pre { overflow-x: auto; padding: 1rem; background: #f2f4f7; border: 1px solid #d5d9df; white-space: pre-wrap; }
     .error { padding: .75rem; color: #8b1111; background: #fff0f0; border: 1px solid #e5bcbc; }
+    .ambiguity { padding: .75rem; background: #fff8e6; border: 1px solid #d6b65d; }
     .debug-panel { padding: .75rem; border: 1px solid #c8ccd0; background: #f8f9fa; }
     .readiness { padding: .75rem; border: 1px solid #c8ccd0; }
     .readiness.ready { background: #eff8ef; border-color: #83b883; }
@@ -44,6 +45,28 @@
   </form>
 
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+
+  {% if ambiguity %}
+  <section class="ambiguity" role="status" aria-live="polite">
+    <h2>More than one local Member record matches</h2>
+    <p>
+      I found {{ ambiguity.candidates|length }} local Member records named
+      <strong>{{ ambiguity.entity_reference }}</strong>. The question does not
+      distinguish them, so I have not selected one. Add a specific Dáil/Seanad
+      term or constituency/panel to narrow the reference.
+    </p>
+    <ul>
+    {% for candidate in ambiguity.candidates %}
+      <li>
+        <strong>{{ candidate.name }}</strong>
+        {% if candidate.house_terms %}— served in {{ candidate.house_terms|join(", ") }}{% endif %}
+        {% if candidate.representations %}; represented {{ candidate.representations|join(", ") }}{% endif %}
+        {% if not candidate.house_terms and not candidate.representations %}— no additional local chamber/term/representation context is available{% endif %}
+      </li>
+    {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
 
   {% if interpretation %}
   <section>
@@ -83,7 +106,7 @@
     {% if debug_message %}<p>{{ debug_message }}</p>{% endif %}
     {% if debug_output %}
     <details {% if debug_message or error %}open{% endif %}>
-      <summary>Raw {{ debug_source or "endpoint" }} response payload</summary>
+      <summary>{% if debug_source == "Local Member resolution" %}Local Member resolution evidence{% else %}Raw {{ debug_source or "endpoint" }} response payload{% endif %}</summary>
       <pre><code>{{ debug_output }}</code></pre>
     </details>
     {% elif error %}

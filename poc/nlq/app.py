@@ -20,7 +20,7 @@ from .fuseki import (
 )
 from .llm import ResponsesTranslator
 from .pipeline import process_question
-from .results import QueryResult
+from .results import QueryResult, format_debug_payload
 from .schema import build_schema_context
 from .vocabulary import supported_predicates
 
@@ -68,6 +68,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
 
     def render(request: Request, *, question: str = "", interpretation: str | None = None,
                sparql: str | None = None, result: QueryResult | None = None,
+               ambiguity=None,
                error: str | None = None, debug_output: str | None = None,
                debug_message: str | None = None, debug_source: str | None = None,
                readiness: FusekiReadiness | None = None):
@@ -78,6 +79,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
             "interpretation": interpretation,
             "sparql": sparql,
             "result": result,
+            "ambiguity": ambiguity,
             "error": error,
             "debug_output": debug_output,
             "debug_message": debug_message,
@@ -137,6 +139,19 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
             if outcome.error is not None:
                 phase = outcome.error_phase or phase
                 raise outcome.error
+            if outcome.ambiguity is not None:
+                ambiguity_debug = format_debug_payload(outcome.ambiguity.as_dict())
+                return render(
+                    request,
+                    question=question,
+                    ambiguity=outcome.ambiguity,
+                    debug_message=(
+                        "Local Member-name ambiguity was detected before SPARQL generation. "
+                        "No answer query was sent to Fuseki."
+                    ),
+                    debug_output=ambiguity_debug,
+                    debug_source="Local Member resolution",
+                )
             safe_sparql = outcome.validated_sparql
             result = outcome.result
             debug_message = None
@@ -151,13 +166,21 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                           sparql=safe_sparql, result=result, debug_output=result.raw_json,
                           debug_message=debug_message, debug_source="Fuseki")
         except NLQError as error:
-            if phase == "SPARQL validation":
+            if phase == "Member name resolution":
+                debug_message = (
+                    "Local Member-name resolution failed; no answer query was sent to Fuseki."
+                )
+            elif phase == "SPARQL validation":
                 debug_message = "Generated SPARQL failed local syntax/safety validation and was not sent to Fuseki."
             elif phase == "Fuseki query":
                 debug_message = "The SPARQL passed local validation, but the Fuseki query failed. The endpoint response is shown below when available."
             else:
                 debug_message = "LLM translation failed; no SPARQL query was sent to Fuseki."
-            debug_source = error.debug_source or ("LLM API" if phase == "LLM translation" else "Fuseki")
+            debug_source = error.debug_source or (
+                "LLM API" if phase == "LLM translation" else
+                "Local Member resolution" if phase == "Member name resolution" else
+                "Fuseki"
+            )
             return render(request, question=question,
                           interpretation=translation.interpretation if translation else None,
                           sparql=translation.sparql if translation else None,
