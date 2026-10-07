@@ -17,7 +17,7 @@ from .safety import validate_sparql
 
 BENCHMARK_SCHEMA_VERSION = 1
 DEFAULT_BENCHMARK_PATH = (
-    Path(__file__).resolve().parent / "benchmarks" / "benchmark-v1.json"
+    Path(__file__).resolve().parent / "benchmarks" / "benchmark-v2.json"
 )
 GRAPH_FAMILIES = {
     "houses", "parties", "constituencies", "committees", "members", "bills", "debates",

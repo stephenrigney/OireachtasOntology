@@ -106,8 +106,10 @@ of other or stale graphs already in a persistent Fuseki dataset.
 
 ## NLQ evaluation benchmark
 
-The version-1 question set is `poc/nlq/benchmarks/benchmark-v1.json`; its
-format is defined by `poc/specs/nlq-benchmark.schema.json`. Each case records its
+The current question set is benchmark v0.2.0 at
+`poc/nlq/benchmarks/benchmark-v2.json`; the historical v0.1.0 set is preserved
+as `poc/nlq/benchmarks/benchmark-v1.json`. Both use the format defined by
+`poc/specs/nlq-benchmark.schema.json`. Each case records its
 category, support expectation, interpretation target, semantic result
 invariants, graph/resource prerequisites, and optional independent coverage
 probes. Ambiguous and unsupported questions are retained for measured/manual
@@ -119,7 +121,7 @@ Run the deterministic ten-case subset without an external LLM:
 uv run --locked --extra nlq python scripts/run-nlq-benchmark.py --tier regression
 ```
 
-Run all 42 cases using the configured Responses-compatible LLM:
+Run all 42 v0.2.0 cases using the configured Responses-compatible LLM:
 
 ```bash
 uv run --locked --extra nlq python scripts/run-nlq-benchmark.py --tier measured
@@ -132,8 +134,11 @@ with `--raw-dir` / `--state-db` or the existing `OIR_RAW_DIR` /
 `stain/jena-fuseki:5.1.0` container for each run, publishes a random port only
 on loopback, attaches no host or named data volume, bootstraps that instance
 from the preserved captures, and stops/removes it after evaluation. It never
-targets the ordinary persistent Compose dataset. Result JSON is written beneath
-the ignored `var/nlq-benchmark/runs/` directory by default.
+targets the ordinary persistent Compose dataset. The runner defaults to
+benchmark v0.2.0; use `--benchmark
+poc/nlq/benchmarks/benchmark-v1.json` only to reproduce the historical v0.1.0
+case set. Result JSON is written beneath the ignored
+`var/nlq-benchmark/runs/` directory by default.
 
 Every result embeds the exact Phase 0A dataset-baseline JSON and its stable
 `sha256:` dataset ID, plus the disposable container ID for that particular run.

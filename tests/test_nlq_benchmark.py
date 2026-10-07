@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -8,8 +9,10 @@ import subprocess
 
 import httpx
 import pytest
+from jsonschema import Draft202012Validator
 
 from poc.nlq.benchmark import (
+    DEFAULT_BENCHMARK_PATH,
     BenchmarkFormatError,
     assess_dataset_prerequisites,
     dataset_association,
@@ -26,7 +29,8 @@ from poc.nlq.results import QueryResult, parse_results
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BENCHMARK_PATH = ROOT / "poc/nlq/benchmarks/benchmark-v1.json"
+BENCHMARK_PATH = ROOT / "poc/nlq/benchmarks/benchmark-v2.json"
+HISTORICAL_BENCHMARK_PATH = ROOT / "poc/nlq/benchmarks/benchmark-v1.json"
 
 
 def _baseline(*, quarantined=(), unresolved=(), missing=()) -> dict:
@@ -72,22 +76,53 @@ class _FakeFuseki:
         self.queries.append(sparql)
         if "ASK {" in sparql:
             return parse_results({"head": {}, "boolean": True})
-        if "?termLabel" in sparql:
-            value = "33rd Dáil"
-        elif "foaf:name" in sparql and "Aengus" in sparql:
-            value = "Aengus Ó Snodaigh"
-        elif "foaf:name" in sparql and "Timmy" in sparql:
-            value = "Timmy Dooley"
-        elif "?collectionLabel" in sparql:
+        if "?committeeLabel" in sparql and "26th Seanad" in sparql:
+            return parse_results({
+                "head": {"vars": ["committeeLabel"]},
+                "results": {"bindings": [
+                    {"committeeLabel": {"type": "literal", "value":
+                     "Select Committee on Transport and Communications"}},
+                    {"committeeLabel": {"type": "literal", "value":
+                     "Select Committee on Environment and Climate Action"}},
+                ]},
+            })
+        if "?collectionLabel" in sparql:
             value = "Fianna Fáil"
         elif "?panelLabel" in sparql:
             value = "Nominated by the Taoiseach"
         elif "?committeeLabel" in sparql:
             value = "Joint Committee on Transport and Communications"
-        elif "?startDate" in sparql and "Timmy-Dooley" in sparql:
+        elif "?startDate" in sparql and "26th Seanad" in sparql:
             value = "2020-06-29T00:00:00"
         elif "?startDate" in sparql:
             value = "2024-11-29T00:00:00"
+        elif "?termLabel" in sparql and '"Micheál Martin"' in sparql:
+            labels = (
+                "26th Dáil", "27th Dáil", "28th Dáil", "29th Dáil", "30th Dáil",
+                "31st Dáil", "32nd Dáil", "33rd Dáil", "34th Dáil",
+            )
+            return parse_results({
+                "head": {"vars": ["termLabel"]},
+                "results": {"bindings": [
+                    {"termLabel": {"type": "literal", "value": label}}
+                    for label in labels
+                ]},
+            })
+        elif ("?termLabel" in sparql and '"Timmy Dooley"' in sparql
+              and "SeanadMembership" in sparql):
+            return parse_results({
+                "head": {"vars": ["termLabel"]},
+                "results": {"bindings": [
+                    {"termLabel": {"type": "literal", "value": label}}
+                    for label in ("22nd Seanad", "26th Seanad")
+                ]},
+            })
+        elif "?termLabel" in sparql:
+            value = "33rd Dáil"
+        elif "foaf:name" in sparql and "Aengus" in sparql:
+            value = "Aengus Ó Snodaigh"
+        elif "foaf:name" in sparql and "Timmy" in sparql:
+            value = "Timmy Dooley"
         elif "COUNT(" in sparql:
             value = "19"
         else:
@@ -117,6 +152,119 @@ def test_benchmark_json_is_versioned_and_contains_representative_categories():
         "supported", "ambiguous", "unsupported", "unavailable",
     }
     assert sum("regression" in case["tiers"] for case in benchmark["cases"]) == 10
+
+
+def test_benchmark_history_and_default_version_are_preserved():
+    historical = load_benchmark(HISTORICAL_BENCHMARK_PATH)
+    current = load_benchmark(BENCHMARK_PATH)
+
+    assert historical["benchmark_version"] == "0.1.0"
+    assert current["benchmark_version"] == "0.2.0"
+    assert DEFAULT_BENCHMARK_PATH == BENCHMARK_PATH
+    assert hashlib.sha256(
+        HISTORICAL_BENCHMARK_PATH.read_bytes()
+    ).hexdigest() == "afaebc738c86e150e73d1bf997c2fe739df3e22226e566e4416508bdf48885c3"
+
+
+def test_benchmark_versions_validate_against_the_published_json_schema():
+    schema = json.loads((ROOT / "poc/specs/nlq-benchmark.schema.json").read_text())
+    Draft202012Validator.check_schema(schema)
+    validator = Draft202012Validator(schema)
+
+    for path in (HISTORICAL_BENCHMARK_PATH, BENCHMARK_PATH):
+        validator.validate(json.loads(path.read_text(encoding="utf-8")))
+
+
+def test_v02_support_expectations_match_contract_scope_and_dataset_evidence():
+    benchmark = load_benchmark(BENCHMARK_PATH)
+    contract = json.loads((ROOT / "poc/specs/query-schema-contract.json").read_text())
+    by_id = {case["id"]: case for case in benchmark["cases"]}
+
+    assert "dct:temporal" not in contract["queryableProperties"]
+    house_start = by_id["date.dail-34-start"]
+    assert house_start["support_expectation"] == "unsupported"
+    assert house_start["evaluation_mode"] == "manual_review"
+    assert house_start["expected_result"] is None
+    assert "regression" not in house_start["tiers"]
+    interval_case = by_id["date.aengus-active-mid-2023"]
+    assert interval_case["expected_result"]["kind"] == "select"
+    assert interval_case["expected_result"]["invariants"]["required_rows"] == [[
+        "2020-02-08T00:00:00", "2024-11-08T00:00:00",
+    ]]
+    assert "term.dail-34-start-date" not in by_id
+    assert "term.micheal-dail-34-membership" in by_id
+    assert "collection.enduring-party-unsupported" not in by_id
+    assert by_id["collection.micheal-dail-34"]["support_expectation"] == "supported"
+
+    for case in benchmark["cases"]:
+        if "regression" in case["tiers"]:
+            query = case["regression_translation"]["sparql"]
+            assert "#term-period" not in query
+            assert "dct:temporal" not in query
+            assert "/ie/oireachtas/member/id/" not in query
+            assert "/ie/oireachtas/house/" not in query
+            assert "/graph/member/" not in query
+
+
+def test_ambiguous_cases_have_capture_backed_candidate_probes():
+    benchmark = load_benchmark(BENCHMARK_PATH)
+    by_id = {case["id"]: case for case in benchmark["cases"]}
+
+    for case_id, minimum in (
+        ("ambiguous.duplicate-michael-collins", 3),
+        ("ambiguous.martin", 2),
+        ("ambiguous.duplicate-cathy-honan", 3),
+    ):
+        case = by_id[case_id]
+        assert case["support_expectation"] == "ambiguous"
+        assert case["evaluation_mode"] == "manual_review"
+        assert case["expected_result"] is None
+        assert case["dataset_prerequisites"]["coverage_probes"]
+        invariant = case["dataset_prerequisites"]["coverage_probes"][0]["expected_result"]["invariants"]
+        assert invariant["min_rows"] >= minimum
+
+
+def test_aengus_coverage_uses_member_graph_discovery_not_unicode_graph_iri_literals():
+    benchmark = load_benchmark(BENCHMARK_PATH)
+    selected = {
+        "lookup.aengus-name", "term.aengus-dail-33", "collection.aengus-dail-33",
+        "date.aengus-active-mid-2023", "join.aengus-dail-33-collection",
+        "join.aengus-dail-33-constituency",
+    }
+    for case in benchmark["cases"]:
+        if case["id"] not in selected:
+            continue
+        for probe in case["dataset_prerequisites"]["coverage_probes"]:
+            assert "GRAPH ?memberGraph" in probe["sparql"]
+            assert "Aengus Ó Snodaigh" in probe["sparql"]
+            assert "GRAPH <https://data.oireachtas.ie/graph/member/Aengus" not in probe["sparql"]
+
+
+def test_committee_cases_follow_member_committee_owner_join_in_contract():
+    benchmark = load_benchmark(BENCHMARK_PATH)
+    by_id = {case["id"]: case for case in benchmark["cases"]}
+    expected_labels = {
+        "Select Committee on Transport and Communications",
+        "Select Committee on Environment and Climate Action",
+    }
+    for case_id in (
+        "committee.timmy-transport-committee", "committee.timmy-committee-count",
+        "join.timmy-committee-owner",
+    ):
+        case = by_id[case_id]
+        assert "26th Seanad" in case["expected_interpretation"]
+        probes = "\n".join(
+            probe["sparql"]
+            for probe in case["dataset_prerequisites"]["coverage_probes"]
+        )
+        assert "members:CommitteeMembership" in probes
+        assert "members:isCommitteeMembershipOf" in probes
+        assert "members:committeeInHouseTerm" in probes
+        if case_id != "committee.timmy-committee-count":
+            assert all(label in probes for label in expected_labels)
+        else:
+            assert case["expected_result"]["invariants"]["contains_values"] == ["2"]
+        assert "/member/id/Timmy-Dooley.S.2002-09-12/house/seanad/26" not in probes
 
 
 @pytest.mark.parametrize("mutation, message", [
@@ -156,6 +304,27 @@ def test_semantic_scoring_ignores_variable_names_and_binding_order():
 
     assert score.passed
     assert score.reason == "all semantic result invariants matched"
+
+
+def test_date_range_semantics_match_selected_values_without_rdf_datatype_suffixes():
+    benchmark = load_benchmark(BENCHMARK_PATH)
+    case = next(item for item in benchmark["cases"]
+                if item["id"] == "date.aengus-active-mid-2023")
+    actual = parse_results({
+        "head": {"vars": ["startDate", "endDate"]},
+        "results": {"bindings": [{
+            "startDate": {
+                "type": "literal", "value": "2020-02-08T00:00:00",
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            },
+            "endDate": {
+                "type": "literal", "value": "2024-11-08T00:00:00",
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            },
+        }]},
+    })
+
+    assert score_semantic_result(case["expected_result"], actual).passed
 
 
 def test_semantic_scoring_checks_aggregate_and_ask_invariants():

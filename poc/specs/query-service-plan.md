@@ -395,6 +395,11 @@ capture-backed Phase 0A development dataset. Results, configuration, coverage
 outcomes and diagnostic limitations are recorded in
 [`poc/nlq/benchmarks/phase-1a-baseline.md`](../nlq/benchmarks/phase-1a-baseline.md).
 
+Phase 1B corrected benchmark contract and capture-coverage defects without
+changing NLQ behavior. The versioned v0.2.0 baseline and the case-by-case
+validity decisions are recorded in
+[`poc/nlq/benchmarks/phase-1b-baseline.md`](../nlq/benchmarks/phase-1b-baseline.md).
+
 #### Schema grounding
 
 - [ ] Remove redundant or misleading schema context.
