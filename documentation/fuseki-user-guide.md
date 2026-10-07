@@ -61,6 +61,42 @@ reachable beyond the local development machine. An existing `fuseki-data` volume
 keeps the password it was first initialised with; `scripts/dev-nlq.sh` reconciles
 that stored password to the configured value without deleting the volume.
 
+## Local ETL development
+
+From the repository root, install the locked Python dependencies, start the
+local Fuseki service, and configure the ETL Graph Store and verification
+endpoints:
+
+```bash
+uv sync --locked --extra test
+docker compose up -d fuseki
+export OIR_FUSEKI_GSP_URL=http://localhost:3030/houses/data
+export OIR_FUSEKI_SPARQL_URL=http://localhost:3030/houses/query
+```
+
+For authenticated Fuseki, also export `OIR_FUSEKI_USER` and
+`OIR_FUSEKI_PASSWORD` for the ETL client.
+
+The `oir-etl` command fetches current API data for these endpoint runs, preserves
+raw responses, validates the generated RDF, then publishes and verifies the
+owned graph(s):
+
+```bash
+uv run --locked oir-etl run houses
+uv run --locked oir-etl run parties
+uv run --locked oir-etl run constituencies
+uv run --locked oir-etl run members
+uv run --locked oir-etl run bills
+```
+
+Use disposable/local Fuseki endpoints for development. Do not point these
+commands at production without following the approved operational process.
+Fixture-backed offline examples and the production refresh/recovery contracts
+are in [the ETL plan](etl-plan.md) and
+[incremental refresh/state guide](incremental-refresh-state.md). The bounded
+Debates batch publication path has separate acceptance and is not one of these
+standard endpoint commands; see [Phase 7 Debates](phase-7-debates.md).
+
 ## 3. Configure the ETL client
 
 Set the Fuseki endpoints:

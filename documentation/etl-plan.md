@@ -1,5 +1,13 @@
 # Oireachtas Open Data ETL — Phase Plan and Backlog
 
+> **Document type: design and implementation history.** This plan retains
+> architectural decisions, phase/tranche scope, completion records and deferred
+> work; it is not the concise description of the current system. For current
+> integrated behavior and navigation, see
+> [Current system overview](current-state.md). Status statements in this file
+> are phase-specific and should be read with their dates and acceptance
+> boundaries.
+
 ## 1. Objective
 
 Build a deterministic and maintainable ETL pipeline that:

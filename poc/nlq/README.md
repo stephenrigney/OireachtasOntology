@@ -4,9 +4,71 @@ This proof of concept lets you ask questions about the Oireachtas RDF dataset in
 
 The application sends the question, together with schema context derived from the repository ontology, to an OpenAI Responses-compatible LLM. The model returns read-only SPARQL, the application validates it, runs it against Fuseki, and shows both the result and the generated SPARQL.
 
-This is an experimental query interface. It is separate from the deterministic ETL pipeline and never writes to Fuseki.
+This is an **experimental query interface**, not a production service. It is separate from the deterministic ETL pipeline and never writes to Fuseki.
 
-## Quick start
+## Example questions
+
+- Who were the Fine Gael members of the 33rd Dáil?
+- Which TDs represented Dublin constituencies in the 32nd Dáil?
+- Which parliamentary member collection did Micheál Martin belong to in the 33rd Dáil?
+- How many members were in each parliamentary member collection in the 33rd Dáil?
+
+Results depend on the graph data actually loaded. The examples illustrate
+currently supported patterns, not a promise of complete historical coverage.
+
+## Current data and query support
+
+The local query contract covers selected currently emitted patterns for:
+
+- Members and their Dáil/Seanad memberships and terms;
+- term-scoped ParliamentaryParty and IndependentMemberCollection membership;
+- Dáil constituencies, Seanad panels and Committees, including membership
+  references;
+- Bill/legislative process descriptions, lifecycle properties, versions and
+  related resources when Bill graphs have been loaded; and
+- selected reviewed external identity links, where present.
+
+It supports read-only `SELECT` and `ASK` only. The machine-readable, versioned
+contract is [`poc/specs/query-schema-contract.json`](../specs/query-schema-contract.json);
+it defines exactly which classes, properties, graph families and joins are
+queryable. Ontology declarations alone do not make a pattern queryable. Debate
+descriptions are not currently available through this query contract.
+
+## How a question is answered
+
+```text
+natural-language question → interpretation → validated SPARQL → Fuseki → result
+```
+
+The browser sends the question and contract-scoped schema context to an
+OpenAI Responses-compatible LLM. The response contains an interpretation and
+SPARQL; the application applies local parsing/safety checks before sending the
+query to the configured Fuseki endpoint. The page presents the interpretation,
+generated query and result. No RDF instance dataset is sent to the LLM, and
+Fuseki remains the source of facts.
+
+## Status and limitations
+
+This is an experimental proof of concept for local or otherwise isolated use,
+not a complete SPARQL sandbox or production-hardened service. A safe query can
+still be semantically wrong. It does not provide general OWL entailment,
+conversational follow-up, authentication, complete entity resolution or a full
+query planner. Data coverage is whatever has been loaded; presence checks do
+not prove reference closure or historical completeness. Debate patterns and
+some emitted predicates remain outside the query allowlist. Always inspect the
+generated SPARQL and the detailed [limitations](#limitations) before relying
+on a result.
+
+Exact local Member-name ambiguity handling is in development and is **not**
+part of the current integrated pipeline. Follow the Query Service plan for
+status; do not assume similarly named Member records are disambiguated.
+
+The Query Service design and future work are recorded in
+[`poc/specs/query-service-plan.md`](../specs/query-service-plan.md). Plans and
+specifications describe intended scope and may include work not yet integrated;
+this guide's status is based on the application and query contract on `master`.
+
+## Run locally
 
 Run all commands from the repository root. The launcher needs `uv`, Docker with
 the `docker compose` plugin, and `curl`.
@@ -54,13 +116,6 @@ The home page performs a read-only, presence-only readiness check for Houses,
 Parties, Constituencies and Members; Bills are detected as optional. This check
 does not identify the source captures or establish reference closure, and it
 does not currently probe the Committee graph family.
-
-Try questions such as:
-
-- Who were the Fine Gael members of the 33rd Dáil?
-- Which TDs represented Dublin constituencies in the 32nd Dáil?
-- Which parliamentary member collection did Micheál Martin belong to in the 33rd Dáil?
-- How many members were in each parliamentary member collection in the 33rd Dáil?
 
 The application shows:
 

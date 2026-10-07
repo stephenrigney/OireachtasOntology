@@ -1,6 +1,21 @@
 ## Oireachtas Ontology — Structure and Contents
 
-The ontology is split into six sub-ontologies, each covering one of the four declared areas of the Oireachtas ontology, plus a shared controlled vocabulary layer and a detailed membership model. A root umbrella file imports all six.
+This is the detailed vocabulary/module reference. For a concise account of the
+current conceptual model, integrated data coverage, ETL and graph ownership,
+limitations and repository navigation, see the
+[current system overview](../documentation/current-state.md). The tables below
+document ontology declarations; they do not imply that every term has
+instances in the published dataset.
+
+The umbrella ontology imports six modules: agents, events, legislation,
+members, controlled vocabulary and debates. Their boundaries follow the current
+vocabulary modules rather than a fixed count of subject areas.
+
+The ontology Turtle files are the executable vocabulary. Dated migration notes
+below preserve historical change context and can lag later changes; do not use
+an older note as the current declaration when it conflicts with the Turtle
+source. Current model distinctions are summarized in the
+[current system overview](../documentation/current-state.md).
 
 ---
 
@@ -54,7 +69,13 @@ oireachtas.owl
 
 **IRI:** `https://data.oireachtas.ie/ontology/agents`
 
-Defines the organisations, roles and persons involved in the legislative process.
+Defines the organisations, roles and persons involved in the legislative
+process. `agents:ParliamentaryBody` is the class of enduring parliamentary
+formal organisations; the enduring Oireachtas itself is an individual. The
+continuous Dáil and Seanad are `agents:House` instances, with distinct,
+numbered `agents:HouseTerm` resources. See
+[`documentation/house_model.md`](../documentation/house_model.md) for the
+House, Government and term identity distinctions.
 
 > **ELI-DL alignment (2026):** `eli-dl` import added. `:BillSource` class and `:Mover` class eliminated. `:Government`, `:PrivateMember` and `:PrivateSponsor` no longer subclasses of `:BillSource`. Canonical submitter linking now via `eli-dl:was_submitted_by`. Activity-level participation (e.g. who moved a bill) now via `eli-dl:had_participation` with `eli-dl:ParticipationRole` individuals defined in `members.owl`.
 >
