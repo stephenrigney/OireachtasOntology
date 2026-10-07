@@ -36,12 +36,19 @@ time-bounded participation and source observations. The principal patterns are:
 | Oireachtas and Houses | The enduring Oireachtas is a named individual. `agents:ParliamentaryBody` is a class, and `agents:House` models enduring Dáil and Seanad institutions. Houses own numbered `agents:HouseTerm` individuals (typed `agents:DailTerm` or `agents:SeanadTerm`). House and term are distinct identities; a term is not an organisation. See [House model](house_model.md). |
 | Parliamentary body | `agents:ParliamentaryBody` represents enduring parliamentary formal organisations; it is not the Oireachtas singleton, a HouseTerm or the Government. |
 | Government | The constitutional Government is `agents:Government`, distinct from House and term. Members' ministerial roles, the wider `members:GovernmentExecutive`, and the parliamentary whip bloc `members:GovernmentBenches` are separate tiers, not interchangeable meanings of “Government”. |
-| People and memberships | `agents:Member` is the canonical person class. Dated `members:OireachtasMembership` records distinguish Dáil, Seanad and Committee membership and connect the person to the enduring House and (where applicable) its particular term. A person can serve in different Houses across a career. |
+| People and memberships | `agents:Member` is the canonical person class. Dated `members:OireachtasMembership` records represent Dáil or Seanad service and connect a person to an enduring House and its particular term. `members:CommitteeMembership` is a separate membership type linking a Member to a Committee. A person can serve in different Houses and committees over a career. |
 | Parliamentary collections | `members:ParliamentaryParty` and `members:IndependentMemberCollection` are term-scoped collections. Dated `ParliamentaryCollectionMembership` records connect a person's membership to the collection and containing Oireachtas membership. An independent collection is not a party; no ParliamentaryGroup is inferred from party or government status. |
 | Offices and tenure | `members:NamedOffice` is an enduring particular office; `members:AdministrativeUnit` is a distinct institution. `members:OfficeHolding` records a person's dated tenure in one office. Reviewed office-type concepts—not generic OWL role classes—distinguish office categories. Qualifying holdings can support derived `agents:Government` `members:CabinetMembership` episodes. See [ministerial office design/status](phase-7-ministerial-offices.md). |
 | Committees | `members:Committee` is an organisation with shared descriptive ownership. Committee membership and tenure are represented in the Member's membership graph. Committee instances are distinct from HouseTerms and are not created by copying committee descriptions into Member graphs. |
 | Bills and legislation | ELI/ELI-DL resources represent a Bill's legislative process, source, lifecycle activities, versions and related document resources. The Bill graph owns Bill/process data and sponsor evidence; it does not own Member, Act or Debate descriptions. |
 | Debates | The structured model follows Akoma Ntoso Works and Expressions, with debate records, sittings where supported, ordered sections, speeches, summaries, questions and divisions/votes. AKN XML is authoritative; transcript text is not copied into RDF. Questions and votes belong to their Debate record. Cross-resource identities are linked only where resolved evidence supports them. |
+
+For the approachable topic-by-topic explanation of these relationships, see
+the [ontology conceptual guide](wiki/Home.md), particularly its pages on
+[Agents and institutions](wiki/Agents.md),
+[Members and membership](wiki/Members.md),
+[offices and administrative units](wiki/Departments.md),
+[Bills](wiki/Bills.md), and [Debates](wiki/Debates.md).
 
 These are a guide to the implemented model, not a claim that every ontology
 class is populated in every dataset. The module inventory is in

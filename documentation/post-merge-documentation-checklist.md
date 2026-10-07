@@ -15,6 +15,9 @@ unmerged behavior into the overview.
 - [ ] `documentation/current-state.md`: recheck only the NLQ coverage row and
   the short NLQ description/navigation in “Local development, operations and
   history”. Keep application detail in its canonical guide.
+- [ ] `documentation/wiki/Home.md`: recheck the short experimental-NLQ
+  introduction and canonical-guide link only; do not duplicate Query Service
+  behavior or examples there.
 - [ ] `README.md`: update its short NLQ summary/link only if the merged user
   entry point or canonical documentation location changes.
 
@@ -25,6 +28,15 @@ unmerged behavior into the overview.
   ownership”, and the operational-documentation links. Align production
   readiness and publication/recovery claims with merged code and acceptance,
   not the Phase 6 plan alone.
+- [ ] `documentation/wiki/Agents.md`, `documentation/wiki/Members.md`, and
+  `documentation/wiki/Departments.md`: recheck only operationally sensitive
+  status/coverage statements for Government, membership, office registries,
+  and office/administrative-unit publication. Their ontology concepts remain
+  unchanged unless the ontology itself receives a separately reviewed change.
+- [ ] `documentation/wiki/Debates.md` and
+  `documentation/wiki/Debates-body.md`: recheck the bounded production-readiness
+  and ingestion-status statements against Phase 6 acceptance; do not imply
+  Phase 6 operational capability before it is merged and verified.
 - [ ] `README.md`: recheck its ETL/Fuseki summary and validation commands if
   the supported operator entry point or local developer workflow changes.
 - [ ] `documentation/etl-plan.md`: update only the Phase 6 implementation/status

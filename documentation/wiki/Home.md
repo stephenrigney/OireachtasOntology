@@ -1,105 +1,90 @@
+# OireachtasOntology: conceptual guide
 
-## Houses of the Oireachtas Ontology
+OireachtasOntology is a formal vocabulary for describing the institutions,
+people, memberships, legislative processes and parliamentary records of the
+Houses of the Oireachtas. It combines local OWL terms with established
+vocabularies such as ORG, FOAF, SKOS, ELI and ELI-DL. Its Python ETL maps
+selected Oireachtas source records into validated RDF; the ontology describes
+the model, while source mappings and implementation determine which data is
+currently represented.
 
-*This is a work in progress*
+This wiki is the approachable conceptual guide to that model. For the concise
+whole-system summary, see [Current system overview](../current-state.md).
+For the executable term inventory, see the
+[ontology module reference](../../ontology/README.md) and the Turtle files in
+[`ontology/`](../../ontology/).
 
-1. [Introduction](#introduction)
-1. [Bills](Bills)
-1. [Debates](Debates)
-1. [Members and Agents](Members)
-1. [Agents — Organisations and Roles](Agents)
-1. [Departments](Departments)
-1. [Concept Schemes](Concept-Schemes)
-1. [Ordering Business](Ordering-Business)
-2. [Namespaces](#namespaces)
+## Conceptual map
 
+```text
+Oireachtas (enduring ParliamentaryBody individual)
+├── Dáil Éireann (enduring House) ── numbered Dáil HouseTerms
+└── Seanad Éireann (enduring House) ─ numbered Seanad HouseTerms
 
-### Introduction
+People ── dated OireachtasMembership ── House + HouseTerm
+       ├── collection membership ───── ParliamentaryParty / IndependentMemberCollection
+       ├── CommitteeMembership ───────── Committee (separately described organisation)
+       └── OfficeHolding ─────────────── NamedOffice ── AdministrativeUnit
+                    └── where qualifying: CabinetMembership ── Government
 
-The Houses of the Oireachtas ontology attempts to describe the business processes and publications produced by the Houses of the Oireachtas within a formal vocabulary that allows documents, legislative events and entities to be linked programmatically.
+Bill / legislative process ── stages, events, versions and documents
+Debate Work ── Expression(s) ── ordered sections ── speeches / questions / divisions
+```
 
-The ontology is being developed using the [web ontology language (OWL)](http://www.w3.org/TR/owl-features/) and reuses other ontology schema wherever possible. The Oireachtas ontology extensively reuses the [European Legislative Identifier (ELI)](http://publications.europa.eu/mdr/eli/documentation/) ontology and its draft-legislation extension [ELI-DL](http://data.europa.eu/eli/eli-draft-legislation-ontology), as well as the [Akoma Ntoso](http://www.akomantoso.org/) schema, all of which were designed for legislation and the legislative process.
+These are distinct resources and relationships, not synonyms or a claim that
+every resource is populated in every dataset.
 
-It is envisaged that the ontology will ultimately describe the following datasets from the Houses of the Oireachtas:
-- Bills and other legislation, including motions and amendments
-- Sub-units of the Houses of the Oireachtas, such as the Dáil, the Seanad and committees
-- the Official Report (debates), including parliamentary questions
-- Members
-- Departments and other relevant bodies, including political parties
-- Roles within the Houses of the Oireachtas (eg, Ministers or Chairs)
-- Order papers and journals, including voting records
-- Documents laid before the Houses
-- Committee reports and submissions
+## Explore the ontology
 
-One of the core functions of any Parliament is to decide on the legal basis for the creation and dissolution of State bodies, and to set the scope of their functions. Where relevant and feasible, the descriptions of Departments, roles and offices in this ontology will include a link to the decision of the Oireachtas on their creation, modification or dissolution, thereby allowing the Oireachtas dataset to be used as an authority vocabulary for Departments and Ministerial roles.
-
-For the current technical structure of the ontology, see the [ontology README](https://github.com/Oireachtas/ontology/blob/master/ontology/README.md).
-
-#### Terms used
-
-As the Houses of the Oireachtas can be understand as different things depending on the context, it is useful to clarify at the outset to define how certain terms are being used in this document, as follows:
-- A ``thing`` refers to the top level category in the ontology. Every object in the ontology is a thing. A thing might also refer to entities existing outside of the Oireachtas ontology, purely for convenience.
--  The ``Oireachtas`` refers to the Houses of the Oireachtas as a legislative body or parliament.
-- The ``Service`` refers to the administrative functions that support the Oireachtas, as set out by the Houses of the Oireachtas Commission Act 2003.
-- The ``Houses of the Oireachtas`` refer to the Oireachtas and Service collectively.
-- The ``Houses`` refer to the Dáil and Seanad collectively, while individual houses are referred to as ``House``, ``Dáil`` or ``Seanad`` depending on the context.
-- A ``committee`` is a subset of one or both Houses given delegated powers either by direction of a House, under Standing Orders of a House or by law.
-- A ``Member`` is an elected Member of the Oireachtas, a ``Deputy`` is a Member of the Dáil and a ``Senator`` is a Member of the Seanad.
-
-#### OWL and RDF syntax
-
-OWL uses the [resource description framework (RDF)](http://www.w3.org/RDF/) syntax. The RDF syntax describes data as a series of three-part statements linking things to other things.
-
-The three parts of the statement are called the subject, predicate and object, with the predicate expressing the relationship that the subject has with the object. Thus the sentence ``Enda Kenny holds the office of Taoiseach`` could be expressed in pseudo-rdf as ``<Enda Kenny><holds><office of Taoiseach``, with ``<Enda Kenny>`` as the object of the statement, ``<holds>`` as predicate and ``<office of the Taoiseach>`` as object.
-
-The predicate expresses the relationship from the subject to the object unidirectionally, so the statement cannot be reversed. In other words, one cannot state ``<office of Taoiseach><holds><Enda Kenny>`` but must instead use a new predicate: ``<office of Taoiseach><is held by><Enda Kenny>`` subject-object relations. This statement demonstrates that subjects and objects are mutable, that is, the object of one statement can become the subject of another. Indeed predicates can also be subjects or objects, as with the OWL property ``inverseOf``, which describes two predicates as the inverse of each other: ``<holds><owl:inverseOf><is held by>``.
-
-Each element in an RDF statement is either a [Internationalised resource identifier (IRI)] (http://www.w3.org/Addressing/#background) (an IRI is a generalisation of URIs which permit a wider range of characters) or a literal (or a blank node but these are not important in this discussion). An IRI is a string of characters which can uniquely identify the element. A literal is an element which is not denoted by an IRI, such as a string of text, a number or a date.
-
-OWL ontologies can be divided into three primary types, ``classes``, ``properties`` ``literals``.  A ``class`` corresponds to an RDF subject or object, while a ``property`` corresponds to a predicate. It is possible to sub-class both ``classes`` and ``properties`` in a hierarchical manner, and a particular class or property may be the sub-class of multiple parent classes.
-
-OWL permits the reuse and adaptation of existing ontologies in the development of new ones. This is in fact quite important because describing things using terms common to multiple datasets facilitates the sharing of information across the web. For this reason, the Oireachtas ontology reuses a number of other ontologies, including in particular the [European Legislative Identifier (ELI)](http://publications.europa.eu/mdr/eli/documentation/) ontology, which is designed to facilitate sharing and integration of legal resources across the European Union, and its extension [ELI-DL](http://data.europa.eu/eli/eli-draft-legislation-ontology), which covers draft legislation and the legislative process. However, given the particular nature of the material published by the Houses of the Oireachtas, as well as the procedures through which they are accorded legal status, it is also necessary in some cases to create our own models to properly describe things.
-
-At a document level, [Akoma Ntoso](http://www.akomantoso.org/) is being adopted as an XML schema for publication of the Official Report of Debates, and is being evaluated for Bills. Akoma Ntoso was developed to represent legal, parliamentary and judicial documents in XML format, and is currently under review as an [OASIS](https://www.oasis-open.org/) open standard.
-
-To describe categories and taxonomies of things, including controlled vocabularies as ways to describe them, the [Simple Knowledge Organising Scheme (SKOS)](www.w3.org/TR/skos-reference/) ontology is used. Concept scheme tables can be found in [Concept-Schemes](Concept-Schemes).
-
-Elements of the [Data Catalog vocabulary (DCAT)](www.w3.org/TR/vocab-dcat/) will also be reused.
-
-#### URIs
-
-The namespace for the Oireachtas ontology is ``https://data.oireachtas.ie/ontology#``. The string ``oir:`` denotes that the following term is in the Oireachtas namespace. Class names are in camel case with all first letters of words capitalised: ``oir:BillFormat``. Property names are camel case with the very first letter in lower case: ``oir:amendedBy``
-
-The namespace for URLs of instances of classes is ``https://data.oireachtas.ie`` and the patterns will be further described in the relevant sections.
-
-#### Schema Overview
-
-The OWL ontology is split into six sub-ontologies. See the [ontology README](https://github.com/Oireachtas/ontology/blob/master/ontology/README.md) for the full class, property and named individual reference.
-
-| Sub-ontology | Description |
+| Page | What it explains |
 |---|---|
-| `agents.owl` | Persons, roles and organisations (Houses, Government, Members, Committees) |
-| `events.owl` | Journal events, bill stages and procedural outcomes |
-| `legislation.owl` | Legislative documents, versions and statuses |
-| `members.owl` | Membership, roles, party groupings and government tiers |
-| `vocabulary.owl` | SKOS controlled vocabularies (concept schemes) |
-| `debates.owl` | Official Report and debates — Akoma Ntoso structure, speeches, divisions and participation |
+| [Agents and institutions](Agents.md) | Oireachtas, ParliamentaryBody, Houses, HouseTerms, Government, Committees and committee identity |
+| [Members and membership](Members.md) | Member, OireachtasMembership, constituencies/panels, committee service and term-scoped collections |
+| [Departments, offices and administrative units](Departments.md) | NamedOffice, OfficeHolding, CabinetMembership and AdministrativeUnit |
+| [Bills and legislative processes](Bills.md) | The ELI/ELI-DL distinction between Bill works, processes, activities and versions |
+| [Bill classes](Bill-Classes.md) · [Bill properties](Bill-Properties.md) | Selected class and relationship summaries; precise declarations live in ontology sources |
+| [Debates](Debates.md) · [Debate structure](Debates-body.md) | AKN Work/Expression identity and the structured content model |
+| [Concept schemes](Concept-Schemes.md) | Controlled vocabularies and their uses |
+| [Ordering business](Ordering-Business.md) | Boundary note for order papers, questions and votes not modelled as a separate current dataset |
 
-Conceptually, the subject matter falls into four areas: **Legislative Documents**, **Journal Events**, **Debates** and **Oireachtas Agents**. Some things straddle multiple areas — for example, an amendment to a Bill is both a legislative document and a journal event; such things are classified under multiple classes.
+## Current coverage and status
 
+The model and ETL are not synonymous with complete published data. Houses,
+reference data, Members, Bills and a bounded Debates implementation have
+distinct current coverage and limitations. The Debates model is implemented
+for its bounded scope, but the approved initial 2011+ production load is not
+yet cleared for production. Reference identity/coverage also has unresolved
+evidence. See [current coverage and limits](../current-state.md#data-coverage-and-limits)
+before interpreting these pages as a completeness claim.
 
+Some concepts exist in OWL before there are mapped or published instances.
+Formal ParliamentaryGroup and TechnicalGroup recognition is not inferred from
+party membership or Government status; statutory office succession and
+several debate crosswalks also remain evidence-dependent or deferred.
 
-### Namespaces
+## Try the experimental NLQ application
 
-| prefix  | namespace                                                              |
-|---------|------------------------------------------------------------------------|
-| oir     | https://data.oireachtas.ie/ontology#                                   |
-| eli     | http://data.europa.eu/eli/ontology#                                    |
-| eli-dl  | http://data.europa.eu/eli/eli-draft-legislation-ontology#              |
-| org     | http://www.w3.org/ns/org#                                              |
-| foaf    | http://xmlns.com/foaf/0.1/                                             |
-| skos    | http://www.w3.org/2004/02/skos/core#                                   |
-| dct     | http://purl.org/dc/terms/                                              |
-| dcat    | http://www.w3.org/ns/dcat#                                             |
-| lang    | http://publications.europa.eu/resource/authority/language              |
-| iana    | http://www.iana.org/assignments/media-types/                           |
+The experimental local NLQ application can translate questions about a limited
+subset of loaded RDF into inspectable, read-only SPARQL. For example, it may be
+used to ask which parliamentary collection a Member belonged to in a given
+term. It is not a complete data browser and results depend on loaded coverage.
+See the canonical [NLQ user and developer guide](../../poc/nlq/README.md) for
+examples, supported queries, setup and limitations.
+
+## Technical and historical references
+
+- [Current system overview](../current-state.md) — architecture, data
+  coverage, graph ownership, identifiers and repository navigation.
+- [Ontology module reference](../../ontology/README.md) — module inventory and
+  selected vocabulary declarations. The Turtle sources are authoritative.
+- [Mapping notes](../mapping_notes.md) and [`mappings/`](../../mappings/) —
+  source-field mapping meaning/status.
+- [ETL plan](../etl-plan.md) — architectural decisions and dated phase/tranche
+  implementation history, not a replacement for current-state documentation.
+- [House model](../house_model.md), [ministerial office design](../phase-7-ministerial-offices.md),
+  and [Debates design/status](../phase-7-debates.md) — detailed canonical
+  conceptual and acceptance records.
+
+Historical investigation and tranche documents are retained as evidence. Where
+an older idea is not in the integrated model, the relevant topic page marks it
+deferred or superseded rather than presenting it as current.

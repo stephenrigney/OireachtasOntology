@@ -1,155 +1,100 @@
-## Ontology of Houses, Constituencies, Parties, Members and Member Roles
+# Members and parliamentary membership
 
-> **2026 update:** Substantial refactoring. `agents:Chamber` renamed to `agents:House`; `members:Cabinet` eliminated; three-tier Government model introduced; member class hierarchy restructured; `metalex:` and `rda:` superclasses removed. See the [ontology README](https://github.com/Oireachtas/ontology/blob/master/ontology/README.md) for the authoritative class and property reference. Further detail on the House/HouseTerm split is in [house_model.md](../house_model.md).
->
-> For constitutional structures (Houses, Government tiers, Committees) and bill submitter/participation roles see also [Agents](Agents).
+The model separates **who a person is** from **which parliamentary service or
+collection membership they held, and when**. `agents:Member` is the canonical
+person class. A Member may serve in successive Dáil or Seanad terms, on
+committees, and in a parliamentary collection; these are dated relationships,
+not interchangeable person types.
 
-The [Organisation](https://www.w3.org/TR/vocab-org/) ontology is extensively reused to model the organisational and temporal components of the Houses of the Oireachtas, Members of the Houses and the roles they play, including in ministerial and committee positions.
+## House service
 
-### [Houses of the Oireachtas](#houses)
+`members:OireachtasMembership` is the record type for a Member's House service.
+Its `DailMembership` and `SeanadMembership` subclasses distinguish the term
+types. A record identifies the person and both the enduring House and the
+numbered HouseTerm:
 
-The modelling deliberately separates two distinct concepts of a "House":
-
-- **The permanent institution** (`agents:House`) — Dáil Éireann or Seanad Éireann as a continuous constitutional body persisting across elections. Named individuals `<https://data.oireachtas.ie/house/dail>` and `<https://data.oireachtas.ie/house/seanad>` are the identifiers. Parliamentary committees are also `agents:House` instances.
-- **A numbered sitting** (`agents:HouseTerm`) — a bounded parliamentary period, e.g. the 33rd Dáil (2020–2025). Subclasses `agents:DailTerm` and `agents:SeanadTerm` exist. Each `HouseTerm` is additionally typed `eli-dl:ParliamentaryTerm` so it can be referenced via `eli-dl:parliamentary_term` on activities and works.
-
-The temporal date range (commencement and dissolution) is modelled via `dct:temporal` / `dct:PeriodOfTime` with `dcat:startDate` and `dcat:endDate`. See [mapping_notes.md](../mapping_notes.md) for a worked example.
-
-#### [House URI patterns](#house-uri)
-
-```
-https://data.oireachtas.ie/house/dail                          — permanent Dáil institution
-https://data.oireachtas.ie/house/seanad                        — permanent Seanad institution
-https://data.oireachtas.ie/ie/oireachtas/house/dail/{no}       — a numbered Dáil term
-https://data.oireachtas.ie/ie/oireachtas/house/seanad/{no}     — a numbered Seanad term
-```
-
-| Class | Example IRI | Describes |
-|---|---|---|
-| `agents:House` | `/house/dail` | Dáil Éireann as a continuous constitutional institution |
-| `agents:House` | `/house/seanad` | Seanad Éireann as a continuous constitutional institution |
-| `agents:DailTerm` | `/ie/oireachtas/house/dail/34` | The 34th Dáil |
-| `agents:SeanadTerm` | `/ie/oireachtas/house/seanad/27` | The 27th Seanad |
-
-#### [House and HouseTerm classes](#house-class)
-
-| Class | Superclass(es) | Description |
-|---|---|---|
-| `agents:ParliamentaryBody` | `org:FormalOrganization` | Class of enduring parliamentary institutions; `<https://data.oireachtas.ie/oireachtas>` is the Oireachtas individual |
-| `agents:House` | `agents:ParliamentaryBody` | Dáil or Seanad as a continuous constitutional institution |
-| `agents:HouseTerm` | —; disjoint with `agents:ParliamentaryBody` | A bounded parliamentary sitting period, not an enduring organisation |
-| `agents:DailTerm` | `agents:HouseTerm` | A specific numbered term of Dáil Éireann |
-| `agents:SeanadTerm` | `agents:HouseTerm` | A specific numbered term of Seanad Éireann |
-| `members:House` | `agents:House` | The two plenary houses as membership containers (`equivalentClass Dail ∪ Seanad`); excludes committees |
-| `members:Dail` | `members:House` | Dáil membership-container class; not a Dáil term |
-| `members:Seanad` | `members:House` | Seanad membership-container class; not a Seanad term |
-| `members:Committee` | `org:Organization` | A parliamentary committee. Members API URI pattern: `<https://data.oireachtas.ie/ie/oireachtas/committee/{houseCode}/{houseNo}/{slug}>`; its HouseTerm is derived from its own source IRI and descriptions belong to `https://data.oireachtas.ie/graph/committees`. |
-
-#### [House properties](#house-property)
-
-| Property | Domain | Range | Notes |
-|---|---|---|---|
-| `:hasTerm` | `agents:House` | `agents:HouseTerm` | `owl:inverseOf :termOf` |
-| `:termOf` | `agents:HouseTerm` | `agents:House` | Links a term back to its persistent house |
-| `:termNo` | `agents:HouseTerm` | `xsd:integer` | Sequential number (e.g. `34`) |
-| `:houseCode` | `agents:HouseTerm` | `xsd:string` | E.g. `"dail"`, `"seanad"` |
-| `:seats` | `agents:HouseTerm` | `xsd:integer` | Seat count for this term |
-| `dct:temporal` | `agents:HouseTerm` | `dct:PeriodOfTime` | Links to a date range node with `dcat:startDate` / `dcat:endDate` |
-| `skos:prefLabel` | `agents:HouseTerm` | `xsd:string` | E.g. `"34th Dáil"@en` |
-
-### [Government structure](#government)
-
-The Government is modelled across three tiers to reflect both constitutional and parliamentary realities:
-
-| Tier | Class | Description |
-|---|---|---|
-| 1 | `agents:Government` | The constitutional executive body (Article 28). Membership confined to `members:CabinetMember` role-holders (Taoiseach, Tánaiste, Ministers). |
-| 2 | `members:GovernmentExecutive` | `agents:Government` plus `members:MinisterOfStateRole` holders. |
-| 3 | `members:GovernmentBenches` | `members:GovernmentExecutive` plus other OireachtasMembers under the government whip. Replaces the former `members:Government` (whip side). |
-
-The former `members:Cabinet` class (a subclass of the whip side — architecturally incorrect) has been eliminated. Use `agents:Government` for the constitutional Cabinet.
-
-Enduring Government URI: `<https://data.oireachtas.ie/government>` — typed `agents:Government`, accountable to enduring Dáil. The separate `<https://data.oireachtas.ie/ie/oireachtas/def/bill-source/government>` is `agents:GovernmentBillSource`.
-
-#### Role classes
-
-| Class | Superclass(es) | Description |
-|---|---|---|
-| `members:CabinetMember` | `org:Role` | Abstract role in `agents:Government`; subclasses below |
-| `members:TaoiseachRole` | `members:CabinetMember` | Role of Taoiseach |
-| `members:TanaisteRole` | `members:CabinetMember` | Role of Tánaiste. `owl:disjointWith TaoiseachRole` |
-| `members:MinisterRole` | `members:CabinetMember` | Ministerial office role. Counterpart person class: `agents:Minister` |
-| `members:MinisterOfStateRole` | `org:Role` | Role of Minister of State. `owl:disjointWith CabinetMember` |
-
-### [Members of the Oireachtas](#members)
-
-Members of the Oireachtas are modelled using `foaf:Person` for biographical details and the Organisation ontology for temporal roles such as Deputy or Senator, minister or committee member.
-
-#### [Member URI patterns](#member-uri)
-
-```
-https://data.oireachtas.ie/ie/oireachtas/member/{firstname}-{opt middle name}-{last name}.{D|S}.{xs:date}
+```text
+agents:Member
+  └─ members:hasMembersMembership → members:OireachtasMembership
+       └─ DailMembership / SeanadMembership
+            ├─ members:isMembershipOfMember → agents:Member
+            ├─ members:isOireachtasMembershipOf → agents:House (enduring)
+            ├─ members:inHouseTerm → agents:DailTerm / SeanadTerm
+            └─ members:hasMembershipDateRange → dated service interval
 ```
 
-| Class | Example IRI | Describes |
-|---|---|---|
-| `agents:Member` | `/ie/oireachtas/member/Enda-Kenny.D.1975-11-12` | Enda Kenny, Member of the Oireachtas |
-| `members:DailMembership` | `/ie/oireachtas/member/Enda-Kenny.D.1975-11-12/dail/31` | Enda Kenny's membership of the 31st Dáil |
-| `members:CabinetMembership` | `member/Enda-Kenny.D.1975-11-12/cabinet/dail/31` | Enda Kenny's Cabinet membership (31st Dáil) |
+Committee service is a separate sibling membership type:
 
-#### [Member Classes](#member-class)
+```
+agents:Member ── hasMembersMembership → members:CommitteeMembership
+                                             └─ isCommitteeMembershipOf → members:Committee
+```
 
-| Class | Superclass(es) | Description |
-|---|---|---|
-| `agents:Member` | `foaf:Person` | Any person who is or was a Member of the Oireachtas |
-| `agents:Minister` | `agents:Member` | A Member who also holds a ministerial office. Linked to `members:MinisterRole` via `org:holds` / `org:heldBy` |
-| `agents:PrivateMember` | `agents:Member` | A Member who is not a Member of Government |
-| `agents:PrivateSponsor` | `foaf:Agent` | A non-Member person or body that introduces legislation |
-| `members:OireachtasMember` | `org:Role` | An elected  role — `equivalentClass Deputy ∪ Senator` |
-| `members:Deputy` | `members:OireachtasMember` | Member elected to the Dáil |
-| `members:Senator` | `members:OireachtasMember` | Member of the Seanad |
-| `members:GovernmentBenches` | `members:SidesOfHouse` | The parliamentary whip bloc supporting the Government; `owl:disjointWith Opposition` |
-| `members:Opposition` | `members:SidesOfHouse` | The opposition |
+The inverse `isMembershipOfMember` link is explicit. Dáil and Seanad
+membership records are distinct subclasses and point to the corresponding
+term type. A Member can have different memberships over time; the identity of
+the person is not the identity of a particular term's service. For the
+institution/term distinction, see [Agents](Agents.md) and the canonical
+[House model](../house_model.md).
 
-#### [Membership Classes](#membership-class)
+## Parties and independent collections
 
-| Class | Superclass(es) | Description |
-|---|---|---|
-| `members:OireachtasMembership` | `members:MembersMembership` | Abstract superclass for house and committee membership records |
-| `members:DailMembership` | `members:OireachtasMembership` | Membership record for a specific Dáil term. `owl:disjointWith SeanadMembership` |
-| `members:SeanadMembership` | `members:OireachtasMembership` | Membership record for a specific Seanad term |
-| `members:CabinetMembership` | `members:MembersMembership` | Record of holding a `members:CabinetMember` role in the enduring constitutional Government; its holder must also have an OireachtasMembership |
-| `members:MinisterOfStateMembership` | `members:MembersMembership` | Record of holding a `members:MinisterOfStateRole` |
-| `members:CommitteeMembership` | `members:MembersMembership` | Membership of a committee |
+`members:ParliamentaryMemberCollection` is the broad class for term-scoped
+collections in which Members are represented as belonging. Two current source
+types are:
 
-#### [Constituency Classes](#constituency-class)
+- `members:ParliamentaryParty` — a parliamentary collection associated with a
+  registered political party for that term;
+- `members:IndependentMemberCollection` — a term-scoped API collection for
+  Members represented as Independent/non-party. It is **not** a political
+  party and does not imply recognition as a parliamentary group.
 
-| Class | Superclass(es) | Description |
-|---|---|---|
-| `members:Constituencies` | — | Abstract superclass for Dáil constituencies and Seanad panels |
-| `members:DailConstituency` | `members:Constituencies`, `geo:SpatialThing` | A geographically bounded Dáil constituency. URI: `…/house/dail/{no}/constituency/{representCode}`. `owl:disjointWith SeanadPanel` |
-| `members:SeanadPanel` | `members:Constituencies` | A Seanad vocational or appointment panel. URI: `…/house/seanad/{no}/panel/{representCode}` |
+A dated `members:ParliamentaryCollectionMembership` points to its containing
+`OireachtasMembership` and to the collection:
 
-#### [Member properties](#member-property)
+```text
+members:ParliamentaryCollectionMembership
+  ├─ members:inOireachtasMembership → members:OireachtasMembership
+  └─ members:memberOfCollection → ParliamentaryParty
+                                 or IndependentMemberCollection
+```
 
-| Property | Domain | Range | Notes |
-|---|---|---|---|
-| `foaf:familyName` | `agents:Member` | `xsd:string` | |
-| `foaf:firstName` | `agents:Member` | `xsd:string` | |
-| `foaf:name` | `agents:Member` | `xsd:string` | |
-| `:memberCode` | `agents:Member` | `xsd:string` | Unique member code from the API, e.g. `'Timmy-Dooley.S.2002-09-12'` |
-| `:pId` | `agents:Member` | `xsd:string` | Short parliamentary identifier slug, e.g. `'TimDooley'` |
-| `:gender` | `agents:Member` | `xsd:string` | Gender as reported by the API |
-| `:dateOfDeath` | `agents:Member` | `xsd:dateTime` | Date of death where known |
-| `:wikiTitle` | `agents:Member` | `xsd:string` | Wikipedia article title |
-| `:hasImage` | `agents:Member` | `xsd:boolean` | `true` if the API has an image available |
-| `:elected` | `time:TemporalEntity` | `:EventDate` | Date of election |
-| `:isOireachtasMembershipOf` | `members:OireachtasMembership` | `agents:House` | The continuous house (`<.../house/dail>`) |
-| `:inHouseTerm` | `members:OireachtasMembership` | `agents:HouseTerm` | The specific numbered term |
-| `members:constituencyInHouseTerm` | `members:Constituencies` | `agents:HouseTerm` | Sub-property of `members:inHouseTerm`; links constituency/panel to its term |
-| `members:partyCode` | `members:ParliamentaryMemberCollection` | `xsd:string` | Short API code on a term-scoped ParliamentaryParty or IndependentMemberCollection, e.g. `'Fianna_Fáil'` or `'Independent'` |
-| `members:representCode` | `members:Constituencies` | `xsd:string` | Short constituency/panel code, e.g. `'Clare'`, `'Administrative-Panel'` |
-| `:committeeCode` | `members:Committee` | `xsd:string` | Short alphanumeric committee code, e.g. `'CAJ'` |
-| `:committeeID` | `members:Committee` | `xsd:integer` | Numeric committee identifier |
-| `:hasCommitteeRole` | `members:CommitteeMembership` | `org:Role` | Role held within the committee (`:Chair`, `:DeputyChair`); absent when no special role |
-| `:officeNameUri` | `members:MinisterOfStateMembership` | IRI | Dereferenceable IRI of the ministerial office name from the API |
+Party-specific membership may also use `members:PartyMembership` and
+`members:isPartyMembershipOf`. An external enduring-party link, when reviewed,
+is a separate reconciliation relationship; the term-scoped collection is not
+the same identity as the external political-party organisation. Formal
+`ParliamentaryGroup` and `TechnicalGroup` instances are not inferred from
+party size, Government status, or collection membership.
+
+## Constituencies, panels and committees
+
+`members:Constituencies` has two distinct forms: a geographically bounded
+`members:DailConstituency` and a `members:SeanadPanel`. Both are term-scoped
+through `members:constituencyInHouseTerm`; a Seanad panel is not asserted to be
+a geographic constituency. These identities should not be treated as one
+perpetual constituency across term boundaries. A House-membership record can
+link to the relevant representative body through
+`members:isRepresentativeFrom`.
+
+`members:Committee` is an `org:Organization`, not a House or HouseTerm.
+Committee descriptive identity is owned separately from a Member's
+`members:CommitteeMembership` service record. That record can carry dates and
+an optional `members:Chair` or `members:DeputyChair` committee role. Committee
+service does not make a Committee an instance of `agents:House`; see
+[Agents and institutions](Agents.md#committees-are-organisations-not-houses).
+
+## What is populated and where to go next
+
+Member graphs contain source-backed House, collection and Committee
+membership records. Constituency, party and Committee descriptions have their
+own owner graphs. Identity ambiguities and absent evidence are not resolved by
+guessing; some references remain quarantined or under review. Local office
+tenure, where a source observation resolves to a reviewed office, is described
+with the [office model](Departments.md), not by reviving legacy
+`MinisterOfStateMembership` records.
+
+For ETL ownership, mapping status and reference-coverage acceptance see the
+[current system overview](../current-state.md#data-coverage-and-limits),
+[mapping notes](../mapping_notes.md), and the detailed
+[reference-coverage record](../etl-plan.md). The ontology declarations are
+indexed in the [ontology module guide](../../ontology/README.md).

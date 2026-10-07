@@ -1,186 +1,91 @@
-# Agents
+# Agents and institutions
 
-The Agents section of the ontology covers the persons, roles, organisations and geographic units involved in the legislative process. It is implemented across two sub-ontologies:
+This page explains the institutions and people around parliamentary
+proceedings. `agents.owl.ttl` supplies the canonical person, ParliamentaryBody,
+House and Government terms; `members.owl.ttl` supplies membership and
+collection structures. See [Members](Members.md) for how dated service is
+recorded.
 
-- **`agents.owl`** — constitutional structures: Houses, HouseTerms, Government, Members, bill submitters
-- **`members.owl`** — detailed membership, roles, party groupings, committees and constituencies
+## Oireachtas, Houses and terms
 
-See also [Members](Members) for the full property and URI reference.
+`agents:ParliamentaryBody` is the class of enduring parliamentary formal
+organisations. The enduring Oireachtas resource
+`<https://data.oireachtas.ie/oireachtas>` is an individual of that class, not
+an OWL class or a HouseTerm. It is organisationally related to its two
+continuous Houses:
 
----
+```text
+<.../oireachtas>  agents:ParliamentaryBody individual
+  ├─ org:hasSubOrganization → <.../house/dail>   agents:House
+  └─ org:hasSubOrganization → <.../house/seanad> agents:House
 
-## Contents
-
-1. [Constitutional Structures — Houses](#constitutional-structures--houses)
-2. [Government — Three-Tier Model](#government--three-tier-model)
-3. [Member Class Hierarchy](#member-class-hierarchy)
-4. [Committee Structure](#committee-structure)
-5. [Constituency Model](#constituency-model)
-6. [Bill Submitters](#bill-submitters)
-7. [Participation Roles](#participation-roles)
-8. [Eliminated Classes](#eliminated-classes)
-
----
-
-## Constitutional Structures — Houses
-
-The ontology distinguishes between the *continuous constitutional institution* and a *bounded parliamentary term*.
-
-| Class | Ontology | Superclass | Description |
-|---|---|---|---|
-| `:ParliamentaryBody` | `agents.owl` | `org:FormalOrganization` | Class for enduring parliamentary institutions; the Oireachtas itself is a named individual. |
-| `:House` | `agents.owl` | `:ParliamentaryBody` | Dáil Éireann or Seanad Éireann as a continuous institution persisting across successive terms. Named individuals `<.../house/dail>` and `<.../house/seanad>` are the canonical instances. |
-| `:HouseTerm` | `agents.owl` | —; disjoint with `:ParliamentaryBody` | A bounded parliamentary sitting period, not an enduring organisation. |
-| `:DailTerm` | `agents.owl` | `:HouseTerm` | A specific numbered term of Dáil Éireann (e.g. the 33rd Dáil). Disjoint with `:SeanadTerm`. |
-| `:SeanadTerm` | `agents.owl` | `:HouseTerm` | A specific numbered term of Seanad Éireann. Disjoint with `:DailTerm`. |
-
-### House and HouseTerm URIs
-
-```
-https://data.oireachtas.ie/house/dail
-https://data.oireachtas.ie/house/seanad
-https://data.oireachtas.ie/ie/oireachtas/house/dail/33
-https://data.oireachtas.ie/ie/oireachtas/house/seanad/27
+agents:House ── agents:hasTerm → agents:HouseTerm
+                                  ├─ agents:DailTerm
+                                  └─ agents:SeanadTerm
 ```
 
-### HouseTerm Datatype Properties
+Dáil Éireann and Seanad Éireann are enduring institutions. A numbered Dáil or
+Seanad is a time-bounded `agents:HouseTerm`, disjoint from
+`agents:ParliamentaryBody`; it is not another enduring organisation. `hasTerm`
+and `termOf` connect the term to its House. Term number, dates, seat count and
+label describe the term. See the canonical [House model](../house_model.md).
 
-| Property | Range | Notes |
-|---|---|---|
-| `:seats` | `xsd:integer` | Number of seats in this term (e.g. 33rd Dáil: 160; 34th Dáil: 174). Corresponds to `house.seats` in the houses API. |
-| `dct:temporal` | `dct:PeriodOfTime` | Links the term to a period-of-time node. The node carries `dcat:startDate` (commencement) and `dcat:endDate` (dissolution; absent for the current sitting term). |
+## Government is not a House or bill source
 
----
+The constitutional Government is a distinct enduring `agents:Government`
+organisation (`<https://data.oireachtas.ie/government>`), responsible to the
+enduring Dáil. It is not a `ParliamentaryBody`, a HouseTerm, or the
+`GovernmentBillSource` concept used as a Bill submitter. The word “Government”
+can also mean a wider parliamentary grouping, so the model distinguishes:
 
-## Government — Three-Tier Model
+| Resource | Meaning |
+|---|---|
+| `agents:Government` | Constitutional Government; Cabinet-level Government membership is represented separately by dated `members:CabinetMembership` resources. |
+| `members:GovernmentExecutive` | Wider executive tier including Ministers of State. It is not identical to the constitutional Government. |
+| `members:GovernmentBenches` | Parliamentary whip bloc, which may include Members outside the executive. It is not a synonym for Cabinet. |
 
-The Government is modelled in three widening tiers:
+Taoiseach, Tánaiste and ministerial role vocabulary remains available for role
+classification and links, but actual dated local office tenure uses
+`members:NamedOffice` and `members:OfficeHolding`; see
+[Departments and offices](Departments.md). Do not read the older role classes
+as a substitute for a particular office identity or holding.
 
-| Tier | Class | Ontology | Description |
-|---|---|---|---|
-| 1 — Constitutional Cabinet | `agents:Government` | `agents.owl` | The Government as defined by Article 28 of the Constitution — the collective executive body. Membership confined to holders of `members:CabinetMember` roles (Taoiseach, Tánaiste, Ministers). Also known informally as the Cabinet (`skos:altLabel "Cabinet"`). |
-| 2 — Executive | `members:GovernmentExecutive` | `members.owl` | `agents:Government` plus `members:MinisterOfStateRole` role-holders. |
-| 3 — Parliamentary Whip Bloc | `members:GovernmentBenches` | `members.owl` | `members:GovernmentExecutive` plus other OireachtasMembers under the Government whip. Disjoint with `members:Opposition`. Replaces the former `members:Government` (whip side). |
+## Members and roles
 
-### Cabinet Role Classes
+`agents:Member` is the canonical person class (a `foaf:Person`). A person may
+serve as a Deputy or Senator in different HouseTerms over a career. The
+membership record, rather than a permanent person type alone, carries the
+House and term context. Detailed relationships are in [Members](Members.md).
 
-| Class | Superclass | Description |
-|---|---|---|
-| `members:CabinetMember` | `org:Role` | Abstract role in `agents:Government`. Subclasses: TaoiseachRole, TanaisteRole, MinisterRole. |
-| `members:TaoiseachRole` | `:CabinetMember` | Role of Taoiseach (Head of Government). Disjoint with TanaisteRole. |
-| `members:TanaisteRole` | `:CabinetMember` | Role of Tánaiste (Deputy Head of Government). Disjoint with TaoiseachRole. |
-| `members:MinisterRole` | `:CabinetMember` | Ministerial office role. Person counterpart: `agents:Minister`. |
-| `members:MinisterOfStateRole` | `org:Role` | Role of a Minister of State. Disjoint with CabinetMember. |
+For Bill submission, `eli-dl:was_submitted_by` points to a supported submitter
+resource such as `agents:GovernmentBillSource`, `agents:PrivateMember`, or a
+resolved `agents:PrivateSponsor`. The Government bill-source concept is not the
+constitutional Government institution. ELI-DL `Participation` resources and
+role concepts such as `members:MoverRole` represent participation in supported
+legislative activities.
 
----
+## Committees are organisations, not Houses
 
-## Member Class Hierarchy
+`members:Committee` is an `org:Organization`, distinct from both a continuous
+House and a numbered HouseTerm. A Committee has its own identity and shared
+description. When source evidence associates it with a HouseTerm, that
+association does not turn the Committee into a HouseTerm. Committee member
+service is represented as `members:CommitteeMembership` in the relevant
+Member's membership graph; the Committee's description is separately owned.
 
-```
-foaf:Person
-└── agents:Member              — any Member of either House
-    ├── agents:PrivateMember   — Member not in Government
-    ├── agents:Minister        — Member holding a ministerial office (→ members:MinisterRole)
-    └── (inferred via org:Role restrictions in members.owl)
-        ├── members:OireachtasMember  — an elected role (≡ Deputy ∪ Senator)
-        │   ├── members:Deputy        — inferred via DailMembership
-        │   └── members:Senator       — inferred via SeanadMembership
-```
+Type and purpose are distinct concept schemes: `hasCommitteeType` can point to
+Select, Joint or Special Committee concepts; `hasCommitteePurpose` can point
+to Policy or Shadow Department concepts. Committee URI evidence and the
+conservative owner-identity boundary are recorded in the reference-coverage
+and Debates integration sections of the [ETL plan](../etl-plan.md).
 
-`agents:PrivateSponsor` (`foaf:Agent`) covers non-Member persons or bodies who introduce legislation.
+## Related pages
 
-### Membership Record Classes
+- [Members, HouseTerms and collections](Members.md)
+- [Departments, NamedOffice and AdministrativeUnit](Departments.md)
+- [Current system overview](../current-state.md)
+- [Ontology module reference](../../ontology/README.md)
 
-| Class | Superclass | Description |
-|---|---|---|
-| `members:OireachtasMembership` | `:MembersMembership` | Abstract superclass for house and committee membership records |
-| `members:DailMembership` | `:OireachtasMembership` | Membership record for a specific Dáil term. Requires `inHouseTerm someValuesFrom agents:DailTerm`. Disjoint with SeanadMembership. |
-| `members:SeanadMembership` | `:OireachtasMembership` | Membership record for a specific Seanad term. Requires `inHouseTerm someValuesFrom agents:SeanadTerm`. |
-| `members:CabinetMembership` | `:MembersMembership` | Record of a Member holding a CabinetMember role in `agents:Government`. |
-| `members:MinisterOfStateMembership` | `:MembersMembership` | Record of a Member holding a MinisterOfStateRole. |
-| `members:CommitteeMembership` | `:MembersMembership` | Record of a Member's committee membership |
-
----
-
-## Committee Structure
-
-Committees are typed `members:Committee` (an `org:Organization`); they are not made enduring parliamentary bodies merely by being term-scoped committees.
-
-### Committee Classification
-
-Committees have two orthogonal classifications:
-
-| Property | Range | Concept scheme | Members |
-|---|---|---|---|
-| `agents:hasCommitteeType` | `skos:Concept` | `agents:CommitteeTypeTable` | `:SelectCommitteeType`, `:JointCommitteeType`, `:SpecialCommitteeType` |
-| `agents:hasCommitteePurpose` | `skos:Concept` | `agents:CommitteePurposeTable` | `:PolicyPurpose`, `:ShadowDepartmentPurpose` |
-
-### Committee URIs
-
-```
-https://data.oireachtas.ie/ie/oireachtas/committee/{houseCode}/{houseNo}/{slug}
-```
-
-This is the authoritative Committee `uri` from consolidated Members evidence, retained
-as the Committee owner's subject by `transform_committees`. Its `houseCode` and
-`houseNo` must agree with the URI and identify the Committee's HouseTerm.
-An AKN Committee author can refer to this existing owner only after exact
-identity and owner-graph validation; the former `{slug}/{term-no}` template
-is not an alias or a normalization rule.
-
-### Committee Role Classes
-
-| Class | Superclass | Description |
-|---|---|---|
-| `members:Chair` | `org:Role` | Chair of a committee. Linked via `members:hasCommitteeRole` on a CommitteeMembership record. |
-| `members:DeputyChair` | `org:Role` | Deputy Chair (Vice-Chair) of a committee. |
-
----
-
-## Constituency Model
-
-| Class | Superclass | Description |
-|---|---|---|
-| `members:Constituencies` | — | Abstract superclass for Dáil constituencies and Seanad panels. Each instance is scoped to a HouseTerm via `members:constituencyInHouseTerm`. `showAs` from the API maps to `skos:prefLabel` / `rdfs:label`. |
-| `members:DailConstituency` | `:Constituencies`, `geo:SpatialThing` | A geographically bounded Dáil constituency (`representType = "constituency"`). Disjoint with SeanadPanel. URI: `…/house/dail/{houseNo}/constituency/{representCode}` |
-| `members:SeanadPanel` | `:Constituencies` | A Seanad vocational or appointment panel (`representType = "panel"`). Disjoint with DailConstituency. URI: `…/house/seanad/{houseNo}/panel/{representCode}` |
-
----
-
-## Bill Submitters
-
-Bill submission is expressed via `eli-dl:was_submitted_by` on the `eli-dl:LegislativeProcess` instance, pointing to one of:
-
-| Named individual | Type | When used |
-|---|---|---|
-| `<.../def/bill-source/government>` | `agents:GovernmentBillSource` | Bill introduced by the Government; controlled source concept, not a Government administration |
-| `<.../def/bill-source/private-member>` | `agents:PrivateMember` | Bill introduced by a private Member |
-| *(specific PrivateSponsor individual)* | `agents:PrivateSponsor` | Bill introduced by a non-Member sponsor |
-
-The former `oir:BillSource` concept scheme and `oir:BillSource` class have been eliminated. See [Concept Schemes](Concept-Schemes) for details.
-
----
-
-## Participation Roles
-
-Activity-level participation (who moved a bill, who was rapporteur) is expressed via `eli-dl:had_participation` with a `eli-dl:Participation` individual carrying a `eli-dl:participation_role`.
-
-| Named individual | Type | Purpose |
-|---|---|---|
-| `members:MoverRole` | `eli-dl:ParticipationRole` | The Member who moves a Bill, amendment, or motion. Replaces the former `agents:Mover` class. |
-| `members:RapporteurRole` | `eli-dl:ParticipationRole` | A Member appointed as rapporteur. Alternatively use `eli-dl:had_responsible_person` as a shorthand. |
-
-The boolean property `agents:isPrimarySponsor` (`xsd:boolean`) on `eli-dl:Participation` records whether a sponsor is the primary sponsor (`bill.sponsors[].sponsor.isPrimary` in the API).
-
----
-
-## Eliminated Classes
-
-| Former class | Reason | Replacement |
-|---|---|---|
-| `oir:BillSource` | Submitter type is expressed via `eli-dl:was_submitted_by` | `eli-dl:was_submitted_by` on `eli-dl:LegislativeProcess` |
-| `oir:Mover` | Activity-level participation replaced by ELI-DL participation model | `eli-dl:had_participation` with `members:MoverRole` |
-| `oir:Chamber` | Renamed to `agents:House` | `agents:House` |
-| `oir:Cabinet` | Renamed / split into constitutional body + role | `agents:Government` (body) / `members:CabinetMember` (role) |
-| `members:Member` | Replaced by canonical `agents:Member` | `agents:Member` |
-| `members:Government` (whip side) | Renamed to avoid confusion with constitutional body | `members:GovernmentBenches` |
+Historical terminology such as `members:Government` for the former whip-side
+class, `members:Cabinet`, and `agents:Chamber` is superseded. It is not used as
+current model guidance.

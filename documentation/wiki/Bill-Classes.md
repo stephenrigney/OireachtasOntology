@@ -1,28 +1,32 @@
-## Bill Classes
+# Bill and legislative-process classes
 
-> **2026 update:** `oir:BillSource` and `oir:Mover` have been eliminated and `metalex` superclasses replaced with ELI / ELI-DL equivalents. See the [ontology README](https://github.com/Oireachtas/ontology/blob/master/ontology/README.md) for the authoritative class reference.
+This is a short conceptual index, not a duplicate OWL API. The
+[Turtle vocabulary](../../ontology/legislation.owl.ttl),
+[events module](../../ontology/events.owl.ttl), and
+[ontology module reference](../../ontology/README.md) are authoritative for
+declarations and axioms.
 
-| Class | Superclass(es) | Description |
-|---|---|---|
-| `eli:DraftLegislationWork` | `eli:LegalResource` | The Bill as a distinct intellectual creation (replaces former `oir:BillResource`); use `eli-dl:DraftLegislationWork` directly |
-| `eli:LegalExpression` | — | Language-specific version (expression) of a bill; use `eli:LegalExpression` directly |
-| `eli:Format` | — | Physical format (PDF, XML, HTML) of an expression; use `eli:Format` directly |
-| `oir:BillVersion` | `eli:Version` | Version of Bill (see [Concept Schemes](Concept-Schemes)) |
-| `oir:BillDelivery` | `eli-dl:LegislativeActivity` | The action/event by which a Bill first came before the Houses for consideration; typed via `eli-dl:had_activity_type :LegislativeDeliveryActivity` (see [Concept Schemes](Concept-Schemes)) |
-| `oir:BillDeliveryOutcome` | `eli-dl:DecisionOutcome` | Outcome of `oir:BillDelivery` (see [Concept Schemes](Concept-Schemes)) |
-| `oir:BillEvent` | `eli-dl:LegislativeActivity` | An event that affects the status of a Bill (see [Concept Schemes](Concept-Schemes)) |
-| `oir:BillStage` | `oir:BillEvent` | A formal stage of a Bill's passage (see [Concept Schemes](Concept-Schemes)) |
-| `oir:BillStatus` | `skos:Concept` | The current status of a Bill (see [Concept Schemes](Concept-Schemes)) |
-| `oir:AmendingStage` | `eli-dl:LegislativeActivity`, `oir:BillStage` | A stage (committee or report) at which amendments may be made; typed via `eli-dl:had_activity_type :LegislativeModificationActivity` |
-| `eli-dl:DecisionOutcome` | — | Outcome of a motion, question or amendment; use directly — replaces former `metalex:Result` |
-| `eli:AmendmentToLegislationWork` | `eli:LegalResource`, `oir:BillEvent` | An amendment as simultaneously a document and a modifying event |
-| `oir:AmendmentList` | — | Numbered or unnumbered list of amendments, either proposed or made (see [Concept Schemes](Concept-Schemes)) |
-| `eli:LegalExpression` | — | The text of an amendment (expression of `eli:AmendmentToLegislationWork`); replaces former `oir:BillAmendmentText` |
+| Resource/class | Conceptual role |
+|---|---|
+| `eli-dl:DraftLegislationWork` | The Bill as a distinct legislative work. The local ETL also types a Bill work as `eli:LegalResource`. |
+| `eli-dl:LegislativeProcess` | The process associated with the Bill, with process type, number, status, submitter and latest activity. The ETL uses a deterministic `{Bill IRI}#process` resource; process activities link to it via `eli-dl:forms_part_of`. |
+| `events:BillEvent` | A supported concrete procedural event/stage in the Bill lifecycle; events are activities, not the Bill work itself. |
+| `eli-dl:LegislativeActivity` | ELI-DL activity vocabulary used for process occurrences, including supported stages and delivery/activity types. |
+| `eli-dl:LegislativeProcessWorkVersion` | A Bill process-work version, distinct from the Bill Work and its language-specific Expression. |
+| `eli-dl:AmendmentToDraftLegislationWork` | An amendment-list/work resource where represented by the source. It is not interchangeable with the activity recording the amendment. |
+| `eli:LegalResource` | ELI resource class used for Bill and referenced legal-resource descriptions as appropriate. Acts are not owned/described by the Bill ETL graph. |
+| `eli-dl:Participation` | A reified participation link for a person/agent and role, such as a Bill sponsor or mover, where mapped. |
 
-### Eliminated classes
+The process's `eli-dl:latest_activity` points to the current latest generated
+activity. Controlled values such as `eli-dl:ProcessType`, process statuses,
+activity types and outcomes are individuals, not occurrence records.
 
-| Former class | Reason | Replacement |
-|---|---|---|
-| `oir:BillSource` | Submitter type is expressed via `eli-dl:was_submitted_by` (Process → Agent) | Use `eli-dl:was_submitted_by` on `eli-dl:LegislativeProcess` instances; see `agents:GovernmentBillSource`, `agents:PrivateMember`, `agents:PrivateSponsor` |
-| `oir:Mover` | Activity-level participation is expressed via `eli-dl:Participation` + `eli-dl:ParticipationRole` | Use `eli-dl:had_participation` with `members:MoverRole` on `:JournalEvent` instances |
-| `metalex:Result` | Eliminated with metalex import | Use `eli-dl:DecisionOutcome` directly |
+## Superseded terms
+
+Older wiki tables referred to local `BillResource`, `BillExpression`,
+`BillVersion`, `BillStatus`, `AmendmentList`, `BillSource` and `Mover` classes.
+These are not the current class contract. Current mappings use ELI/ELI-DL
+resources and participation roles. The former `metalex:` alignment was also
+removed. Do not construct RDF using the old classes; see
+[Bill properties](Bill-Properties.md) and the
+[legislative lifecycle design record](../phase-4-legislative-lifecycle.md).

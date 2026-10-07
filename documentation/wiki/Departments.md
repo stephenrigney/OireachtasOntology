@@ -1,64 +1,62 @@
-## Department Ontology
+# Departments, offices and administrative units
 
-> **STATUS: DRAFT / DEFERRED.** The Department sub-ontology has not yet been fully designed. Content below is working notes and should not be treated as authoritative.
+The current model distinguishes an enduring **particular office**, the
+**person's dated tenure in it**, and the administrative institution with which
+the office is associated. The ontology does not treat a changing title or a
+department label as sufficient evidence that an office or institution is the
+same identity over time.
 
-Departments could be conceived as particular arrangements of modular functions, which are organised according to an `org:ChangeEvent` which takes legal form in a Statutory Instrument (SI) under [section 6 (1) of the Ministers and Secretaries (Amendment) Act, 1939](http://www.irishstatutebook.ie/eli/1939/act/36/section/6/enacted/en/html#sec6) or the various Ministers and Secretaries Acts.
+## Three different resources
 
-The list of orders made under the 1939 Act is [here](http://www.irishstatutebook.ie/eli/isbc/ordersundersection6.html).
+| Resource | Meaning |
+|---|---|
+| `members:NamedOffice` | One particular enduring institutional office, independent of its holder, label, associated unit or responsibilities. Its category is represented with `members:hasRoleType` to an `members:OfficeType` **concept individual**, not an OWL role class. |
+| `members:OfficeHolding` | A dated relationship between a person and one NamedOffice. It links the office with `members:heldOffice` and the person through `members:officeHolder` / `members:hasOfficeHolding`. It is a tenure record, not the office itself. |
+| `members:AdministrativeUnit` | A distinct, locally controlled enduring administrative institution (for example, a reviewed department identity). It is not a NamedOffice or a ministerial responsibility/portfolio. |
 
-Departments are offices operating functions on behalf of Ministers, who is assigned certain roles under the relevant Statutory Instrument.
-
-Ministers are Members of the Oireachtas who are also members of the Cabinet. For the purpose of this ontology, Cabinet corresponds to the definition of Government in [Article 28.1 of the Constitution](http://www.irishstatutebook.ie/eli/cons/en/html#part5). That Article also establishes the roles of Taoiseach and Tánaiste. In the OWL ontology these are modelled as `agents:Government` (the body) and `members:GovernmentExecutive` (the collective role class); the legacy class `oir:Cabinet` has been eliminated.
-
-Ministers of State are appointed by order of the Dáil [TO VERIFY].
-
-A Minister without portfolio is a Member who has been appointed to the Cabinet but does not yet have a formal ministerial role because the relevant SI has not issued.
-
-### URIs
-
-Names for specific Department and Ministerial roles consist of their functions (with the words "Department of" removed) separated by double underscores:
-
-```
-department/function1__function2_function3
-minister/trade__industry__commerce
+```text
+agents:Member ── holds via members:OfficeHolding ── members:NamedOffice
+                                                        ├─ hasRoleType → OfficeType concept
+                                                        ├─ headsAdministrativeUnit → AdministrativeUnit
+                                                        └─ assignedToAdministrativeUnit → AdministrativeUnit
 ```
 
-Where a function name is a phrase rather than a single word, the words in the phrase are separated by a single underscore:
+Departmental Minister offices can be linked as heading an AdministrativeUnit.
+Minister-of-State offices can be assigned to a unit; assignment does not mean
+headship. The model does not create one office for every portfolio or delegated
+function. Office succession is asserted only when positively reviewed; a
+changed label, identifier or Department boundary does not by itself prove
+office succession.
 
-```
-department/foreign_affairs__trade
-minister_state/social__protection
-```
+## Government and Cabinet membership
 
-For constitutional (Taoiseach / Tánaiste) roles:
+Where qualifying office holdings represent Taoiseach, Tánaiste or Minister
+office types, the ETL derives a time-bounded `members:CabinetMembership`
+episode in the constitutional `agents:Government`. It links back to the
+supporting `members:OfficeHolding` records with
+`members:supportedByOfficeHolding`. Overlapping or continuous qualifying
+holdings are combined so concurrent offices do not create duplicate episodes.
 
-```
-https://data.oireachtas.ie/taoiseach
-https://data.oireachtas.ie/tanaiste
-```
+Minister-of-State holdings do not create constitutional Cabinet membership;
+they belong to the wider `members:GovernmentExecutive` tier. The parliamentary
+whip bloc is `members:GovernmentBenches`, a separate concept. See
+[Agents and institutions](Agents.md#government-is-not-a-house-or-bill-source).
 
-For ministerial roles:
+## Current coverage and deferred detail
 
-```
-https://data.oireachtas.ie/minister/{specific title}
-https://data.oireachtas.ie/minister_state/{specific title}
-https://data.oireachtas.ie/minister_without_portfolio
-```
+The office and administrative-unit registry is a reviewed, limited bootstrap,
+not a comprehensive catalogue of every historical office, Department,
+function, responsibility or portfolio. Accepted local identities are distinct
+from source labels and external identifiers; unresolved observations do not
+emit guessed holdings. Detailed delegated functions, temporal unit assignments,
+complete statutory grounding and unsupported historical successions remain
+deferred or evidence-dependent.
 
-For departments:
-
-```
-https://data.oireachtas.ie/department/{department specific name}
-https://data.oireachtas.ie/department/transport__tourism__sport
-```
-
-For departmental functions or areas:
-
-```
-https://data.oireachtas.ie/department/function/{function}/{SI date}
-https://data.oireachtas.ie/department/function/transport/2011-03-29
-```
-
-The Statutory Instrument date (SI) is either the date of the SI published under the 1939 Act or the appointment date in the case of SIs under other Ministers and Secretaries Acts.
-
-A challenge with this approach is that the date of signature of the Statutory Instrument must be parsed from its text — as does the departmental function. One alternative is to use the date on which the Taoiseach announced the Ministerial appointment or department reshuffle, but this is not the official date of appointment.
+For resolution rules, migration, registry status and validation, see the
+canonical [ministerial office design and tranche record](../phase-7-ministerial-offices.md),
+[office registry](../ministerial-office-registry.md), and
+[office observation reconciliation](../office-observation-reconciliation.md).
+The RDF vocabulary is in `ontology/members.owl.ttl` and the ETL mapping status
+is in [mapping notes](../mapping_notes.md). This page replaces the former
+function/URI proposal in this wiki; that proposal is not an implemented
+Department ontology or identifier policy.
