@@ -3,18 +3,22 @@
 ## Status
 
 Tranches 1–4 are complete for the bounded representative scope. All links with
-reviewed source/owner support are validated; the Bill-event section and
-question-recipient competencies remain explicitly deferred because the checked
-evidence does not support their joins. Their query contracts remain in place,
-and the unanswered queries are not claimed as successful competency results.
-Tranche 4 supplies explicit main.xml acquisition/replay, immutable raw storage,
-Core State tracking and opt-in per-Work graph publication; it does not enumerate
-or schedule the production corpus. The production-corpus resource benchmark
-required before broad ingestion has been measured and is reported in
-[`debates-production-benchmark.md`](debates-production-benchmark.md); the
-production-scope choice and gate remain open pending an operational
-acceptability threshold. This does not claim broad cross-dataset
-reconciliation, full Phase 7 completion, ingestion or graph publication.
+reviewed source/owner support are validated; unsupported Bill-event section
+and question-recipient competencies remain explicitly deferred, with their
+query contracts retained but not counted as positive acceptance. Tranche 4
+supplies explicit main.xml acquisition/replay, immutable raw storage, Core
+State tracking and opt-in per-Work graph publication; it does not enumerate
+or schedule the production corpus.
+
+**Initial production scope approved (2026-10-07):** Dáil, Seanad and
+committee debate Works dated **2011-01-01 onward**, with written answers
+excluded. The corpus benchmark is in
+[`debates-production-benchmark.md`](debates-production-benchmark.md);
+the separate 2026-10-06 scoped resource assessment informed the selection.
+This closes the *initial scope decision*, not the production-readiness gate:
+configurable operational limits, an exact in-scope quarantine inventory,
+Phase 6 execution policy and staged operational acceptance remain pending.
+No broad production ingestion or graph publication is claimed.
 
 This note records the approved Phase 7 design for the Debates vertical slice.
 It complements the ontology-specific material in
@@ -25,12 +29,16 @@ It complements the ontology-specific material in
 - Akoma Ntoso (AKN) XML is the authoritative source format.
 - The intended corpus covers Dáil, Seanad, committees and written answers for
   Tranche 2 representative transformation.
-- A separate production-scope gate does not block Tranche 1 or Tranche 2. The
-  in-scope corpus (including written-answer XML) has been censused and
-  benchmarked after the core transformer; see
-  [`debates-production-benchmark.md`](debates-production-benchmark.md). The
-  full-corpus versus Bill-debates-first choice is still pending an operational
-  resource threshold, and this choice does not change the semantic design.
+- The approved **first production load** includes all debate subjects for
+  Dáil, Seanad and committees from 2011-01-01 onward. It excludes written
+  answers, including complete 2013+ written-answer Works. Older debate Works,
+  later written-answer ingestion and fragment-only pre-2013 written answers
+  are separate expansion items; this does not change the semantic model.
+- The all-years census/benchmark is retained in
+  [`debates-production-benchmark.md`](debates-production-benchmark.md).
+  Selecting the initial scope does not authorize ingestion: the exact
+  malformed-source inventory, operational resource limits and Phase 6
+  production execution/validation gate remain outstanding.
 - The Debates slice owns parliamentary questions and divisions/votes found in
   the AKN debate record. They are not separate Phase 7 publication owners.
 - Raw AKN source must be preserved so the RDF can be regenerated and source
@@ -270,17 +278,16 @@ resource gate remains open before broad ingestion; Tranche 3 owns broader
 cross-dataset resolution, SHACL and competency checks, with the bounded
 evidence review and explicit deferrals recorded below.
 
-The census/benchmark for the full-corpus versus Bill-debates-first production
-choice was run after the core transformer existed and is recorded in
-[`debates-production-benchmark.md`](debates-production-benchmark.md). It
-measures total in-scope XML volume (including `writtens`), runtime and RDF
-output (and required working/storage volume). The scope choice has not been
-made: no operational resource budget/threshold is defined in the repository,
-and the measurement also found quarantine and source-fragmentation limits
-(2004–2007 duplicate-eId records; pre-2013 written answers lacking a
-whole-record source) that need separate disposition. This gate does not delay
-Tranche 1 or representative Tranche 2 implementation. Phase 6's scan cadence,
-scheduling and reconciliation policy remain unchanged.
+The initial all-years and Bill-linked census/benchmark was recorded in
+[`debates-production-benchmark.md`](debates-production-benchmark.md).
+A subsequent scoped assessment measured the Tranche 4 publication/storage
+path and compared 2011+ debates with and without 2013+ complete written
+answers. The approved initial selection is **2011+ debates only**, with
+written answers deferred. Quarantine and source-fragmentation findings remain
+separate backlog items, while configurable operational budgets and staged
+production acceptance remain open. Phase 6 retains scan cadence, scheduling
+and reconciliation policy. See `documentation/etl-plan.md`'s Debates backlog
+for required pre-ingestion actions and reopening conditions.
 
 ### Tranche 3 — Cross-dataset integration and validation
 
@@ -382,12 +389,11 @@ correction was applied as a bounded follow-up to this closure.
 This paragraph records **Tranche 3 closure before the bounded Tranche 4
 implementation recorded below**. At that earlier point Tranche 4 ingestion,
 state and publication had not started. The supplied-batch mechanics are now
-complete, but this is not full Phase 7 acceptance: the production-scope/resource
-gate, corpus quarantine and fragmentation issues, and eventual positive
-acceptance of the two deferred competencies remain open. Broad ingestion remains
-subject to the production-scope/resource gate. The 2004–2007 duplicate-eId
-cases, empty section names and pre-2013 fragmented written answers remain
-separate corpus work.
+complete, but production-readiness acceptance remains open. The two unsupported
+positive crosswalk competencies are deliberate, evidence-backed **future
+reconciliation work**, not blockers to the agreed first production scope.
+The 2004–2007 duplicate-eId cases, empty section names and pre-2013 fragmented
+written answers remain separately tracked corpus work.
 
 ### Tranche 4 — Source ingestion, state and publication mechanics
 
@@ -473,15 +479,18 @@ broad-ingestion acceptance.
 
 The Debates slice is complete when:
 
-- the measured production scope (full corpus or Bill-debates-first) can be
-  processed within accepted resource budgets;
+- the approved initial 2011+ Dáil/Seanad/committee debate scope (without
+  written answers) can be processed within approved operational resource
+  budgets, with excluded/quarantined records inventoried and auditable;
 - AKN source is preserved and replayable;
 - generated RDF is deterministic and contains no transcript text;
 - questions and divisions/votes are owned by the debate graph;
 - cross-resource links respect existing RDF ownership;
 - unresolved references fail safe and remain auditable;
 - representative Dáil, Seanad, committee and written-answer fixtures pass
-  validation for Tranche 2, regardless of when the later production-scope gate
-  selects full-corpus or Bill-debates-first ingestion;
+  Tranche 2 validation, independently of which source types are included in
+  the first production load;
 - graph replacement is idempotent and removes stale debate-owned triples; and
-- the agreed competency queries pass.
+- supported competency queries pass; explicitly evidence-deferred positive
+  legislative-section and question-recipient crosswalks are not asserted as
+  passing or required to close the bounded initial-production slice.
