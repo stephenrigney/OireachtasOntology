@@ -19,6 +19,7 @@ from .raw import persist_raw
 from .debates_raw import (DebateSourceError, fetch_main_xml, load_main_xml,
                           persist_main_xml)
 from .debates_pipeline import run_debate_batch
+from .debates_readiness import load_manifest, make_batches, load_batch_sources
 from .serialization import nquads, ntriples, turtle
 from .transforms.houses import PERSISTENT_HOUSES, transform_houses_with_report
 from .transforms.parties import transform_parties
@@ -3825,6 +3826,46 @@ def run_debates(args: argparse.Namespace) -> int:
     raw_root = Path(args.raw_dir or settings.raw_dir).expanduser()
     source_urls = list(dict.fromkeys(getattr(args, "source_url", None) or []))
     replay_hashes = list(dict.fromkeys(getattr(args, "replay", None) or []))
+    inventory_file = getattr(args, "inventory_file", None)
+    selected_batch = None
+    manifest = None
+    def partition_manifest_sources(sources):
+        if selected_batch is None:
+            return sources, []
+        by_hash = {source.source_sha256: source for source in sources}
+        eligible = []
+        withheld = []
+        for record in selected_batch.records:
+            source = by_hash.get(record.sha256)
+            if source is None:
+                raise ValueError("manifest batch source is missing after evidence validation")
+            if record.status == "quarantined":
+                withheld.append((source, record.work_iri, record.failure_stage,
+                                 record.failure_classification))
+            else:
+                eligible.append(source)
+        return eligible, withheld
+    if not inventory_file and getattr(args, "batch_index", None) is not None:
+        raise ValueError("--batch-index requires --inventory-file")
+    if inventory_file:
+        if source_urls or replay_hashes:
+            raise ValueError("--inventory-file cannot be combined with --source-url or --replay")
+        if getattr(args, "batch_index", None) is None:
+            raise ValueError("--inventory-file requires an explicit --batch-index")
+        max_batch_works = getattr(args, "batch_max_works", 25)
+        max_source_bytes = getattr(args, "batch_max_source_bytes", 64 * 1024 * 1024)
+        if max_batch_works > 25 or max_source_bytes > 64 * 1024 * 1024:
+            raise ValueError("initial Debates batch ceilings cannot exceed 25 Works or 64 MiB")
+        manifest = load_manifest(inventory_file)
+        batches = make_batches(
+            manifest,
+            max_works=max_batch_works,
+            max_source_bytes=max_source_bytes,
+        )
+        if args.batch_index < 0 or args.batch_index >= len(batches):
+            raise ValueError(f"Debates batch index must be in 0..{len(batches) - 1}")
+        selected_batch = batches[args.batch_index]
+        replay_hashes = [record.sha256 for record in selected_batch.records]
     if getattr(args, "fixture", None):
         raise ValueError("Debates use explicit --source-url acquisition or exact --replay hashes, not generic JSON fixtures")
     if not source_urls and not replay_hashes:
@@ -3838,8 +3879,10 @@ def run_debates(args: argparse.Namespace) -> int:
         # Default behavior has no access to a GSP loader and does not open Core
         # State for writing. Both online acquisition and exact offline replay
         # preserve/validate sources and emit local RDF only.
-        sources = _load_debate_sources(raw_root, source_urls, replay_hashes, settings)
-        outcomes = run_debate_batch(sources)
+        sources = (load_batch_sources(selected_batch, raw_root) if selected_batch
+                   else _load_debate_sources(raw_root, source_urls, replay_hashes, settings))
+        sources, withheld_records = partition_manifest_sources(sources)
+        outcomes = run_debate_batch(sources, withheld_records=withheld_records)
         _write_debate_outputs(outcomes, args)
         return _debate_result(outcomes, run_id=None, published=False)
 
@@ -3858,6 +3901,12 @@ def run_debates(args: argparse.Namespace) -> int:
                     "source": "explicit-akn-main-xml-batch",
                     "source_urls": source_urls,
                     "replay_sha256": replay_hashes,
+                    "selection_manifest_sha256": manifest.sha256 if manifest else None,
+                    "selection_batch_index": selected_batch.index if selected_batch else None,
+                    "selection_batch_works": len(selected_batch.records) if selected_batch else None,
+                    "selection_batch_source_bytes": selected_batch.source_bytes if selected_batch else None,
+                    "selection_batch_max_works": getattr(args, "batch_max_works", None),
+                    "selection_batch_max_source_bytes": getattr(args, "batch_max_source_bytes", None),
                     "raw_root": str(raw_root.resolve()),
                     "supplied_count": len(source_urls) + len(replay_hashes),
                 }, versions=versions,
@@ -3892,9 +3941,16 @@ def run_debates(args: argparse.Namespace) -> int:
                     api_failures += 1
                     _set_run_metrics(args, counters={"api_failures": api_failures})
 
-                sources = _load_debate_sources(
-                    raw_root, source_urls, replay_hashes, settings,
-                    on_source=record_observation, on_api_failure=record_api_failure)
+                if selected_batch:
+                    loaded_sources = load_batch_sources(selected_batch, raw_root)
+                    for source in loaded_sources:
+                        record_observation(source)
+                    sources, withheld_records = partition_manifest_sources(loaded_sources)
+                else:
+                    sources = _load_debate_sources(
+                        raw_root, source_urls, replay_hashes, settings,
+                        on_source=record_observation, on_api_failure=record_api_failure)
+                    withheld_records = []
                 _set_run_metrics(args, counters={
                     "changed": 0, "unchanged": 0,
                     "quarantined": 0, "validation_failures": 0,
@@ -3911,6 +3967,8 @@ def run_debates(args: argparse.Namespace) -> int:
                 retry_candidates = _retry_candidates(store, "debates")
                 retry_candidates_by_hash = _retry_candidates_by_hash(store, "debates")
                 sources_by_hash = {source.source_sha256: source for source in sources}
+                sources_by_hash.update({item[0].source_sha256: item[0]
+                                        for item in withheld_records})
                 quarantined_count = 0
                 started_retry_ids: set[str] = set()
 
@@ -3969,6 +4027,7 @@ def run_debates(args: argparse.Namespace) -> int:
                     sources, store=store, run_id=run_id, publish=True,
                     loader=loader, client=client,
                     on_record_failure=persist_debate_failure,
+                    withheld_records=withheld_records,
                 )
                 _write_debate_outputs(outcomes, args)
                 for item in outcomes:
@@ -3986,7 +4045,7 @@ def run_debates(args: argparse.Namespace) -> int:
                     _finish_retries(store, retry_ids, run_id, success=True, args=args)
                 context = _run_context(args, run_id=run_id)
                 _set_run_metrics(args, counters={
-                    "extracted": len(sources),
+                    "extracted": len(sources) + len(withheld_records),
                     "changed": sum(item.status == "changed" for item in outcomes),
                     "unchanged": sum(item.status == "skipped" for item in outcomes),
                     "published_graphs": sum(
@@ -5681,6 +5740,14 @@ def main(argv: list[str] | None = None) -> int:
                      help="explicit official AKN main.xml URL (repeat for a supplied batch)")
     run.add_argument("--replay", action="append", default=[],
                      help="exact preserved Debates XML SHA-256 (repeat for a supplied batch)")
+    run.add_argument("--inventory-file",
+                     help="versioned initial Debates inventory; requires an explicit batch index")
+    run.add_argument("--batch-index", type=int,
+                     help="deterministic zero-based inventory batch (25 Works / 64 MiB ceilings)")
+    run.add_argument("--batch-max-works", type=int, default=25,
+                     help="inventory batch record ceiling (default: 25)")
+    run.add_argument("--batch-max-source-bytes", type=int, default=64 * 1024 * 1024,
+                     help="inventory batch source XML byte ceiling (default: 67108864)")
     run.add_argument("--publish", action="store_true",
                      help="explicitly opt in to validated Debates graph replacement")
     run.add_argument("--registry-file", help="version-controlled office/unit registry JSON")
@@ -5740,8 +5807,9 @@ def main(argv: list[str] | None = None) -> int:
     reconcile.add_argument("--raw-dir", help="immutable raw response root for office source scans")
     args = parser.parse_args(argv)
     if (args.command == "run" and args.endpoint != "debates"
-            and (args.source_url or args.replay or args.publish)):
-        parser.error("--source-url, --replay, and --publish are only available for run debates")
+            and (args.source_url or args.replay or args.publish or args.inventory_file
+                 or args.batch_index is not None)):
+        parser.error("Debates-only arguments were supplied for another endpoint")
     # Library callers supply argv and retain exceptions for diagnosis. The
     # installed command calls main() without argv: never let a source-supplied
     # exception message escape in a Python traceback on that process boundary.

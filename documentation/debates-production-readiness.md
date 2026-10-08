@@ -1,8 +1,10 @@
 # Debates initial-production readiness assessment
 
 Assessment date: 2026-10-08. This report completes the exact source/exception
-inventory and recommends operational limits for the approved initial scope. It
-does **not** authorize controlled ingestion, publish RDF, or close the human
+inventory and recommends operational limits for the approved initial scope. The
+manifest-driven controlled-ingestion implementation is recorded in
+[`debates-controlled-staging-report.md`](debates-controlled-staging-report.md).
+It does **not** authorize controlled ingestion, publish RDF, or close the human
 readiness gate.
 
 ## Approved source scope and exact inventory
@@ -165,7 +167,19 @@ no-owner-resolver path, not a production-owner run or full publication test.
 4. **Staged acceptance:** exercise a small bounded batch with the production
    owner snapshot against disposable Fuseki, then verify quarantine, exact graph
    replacement, clean/dirty recovery and replay under the approved budgets.
-   This is not a corpus-wide benchmark and must not touch production.
+    This is not a corpus-wide benchmark and must not touch production.
+
+### 2026-10-08 implementation update
+
+Manifest selection and deterministic 25-Work/64-MiB batch calculation are now
+implemented in `src/oireachtas_etl/debates_readiness.py` and manually invoked via
+`oir-etl run debates --inventory-file ... --batch-index N`. Inventory-marked
+exceptions are withheld through the existing Phase 6 quarantine callback. This
+does not complete the remaining capabilities: resource preflight/runtime
+enforcement is not implemented, and actual disposable-Fuseki staging with a
+source-validated owner snapshot was blocked because no suitable snapshot is
+available in the current Core State evidence. No staging metrics were captured.
+See `debates-controlled-staging-report.md`; the production gate remains open.
 
 Recurring schedules, unattended deployment, monitoring/alert wiring and backup
 automation/restore remain Phase 6 Tranche B responsibilities. They are not part

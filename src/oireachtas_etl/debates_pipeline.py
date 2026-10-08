@@ -367,7 +367,10 @@ def _plan_records(sources: list[DebateRawSource], resolver, *,
 def run_debate_batch(sources: list[DebateRawSource], *,
                      store: CoreStateStore | None = None, run_id: str | None = None,
                      publish: bool = False, loader=None, client=None,
-                     on_record_failure=None) -> list[DebateBatchOutcome]:
+                     on_record_failure=None,
+                     withheld_records: list[tuple[DebateRawSource, str | None,
+                                                  str | None, str | None]] | None = None
+                     ) -> list[DebateBatchOutcome]:
     """Validate and optionally publish only the explicitly supplied AKN objects.
 
     Every source is preserved before this function. All source/RDF/integration
@@ -376,7 +379,7 @@ def run_debate_batch(sources: list[DebateRawSource], *,
     """
     if publish and (store is None or not run_id or loader is None or client is None):
         raise ValueError("Debates publication requires Core State, an active run, GSP loader and SPARQL verifier")
-    if not sources:
+    if not sources and not withheld_records:
         raise DebateSourceError("supply at least one explicit AKN main.xml URL or preserved SHA-256 replay key")
     if store is not None:
         owner_snapshot = load_debate_owner_snapshot(store)
@@ -385,12 +388,26 @@ def run_debate_batch(sources: list[DebateRawSource], *,
             build_debate_reference_resolver(), {},
             hashlib.sha256(b"[]").hexdigest(),
         )
-    work_items, outcomes = _plan_records(
-        sources, owner_snapshot.resolver, owner_graphs=owner_snapshot.graphs,
-        store=store, run_id=run_id,
-        client=client, publish=publish,
-        owner_snapshot_hash=owner_snapshot.snapshot_hash,
-    )
+    if sources:
+        work_items, outcomes = _plan_records(
+            sources, owner_snapshot.resolver, owner_graphs=owner_snapshot.graphs,
+            store=store, run_id=run_id,
+            client=client, publish=publish,
+            owner_snapshot_hash=owner_snapshot.snapshot_hash,
+        )
+    else:
+        work_items, outcomes = [], []
+    for source, work_iri, failure_stage, failure_classification in withheld_records or []:
+        if hashlib.sha256(source.body).hexdigest() != source.source_sha256:
+            raise DebateSourceError("withheld Debates inventory source failed its content hash")
+        outcomes.append(DebateBatchOutcome(
+            work_iri,
+            expected_graph_iri("debates", work_iri) if work_iri else None,
+            source.source_sha256, "quarantined", 0, Graph(),
+            failure_stage or "inventory_withheld",
+            failure_classification or "record_inventory_withheld",
+            "withheld by the versioned initial-production inventory; source unchanged",
+        ))
     # Persist isolated record failures before the first remote mutation. If a
     # later sibling PUT fails, its system failure must not erase the already
     # observed quarantine evidence from this batch.

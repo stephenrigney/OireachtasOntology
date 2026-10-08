@@ -2051,7 +2051,16 @@ operational limits, a decision on the accepted source-listing/Expression
 completeness boundary, and staged operational acceptance. The exact inventory
 does not prove global Work/Expression completeness. Tranche 4 supports explicit
 AKN acquisition/replay and opt-in supplied-batch publication; it does not
-implement production enumeration or scheduling.
+  implement production enumeration or scheduling.
+
+The 2026-10-08 follow-up implements only deterministic manifest-driven
+selection and bounded batch indexing, reusing Phase 6 run/quarantine and the
+existing Debates publication path. It does not implement resource-budget
+enforcement or complete disposable staging acceptance: a current
+source-validated owner snapshot was unavailable. The controlled-ingestion gate
+therefore remains **blocked**; see
+`documentation/debates-controlled-staging-report.md` for limitations and the
+remaining acceptance plan. This update authorizes no production publication.
 
 Settled boundaries include:
 

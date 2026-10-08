@@ -27,6 +27,17 @@ and does not prove global Work/Expression completeness. Inventory completion
 does not close the production-readiness gate or authorize ingestion or graph
 publication.
 
+**Controlled-ingestion implementation update (2026-10-08):** deterministic
+manifest-driven selection and bounded batch indexing are implemented using the
+preserved inventory and existing Core State run/quarantine/publication
+machinery. See
+[`debates-controlled-staging-report.md`](debates-controlled-staging-report.md).
+This is not staged acceptance: the locally available Core State does not
+provide a current source-validated owner snapshot, so actual disposable-Fuseki
+calibration was not run. Resource preflight/runtime guards also remain
+unimplemented. Production readiness remains blocked and no production load is
+authorized.
+
 The Tranche 4 scoped resource measurement (2011+ debates only versus adding
 2013+ whole-record written answers) is recorded in
 [`debates-production-resource-assessment.md`](debates-production-resource-assessment.md).
