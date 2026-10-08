@@ -3750,38 +3750,67 @@ def run_bills(args: argparse.Namespace) -> int:
 
 
 def _load_debate_sources(raw_root: Path, source_urls: list[str],
-                         replay_hashes: list[str], settings: Settings):
-    sources = [load_main_xml(raw_root, digest) for digest in replay_hashes]
+                         replay_hashes: list[str], settings: Settings, *,
+                         on_source=None, on_api_failure=None):
+    sources = []
+    for digest in replay_hashes:
+        source = load_main_xml(raw_root, digest)
+        sources.append(source)
+        if on_source is not None:
+            on_source(source)
     for source_url in source_urls:
-        body, final_url = fetch_main_xml(
-            source_url, retries=settings.retries, timeout=settings.timeout)
-        sources.append(persist_main_xml(raw_root, body, final_url))
+        try:
+            body, final_url = fetch_main_xml(
+                source_url, retries=settings.retries, timeout=settings.timeout)
+            source = persist_main_xml(raw_root, body, final_url)
+        except DebateSourceError:
+            if on_api_failure is not None:
+                on_api_failure()
+            raise
+        sources.append(source)
+        if on_source is not None:
+            on_source(source)
     return sources
 
 
 def _write_debate_outputs(outcomes, args: argparse.Namespace) -> None:
+    publishable = [item for item in outcomes if item.status != "quarantined"]
     if args.output_nq:
         Path(args.output_nq).write_text(
-            "".join(nquads(item.graph, item.graph_iri) for item in outcomes),
+            "".join(nquads(item.graph, item.graph_iri) for item in publishable),
             encoding="utf-8")
     if args.output_ttl:
         Path(args.output_ttl).write_text(
-            "\n".join(turtle(item.graph) for item in outcomes),
+            "\n".join(turtle(item.graph) for item in publishable),
             encoding="utf-8")
 
 
-def _debate_result(outcomes, *, run_id: str | None, published: bool) -> int:
+def _debate_result(outcomes, *, run_id: str | None, published: bool,
+                   outcome: str | None = None,
+                   failure_scope: str | None = None,
+                   failure_classification: str | None = None) -> int:
+    quarantined = [item for item in outcomes if item.status == "quarantined"]
+    published_items = [item for item in outcomes if item.status != "quarantined"]
+    outcome = outcome or ("degraded" if quarantined else "success")
     summary = {
-        "batch_size": len(outcomes),
-        "changed": sum(item.status == "changed" for item in outcomes),
-        "new": sum(item.status == "new" for item in outcomes),
+        "batch_size": len(published_items) + len(quarantined),
+        "changed": sum(item.status == "changed" for item in published_items),
+        "new": sum(item.status == "new" for item in published_items),
         "published": published,
+        "quarantined": len(quarantined),
+        "outcome": outcome,
+        "failure_scope": failure_scope or ("record" if quarantined else None),
+        "failure_classification": (failure_classification
+                                    or ("record_processing_failure" if quarantined else None)),
         "run_id": run_id,
-        "skipped": sum(item.status == "skipped" for item in outcomes),
+        "skipped": sum(item.status == "skipped" for item in published_items),
         "work_records": [
             {"graph_iri": item.graph_iri, "source_sha256": item.source_sha256,
              "status": item.status, "triples": item.triples,
-             "work_iri": item.work_iri}
+             "work_iri": item.work_iri,
+             **({"failure_stage": item.failure_stage,
+                 "failure_classification": item.failure_classification,
+                 "error": item.error} if item.status == "quarantined" else {})}
             for item in outcomes
         ],
     }
@@ -3837,13 +3866,12 @@ def run_debates(args: argparse.Namespace) -> int:
                 # Evidence is persisted before source validation or RDF work.
                 _set_run_metrics(args, counters={
                     "api_requests": len(source_urls), "api_failures": 0})
-                sources = _load_debate_sources(raw_root, source_urls, replay_hashes, settings)
-                _set_run_metrics(args, counters={
-                    "extracted": len(sources), "changed": 0, "unchanged": 0,
-                    "quarantined": 0, "validation_failures": 0,
-                })
-                observed_at = datetime.now(timezone.utc).isoformat()
-                for source in sources:
+                extracted = 0
+                api_failures = 0
+
+                def record_observation(source) -> None:
+                    nonlocal extracted
+                    observed_at = datetime.now(timezone.utc).isoformat()
                     store.record_source_observation(
                         "debates", source.source_sha256, observed_at,
                         run_id=run_id,
@@ -3855,6 +3883,21 @@ def run_debates(args: argparse.Namespace) -> int:
                         },
                         versions=versions,
                     )
+                    extracted += 1
+                    _set_run_metrics(args, counters={"extracted": extracted})
+
+                def record_api_failure() -> None:
+                    nonlocal api_failures
+                    api_failures += 1
+                    _set_run_metrics(args, counters={"api_failures": api_failures})
+
+                sources = _load_debate_sources(
+                    raw_root, source_urls, replay_hashes, settings,
+                    on_source=record_observation, on_api_failure=record_api_failure)
+                _set_run_metrics(args, counters={
+                    "changed": 0, "unchanged": 0,
+                    "quarantined": 0, "validation_failures": 0,
+                })
                 loader = FusekiGraphStoreLoader(
                     gsp_endpoint, user=settings.fuseki_user,
                     password=settings.fuseki_password, timeout=settings.timeout)
@@ -3864,19 +3907,92 @@ def run_debates(args: argparse.Namespace) -> int:
                 context = _run_context(args, run_id=run_id)
                 if context is not None:
                     context.update(loader=loader, client=client, safe_publication=True)
+                retry_candidates = _retry_candidates(store, "debates")
+                retry_candidates_by_hash = _retry_candidates_by_hash(store, "debates")
+                sources_by_hash = {source.source_sha256: source for source in sources}
+                quarantined_count = 0
+                started_retry_ids: set[str] = set()
+
+                def start_debate_retries(rows: list[dict]) -> list[str]:
+                    eligible = [row for row in rows
+                                if row["quarantine_id"] not in started_retry_ids]
+                    retry_ids = _start_retries(store, eligible, run_id)
+                    started_retry_ids.update(retry_ids)
+                    return retry_ids
+
+                def persist_debate_failure(item) -> None:
+                    nonlocal quarantined_count
+                    source = sources_by_hash[item.source_sha256]
+                    retry_rows = _retry_rows_for_record(
+                        retry_candidates, retry_candidates_by_hash,
+                        item.work_iri, item.source_sha256,
+                        include_unidentified=True)
+                    retry_ids = start_debate_retries(retry_rows)
+                    if retry_ids:
+                        active_context = _run_context(args, run_id=run_id)
+                        if active_context is not None:
+                            active_context.setdefault("retry_attempts", []).extend(retry_ids)
+                    store.record_quarantine(
+                        "debates", run_id=run_id,
+                        source_hash=item.source_sha256,
+                        observed_at=datetime.now(timezone.utc).isoformat(),
+                        evidence_pointer=source.raw_path.resolve().as_uri(),
+                        stage=item.failure_stage or "debate_record_processing",
+                        error=item.error or "Debate source failed processing",
+                        resource_iri=item.work_iri,
+                        failure_classification=(item.failure_classification
+                                                 or "record_transform_failure"),
+                        etl_version=versions.get("etl_version"),
+                        ontology_version=versions.get("ontology_version"),
+                        mapping_version=versions.get("mapping_version"),
+                    )
+                    _json_log(
+                        "record_quarantined", run_id=run_id, endpoint="debates",
+                        resource_iri=item.work_iri,
+                        source_sha256=item.source_sha256,
+                        stage=item.failure_stage,
+                        classification=item.failure_classification)
+                    _finish_retries(
+                        store, retry_ids, run_id, success=False,
+                        error=item.error, args=args)
+                    quarantined_count += 1
+                    _set_run_metrics(args, counters={
+                        "quarantined": quarantined_count,
+                        "validation_failures": quarantined_count,
+                    })
+                    _degrade_run(
+                        args, error=f"{quarantined_count} Debate record(s) quarantined",
+                        classification="record_processing_failure")
+
                 outcomes = run_debate_batch(
                     sources, store=store, run_id=run_id, publish=True,
                     loader=loader, client=client,
+                    on_record_failure=persist_debate_failure,
                 )
                 _write_debate_outputs(outcomes, args)
+                for item in outcomes:
+                    if item.status == "quarantined":
+                        continue
+                    retry_rows = _retry_rows_for_record(
+                        retry_candidates, retry_candidates_by_hash,
+                        item.work_iri, item.source_sha256,
+                        include_unidentified=True)
+                    retry_ids = start_debate_retries(retry_rows)
+                    if retry_ids:
+                        context = _run_context(args, run_id=run_id)
+                        if context is not None:
+                            context.setdefault("retry_attempts", []).extend(retry_ids)
+                    _finish_retries(store, retry_ids, run_id, success=True, args=args)
                 context = _run_context(args, run_id=run_id)
                 _set_run_metrics(args, counters={
                     "extracted": len(sources),
                     "changed": sum(item.status == "changed" for item in outcomes),
                     "unchanged": sum(item.status == "skipped" for item in outcomes),
-                    "published_graphs": sum(item.status != "skipped" for item in outcomes),
-                    "quarantined": 0, "validation_failures": 0,
-                    "api_requests": len(source_urls), "api_failures": 0,
+                    "published_graphs": sum(
+                        item.status not in {"skipped", "quarantined"} for item in outcomes),
+                    "quarantined": quarantined_count,
+                    "validation_failures": quarantined_count,
+                    "api_requests": len(source_urls), "api_failures": api_failures,
                     "publication_succeeded": 1})
                 _finalize_run(store, args, run_id=run_id, endpoint="debates",
                               versions=versions, loader=loader, client=client)
@@ -3892,7 +4008,12 @@ def run_debates(args: argparse.Namespace) -> int:
                         failure_scope=scope,
                         failure_classification=classification)
                 raise
-    return _debate_result(outcomes, run_id=run_id, published=True)
+    context = _run_context(args, run_id=run_id) or {}
+    return _debate_result(
+        outcomes, run_id=run_id, published=True,
+        outcome=context.get("outcome"),
+        failure_scope=context.get("failure_scope"),
+        failure_classification=context.get("failure_classification"))
 
 
 class _FixtureWikidataClient:

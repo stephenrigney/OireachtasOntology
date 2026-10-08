@@ -165,6 +165,209 @@ def _memory_verify(remote: dict[str, Graph]):
     return verify
 
 
+def _patch_published_cli(monkeypatch, raw_root: Path,
+                         sources_by_url: dict[str, bytes], remote=None):
+    remote = {} if remote is None else remote
+    loader = _MemoryLoader(remote)
+    monkeypatch.setattr(
+        etl_cli, "fetch_main_xml",
+        lambda url, **_kwargs: (sources_by_url[url], url))
+    monkeypatch.setattr(etl_cli, "FusekiGraphStoreLoader", lambda *_a, **_k: loader)
+    monkeypatch.setattr(etl_cli, "FusekiSparqlClient", lambda *_a, **_k: object())
+    verifier = _memory_verify(remote)
+    monkeypatch.setattr(etl_cli, "verify_core_graph", verifier)
+    monkeypatch.setattr(competency, "verify_core_graph", verifier)
+
+    def run(state_path: Path, urls: list[str] | None = None,
+            hashes: list[str] | None = None):
+        command = ["run", "debates", "--publish", "--raw-dir", str(raw_root),
+                   "--state-db", str(state_path),
+                   "--fuseki-gsp-url", "http://fuseki.test/data",
+                   "--fuseki-sparql-url", "http://fuseki.test/query"]
+        for url in urls or []:
+            command.extend(["--source-url", url])
+        for digest in hashes or []:
+            command.extend(["--replay", digest])
+        return etl_cli.main(command)
+
+    return run, loader, remote
+
+
+def test_published_debates_quarantines_malformed_and_transform_failures_but_publishes_sibling(
+        tmp_path, monkeypatch, capsys):
+    from oireachtas_etl.state import CoreStateStore
+
+    valid = _source(work="/akn/ie/debateRecord/dail/2026-10-06/valid-sibling")
+    duplicate_eid = _source(
+        work="/akn/ie/debateRecord/dail/2026-10-06/duplicate-eid",
+        speech="section")
+    malformed_url = (
+        "https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-10-06/malformed/mul%40/main.xml")
+    duplicate_url = _source_url(duplicate_eid)
+    valid_url = _source_url(valid)
+    run, loader, remote = _patch_published_cli(
+        monkeypatch, tmp_path / "raw",
+        {malformed_url: b"<akomaNtoso><debate>",
+         duplicate_url: duplicate_eid, valid_url: valid})
+
+    assert run(tmp_path / "core.sqlite", [malformed_url, duplicate_url, valid_url]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["quarantined"] == 2
+    assert result["changed"] + result["new"] == 1
+    assert len(loader.puts) == 2  # one valid Work graph and the provenance catalog
+    assert len(remote) == 2
+
+    with CoreStateStore(tmp_path / "core.sqlite") as store:
+        run_row = store.status()["recent_runs"][0]
+        quarantines = store.quarantine_records(endpoint="debates", status="quarantined")
+        assert run_row["outcome"] == "degraded"
+        assert run_row["is_complete"] is False
+        assert run_row["failure_scope"] == "record"
+        assert run_row["summary"]["counters"]["quarantined"] == 2
+        assert run_row["summary"]["counters"]["validation_failures"] == 2
+        assert run_row["summary"]["counters"]["published_graphs"] == 1
+        assert {row["stage"] for row in quarantines} == {
+            "debate_transform", "debate_transform"}
+        by_hash = {row["source_hash"]: row for row in quarantines}
+        malformed_hash = hashlib.sha256(b"<akomaNtoso><debate>").hexdigest()
+        assert by_hash[malformed_hash]["resource_iri"] is None
+        assert by_hash[malformed_hash]["failure_classification"] == "record_transform_failure"
+        assert Path(by_hash[malformed_hash]["evidence_pointer"].removeprefix("file://")).exists()
+        observation = store.connection.execute(
+            "SELECT evidence_pointer,versions_json FROM source_observation "
+            "WHERE endpoint='debates' AND run_id=? AND source_hash=?",
+            (run_row["run_id"], malformed_hash),
+        ).fetchone()
+        assert observation is not None
+        assert observation["evidence_pointer"] == by_hash[malformed_hash]["evidence_pointer"]
+        assert json.loads(observation["versions_json"])["mapping_version"]
+        assert all(row["run_id"] == run_row["run_id"] for row in quarantines)
+        assert all(row["retry_state"] == "not_requested" for row in quarantines)
+        assert len(store.resources("debates")) == 1
+
+
+def test_debates_integration_quarantine_can_be_manually_retried_from_preserved_hash(
+        tmp_path, monkeypatch, capsys):
+    from oireachtas_etl.state import CoreStateStore
+
+    source = _source(work="/akn/ie/debateRecord/dail/2026-10-06/integration-retry")
+    source_url = _source_url(source)
+    run, loader, remote = _patch_published_cli(
+        monkeypatch, tmp_path / "raw", {source_url: source})
+    original_validate = debates_pipeline.validate_debates_integration
+    fail_once = {"active": True}
+
+    def injected_validation(result, *args, **kwargs):
+        if fail_once["active"]:
+            fail_once["active"] = False
+            raise ValueError("injected Debate integration validation failure")
+        return original_validate(result, *args, **kwargs)
+
+    monkeypatch.setattr(debates_pipeline, "validate_debates_integration", injected_validation)
+    database = tmp_path / "core.sqlite"
+    assert run(database, [source_url]) == 0
+    first_result = json.loads(capsys.readouterr().out)
+    assert first_result["quarantined"] == 1
+    assert first_result["outcome"] == "degraded"
+    assert loader.puts == ["https://data.oireachtas.ie/graph/provenance"]
+
+    with CoreStateStore(database) as store:
+        quarantine = store.quarantine_records(endpoint="debates")[0]
+        assert quarantine["stage"] == "integration_validation"
+        assert quarantine["failure_classification"] == "record_integration_validation_failure"
+        assert quarantine["resource_iri"] == inspect_debate_source_identity(source)["work_iri"]
+        digest = quarantine["source_hash"]
+        quarantine_id = quarantine["quarantine_id"]
+
+    assert etl_cli.main([
+        "quarantine", "retry", quarantine_id,
+        "--requested-by", "test-operator", "--reason", "retry after validation repair",
+        "--state-db", str(database),
+    ]) == 0
+    capsys.readouterr()
+
+    assert run(database, hashes=[digest]) == 0
+    retry_result = json.loads(capsys.readouterr().out)
+    assert retry_result["quarantined"] == 0
+    assert retry_result["new"] == 1
+    assert len(loader.puts) == 3  # Initial catalog, Work graph, final catalog
+    with CoreStateStore(database) as store:
+        resolved = store.quarantine_records(endpoint="debates", status="resolved")
+        assert len(resolved) == 1
+        assert resolved[0]["retry_state"] == "succeeded"
+        assert [row["action"] for row in store.quarantine_history(
+            resolved[0]["quarantine_id"])] == [
+                "quarantined", "retry_requested", "retry_started", "retry_succeeded"]
+        run_row = store.status()["recent_runs"][0]
+        assert run_row["outcome"] == "success"
+        assert run_row["summary"]["counters"]["quarantined"] == 0
+        assert store.get_resource("debates", resolved[0]["resource_iri"])[
+            "publication_state"] == "clean"
+
+
+def test_debates_publication_system_failure_stays_dirty_and_keeps_prior_quarantine(
+        tmp_path, monkeypatch):
+    from oireachtas_etl.state import CoreStateStore
+
+    source = _source(work="/akn/ie/debateRecord/dail/2026-10-06/system-failure")
+    source_url = _source_url(source)
+    malformed_url = (
+        "https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-10-06/system-sibling/mul%40/main.xml")
+    run, _loader, remote = _patch_published_cli(
+        monkeypatch, tmp_path / "raw",
+        {source_url: source, malformed_url: b"<akomaNtoso><debate>"})
+
+    class FailingLoader:
+        def replace(self, *_args, **_kwargs):
+            raise RuntimeError("injected GSP outage")
+
+    monkeypatch.setattr(etl_cli, "FusekiGraphStoreLoader", lambda *_a, **_k: FailingLoader())
+    with pytest.raises(RuntimeError, match="injected GSP outage"):
+        run(tmp_path / "core.sqlite", [source_url, malformed_url])
+
+    with CoreStateStore(tmp_path / "core.sqlite") as store:
+        run_row = store.status()["recent_runs"][0]
+        resource = store.resources("debates")[0]
+        assert run_row["outcome"] == "failed"
+        assert run_row["failure_scope"] == "system"
+        assert run_row["failure_classification"] == "system_failure"
+        assert run_row["summary"]["counters"]["quarantined"] == 1
+        quarantines = store.quarantine_records(endpoint="debates")
+        assert len(quarantines) == 1
+        assert quarantines[0]["failure_classification"] == "record_transform_failure"
+        assert resource["publication_state"] == "dirty"
+        assert resource["pending_payload_hash"]
+        assert store.catalog_publication()["publication_state"] == "dirty"
+    assert remote == {}
+
+
+def test_debates_source_acquisition_failure_is_failed_not_quarantined(
+        tmp_path, monkeypatch):
+    from oireachtas_etl.state import CoreStateStore
+
+    source_url = (
+        "https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-10-06/unavailable/mul%40/main.xml")
+    run, _loader, remote = _patch_published_cli(
+        monkeypatch, tmp_path / "raw", {})
+
+    def failed_fetch(*_args, **_kwargs):
+        raise DebateSourceError("injected AKN acquisition failure")
+
+    monkeypatch.setattr(etl_cli, "fetch_main_xml", failed_fetch)
+    with pytest.raises(DebateSourceError, match="injected AKN acquisition failure"):
+        run(tmp_path / "core.sqlite", [source_url])
+
+    with CoreStateStore(tmp_path / "core.sqlite") as store:
+        run_row = store.status()["recent_runs"][0]
+        assert run_row["outcome"] == "failed"
+        assert run_row["failure_scope"] == "source"
+        assert run_row["failure_classification"] == "debate_source_failure"
+        assert run_row["summary"]["counters"]["api_failures"] == 1
+        assert store.quarantine_records(endpoint="debates") == []
+        assert store.resources("debates") == []
+    assert remote == {}
+
+
 def test_content_addressed_raw_xml_is_exact_immutable_and_replayable(tmp_path):
     source = _source()
     source_url = _source_url(source)
@@ -381,8 +584,9 @@ def test_first_replay_skip_changed_replacement_and_owner_isolation(tmp_path, mon
             speech="alternate-expression",
         )
         alternate_input = _preserved_source(tmp_path / "raw", distinct_expression)
-        with pytest.raises(DebateSourceError, match="multiple known Expressions"):
-            _run(store, [alternate_input], remote, loader=loader)
+        conflict = _run(store, [alternate_input], remote, loader=loader)
+        assert conflict[0].status == "quarantined"
+        assert conflict[0].failure_stage == "work_expression_set"
         after_rejection = store.get_resource("debates", first[0].work_iri)
         assert after_rejection["expression_iri"] == expression_iri
         assert after_rejection["published_source_hash"] == changed_input.source_sha256
@@ -585,11 +789,13 @@ def test_reference_report_persistence_failure_precedes_resource_state_and_put(
         assert loader.puts == [] and remote == {}
 
 
-def test_invalid_xml_and_multiple_expressions_fail_before_publication(tmp_path):
+def test_invalid_xml_and_multiple_expressions_are_isolated_before_publication(tmp_path):
     bad_url = "https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-10-06/mul%40/main.xml"
     invalid = persist_main_xml(tmp_path / "raw", b"<akomaNtoso><debate>", bad_url)
-    with pytest.raises(ValueError, match="invalid AKN XML"):
-        run_debate_batch([invalid])
+    invalid_outcome = run_debate_batch([invalid])
+    assert invalid_outcome[0].status == "quarantined"
+    assert invalid_outcome[0].failure_stage == "debate_transform"
+    assert invalid_outcome[0].work_iri is None
 
     one = _source()
     two = _source(expression="/akn/ie/debateRecord/dail/2026-10-06/tranche-4-test/ga@",
@@ -600,15 +806,18 @@ def test_invalid_xml_and_multiple_expressions_fail_before_publication(tmp_path):
     with CoreStateStore(tmp_path / "multi.sqlite") as store:
         run_id = store.start_run("debates", "incremental_refresh", is_complete=False,
                                  parameters={"source": "test"})
-        with pytest.raises(Exception, match="multiple known Expressions"):
-            run_debate_batch([first_input, second_input], store=store, run_id=run_id,
-                             publish=True, loader=_MemoryLoader(remote), client=object())
+        outcomes = run_debate_batch(
+            [first_input, second_input], store=store, run_id=run_id,
+            publish=True, loader=_MemoryLoader(remote), client=object())
+        assert len(outcomes) == 2
+        assert all(item.status == "quarantined" for item in outcomes)
+        assert all(item.failure_stage == "work_expression_set" for item in outcomes)
         assert not remote
         assert store.resources("debates") == []
-        store.finish_run(run_id, success=False, error="multiple expressions")
+        store.finish_run(run_id, success=True)
 
 
-def test_mixed_valid_and_duplicate_eid_batch_fails_before_any_put_or_state(tmp_path):
+def test_mixed_valid_and_duplicate_eid_batch_publishes_only_valid_sibling(tmp_path, monkeypatch):
     raw_root = tmp_path / "raw"
     valid = _preserved_source(
         raw_root,
@@ -621,18 +830,23 @@ def test_mixed_valid_and_duplicate_eid_batch_fails_before_any_put_or_state(tmp_p
     )
     remote: dict[str, Graph] = {}
     loader = _MemoryLoader(remote)
+    monkeypatch.setattr(competency, "verify_core_graph", _memory_verify(remote))
     with CoreStateStore(tmp_path / "state.sqlite") as store:
         run_id = store.start_run(
             "debates", "incremental_refresh", is_complete=False,
             parameters={"source": "mixed-valid-and-invalid-test"},
         )
-        with pytest.raises(ValueError, match="duplicate decoded eId"):
-            run_debate_batch([valid, duplicate], store=store, run_id=run_id,
-                             publish=True, loader=loader, client=object())
-        assert loader.puts == [] and loader.payloads == []
-        assert remote == {}
-        assert store.resources("debates") == []
-        store.finish_run(run_id, success=False, error="duplicate decoded eId")
+        outcomes = run_debate_batch(
+            [valid, duplicate], store=store, run_id=run_id,
+            publish=True, loader=loader, client=object())
+        assert {item.status for item in outcomes} == {"new", "quarantined"}
+        quarantined = next(item for item in outcomes if item.status == "quarantined")
+        published = next(item for item in outcomes if item.status == "new")
+        assert quarantined.failure_stage == "debate_transform"
+        assert loader.puts == [published.graph_iri]
+        assert set(remote) == {published.graph_iri}
+        assert store.get_resource("debates", published.work_iri)["publication_state"] == "clean"
+        store.finish_run(run_id, success=True)
 
 
 def test_owner_snapshot_change_forces_reresolution_even_if_lookup_version_is_same(tmp_path, monkeypatch):

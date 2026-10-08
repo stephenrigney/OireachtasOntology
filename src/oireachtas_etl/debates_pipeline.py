@@ -20,6 +20,7 @@ from .debates_raw import (
 from .serialization import ntriples
 from .state import CoreStateError, CoreStateStore, expected_graph_iri
 from .transforms.debates import (
+    DebateTransformError,
     inspect_debate_source_identity,
     transform_debate,
 )
@@ -31,12 +32,15 @@ DEBATES_PUBLICATION_CONTRACT = 1
 
 @dataclass(frozen=True)
 class DebateBatchOutcome:
-    work_iri: str
-    graph_iri: str
+    work_iri: str | None
+    graph_iri: str | None
     source_sha256: str
     status: str
     triples: int
     graph: Graph
+    failure_stage: str | None = None
+    failure_classification: str | None = None
+    error: str | None = None
 
 
 @dataclass(frozen=True)
@@ -153,6 +157,18 @@ def _plan_records(sources: list[DebateRawSource], resolver, *,
                   owner_snapshot_hash: str) -> tuple[list[dict], list[DebateBatchOutcome]]:
     planned: list[dict] = []
     expressions_by_work: dict[str, dict[str, str]] = {}
+    work_conflicts: dict[str, tuple[str, str, str]] = {}
+    source_hashes_by_resource: dict[tuple[str, str], set[str]] = {}
+    failures: list[DebateBatchOutcome] = []
+
+    def quarantine(item: dict, *, work_iri: str | None, stage: str,
+                   classification: str, error: Exception) -> None:
+        failures.append(DebateBatchOutcome(
+            work_iri, expected_graph_iri("debates", work_iri) if work_iri else None,
+            item["source_sha256"], "quarantined", 0, Graph(), stage,
+            classification, f"{type(error).__name__}: {error}",
+        ))
+
     for item in _checked_inputs(sources):
         try:
             identity = inspect_debate_source_identity(item["body"])
@@ -161,7 +177,12 @@ def _plan_records(sources: list[DebateRawSource], resolver, *,
             # below; this fast identity pass only exists for known-good hashes.
             identity = None
         if identity is None:
-            result = transform_debate(item["body"], resolver=resolver)
+            try:
+                result = transform_debate(item["body"], resolver=resolver)
+            except DebateTransformError as error:
+                quarantine(item, work_iri=None, stage="debate_transform",
+                           classification="record_transform_failure", error=error)
+                continue
             identity = {
                 "work_iri": result.work_iri,
                 "expression_iri": result.expression_iri,
@@ -180,28 +201,51 @@ def _plan_records(sources: list[DebateRawSource], resolver, *,
             if not matching_urls:
                 raise DebateSourceError(
                     "preserved source evidence is not the main.xml object for its exact FRBRExpression")
+        except DebateSourceError as error:
+            quarantine(item, work_iri=identity.get("work_iri"),
+                       stage="source_identity",
+                       classification="record_source_identity_failure", error=error)
+            continue
         except (KeyError, TypeError) as error:
-            raise DebateSourceError("Debates source identity lacks an exact Expression IRI") from error
+            quarantine(item, work_iri=identity.get("work_iri"),
+                       stage="source_identity",
+                       classification="record_source_identity_failure",
+                       error=DebateSourceError(
+                           "Debates source identity lacks an exact Expression IRI"))
+            continue
         item.update(identity)
         item["source_url"] = matching_urls[0]
         item["run_id"] = run_id
         work_expressions = expressions_by_work.setdefault(item["work_iri"], {})
         prior_source_uri = work_expressions.get(item["expression_iri"])
         if prior_source_uri is not None and prior_source_uri != item["source_expression_uri"]:
-            raise DebateSourceError("conflicting source FRBR Expression evidence has one canonical identity")
+            work_conflicts.setdefault(
+                item["work_iri"],
+                ("work_source_identity", "record_source_identity_conflict",
+                 "conflicting source FRBR Expression evidence has one canonical identity"))
         work_expressions[item["expression_iri"]] = item["source_expression_uri"]
+        resource_key = (item["work_iri"], item["expression_iri"])
+        source_hashes = source_hashes_by_resource.setdefault(resource_key, set())
+        source_hashes.add(item["source_sha256"])
+        if len(source_hashes) > 1:
+            work_conflicts.setdefault(
+                item["work_iri"],
+                ("work_source_identity", "record_source_identity_conflict",
+                 "conflicting source bytes share one Debate Work/Expression identity"))
         planned.append(item)
 
-    for work_iri, expression_values in sorted(expressions_by_work.items()):
+    for work_iri, expression_values in expressions_by_work.items():
         if len(expression_values) > 1:
-            # Reuse the approved transformer failure for a known incomplete
-            # Work bundle. The single-file case remains explicitly incomplete.
-            first = next(item for item in planned if item["work_iri"] == work_iri)
-            transform_debate(
-                first["body"], resolver=resolver,
-                known_expression_source_uris=tuple(expression_values.values()),
-            )
-            raise AssertionError("multiple Expression transform unexpectedly succeeded")
+            work_conflicts[work_iri] = (
+                "work_expression_set", "record_work_expression_conflict",
+                "multiple known Expressions for one Debate Work; refusing to publish or replace its Work graph")
+    for item in planned:
+        conflict = work_conflicts.get(item["work_iri"])
+        if conflict is not None:
+            stage, classification, message = conflict
+            quarantine(item, work_iri=item["work_iri"], stage=stage,
+                       classification=classification, error=DebateSourceError(message))
+    planned = [item for item in planned if item["work_iri"] not in work_conflicts]
 
     by_resource: dict[tuple[str, str], dict] = {}
     for item in planned:
@@ -228,8 +272,11 @@ def _plan_records(sources: list[DebateRawSource], resolver, *,
         item["old"] = old
         if (old is not None and old.get("expression_iri")
                 and old["expression_iri"] != item["expression_iri"]):
-            raise DebateSourceError(
+            error = DebateSourceError(
                 "multiple known Expressions for one Debate Work; refusing to publish or replace its Work graph")
+            quarantine(item, work_iri=item["work_iri"], stage="work_expression_set",
+                       classification="record_work_expression_conflict", error=error)
+            continue
         if (publish and old is not None
                 and old.get("publication_state") == "clean"
                 and old.get("published_source_hash") == item["source_sha256"]
@@ -275,19 +322,29 @@ def _plan_records(sources: list[DebateRawSource], resolver, *,
                 ))
                 continue
 
-        result = item.get("pretransformed") or transform_debate(
-            item["body"], resolver=resolver,
-            known_expression_source_uris=(item["source_expression_uri"],),
-        )
+        try:
+            result = item.get("pretransformed") or transform_debate(
+                item["body"], resolver=resolver,
+                known_expression_source_uris=(item["source_expression_uri"],),
+            )
+        except DebateTransformError as error:
+            quarantine(item, work_iri=item["work_iri"], stage="debate_transform",
+                       classification="record_transform_failure", error=error)
+            continue
         if (result.work_iri != item["work_iri"]
                 or result.expression_iri != item["expression_iri"]
                 or result.source_sha256 != item["source_sha256"]
                 or result.graph_iri != graph_iri):
             raise CoreStateError("Debates transformer result differs from source identity preflight")
-        validate_debates_integration(
-            result, _integration_dataset(result, owner_graphs),
-            source_xml=item["body"],
-        )
+        try:
+            validate_debates_integration(
+                result, _integration_dataset(result, owner_graphs),
+                source_xml=item["body"],
+            )
+        except ValueError as error:
+            quarantine(item, work_iri=item["work_iri"], stage="integration_validation",
+                       classification="record_integration_validation_failure", error=error)
+            continue
         report_path, report_hash = persist_reference_report(
             item["raw_source"], result.reference_report_json,
             resolver_version=resolver_version,
@@ -304,12 +361,13 @@ def _plan_records(sources: list[DebateRawSource], resolver, *,
             item["work_iri"], graph_iri, item["source_sha256"],
             "changed" if old is not None else "new", len(result.graph), result.graph,
         ))
-    return work_items, outcomes
+    return work_items, failures + outcomes
 
 
 def run_debate_batch(sources: list[DebateRawSource], *,
                      store: CoreStateStore | None = None, run_id: str | None = None,
-                     publish: bool = False, loader=None, client=None) -> list[DebateBatchOutcome]:
+                     publish: bool = False, loader=None, client=None,
+                     on_record_failure=None) -> list[DebateBatchOutcome]:
     """Validate and optionally publish only the explicitly supplied AKN objects.
 
     Every source is preserved before this function. All source/RDF/integration
@@ -333,6 +391,13 @@ def run_debate_batch(sources: list[DebateRawSource], *,
         client=client, publish=publish,
         owner_snapshot_hash=owner_snapshot.snapshot_hash,
     )
+    # Persist isolated record failures before the first remote mutation. If a
+    # later sibling PUT fails, its system failure must not erase the already
+    # observed quarantine evidence from this batch.
+    if on_record_failure is not None:
+        for outcome in outcomes:
+            if outcome.status == "quarantined":
+                on_record_failure(outcome)
     if publish:
         for item in work_items:
             digest = store.mark_publication_dirty(

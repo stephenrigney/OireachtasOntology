@@ -66,14 +66,18 @@ construction or staging failures fail before a new catalog PUT.
 Runs have `success`, `degraded`, or `failed` outcomes. Non-success runs record a
 failure scope (`record`, `source`, `run`, or `system`) and a non-empty
 classification identifying the cause. Record failures that can be isolated
-(notably Members and Legislation/Bills) retain immutable quarantine evidence
-and can leave unaffected validated graphs publishable. If processing otherwise
-reaches finalization, unresolved quarantine prevents a `success` outcome and
-makes the run degraded. Incompatible records on the shared-source Houses,
-Parties, and Constituencies paths, source-envelope/completeness failures, and
-fatal state, validation, publication, or verification errors fail the run
-rather than claiming a complete successful view. JSON Lines operational events
-go to stderr; persisted run summaries contain endpoint-applicable counters and
+(Members, Legislation/Bills, and explicit Debates Work inputs) retain immutable
+quarantine evidence and can leave unaffected validated graphs publishable. The
+Debates publisher still validates all publishable Work graphs before the first
+PUT; it omits quarantined Works while preserving the one-graph-per-Work
+ownership boundary. A known multi-Expression Work is quarantined as a Work-level
+conflict, never partially published. If processing otherwise reaches
+finalization, unresolved quarantine prevents a `success` outcome and makes the
+run degraded. Incompatible records on the shared-source Houses, Parties, and
+Constituencies paths, source-envelope/completeness failures, and fatal state,
+validation, publication, or verification errors fail the run rather than
+claiming a complete successful view. JSON Lines operational events go to
+stderr; persisted run summaries contain endpoint-applicable counters and
 timings.
 
 A degraded or failed run cannot advance the Bills incremental cursor or create
@@ -96,15 +100,18 @@ oir-etl quarantine retry QUARANTINE_ID --requested-by OPERATOR [--reason TEXT] [
 `houses`, `parties`, `constituencies`, `members`, `legislation`, and `debates`.
 `show` returns the record and its append-only history. `retry` records an
 operator request; it does not run the transformation immediately. Automatic
-retry processing is wired to Members and Bills/Legislation source runs. It
-selects unresolved records only when the corresponding source record is
-reobserved: identified records match their resource IRI; identity-less records
-may match by exact source hash only in an applicable live full scan (for Bills,
-`run bills --full`). Fixtures/offline runs do not consume identity-less hash
-matches. A successful attempt marks the record resolved but retains its
-original evidence and history; a failed attempt leaves it quarantined with the
-failure recorded. Thus retry never republishes a stale quarantined snapshot
-merely because an operator requested it.
+retry processing is wired to Members, Bills/Legislation, and explicit Debates
+source runs. It selects unresolved records only when the corresponding source
+record is reobserved: identified records match their resource IRI; identity-less
+records may match by exact source hash only in an applicable live full scan (for
+Bills, `run bills --full`) or the exact Debates content-addressed replay. A
+Debates retry can be driven deterministically with
+`oir-etl run debates --publish --replay SHA256`; the original AKN bytes and
+source identity are revalidated before retry state can resolve. A successful
+attempt marks the record resolved but retains its original evidence and
+history; a failed attempt leaves it quarantined with the failure recorded.
+Thus retry never republishes a stale quarantined snapshot merely because an
+operator requested it.
 
 ## Source drift reports
 
