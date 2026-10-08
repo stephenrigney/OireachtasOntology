@@ -19,6 +19,12 @@ from urllib.parse import quote, unquote, urlsplit
 
 
 SCHEMA_VERSION = 5
+RESOURCE_READ_SCHEMA_VERSIONS = frozenset({4, SCHEMA_VERSION})
+RESOURCE_READ_COLUMNS = frozenset({
+    "resource_iri", "graph_iri", "observed_source_hash", "published_source_hash",
+    "published_payload_hash", "published_payload", "last_seen_run_id",
+    "publication_state", "source_presence", "contract_version",
+})
 ENDPOINTS = ("houses", "parties", "constituencies", "committees", "members", "legislation",
              "debates",
              "administrative-units", "offices")
@@ -40,6 +46,59 @@ SHARED_GRAPHS = {
 
 class CoreStateError(ValueError):
     """Invalid or internally inconsistent authoritative ETL state."""
+
+
+def read_resource_state(state_db: Path | str,
+                        endpoints: tuple[str, ...] | list[str]) -> dict[str, list[dict]]:
+    """Read resource publication rows from Core State without opening it for writes.
+
+    Development tooling uses this narrow reader to reuse already-validated
+    resource payloads. It deliberately does not initialize, migrate, lock, or
+    otherwise mutate Core State.
+    """
+    requested = tuple(endpoints)
+    if (not requested or len(requested) != len(set(requested))
+            or any(endpoint not in RESOURCE_ENDPOINTS for endpoint in requested)):
+        raise CoreStateError("read-only resource selection requires unique resource endpoints")
+    path = Path(state_db).expanduser().resolve()
+    try:
+        connection = sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA busy_timeout=30000")
+    except sqlite3.Error as error:
+        raise CoreStateError(f"cannot open Core State read-only: {error}") from error
+    try:
+        connection.execute("BEGIN")
+        version = connection.execute("PRAGMA user_version").fetchone()[0]
+        if version not in RESOURCE_READ_SCHEMA_VERSIONS:
+            raise CoreStateError(
+                f"unsupported Core State schema version {version}; supported versions are "
+                f"{', '.join(map(str, sorted(RESOURCE_READ_SCHEMA_VERSIONS)))}")
+        tables = {row[0] for row in connection.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'")}
+        if "resource_state" not in tables:
+            raise CoreStateError("Core State resource table is unavailable")
+        columns = {row[1] for row in connection.execute(
+            "PRAGMA table_info(resource_state)")}
+        if not RESOURCE_READ_COLUMNS <= columns:
+            raise CoreStateError("Core State resource publication schema is incomplete")
+        result = {
+            endpoint: [dict(row) for row in connection.execute(
+                "SELECT * FROM resource_state WHERE endpoint=? ORDER BY resource_iri",
+                (endpoint,),
+            )]
+            for endpoint in requested
+        }
+        connection.commit()
+        return result
+    except sqlite3.Error as error:
+        connection.rollback()
+        raise CoreStateError(f"cannot read Core State resource rows: {error}") from error
+    except BaseException:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
 
 
 def _validate_debate_source_evidence(source_hash: str, raw_source_path: object,

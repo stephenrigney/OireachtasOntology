@@ -74,15 +74,47 @@ SELECT DISTINCT ?source WHERE {
     FILTER(STRSTARTS(STR(?memberGraph), "__MEMBER_GRAPH_PREFIX__"))
   }
   UNION
+  { BIND("Committees" AS ?source)
+    GRAPH <__COMMITTEES_GRAPH__> {
+      ?committee rdf:type members:Committee
+    }
+  }
+  UNION
   { BIND("Bills" AS ?source)
     GRAPH ?billGraph {
       ?bill rdf:type eli-dl:DraftLegislationWork
     }
     FILTER(STRSTARTS(STR(?billGraph), "__BILL_GRAPH_PREFIX__"))
   }
+  UNION
+  { BIND("Offices" AS ?source)
+    GRAPH <__OFFICES_GRAPH__> {
+      ?office rdf:type members:NamedOffice
+    }
+  }
+  UNION
+  { BIND("Administrative Units" AS ?source)
+    GRAPH <__ADMINISTRATIVE_UNITS_GRAPH__> {
+      ?unit rdf:type members:AdministrativeUnit
+    }
+  }
+  UNION
+  { BIND("Office Holdings" AS ?source)
+    GRAPH ?officeHoldingGraph {
+      ?holding rdf:type members:OfficeHolding
+    }
+    FILTER(STRSTARTS(STR(?officeHoldingGraph), "__MEMBER_GRAPH_PREFIX__"))
+  }
+  UNION
+  { BIND("Cabinet Memberships" AS ?source)
+    GRAPH ?cabinetMembershipGraph {
+      ?cabinet rdf:type members:CabinetMembership
+    }
+    FILTER(STRSTARTS(STR(?cabinetMembershipGraph), "__MEMBER_GRAPH_PREFIX__"))
+  }
 }
 ORDER BY ?source
-LIMIT 10
+LIMIT 20
 """
 for _token, _value in (
     ("__AGENTS_NS__", _QUERY_CONTRACT["namespaces"]["agents"]),
@@ -93,6 +125,9 @@ for _token, _value in (
     ("__HOUSES_GRAPH__", _fixed_graph_iri("houses")),
     ("__PARTIES_GRAPH__", _fixed_graph_iri("parties")),
     ("__CONSTITUENCIES_GRAPH__", _fixed_graph_iri("constituencies")),
+    ("__COMMITTEES_GRAPH__", _fixed_graph_iri("committees")),
+    ("__OFFICES_GRAPH__", _fixed_graph_iri("offices")),
+    ("__ADMINISTRATIVE_UNITS_GRAPH__", _fixed_graph_iri("administrative-units")),
     ("__MEMBER_GRAPH_PREFIX__", _resource_graph_prefix("member-records")),
     ("__BILL_GRAPH_PREFIX__", _resource_graph_prefix("bill-records")),
 ):
@@ -186,7 +221,9 @@ class FusekiQueryClient:
             present_sources = {row[source_index].split("@", 1)[0] for row in source_result.rows}
 
         source_status = tuple((name, name in present_sources) for name in (
-            "Houses", "Parties", "Constituencies", "Members", "Bills"
+            "Houses", "Parties", "Constituencies", "Members", "Committees", "Bills",
+            "Offices", "Administrative Units", "Office Holdings",
+            "Cabinet Memberships",
         ))
         missing_required = [name for name in REQUIRED_READINESS_SOURCES if name not in present_sources]
         if not has_triples:
@@ -203,10 +240,22 @@ class FusekiQueryClient:
                 + ". Use the ETL startup instructions to load data; the POC will not write to Fuseki."
             )
         else:
+            optional_present = [name for name in present_sources
+                                if name not in REQUIRED_READINESS_SOURCES]
+            optional_missing = [name for name, present in source_status
+                                if name not in REQUIRED_READINESS_SOURCES and not present]
+            optional_status = []
+            if optional_present:
+                optional_status.append("optional graph families detected: "
+                                       + ", ".join(sorted(optional_present)))
+            if optional_missing:
+                optional_status.append("optional graph families not detected: "
+                                       + ", ".join(optional_missing))
             state = "ready"
             message = (
                 "Houses, Parties, Constituencies, and Member graph families are present. "
                 "Individual questions may still return no rows when their facts are not loaded."
+                + (" " + " ".join(optional_status) + "." if optional_status else "")
             )
         return FusekiReadiness(state, has_triples, source_status, message)
 

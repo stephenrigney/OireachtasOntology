@@ -36,7 +36,8 @@ The proof of concept currently provides:
 - result rendering and debug information;
 - a one-command development launcher under `scripts/dev-nlq.sh`;
 - an explicit non-authoritative local bootstrap for Houses, reference owners
-  and Members from preserved complete API captures; and
+  and Members from preserved complete API captures, plus optional Bill graphs
+  and reviewed ministerial data from already validated Core State outputs; and
 - an explicit prohibition on `SERVICE`, `FROM` and `FROM NAMED` in
   generated queries.
 
@@ -120,8 +121,18 @@ service can consume.
 for a disposable, loopback Fuseki dataset, not partial production publication.
 It reads preserved successful complete API captures, validates and loads
 Houses/HouseTerms, Member graphs and valid Party, Independent collection,
-constituency/panel and Committee owner descriptions. It does not fetch source
-data or write Core State or external-reconciliation state.
+constituency/panel and Committee owner descriptions, and validates and loads
+the reviewed NamedOffice and AdministrativeUnit registries. Bill graphs come
+only from read-only Core State resource rows that are present, clean, still
+match their last-observed source hash, use the supported Bill contract, are on
+their expected graph IRI, and contain an intact published RDF payload; zero
+eligible Bills is valid and optional. A Member's
+OfficeHolding and CabinetMembership data is reused only from an exact-source-
+matching, clean contract-3 Member publication. Members without such a
+publication use the normal transform without office resolutions, so raw or
+unresolved observations are never promoted. The command does not fetch source
+data, reconcile offices, or write Core State, office-occurrence, or
+external-reconciliation state.
 
 The local path reuses the source census and owner transformations, but
 materially conflicted identities are quarantined: no observation is selected,
@@ -345,7 +356,7 @@ ETL implementation details before changing the query architecture.
 - [x] Define the safety boundary that later federation must explicitly extend.
 
 Phase 0C records this baseline in `poc/specs/query-schema-contract.json`
-(contract `1.0.0`, schema `1`) and
+(contract `1.1.0`, schema `1`) and
 `poc/specs/query-schema-contract.schema.json`. The NLQ grounding path scopes
 ontology detail to the contract and no longer imports private
 `oireachtas_etl.config` graph constants. Contract-compatible additions may use
@@ -356,6 +367,13 @@ major versions. The current local safety baseline remains SELECT/ASK only,
 without Update, `SERVICE`, `FROM`/`FROM NAMED`, subqueries, variable predicates,
 or property paths; exact limits and endpoint caveats are in the artifact and
 `poc/nlq/README.md`. Federation remains disabled.
+
+Contract `1.1.0` is a compatible minor expansion: it adds query terms and
+patterns for the already-emitted reviewed Office/AdministrativeUnit registry
+and accepted Member office/Cabinet output. The earlier office-holding pattern
+was explicitly marked non-queryable, so enabling the now-populated model does
+not remove an executable pattern or reinterpret existing triples; graph and
+identity ownership, reasoning, and safety capabilities remain unchanged.
 
 ### Exit criteria
 

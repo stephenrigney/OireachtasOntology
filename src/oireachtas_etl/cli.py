@@ -35,7 +35,8 @@ from .transforms.common import MEMBERS, datetime_literal
 from .transforms.offices import office_iri
 from .transforms.bills import bill_graph_iri, source_hash as bill_source_hash, transform_bill_with_report
 from .validation.bills import validate_bill_source
-from .state import CoreStateStore, expected_graph_iri, state_lock
+from .state import (CoreStateStore, expected_graph_iri, read_resource_state,
+                    state_lock)
 from rdflib import Graph, URIRef
 from rdflib.namespace import RDF
 from .transforms.common import ELIDL, OIR
@@ -3091,11 +3092,14 @@ LOCAL_DEVELOPMENT_GRAPH_ORDER = (
     ("parties", PARTIES_GRAPH),
     ("constituencies", CONSTITUENCIES_GRAPH),
     ("committees", COMMITTEES_GRAPH),
+    ("administrative-units", ADMINISTRATIVE_UNITS_GRAPH),
+    ("offices", OFFICES_GRAPH),
 )
 
 
 def _development_dataset_baseline(captures: dict, counts: dict,
-                                  development_status: dict) -> dict:
+                                  development_status: dict,
+                                  source_evidence: dict) -> dict:
     """Describe the capture-backed dataset written by the local bootstrap.
 
     The stable identity is based on source run IDs and URLs, not local paths,
@@ -3121,37 +3125,56 @@ def _development_dataset_baseline(captures: dict, counts: dict,
         }
 
     identity_material = {
-        "identity_version": 1,
+        "identity_version": 2,
         "source_captures": identity_captures,
+        "development_source_evidence": source_evidence,
     }
     identity_json = json.dumps(
         identity_material, ensure_ascii=False, sort_keys=True,
         separators=(",", ":"),
     )
     dataset_id = "sha256:" + hashlib.sha256(identity_json.encode("utf-8")).hexdigest()
+    graph_families_loaded = [
+        {"name": "houses", "graph_iri": HOUSES_GRAPH, "graph_count": 1},
+        {"name": "parties", "graph_iri": PARTIES_GRAPH, "graph_count": 1},
+        {"name": "constituencies", "graph_iri": CONSTITUENCIES_GRAPH,
+         "graph_count": 1},
+        {"name": "committees", "graph_iri": COMMITTEES_GRAPH,
+         "graph_count": 1},
+        {"name": "administrative-units",
+         "graph_iri": ADMINISTRATIVE_UNITS_GRAPH, "graph_count": 1},
+        {"name": "offices", "graph_iri": OFFICES_GRAPH, "graph_count": 1},
+        {"name": "members",
+         "graph_iri_pattern": "https://data.oireachtas.ie/graph/member/{memberCode}",
+         "graph_count": counts["members"]},
+    ]
+    if counts["bills"]:
+        graph_families_loaded.append({
+            "name": "bills",
+            "graph_iri_pattern": "https://data.oireachtas.ie/graph/bill/{year}/{number}",
+            "graph_count": counts["bills"],
+        })
 
     return {
         "schema_version": 1,
         "dataset": {
             "id": dataset_id,
             "identity_method": (
-                "SHA-256 of canonical JSON containing each selected endpoint's "
-                "source URL and successful complete Core State run ID"
+                "SHA-256 of canonical JSON containing selected complete capture "
+                "identities plus the exact Core State publication payload inventories "
+                "and configured office/unit registry digest"
             ),
             "authority": "non-authoritative development dataset",
             "authoritative_reference_closure_complete": False,
         },
         "source_captures": source_captures,
-        "graph_families_loaded": [
-            {"name": "houses", "graph_iri": HOUSES_GRAPH, "graph_count": 1},
-            {"name": "parties", "graph_iri": PARTIES_GRAPH, "graph_count": 1},
-            {"name": "constituencies", "graph_iri": CONSTITUENCIES_GRAPH,
-             "graph_count": 1},
-            {"name": "committees", "graph_iri": COMMITTEES_GRAPH,
-             "graph_count": 1},
-            {"name": "members",
-             "graph_iri_pattern": "https://data.oireachtas.ie/graph/member/{memberCode}",
-             "graph_count": counts["members"]},
+        "graph_families_loaded": graph_families_loaded,
+        "optional_graph_families": [
+            {"name": "bills",
+             "graph_iri_pattern": "https://data.oireachtas.ie/graph/bill/{year}/{number}",
+             "graph_count": counts["bills"],
+             "status": ("loaded" if counts["bills"] else
+                        "no-eligible-published-resources")},
         ],
         "source_record_counts": {
             endpoint: capture["advertised_count"]
@@ -3163,7 +3186,13 @@ def _development_dataset_baseline(captures: dict, counts: dict,
             "party_owner_identities": counts["parties"],
             "constituency_panel_owner_identities": counts["constituencies"],
             "committee_owner_identities": counts["committees"],
+            "administrative_units": counts["administrative_units"],
+            "named_offices": counts["offices"],
+            "office_holdings": counts["office_holdings"],
+            "cabinet_memberships": counts["cabinet_memberships"],
+            "bills": counts["bills"],
         },
+        "source_evidence": source_evidence,
         "quarantined_conflict_count": development_status[
             "quarantined_conflict_count"],
         "quarantined_conflicted_identities": development_status[
@@ -3177,6 +3206,180 @@ def _development_dataset_baseline(captures: dict, counts: dict,
             "This is not a live census of other or stale graphs already present "
             "in a persistent Fuseki dataset."
         ),
+    }
+
+
+def _read_development_registry(registry_path: Path) -> tuple[dict, Graph, Graph, str]:
+    """Load and independently validate the reviewed local office registries."""
+    try:
+        raw = registry_path.read_bytes()
+        registry = json.loads(raw)
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"invalid office registry: {error}") from error
+    validate_registry_source(registry)
+    units_graph = transform_administrative_units(registry)
+    offices_graph = transform_offices(registry)
+    validate_administrative_units(registry, units_graph)
+    validate_offices(registry, offices_graph)
+    return registry, units_graph, offices_graph, hashlib.sha256(raw).hexdigest()
+
+
+def _development_bills(rows: list[dict]) -> tuple[list[tuple[str, Graph, dict]], dict]:
+    """Select only intact, clean Bill graphs already published in Core State."""
+    selected: list[tuple[str, Graph, dict]] = []
+    skipped: dict[str, int] = {}
+
+    def skip(reason: str) -> None:
+        skipped[reason] = skipped.get(reason, 0) + 1
+
+    for row in rows:
+        if row.get("source_presence") != "present":
+            skip("not-present")
+            continue
+        if row.get("publication_state") != "clean":
+            skip("not-clean")
+            continue
+        if row.get("contract_version") != 1:
+            skip("unsupported-contract-version")
+            continue
+        observed_hash = row.get("observed_source_hash")
+        published_source_hash = row.get("published_source_hash")
+        if (not isinstance(observed_hash, str) or not observed_hash
+                or not isinstance(published_source_hash, str) or not published_source_hash
+                or observed_hash != published_source_hash):
+            skip("published-source-not-current")
+            continue
+        resource_iri = row.get("resource_iri")
+        try:
+            expected_graph = expected_graph_iri("legislation", resource_iri)
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"invalid published Bill resource identity: {resource_iri!r}") from error
+        if row.get("graph_iri") != expected_graph:
+            raise ValueError(f"published Bill graph identity does not match resource: {resource_iri}")
+        payload = row.get("published_payload")
+        if not isinstance(payload, str) or not payload:
+            skip("missing-published-payload")
+            continue
+        payload_hash = row.get("published_payload_hash")
+        if (not isinstance(payload_hash, str)
+                or hashlib.sha256(payload.encode("utf-8")).hexdigest() != payload_hash):
+            raise ValueError(f"published Bill payload hash does not verify: {resource_iri}")
+        graph = Graph()
+        try:
+            graph.parse(data=payload, format="nt")
+        except Exception as error:
+            raise ValueError(f"published Bill RDF payload cannot be parsed: {resource_iri}") from error
+        if (URIRef(resource_iri), RDF.type, ELIDL.DraftLegislationWork) not in graph:
+            raise ValueError(f"published Bill RDF payload does not describe its Bill: {resource_iri}")
+        selected.append((expected_graph, graph, row))
+    selected.sort(key=lambda item: item[0])
+    inventory = [{
+        "resource_iri": row["resource_iri"],
+        "graph_iri": graph_iri,
+        "observed_source_hash": row["observed_source_hash"],
+        "published_source_hash": row["published_source_hash"],
+        "published_payload_hash": row["published_payload_hash"],
+        "source_run_id": row.get("last_seen_run_id"),
+    } for graph_iri, _graph, row in selected]
+    evidence = {
+        "source": "read-only Core State legislation resource publications",
+        "resource_rows_examined": len(rows),
+        "eligible_resource_count": len(selected),
+        "skipped_resource_counts": dict(sorted(skipped.items())),
+        "source_run_ids": sorted({item["source_run_id"] for item in inventory
+                                   if item["source_run_id"]}),
+        "payload_inventory_sha256": hashlib.sha256(json.dumps(
+            inventory, ensure_ascii=False, sort_keys=True,
+            separators=(",", ":")).encode("utf-8")).hexdigest(),
+    }
+    return selected, evidence
+
+
+def _development_member_graph(wrapper: dict, state_row: dict | None) -> tuple[Graph, bool, str | None]:
+    """Reuse exact current validated Member output when Core State proves it.
+
+    In particular, office observations are never resolved here. OfficeHolding
+    and CabinetMembership enter development only through a clean, current,
+    contract-3 Member publication produced by the existing ETL path.
+    """
+    member = wrapper["member"]
+    identity = member["uri"]
+    graph_iri = member_graph_iri(member)
+    source_digest = source_hash(member)
+    validate_member_source(wrapper)
+    if (state_row is not None
+            and state_row.get("source_presence") == "present"
+            and state_row.get("publication_state") == "clean"
+            and state_row.get("contract_version") == 3
+            and state_row.get("observed_source_hash")
+                == state_row.get("published_source_hash")
+            and state_row.get("published_source_hash") == source_digest):
+        if state_row.get("graph_iri") != graph_iri:
+            raise ValueError(f"published Member graph identity does not match source: {identity}")
+        payload = state_row.get("published_payload")
+        payload_hash = state_row.get("published_payload_hash")
+        if (not isinstance(payload, str) or not payload
+                or not isinstance(payload_hash, str)
+                or hashlib.sha256(payload.encode("utf-8")).hexdigest() != payload_hash):
+            raise ValueError(f"published Member payload hash does not verify: {identity}")
+        graph = Graph()
+        try:
+            graph.parse(data=payload, format="nt")
+        except Exception as error:
+            raise ValueError(f"published Member RDF payload cannot be parsed: {identity}") from error
+        if (URIRef(identity), RDF.type, OIR.Member) not in graph:
+            raise ValueError(f"published Member RDF payload does not describe its Member: {identity}")
+        return graph, True, payload_hash
+
+    graph, _diagnostics = transform_member_with_report(wrapper)
+    validate_member(wrapper, graph)
+    return graph, False, None
+
+
+def _validate_development_office_references(
+        member_graphs: list[tuple[str, Graph]], offices_graph: Graph,
+        units_graph: Graph) -> dict:
+    """Require reused holdings to resolve in the reviewed registries we load.
+
+    Core State records the validated Member graph payload but not the office
+    registry snapshot used to produce it. Do not silently combine an accepted
+    historical holding with a different current registry that omits its office.
+    """
+    registered_offices = set(offices_graph.subjects(RDF.type, MEMBERS.NamedOffice))
+    registered_units = set(units_graph.subjects(RDF.type, MEMBERS.AdministrativeUnit))
+    missing_offices: set[URIRef] = set()
+    for _graph_iri, graph in member_graphs:
+        missing_offices.update(
+            set(graph.objects(None, MEMBERS.heldOffice)) - registered_offices)
+    missing_units: set[URIRef] = set()
+    unit_links = set()
+    for predicate in (MEMBERS.headsAdministrativeUnit,
+                      MEMBERS.assignedToAdministrativeUnit):
+        targets = set(offices_graph.objects(None, predicate))
+        unit_links.update(targets)
+        missing_units.update(targets - registered_units)
+    if missing_offices or missing_units:
+        details = []
+        if missing_offices:
+            details.append("unregistered heldOffice targets: "
+                           + ", ".join(sorted(map(str, missing_offices))))
+        if missing_units:
+            details.append("unregistered office administrative-unit targets: "
+                           + ", ".join(sorted(map(str, missing_units))))
+        raise ValueError("development office registry references do not close: "
+                         + "; ".join(details))
+    return {
+        "status": "verified",
+        "member_graph_count": len(member_graphs),
+        "office_holding_count": sum(
+            len(set(graph.subjects(RDF.type, MEMBERS.OfficeHolding)))
+            for _graph_iri, graph in member_graphs),
+        "distinct_held_office_count": len(set().union(*(
+            set(graph.objects(None, MEMBERS.heldOffice))
+            for _graph_iri, graph in member_graphs))) if member_graphs else 0,
+        "registered_office_count": len(registered_offices),
+        "office_administrative_unit_link_count": len(unit_links),
+        "registered_administrative_unit_count": len(registered_units),
     }
 
 
@@ -3227,9 +3430,10 @@ def _require_loopback_fuseki_endpoint(label: str, endpoint: str | None) -> str:
 def _run_development_bootstrap(args: argparse.Namespace) -> int:
     """Load validated, explicitly non-authoritative data into local Fuseki.
 
-    This path reads existing complete API captures and Core State pointers in
-    read-only mode. It neither opens ETL/reconciliation stores for writing nor
-    calls the authoritative publication helper.
+    This path reads existing complete API captures and clean resource
+    publications from Core State in read-only mode. It neither opens
+    ETL/reconciliation stores for writing nor calls the authoritative
+    publication helper.
     """
     settings = Settings.from_environment()
     raw_root = Path(getattr(args, "raw_dir", None) or settings.raw_dir).expanduser()
@@ -3260,21 +3464,49 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
     parties, _parties_capture = captures["parties"]
     constituencies, _constituencies_capture = captures["constituencies"]
     members, _members_capture = captures["members"]
+    state_resources = read_resource_state(state_db, ("members", "legislation"))
+    member_state = {row["resource_iri"]: row
+                    for row in state_resources["members"]}
+    bill_graphs, bills_evidence = _development_bills(state_resources["legislation"])
+
+    registry_path = Path(getattr(args, "registry_file", None) or OFFICE_REGISTRY_FILE)
+    registry, units_graph, offices_graph, registry_hash = _read_development_registry(
+        registry_path)
 
     houses_graph, _house_exclusions = transform_houses_with_report(houses)
     validate_houses(houses, houses_graph)
 
-    # Build and validate Member graphs using the ordinary Member mapping, but
-    # without office reconciliation or any Member/Core State publication.
+    # Reuse exact current clean contract-3 Member output from Core State where
+    # available. That is the validated result of the existing reviewed-office
+    # transformation, including its retention and Cabinet-episode semantics.
+    # For every other Member, use the normal transform with no office
+    # resolutions: source observations alone can never create holdings.
     member_graphs: list[tuple[str, Graph]] = []
     member_graph = Graph()
+    member_publication_inventory = []
+    members_from_published_state = 0
     for wrapper in members:
-        validate_member_source(wrapper)
-        graph, _diagnostics = transform_member_with_report(wrapper)
-        validate_member(wrapper, graph)
+        identity = wrapper["member"]["uri"]
+        graph, reused_publication, payload_hash = _development_member_graph(
+            wrapper, member_state.get(identity))
         member_graph += graph
         member_graphs.append((member_graph_iri(wrapper["member"]), graph))
+        if reused_publication:
+            members_from_published_state += 1
+            row = member_state[identity]
+            member_publication_inventory.append({
+                "resource_iri": identity,
+                "published_source_hash": row["published_source_hash"],
+                "published_payload_hash": payload_hash,
+                "source_run_id": row.get("last_seen_run_id"),
+            })
     member_graphs.sort(key=lambda item: item[0])
+    office_reference_evidence = _validate_development_office_references(
+        member_graphs, offices_graph, units_graph)
+    member_publication_inventory.sort(key=lambda item: item["resource_iri"])
+    member_publication_digest = hashlib.sha256(json.dumps(
+        member_publication_inventory, ensure_ascii=False, sort_keys=True,
+        separators=(",", ":")).encode("utf-8")).hexdigest()
 
     census = build_reference_census(
         member_records=members,
@@ -3297,10 +3529,16 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
         timeout=settings.timeout)
     graphs = {
         "houses": houses_graph,
+        "administrative-units": units_graph,
+        "offices": offices_graph,
         **candidates["graphs"],
     }
     for endpoint, graph_iri in LOCAL_DEVELOPMENT_GRAPH_ORDER:
         payload = ntriples(graphs[endpoint])
+        loader.replace(graph_iri, payload, content_type="application/n-triples")
+        verify_core_graph(client, graph_iri, payload)
+    for graph_iri, graph, _row in bill_graphs:
+        payload = ntriples(graph)
         loader.replace(graph_iri, payload, content_type="application/n-triples")
         verify_core_graph(client, graph_iri, payload)
     for graph_iri, graph in member_graphs:
@@ -3316,6 +3554,32 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
         "constituencies": len(census["records"]["constituencies"]),
         "committees": len(census["records"]["committees"]),
         "members": len(member_graphs),
+        "administrative_units": len(registry["administrative_units"]),
+        "offices": len(registry["offices"]),
+        "office_holdings": sum(len(set(graph.subjects(RDF.type, MEMBERS.OfficeHolding)))
+                                for _iri, graph in member_graphs),
+        "cabinet_memberships": sum(len(set(graph.subjects(RDF.type, MEMBERS.CabinetMembership)))
+                                    for _iri, graph in member_graphs),
+        "bills": len(bill_graphs),
+    }
+    source_evidence = {
+        "office_registry": {
+            "source": "configured office/unit registry file",
+            "sha256": registry_hash,
+            "administrative_unit_count": counts["administrative_units"],
+            "office_count": counts["offices"],
+        },
+        "member_office_registry_references": office_reference_evidence,
+        "member_publications": {
+            "source": "read-only Core State clean contract-3 publications matching the selected Member source",
+            "resource_rows_examined": len(state_resources["members"]),
+            "exact_current_graph_count": members_from_published_state,
+            "payload_inventory_sha256": member_publication_digest,
+            "source_run_ids": sorted({item["source_run_id"]
+                                       for item in member_publication_inventory
+                                       if item["source_run_id"]}),
+        },
+        "bill_publications": bills_evidence,
     }
     print("Local development reference bootstrap:")
     print(f"  Houses/HouseTerms: {len(houses)} source records; "
@@ -3324,6 +3588,12 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
     print(f"  Parties: {counts['parties']} owner identities")
     print(f"  Constituencies/panels: {counts['constituencies']} owner identities")
     print(f"  Committees: {counts['committees']} owner identities")
+    print(f"  Administrative units: {counts['administrative_units']} reviewed identities")
+    print(f"  Named offices: {counts['offices']} reviewed identities")
+    print(f"  Office holdings: {counts['office_holdings']} from validated current Member publications")
+    print(f"  Cabinet memberships: {counts['cabinet_memberships']} from validated current Member publications")
+    print(f"  Bills: {counts['bills']} clean published Bill graphs"
+          + (" (optional; none available)" if not counts["bills"] else ""))
     print(f"  Quarantined conflicts: {development_status['quarantined_conflict_count']}")
     for conflict in development_status["quarantined_conflicts"]:
         print(f"    {conflict['reference_kind']} {conflict['canonical_iri']}: "
@@ -3334,7 +3604,8 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
         print(f"    {reference['reference_kind']} {reference['canonical_iri']}: "
               f"{reference['reason']}")
     print(f"  Reference closure: {development_status['reference_closure']}")
-    baseline = _development_dataset_baseline(captures, counts, development_status)
+    baseline = _development_dataset_baseline(
+        captures, counts, development_status, source_evidence)
     print(f"  Dataset identity: {baseline['dataset']['id']}")
     if baseline_output_path:
         baseline_output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -3380,6 +3651,8 @@ def main(argv: list[str] | None = None) -> int:
         "bootstrap", help="load preserved API captures into loopback Fuseki for local PoC use")
     dev_bootstrap.add_argument("--raw-dir", help="preserved immutable API capture root")
     dev_bootstrap.add_argument("--state-db", help="read-only Core State capture index")
+    dev_bootstrap.add_argument("--registry-file",
+                               help="configured office/unit registry JSON")
     dev_bootstrap.add_argument("--fuseki-gsp-url", help="loopback Fuseki Graph Store endpoint")
     dev_bootstrap.add_argument("--fuseki-sparql-url", help="loopback Fuseki SPARQL endpoint")
     dev_bootstrap.add_argument(

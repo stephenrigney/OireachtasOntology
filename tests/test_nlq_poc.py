@@ -244,6 +244,13 @@ def test_fuseki_readiness_is_read_only_and_reports_partial_graphs():
             return httpx.Response(200, json={"head": {}, "boolean": True})
         assert "SELECT DISTINCT ?source" in query
         assert "INSERT" not in query.upper() and "DROP" not in query.upper()
+        assert "members:Committee" in query
+        assert "members:NamedOffice" in query
+        assert "members:AdministrativeUnit" in query
+        assert "members:OfficeHolding" in query
+        assert "members:CabinetMembership" in query
+        assert "https://data.oireachtas.ie/graph/offices" in query
+        assert "https://data.oireachtas.ie/graph/committees" in query
         return httpx.Response(200, json={
             "head": {"vars": ["source"]},
             "results": {"bindings": [
@@ -262,10 +269,77 @@ def test_fuseki_readiness_is_read_only_and_reports_partial_graphs():
     assert readiness.state == "partial"
     assert readiness.has_triples is True
     assert dict(readiness.sources) == {
-        "Houses": True, "Parties": False, "Constituencies": False, "Members": True, "Bills": False,
+        "Houses": True, "Parties": False, "Constituencies": False, "Members": True,
+        "Committees": False, "Bills": False,
+        "Offices": False, "Administrative Units": False,
+        "Office Holdings": False, "Cabinet Memberships": False,
     }
     assert "missing: Parties, Constituencies" in readiness.message
+    # Optional domains are visible but never become readiness requirements.
     assert len(calls) == 2
+
+
+def test_fuseki_readiness_detects_optional_bill_and_ministerial_graphs():
+    def handler(request: httpx.Request) -> httpx.Response:
+        query = parse_qs(request.content.decode())["query"][0]
+        if query.lstrip().startswith("ASK"):
+            return httpx.Response(200, json={"head": {}, "boolean": True})
+        sources = (
+            "Houses", "Parties", "Constituencies", "Members", "Committees", "Bills",
+            "Offices", "Administrative Units", "Office Holdings",
+            "Cabinet Memberships",
+        )
+        return httpx.Response(200, json={
+            "head": {"vars": ["source"]},
+            "results": {"bindings": [
+                {"source": {"type": "literal", "value": source}}
+                for source in sources
+            ]},
+        })
+
+    client = FusekiQueryClient(
+        "http://fuseki.test/houses/query", transport=httpx.MockTransport(handler)
+    )
+    try:
+        readiness = client.readiness()
+    finally:
+        client.close()
+    assert readiness.state == "ready"
+    assert all(dict(readiness.sources).values())
+    assert "Bills" in readiness.message
+    assert "Office Holdings" in readiness.message
+    assert "Cabinet Memberships" in readiness.message
+
+
+def test_missing_optional_bill_and_office_graphs_do_not_block_ready_state():
+    def handler(request: httpx.Request) -> httpx.Response:
+        query = parse_qs(request.content.decode())["query"][0]
+        if query.lstrip().startswith("ASK"):
+            return httpx.Response(200, json={"head": {}, "boolean": True})
+        return httpx.Response(200, json={
+            "head": {"vars": ["source"]},
+            "results": {"bindings": [
+                {"source": {"type": "literal", "value": source}}
+                for source in ("Houses", "Parties", "Constituencies", "Members")
+            ]},
+        })
+
+    client = FusekiQueryClient(
+        "http://fuseki.test/houses/query", transport=httpx.MockTransport(handler)
+    )
+    try:
+        readiness = client.readiness()
+    finally:
+        client.close()
+
+    assert readiness.state == "ready"
+    sources = dict(readiness.sources)
+    assert all(sources[name] for name in (
+        "Houses", "Parties", "Constituencies", "Members"))
+    assert sources["Bills"] is False
+    assert sources["Offices"] is False
+    assert "Bills" in readiness.message
+    assert "not detected" in readiness.message
 
 
 def test_fuseki_readiness_recognizes_an_empty_named_dataset():
@@ -441,7 +515,7 @@ def test_schema_context_comes_from_real_member_and_agent_ontology():
     assert "DailTerm: skos:prefLabel (language: en)" in context
     assert "Independent records must use members:memberOfCollection" in context
     assert "older published Member graphs may omit that explicit type" in context
-    assert "require accepted office resolution" in context
+    assert "Only holdings in a clean current contract-3 Member publication" in context
     assert "not executable through the current local NLQ predicate allowlist" in context
     assert "Reviewed Wikidata Q-item" in context
     assert "ns1:" not in context

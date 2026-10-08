@@ -50,7 +50,7 @@ def test_contract_artifact_loads_and_validates_its_versioned_shape():
         (ROOT / "poc/specs/query-schema-contract.schema.json").read_text(encoding="utf-8")
     )
 
-    assert contract["contractVersion"] == "1.0.0"
+    assert contract["contractVersion"] == "1.1.0"
     assert contract["schemaVersion"] == schema["properties"]["schemaVersion"]["const"] == 1
     assert contract["contractId"] == "https://data.oireachtas.ie/specs/query-schema-contract"
     assert contract["contractSchema"] == "poc/specs/query-schema-contract.schema.json"
@@ -110,13 +110,34 @@ def test_graph_family_ownership_patterns_and_cross_graph_joins_are_explicit():
     assert families["committees"]["owner"] == "Committees ETL"
     assert families["member-records"]["graph"]["iriTemplate"].endswith("{percent-encoded-memberCode}")
     assert families["bill-records"]["availability"] == "optional-published-when-loaded"
-    assert families["offices"]["availability"] == "registry-currently-empty"
+    assert families["offices"]["availability"] == "published-when-loaded"
+    assert families["administrative-units"]["availability"] == "published-when-loaded"
     assert patterns["member-house-membership"]["graphFamily"] == "member-records"
     assert patterns["member-collection-membership"]["availability"] == "emitted"
+    assert patterns["registered-office-description"]["graphFamily"] == "offices"
+    assert patterns["administrative-unit-description"]["graphFamily"] == "administrative-units"
+    assert patterns["accepted-member-office-holding"]["queryableInLocalNlq"] is True
+    assert patterns["accepted-cabinet-membership"]["queryableInLocalNlq"] is True
+    assert {
+        "members:NamedOffice", "members:AdministrativeUnit",
+        "members:OfficeHolding", "members:CabinetMembership",
+    }.issubset(contract["queryableClasses"])
     assert any(
         join["fromGraphFamily"] == "member-records"
         and join["predicate"] == "members:isCommitteeMembershipOf"
         and join["toGraphFamily"] == "committees"
+        for join in contract["crossGraphJoins"]
+    )
+    assert any(
+        join["fromGraphFamily"] == "member-records"
+        and join["predicate"] == "members:heldOffice"
+        and join["toGraphFamily"] == "offices"
+        for join in contract["crossGraphJoins"]
+    )
+    assert any(
+        join["fromGraphFamily"] == "offices"
+        and join["predicate"] == "members:headsAdministrativeUnit"
+        and join["toGraphFamily"] == "administrative-units"
         for join in contract["crossGraphJoins"]
     )
     assert contract["reasoning"]["owlEntailment"] == "none"
@@ -125,6 +146,7 @@ def test_graph_family_ownership_patterns_and_cross_graph_joins_are_explicit():
     unsupported = {item["id"] for item in contract["unsupportedPatterns"]}
     assert "parliamentary-group-records" in unsupported
     assert "office-type-vocabulary" in unsupported
+    assert "office-registry-data" not in unsupported
 
 
 def test_supported_predicates_come_from_contract_policy_and_active_sources():
@@ -142,6 +164,15 @@ def test_supported_predicates_come_from_contract_policy_and_active_sources():
     assert URIRef("http://www.w3.org/2002/07/owl#sameAs") in predicates
     assert URIRef("https://data.oireachtas.ie/ontology/members#recognisedAsParty") in predicates
     assert URIRef("http://xmlns.com/foaf/0.1/isPrimaryTopicOf") in predicates
+    assert "skos:altLabel" in contract["localSafety"]["predicateAllowlist"]["unconditionalPredicates"]
+    assert "org:heldBy" in contract["localSafety"]["predicateAllowlist"]["unconditionalPredicates"]
+    for property_name in (
+        "members:hasOfficeHolding", "members:heldOffice", "members:officeHolder",
+        "members:hasRoleType", "members:headsAdministrativeUnit",
+        "members:isCabinetMembershipOf", "members:supportedByOfficeHolding",
+    ):
+        prefix, local = property_name.split(":", 1)
+        assert URIRef(namespaces[prefix] + local) in queryable
 
     # These are real emitted triples but are deliberately not in the current
     # executable grounding allowlist; the contract calls that out explicitly.
@@ -165,8 +196,10 @@ def test_grounding_is_generated_from_contract_scope_without_private_etl_imports(
 
     for term in ("agents:Member", "members:PartyMembership", "eli-dl:DraftLegislationWork"):
         assert term in context
-    assert "contract 1.0.0 (schema version 1)" in context
+    assert "contract 1.1.0 (schema version 1)" in context
     assert "https://data.oireachtas.ie/graph/committees" in context
+    assert "https://data.oireachtas.ie/graph/offices" in context
+    assert "members:CabinetMembership" in context
     assert "same RDF resource IRI" in context
     assert "Reviewed Wikidata political-party item" in context
     assert "not executable through the current local NLQ predicate allowlist" in context
@@ -231,7 +264,6 @@ def test_emitted_but_unallowlisted_patterns_are_not_mislabeled_queryable():
 
     for pattern_id in (
         "house-term-temporal-reference", "bill-document-work-links",
-        "conditionally-resolved-office-holdings",
     ):
         assert patterns[pattern_id]["queryableInLocalNlq"] is False
     for pattern_id in ("house-term-temporal-reference", "bill-document-work-links"):

@@ -32,7 +32,7 @@
     <p><strong>{{ readiness.state|capitalize }}:</strong> {{ readiness.message }}</p>
     <ul>
     {% for source, present in readiness.sources %}
-      <li>{{ source }}: {% if readiness.state == "unavailable" %}unknown{% else %}{{ "present" if present else "not detected" }}{% endif %}{% if source == "Bills" %} (optional for the example member questions){% endif %}</li>
+      <li>{{ source }}: {% if readiness.state == "unavailable" %}unknown{% else %}{{ "present" if present else "not detected" }}{% endif %}{% if source in ["Committees", "Bills", "Offices", "Administrative Units", "Office Holdings", "Cabinet Memberships"] %} (optional for basic readiness){% endif %}</li>
     {% endfor %}
     </ul>
     <p>This check only queries Fuseki. The POC never loads, clears, or rebuilds graphs.</p>

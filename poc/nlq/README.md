@@ -51,9 +51,11 @@ Open:
 <http://127.0.0.1:8000/>
 
 The home page performs a read-only, presence-only readiness check for Houses,
-Parties, Constituencies and Members; Bills are detected as optional. This check
-does not identify the source captures or establish reference closure, and it
-does not currently probe the Committee graph family.
+Parties, Constituencies and Members. Committees, Bills, the reviewed office and
+administrative-unit registries, and accepted OfficeHolding/CabinetMembership
+data are reported as optional domains; their absence does not make the basic
+dataset unready. This check does not identify source captures or establish
+reference closure.
 
 Try questions such as:
 
@@ -77,14 +79,26 @@ scripts/dev-nlq.sh --no-reload   # start without the Uvicorn autoreload watcher
 ```
 
 Ordinary startup never loads source data. `--load-data` explicitly invokes
-`oir-etl dev bootstrap`, which reads the latest successful complete API captures
-already preserved and indexed in Core State, validates them, and loads the
-non-authoritative local-development graphs into loopback Fuseki. It does not
-fetch current API data, run the authoritative `oir-etl run` publication path,
-or advance Core State coverage/publication or external-reconciliation state.
-Materially conflicted reference identities remain quarantined, and the bootstrap
-reports unresolved references and labels reference closure **NOT authoritative
-/ not complete**. If the bootstrap fails, the POC is not started.
+`oir-etl dev bootstrap`, which reads the latest successful complete reference
+and Member API captures already preserved and indexed in Core State, and loads
+their validated non-authoritative development graphs into loopback Fuseki. Bill
+graphs are selected separately from read-only Core State resource records: only
+present, clean, contract-1 publications whose last observed source hash still
+matches the published source, with the expected graph IRI and an intact
+published RDF payload, are loaded. If no Bill records qualify, Bills are
+reported as an optional zero-graph family and do not block bootstrap.
+
+The bootstrap also validates and loads the reviewed Office and
+AdministrativeUnit registry graphs. Member office holdings and Cabinet
+episodes come only from exact-source-matching, clean contract-3 Member
+publications already validated by the authoritative Member ETL. Other Members
+use the normal transform without office resolutions, so raw or unresolved
+office observations are never promoted. The bootstrap does not fetch current
+API data, run reconciliation, call the authoritative publication path, or
+advance Core State, office-occurrence, or external-reconciliation state.
+Materially conflicted reference identities remain quarantined, and the
+bootstrap reports unresolved references and labels reference closure **NOT
+authoritative / not complete**. If the bootstrap fails, the POC is not started.
 
 The bootstrap prints a stable dataset identity. To save its full machine-readable
 baseline for later evaluation tooling, invoke the same development-only command
@@ -97,10 +111,13 @@ uv run --locked oir-etl dev bootstrap \
   --dataset-baseline-output /tmp/oireachtas-nlq-dataset-baseline.json
 ```
 
-The baseline records the selected source capture run IDs, graph families and
-resource counts, quarantined identities, unresolved references, and the
-non-authoritative closure status. Its identity is derived from the source URLs
-and run IDs, so reusing the same preserved captures produces the same identity.
+The baseline records selected source capture run IDs, graph families and
+resource counts, qualifying Bill publication evidence (including a clear zero
+count when none qualify), configured office/unit registry digest, exact-current Member
+publication inventory, quarantined identities, unresolved references, and the
+non-authoritative closure status. Its identity includes those stable source
+and publication fingerprints, so reusing the same evidence produces the same
+identity.
 It describes graph payloads written by the bootstrap; it is not a live census
 of other or stale graphs already in a persistent Fuseki dataset.
 
@@ -355,7 +372,7 @@ Question in browser / benchmark runner
 ```
 
 The repository-owned machine-readable query contract is
-`poc/specs/query-schema-contract.json` (contract version `1.0.0`, schema
+`poc/specs/query-schema-contract.json` (contract version `1.1.0`, schema
 version `1`). Its JSON Schema is `poc/specs/query-schema-contract.schema.json`.
 The contract defines the queryable class/property scope, named-graph families
 and owners, emitted RDF patterns, entity-specific label predicates,
