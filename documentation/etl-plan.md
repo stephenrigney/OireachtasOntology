@@ -2291,6 +2291,64 @@ review state, validation, migration and tranche-level gates.
 Each vertical slice should follow the same extract, transform, validate,
 publish and reconcile model as the core datasets.
 
+### Query-service development/evaluation surface expansion — planned
+
+The Query Service Phase 2 planner must eventually be evaluated against a broader
+local data surface than the Phase 0A/Phase 1 bootstrap. The current development
+bootstrap covers Houses/HouseTerms, Members, parliamentary collections,
+constituencies/panels and Committees, but does not provide useful local query
+coverage for Bills, ministerial offices/administrative units or Debates.
+
+Add a bounded **development/evaluation expansion tranche** after the initial
+Phase 2 query-plan contract work. This is a query-service test-data dependency,
+not a new authoritative publication model and not authorization for broad
+production ingestion.
+
+The tranche should:
+
+- extend the non-authoritative local development bootstrap to load **Bills**
+  from preserved successful legislation captures through the existing validated
+  Bill transformation/publication path;
+- load the existing reviewed **NamedOffice** and **AdministrativeUnit**
+  registries and enough accepted Member office-holding/Cabinet evidence for
+  representative Minister/office queries, reusing the completed ministerial
+  contracts rather than inventing a parallel model;
+- load a **small, fixed representative Debates slice** from preserved AKN
+  captures, sufficient to exercise Dáil, Seanad and committee debate planning
+  without loading the full 2011+ corpus or written-answer corpus merely for
+  query-service development;
+- preserve the existing source evidence, validation, RDF ownership, graph
+  boundaries and fail-closed quarantine rules for all three domains;
+- keep the bootstrap explicitly non-authoritative: it must not advance Core
+  State publication/coverage authority or masquerade as production ingestion;
+- record the exact capture/run identities and selected Debate resources so the
+  expanded evaluation dataset is deterministic and repeatable;
+- extend query-service benchmark coverage with domain-specific cases only after
+  each domain is actually present in the development dataset; and
+- retain the Phase 1 controlled benchmark as the core regression suite while
+  the separate realistic-question benchmark grows to include Bills, offices and
+  representative Debates.
+
+The representative Debates slice should be selected for semantic coverage, not
+volume. It should contain enough reviewed records to exercise the planner across
+the supported Debate patterns and existing cross-dataset references. Full
+2011+ Debates ingestion, earlier historical coverage and written answers remain
+governed by the Debates production scope and backlog above.
+
+#### Expansion-tranche exit criteria
+
+- Bills, reviewed ministerial office/unit data and a fixed representative
+  Debates slice can be loaded reproducibly into a fresh disposable development
+  Fuseki from preserved evidence.
+- The expanded bootstrap remains non-authoritative and does not alter
+  production publication state.
+- Representative query-service cases for all three added domains have verified
+  source-data prerequisites and are distinguishable from NLQ/planner failures.
+- No new RDF ownership, identity or transformation semantics are introduced
+  solely for the query-service benchmark.
+- Phase 2 query-planning evaluation can therefore cover the principal currently
+  implemented local data domains rather than only the parliamentary core.
+
 ### Exit criteria
 
 Each implemented Phase 7 vertical slice has explicit RDF ownership,
