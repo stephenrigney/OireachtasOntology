@@ -30,13 +30,13 @@
   "requirements": [
     {
       "id": "membership",
-      "fact": "Membership in a parliamentary collection",
+      "fact": "member_collection_membership",
       "subject": {"type": "Member"},
       "object": {"type": "ParliamentaryMemberCollection"}
     },
     {
       "id": "representation",
-      "fact": "Representation from a Dáil constituency",
+      "fact": "member_constituency_representation",
       "subject": {"type": "Member"},
       "object": {"entity": "constituency"}
     }
@@ -44,7 +44,7 @@
   "filters": [
     {
       "requirement": "membership",
-      "field": "collection",
+      "field": "parliamentary_collection",
       "operator": "equals",
       "value": {"entity": "collection"}
     }

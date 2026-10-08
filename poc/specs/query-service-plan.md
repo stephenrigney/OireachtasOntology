@@ -520,7 +520,13 @@ implementation details. Source selection remains Phase 3 work.
 Phase 2A is complete as a contract-only tranche. The artifact and examples are
 under `poc/specs/query-plan-*`; `poc.nlq.plan_contract` loads and validates them.
 No plan production or validation is connected to the live NLQ path, and no
-SPARQL generation is implemented.
+SPARQL generation is implemented. Facts and filter fields use controlled,
+fact-specific semantic identifiers defined by the contract manifest and
+mirrored by the plan schema; unknown identifiers fail validation. The current
+entity-type vocabulary remains controlled by the artifact. Adding a reviewed
+supported entity type is an additive contract-major-1 extension when existing
+meanings and validation behavior are unchanged. This does not predeclare Bill,
+office, or Debate semantics; their data-surface evaluation remains future work.
 
 #### Realistic-question evaluation
 

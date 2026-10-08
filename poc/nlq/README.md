@@ -385,18 +385,40 @@ entities, label, fact, list, count, and grouped result. Source scope is fixed to
 local Oireachtas data; source selection and federation are not part of this
 contract.
 
+The manifest's `semanticVocabulary` is the source of truth for the currently
+supported entity types, semantic fact IDs, and filter-field IDs. The fact IDs
+cover the Phase 1 queryable House, Member, parliamentary-term, collection,
+constituency/panel, and Committee patterns recorded by the query/schema
+contract; their manifest descriptions are for people, while the IDs drive
+consumer dispatch. Fact IDs and filter fields are controlled values, not
+natural-language descriptions or RDF/SPARQL names. Filter fields also declare
+their applicable facts, value kind, and supported operators; for example,
+`parliamentary_collection` is valid for `member_collection_membership`, not for
+an unrelated fact. Unknown facts and fields are rejected. The plan-schema enum
+and field-specific rules mirror the manifest vocabulary, with exact parity
+checked by the focused contract tests.
+
+Entity types remain a controlled set: the validator accepts only the types in
+the current manifest and the plan schema. Adding a **reviewed, supported** entity
+type is an additive compatible extension within contract major version `1`,
+provided existing meanings and validation behavior are unchanged. The manifest,
+schema enum, and focused vocabulary-parity test must be updated together;
+consumers that do not yet support an added type reject it. No Bill, office, or
+Debate entity types or facts are introduced by the current contract.
+
 Requirements, filters, and temporal constraints are conjunctive. Repeated
 references to one entity ID denote that same entity; repeated type-only
 participants of one type denote one result role (schema v1 does not express two
 independent unbound roles of the same type). Ambiguous or unresolved references
 are valid plan states, not executable identity bindings: a later consumer must
 clarify or resolve them and must not choose a candidate or drop a dependent
-constraint. Filter fields and operators are semantic; equality is exact, with
-no implied fuzzy or label-matching behavior. The validator checks that IRIs
-use the Oireachtas namespace but does not manufacture IRIs or independently
-check the resolver's entity-type/IRI assignment. Unknown compatible optional
-fields may be ignored and must not be treated as query, graph, variable, source,
-or endpoint instructions.
+constraint. Filter field IDs are controlled and fact-specific; values are
+typed by the selected field. Equality is exact, with no implied fuzzy or
+label-matching behavior. The validator checks that IRIs use the Oireachtas
+namespace but does not manufacture IRIs or independently check the resolver's
+entity-type/IRI assignment. Unknown compatible optional fields may be ignored
+and must not be treated as query, graph, variable, source, or endpoint
+instructions.
 
 `poc.nlq.plan_contract` exposes `load_query_plan_contract`,
 `validate_query_plan`, and `load_query_plan`. Its deterministic validation is
@@ -407,11 +429,13 @@ artifacts, examples, and validator:
 uv run --locked --extra test python -m pytest tests/test_nlq_query_plan.py
 ```
 
-Contract major version `1` allows additive optional extensions that preserve
-existing meanings. A breaking change to field meaning, resolution states, or
-validation expectations requires a major bump. Consumers reject unsupported
-schema versions and contract majors. The separate realistic-question benchmark
-is deferred until an initial planner path can be evaluated meaningfully; the
+Contract major version `1` allows additive optional extensions and additive
+reviewed entity types, semantic facts, or filter fields when existing meanings
+and validation behavior are unchanged. A breaking change to an existing field's
+meaning, supported resolution states, or validation expectations requires a
+major bump. Consumers reject unsupported schema versions, contract majors, and
+semantic vocabulary values. The separate realistic-question benchmark is
+deferred until an initial planner path can be evaluated meaningfully; the
 controlled Phase 1 benchmark remains the capability/regression suite.
 
 At startup, RDFLib reads the repository's `ontology/*.owl.ttl` modules and the

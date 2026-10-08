@@ -16,7 +16,7 @@
   "requirements": [
     {
       "id": "member-name",
-      "fact": "Member full name",
+      "fact": "member_full_name",
       "subject": {"entity": "member"}
     }
   ],

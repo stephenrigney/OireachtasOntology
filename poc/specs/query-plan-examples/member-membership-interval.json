@@ -16,7 +16,7 @@
   "requirements": [
     {
       "id": "membership",
-      "fact": "Dáil membership",
+      "fact": "member_house_term_membership",
       "subject": {"entity": "member"},
       "object": {"type": "DailTerm"}
     }

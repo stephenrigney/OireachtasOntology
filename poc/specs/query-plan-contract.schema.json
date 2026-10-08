@@ -14,7 +14,8 @@
     "description",
     "compatibility",
     "scope",
-    "planSemantics"
+    "planSemantics",
+    "semanticVocabulary"
   ],
   "properties": {
     "$schema": {"const": "https://json-schema.org/draft/2020-12/schema"},
@@ -56,6 +57,79 @@
         "filterMeaning": {"type": "string", "minLength": 1},
         "unknownExtensions": {"type": "string", "minLength": 1},
         "iriValidation": {"type": "string", "minLength": 1}
+      }
+    },
+    "semanticVocabulary": {
+      "type": "object",
+      "required": ["entityTypes", "facts", "filterFields"],
+      "properties": {
+        "entityTypes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"}
+        },
+        "facts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "description", "subjectTypes", "objectTypes"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
+              "description": {"type": "string", "minLength": 1},
+              "subjectTypes": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"}
+              },
+              "objectTypes": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"}
+              }
+            }
+          }
+        },
+        "filterFields": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "description", "facts", "valueKind", "operators"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
+              "description": {"type": "string", "minLength": 1},
+              "facts": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"}
+              },
+              "valueKind": {"enum": ["string", "number", "entity"]},
+              "entityTypes": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"}
+              },
+              "operators": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {"enum": ["equals", "not_equals", "greater_than", "greater_than_or_equal", "less_than", "less_than_or_equal", "exists"]}
+              }
+            },
+            "allOf": [
+              {
+                "if": {"properties": {"valueKind": {"const": "entity"}}, "required": ["valueKind"]},
+                "then": {"required": ["entityTypes"]},
+                "else": {"not": {"required": ["entityTypes"]}}
+              }
+            ]
+          }
+        }
       }
     }
   }

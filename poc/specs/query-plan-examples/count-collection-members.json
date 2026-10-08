@@ -23,7 +23,7 @@
   "requirements": [
     {
       "id": "membership",
-      "fact": "Membership in a parliamentary collection",
+      "fact": "member_collection_membership",
       "subject": {"type": "Member"},
       "object": {"entity": "collection"}
     }

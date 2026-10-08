@@ -8,9 +8,9 @@
   "description": "Versioned semantic contract for structured Oireachtas query plans. Plans describe the user's requested meaning, not executable SPARQL.",
   "compatibility": {
     "schemaVersion": "The consumer supports plan schema version 1 and rejects other schema versions.",
-    "compatibleChanges": "Additive optional fields that preserve existing meanings may remain within contract major version 1. Consumers ignore unknown optional fields.",
-    "breakingChanges": "Changing an existing field's meaning, required semantics, supported resolution states, or validation expectations requires a contract major version bump.",
-    "consumerSupport": "Consumers reject unsupported schema versions and contract major versions. A newer minor or patch version within major 1 is compatible when it uses only supported semantic states."
+    "compatibleChanges": "Additive optional fields and additive reviewed supported entity types, semantic facts, or filter fields may remain within contract major version 1 when existing meanings and validation semantics are unchanged. Consumers ignore unknown optional fields and reject unsupported semantic vocabulary values.",
+    "breakingChanges": "After this controlled semantic vocabulary is established, changing an existing field's meaning, required semantics, supported resolution states, or validation expectations, including removing or reinterpreting a supported semantic identifier, requires a contract major version bump.",
+    "consumerSupport": "Consumers reject unsupported schema versions, contract major versions, and semantic vocabulary values. A newer minor or patch version within major 1 is compatible when it uses only supported semantic states."
   },
   "scope": {
     "source": "oireachtas",
@@ -30,8 +30,143 @@
     "conjunction": "Every requirement, filter, and temporal constraint in one plan applies conjunctively.",
     "participantIdentity": "Entity participants with the same entity id refer to the same entity. Type-only participants of the same type refer to one semantic result role throughout the plan; separate unbound roles of the same type are not represented in schema version 1.",
     "resolutionReadiness": "Ambiguous and unresolved entities are valid semantic plan states but are not executable identity bindings. Consumers must clarify or resolve them and must not select a candidate arbitrarily or drop a dependent constraint.",
-    "filterMeaning": "Filter fields, operators, and values express semantic constraints, not SPARQL FILTER syntax or label-matching heuristics. Equality means semantic equality; no fuzzy matching is implied.",
+    "filterMeaning": "Filter fields are controlled semantic identifiers supported only for the facts listed in semanticVocabulary. Operators and typed values express semantic constraints, not SPARQL FILTER syntax or label-matching heuristics. Equality means semantic equality; no fuzzy matching is implied.",
     "unknownExtensions": "Consumers may ignore unknown optional fields for compatible major-version extensions and must not treat them as SPARQL, graph, variable, endpoint, or source-selection instructions.",
     "iriValidation": "The contract checks the local Oireachtas IRI namespace but does not manufacture identifiers or independently verify the resolver's entity-type-to-IRI assignment."
+  },
+  "semanticVocabulary": {
+    "entityTypes": [
+      "Member",
+      "House",
+      "DailTerm",
+      "SeanadTerm",
+      "ParliamentaryMemberCollection",
+      "DailConstituency",
+      "SeanadPanel",
+      "Committee"
+    ],
+    "facts": [
+      {
+        "id": "member_identity",
+        "description": "Identity of a Member resource.",
+        "subjectTypes": ["Member"],
+        "objectTypes": []
+      },
+      {
+        "id": "member_full_name",
+        "description": "A Member's full name.",
+        "subjectTypes": ["Member"],
+        "objectTypes": []
+      },
+      {
+        "id": "member_house_term_membership",
+        "description": "A Member's service in a Dáil or Seanad term.",
+        "subjectTypes": ["Member"],
+        "objectTypes": ["DailTerm", "SeanadTerm"]
+      },
+      {
+        "id": "member_parliamentary_membership_start_date",
+        "description": "The start date of a Member's parliamentary membership in a term.",
+        "subjectTypes": ["Member"],
+        "objectTypes": ["DailTerm", "SeanadTerm"]
+      },
+      {
+        "id": "member_parliamentary_membership_end_date",
+        "description": "The end date of a Member's parliamentary membership in a term, when recorded.",
+        "subjectTypes": ["Member"],
+        "objectTypes": ["DailTerm", "SeanadTerm"]
+      },
+      {
+        "id": "member_collection_membership",
+        "description": "A Member's membership in a term-scoped parliamentary collection.",
+        "subjectTypes": ["Member"],
+        "objectTypes": ["ParliamentaryMemberCollection"]
+      },
+      {
+        "id": "member_constituency_representation",
+        "description": "A Member's representation from a Dáil constituency or Seanad panel.",
+        "subjectTypes": ["Member"],
+        "objectTypes": ["DailConstituency", "SeanadPanel"]
+      },
+      {
+        "id": "member_committee_membership",
+        "description": "A Member's membership in a Committee.",
+        "subjectTypes": ["Member"],
+        "objectTypes": ["Committee"]
+      },
+      {
+        "id": "house_label",
+        "description": "The label of a House.",
+        "subjectTypes": ["House"],
+        "objectTypes": []
+      },
+      {
+        "id": "parliamentary_term_label",
+        "description": "The label of a Dáil or Seanad term.",
+        "subjectTypes": ["DailTerm", "SeanadTerm"],
+        "objectTypes": []
+      },
+      {
+        "id": "parliamentary_term_number",
+        "description": "The ordinal number of a Dáil or Seanad term.",
+        "subjectTypes": ["DailTerm", "SeanadTerm"],
+        "objectTypes": []
+      },
+      {
+        "id": "parliamentary_collection_label",
+        "description": "The label of a parliamentary member collection.",
+        "subjectTypes": ["ParliamentaryMemberCollection"],
+        "objectTypes": []
+      },
+      {
+        "id": "constituency_panel_label",
+        "description": "The label of a Dáil constituency or Seanad panel.",
+        "subjectTypes": ["DailConstituency", "SeanadPanel"],
+        "objectTypes": []
+      },
+      {
+        "id": "committee_label",
+        "description": "The label of a Committee.",
+        "subjectTypes": ["Committee"],
+        "objectTypes": []
+      },
+      {
+        "id": "committee_code",
+        "description": "The identifier code of a Committee.",
+        "subjectTypes": ["Committee"],
+        "objectTypes": []
+      }
+    ],
+    "filterFields": [
+      {
+        "id": "member_name",
+        "description": "Filter by a Member's full name.",
+        "facts": ["member_full_name"],
+        "valueKind": "string",
+        "operators": ["equals", "not_equals", "exists"]
+      },
+      {
+        "id": "parliamentary_term_number",
+        "description": "Filter by a Dáil or Seanad term number.",
+        "facts": ["parliamentary_term_number"],
+        "valueKind": "number",
+        "operators": ["equals", "not_equals", "greater_than", "greater_than_or_equal", "less_than", "less_than_or_equal", "exists"]
+      },
+      {
+        "id": "parliamentary_collection",
+        "description": "Filter by the parliamentary collection in a collection-membership fact.",
+        "facts": ["member_collection_membership"],
+        "valueKind": "entity",
+        "entityTypes": ["ParliamentaryMemberCollection"],
+        "operators": ["equals", "not_equals", "exists"]
+      },
+      {
+        "id": "committee_code",
+        "description": "Filter by a Committee's identifier code.",
+        "facts": ["committee_code"],
+        "valueKind": "string",
+        "operators": ["equals", "not_equals", "exists"]
+      }
+    ]
   }
 }

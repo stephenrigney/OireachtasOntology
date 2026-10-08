@@ -86,6 +86,33 @@
         "Committee"
       ]
     },
+    "factId": {
+      "enum": [
+        "member_identity",
+        "member_full_name",
+        "member_house_term_membership",
+        "member_parliamentary_membership_start_date",
+        "member_parliamentary_membership_end_date",
+        "member_collection_membership",
+        "member_constituency_representation",
+        "member_committee_membership",
+        "house_label",
+        "parliamentary_term_label",
+        "parliamentary_term_number",
+        "parliamentary_collection_label",
+        "constituency_panel_label",
+        "committee_label",
+        "committee_code"
+      ]
+    },
+    "filterFieldId": {
+      "enum": [
+        "member_name",
+        "parliamentary_term_number",
+        "parliamentary_collection",
+        "committee_code"
+      ]
+    },
     "localIri": {"type": "string", "pattern": "^https://data\\.oireachtas\\.ie/[^\\s?#]+$"},
     "noImplementationFields": {
       "not": {
@@ -192,7 +219,7 @@
       "required": ["id", "fact", "subject"],
       "properties": {
         "id": {"$ref": "#/$defs/identifier"},
-        "fact": {"type": "string", "minLength": 1},
+        "fact": {"$ref": "#/$defs/factId"},
         "subject": {"$ref": "#/$defs/participant"},
         "object": {"$ref": "#/$defs/participant"}
       },
@@ -201,18 +228,19 @@
         {"not": {"anyOf": [{"required": ["source"]}, {"required": ["sources"]}]}}
       ]
     },
+    "filterEntityReference": {
+      "type": "object",
+      "required": ["entity"],
+      "properties": {"entity": {"$ref": "#/$defs/identifier"}},
+      "not": {"required": ["type"]},
+      "allOf": [{"$ref": "#/$defs/noImplementationFields"}]
+    },
     "filterValue": {
       "oneOf": [
         {"type": "string"},
         {"type": "number"},
         {"type": "boolean"},
-        {
-          "type": "object",
-          "required": ["entity"],
-          "properties": {"entity": {"$ref": "#/$defs/identifier"}},
-          "not": {"required": ["type"]},
-          "allOf": [{"$ref": "#/$defs/noImplementationFields"}]
-        }
+        {"$ref": "#/$defs/filterEntityReference"}
       ]
     },
     "filter": {
@@ -220,12 +248,48 @@
       "required": ["requirement", "field", "operator"],
       "properties": {
         "requirement": {"$ref": "#/$defs/identifier"},
-        "field": {"type": "string", "minLength": 1},
+        "field": {"$ref": "#/$defs/filterFieldId"},
         "operator": {"enum": ["equals", "not_equals", "greater_than", "greater_than_or_equal", "less_than", "less_than_or_equal", "exists"]},
         "value": {"$ref": "#/$defs/filterValue"}
       },
       "allOf": [
         {"$ref": "#/$defs/noImplementationFields"},
+        {
+          "if": {"properties": {"field": {"const": "member_name"}}, "required": ["field"]},
+          "then": {
+            "properties": {
+              "operator": {"enum": ["equals", "not_equals", "exists"]},
+              "value": {"type": "string"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"field": {"const": "parliamentary_term_number"}}, "required": ["field"]},
+          "then": {
+            "properties": {
+              "operator": {"enum": ["equals", "not_equals", "greater_than", "greater_than_or_equal", "less_than", "less_than_or_equal", "exists"]},
+              "value": {"type": "number"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"field": {"const": "parliamentary_collection"}}, "required": ["field"]},
+          "then": {
+            "properties": {
+              "operator": {"enum": ["equals", "not_equals", "exists"]},
+              "value": {"$ref": "#/$defs/filterEntityReference"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"field": {"const": "committee_code"}}, "required": ["field"]},
+          "then": {
+            "properties": {
+              "operator": {"enum": ["equals", "not_equals", "exists"]},
+              "value": {"type": "string"}
+            }
+          }
+        },
         {
           "if": {"properties": {"operator": {"const": "exists"}}, "required": ["operator"]},
           "then": {"not": {"required": ["value"]}}

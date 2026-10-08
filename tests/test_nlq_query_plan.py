@@ -82,6 +82,23 @@ def test_contract_manifest_plan_schema_and_all_examples_are_valid():
     assert contract["planSchema"] == "poc/specs/query-plan.schema.json"
     assert "conjunctively" in contract["planSemantics"]["conjunction"]
     assert "not executable identity bindings" in contract["planSemantics"]["resolutionReadiness"]
+    vocabulary = contract["semanticVocabulary"]
+    assert set(vocabulary["entityTypes"]) == set(plan_schema["$defs"]["entityType"]["enum"])
+    assert {fact["id"] for fact in vocabulary["facts"]} == set(plan_schema["$defs"]["factId"]["enum"])
+    assert {field["id"] for field in vocabulary["filterFields"]} == set(plan_schema["$defs"]["filterFieldId"]["enum"])
+    filter_rules = {}
+    for rule in plan_schema["$defs"]["filter"]["allOf"]:
+        field_condition = rule.get("if", {}).get("properties", {}).get("field", {})
+        if "const" in field_condition:
+            filter_rules[field_condition["const"]] = rule["then"]["properties"]
+    assert set(filter_rules) == {field["id"] for field in vocabulary["filterFields"]}
+    for field in vocabulary["filterFields"]:
+        rule = filter_rules[field["id"]]
+        assert set(rule["operator"]["enum"]) == set(field["operators"])
+        if field["valueKind"] == "entity":
+            assert rule["value"] == {"$ref": "#/$defs/filterEntityReference"}
+        else:
+            assert rule["value"]["type"] == field["valueKind"]
 
     example_paths = sorted(EXAMPLES.glob("*.json"))
     assert len(example_paths) >= 7
@@ -104,6 +121,18 @@ def test_compatible_minor_and_patch_versions_and_unknown_optional_fields_are_acc
     manifest["contractVersion"] = "1.3.7"
     manifest_path = _write_json(tmp_path / "query-plan-contract.json", manifest)
     assert load_query_plan_contract(manifest_path)["contractVersion"] == "1.3.7"
+
+
+def test_contract_documents_reviewed_entity_type_extensions_within_major_one():
+    manifest = _read_json(CONTRACT_PATH)
+    compatibility = manifest["compatibility"]
+    assert "reviewed supported entity types" in compatibility["compatibleChanges"]
+    assert "contract major version 1" in compatibility["compatibleChanges"]
+    assert "and semantic vocabulary values" in compatibility["consumerSupport"]
+
+    readme = (ROOT / "poc/nlq/README.md").read_text(encoding="utf-8")
+    assert "reviewed, supported** entity" in readme
+    assert "major version `1`" in readme
 
 
 @pytest.mark.parametrize(
@@ -234,13 +263,13 @@ def test_valid_unresolved_reference_is_preserved_instead_of_dropped_from_a_filte
             }],
             requirements=[{
                 "id": "membership",
-                "fact": "Membership in a parliamentary collection",
+                "fact": "member_collection_membership",
                 "subject": {"type": "Member"},
                 "object": {"type": "ParliamentaryMemberCollection"},
             }],
             filters=[{
                 "requirement": "membership",
-                "field": "collection",
+                "field": "parliamentary_collection",
                 "operator": "equals",
                 "value": {"entity": "party"},
             }],
@@ -265,7 +294,10 @@ def test_valid_unresolved_reference_is_preserved_instead_of_dropped_from_a_filte
 def test_supported_temporal_constraint_shapes_validate(constraint):
     plan = _mutated_plan(
         lambda value: value.update(
-            requirements=[{"id": "membership", "fact": "membership", "subject": {"entity": "member"}}],
+            requirements=[{
+                "id": "membership", "fact": "member_house_term_membership",
+                "subject": {"entity": "member"}, "object": {"type": "DailTerm"},
+            }],
             temporalConstraints=[constraint],
             answerShape={"kind": "list", "target": "membership"},
         ),
@@ -291,7 +323,10 @@ def test_supported_temporal_constraint_shapes_validate(constraint):
 def test_invalid_temporal_shapes_and_cross_references_fail(constraint, message):
     plan = _mutated_plan(
         lambda value: value.update(
-            requirements=[{"id": "membership", "fact": "membership", "subject": {"entity": "member"}}],
+            requirements=[{
+                "id": "membership", "fact": "member_house_term_membership",
+                "subject": {"entity": "member"}, "object": {"type": "DailTerm"},
+            }],
             temporalConstraints=[constraint],
             answerShape={"kind": "list", "target": "membership"},
         ),
@@ -321,7 +356,7 @@ def test_count_and_grouped_aggregation_shapes_are_coherent():
         (lambda plan: (
             plan["requirements"][0].pop("object"),
             plan["aggregation"].update(target={"requirement": "membership", "participant": "object"}),
-        ), "missing object participant"),
+        ), "requires an object participant"),
         (lambda plan: plan["aggregation"].update(groupBy=[{"requirement": "membership", "participant": "object"}]), "without groupBy"),
         (lambda plan: plan.update(answerShape={"kind": "grouped_result", "target": "aggregation"}), "at least one groupBy"),
         (lambda plan: plan.update(answerShape={"kind": "list", "target": "membership"}), "only compatible with count"),
@@ -372,7 +407,7 @@ def test_invalid_answer_shapes_fail_closed(shape, message):
         (lambda plan: plan["entities"][0].update(resolution="indeterminate"), "unsupported value"),
         (lambda plan: plan["entities"][0].update(type="LegislativeProcess"), "unsupported value"),
         (lambda plan: plan["requirements"][0].update(subject={"type": "UnknownType"}), "unsupported value"),
-        (lambda plan: plan.update(filters=[{"requirement": "member-name", "field": "name", "operator": "fuzzy", "value": "Micheál Martin"}]), "unsupported value"),
+        (lambda plan: plan.update(filters=[{"requirement": "member-name", "field": "member_name", "operator": "fuzzy", "value": "Micheál Martin"}]), "unsupported value"),
         (lambda plan: plan.update(temporalConstraints=[{"target": "member-name", "kind": "eventually"}]), "unsupported value"),
     ],
 )
@@ -385,10 +420,9 @@ def test_unknown_required_enum_and_state_values_are_rejected(mutate, message):
 @pytest.mark.parametrize(
     "filters, message",
     [
-        ([{"requirement": "missing", "field": "name", "operator": "equals", "value": "x"}], "unknown requirement"),
-        ([{"requirement": "member-name", "field": "name", "operator": "equals"}], "value is required"),
-        ([{"requirement": "member-name", "field": "name", "operator": "exists", "value": True}], "must not provide a value"),
-        ([{"requirement": "member-name", "field": "name", "operator": "equals", "value": {"entity": "missing"}}], "unknown entity"),
+        ([{"requirement": "missing", "field": "member_name", "operator": "equals", "value": "x"}], "unknown requirement"),
+        ([{"requirement": "member-name", "field": "member_name", "operator": "equals"}], "value is required"),
+        ([{"requirement": "member-name", "field": "member_name", "operator": "exists", "value": True}], "must not provide a value"),
     ],
 )
 def test_filter_shape_and_reference_invariants(filters, message):
@@ -397,28 +431,235 @@ def test_filter_shape_and_reference_invariants(filters, message):
         validate_query_plan(plan)
 
 
+def test_filter_entity_reference_must_resolve_to_a_supported_entity():
+    plan = _mutated_plan(
+        lambda value: value.update(
+            requirements=[{
+                "id": "membership",
+                "fact": "member_collection_membership",
+                "subject": {"type": "Member"},
+                "object": {"type": "ParliamentaryMemberCollection"},
+            }],
+            filters=[{
+                "requirement": "membership",
+                "field": "parliamentary_collection",
+                "operator": "equals",
+                "value": {"entity": "missing"},
+            }],
+            answerShape={"kind": "boolean"},
+        )
+    )
+    with pytest.raises(QueryPlanContractError, match="unknown entity"):
+        validate_query_plan(plan)
+
+
+def test_supported_facts_have_stable_identifiers_and_coherent_participant_types():
+    manifest = load_query_plan_contract()
+    for fact in manifest["semanticVocabulary"]["facts"]:
+        plan = _example()
+        requirement = {
+            "id": "known-fact",
+            "fact": fact["id"],
+            "subject": {"type": fact["subjectTypes"][0]},
+        }
+        if fact["objectTypes"]:
+            requirement["object"] = {"type": fact["objectTypes"][0]}
+        plan.update(
+            entities=[],
+            requirements=[requirement],
+            filters=[],
+            temporalConstraints=[],
+            aggregation=None,
+            answerShape={"kind": "boolean"},
+        )
+        validate_query_plan(plan)
+        _assert_schema_valid(plan)
+
+
+def test_every_supported_filter_field_validates_with_its_declared_fact_and_value_kind():
+    vocabulary = load_query_plan_contract()["semanticVocabulary"]
+    facts = {fact["id"]: fact for fact in vocabulary["facts"]}
+    for filter_field in vocabulary["filterFields"]:
+        fact = facts[filter_field["facts"][0]]
+        requirement = {
+            "id": "supported-filter",
+            "fact": fact["id"],
+            "subject": {"type": fact["subjectTypes"][0]},
+        }
+        if fact["objectTypes"]:
+            requirement["object"] = {"type": fact["objectTypes"][0]}
+        plan = _example()
+        plan["entities"] = []
+        filter_value = {
+            "requirement": requirement["id"],
+            "field": filter_field["id"],
+            "operator": "equals",
+        }
+        if filter_field["valueKind"] == "string":
+            filter_value["value"] = "sample"
+        elif filter_field["valueKind"] == "number":
+            filter_value["value"] = 1
+        else:
+            entity_type = filter_field["entityTypes"][0]
+            plan["entities"] = [{
+                "id": "filter-entity",
+                "type": entity_type,
+                "label": "Filter target",
+                "resolution": "unresolved",
+            }]
+            filter_value["value"] = {"entity": "filter-entity"}
+        plan.update(
+            requirements=[requirement],
+            filters=[filter_value],
+            temporalConstraints=[],
+            aggregation=None,
+            answerShape={"kind": "boolean"},
+        )
+        validate_query_plan(plan)
+        _assert_schema_valid(plan)
+
+
+@pytest.mark.parametrize("fact", ["Member full name", "unreviewed_future_fact"])
+def test_arbitrary_or_unknown_fact_identifiers_fail_validation(fact):
+    plan = _mutated_plan(lambda value: value["requirements"][0].update(fact=fact))
+    _assert_schema_invalid(plan)
+    with pytest.raises(QueryPlanContractError, match="unsupported value"):
+        validate_query_plan(plan)
+
+
+def test_filter_fields_are_controlled_and_coherent_with_the_requirement_fact():
+    known = _example("multi-constraint-local.json")
+    validate_query_plan(known)
+    _assert_schema_valid(known)
+
+    incompatible = _mutated_plan(
+        lambda value: value.update(
+            entities=[{
+                "id": "collection",
+                "type": "ParliamentaryMemberCollection",
+                "label": "Fianna Fáil",
+                "resolution": "unresolved",
+            }],
+            requirements=[{
+                "id": "membership",
+                "fact": "member_house_term_membership",
+                "subject": {"type": "Member"},
+                "object": {"type": "DailTerm"},
+            }],
+            filters=[{
+                "requirement": "membership",
+                "field": "parliamentary_collection",
+                "operator": "equals",
+                "value": {"entity": "collection"},
+            }],
+            answerShape={"kind": "boolean"},
+        )
+    )
+    _assert_schema_valid(incompatible)
+    with pytest.raises(QueryPlanContractError, match="not supported for fact"):
+        validate_query_plan(incompatible)
+
+    arbitrary = _mutated_plan(
+        lambda value: value.update(filters=[{
+            "requirement": "member-name",
+            "field": "arbitrary English field",
+            "operator": "equals",
+            "value": "Micheál Martin",
+        }])
+    )
+    _assert_schema_invalid(arbitrary)
+    with pytest.raises(QueryPlanContractError, match="unsupported value"):
+        validate_query_plan(arbitrary)
+
+
 @pytest.mark.parametrize(
-    "operator, value",
+    "fact, subject_type, field, operator, value",
     [
-        ("equals", "Timmy Dooley"),
-        ("not_equals", "Unknown"),
-        ("greater_than", 1),
-        ("greater_than_or_equal", 1),
-        ("less_than", 10),
-        ("less_than_or_equal", 10),
-        ("exists", None),
-        ("equals", {"entity": "member"}),
-        ("equals", True),
+        ("member_full_name", "Member", "member_name", "equals", "Timmy Dooley"),
+        ("member_full_name", "Member", "member_name", "not_equals", "Unknown"),
+        ("member_full_name", "Member", "member_name", "exists", None),
+        ("parliamentary_term_number", "DailTerm", "parliamentary_term_number", "greater_than", 1),
+        ("parliamentary_term_number", "DailTerm", "parliamentary_term_number", "greater_than_or_equal", 1),
+        ("parliamentary_term_number", "DailTerm", "parliamentary_term_number", "less_than", 10),
+        ("parliamentary_term_number", "DailTerm", "parliamentary_term_number", "less_than_or_equal", 10),
+        ("parliamentary_term_number", "DailTerm", "parliamentary_term_number", "exists", None),
     ],
 )
-def test_supported_filter_operators_and_value_shapes_validate(operator, value):
-    filter_value = {"requirement": "member-name", "field": "name", "operator": operator}
+def test_supported_filter_identifiers_operators_and_typed_values_validate(
+    fact, subject_type, field, operator, value,
+):
+    filter_value = {"requirement": "attribute", "field": field, "operator": operator}
     if operator != "exists":
         filter_value["value"] = value
-    plan = _mutated_plan(lambda document: document.update(filters=[filter_value]))
+    plan = _mutated_plan(
+        lambda document: document.update(
+            requirements=[{"id": "attribute", "fact": fact, "subject": {"type": subject_type}}],
+            filters=[filter_value],
+            answerShape={"kind": "boolean"},
+        )
+    )
 
     validate_query_plan(plan)
     _assert_schema_valid(plan)
+
+
+@pytest.mark.parametrize(
+    "field, value, message",
+    [
+        ("member_name", 42, "must be a string"),
+        ("parliamentary_term_number", True, "must be a finite number"),
+        ("parliamentary_term_number", float("inf"), "must be a finite number"),
+        ("parliamentary_collection", "Fianna Fáil", "must be an entity reference"),
+    ],
+)
+def test_filter_values_must_match_the_semantic_field_type(field, value, message):
+    fact = "member_full_name" if field == "member_name" else (
+        "parliamentary_term_number" if field == "parliamentary_term_number" else "member_collection_membership"
+    )
+    subject = {"type": "Member" if fact != "parliamentary_term_number" else "DailTerm"}
+    requirement = {"id": "attribute", "fact": fact, "subject": subject}
+    if fact == "member_collection_membership":
+        requirement["object"] = {"type": "ParliamentaryMemberCollection"}
+    plan = _mutated_plan(
+        lambda document: document.update(
+            requirements=[requirement],
+            filters=[{"requirement": "attribute", "field": field, "operator": "equals", "value": value}],
+            answerShape={"kind": "boolean"},
+        )
+    )
+    if value != float("inf"):
+        _assert_schema_invalid(plan)
+    with pytest.raises(QueryPlanContractError, match=message):
+        validate_query_plan(plan)
+
+
+def test_current_supported_entity_types_validate_and_unknown_type_fails_closed():
+    entity_types = load_query_plan_contract()["semanticVocabulary"]["entityTypes"]
+    assert entity_types == [
+        "Member", "House", "DailTerm", "SeanadTerm", "ParliamentaryMemberCollection",
+        "DailConstituency", "SeanadPanel", "Committee",
+    ]
+    for entity_type in entity_types:
+        plan = _mutated_plan(
+            lambda value: value.update(
+                entities=[{
+                    "id": "surface-entity",
+                    "type": entity_type,
+                    "label": "Supported entity",
+                    "resolution": "resolved",
+                    "iri": "https://data.oireachtas.ie/resource/supported-entity",
+                }],
+                requirements=[{"id": "identity", "fact": "member_identity", "subject": {"type": "Member"}}],
+                answerShape={"kind": "boolean"},
+            )
+        )
+        validate_query_plan(plan)
+        _assert_schema_valid(plan)
+
+    unknown = _mutated_plan(lambda value: value["entities"][0].update(type="Bill"))
+    _assert_schema_invalid(unknown)
+    with pytest.raises(QueryPlanContractError, match="unsupported value"):
+        validate_query_plan(unknown)
 
 
 def test_local_source_requirement_cannot_be_overridden_per_fact():
