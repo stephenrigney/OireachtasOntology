@@ -7,6 +7,7 @@ SPARQL from a plan, and it does not replace the Phase 1 NL-to-SPARQL pipeline.
 from __future__ import annotations
 
 import json
+import math
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -29,6 +30,7 @@ from .results import format_debug_payload, format_debug_text
 DRAFT_SCHEMA_PATH = Path(__file__).resolve().parents[1] / "specs" / "query-plan-draft.schema.json"
 _LOCAL_IRI_TEXT = re.compile(r"https://data\.oireachtas\.ie/", re.IGNORECASE)
 _URL_TEXT = re.compile(r"https?://\S+", re.IGNORECASE)
+_IDENTIFIER = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
 
 PLANNER_SYSTEM_GUIDANCE = """Interpret one natural-language question as a draft semantic query plan for local Oireachtas data.
 
@@ -301,6 +303,11 @@ def _required_text(value: Any, where: str) -> None:
         raise DraftStructureError(f"{where} must be a non-empty string")
 
 
+def _required_identifier(value: Any, where: str) -> None:
+    if not isinstance(value, str) or not _IDENTIFIER.fullmatch(value):
+        raise DraftStructureError(f"{where} must be a semantic identifier")
+
+
 def _validate_participant_output(value: Any, where: str) -> None:
     participant = _exact_object(value, {"entity", "type"}, where)
     entity, entity_type = participant["entity"], participant["type"]
@@ -309,16 +316,64 @@ def _validate_participant_output(value: Any, where: str) -> None:
             f"{where} must set exactly one of entity or type; set the other to null"
         )
     if entity is not None:
-        _required_text(entity, f"{where}.entity")
+        _required_identifier(entity, f"{where}.entity")
     if entity_type is not None:
         _required_text(entity_type, f"{where}.type")
 
 
 def _validate_reference_output(value: Any, where: str) -> None:
     reference = _exact_object(value, {"requirement", "participant"}, where)
-    _required_text(reference["requirement"], f"{where}.requirement")
+    _required_identifier(reference["requirement"], f"{where}.requirement")
     if reference["participant"] not in ("subject", "object"):
         raise DraftStructureError(f"{where}.participant must be 'subject' or 'object'")
+
+
+def _validate_filter_output(
+    item: dict[str, Any], where: str, filter_fields: dict[str, dict[str, Any]],
+) -> None:
+    _required_identifier(item["requirement"], f"{where}.requirement")
+    field_id, operator, value = item["field"], item["operator"], item["value"]
+    _required_text(field_id, f"{where}.field")
+    _required_text(operator, f"{where}.operator")
+
+    if operator == "exists":
+        if value is not None:
+            raise DraftStructureError(f"{where}.value must be null for the exists operator")
+        return
+    if value is None:
+        raise DraftStructureError(f"{where}.value must not be null for operator {operator!r}")
+
+    field = filter_fields.get(field_id)
+    if field is None:
+        # Keep unsupported semantic identifiers classified by the Phase 2A
+        # vocabulary validator rather than treating them as malformed JSON.
+        if isinstance(value, dict):
+            reference = _exact_object(value, {"entity"}, f"{where}.value")
+            _required_identifier(reference["entity"], f"{where}.value.entity")
+        elif not isinstance(value, (str, int, float, bool)):
+            raise DraftStructureError(f"{where}.value must be a JSON scalar or entity reference")
+        return
+
+    if operator not in field["operators"]:
+        raise DraftStructureError(
+            f"{where}.operator {operator!r} is not valid for field {field_id!r}"
+        )
+    value_kind = field["valueKind"]
+    if value_kind == "string":
+        if not isinstance(value, str):
+            raise DraftStructureError(f"{where}.value must be a string for field {field_id!r}")
+    elif value_kind == "number":
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or (isinstance(value, float) and not math.isfinite(value))
+        ):
+            raise DraftStructureError(f"{where}.value must be a finite number for field {field_id!r}")
+    elif value_kind == "entity":
+        reference = _exact_object(value, {"entity"}, f"{where}.value")
+        _required_identifier(reference["entity"], f"{where}.value.entity")
+    else:
+        raise DraftStructureError(f"{where}.field {field_id!r} has an unsupported value kind")
 
 
 def _validate_draft_output_shape(draft: dict[str, Any]) -> None:
@@ -332,57 +387,85 @@ def _validate_draft_output_shape(draft: dict[str, Any]) -> None:
     for field in ("entities", "requirements", "filters", "temporalConstraints"):
         if not isinstance(root[field], list):
             raise DraftStructureError(f"draft.{field} must be an array")
+    if not root["requirements"]:
+        raise DraftStructureError("draft.requirements must contain at least one requirement")
 
     for index, value in enumerate(root["entities"]):
         where = f"draft.entities[{index}]"
         entity = _exact_object(value, {"id", "type", "label"}, where)
-        for field in ("id", "type", "label"):
+        _required_identifier(entity["id"], f"{where}.id")
+        for field in ("type", "label"):
             _required_text(entity[field], f"{where}.{field}")
 
     for index, value in enumerate(root["requirements"]):
         where = f"draft.requirements[{index}]"
         requirement = _exact_object(value, {"id", "fact", "subject", "object"}, where)
-        _required_text(requirement["id"], f"{where}.id")
+        _required_identifier(requirement["id"], f"{where}.id")
         _required_text(requirement["fact"], f"{where}.fact")
         _validate_participant_output(requirement["subject"], f"{where}.subject")
         if requirement["object"] is not None:
             _validate_participant_output(requirement["object"], f"{where}.object")
 
+    filter_fields = {
+        field["id"]: field
+        for field in load_query_plan_contract()["semanticVocabulary"]["filterFields"]
+    }
     for index, value in enumerate(root["filters"]):
         where = f"draft.filters[{index}]"
         item = _exact_object(value, {"requirement", "field", "operator", "value"}, where)
-        for field in ("requirement", "field", "operator"):
-            _required_text(item[field], f"{where}.{field}")
-        filter_value = item["value"]
-        if isinstance(filter_value, dict):
-            entity_ref = _exact_object(filter_value, {"entity"}, f"{where}.value")
-            _required_text(entity_ref["entity"], f"{where}.value.entity")
-        elif filter_value is not None and not isinstance(filter_value, (str, int, float, bool)):
-            raise DraftStructureError(f"{where}.value must be a JSON scalar, entity reference, or null")
+        _validate_filter_output(item, where, filter_fields)
 
     for index, value in enumerate(root["temporalConstraints"]):
         where = f"draft.temporalConstraints[{index}]"
         constraint = _exact_object(
             value, {"target", "kind", "date", "period", "start", "end"}, where,
         )
-        _required_text(constraint["target"], f"{where}.target")
+        _required_identifier(constraint["target"], f"{where}.target")
         _required_text(constraint["kind"], f"{where}.kind")
         for field in ("date", "start", "end"):
             if constraint[field] is not None:
                 _required_text(constraint[field], f"{where}.{field}")
+        period = constraint["period"]
         if constraint["period"] is not None:
-            period = _exact_object(
-                constraint["period"], {"entity", "start", "end"}, f"{where}.period",
-            )
+            period = _exact_object(period, {"entity", "start", "end"}, f"{where}.period")
             for field in ("entity", "start", "end"):
                 if period[field] is not None:
-                    _required_text(period[field], f"{where}.period.{field}")
+                    if field == "entity":
+                        _required_identifier(period[field], f"{where}.period.{field}")
+                    else:
+                        _required_text(period[field], f"{where}.period.{field}")
 
+        kind = constraint["kind"]
+        if kind in {"on", "before", "after"}:
+            valid = constraint["date"] is not None and period is None \
+                and constraint["start"] is None and constraint["end"] is None
+        elif kind == "during":
+            valid = constraint["date"] is None and period is not None \
+                and constraint["start"] is None and constraint["end"] is None
+            if valid:
+                entity_period = period["entity"] is not None
+                date_period = period["start"] is not None and period["end"] is not None
+                valid = (entity_period and period["start"] is None and period["end"] is None) \
+                    or (period["entity"] is None and date_period)
+        elif kind == "interval":
+            valid = constraint["date"] is None and period is None \
+                and constraint["start"] is not None and constraint["end"] is not None
+        elif kind == "current":
+            valid = constraint["date"] is None and period is None \
+                and constraint["start"] is None and constraint["end"] is None
+        else:
+            raise DraftStructureError(f"{where}.kind is unsupported")
+        if not valid:
+            raise DraftStructureError(f"{where} has values that do not match temporal kind {kind!r}")
+
+    aggregation = None
     if root["aggregation"] is not None:
         aggregation = _exact_object(
             root["aggregation"], {"operation", "target", "groupBy"}, "draft.aggregation",
         )
         _required_text(aggregation["operation"], "draft.aggregation.operation")
+        if aggregation["operation"] != "count":
+            raise DraftStructureError("draft.aggregation.operation must be 'count'")
         _validate_reference_output(aggregation["target"], "draft.aggregation.target")
         if not isinstance(aggregation["groupBy"], list):
             raise DraftStructureError("draft.aggregation.groupBy must be an array")
@@ -394,6 +477,31 @@ def _validate_draft_output_shape(draft: dict[str, Any]) -> None:
     for field in ("target", "entityType"):
         if answer[field] is not None:
             _required_text(answer[field], f"draft.answerShape.{field}")
+    kind = answer["kind"]
+    if kind == "boolean":
+        valid_answer = answer["target"] is None and answer["entityType"] is None
+    elif kind in {"entity", "entities"}:
+        valid_answer = answer["target"] is None and answer["entityType"] is not None
+    elif kind in {"label", "fact", "list"}:
+        valid_answer = answer["target"] is not None and answer["entityType"] is None
+        if valid_answer:
+            _required_identifier(answer["target"], "draft.answerShape.target")
+    elif kind in {"count", "grouped_result"}:
+        valid_answer = answer["target"] == "aggregation" and answer["entityType"] is None
+    else:
+        raise DraftStructureError(f"draft.answerShape.kind {kind!r} is unsupported")
+    if not valid_answer:
+        raise DraftStructureError(f"draft.answerShape fields do not match kind {kind!r}")
+
+    if kind in {"count", "grouped_result"}:
+        if aggregation is None:
+            raise DraftStructureError(f"answer shape {kind!r} requires an aggregation")
+        if kind == "count" and aggregation["groupBy"]:
+            raise DraftStructureError("count answer shape requires an empty aggregation.groupBy")
+        if kind == "grouped_result" and not aggregation["groupBy"]:
+            raise DraftStructureError("grouped_result answer shape requires aggregation.groupBy")
+    elif aggregation is not None:
+        raise DraftStructureError("aggregation is only valid with count or grouped_result answer shapes")
 
 
 def _normalise_participant(value: dict[str, Any]) -> dict[str, str]:

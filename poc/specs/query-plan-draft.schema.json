@@ -145,7 +145,27 @@
       "properties": {
         "entity": {"$ref": "#/$defs/nullableEntityReference"},
         "type": {"$ref": "#/$defs/nullableEntityType"}
-      }
+      },
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entity", "type"],
+          "properties": {
+            "entity": {"$ref": "#/$defs/identifier"},
+            "type": {"type": "null"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entity", "type"],
+          "properties": {
+            "entity": {"type": "null"},
+            "type": {"$ref": "#/$defs/entityType"}
+          }
+        }
+      ]
     },
     "requirement": {
       "type": "object",
@@ -179,23 +199,95 @@
       ]
     },
     "filter": {
-      "type": "object",
-      "additionalProperties": false,
+      "anyOf": [
+        {"$ref": "#/$defs/memberNameExistsFilter"},
+        {"$ref": "#/$defs/memberNameValueFilter"},
+        {"$ref": "#/$defs/termNumberExistsFilter"},
+        {"$ref": "#/$defs/termNumberValueFilter"},
+        {"$ref": "#/$defs/collectionExistsFilter"},
+        {"$ref": "#/$defs/collectionValueFilter"},
+        {"$ref": "#/$defs/committeeCodeExistsFilter"},
+        {"$ref": "#/$defs/committeeCodeValueFilter"}
+      ]
+    },
+    "memberNameExistsFilter": {
+      "type": "object", "additionalProperties": false,
       "required": ["requirement", "field", "operator", "value"],
       "properties": {
         "requirement": {"$ref": "#/$defs/identifier"},
-        "field": {"$ref": "#/$defs/filterFieldId"},
-        "operator": {"$ref": "#/$defs/filterOperator"},
-        "value": {"$ref": "#/$defs/filterValue"}
+        "field": {"type": "string", "const": "member_name"},
+        "operator": {"type": "string", "const": "exists"},
+        "value": {"type": "null"}
       }
     },
-    "dateWindow": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["start", "end"],
+    "memberNameValueFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
       "properties": {
-        "start": {"type": ["string", "null"]},
-        "end": {"type": ["string", "null"]}
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "member_name"},
+        "operator": {"type": "string", "enum": ["equals", "not_equals"]},
+        "value": {"type": "string"}
+      }
+    },
+    "termNumberExistsFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "parliamentary_term_number"},
+        "operator": {"type": "string", "const": "exists"},
+        "value": {"type": "null"}
+      }
+    },
+    "termNumberValueFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "parliamentary_term_number"},
+        "operator": {"type": "string", "enum": ["equals", "not_equals", "greater_than", "greater_than_or_equal", "less_than", "less_than_or_equal"]},
+        "value": {"type": "number"}
+      }
+    },
+    "collectionExistsFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "parliamentary_collection"},
+        "operator": {"type": "string", "const": "exists"},
+        "value": {"type": "null"}
+      }
+    },
+    "collectionValueFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "parliamentary_collection"},
+        "operator": {"type": "string", "enum": ["equals", "not_equals"]},
+        "value": {"$ref": "#/$defs/filterEntityReference"}
+      }
+    },
+    "committeeCodeExistsFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "committee_code"},
+        "operator": {"type": "string", "const": "exists"},
+        "value": {"type": "null"}
+      }
+    },
+    "committeeCodeValueFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "committee_code"},
+        "operator": {"type": "string", "enum": ["equals", "not_equals"]},
+        "value": {"type": "string"}
       }
     },
     "temporalPeriod": {
@@ -204,9 +296,31 @@
       "required": ["entity", "start", "end"],
       "properties": {
         "entity": {"$ref": "#/$defs/nullableEntityReference"},
-        "start": {"type": ["string", "null"]},
-        "end": {"type": ["string", "null"]}
-      }
+        "start": {"type": ["string", "null"], "minLength": 1},
+        "end": {"type": ["string", "null"], "minLength": 1}
+      },
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entity", "start", "end"],
+          "properties": {
+            "entity": {"$ref": "#/$defs/identifier"},
+            "start": {"type": "null"},
+            "end": {"type": "null"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entity", "start", "end"],
+          "properties": {
+            "entity": {"type": "null"},
+            "start": {"type": "string", "minLength": 1},
+            "end": {"type": "string", "minLength": 1}
+          }
+        }
+      ]
     },
     "temporalConstraint": {
       "type": "object",
@@ -215,16 +329,70 @@
       "properties": {
         "target": {"$ref": "#/$defs/identifier"},
         "kind": {"$ref": "#/$defs/temporalKind"},
-        "date": {"type": ["string", "null"]},
+        "date": {"type": ["string", "null"], "minLength": 1},
         "period": {
           "anyOf": [
             {"$ref": "#/$defs/temporalPeriod"},
             {"type": "null"}
           ]
         },
-        "start": {"type": ["string", "null"]},
-        "end": {"type": ["string", "null"]}
-      }
+        "start": {"type": ["string", "null"], "minLength": 1},
+        "end": {"type": ["string", "null"], "minLength": 1}
+      },
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["target", "kind", "date", "period", "start", "end"],
+          "properties": {
+            "target": {"$ref": "#/$defs/identifier"},
+            "kind": {"type": "string", "enum": ["on", "before", "after"]},
+            "date": {"type": "string", "minLength": 1},
+            "period": {"type": "null"},
+            "start": {"type": "null"},
+            "end": {"type": "null"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["target", "kind", "date", "period", "start", "end"],
+          "properties": {
+            "target": {"$ref": "#/$defs/identifier"},
+            "kind": {"type": "string", "const": "during"},
+            "date": {"type": "null"},
+            "period": {"$ref": "#/$defs/temporalPeriod"},
+            "start": {"type": "null"},
+            "end": {"type": "null"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["target", "kind", "date", "period", "start", "end"],
+          "properties": {
+            "target": {"$ref": "#/$defs/identifier"},
+            "kind": {"type": "string", "const": "interval"},
+            "date": {"type": "null"},
+            "period": {"type": "null"},
+            "start": {"type": "string", "minLength": 1},
+            "end": {"type": "string", "minLength": 1}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["target", "kind", "date", "period", "start", "end"],
+          "properties": {
+            "target": {"$ref": "#/$defs/identifier"},
+            "kind": {"type": "string", "const": "current"},
+            "date": {"type": "null"},
+            "period": {"type": "null"},
+            "start": {"type": "null"},
+            "end": {"type": "null"}
+          }
+        }
+      ]
     },
     "aggregationReference": {
       "type": "object",
@@ -249,13 +417,57 @@
       }
     },
     "answerShape": {
-      "type": "object",
-      "additionalProperties": false,
+      "anyOf": [
+        {"$ref": "#/$defs/booleanAnswerShape"},
+        {"$ref": "#/$defs/entityAnswerShape"},
+        {"$ref": "#/$defs/requirementAnswerShape"},
+        {"$ref": "#/$defs/countAnswerShape"},
+        {"$ref": "#/$defs/groupedAnswerShape"}
+      ]
+    },
+    "booleanAnswerShape": {
+      "type": "object", "additionalProperties": false,
       "required": ["kind", "target", "entityType"],
       "properties": {
-        "kind": {"$ref": "#/$defs/answerKind"},
-        "target": {"$ref": "#/$defs/nullableEntityReference"},
-        "entityType": {"$ref": "#/$defs/nullableEntityType"}
+        "kind": {"type": "string", "const": "boolean"},
+        "target": {"type": "null"},
+        "entityType": {"type": "null"}
+      }
+    },
+    "entityAnswerShape": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "target", "entityType"],
+      "properties": {
+        "kind": {"type": "string", "enum": ["entity", "entities"]},
+        "target": {"type": "null"},
+        "entityType": {"$ref": "#/$defs/entityType"}
+      }
+    },
+    "requirementAnswerShape": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "target", "entityType"],
+      "properties": {
+        "kind": {"type": "string", "enum": ["label", "fact", "list"]},
+        "target": {"$ref": "#/$defs/identifier"},
+        "entityType": {"type": "null"}
+      }
+    },
+    "countAnswerShape": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "target", "entityType"],
+      "properties": {
+        "kind": {"type": "string", "const": "count"},
+        "target": {"type": "string", "const": "aggregation"},
+        "entityType": {"type": "null"}
+      }
+    },
+    "groupedAnswerShape": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "target", "entityType"],
+      "properties": {
+        "kind": {"type": "string", "const": "grouped_result"},
+        "target": {"type": "string", "const": "aggregation"},
+        "entityType": {"type": "null"}
       }
     }
   }

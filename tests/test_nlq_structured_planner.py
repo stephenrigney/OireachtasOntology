@@ -24,10 +24,12 @@ from poc.nlq.benchmark import CoverageAssessment
 from poc.nlq.results import QueryResult
 from poc.nlq.structured_planner import (
     DRAFT_SCHEMA_PATH,
+    DraftStructureError,
     ResponsesPlanGenerator,
     StructuredPlanner,
     _response_schema,
     build_planner_instructions,
+    normalise_draft_output,
 )
 
 
@@ -106,18 +108,63 @@ def _planner(output: str | dict, fuseki: LocalResolverFuseki):
     return planner, generator
 
 
+def _assert_strict_schema_objects(schema):
+    if isinstance(schema, dict):
+        if schema.get("type") == "object":
+            properties = set(schema.get("properties", {}))
+            assert schema.get("additionalProperties") is False
+            assert set(schema.get("required", [])) == properties
+        for child in schema.values():
+            _assert_strict_schema_objects(child)
+    elif isinstance(schema, list):
+        for child in schema:
+            _assert_strict_schema_objects(child)
+
+
 def test_draft_schema_is_valid_closed_and_vocabularies_match_phase_2a():
     schema = json.loads(DRAFT_SCHEMA_PATH.read_text(encoding="utf-8"))
     Draft202012Validator.check_schema(schema)
     response_schema = _response_schema()
     assert response_schema["additionalProperties"] is False
     assert set(response_schema["required"]) == set(response_schema["properties"])
+    assert "anyOf" not in response_schema  # Responses strict output requires an object root.
+    _assert_strict_schema_objects(response_schema)
     vocabulary = PLAN_CONTRACT["semanticVocabulary"]
     assert set(schema["$defs"]["entityType"]["enum"]) == set(vocabulary["entityTypes"])
     assert set(schema["$defs"]["factId"]["enum"]) == {
         fact["id"] for fact in vocabulary["facts"]
     }
     assert set(schema["$defs"]["filterFieldId"]["enum"]) == {
+        field["id"] for field in vocabulary["filterFields"]
+    }
+    schema_filter_shapes = {}
+    for name, definition in schema["$defs"].items():
+        if not name.endswith("Filter"):
+            continue
+        properties = definition["properties"]
+        field_id = properties["field"]["const"]
+        operator_schema = properties["operator"]
+        operators = {
+            operator_schema["const"]
+            if "const" in operator_schema else operator
+            for operator in operator_schema.get("enum", [operator_schema.get("const")])
+        }
+        value_schema = properties["value"]
+        value_kind = (
+            "null" if value_schema.get("type") == "null"
+            else "entity" if value_schema.get("$ref") == "#/$defs/filterEntityReference"
+            else value_schema.get("type")
+        )
+        schema_filter_shapes.setdefault(field_id, []).append((operators, value_kind))
+    for field in vocabulary["filterFields"]:
+        branches = schema_filter_shapes[field["id"]]
+        actual_operators = set().union(*(operators for operators, _kind in branches))
+        assert actual_operators == set(field["operators"])
+        assert all(
+            kind == ("null" if operators == {"exists"} else field["valueKind"])
+            for operators, kind in branches
+        )
+    assert set(schema_filter_shapes) == {
         field["id"] for field in vocabulary["filterFields"]
     }
     assert set(schema["$defs"]["temporalKind"]["enum"]) == {
@@ -141,6 +188,269 @@ def test_draft_schema_is_valid_closed_and_vocabularies_match_phase_2a():
         "plan.aggregate.dail-term-count",
     ):
         assert list(validator.iter_errors(_expected_case_draft(case_id))) == [], case_id
+
+
+def _assert_provider_draft_valid(draft):
+    errors = list(Draft202012Validator(_response_schema()).iter_errors(draft))
+    assert errors == []
+    return normalise_draft_output(draft)
+
+
+def _assert_provider_draft_invalid(draft):
+    assert list(Draft202012Validator(_response_schema()).iter_errors(draft))
+    with pytest.raises(DraftStructureError):
+        normalise_draft_output(draft)
+
+
+@pytest.mark.parametrize(
+    "participant",
+    [
+        {"entity": "member", "type": None},
+        {"entity": None, "type": "Member"},
+    ],
+)
+def test_provider_and_local_participant_xor_accept_both_valid_forms(participant):
+    draft = _output_draft()
+    draft["requirements"][0]["subject"] = participant
+
+    normalized = _assert_provider_draft_valid(draft)
+
+    assert normalized["requirements"][0]["subject"] == {
+        key: value for key, value in participant.items() if value is not None
+    }
+
+
+@pytest.mark.parametrize(
+    "participant",
+    [
+        {"entity": "member", "type": "Member"},
+        {"entity": None, "type": None},
+    ],
+)
+def test_provider_and_local_participant_xor_reject_both_invalid_forms(participant):
+    draft = _output_draft()
+    draft["requirements"][0]["subject"] = participant
+
+    _assert_provider_draft_invalid(draft)
+
+
+def test_provider_and_local_require_at_least_one_requirement():
+    draft = _output_draft()
+    draft["requirements"] = []
+
+    _assert_provider_draft_invalid(draft)
+
+
+@pytest.mark.parametrize(
+    ("shape", "aggregation"),
+    [
+        ({"kind": "boolean", "target": None, "entityType": None}, None),
+        ({"kind": "entity", "target": None, "entityType": "Member"}, None),
+        ({"kind": "entities", "target": None, "entityType": "Member"}, None),
+        ({"kind": "label", "target": "requested-fact", "entityType": None}, None),
+        ({"kind": "fact", "target": "requested-fact", "entityType": None}, None),
+        ({"kind": "list", "target": "requested-fact", "entityType": None}, None),
+        (
+            {"kind": "count", "target": "aggregation", "entityType": None},
+            {"operation": "count", "target": {"requirement": "requested-fact", "participant": "subject"}, "groupBy": []},
+        ),
+        (
+            {"kind": "grouped_result", "target": "aggregation", "entityType": None},
+            {"operation": "count", "target": {"requirement": "requested-fact", "participant": "subject"}, "groupBy": [{"requirement": "requested-fact", "participant": "subject"}]},
+        ),
+    ],
+)
+def test_provider_and_local_accept_each_answer_shape_with_matching_fields(shape, aggregation):
+    draft = _output_draft()
+    draft["answerShape"] = shape
+    draft["aggregation"] = aggregation
+
+    normalized = _assert_provider_draft_valid(draft)
+
+    assert normalized["answerShape"] == {
+        key: value for key, value in shape.items() if value is not None
+    }
+    assert normalized["aggregation"] == aggregation
+
+
+@pytest.mark.parametrize(
+    ("shape", "aggregation"),
+    [
+        ({"kind": "boolean", "target": "requested-fact", "entityType": None}, None),
+        ({"kind": "entity", "target": None, "entityType": None}, None),
+        ({"kind": "fact", "target": None, "entityType": None}, None),
+        ({"kind": "count", "target": "requested-fact", "entityType": None}, None),
+    ],
+)
+def test_provider_and_local_reject_answer_shape_field_and_aggregation_mismatches(shape, aggregation):
+    draft = _output_draft()
+    draft["answerShape"] = shape
+    draft["aggregation"] = aggregation
+
+    _assert_provider_draft_invalid(draft)
+
+
+@pytest.mark.parametrize(
+    ("shape", "aggregation"),
+    [
+        ({"kind": "count", "target": "aggregation", "entityType": None}, None),
+        ({"kind": "grouped_result", "target": "aggregation", "entityType": None}, {
+            "operation": "count", "target": {"requirement": "requested-fact", "participant": "subject"}, "groupBy": [],
+        }),
+        ({"kind": "count", "target": "aggregation", "entityType": None}, {
+            "operation": "count", "target": {"requirement": "requested-fact", "participant": "subject"}, "groupBy": [{"requirement": "requested-fact", "participant": "subject"}],
+        }),
+    ],
+)
+def test_provider_schema_defers_cross_root_aggregation_consistency_to_local_validation(shape, aggregation):
+    draft = _output_draft()
+    draft["answerShape"] = shape
+    draft["aggregation"] = aggregation
+
+    assert list(Draft202012Validator(_response_schema()).iter_errors(draft)) == []
+    with pytest.raises(DraftStructureError):
+        normalise_draft_output(draft)
+
+
+@pytest.mark.parametrize(
+    ("field", "operator", "value"),
+    [
+        ("member_name", "exists", None),
+        ("member_name", "equals", "Micheál Martin"),
+        ("parliamentary_term_number", "greater_than", 34),
+        ("parliamentary_term_number", "exists", None),
+        ("parliamentary_collection", "equals", {"entity": "collection"}),
+        ("parliamentary_collection", "exists", None),
+        ("committee_code", "not_equals", "JTC"),
+        ("committee_code", "exists", None),
+    ],
+)
+def test_provider_and_local_accept_filter_operator_value_shapes(field, operator, value):
+    draft = _output_draft()
+    draft["filters"] = [{
+        "requirement": "requested-fact", "field": field,
+        "operator": operator, "value": value,
+    }]
+
+    normalized = _assert_provider_draft_valid(draft)
+
+    if operator == "exists":
+        assert "value" not in normalized["filters"][0]
+    else:
+        assert normalized["filters"][0]["value"] == value
+
+
+@pytest.mark.parametrize(
+    ("field", "operator", "value"),
+    [
+        ("member_name", "exists", "Timmy Dooley"),
+        ("member_name", "equals", None),
+        ("member_name", "greater_than", "Timmy Dooley"),
+        ("parliamentary_term_number", "equals", True),
+        ("parliamentary_term_number", "equals", None),
+        ("parliamentary_collection", "equals", "collection"),
+        ("parliamentary_collection", "exists", {"entity": "collection"}),
+        ("committee_code", "equals", {"entity": "committee"}),
+    ],
+)
+def test_provider_and_local_reject_filter_value_null_and_type_mismatches(field, operator, value):
+    draft = _output_draft()
+    draft["filters"] = [{
+        "requirement": "requested-fact", "field": field,
+        "operator": operator, "value": value,
+    }]
+
+    _assert_provider_draft_invalid(draft)
+
+
+def _temporal_output_draft(kind, *, date=None, period=None, start=None, end=None):
+    draft = _output_draft()
+    draft["requirements"] = [{
+        "id": "membership", "fact": "member_house_term_membership",
+        "subject": {"entity": "member", "type": None},
+        "object": {"entity": None, "type": "DailTerm"},
+    }]
+    draft["answerShape"] = {"kind": "boolean", "target": None, "entityType": None}
+    draft["temporalConstraints"] = [{
+        "target": "membership", "kind": kind, "date": date,
+        "period": period, "start": start, "end": end,
+    }]
+    return draft
+
+
+@pytest.mark.parametrize(
+    "draft",
+    [
+        _temporal_output_draft("on", date="2020-01-01"),
+        _temporal_output_draft("before", date="2020-01-01"),
+        _temporal_output_draft("after", date="2020-01-01"),
+        _temporal_output_draft("during", period={"entity": "term", "start": None, "end": None}),
+        _temporal_output_draft("during", period={"entity": None, "start": "2020-01-01", "end": "2021-01-01"}),
+        _temporal_output_draft("interval", start="2020-01-01", end="2021-01-01"),
+        _temporal_output_draft("current"),
+    ],
+)
+def test_provider_and_local_accept_each_temporal_structure(draft):
+    _assert_provider_draft_valid(draft)
+
+
+@pytest.mark.parametrize(
+    "draft",
+    [
+        _temporal_output_draft("on"),
+        _temporal_output_draft("on", date="2020-01-01", start="2020-01-02"),
+        _temporal_output_draft("during"),
+        _temporal_output_draft("during", period={"entity": "term", "start": "2020-01-01", "end": "2021-01-01"}),
+        _temporal_output_draft("during", period={"entity": None, "start": "2020-01-01", "end": None}),
+        _temporal_output_draft("interval", start="2020-01-01"),
+        _temporal_output_draft("current", date="2020-01-01"),
+    ],
+)
+def test_provider_and_local_reject_temporal_variant_mismatches(draft):
+    _assert_provider_draft_invalid(draft)
+
+
+@pytest.mark.parametrize(
+    "aggregation",
+    [
+        {"operation": "sum", "target": {"requirement": "requested-fact", "participant": "subject"}, "groupBy": []},
+        {"operation": "count", "target": {"requirement": "requested-fact", "participant": "other"}, "groupBy": []},
+        {"operation": "count", "target": {"requirement": "requested-fact", "participant": "subject"}, "groupBy": "not-an-array"},
+    ],
+)
+def test_provider_and_local_reject_invalid_aggregation_structures(aggregation):
+    draft = _output_draft()
+    draft["aggregation"] = aggregation
+    draft["answerShape"] = {"kind": "count", "target": "aggregation", "entityType": None}
+
+    _assert_provider_draft_invalid(draft)
+
+
+@pytest.mark.parametrize(
+    ("fact", "object_value"),
+    [
+        ("member_full_name", {"entity": None, "type": "DailTerm"}),
+        ("member_house_term_membership", None),
+    ],
+)
+def test_fact_specific_object_semantics_remain_authoritative_in_phase_2a(fact, object_value):
+    draft = _output_draft()
+    draft["requirements"][0]["fact"] = fact
+    draft["requirements"][0]["object"] = object_value
+
+    normalized = _assert_provider_draft_valid(draft)
+    if object_value is None:
+        assert "object" not in normalized["requirements"][0]
+    else:
+        assert normalized["requirements"][0]["object"] == {"type": "DailTerm"}
+
+    fuseki = LocalResolverFuseki()
+    planner, _ = _planner(draft, fuseki)
+    result = planner.plan("What is the full name of Timmy Dooley?")
+
+    assert result.status == "invalid_draft_semantics"
+    assert result.failure_stage == "draft_validation"
+    assert fuseki.queries == []
 
 
 def test_responses_plan_generator_uses_strict_schema_and_makes_one_call():
@@ -251,6 +561,21 @@ def test_model_supplied_iri_is_rejected_before_local_resolution():
     assert fuseki.queries == []
 
 
+def test_model_supplied_iri_or_url_text_is_rejected_even_when_shape_schema_allows_text():
+    draft = _output_draft()
+    draft["intent"] = "Use https://data.oireachtas.ie/ie/oireachtas/member/id/guess"
+    assert list(Draft202012Validator(_response_schema()).iter_errors(draft)) == []
+    with pytest.raises(DraftStructureError, match="IRI/URL text"):
+        normalise_draft_output(draft)
+
+    fuseki = LocalResolverFuseki()
+    planner, _ = _planner(draft, fuseki)
+    result = planner.plan("What is the full name of Timmy Dooley?")
+
+    assert result.status == "invalid_draft_structure"
+    assert fuseki.queries == []
+
+
 @pytest.mark.parametrize(
     "mutate, phrase",
     [
@@ -265,6 +590,7 @@ def test_model_supplied_iri_is_rejected_before_local_resolution():
 def test_unsupported_semantic_vocabulary_fails_before_entity_lookup(mutate, phrase):
     draft = _output_draft()
     mutate(draft)
+    assert list(Draft202012Validator(_response_schema()).iter_errors(draft))
     fuseki = LocalResolverFuseki()
     planner, _ = _planner(draft, fuseki)
 
@@ -306,6 +632,7 @@ def test_invalid_temporal_or_aggregation_semantics_fail_before_resolution(invali
             "start": "2021-02-01", "end": "2020-01-01",
         }]
         draft["answerShape"] = {"kind": "boolean", "target": None, "entityType": None}
+        assert list(Draft202012Validator(_response_schema()).iter_errors(draft)) == []
     else:
         draft["aggregation"] = {
             "operation": "count",
@@ -318,7 +645,11 @@ def test_invalid_temporal_or_aggregation_semantics_fail_before_resolution(invali
 
     result = planner.plan(question)
 
-    assert result.status == "invalid_draft_semantics"
+    expected_status = (
+        "invalid_draft_semantics" if invalid_kind == "temporal"
+        else "invalid_draft_structure"
+    )
+    assert result.status == expected_status
     assert result.failure_stage == "draft_validation"
     assert fuseki.queries == []
 

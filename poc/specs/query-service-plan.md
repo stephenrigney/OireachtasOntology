@@ -549,6 +549,24 @@ set-valued intent or fail closed, with corresponding benchmark coverage. The
 current final plan also omits the context labels that justified narrowing; make
 that decision inspectable before Phase 2C relies on contextual identity binding.
 
+The Phase 2B corrective tranche aligned the strict draft schema and local
+normalizer on participant XOR, kind-specific answer fields, filter values,
+temporal variants, and aggregation structure. The Responses endpoint accepted
+the corrected schema. It rejects a top-level `anyOf`, so cross-field
+aggregation/answer consistency remains fail-closed in the deterministic local
+validator; no semantic values are inferred or repaired. Measured run
+`d4c0f433-eebd-42bf-ba2d-f5534c21b38b` used
+`oireachtas-semantic-planner@0.1.0`, dataset
+`sha256:1d849ec68168b6c456a38756ea812a23a218644204eb44d9bc55ddb3992b814d`,
+model `gpt-6-luna` (repository dotenv), and the default
+`https://opencode.ai/inference/openai/v1` endpoint (45-second timeout and
+2,000-token output limit, both defaults): 3 passed, 6 failed, and 2 not scored.
+Failures were 5 `semantic_plan_mismatch`, 1
+`invalid_draft_semantics`, and 1 `source_data_coverage`; no model-output
+structural failures remained. The run provides usable planner evidence, while
+the remaining semantic failures are retained as planner-quality work rather
+than changing benchmark expectations.
+
 Planner evaluation is a separate controlled path in
 `poc/nlq/planner_benchmark.py` using selected Phase 1 cases, semantic plan
 invariants, and the existing source-coverage checks. It scores planning only;
