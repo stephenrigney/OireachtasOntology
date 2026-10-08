@@ -29,6 +29,14 @@ def _args(tmp_path, *, full=False):
 
 def _fake_online(monkeypatch, records, calls, *, fail=False):
     from oireachtas_etl import cli
+    from oireachtas_etl.state import PROVENANCE_GRAPH_IRI
+    from tests._in_memory_fuseki import InMemoryFuseki
+
+    fuseki = getattr(monkeypatch, "_incremental_fuseki", None)
+    if fuseki is None:
+        fuseki = InMemoryFuseki()
+        monkeypatch._incremental_fuseki = fuseki
+
     class Api:
         def __init__(self, *args, **kwargs): pass
         def harvest(self, *, limit, query_params=None):
@@ -40,14 +48,15 @@ def _fake_online(monkeypatch, records, calls, *, fail=False):
     class Loader:
         def __init__(self, *args, **kwargs): pass
         def replace(self, graph, payload, **kwargs):
-            calls.append(("put", graph))
-            if fail:
+            if graph != PROVENANCE_GRAPH_IRI:
+                calls.append(("put", graph))
+            if fail and graph != PROVENANCE_GRAPH_IRI:
                 raise RuntimeError("PUT failed")
+            fuseki.replace(graph, payload, **kwargs)
     monkeypatch.setattr(cli, "ApiClient", Api)
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
-    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
+    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: fuseki)
     monkeypatch.setattr(cli, "verify_bill_competency", lambda *args: None)
-    monkeypatch.setattr(cli, "verify_core_graph", lambda *args: None)
 
 
 def test_incremental_fixed_boundary_overlap_dedup_and_no_missing_inference(tmp_path, monkeypatch):
@@ -91,14 +100,14 @@ def test_failed_put_and_crash_before_cursor_completion_retry_safely(tmp_path, mo
         assert store.get_resource("legislation", WRAPPER["bill"]["uri"])["publication_state"] == "dirty"
 
     _fake_online(monkeypatch, lambda: [WRAPPER], calls)
-    original = CoreStateStore.finish_run
+    original = CoreStateStore.stage_run_catalog_finalization
     crashed = {"yes": False}
     def interrupt(self, run_id, **kwargs):
-        if kwargs["success"] and not crashed["yes"]:
+        if kwargs.get("outcome") == "success" and not crashed["yes"]:
             crashed["yes"] = True
             raise RuntimeError("crash before cursor commit")
         return original(self, run_id, **kwargs)
-    monkeypatch.setattr(CoreStateStore, "finish_run", interrupt)
+    monkeypatch.setattr(CoreStateStore, "stage_run_catalog_finalization", interrupt)
     with pytest.raises(RuntimeError, match="crash before cursor commit"):
         cli.run_bills(args)
     with CoreStateStore(Path(args.state_db)) as store:
@@ -152,40 +161,32 @@ def test_whole_graph_verification_rejects_same_count_wrong_content():
 def test_clean_graph_mismatch_is_repaired_with_verified_whole_graph_replacement(tmp_path, monkeypatch):
     from oireachtas_etl import cli
     from oireachtas_etl.serialization import ntriples
+    from tests._in_memory_fuseki import InMemoryFuseki
+
     calls = []
-    remote = {}
+    fuseki = InMemoryFuseki()
     class Loader:
         def __init__(self, *args, **kwargs): pass
         def replace(self, graph_iri, payload, **kwargs):
             calls.append(graph_iri)
-            remote[graph_iri] = Graph().parse(data=payload, format="nt")
-    class Client:
-        def __init__(self, *args, **kwargs): pass
-        def query(self, query):
-            graph_iri = query.split("GRAPH <", 1)[1].split(">", 1)[0]
-            def binding(term):
-                if isinstance(term, URIRef): return {"type": "uri", "value": str(term)}
-                value = {"type": "literal", "value": str(term)}
-                if term.language: value["xml:lang"] = term.language
-                if term.datatype: value["datatype"] = str(term.datatype)
-                return value
-            return [{"s": binding(s), "p": binding(p), "o": binding(o)}
-                    for s, p, o in remote.get(graph_iri, Graph())]
+            fuseki.replace(graph_iri, payload, **kwargs)
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
-    monkeypatch.setattr(cli, "FusekiSparqlClient", Client)
+    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: fuseki)
     monkeypatch.setattr(cli, "verify_bill_competency", lambda *args: None)
     args = _args(tmp_path)
     args.fixture = str(ROOT / "data/api_examples/bill.json")
     assert cli.run_bills(args) == 0
     graph_iri = bill_graph_iri(WRAPPER["bill"])
-    original = ntriples(remote[graph_iri]); count = len(remote[graph_iri])
-    remote[graph_iri].remove(next(iter(remote[graph_iri])))
-    remote[graph_iri].add((URIRef("https://example.test/stale"),
-                           URIRef("https://example.test/p"), Literal("wrong")))
-    assert len(remote[graph_iri]) == count
+    remote = fuseki.dataset.graph(URIRef(graph_iri))
+    original = ntriples(remote); count = len(remote)
+    remote.remove(next(iter(remote)))
+    remote.add((URIRef("https://example.test/stale"),
+                URIRef("https://example.test/p"), Literal("wrong")))
+    assert len(remote) == count
     assert cli.run_bills(args) == 0
-    assert len(calls) == 2
-    assert ntriples(remote[graph_iri]) == original
+    assert len([graph for graph in calls
+                if graph != "https://data.oireachtas.ie/graph/provenance"]) == 2
+    assert ntriples(fuseki.construct_graph(graph_iri)) == original
     with CoreStateStore(Path(args.state_db)) as store:
         assert store.get_resource("legislation", WRAPPER["bill"]["uri"])["publication_state"] == "clean"
 

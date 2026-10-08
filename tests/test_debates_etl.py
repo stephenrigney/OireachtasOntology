@@ -248,22 +248,68 @@ def test_debates_graph_identity_is_exact_and_only_work_paths_are_accepted():
             expected_graph_iri("debates", bad)
 
 
-def test_default_cli_replay_never_opens_publisher_or_core_state(tmp_path, monkeypatch, capsys):
+@pytest.mark.parametrize("offline", [False, True])
+def test_unpublished_cli_replay_never_opens_publisher_or_core_state(
+        tmp_path, monkeypatch, capsys, offline):
     source = _source()
     preserved = _preserved_source(tmp_path / "raw", source)
     monkeypatch.setenv("OIR_FUSEKI_GSP_URL", "http://127.0.0.1:13035/debates_t4/data")
 
     class ForbiddenLoader:
         def __init__(self, *_args, **_kwargs):
-            raise AssertionError("default Debates invocation must not construct a GSP publisher")
+            raise AssertionError("unpublished Debates invocation must not construct a GSP publisher")
+
+    class ForbiddenState:
+        def __init__(self, *_args, **_kwargs):
+            raise AssertionError("unpublished Debates invocation must not open Core State")
 
     monkeypatch.setattr(etl_cli, "FusekiGraphStoreLoader", ForbiddenLoader)
-    assert main(["run", "debates", "--offline", "--raw-dir", str(tmp_path / "raw"),
-                 "--replay", preserved.source_sha256, "--state-db",
-                 str(tmp_path / "must-not-exist.sqlite")]) == 0
+    monkeypatch.setattr(etl_cli, "CoreStateStore", ForbiddenState)
+    command = ["run", "debates", "--raw-dir", str(tmp_path / "raw"),
+               "--replay", preserved.source_sha256, "--state-db",
+               str(tmp_path / "must-not-exist.sqlite")]
+    if offline:
+        command.append("--offline")
+    assert main(command) == 0
     report = json.loads(capsys.readouterr().out)
-    assert report["published"] is False and report["work_records"][0]["status"] == "new"
+    assert report["published"] is False and report["run_id"] is None
+    assert report["work_records"][0]["status"] == "new"
     assert not (tmp_path / "must-not-exist.sqlite").exists()
+
+
+def test_published_debates_run_persists_hash_identified_ontology_and_mapping_versions(
+        tmp_path, monkeypatch, capsys):
+    import hashlib
+
+    from oireachtas_etl.state import CoreStateStore
+
+    preserved = _preserved_source(tmp_path / "raw", _source())
+    database = tmp_path / "published.sqlite"
+    monkeypatch.setattr(etl_cli, "FusekiGraphStoreLoader", lambda *_a, **_k: object())
+    monkeypatch.setattr(etl_cli, "FusekiSparqlClient", lambda *_a, **_k: object())
+    monkeypatch.setattr(etl_cli, "run_debate_batch", lambda *_a, **_k: [])
+
+    def finalize(store, _args, *, run_id, **_kwargs):
+        store.finish_run(run_id, success=True)
+
+    monkeypatch.setattr(etl_cli, "_finalize_run", finalize)
+    assert main([
+        "run", "debates", "--publish", "--replay", preserved.source_sha256,
+        "--raw-dir", str(tmp_path / "raw"), "--state-db", str(database),
+        "--fuseki-gsp-url", "http://fuseki.test/data",
+        "--fuseki-sparql-url", "http://fuseki.test/query",
+    ]) == 0
+    capsys.readouterr()
+
+    expected_ontology = "debates.owl.ttl@sha256:" + hashlib.sha256(
+        (ROOT / "ontology" / "debates.owl.ttl").read_bytes()).hexdigest()
+    expected_mapping = "debates_mapping.csv@sha256:" + hashlib.sha256(
+        (ROOT / "mappings" / "debates_mapping.csv").read_bytes()).hexdigest()
+    with CoreStateStore(database) as store:
+        run = store.status()["recent_runs"][0]
+    assert run["endpoint"] == "debates" and run["outcome"] == "success"
+    assert run["ontology_version"] == expected_ontology
+    assert run["mapping_version"] == expected_mapping
 
 
 def test_first_replay_skip_changed_replacement_and_owner_isolation(tmp_path, monkeypatch):
@@ -687,7 +733,7 @@ def test_core_state_v4_migration_preserves_publication_history_and_adds_debates(
             VALUES ('kept-run','members','full_refresh',0,'2026-10-01T00:00:00+00:00',
                     '2026-10-01T00:00:01+00:00','succeeded',NULL,'{}')""")
     with CoreStateStore(database) as store:
-        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 5
+        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 8
         resource_columns = {row[1] for row in store.connection.execute(
             "PRAGMA table_info(resource_state)")}
         assert {

@@ -13,7 +13,7 @@ from rdflib.namespace import RDF
 
 from oireachtas_etl.office_observations import extract_office_observations
 from oireachtas_etl.office_reconciliation import OfficeOccurrenceStore
-from oireachtas_etl.state import CoreStateStore
+from oireachtas_etl.state import CoreStateStore, PROVENANCE_GRAPH_IRI
 from oireachtas_etl.transforms.common import MEMBERS, OIR
 
 
@@ -86,20 +86,25 @@ def _args(tmp_path, fixture, review_file):
 
 def _mock_publication(monkeypatch, *, fail_verification=False, before_replace=None):
     from oireachtas_etl import cli
+    from tests._in_memory_fuseki import InMemoryFuseki
 
     calls = []
+    fuseki = InMemoryFuseki()
+    monkeypatch._office_fuseki = fuseki
 
     class Loader:
         def __init__(self, *args, **kwargs):
             pass
 
         def replace(self, graph_iri, payload, **kwargs):
-            if before_replace is not None:
-                before_replace(graph_iri, payload)
-            calls.append((graph_iri, payload))
+            if graph_iri != PROVENANCE_GRAPH_IRI:
+                if before_replace is not None:
+                    before_replace(graph_iri, payload)
+                calls.append((graph_iri, payload))
+            fuseki.replace(graph_iri, payload, **kwargs)
 
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
-    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
+    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: fuseki)
     if fail_verification:
         attempts = []
 
@@ -111,7 +116,6 @@ def _mock_publication(monkeypatch, *, fail_verification=False, before_replace=No
         monkeypatch.setattr(cli, "verify_member_competency", verify)
     else:
         monkeypatch.setattr(cli, "verify_member_competency", lambda *args: None)
-    monkeypatch.setattr(cli, "verify_core_graph", lambda *args: None)
     return calls
 
 
@@ -214,6 +218,7 @@ def test_complete_member_scan_retains_missing_holding_and_blocks_without_prior_p
     assert cli.run_members(args) == 0
     first = _report(capsys)
     assert first["published"] == 1
+    assert len(monkeypatch._office_fuseki.construct_graph(PROVENANCE_GRAPH_IRI)) > 0
     first_graph = _graph(calls[-1][1])
     holding = next(first_graph.subjects(RDF.type, MEMBERS.OfficeHolding))
     assert (holding, MEMBERS.heldOffice, URIRef(TAOISEACH)) in first_graph
@@ -607,9 +612,16 @@ def test_migration_inventory_is_written_before_contract_three_put_and_records_le
             "contract_predates_office_holding_publication")
         observed_inventory.append(inventory)
 
-    monkeypatch.setattr(cli, "FusekiGraphStoreLoader", lambda *args, **kwargs: type(
-        "Loader", (), {"replace": lambda self, graph, payload, **kw:
-                       (inspect_before_put(graph, payload), calls.append((graph, payload)))})())
+    fuseki = monkeypatch._office_fuseki
+
+    class Loader:
+        def replace(self, graph, payload, **kwargs):
+            if graph != PROVENANCE_GRAPH_IRI:
+                inspect_before_put(graph, payload)
+                calls.append((graph, payload))
+            fuseki.replace(graph, payload, **kwargs)
+
+    monkeypatch.setattr(cli, "FusekiGraphStoreLoader", lambda *args, **kwargs: Loader())
     calls.clear()
     assert cli.run_members(args) == 0
     report = _report(capsys)

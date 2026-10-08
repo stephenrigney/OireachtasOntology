@@ -54,6 +54,14 @@ def test_capture_loader_rejects_missing_terminal_page_and_advertised_mismatch(tm
     _page(directory, skip=0, limit=2, records=records[:1], total=2)
     with pytest.raises(ValueError, match="unique records, not its advertised"):
         load_complete_capture(directory, "parties")
+    raw_path = directory / "skip-000000.json"
+    report_path = directory / "skip-000000.source-envelope-drift.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    finding = next(item for item in report["findings"]
+                   if item["change"] == "advertised_count_mismatch")
+    assert finding["json_pointer"] == "/head/counts/partyCount"
+    assert finding["source_evidence"]["sha256"] == hashlib.sha256(
+        raw_path.read_bytes()).hexdigest()
 
 
 def test_capture_loader_rejects_filename_metadata_pagination_disagreement(tmp_path):

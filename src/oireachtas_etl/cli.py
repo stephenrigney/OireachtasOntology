@@ -1,5 +1,6 @@
 from __future__ import annotations
-import argparse, json, sys, uuid
+import argparse, json, os, re, sys, time, uuid
+from collections.abc import Mapping
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -16,10 +17,11 @@ from .loader import FusekiSparqlClient
 from .competency import verify_member_competency, verify_bill_competency
 from .competency import verify_core_graph
 from .raw import persist_raw
-from .debates_raw import fetch_main_xml, load_main_xml, persist_main_xml
+from .debates_raw import (DebateSourceError, fetch_main_xml, load_main_xml,
+                          persist_main_xml)
 from .debates_pipeline import run_debate_batch
 from .serialization import nquads, ntriples, turtle
-from .transforms.houses import transform_houses_with_report
+from .transforms.houses import PERSISTENT_HOUSES, transform_houses_with_report
 from .transforms.parties import transform_parties
 from .transforms.constituencies import transform_constituencies
 from .transforms.committees import transform_committees
@@ -31,14 +33,14 @@ from .validation.committees import validate_committees
 from .validation.members import validate_member_source
 from .transforms.members import (member_graph_iri, prior_party_membership_evidence,
                                  source_hash, transform_member_with_report)
-from .transforms.common import MEMBERS, datetime_literal
+from .transforms.common import MEMBERS, datetime_literal, iri
 from .transforms.offices import office_iri
 from .transforms.bills import bill_graph_iri, source_hash as bill_source_hash, transform_bill_with_report
 from .validation.bills import validate_bill_source
 from .state import (CoreStateStore, expected_graph_iri, read_resource_state,
                     state_lock)
-from rdflib import Graph, URIRef
-from rdflib.namespace import RDF
+from rdflib import Graph, Literal, URIRef
+from rdflib.namespace import RDF, PROV, XSD
 from .transforms.common import ELIDL, OIR
 from .reconciliation import (DbpediaClient, ReconciliationStore, WikidataClient,
                               FixtureResponseError, external_graph_iri, party_external_graph_iri,
@@ -69,11 +71,832 @@ from .reference_closure import (candidate_member_dataset,
                                 verify_reference_closure)
 from .reference_publication import (build_development_reference_candidates,
                                     build_reference_candidates)
-from .raw_captures import (load_latest_complete_capture,
+from .raw_captures import (capture_record_pointers, load_latest_complete_capture,
                            load_latest_development_capture)
+from .provenance import (ETL, build_provenance_catalog,
+                          package_version as etl_package_version,
+                          shared_graph_entity_iris,
+                          validate_provenance_catalog)
+from .source_contract import classify_source_contract, classify_source_envelope
+from .state import (PROVENANCE_GRAPH_IRI, catalog_publication_boundary,
+                    run_resource_iri)
 
 
 MEMBER_MAPPING_VERSION = "member_mapping.csv@reference-coverage-2026"
+DEBATES_ONTOLOGY_VERSION = (
+    "debates.owl.ttl@sha256:f85566827205594c4b51b0eda05516d2bff34e41d211d00adf04b450f5c9bf21")
+DEBATES_MAPPING_VERSION = (
+    "debates_mapping.csv@sha256:7f8fb1db6e8d6878463de2f09f3e67227f4868aedc208d18d09138c165ddcf5d")
+
+_SENSITIVE_LOG_KEY = re.compile(
+    r"(?:api[_-]?key|access[_-]?key|private[_-]?key|client[_-]?secret|"
+    r"secret|password|passwd|token|authorization|credential|cookie|signature|^auth$|"
+    r"(?:^|[_-])key$)", re.IGNORECASE)
+_SECRET_ASSIGNMENT = re.compile(
+    r"(?i)([\"']?(?:api[_-]?key|access[_-]?(?:key|token)|client[_-]?secret|"
+    r"secret|password|passwd|token|authorization|credential|cookie|signature)"
+    r"[\"']?\s*[:=]\s*)(?:\"[^\"]*\"|'[^']*'|[^&\s,;}]+)")
+_SECRET_QUERY_PARAMETER = re.compile(
+    r"(?i)([?&](?:api[_-]?key|access[_-]?(?:key|token)|client[_-]?secret|"
+    r"secret|password|passwd|token|authorization|credential|cookie|signature)=)[^&#\s]*")
+_URL_CREDENTIALS = re.compile(r"(?i)\b(https?://)[^\s/@]+(?::[^\s/@]*)?@")
+_AUTH_SCHEME = re.compile(r"(?i)\b(Bearer|Basic)\s+[A-Za-z0-9+/=_-]{4,}")
+
+
+def _redact_text(value: str) -> str:
+    value = _URL_CREDENTIALS.sub(r"\1[REDACTED]@", value)
+    value = _SECRET_QUERY_PARAMETER.sub(r"\1[REDACTED]", value)
+    value = _SECRET_ASSIGNMENT.sub(r"\1[REDACTED]", value)
+    return _AUTH_SCHEME.sub(r"\1 [REDACTED]", value)
+
+
+def _redact_sensitive(value: object, *, key: str | None = None) -> object:
+    """Redact credential-like values before structured output or JSON reports."""
+    if key is not None and _SENSITIVE_LOG_KEY.search(key.replace(" ", "")):
+        return "[REDACTED]"
+    if isinstance(value, Mapping):
+        return {str(name): _redact_sensitive(item, key=str(name))
+                for name, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_redact_sensitive(item) for item in value]
+    if isinstance(value, (str, Path)):
+        return _redact_text(str(value))
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    return _redact_text(str(value))
+
+
+def _safe_error_message(error: BaseException) -> str:
+    value = _redact_text(f"{type(error).__name__}: {error}")
+    # Core State rejects credential-shaped assignments and unsafe URLs rather
+    # than accepting a placeholder value under the original secret key.
+    value = _SECRET_ASSIGNMENT.sub("[REDACTED]", value)
+    value = _SECRET_QUERY_PARAMETER.sub("[REDACTED]", value)
+
+    def redact_unsafe_url(match: re.Match) -> str:
+        candidate = match.group(0).rstrip(".,);]")
+        try:
+            parsed = urlsplit(candidate)
+        except ValueError:
+            return "[REDACTED URL]"
+        if (parsed.username is not None or parsed.password is not None
+                or _SECRET_QUERY_PARAMETER.search(candidate)):
+            return "[REDACTED URL]"
+        return match.group(0)
+
+    return re.sub(r"(?i)https?://[^\s<>\"']+", redact_unsafe_url, value)
+
+LEGISLATION_ONTOLOGY_VERSION = "legislation.owl.ttl@phase-4-legislative-lifecycle-2026"
+LEGISLATION_MAPPING_VERSION = "bill_mapping.csv@phase-4-legislative-lifecycle-2026"
+
+
+class _RunFailure(ValueError):
+    """A source/run failure whose scope is safe to expose in run history."""
+
+    def __init__(self, message: str, *, scope: str = "source",
+                 classification: str = "source_contract_failure"):
+        super().__init__(message)
+        self.scope = scope
+        self.classification = classification
+
+
+class _AdvertisedCountMismatch(ValueError):
+    def __init__(self, endpoint: str, observed: int, advertised: int):
+        super().__init__(
+            f"{endpoint} unique count {observed} does not match advertised count")
+        self.endpoint = endpoint
+        self.observed = observed
+        self.advertised = advertised
+
+
+def _run_versions(endpoint: str, settings: Settings) -> dict[str, str | None]:
+    ontology, mapping = {
+        "houses": (settings.ontology_version, settings.mapping_version),
+        "parties": (REFERENCE_ONTOLOGY_VERSION,
+                    "party_mapping.csv@phase-2-reference-data-2026"),
+        "constituencies": (REFERENCE_ONTOLOGY_VERSION,
+                           "constituencies_mapping.csv@phase-2-reference-data-2026"),
+        "members": (REFERENCE_ONTOLOGY_VERSION, MEMBER_MAPPING_VERSION),
+        "legislation": (LEGISLATION_ONTOLOGY_VERSION, LEGISLATION_MAPPING_VERSION),
+        # Debates are an explicit AKN batch, not a broad API mapping. Identify
+        # the approved local vocabulary and mapping by exact content hashes.
+        "debates": (DEBATES_ONTOLOGY_VERSION, DEBATES_MAPPING_VERSION),
+    }.get(endpoint, (settings.ontology_version, settings.mapping_version))
+    return {"etl_version": etl_package_version(),
+            "ontology_version": ontology, "mapping_version": mapping}
+
+
+def _json_log(event: str, **fields) -> None:
+    """Emit one secret-conscious JSON Lines operational event to stderr."""
+    record = {"event": event, "timestamp": datetime.now(timezone.utc).isoformat(),
+              **_redact_sensitive(fields)}
+    print(json.dumps(record, ensure_ascii=False, sort_keys=True, default=str), file=sys.stderr)
+
+
+def _run_context(args: argparse.Namespace, *, run_id: str | None = None) -> dict | None:
+    context = getattr(args, "_etl_run_context", None)
+    if context is not None and (run_id is None or context.get("run_id") == run_id):
+        return context
+    return None
+
+
+def _begin_run_context(args: argparse.Namespace, run_id: str, endpoint: str,
+                       versions: dict[str, str | None]) -> dict:
+    context = {"run_id": run_id, "versions": versions, "outcome": "success",
+               "failure_scope": None, "failure_classification": None,
+               "error": None, "safe_publication": False,
+               "started_monotonic": time.perf_counter(),
+               "summary": {"counters": {}, "timings": {}}}
+    args._etl_run_context = context
+    _json_log("run_started", run_id=run_id, endpoint=endpoint,
+              versions=versions)
+    return context
+
+
+def _set_run_metrics(args: argparse.Namespace, *, counters: dict | None = None,
+                     timings: dict | None = None) -> None:
+    context = _run_context(args)
+    if context is None:
+        return
+    context["summary"]["counters"].update(counters or {})
+    context["summary"]["timings"].update(timings or {})
+
+
+def _failure_summary(args: argparse.Namespace, run_id: str,
+                     store: CoreStateStore | None = None) -> dict:
+    """Persist a stable operational summary even when a stage aborts."""
+    context = _run_context(args, run_id=run_id)
+    summary = (context.get("summary") if context is not None else None) or {
+        "counters": {}, "timings": {}}
+    counters = summary.setdefault("counters", {})
+    timings = summary.setdefault("timings", {})
+    published_events = 0
+    if store is not None:
+        published_events = sum(
+            event["event_type"] in {"graph_published", "entity_published"}
+            for event in store.provenance_events(run_id=run_id))
+        quarantined = store.connection.execute(
+            "SELECT COUNT(*) FROM quarantine_record WHERE run_id=?", (run_id,)
+        ).fetchone()[0]
+        counters["quarantined"] = max(counters.get("quarantined", 0), quarantined)
+    for name, default in {
+            "extracted": 0,
+            "changed": 0,
+            "unchanged": 0,
+            "published_graphs": published_events,
+            "quarantined": 0,
+            "validation_failures": 0,
+            "api_requests": 0,
+            "api_failures": 0,
+            "external_requests": 0,
+            "external_failures": 0,
+            "publication_succeeded": 0,
+    }.items():
+        counters.setdefault(name, default)
+    counters["published_graphs"] = max(counters["published_graphs"], published_events)
+    # A fatal run is not a successful whole-run publication, even if earlier
+    # graph-level replacements in the batch completed and remain durable.
+    counters["publication_succeeded"] = 0
+    started = context.get("started_monotonic") if context is not None else None
+    elapsed = (max(0.0, time.perf_counter() - started)
+               if isinstance(started, (int, float)) else 0.0)
+    timings.setdefault("etl_stage_seconds", elapsed)
+    return summary
+
+
+def _record_fatal_run(store: CoreStateStore, args: argparse.Namespace, *,
+                      run_id: str, endpoint: str, error: Exception,
+                      failure_scope: str = "system",
+                      failure_classification: str = "system_failure") -> None:
+    """Persist a terminal failure and keep any published catalog projection recoverable."""
+    context = _run_context(args, run_id=run_id)
+    message = _safe_error_message(error)
+    _finish_retries(store, (context or {}).get("retry_attempts", []), run_id,
+                    success=False, error=message, args=args)
+    if failure_scope not in {"record", "source", "run", "system"}:
+        failure_scope = "system"
+    if not isinstance(failure_classification, str) or not failure_classification.strip():
+        failure_classification = "system_failure"
+    failure_classification = _redact_text(failure_classification)
+    summary = _failure_summary(args, run_id, store)
+    if context is not None:
+        context.update(outcome="failed", error=message,
+                       failure_scope=failure_scope,
+                       failure_classification=failure_classification)
+
+    catalog_pending = False
+    if context is not None and context.get("safe_publication"):
+        loader, client = context.get("loader"), context.get("client")
+        if loader is not None and client is not None:
+            try:
+                store.record_run_summary(
+                    run_id, counters=summary["counters"], timings=summary["timings"])
+                # Do not replace a previous exact dirty candidate. Replay it
+                # first; an unavailable older candidate remains detectable.
+                _replay_pending_catalog(store, loader=loader, client=client)
+                completed_at = datetime.now(timezone.utc).isoformat()
+                failed_payload = _catalog_payload_for_final_outcome(
+                    store, run_id, outcome="failed", completed_at=completed_at)
+                store.finish_failed_run_with_catalog(
+                    run_id, error=message, failure_scope=failure_scope,
+                    failure_classification=failure_classification, summary=summary,
+                    catalog_payload=failed_payload, completed_at=completed_at)
+                if context is not None:
+                    context["finished"] = True
+                try:
+                    _publish_staged_catalog(store, loader=loader, client=client)
+                except Exception as catalog_error:
+                    catalog_pending = bool(
+                        (store.catalog_publication() or {}).get("publication_state") == "dirty")
+                    safe_catalog_error = _safe_error_message(catalog_error)
+                    _json_log("catalog_publication_failed", run_id=run_id,
+                              endpoint=endpoint, outcome="failed",
+                              error=safe_catalog_error, pending_catalog=catalog_pending)
+                    if hasattr(error, "add_note"):
+                        error.add_note(
+                            "failed-run catalog publication remains pending: "
+                            + safe_catalog_error)
+            except Exception as catalog_error:
+                # Preserve the fatal local outcome even if constructing or
+                # staging its projection encounters an integrity failure. The
+                # integrity error is also surfaced in logs/traceback, never
+                # converted into a successful catalog claim.
+                run = store.connection.execute(
+                    "SELECT status FROM etl_run WHERE run_id=?", (run_id,)
+                ).fetchone()
+                if run is not None and run["status"] == "running":
+                    store.finish_run(
+                        run_id, outcome="failed", error=message,
+                        failure_scope=failure_scope,
+                        failure_classification=failure_classification,
+                        summary=summary)
+                if context is not None:
+                    context["finished"] = True
+                catalog_pending = bool(
+                    (store.catalog_publication() or {}).get("publication_state") == "dirty")
+                safe_catalog_error = _safe_error_message(catalog_error)
+                _json_log("failed_run_catalog_finalization_failed", run_id=run_id,
+                          endpoint=endpoint, error=safe_catalog_error,
+                          pending_catalog=catalog_pending)
+                if hasattr(error, "add_note"):
+                    error.add_note(
+                        "failed-run catalog finalization failed: " + safe_catalog_error)
+        else:
+            store.finish_run(
+                run_id, outcome="failed", error=message,
+                failure_scope=failure_scope,
+                failure_classification=failure_classification, summary=summary)
+            if context is not None:
+                context["finished"] = True
+    else:
+        store.finish_run(
+            run_id, outcome="failed", error=message,
+            failure_scope=failure_scope,
+            failure_classification=failure_classification, summary=summary)
+        if context is not None:
+            context["finished"] = True
+
+    catalog_pending = catalog_pending or bool(
+        (store.catalog_publication() or {}).get("publication_state") == "dirty")
+    _json_log("run_finished", run_id=run_id, endpoint=endpoint,
+              outcome="failed", failure_scope=failure_scope,
+              failure_classification=failure_classification, error=message,
+              summary=summary, pending_catalog=catalog_pending)
+
+
+def _degrade_run(args: argparse.Namespace, *, error: str,
+                 classification: str = "record_transform_failure") -> None:
+    context = _run_context(args)
+    if context is None:
+        return
+    context["outcome"] = "degraded"
+    context["failure_scope"] = "record"
+    context["failure_classification"] = classification
+    context["error"] = error
+
+
+def _record_raw_page(args: argparse.Namespace, store: CoreStateStore | None, *,
+                     endpoint: str, run_id: str | None,
+                     raw_path: Path, raw_root: Path, body: bytes, source_url: str | None,
+                     parameters: dict, observed_at: datetime,
+                     versions: dict[str, str | None]) -> dict[str, str]:
+    """Record immutable page-level source evidence and return contract evidence."""
+    digest = hashlib.sha256(body).hexdigest()
+    pointer = {"path": raw_path.resolve().as_uri(), "sha256": digest,
+               "json_pointer": ""}
+    context = _run_context(args, run_id=run_id)
+    if store is not None and run_id is not None and context is not None:
+        store.record_source_observation(
+            endpoint, digest, observed_at.isoformat(), run_id=run_id,
+            evidence_pointer=pointer["path"], source_url=source_url,
+            request_parameters=parameters, versions=versions,
+        )
+    if source_url is not None:
+        if context is not None:
+            counters = context["summary"]["counters"]
+            counters["api_requests"] = counters.get("api_requests", 0) + 1
+    _json_log("source_page_observed", endpoint=endpoint, run_id=run_id,
+              source_sha256=digest, evidence_pointer=pointer["path"],
+              request_parameters=parameters)
+    return _raw_contract_pointer(raw_path, raw_root, body, "")
+
+
+def _safe_harvest(args: argparse.Namespace, client, *, limit: int,
+                  query_params: dict | None = None):
+    """Yield raw pages before decoding so even malformed responses are retained.
+
+    ``ApiClient.harvest`` decodes each page to decide when pagination ends. The
+    operational path uses ``page`` directly when available so the caller can
+    persist immutable bytes before parsing; harvest-only adapters remain
+    supported for existing endpoint tests and injected clients.
+    """
+    try:
+        page_method = getattr(client, "page", None)
+        if callable(page_method):
+            skip = 0
+            while True:
+                if query_params:
+                    page = page_method(skip=skip, limit=limit,
+                                       query_params=query_params)
+                else:
+                    page = page_method(skip=skip, limit=limit)
+                yield page
+                # This executes after the caller has persisted and consumed the
+                # raw page. A malformed page therefore fails closed without
+                # losing the response bytes that explain the failure.
+                decoded = json.loads(page.body)
+                records = decoded.get("results", decoded) if isinstance(decoded, dict) else decoded
+                if not isinstance(records, list):
+                    raise ValueError("API page must be an array or an object with results")
+                if len(records) < limit:
+                    return
+                skip += limit
+        else:
+            pages = (client.harvest(limit=limit, query_params=query_params)
+                     if query_params else client.harvest(limit=limit))
+            yield from pages
+    except Exception as error:
+        _set_run_metrics(args, counters={
+            "api_failures": (_run_context(args) or {}).get(
+                "summary", {}).get("counters", {}).get("api_failures", 0) + 1})
+        raise _RunFailure(
+            f"API extraction failed: {type(error).__name__}: {error}",
+            scope="source", classification="api_extraction_failure") from error
+
+
+def _decode_api_page(body: bytes, endpoint: str, args: argparse.Namespace | None = None):
+    try:
+        return json.loads(body)
+    except (UnicodeError, json.JSONDecodeError) as error:
+        if args is not None:
+            context = _run_context(args) or {}
+            current = context.get("summary", {}).get("counters", {}).get("api_failures", 0)
+            _set_run_metrics(args, counters={"api_failures": current + 1})
+        raise _RunFailure(f"{endpoint} API page is not valid JSON: {error}",
+                          scope="source",
+                          classification="api_response_failure") from error
+
+
+def _raw_contract_pointer(raw_path: Path, raw_root: Path, body: bytes,
+                          json_pointer: str) -> dict[str, str]:
+    return {"path": raw_path.resolve().relative_to(raw_root.resolve()).as_posix(),
+            "sha256": hashlib.sha256(body).hexdigest(),
+            "json_pointer": json_pointer}
+
+
+def _raw_resource_pointer(raw_path: Path, json_pointer: str) -> str:
+    return raw_path.resolve().as_uri() + ("#" + json_pointer if json_pointer else "")
+
+
+def _persist_immutable_json(path: Path, value: object) -> None:
+    """Create a canonical JSON report without ever overwriting prior evidence."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    safe_value = _redact_sensitive(value)
+    payload = (json.dumps(safe_value, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8")
+    if path.exists():
+        if path.read_bytes() != payload:
+            raise FileExistsError(f"immutable JSON evidence collision: {path}")
+        return
+    with path.open("xb") as handle:
+        handle.write(payload)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def _source_contract(args: argparse.Namespace, endpoint: str, records: list[dict], *,
+                     run_id: str | None, evidence: list[dict[str, str]],
+                     report_path: Path | None) -> dict:
+    """Classify consumed-field drift and retain an immutable run report."""
+    if run_id is None:
+        return {"findings": [], "failed_record_indices": [], "source_failed": False}
+    report = classify_source_contract(endpoint, records, run_id=run_id,
+                                      source_evidence=evidence)
+    value = report.as_dict()
+    if report_path is not None:
+        _persist_immutable_json(report_path, value)
+    _set_run_metrics(args, counters={
+        "schema_drift_warnings": len(report.warnings),
+        "source_contract_record_failures": len(report.record_failures),
+        "source_contract_failures": len(report.source_failures),
+    })
+    for finding in report.findings:
+        logged = finding.as_dict()
+        logged.pop("observed", None)
+        _json_log("source_drift", run_id=run_id, endpoint=endpoint,
+                  finding=logged)
+    context = _run_context(args, run_id=run_id)
+    if context is not None:
+        context["summary"]["counters"]["source_drift_report_count"] = len(report.findings)
+        context["source_drift_report"] = str(report_path) if report_path else None
+    return value
+
+
+def _api_envelope_contract(args: argparse.Namespace, endpoint: str, envelope: object, *,
+                           run_id: str, raw_path: Path, raw_root: Path, body: bytes,
+                           count_field: str | None = None,
+                           expected_count: int | None = None,
+                           observed_record_count: int | None = None,
+                           allow_array: bool = False):
+    """Classify API envelope drift against the exact preserved page bytes."""
+    evidence = _raw_contract_pointer(raw_path, raw_root, body, "")
+    report = classify_source_envelope(
+        endpoint, envelope, run_id=run_id, source_evidence=evidence,
+        count_field=count_field, expected_count=expected_count,
+        observed_record_count=observed_record_count, allow_array=allow_array,
+    )
+    if report.findings:
+        report_path = raw_path.with_name(
+            raw_path.name.removesuffix(".json") + ".source-envelope-drift.json")
+        _persist_immutable_json(report_path, report.as_dict())
+        context = _run_context(args, run_id=run_id)
+        if context is not None:
+            counters = context["summary"]["counters"]
+            failures = len(report.source_failures)
+            counters["source_contract_failures"] = (
+                counters.get("source_contract_failures", 0) + failures)
+            counters["api_envelope_contract_failures"] = (
+                counters.get("api_envelope_contract_failures", 0) + failures)
+            context["source_envelope_report"] = str(report_path)
+        for finding in report.findings:
+            logged = finding.as_dict()
+            logged.pop("observed", None)
+            _json_log("source_envelope_drift", endpoint=endpoint,
+                      run_id=run_id, finding=logged)
+    return report
+
+
+def _raise_on_envelope_failure(report, endpoint: str) -> None:
+    if report.source_failed:
+        finding = report.source_failures[0]
+        if finding.change == "advertised_count_changed":
+            detail = "advertised count changed during scan"
+        elif finding.change in {"advertised_count_mismatch", "result_count_mismatch"}:
+            detail = "advertised count does not match observed records"
+        elif finding.json_pointer == "/results" or finding.change == "invalid_source_container":
+            detail = "API page must contain an object envelope with a results array"
+        elif finding.json_pointer.startswith("/head"):
+            detail = "API page must contain a nonnegative integer advertised count"
+        else:
+            detail = "API envelope violates consumed source contract"
+        raise _RunFailure(
+            f"{endpoint} {detail}",
+            scope="source", classification="api_envelope_contract_failure")
+
+
+def _capture_api_pages(args: argparse.Namespace, endpoint: str, api_url: str,
+                       settings: Settings, *, count_field: str):
+    """Preserve API pages and classify their consumed count envelope fields."""
+    raw_root = Path(getattr(args, "raw_dir", None) or settings.raw_dir).expanduser().resolve()
+    extraction_id = str(uuid.uuid4())
+    versions = _run_versions(endpoint, settings)
+    records: list[dict] = []
+    advertised: int | None = None
+    last_page: tuple[Path, bytes, object] | None = None
+    for page_index, page in enumerate(_safe_harvest(
+            args, ApiClient(api_url, retries=settings.retries, timeout=settings.timeout),
+            limit=settings.limit)):
+        observed_at = datetime.now(timezone.utc)
+        # Harvest-only test adapters predate ApiPage request metadata. The
+        # actual client always supplies exact params; retain the known requested
+        # pagination boundary for adapters rather than failing raw persistence.
+        page_params = page.params or {"skip": page_index * settings.limit,
+                                      "limit": settings.limit}
+        raw_path, _ = persist_raw(
+            root=raw_root, endpoint=api_url, params=page_params, body=page.body,
+            status=page.status, retrieved_at=observed_at,
+            ontology_version=versions["ontology_version"],
+            mapping_version=versions["mapping_version"],
+            endpoint_name=endpoint, extraction_id=extraction_id)
+        decoded = _decode_api_page(page.body, endpoint, args)
+        report = _api_envelope_contract(
+            args, endpoint, decoded, run_id=extraction_id,
+            raw_path=raw_path, raw_root=raw_root, body=page.body,
+            count_field=count_field, expected_count=advertised)
+        _raise_on_envelope_failure(report, endpoint)
+        # The classifier above validates the nested count as a nonnegative int.
+        count = decoded["head"]["counts"][count_field]
+        if advertised is None:
+            advertised = count
+        records.extend(decoded["results"])
+        last_page = (raw_path, page.body, decoded)
+    return records, advertised, last_page, raw_root, extraction_id
+
+
+def _contract_failure_detail(report: dict) -> str:
+    """Return a concise, non-value-bearing detail for consumed-field failures."""
+    failures = [item for item in report.get("findings", [])
+                if item.get("severity") in {"record", "source"}]
+    if not failures:
+        return "incompatible source contract"
+    first = failures[0]
+    pointer = str(first.get("json_pointer", ""))
+    segment = pointer.rsplit("/", 1)[-1]
+    known = {"representType": "unsupported representType",
+             "houseCode": "unsupported houseCode",
+             "representCode": "invalid representCode"}
+    detail = known.get(segment, f"{first.get('change', 'contract failure')} at {pointer}")
+    if len(failures) > 1:
+        detail += f" (+{len(failures) - 1} additional contract finding(s))"
+    return detail
+
+
+def _record_quarantine(store: CoreStateStore | None, *, endpoint: str,
+                       run_id: str | None, source_hash: str,
+                       observed_at: str, evidence_pointer: str,
+                       stage: str, error: str, resource_iri: str | None,
+                       classification: str, versions: dict[str, str | None]) -> str | None:
+    if store is None or run_id is None:
+        return None
+    quarantine_id = store.record_quarantine(
+        endpoint, run_id=run_id, source_hash=source_hash,
+        observed_at=observed_at, evidence_pointer=evidence_pointer,
+        stage=stage, error=error, resource_iri=resource_iri,
+        failure_classification=classification,
+        etl_version=versions.get("etl_version"),
+        ontology_version=versions.get("ontology_version"),
+        mapping_version=versions.get("mapping_version"),
+    )
+    _json_log("record_quarantined", run_id=run_id, endpoint=endpoint,
+              quarantine_id=quarantine_id, resource_iri=resource_iri,
+              stage=stage, classification=classification)
+    return quarantine_id
+
+
+def _retry_candidates(store: CoreStateStore | None, endpoint: str) -> dict[str, list[dict]]:
+    result: dict[str, list[dict]] = {}
+    if store is not None:
+        for row in store.quarantines_for_retry(endpoint):
+            identity = row.get("resource_iri")
+            if isinstance(identity, str):
+                result.setdefault(identity, []).append(row)
+    return result
+
+
+def _retry_candidates_by_hash(store: CoreStateStore | None,
+                             endpoint: str) -> dict[str, list[dict]]:
+    """Index unidentified quarantines by their immutable record source hash."""
+    result: dict[str, list[dict]] = {}
+    if store is not None:
+        for row in store.quarantines_for_retry(endpoint):
+            if row.get("resource_iri") is None:
+                result.setdefault(row["source_hash"], []).append(row)
+    return result
+
+
+def _retry_rows_for_record(by_identity: dict[str, list[dict]],
+                           by_hash: dict[str, list[dict]], identity: str | None,
+                           source_hash: str, *, include_unidentified: bool) -> list[dict]:
+    """Select retries only when the current source record is reobserved.
+
+    Hash-only matching is limited to null-identity quarantines and callers must
+    opt in only for an applicable complete live scan. Consuming the hash entry
+    prevents duplicate copies of one source record from starting the same
+    quarantine twice in a run.
+    """
+    rows = list(by_identity.get(identity, [])) if isinstance(identity, str) else []
+    if include_unidentified:
+        rows.extend(by_hash.pop(source_hash, []))
+    unique: dict[str, dict] = {}
+    for row in rows:
+        unique.setdefault(row["quarantine_id"], row)
+    return list(unique.values())
+
+
+def _start_retries(store: CoreStateStore | None, rows: list[dict], run_id: str | None) -> list[str]:
+    started = []
+    if store is None or run_id is None:
+        return started
+    for row in rows:
+        store.start_quarantine_retry(row["quarantine_id"], run_id=run_id)
+        started.append(row["quarantine_id"])
+    return started
+
+
+def _finish_retries(store: CoreStateStore | None, ids: list[str], run_id: str | None,
+                    *, success: bool, error: str | None = None,
+                    args: argparse.Namespace | None = None) -> None:
+    if store is None or run_id is None:
+        return
+    for quarantine_id in ids:
+        store.finish_quarantine_retry(quarantine_id, run_id=run_id,
+                                      success=success, error=error)
+    context = _run_context(args, run_id=run_id) if args is not None else None
+    if context is not None:
+        done = set(ids)
+        context["retry_attempts"] = [item for item in context.get("retry_attempts", [])
+                                     if item not in done]
+
+
+def _catalog_payload_for_final_outcome(store: CoreStateStore, run_id: str, *,
+                                       outcome: str, completed_at: str) -> str:
+    """Build the exact validated catalog candidate for a prospective run outcome."""
+    graph = build_provenance_catalog(store, require_source_run_ids=(run_id,))
+    activity = URIRef(run_resource_iri(run_id))
+    graph.remove((activity, ETL.runStatus, None))
+    graph.remove((activity, ETL.runOutcome, None))
+    graph.remove((activity, PROV.endedAtTime, None))
+    graph.add((activity, ETL.runStatus,
+               Literal({"success": "succeeded", "degraded": "degraded",
+                        "failed": "failed"}[outcome])))
+    graph.add((activity, ETL.runOutcome, Literal(outcome)))
+    graph.add((activity, PROV.endedAtTime,
+               Literal(completed_at, datatype=XSD.dateTime)))
+    validate_provenance_catalog(graph)
+    return ntriples(graph)
+
+
+def _replay_pending_catalog(store: CoreStateStore, *, loader, client) -> bool:
+    """Replay an older exact catalog payload before staging a new projection."""
+    pending = store.catalog_publication()
+    if pending and pending.get("publication_state") == "dirty":
+        payload = pending.get("pending_payload")
+        digest = pending.get("pending_payload_hash")
+        if (not isinstance(payload, str)
+                or hashlib.sha256(payload.encode("utf-8")).hexdigest() != digest):
+            raise ValueError("dirty provenance catalog has no hash-verified replay payload")
+        loader.replace(PROVENANCE_GRAPH_IRI, payload,
+                       content_type="application/n-triples")
+        verify_core_graph(client, PROVENANCE_GRAPH_IRI, payload)
+        catalog_publication_boundary(store).mark_clean(PROVENANCE_GRAPH_IRI, digest)
+        return True
+    return False
+
+
+def _publish_staged_catalog(store: CoreStateStore, *, loader, client) -> str:
+    """Publish only the exact payload atomically staged with the finished run."""
+    pending = store.catalog_publication()
+    if not pending or pending.get("publication_state") != "dirty":
+        raise ValueError("finished run has no dirty provenance catalog payload")
+    payload = pending.get("pending_payload")
+    digest = pending.get("pending_payload_hash")
+    if (not isinstance(payload, str)
+            or hashlib.sha256(payload.encode("utf-8")).hexdigest() != digest):
+        raise ValueError("dirty provenance catalog has no hash-verified publication payload")
+    loader.replace(PROVENANCE_GRAPH_IRI, payload,
+                   content_type="application/n-triples")
+    verify_core_graph(client, PROVENANCE_GRAPH_IRI, payload)
+    catalog_publication_boundary(store).mark_clean(PROVENANCE_GRAPH_IRI, digest)
+    return digest
+
+
+def _finalize_run(store: CoreStateStore, args: argparse.Namespace, *,
+                  run_id: str, endpoint: str, versions: dict[str, str | None],
+                  loader=None, client=None) -> None:
+    context = _run_context(args, run_id=run_id) or {
+        "outcome": "success", "summary": {"counters": {}, "timings": {}},
+        "safe_publication": False,
+    }
+    unresolved = store.quarantine_records(endpoint=endpoint, status="quarantined")
+    if unresolved and context.get("outcome") == "success":
+        context["outcome"] = "degraded"
+        context["failure_scope"] = "record"
+        context["failure_classification"] = "unresolved_record_quarantine"
+        context["error"] = f"{len(unresolved)} unresolved record quarantine(s) remain"
+    summary = context["summary"]
+    summary["counters"].setdefault("quarantined", len(unresolved))
+    page_observations = store.connection.execute(
+        "SELECT COUNT(*) FROM source_observation WHERE run_id=? AND endpoint=? "
+        "AND evidence_pointer IS NOT NULL AND instr(evidence_pointer,'#')=0 "
+        "AND source_url IS NOT NULL",
+        (run_id, endpoint),
+    ).fetchone()[0]
+    summary["counters"].setdefault("api_requests", page_observations)
+    summary["counters"].setdefault("api_failures", 0)
+    started_monotonic = context.get("started_monotonic")
+    if isinstance(started_monotonic, (int, float)):
+        summary["timings"].setdefault(
+            "etl_stage_seconds", max(0.0, time.perf_counter() - started_monotonic))
+    store.record_run_summary(run_id, counters=summary["counters"],
+                             timings=summary["timings"])
+    outcome = context.get("outcome", "success")
+    completed_at = datetime.now(timezone.utc).isoformat()
+    finish_facts = {
+        "error": context.get("error") if outcome != "success" else None,
+        "failure_scope": context.get("failure_scope") if outcome != "success" else None,
+        "failure_classification": (context.get("failure_classification")
+                                   if outcome != "success" else None),
+        "incremental_cursor": (context.get("incremental_cursor")
+                               if outcome == "success" else None),
+        "complete_scan": bool(context.get("complete_scan", False)
+                              and outcome == "success"),
+        "summary": summary,
+        "completed_at": completed_at,
+    }
+
+    def log_finished(final_outcome: str, *, error: str | None = None,
+                     failure_scope: str | None = None,
+                     failure_classification: str | None = None) -> None:
+        context.update(finished=True, outcome=final_outcome,
+                       error=error, failure_scope=failure_scope,
+                       failure_classification=failure_classification)
+        _json_log("run_finished", run_id=run_id, endpoint=endpoint,
+                  outcome=final_outcome, failure_scope=failure_scope,
+                  failure_classification=failure_classification,
+                  error=error, summary=summary)
+
+    def finish_without_catalog_failure(error: Exception) -> None:
+        message = _safe_error_message(error)
+        store.finish_run(
+            run_id, outcome="failed", error=message,
+            failure_scope="system", failure_classification="catalog_publication_failure",
+            summary=summary, completed_at=completed_at,
+        )
+        log_finished("failed", error=message, failure_scope="system",
+                     failure_classification="catalog_publication_failure")
+        _json_log("catalog_publication_failed", run_id=run_id,
+                  endpoint=endpoint, error=message,
+                  pending_catalog=bool(
+                      (store.catalog_publication() or {}).get("publication_state") == "dirty"))
+
+    def finish_without_catalog() -> None:
+        if outcome == "success":
+            store.finish_run(run_id, success=True, **finish_facts)
+        else:
+            store.finish_run(run_id, outcome=outcome, **finish_facts)
+        log_finished(outcome, error=finish_facts["error"],
+                     failure_scope=finish_facts["failure_scope"],
+                     failure_classification=finish_facts["failure_classification"])
+
+    if not context.get("safe_publication"):
+        finish_without_catalog()
+        return
+
+    if loader is None or client is None:
+        error = RuntimeError("safe graph publication requires a configured catalog publisher/verifier")
+        finish_without_catalog_failure(error)
+        raise error
+
+    try:
+        # Recover any older exact candidate first. If it remains unavailable,
+        # fail this run but leave that pending evidence untouched.
+        _replay_pending_catalog(store, loader=loader, client=client)
+        catalog_payload = _catalog_payload_for_final_outcome(
+            store, run_id, outcome=outcome, completed_at=completed_at)
+        failure_payload = _catalog_payload_for_final_outcome(
+            store, run_id, outcome="failed", completed_at=completed_at)
+        store.stage_run_catalog_finalization(
+            run_id, outcome=outcome,
+            error=finish_facts["error"], completed_at=completed_at,
+            incremental_cursor=finish_facts["incremental_cursor"],
+            complete_scan=finish_facts["complete_scan"],
+            failure_scope=finish_facts["failure_scope"],
+            failure_classification=finish_facts["failure_classification"],
+            summary=summary, catalog_payload=catalog_payload,
+            failure_payload=failure_payload,
+        )
+    except Exception as error:
+        finish_without_catalog_failure(error)
+        raise
+
+    try:
+        _publish_staged_catalog(store, loader=loader, client=client)
+    except Exception as error:
+        message = _safe_error_message(error)
+        try:
+            store.fail_pending_catalog_finalization(run_id, error=message)
+        except Exception as state_error:
+            # Do not let a wrapper mark the still-pending run successful or
+            # overwrite its durable candidate if failure correction itself
+            # cannot be committed. The dirty state remains the recovery signal.
+            context["catalog_state_unresolved"] = True
+            safe_state_error = _safe_error_message(state_error)
+            _json_log("catalog_failure_state_update_failed", run_id=run_id,
+                      endpoint=endpoint, publication_error=message,
+                      state_error=safe_state_error)
+            raise RuntimeError(
+                f"catalog publication failed ({message}); failed-run state update also failed: "
+                f"{safe_state_error}") from state_error
+        log_finished("failed", error=f"catalog publication failed: {message}",
+                     failure_scope="system",
+                     failure_classification="catalog_publication_failure")
+        _json_log("catalog_publication_failed", run_id=run_id,
+                  endpoint=endpoint, outcome="failed", error=message,
+                  pending_catalog=True)
+        raise
+
+    log_finished(outcome, error=finish_facts["error"],
+                 failure_scope=finish_facts["failure_scope"],
+                 failure_classification=finish_facts["failure_classification"])
 
 
 def _reconciliation_state_path(args: argparse.Namespace, settings: Settings) -> Path:
@@ -117,18 +940,79 @@ def _run_houses_impl(args: argparse.Namespace, store: CoreStateStore | None = No
                      run_id: str | None = None) -> int:
     settings = Settings.from_environment()
     settings = Settings(**{**settings.__dict__, "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir})
+    raw_root = settings.raw_dir.expanduser().resolve()
+    versions = (_run_context(args, run_id=run_id) or {}).get(
+        "versions", _run_versions("houses", settings))
+    extraction_id = run_id or str(uuid.uuid4())
+    source_run_id = run_id or extraction_id
+    evidence: list[dict[str, str]] = []
+    record_pointers: list[str] = []
+    report_path: Path | None = None
     if args.fixture:
         records, body = _records_from_fixture(Path(args.fixture))
-        persist_raw(root=settings.raw_dir, endpoint=str(Path(args.fixture)), params={"skip": 0, "limit": len(records)}, body=body,
-                    status=200, retrieved_at=datetime.now(timezone.utc), ontology_version=settings.ontology_version, mapping_version=settings.mapping_version,
-                    extraction_id=run_id)
+        observed_at = datetime.now(timezone.utc)
+        raw_path, _ = persist_raw(root=raw_root, endpoint=str(Path(args.fixture).resolve()),
+                    params={"skip": 0, "limit": len(records)}, body=body,
+                    status=200, retrieved_at=observed_at,
+                    ontology_version=versions["ontology_version"] or settings.ontology_version,
+                    mapping_version=versions["mapping_version"] or settings.mapping_version,
+                    extraction_id=extraction_id)
+        _record_raw_page(args, store, endpoint="houses", run_id=run_id, raw_path=raw_path,
+                         raw_root=raw_root, body=body, source_url=None,
+                         parameters={"skip": 0, "limit": len(records)},
+                         observed_at=observed_at, versions=versions)
+        evidence.extend(_raw_contract_pointer(raw_path, raw_root, body, f"/{index}")
+                        for index, _ in enumerate(records))
+        record_pointers.extend(_raw_resource_pointer(raw_path, f"/{index}")
+                               for index, _ in enumerate(records))
+        report_path = raw_path.parent / "source-drift.json"
     else:
-        records, pages = [], []
-        for page in HousesApiClient(settings.api_url, retries=settings.retries, timeout=settings.timeout).harvest(limit=settings.limit):
-            persist_raw(root=settings.raw_dir, endpoint=settings.api_url, params=page.params, body=page.body, status=page.status, ontology_version=settings.ontology_version, mapping_version=settings.mapping_version, extraction_id=run_id)
-            decoded = json.loads(page.body); records.extend(decoded.get("results", decoded) if isinstance(decoded, dict) else decoded)
-    graph, exclusions = transform_houses_with_report(records)
-    validate_houses(records, graph)  # deliberately before any loader construction/invocation
+        records = []
+        for page in _safe_harvest(
+                args, HousesApiClient(settings.api_url, retries=settings.retries,
+                                      timeout=settings.timeout), limit=settings.limit):
+            observed_at = datetime.now(timezone.utc)
+            raw_path, _ = persist_raw(root=raw_root, endpoint=settings.api_url,
+                params=page.params, body=page.body, status=page.status,
+                retrieved_at=observed_at, ontology_version=versions["ontology_version"],
+                mapping_version=versions["mapping_version"], extraction_id=extraction_id)
+            _record_raw_page(args, store, endpoint="houses", run_id=run_id,
+                             raw_path=raw_path, raw_root=raw_root, body=page.body,
+                             source_url=settings.api_url, parameters=page.params,
+                             observed_at=observed_at, versions=versions)
+            decoded = _decode_api_page(page.body, "Houses", args)
+            envelope_report = _api_envelope_contract(
+                args, "houses", decoded, run_id=source_run_id,
+                raw_path=raw_path, raw_root=raw_root, body=page.body,
+                allow_array=True)
+            _raise_on_envelope_failure(envelope_report, "Houses")
+            page_records = decoded.get("results", decoded) if isinstance(decoded, dict) else decoded
+            if not isinstance(page_records, list):
+                raise _RunFailure("every Houses API page must contain a results array")
+            records.extend(page_records)
+            evidence.extend(_raw_contract_pointer(
+                raw_path, raw_root, page.body,
+                f"/results/{index}" if isinstance(decoded, dict) else f"/{index}")
+                for index in range(len(page_records)))
+            record_pointers.extend(_raw_resource_pointer(
+                raw_path, f"/results/{index}" if isinstance(decoded, dict) else f"/{index}")
+                for index in range(len(page_records)))
+            report_path = raw_path.parent / "source-drift.json"
+    report = _source_contract(args, "houses", records, run_id=source_run_id,
+                              evidence=evidence, report_path=report_path)
+    if report["source_failed"] or report["failed_record_indices"]:
+        unsupported_house_code = any(
+            item.get("change") == "incompatible_value"
+            and item.get("json_pointer", "").endswith("/house/houseCode")
+            for item in report.get("findings", []))
+        detail = "unsupported houseCode; " if unsupported_house_code else ""
+        raise _RunFailure(
+            f"{detail}Houses source contract contains incompatible records")
+    try:
+        graph, exclusions = transform_houses_with_report(records)
+        validate_houses(records, graph)  # before any loader construction/invocation
+    except Exception as error:
+        raise _RunFailure(f"Houses source cannot be transformed safely: {error}") from error
     if args.output_ttl: Path(args.output_ttl).write_text(turtle(graph), encoding="utf-8")
     payload = nquads(graph, HOUSES_GRAPH)
     if args.output_nq: Path(args.output_nq).write_text(payload, encoding="utf-8")
@@ -138,13 +1022,52 @@ def _run_houses_impl(args: argparse.Namespace, store: CoreStateStore | None = No
         if not query_endpoint: raise ValueError("Fuseki SPARQL endpoint is required for post-load whole-graph verification")
         payload = ntriples(graph)
         if store is None: raise RuntimeError("online Houses publication requires durable core ETL state")
-        digest = store.mark_endpoint_dirty("houses", HOUSES_GRAPH, payload)
-        FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout).replace(HOUSES_GRAPH, payload, content_type="application/n-triples")
-        verify_core_graph(FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout), HOUSES_GRAPH, payload)
-        store.complete_endpoint_publication("houses", HOUSES_GRAPH, digest)
+        loader = FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
+        client = FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
+        context = _run_context(args, run_id=run_id)
+        if context is not None:
+            context.update(loader=loader, client=client)
+            context["safe_publication"] = True
+        prior_publication = store.endpoint_publication("houses")
+        replayed_pending_hash = None
+        replayed_had_entity_lineage = False
+        if prior_publication and prior_publication.get("publication_state") == "dirty":
+            pending = prior_publication.get("pending_payload")
+            pending_hash = prior_publication.get("pending_payload_hash")
+            if (not isinstance(pending, str)
+                    or hashlib.sha256(pending.encode("utf-8")).hexdigest() != pending_hash):
+                raise ValueError(
+                    "dirty Houses graph has no hash-verified pending payload; refusing to replace it")
+            loader.replace(HOUSES_GRAPH, pending, content_type="application/n-triples")
+            verify_core_graph(client, HOUSES_GRAPH, pending)
+            replayed_pending_hash = pending_hash
+            replayed_had_entity_lineage = isinstance(
+                prior_publication.get("pending_entity_lineage"), dict)
+            store.complete_endpoint_publication(
+                "houses", HOUSES_GRAPH, pending_hash,
+                publishing_run_id=run_id)
+        entity_lineage = _build_houses_entity_lineage(
+            records, evidence, graph=graph, raw_root=raw_root)
+        current_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        if not (replayed_pending_hash == current_hash and replayed_had_entity_lineage):
+            digest = store.mark_endpoint_dirty(
+                "houses", HOUSES_GRAPH, payload, run_id=run_id,
+                entity_lineage=entity_lineage)
+            loader.replace(HOUSES_GRAPH, payload, content_type="application/n-triples")
+            verify_core_graph(client, HOUSES_GRAPH, payload)
+            store.complete_endpoint_publication(
+                "houses", HOUSES_GRAPH, digest, publishing_run_id=run_id)
+        if context is not None:
+            context["safe_publication"] = True
     elif not args.offline:
         raise ValueError("no Fuseki GSP endpoint configured; use --offline for fixture/developer runs")
     print(json.dumps({"records": len(records), "excluded": exclusions, "published": bool(endpoint)}, sort_keys=True))
+    _set_run_metrics(args, counters={"extracted": len(records),
+                                     "changed": len(records), "unchanged": 0,
+                                     "published_graphs": int(bool(endpoint)),
+                                     "quarantined": 0, "validation_failures": 0,
+                                     "api_failures": 0,
+                                     "publication_succeeded": int(bool(endpoint))})
     return 0
 
 
@@ -159,6 +1082,7 @@ def _run_shared(args: argparse.Namespace, endpoint_name: str, operation) -> int:
             registry_run = endpoint_name in {"administrative-units", "offices"}
             derived_run = endpoint_name == "committees"
             fixture_run = bool(args.fixture)
+            versions = _run_versions(endpoint_name, settings)
             member_source_run = (
                 store.last_successful_complete_run("members")
                 if derived_run and not fixture_run else None)
@@ -171,15 +1095,30 @@ def _run_shared(args: argparse.Namespace, endpoint_name: str, operation) -> int:
                                                                     if member_source_run else None),
                                                   "registry_file": str(Path(args.registry_file or OFFICE_REGISTRY_FILE).resolve()) if registry_run else None,
                                                   "api_url": None if registry_run or derived_run or args.fixture else getattr(settings, {
-                                                       "houses": "api_url", "parties": "parties_api_url",
-                                                       "constituencies": "constituencies_api_url"}[endpoint_name]),
-                                                  "limit": settings.limit})
+                                                    "houses": "api_url", "parties": "parties_api_url",
+                                                        "constituencies": "constituencies_api_url"}[endpoint_name]),
+                                                   "limit": settings.limit},
+                                      versions=versions)
+            args.endpoint = endpoint_name
+            _begin_run_context(args, run_id, endpoint_name, versions)
             try:
                 result = operation(args, store, run_id)
+                context = _run_context(args, run_id=run_id)
+                _finalize_run(store, args, run_id=run_id, endpoint=endpoint_name,
+                              versions=versions,
+                              loader=context.get("loader") if context else None,
+                              client=context.get("client") if context else None)
             except Exception as error:
-                store.finish_run(run_id, success=False, error=f"{type(error).__name__}: {error}")
+                context = _run_context(args, run_id=run_id)
+                if not (context and (context.get("finished")
+                                     or context.get("catalog_state_unresolved"))):
+                    scope = getattr(error, "scope", "system")
+                    classification = getattr(error, "classification", "system_failure")
+                    _record_fatal_run(
+                        store, args, run_id=run_id, endpoint=endpoint_name,
+                        error=error, failure_scope=scope,
+                        failure_classification=classification)
                 raise
-            store.finish_run(run_id, success=True)
             return result
 
 
@@ -234,7 +1173,10 @@ def _write_reference_report(args: argparse.Namespace, report: dict) -> None:
 def _reference_inputs(*, endpoint_name: str, endpoint_records: list[dict] | None,
                       member_records: list[dict] | None, store: CoreStateStore | None,
                       raw_root: Path, endpoint_is_authoritative: bool,
-                      member_is_authoritative: bool) -> tuple[dict, dict]:
+                      member_is_authoritative: bool,
+                      member_record_pointers: dict[str, list[dict]] | None = None,
+                      endpoint_record_pointers: dict[str, dict[str, list[dict]]] | None = None
+                      ) -> tuple[dict, dict]:
     """Assemble current and latest complete source observations deterministically."""
     member_evidence = None
     if member_records is None and store is not None:
@@ -242,16 +1184,30 @@ def _reference_inputs(*, endpoint_name: str, endpoint_records: list[dict] | None
         if loaded is not None:
             member_records, member_evidence = loaded
             member_is_authoritative = True
+            capture_directory = member_evidence.get("capture_directory")
+            member_record_pointers = (capture_record_pointers(
+                Path(capture_directory), raw_root, "members")
+                if isinstance(capture_directory, str) else {})
     member_records = member_records or []
+    member_record_pointers = member_record_pointers or {}
 
     sources: dict[str, tuple[list[dict], bool]] = {}
+    endpoint_record_pointers = endpoint_record_pointers or {}
     for endpoint in ("parties", "constituencies"):
         if endpoint == endpoint_name and endpoint_records is not None:
             sources[endpoint] = (endpoint_records, endpoint_is_authoritative)
             continue
         loaded = (load_latest_complete_capture(raw_root, store, endpoint)
                   if store is not None else None)
-        sources[endpoint] = ((loaded[0], True) if loaded is not None else ([], False))
+        if loaded is None:
+            sources[endpoint] = ([], False)
+        else:
+            sources[endpoint] = (loaded[0], True)
+            capture_directory = loaded[1].get("capture_directory")
+            endpoint_record_pointers[endpoint] = (capture_record_pointers(
+                Path(capture_directory), raw_root, endpoint)
+                if isinstance(capture_directory, str) else {})
+
     result = build_reference_census(
         member_records=member_records,
         party_records=sources["parties"][0],
@@ -260,12 +1216,190 @@ def _reference_inputs(*, endpoint_name: str, endpoint_records: list[dict] | None
         party_capture_complete=sources["parties"][1],
         constituency_capture_complete=sources["constituencies"][1],
     )
+    entity_source_pointers: dict[str, dict[str, list[dict]]] = {
+        endpoint: {} for endpoint in ("parties", "constituencies", "committees")}
+    for observation in result["report"]["observations"]:
+        if (not observation.get("canonical_iri")
+                or observation.get("consolidation_result") != "resolved"
+                or any(item.get("category") == "malformed_observation"
+                       for item in observation.get("diagnostics", []))):
+            continue
+        kind = observation["reference_kind"]
+        owner_endpoint = {"party": "parties", "representation": "constituencies",
+                          "committee": "committees"}[kind]
+        identity = observation["canonical_iri"]
+        if observation["observation_source"] == "members":
+            base_pointers = member_record_pointers.get(
+                observation.get("member_iri"), [])
+            source_path = observation.get("json_pointer")
+            match = re.match(r"^/results/[0-9]+(/.*)$", source_path or "")
+            if match is None:
+                raise ValueError(
+                    f"cannot resolve nested Members source pointer for {identity}")
+            pointers = [{**pointer, "json_pointer":
+                         pointer["json_pointer"].rstrip("/") + match.group(1)}
+                        for pointer in base_pointers]
+        else:
+            pointers = endpoint_record_pointers.get(
+                observation["observation_source"], {}).get(identity, [])
+        if not pointers:
+            continue
+        bucket = entity_source_pointers[owner_endpoint].setdefault(identity, [])
+        bucket.extend(pointers)
+    for owners in entity_source_pointers.values():
+        for identity, pointers in list(owners.items()):
+            unique = {(pointer["path"], pointer["sha256"], pointer["json_pointer"]): pointer
+                      for pointer in pointers}
+            owners[identity] = [unique[key] for key in sorted(unique)]
     provenance = {
         "members": member_evidence,
         "parties": sources["parties"][1],
         "constituencies": sources["constituencies"][1],
+        "entity_source_pointers": entity_source_pointers,
     }
     return result, provenance
+
+
+def _record_pointers_by_identity(records: list[dict], endpoint: str,
+                                 pointers: list[dict]) -> dict[str, list[dict]]:
+    """Associate API result records with their original page/array pointers."""
+    key = {"parties": "party", "constituencies": "constituencyOrPanel",
+           "members": "member"}.get(endpoint)
+    if key is None or len(records) != len(pointers):
+        return {}
+    result: dict[str, list[dict]] = {}
+    for wrapper, pointer in zip(records, pointers):
+        if not isinstance(pointer, dict):
+            continue
+        value = wrapper.get(key) if isinstance(wrapper, dict) else None
+        if isinstance(value, dict) and isinstance(value.get("uri"), str):
+            result.setdefault(str(iri(value["uri"])), []).append(pointer)
+    return result
+
+
+def _json_pointer_value(document: object, pointer: str) -> object:
+    if pointer == "":
+        return document
+    if not isinstance(pointer, str) or not pointer.startswith("/"):
+        raise ValueError("source record evidence is not an RFC 6901 JSON pointer")
+    current = document
+    for encoded in pointer[1:].split("/"):
+        token = encoded.replace("~1", "/").replace("~0", "~")
+        if re.search(r"~(?![01])", encoded):
+            raise ValueError("source record evidence contains an invalid JSON pointer escape")
+        if isinstance(current, list):
+            if not token.isdigit() or (len(token) > 1 and token.startswith("0")):
+                raise ValueError("source record evidence has an invalid array index")
+            current = current[int(token)]
+        elif isinstance(current, dict):
+            current = current[token]
+        else:
+            raise ValueError("source record evidence pointer does not resolve in its page")
+    return current
+
+
+def _source_evidence_for_record(raw_root: Path, pointer: dict, *,
+                                entity_iri: str | None = None,
+                                house_code: str | None = None) -> dict:
+    """Verify a raw-page pointer and attach its exact durable observation key."""
+    raw_root = Path(raw_root).expanduser().resolve()
+    raw_path = (raw_root / pointer["path"]).resolve()
+    try:
+        raw_path.relative_to(raw_root)
+    except ValueError as error:
+        raise ValueError("source record pointer escapes the immutable raw root") from error
+    body = raw_path.read_bytes()
+    digest = hashlib.sha256(body).hexdigest()
+    metadata = _raw_page_metadata(raw_root, pointer)
+    if digest != pointer.get("sha256") or metadata.get("sha256") != digest:
+        raise ValueError("source record pointer does not match its immutable page hash")
+    try:
+        document = json.loads(body)
+        record = _json_pointer_value(document, pointer["json_pointer"])
+    except (UnicodeError, json.JSONDecodeError, KeyError, IndexError, TypeError) as error:
+        raise ValueError("source record JSON pointer does not resolve in its immutable page") from error
+
+    def contains(value: object, key: str, expected: str) -> bool:
+        if isinstance(value, dict):
+            if value.get(key) == expected:
+                return True
+            return any(contains(child, key, expected) for child in value.values())
+        if isinstance(value, list):
+            return any(contains(child, key, expected) for child in value)
+        return False
+
+    if entity_iri is not None and not contains(record, "uri", entity_iri):
+        raise ValueError(
+            f"source record pointer does not contain the described entity {entity_iri}")
+    if house_code is not None and not contains(record, "houseCode", house_code):
+        raise ValueError(
+            f"source record pointer does not establish persistent House code {house_code}")
+    return {
+        "source_hash": digest,
+        "observed_at": metadata["retrieved_at"],
+        "evidence_pointer": _raw_resource_pointer(raw_path, pointer["json_pointer"]),
+    }
+
+
+def _build_shared_entity_lineage(endpoint: str, graph: Graph, *, raw_root: Path,
+                                 source_pointers: dict[str, list[dict]],
+                                 store: CoreStateStore,
+                                 retained_graph: Graph | None = None) -> dict[str, dict]:
+    """Build complete entity lineage before staging or replacing a shared graph."""
+    entities = shared_graph_entity_iris(endpoint, graph)
+    retained = (shared_graph_entity_iris(endpoint, retained_graph)
+                if retained_graph is not None else set())
+    prior = store.endpoint_publication(endpoint) or {}
+    prior_hash = prior.get("published_payload_hash")
+    lineage: dict[str, dict] = {}
+    for entity_iri in sorted(entities):
+        if entity_iri in retained:
+            if not isinstance(prior_hash, str):
+                raise ValueError(
+                    f"cannot safely attribute retained {endpoint} entity {entity_iri}: "
+                    "the previous clean graph version is unavailable")
+            lineage[entity_iri] = {"sources": [], "prior_payload_hash": prior_hash}
+            continue
+        pointers = source_pointers.get(entity_iri, [])
+        if not pointers:
+            raise ValueError(
+                f"cannot safely establish source attribution for shared {endpoint} entity "
+                f"{entity_iri}: no exact source record pointer is available")
+        sources = [_source_evidence_for_record(raw_root, pointer,
+                                               entity_iri=entity_iri)
+                   for pointer in pointers]
+        lineage[entity_iri] = {"sources": sources, "prior_payload_hash": None}
+    return lineage
+
+
+def _build_houses_entity_lineage(records: list[dict], pointers: list[dict], *,
+                                 graph: Graph, raw_root: Path) -> dict[str, dict]:
+    """Link each HouseTerm and persistent House to its matching source record."""
+    sources: dict[str, list[dict]] = {}
+    for wrapper, pointer in zip(records, pointers):
+        house = wrapper.get("house") if isinstance(wrapper, dict) else None
+        if not isinstance(house, dict):
+            continue
+        code = house.get("houseCode")
+        if code not in PERSISTENT_HOUSES:
+            continue
+        term_iri = str(iri(house["uri"]))
+        persistent_house = str(PERSISTENT_HOUSES[code][0])
+        sources.setdefault(term_iri, []).append(
+            _source_evidence_for_record(raw_root, pointer, entity_iri=term_iri))
+        sources.setdefault(persistent_house, []).append(
+            _source_evidence_for_record(raw_root, pointer, house_code=code))
+    entities = shared_graph_entity_iris("houses", graph)
+    lineage = {}
+    for entity_iri in sorted(entities):
+        entity_sources = sources.get(entity_iri, [])
+        if not entity_sources:
+            raise ValueError(
+                f"cannot safely establish source attribution for shared Houses entity "
+                f"{entity_iri}: no exact source record pointer is available")
+        lineage[entity_iri] = {"sources": entity_sources,
+                               "prior_payload_hash": None}
+    return lineage
 
 
 def _shared_graph_from_payload(payload: str, expected_hash: str | None,
@@ -281,7 +1415,8 @@ def _shared_graph_from_payload(payload: str, expected_hash: str | None,
 
 
 def _previous_reference_graphs(store: CoreStateStore, client,
-                               loader: FusekiGraphStoreLoader) -> dict[str, Graph]:
+                               loader: FusekiGraphStoreLoader,
+                               publishing_run_id: str | None = None) -> dict[str, Graph]:
     """Recover dirty shared graphs and load their exact last accepted payloads."""
     previous = {}
     for endpoint_name, graph_iri in REFERENCE_GRAPHS.items():
@@ -298,7 +1433,8 @@ def _previous_reference_graphs(store: CoreStateStore, client,
             verify_core_graph(client, graph_iri, pending)
             store.complete_endpoint_publication(
                 endpoint_name, graph_iri, pending_hash,
-                coverage_authoritative=metadata.get("pending_coverage_authoritative"))
+                coverage_authoritative=metadata.get("pending_coverage_authoritative"),
+                publishing_run_id=publishing_run_id)
             metadata = store.endpoint_publication(endpoint_name)
 
         if metadata and metadata.get("publication_state") not in {"clean", None}:
@@ -330,13 +1466,20 @@ def _publish_reference_graphs(graphs: dict[str, Graph], *, store: CoreStateStore
                               loader: FusekiGraphStoreLoader, client,
                               coverage_authoritative: bool | None,
                               endpoints: tuple[str, ...] = ("parties", "constituencies", "committees"),
-                              member_source_run_id: str | None = None) -> int:
+                              member_source_run_id: str | None = None,
+                              publishing_run_id: str | None = None,
+                              entity_lineage_by_endpoint: dict[str, dict[str, dict]] | None = None
+                              ) -> int:
     _assert_reference_source_not_older(store, endpoints, member_source_run_id)
     published = 0
     for endpoint_name in endpoints:
         graph_iri = REFERENCE_GRAPHS[endpoint_name]
         payload = ntriples(graphs[endpoint_name])
         payload_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        entity_lineage = (entity_lineage_by_endpoint or {}).get(endpoint_name)
+        if entity_lineage is None:
+            raise ValueError(
+                f"cannot publish shared {endpoint_name} graph without complete entity lineage")
         prior = store.endpoint_publication(endpoint_name)
         if (coverage_authoritative is False and prior
                 and prior.get("graph_iri") == graph_iri
@@ -348,11 +1491,15 @@ def _publish_reference_graphs(graphs: dict[str, Graph], *, store: CoreStateStore
         authority_already_recorded = (
             coverage_authoritative is not True
             or bool(prior and prior.get("coverage_authoritative") is True))
+        legacy_gap = any(
+            item["endpoint"] == endpoint_name and item["graph_iri"] == graph_iri
+            and item["status"] == "pending"
+            for item in store.provenance_incomplete_records())
         if (prior and prior.get("publication_state") == "clean"
                 and prior.get("graph_iri") == graph_iri
                 and prior.get("published_payload_hash") == payload_hash
                 and prior.get("published_payload") == payload
-                and authority_already_recorded):
+                and authority_already_recorded and not legacy_gap):
             try:
                 verify_core_graph(client, graph_iri, payload)
             except ValueError:
@@ -367,12 +1514,15 @@ def _publish_reference_graphs(graphs: dict[str, Graph], *, store: CoreStateStore
         digest = store.mark_endpoint_dirty(
             endpoint_name, graph_iri, payload,
             coverage_authoritative=coverage_authoritative,
-            member_source_run_id=member_source_run_id)
+            member_source_run_id=member_source_run_id,
+            run_id=publishing_run_id,
+            entity_lineage=entity_lineage)
         loader.replace(graph_iri, payload, content_type="application/n-triples")
         verify_core_graph(client, graph_iri, payload)
         store.complete_endpoint_publication(
             endpoint_name, graph_iri, digest,
-            coverage_authoritative=coverage_authoritative)
+            coverage_authoritative=coverage_authoritative,
+            publishing_run_id=publishing_run_id)
         published += 1
     return published
 
@@ -394,45 +1544,110 @@ def _run_reference_impl(args: argparse.Namespace, store: CoreStateStore | None =
     graph_iri, url_attr, transform, validator, mapping_version = REFERENCE_ENDPOINTS[endpoint_name]
     settings = Settings.from_environment()
     settings = Settings(**{**settings.__dict__, "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir})
+    raw_root = settings.raw_dir.expanduser().resolve()
+    versions = (_run_context(args, run_id=run_id) or {}).get(
+        "versions", _run_versions(endpoint_name, settings))
+    extraction_id = run_id or str(uuid.uuid4())
+    source_run_id = run_id or extraction_id
+    evidence: list[dict[str, str]] = []
+    report_path: Path | None = None
     if args.fixture:
         records, body = _reference_fixture_records(Path(args.fixture), endpoint_name)
-        persist_raw(root=settings.raw_dir, endpoint=str(Path(args.fixture)), params={"skip": 0, "limit": len(records)}, body=body,
-                    status=200, retrieved_at=datetime.now(timezone.utc), ontology_version=REFERENCE_ONTOLOGY_VERSION,
-                    mapping_version=mapping_version, endpoint_name=endpoint_name, extraction_id=run_id)
+        observed_at = datetime.now(timezone.utc)
+        raw_path, _ = persist_raw(
+            root=raw_root, endpoint=str(Path(args.fixture).resolve()),
+            params={"skip": 0, "limit": len(records)}, body=body, status=200,
+            retrieved_at=observed_at,
+            ontology_version=versions["ontology_version"] or REFERENCE_ONTOLOGY_VERSION,
+            mapping_version=versions["mapping_version"] or mapping_version,
+            endpoint_name=endpoint_name, extraction_id=extraction_id)
+        _record_raw_page(args, store, endpoint=endpoint_name, run_id=run_id,
+                         raw_path=raw_path, raw_root=raw_root, body=body,
+                         source_url=None, parameters={"skip": 0, "limit": len(records)},
+                         observed_at=observed_at, versions=versions)
+        fixture_value = json.loads(body)
+        base_pointer = "/results" if isinstance(fixture_value, dict) else ""
+        evidence.extend(_raw_contract_pointer(
+            raw_path, raw_root, body,
+            f"{base_pointer}/{index}" if base_pointer else f"/{index}")
+            for index, _ in enumerate(records))
+        report_path = raw_path.parent / "source-drift.json"
     else:
         records = []
         api_url = getattr(settings, url_attr)
         count_field = {"parties": "partyCount",
                        "constituencies": "constituencyCount"}[endpoint_name]
         advertised = None
-        for page in ApiClient(api_url, retries=settings.retries, timeout=settings.timeout).harvest(limit=settings.limit):
-            persist_raw(root=settings.raw_dir, endpoint=api_url, params=page.params, body=page.body, status=page.status,
-                    ontology_version=REFERENCE_ONTOLOGY_VERSION, mapping_version=mapping_version, endpoint_name=endpoint_name,
-                    extraction_id=run_id)
-            decoded = json.loads(page.body)
+        last_page: tuple[Path, bytes, object] | None = None
+        for page in _safe_harvest(
+                args, ApiClient(api_url, retries=settings.retries,
+                                timeout=settings.timeout), limit=settings.limit):
+            observed_at = datetime.now(timezone.utc)
+            raw_path, _ = persist_raw(
+                root=raw_root, endpoint=api_url, params=page.params, body=page.body,
+                status=page.status, retrieved_at=observed_at,
+                ontology_version=versions["ontology_version"],
+                mapping_version=versions["mapping_version"],
+                endpoint_name=endpoint_name, extraction_id=extraction_id)
+            _record_raw_page(args, store, endpoint=endpoint_name, run_id=run_id,
+                             raw_path=raw_path, raw_root=raw_root, body=page.body,
+                              source_url=api_url, parameters=page.params,
+                              observed_at=observed_at, versions=versions)
+            decoded = _decode_api_page(page.body, endpoint_name, args)
+            envelope_report = _api_envelope_contract(
+                args, endpoint_name, decoded, run_id=source_run_id,
+                raw_path=raw_path, raw_root=raw_root, body=page.body,
+                count_field=count_field, expected_count=advertised)
+            _raise_on_envelope_failure(envelope_report, endpoint_name)
             if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list):
-                raise ValueError(f"every {endpoint_name} API page must contain a results list")
+                raise _RunFailure(f"every {endpoint_name} API page must contain a results list")
             counts = decoded.get("head", {}).get("counts") if isinstance(decoded.get("head"), dict) else None
             count = counts.get(count_field) if isinstance(counts, dict) else None
             if isinstance(count, bool) or not isinstance(count, int) or count < 0:
-                raise ValueError(f"every {endpoint_name} API page must contain a nonnegative integer {count_field}")
+                raise _RunFailure(f"every {endpoint_name} API page must contain a nonnegative integer {count_field}")
             if advertised is None:
                 advertised = count
             elif count != advertised:
-                raise ValueError(f"{endpoint_name} advertised count changed during scan")
+                raise _RunFailure(f"{endpoint_name} advertised count changed during scan")
             page_records = decoded.get("results", decoded) if isinstance(decoded, dict) else decoded
             records.extend(page_records)
+            evidence.extend(_raw_contract_pointer(
+                raw_path, raw_root, page.body, f"/results/{index}")
+            for index in range(len(page_records)))
+            report_path = raw_path.parent / "source-drift.json"
+            last_page = (raw_path, page.body, decoded)
         if advertised is None or advertised != len(records):
-            raise ValueError(
+            if last_page is not None and advertised is not None:
+                last_path, last_body, last_decoded = last_page
+                envelope_report = _api_envelope_contract(
+                    args, endpoint_name, last_decoded, run_id=source_run_id,
+                    raw_path=last_path, raw_root=raw_root, body=last_body,
+                    count_field=count_field,
+                    observed_record_count=len(records))
+                _raise_on_envelope_failure(envelope_report, endpoint_name)
+            raise _RunFailure(
                 f"{endpoint_name} capture contains {len(records)} records, not its advertised {advertised}")
-    source_graph = transform(records)
-    validator(records, source_graph)  # source gate precedes any loader construction
+    source_report = _source_contract(args, endpoint_name, records,
+                                     run_id=source_run_id, evidence=evidence,
+                                     report_path=report_path)
+    if source_report["source_failed"] or source_report["failed_record_indices"]:
+        raise _RunFailure(
+            f"{endpoint_name} source contract contains incompatible records: "
+            f"{_contract_failure_detail(source_report)}")
+    try:
+        source_graph = transform(records)
+        validator(records, source_graph)  # source gate precedes any loader construction
+    except Exception as error:
+        raise _RunFailure(
+            f"{endpoint_name} shared source graph cannot be transformed safely: {error}") from error
 
     census, provenance = _reference_inputs(
         endpoint_name=endpoint_name, endpoint_records=records, member_records=None,
         store=store, raw_root=settings.raw_dir,
         endpoint_is_authoritative=not bool(args.fixture),
         member_is_authoritative=False,
+        endpoint_record_pointers={endpoint_name: _record_pointers_by_identity(
+            records, endpoint_name, evidence)},
     )
     member_source_run_id = (provenance["members"]["run_id"]
                             if provenance["members"] is not None else None)
@@ -459,18 +1674,32 @@ def _run_reference_impl(args: argparse.Namespace, store: CoreStateStore | None =
         loader = FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user,
                                        password=settings.fuseki_password,
                                        timeout=settings.timeout)
-        previous = _previous_reference_graphs(store, client, loader)
+        context = _run_context(args, run_id=run_id)
+        if context is not None:
+            context.update(loader=loader, client=client)
+            context["safe_publication"] = True
+        previous = _previous_reference_graphs(
+            store, client, loader, publishing_run_id=run_id)
         candidates = build_reference_candidates(
             census, member_graph=member_graph, previous_graphs=previous)
         publish_all = bool(not args.fixture and provenance["members"] is not None)
         publish_set = (("parties", "constituencies", "committees") if publish_all
                        else (endpoint_name,))
+        entity_lineages = {
+            name: _build_shared_entity_lineage(
+                name, candidates["graphs"][name], raw_root=raw_root,
+                source_pointers=provenance["entity_source_pointers"].get(name, {}),
+                store=store, retained_graph=candidates["retained_graphs"][name])
+            for name in publish_set
+        }
         published_graphs = _publish_reference_graphs(
             candidates["graphs"], store=store, loader=loader, client=client,
             coverage_authoritative=(True if publish_all else
                                     False if args.fixture else None),
             endpoints=publish_set,
-            member_source_run_id=member_source_run_id)
+            member_source_run_id=member_source_run_id,
+            publishing_run_id=run_id,
+            entity_lineage_by_endpoint=entity_lineages)
         if hasattr(client, "query"):
             verify_reference_closure(client)
         if endpoint_name == "parties":
@@ -492,6 +1721,9 @@ def _run_reference_impl(args: argparse.Namespace, store: CoreStateStore | None =
                         _handoff_warning("party", error)
     elif not args.offline and not args.fixture:
         raise ValueError("no Fuseki GSP endpoint configured; use --offline for fixture/developer runs")
+    context = _run_context(args, run_id=run_id)
+    if context is not None and endpoint:
+        context["safe_publication"] = True
     if args.output_ttl:
         Path(args.output_ttl).write_text(
             turtle(candidates["graphs"][endpoint_name]), encoding="utf-8")
@@ -504,6 +1736,12 @@ def _run_reference_impl(args: argparse.Namespace, store: CoreStateStore | None =
                       "published_graphs": published_graphs,
                       "reference_census": reference_census_summary(census["report"]),
                       "reference_closure": candidates["closure"]}, sort_keys=True))
+    _set_run_metrics(args, counters={"extracted": len(records),
+                                     "changed": len(records), "unchanged": 0,
+                                     "published_graphs": published_graphs,
+                                     "quarantined": 0, "validation_failures": 0,
+                                     "api_failures": 0,
+                                     "publication_succeeded": int(bool(endpoint))})
     return 0
 
 
@@ -532,6 +1770,7 @@ def _run_committees_impl(args: argparse.Namespace, store: CoreStateStore | None 
         member_records, _, advertised = _members_fixture_records(Path(args.fixture))
         complete_fixture = advertised is not None and advertised == len(member_records)
         member_source_run_id = None
+        member_record_pointers = {}
     else:
         if store is None:
             raise ValueError("Committee owner generation requires a complete Members capture")
@@ -540,6 +1779,10 @@ def _run_committees_impl(args: argparse.Namespace, store: CoreStateStore | None 
             raise ValueError("Committee owner generation requires a successful complete Members API run")
         member_records = loaded[0]
         member_source_run_id = loaded[1]["run_id"]
+        capture_directory = loaded[1].get("capture_directory")
+        member_record_pointers = (capture_record_pointers(
+            Path(capture_directory), settings.raw_dir, "members")
+            if isinstance(capture_directory, str) else {})
         complete_fixture = False
 
     census, provenance = _reference_inputs(
@@ -547,6 +1790,7 @@ def _run_committees_impl(args: argparse.Namespace, store: CoreStateStore | None 
         member_records=member_records, store=store, raw_root=settings.raw_dir,
         endpoint_is_authoritative=False,
         member_is_authoritative=not bool(args.fixture),
+        member_record_pointers=member_record_pointers,
     )
     member_graph = candidate_member_dataset(member_records)
     _write_reference_report(args, census["report"])
@@ -572,13 +1816,27 @@ def _run_committees_impl(args: argparse.Namespace, store: CoreStateStore | None 
         loader = FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user,
                                        password=settings.fuseki_password,
                                        timeout=settings.timeout)
-        previous = _previous_reference_graphs(store, client, loader)
+        context = _run_context(args, run_id=run_id)
+        if context is not None:
+            context.update(loader=loader, client=client)
+            context["safe_publication"] = True
+        previous = _previous_reference_graphs(
+            store, client, loader, publishing_run_id=run_id)
         candidates = build_reference_candidates(
             census, member_graph=member_graph, previous_graphs=previous)
+        entity_lineages = {
+            name: _build_shared_entity_lineage(
+                name, candidates["graphs"][name], raw_root=settings.raw_dir,
+                source_pointers=provenance["entity_source_pointers"].get(name, {}),
+                store=store, retained_graph=candidates["retained_graphs"][name])
+            for name in ("parties", "constituencies", "committees")
+        }
         published = _publish_reference_graphs(
             candidates["graphs"], store=store, loader=loader, client=client,
             coverage_authoritative=True,
             member_source_run_id=member_source_run_id,
+            publishing_run_id=run_id,
+            entity_lineage_by_endpoint=entity_lineages,
         )
         verify_reference_closure(client)
     elif endpoint and args.fixture:
@@ -1152,8 +2410,10 @@ def _deduplicate_members(records: list[dict], advertised: int | None) -> list[di
             if source_hash(unique[identity]["member"]) != source_hash(member): raise ValueError(f"conflicting duplicate Member identity: {identity}")
             continue
         unique[identity] = wrapper
-    if advertised is not None and (isinstance(advertised, bool) or not isinstance(advertised, int) or advertised != len(unique)):
-        raise ValueError(f"Members unique count {len(unique)} does not match advertised count {advertised!r}")
+    if advertised is not None and (
+            isinstance(advertised, bool) or not isinstance(advertised, int)
+            or advertised != len(unique)):
+        raise _AdvertisedCountMismatch("Members", len(unique), advertised)
     return [unique[key] for key in sorted(unique)]
 
 
@@ -1222,15 +2482,27 @@ def _run_members_impl_body(args: argparse.Namespace, store: CoreStateStore | Non
     settings = Settings(**{**settings.__dict__, "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir})
     raw_root = settings.raw_dir.expanduser().resolve()
     extraction_id = run_id or str(uuid.uuid4())
+    source_run_id = run_id or extraction_id
+    versions = (_run_context(args, run_id=run_id) or {}).get(
+        "versions", _run_versions("members", settings))
     records_with_pointers: list[tuple[dict, dict]] = []
+    report_path: Path | None = None
+    last_api_page: tuple[Path, bytes, object] | None = None
     if args.fixture:
         fixture = Path(args.fixture)
         records, body, advertised, shape = _office_fixture_records(fixture)
+        observed_at = datetime.now(timezone.utc)
         raw_path, _ = persist_raw(root=raw_root, endpoint=str(fixture.resolve()),
                     params={"skip": 0, "limit": len(records)}, body=body, status=200,
-                    retrieved_at=datetime.now(timezone.utc), ontology_version=REFERENCE_ONTOLOGY_VERSION,
-                     mapping_version=MEMBER_MAPPING_VERSION,
+                    retrieved_at=observed_at,
+                    ontology_version=versions["ontology_version"] or REFERENCE_ONTOLOGY_VERSION,
+                    mapping_version=versions["mapping_version"] or MEMBER_MAPPING_VERSION,
                     endpoint_name="members", extraction_id=extraction_id)
+        _record_raw_page(args, store, endpoint="members", run_id=run_id,
+                         raw_path=raw_path, raw_root=raw_root, body=body,
+                         source_url=None, parameters={"skip": 0, "limit": len(records)},
+                         observed_at=observed_at, versions=versions)
+        report_path = raw_path.parent / "source-drift.json"
         for index, wrapper in enumerate(records):
             pointer = "" if shape == "single" else (
                 f"/results/{index}" if shape == "results" else f"/{index}")
@@ -1238,16 +2510,32 @@ def _run_members_impl_body(args: argparse.Namespace, store: CoreStateStore | Non
                 wrapper, _office_raw_pointer(raw_path, raw_root, body, pointer)))
     else:
         records, advertised = [], None
-        for page in ApiClient(settings.members_api_url, retries=settings.retries, timeout=settings.timeout).harvest(limit=settings.limit):
-            raw_path, _ = persist_raw(root=raw_root, endpoint=settings.members_api_url, params=page.params, body=page.body, status=page.status,
-                        ontology_version=REFERENCE_ONTOLOGY_VERSION, mapping_version=MEMBER_MAPPING_VERSION, endpoint_name="members", extraction_id=extraction_id)
-            decoded = json.loads(page.body)
+        for page in _safe_harvest(
+                args, ApiClient(settings.members_api_url, retries=settings.retries,
+                                timeout=settings.timeout), limit=settings.limit):
+            observed_at = datetime.now(timezone.utc)
+            raw_path, _ = persist_raw(root=raw_root, endpoint=settings.members_api_url,
+                        params=page.params, body=page.body, status=page.status,
+                        retrieved_at=observed_at,
+                        ontology_version=versions["ontology_version"],
+                        mapping_version=versions["mapping_version"],
+                        endpoint_name="members", extraction_id=extraction_id)
+            _record_raw_page(args, store, endpoint="members", run_id=run_id,
+                             raw_path=raw_path, raw_root=raw_root, body=page.body,
+                              source_url=settings.members_api_url, parameters=page.params,
+                              observed_at=observed_at, versions=versions)
+            decoded = _decode_api_page(page.body, "Members", args)
+            envelope_report = _api_envelope_contract(
+                args, "members", decoded, run_id=source_run_id,
+                raw_path=raw_path, raw_root=raw_root, body=page.body,
+                count_field="memberCount", expected_count=advertised)
+            _raise_on_envelope_failure(envelope_report, "Members")
             if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list):
-                raise ValueError("every Members API page must be an object envelope with a results list")
+                raise _RunFailure("every Members API page must be an object envelope with a results list")
             counts = decoded.get("head", {}).get("counts") if isinstance(decoded.get("head"), dict) else None
             count = counts.get("memberCount") if isinstance(counts, dict) else None
             if isinstance(count, bool) or not isinstance(count, int) or count < 0:
-                raise ValueError("every Members API page must contain a nonnegative integer head.counts.memberCount")
+                raise _RunFailure("every Members API page must contain a nonnegative integer head.counts.memberCount")
             page_records = decoded["results"]
             records.extend(page_records)
             for index, wrapper in enumerate(page_records):
@@ -1255,10 +2543,132 @@ def _run_members_impl_body(args: argparse.Namespace, store: CoreStateStore | Non
                     wrapper, _office_raw_pointer(
                         raw_path, raw_root, page.body, f"/results/{index}")))
             if advertised is None: advertised = count
-            elif count != advertised: raise ValueError("Members advertised count changed during scan")
-    records = _deduplicate_members(records, advertised)
+            elif count != advertised: raise _RunFailure("Members advertised count changed during scan")
+            last_api_page = (raw_path, page.body, decoded)
+            report_path = raw_path.parent / "source-drift.json"
+    contract_report = _source_contract(
+        args, "members", [wrapper for wrapper, _pointer in records_with_pointers],
+        run_id=source_run_id,
+        evidence=[pointer for _wrapper, pointer in records_with_pointers],
+        report_path=report_path)
+    failed_indices = set(contract_report["failed_record_indices"])
+    if contract_report["source_failed"]:
+        raise _RunFailure("Members source container violates the source contract")
+    retry_candidates = _retry_candidates(store, "members")
+    retry_candidates_by_hash = _retry_candidates_by_hash(
+        store, "members") if not args.fixture and not args.offline else {}
+    allow_unidentified_retry = not args.fixture and not args.offline
+    for index in sorted(failed_indices):
+        wrapper, pointer = records_with_pointers[index]
+        member = wrapper.get("member") if isinstance(wrapper, dict) else None
+        identity = member.get("uri") if isinstance(member, dict) else None
+        source_digest = (source_hash(member) if isinstance(member, dict)
+                         else hashlib.sha256(json.dumps(
+                             wrapper, ensure_ascii=False, sort_keys=True,
+                             separators=(",", ":"), default=str).encode()).hexdigest())
+        metadata = _raw_page_metadata(raw_root, pointer)
+        error = "; ".join(
+            item["change"] + " at " + item["json_pointer"]
+            for item in contract_report["findings"]
+            if item.get("severity") == "record" and item.get("record_index") == index)
+        _record_quarantine(
+            store, endpoint="members", run_id=run_id, source_hash=source_digest,
+            observed_at=metadata["retrieved_at"],
+            evidence_pointer=_raw_resource_pointer(
+                raw_root / pointer["path"], pointer["json_pointer"]),
+            stage="source_contract", error=error or "record violates source contract",
+            resource_iri=identity if isinstance(identity, str) else None,
+            classification="record_source_contract_failure", versions=versions)
+        started = _start_retries(
+            store, _retry_rows_for_record(
+                retry_candidates, retry_candidates_by_hash,
+                identity if isinstance(identity, str) else None, source_digest,
+                include_unidentified=allow_unidentified_retry), run_id)
+        _finish_retries(store, started, run_id, success=False,
+                        error="record still violates the source contract", args=args)
+    valid_with_pointers = [item for index, item in enumerate(records_with_pointers)
+                           if index not in failed_indices]
+    # Cheap source validation is also a per-record gate. Run it before any
+    # complete-scan office reconciliation so an invalid record cannot assert
+    # source absence in that independent ledger.
+    preflight_valid = []
+    preflight_failure_count = 0
+    for wrapper, pointer in valid_with_pointers:
+        try:
+            validate_member_source(wrapper)
+        except Exception as error:
+            member = wrapper.get("member") if isinstance(wrapper, dict) else None
+            identity = member.get("uri") if isinstance(member, dict) else None
+            digest = (source_hash(member) if isinstance(member, dict)
+                      else hashlib.sha256(json.dumps(
+                          wrapper, ensure_ascii=False, sort_keys=True,
+                          separators=(",", ":"), default=str).encode()).hexdigest())
+            metadata = _raw_page_metadata(raw_root, pointer)
+            _record_quarantine(
+                store, endpoint="members", run_id=run_id, source_hash=digest,
+                observed_at=metadata["retrieved_at"],
+                evidence_pointer=_raw_resource_pointer(
+                    raw_root / pointer["path"], pointer["json_pointer"]),
+                stage="member_source_validation", error=f"{type(error).__name__}: {error}",
+                resource_iri=identity if isinstance(identity, str) else None,
+                classification="record_source_validation_failure", versions=versions)
+            preflight_failure_count += 1
+            _degrade_run(args, error=f"Member source record failed preflight: {error}",
+                         classification="record_source_validation_failure")
+            started = _start_retries(
+                store, _retry_rows_for_record(
+                    retry_candidates, retry_candidates_by_hash,
+                    identity if isinstance(identity, str) else None, digest,
+                    include_unidentified=allow_unidentified_retry), run_id)
+            _finish_retries(store, started, run_id, success=False,
+                            error=f"{type(error).__name__}: {error}", args=args)
+            continue
+        preflight_valid.append((wrapper, pointer))
+    valid_records = [wrapper for wrapper, _pointer in preflight_valid]
+    if failed_indices:
+        _degrade_run(args, error=f"{len(failed_indices)} Member record(s) failed source contract",
+                     classification="record_source_contract_failure")
+    contract_failure_count = len(failed_indices)
+    record_failure_count = contract_failure_count + preflight_failure_count
+    try:
+        records = (_deduplicate_members(
+            valid_records, advertised if record_failure_count == 0 else None)
+            if valid_records else [])
+    except _AdvertisedCountMismatch as error:
+        if last_api_page is not None:
+            last_path, last_body, last_envelope = last_api_page
+            envelope_report = _api_envelope_contract(
+                args, "members", last_envelope, run_id=source_run_id,
+                raw_path=last_path, raw_root=raw_root, body=last_body,
+                count_field="memberCount", observed_record_count=error.observed)
+            _raise_on_envelope_failure(envelope_report, "Members")
+        raise _RunFailure(
+            "Members advertised memberCount does not match unique observed records",
+            scope="source", classification="api_envelope_contract_failure") from error
+    if (last_api_page is not None and record_failure_count == 0
+            and advertised not in (None, 0) and not valid_records):
+        last_path, last_body, last_envelope = last_api_page
+        envelope_report = _api_envelope_contract(
+            args, "members", last_envelope, run_id=source_run_id,
+            raw_path=last_path, raw_root=raw_root, body=last_body,
+            count_field="memberCount", observed_record_count=0)
+        _raise_on_envelope_failure(envelope_report, "Members")
+    pointers_by_identity = {}
+    for wrapper, pointer in preflight_valid:
+        member = wrapper.get("member") if isinstance(wrapper, dict) else None
+        if isinstance(member, dict) and isinstance(member.get("uri"), str):
+            identity = str(__import__("oireachtas_etl.transforms.common", fromlist=["iri"]).iri(member["uri"]))
+            pointers_by_identity.setdefault(identity, pointer)
+    for wrapper in records:
+        member = wrapper["member"]
+        identity = str(__import__("oireachtas_etl.transforms.common", fromlist=["iri"]).iri(member["uri"]))
+    records_with_pointers = [(wrapper, pointers_by_identity.get(
+        str(__import__("oireachtas_etl.transforms.common", fromlist=["iri"]).iri(wrapper["member"]["uri"]))))
+        for wrapper in records]
     complete_scan = (not args.fixture or
                      (advertised is not None and advertised == len(records)))
+    if record_failure_count:
+        complete_scan = False
     observations = extract_office_observations(records_with_pointers)
     registry, decisions, review_hash, office_types = _member_office_policy(args)
 
@@ -1332,11 +2742,33 @@ def _run_members_impl_body(args: argparse.Namespace, store: CoreStateStore | Non
             }
 
     graphs: list[tuple[dict, object | None, str, str, list[dict], str]] = []
+    retry_started_by_identity: dict[str, list[str]] = {}
     for wrapper in records:
         member = wrapper["member"]; identity, digest, graph_iri = str(__import__("oireachtas_etl.transforms.common", fromlist=["iri"]).iri(member["uri"])), source_hash(member), member_graph_iri(member)
         prior = store.get_resource("members", identity) if store is not None else None
-        old = (store.observe_resource("members", identity, graph_iri, digest, run_id)
-               if store is not None and run_id is not None else {})
+        pointer = pointers_by_identity.get(identity)
+        if store is not None and run_id is not None:
+            if pointer is None:
+                raise RuntimeError(f"Member {identity} has no immutable raw source pointer")
+            page_metadata = _raw_page_metadata(raw_root, pointer)
+            old = store.observe_resource(
+                "members", identity, graph_iri, digest, run_id,
+                observed_at=page_metadata["retrieved_at"],
+                evidence_pointer=_raw_resource_pointer(
+                    raw_root / pointer["path"], pointer["json_pointer"]),
+                request_parameters=page_metadata["params"], versions=versions,
+            )
+        else:
+            old = {}
+        retry_ids = _start_retries(
+            store, _retry_rows_for_record(
+                retry_candidates, retry_candidates_by_hash, identity, digest,
+                include_unidentified=allow_unidentified_retry), run_id)
+        if retry_ids:
+            retry_started_by_identity[identity] = retry_ids
+            context = _run_context(args, run_id=run_id)
+            if context is not None:
+                context.setdefault("retry_attempts", []).extend(retry_ids)
         # Hash-first: unchanged published records do not enter transformation.
         office_resolutions = list(current_office.get(identity, []))
         omissions = validate_member_source(
@@ -1478,11 +2910,15 @@ def _run_members_impl_body(args: argparse.Namespace, store: CoreStateStore | Non
     reference_candidates = None
     member_candidate_graph = None
     if not args.fixture and complete_scan:
+        member_pointer_map = _record_pointers_by_identity(
+            [wrapper for wrapper, _pointer in records_with_pointers], "members",
+            [pointer for _wrapper, pointer in records_with_pointers])
         reference_census, _reference_provenance = _reference_inputs(
             endpoint_name="members", endpoint_records=None,
             member_records=records, store=store, raw_root=raw_root,
             endpoint_is_authoritative=False,
             member_is_authoritative=True,
+            member_record_pointers=member_pointer_map,
         )
         _write_reference_report(args, reference_census["report"])
         member_candidate_graph = candidate_member_dataset(records)
@@ -1509,18 +2945,34 @@ def _run_members_impl_body(args: argparse.Namespace, store: CoreStateStore | Non
             raise RuntimeError("online Member publication requires durable core ETL state")
         loader = FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
         client = FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
+        context = _run_context(args, run_id=run_id)
+        if context is not None:
+            context.update(loader=loader, client=client)
+            context["safe_publication"] = True
         if reference_candidates is not None:
             if store is None:
                 raise RuntimeError("authoritative Member reference publication requires durable core ETL state")
-            previous = _previous_reference_graphs(store, client, loader)
+            previous = _previous_reference_graphs(
+                store, client, loader, publishing_run_id=run_id)
             reference_candidates = build_reference_candidates(
                 reference_census, member_graph=member_candidate_graph,
                 previous_graphs=previous)
+            entity_lineages = {
+                name: _build_shared_entity_lineage(
+                    name, reference_candidates["graphs"][name], raw_root=raw_root,
+                    source_pointers=_reference_provenance[
+                        "entity_source_pointers"].get(name, {}),
+                    store=store,
+                    retained_graph=reference_candidates["retained_graphs"][name])
+                for name in ("parties", "constituencies", "committees")
+            }
             _publish_reference_graphs(
                 reference_candidates["graphs"], store=store, loader=loader,
                 client=client, coverage_authoritative=True,
                 member_source_run_id=(extraction_id if store is not None
-                                      and complete_scan and not args.fixture else None))
+                                      and complete_scan and not args.fixture else None),
+                publishing_run_id=run_id,
+                entity_lineage_by_endpoint=entity_lineages)
             if hasattr(client, "query"):
                 verify_reference_closure(client)
         for wrapper, graph, identity, digest, exclusions, status in graphs:
@@ -1645,6 +3097,8 @@ def _run_members_impl_body(args: argparse.Namespace, store: CoreStateStore | Non
     elif not args.offline:
         raise ValueError("no Fuseki GSP endpoint configured; use --offline for fixture/developer runs")
     report = [item for _, _, _, _, exclusions, _ in graphs for item in exclusions]
+    for retry_ids in retry_started_by_identity.values():
+        _finish_retries(store, retry_ids, run_id, success=True, args=args)
     identities = {kind: sorted(identity for _, _, identity, _, _, status in graphs if status == kind) for kind in ("new", "changed", "skipped")}
     identities["skipped"] = sorted(set(identities["skipped"]) - set(repaired))
     identities["changed"] = sorted(set(identities["changed"]) | set(repaired))
@@ -1682,8 +3136,20 @@ def _run_members_impl_body(args: argparse.Namespace, store: CoreStateStore | Non
                         "migration_inventory": migration_inventory_summary,
                         "migration_inventory_blocked": [item for item in report
                                                          if item["category"] == "migration_inventory_blocked"],
-                        "legacy_dirty_deferred": deferred_dirty,
-                        }, sort_keys=True))
+                         "legacy_dirty_deferred": deferred_dirty,
+                         }, sort_keys=True))
+    context = _run_context(args, run_id=run_id)
+    if context is not None and endpoint:
+        context["safe_publication"] = True
+    _set_run_metrics(args, counters={
+        "extracted": len(records) + record_failure_count,
+        "changed": len(identities["changed"]), "unchanged": len(identities["skipped"]),
+        "published_graphs": published, "quarantined": record_failure_count,
+        "validation_failures": record_failure_count,
+        "api_requests": (0 if args.fixture else
+                         len({pointer["path"] for _wrapper, pointer in records_with_pointers})),
+        "api_failures": 0, "publication_succeeded": int(bool(endpoint)),
+    })
     return 0
 
 
@@ -1693,18 +3159,31 @@ def _run_members(args: argparse.Namespace, store: CoreStateStore | None = None,
     if store is None:
         return _run_members_impl(args)
     settings = Settings.from_environment()
+    versions = _run_versions("members", settings)
     run_id = store.start_run("members", "full_refresh", is_complete=True,
                              parameters={"source": "fixture" if args.fixture else "api",
-                                         "fixture": str(Path(args.fixture).resolve()) if args.fixture else None,
-                                         "api_url": None if args.fixture else settings.members_api_url,
-                                         "limit": settings.limit})
+                                          "fixture": str(Path(args.fixture).resolve()) if args.fixture else None,
+                                          "api_url": None if args.fixture else settings.members_api_url,
+                                          "limit": settings.limit}, versions=versions)
+    _begin_run_context(args, run_id, "members", versions)
     try:
         result = _run_members_impl(args, store, run_id, reconciliation_store,
                                    office_store)
+        context = _run_context(args, run_id=run_id)
+        _finalize_run(store, args, run_id=run_id, endpoint="members",
+                      versions=versions,
+                      loader=context.get("loader") if context else None,
+                      client=context.get("client") if context else None)
     except Exception as error:
-        store.finish_run(run_id, success=False, error=f"{type(error).__name__}: {error}")
+        context = _run_context(args, run_id=run_id)
+        if (context is not None and not context.get("finished")
+                and not context.get("catalog_state_unresolved")):
+            scope = getattr(error, "scope", "system")
+            classification = getattr(error, "classification", "system_failure")
+            _record_fatal_run(
+                store, args, run_id=run_id, endpoint="members", error=error,
+                failure_scope=scope, failure_classification=classification)
         raise
-    store.finish_run(run_id, success=True)
     return result
 
 
@@ -1767,25 +3246,21 @@ def _local_sponsor_source(args: argparse.Namespace, settings: Settings) -> tuple
                     endpoint_name="legislation", extraction_id=extraction_id)
         # A fixture never establishes absence for any Bill outside its scope.
         return _deduplicate_bills(records, advertised), False
-    records: list[dict] = []
-    advertised = None
-    for page in ApiClient(settings.bills_api_url, retries=settings.retries,
-                          timeout=settings.timeout).harvest(limit=settings.limit):
-        persist_raw(root=raw_root, endpoint=settings.bills_api_url,
-                    params=page.params, body=page.body, status=page.status,
-                    retrieved_at=datetime.now(timezone.utc),
-                    ontology_version="legislation.owl.ttl@phase-4-legislative-lifecycle-2026",
-                    mapping_version="bill_mapping.csv@phase-4-legislative-lifecycle-2026",
-                    endpoint_name="legislation", extraction_id=extraction_id)
-        decoded = json.loads(page.body)
-        if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list):
-            raise ValueError("every Legislation API page must contain a results list")
-        count = decoded.get("head", {}).get("counts", {}).get("billCount")
-        if type(count) is not int or count < 0 or (advertised is not None and count != advertised):
-            raise ValueError("Bills advertised count changed or is invalid during local reconciliation scan")
-        advertised = count
-        records.extend(decoded["results"])
-    return _deduplicate_bills(records, advertised, allow_empty=advertised == 0), True
+    records, advertised, last_page, raw_root, extraction_id = _capture_api_pages(
+        args, "legislation", settings.bills_api_url, settings, count_field="billCount")
+    try:
+        unique = _deduplicate_bills(records, advertised, allow_empty=advertised == 0)
+    except _AdvertisedCountMismatch as error:
+        if last_page is not None:
+            raw_path, body, decoded = last_page
+            report = _api_envelope_contract(
+                args, "legislation", decoded, run_id=extraction_id,
+                raw_path=raw_path, raw_root=raw_root, body=body,
+                count_field="billCount", observed_record_count=error.observed)
+            _raise_on_envelope_failure(report, "Legislation")
+        raise ValueError(
+            "Bills advertised count does not match unique records during local reconciliation scan") from error
+    return unique, True
 
 
 def _deduplicate_bills(records: list[dict], advertised: int | None, *, allow_empty=False) -> list[dict]:
@@ -1800,8 +3275,10 @@ def _deduplicate_bills(records: list[dict], advertised: int | None, *, allow_emp
             if bill_source_hash(unique[identity]["bill"]) != bill_source_hash(bill): raise ValueError(f"conflicting duplicate Bill identity: {identity}")
             continue
         unique[identity] = wrapper
-    if advertised is not None and (isinstance(advertised, bool) or not isinstance(advertised, int) or advertised != len(unique)):
-        raise ValueError(f"Bills unique count {len(unique)} does not match advertised count {advertised!r}")
+    if advertised is not None and (
+            isinstance(advertised, bool) or not isinstance(advertised, int)
+            or advertised != len(unique)):
+        raise _AdvertisedCountMismatch("Bills", len(unique), advertised)
     return [unique[key] for key in sorted(unique)]
 
 
@@ -1930,48 +3407,214 @@ def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = Non
                     upper: datetime | None = None, complete: bool = True) -> int:
     settings = Settings.from_environment()
     settings = Settings(**{**settings.__dict__, "raw_dir": Path(args.raw_dir) if args.raw_dir else settings.raw_dir})
+    raw_root = settings.raw_dir.expanduser().resolve()
+    versions = (_run_context(args, run_id=run_id) or {}).get(
+        "versions", _run_versions("legislation", settings))
+    extraction_id = run_id or str(uuid.uuid4())
+    source_run_id = run_id or extraction_id
+    evidence: list[dict[str, str]] = []
+    report_path: Path | None = None
+    last_api_page: tuple[Path, bytes, object] | None = None
     if args.fixture:
         records, body, advertised = _bills_fixture_records(Path(args.fixture))
-        persist_raw(root=settings.raw_dir, endpoint=str(Path(args.fixture)), params={"skip": 0, "limit": len(records)}, body=body, status=200,
-                    retrieved_at=datetime.now(timezone.utc), ontology_version="legislation.owl.ttl@phase-4-legislative-lifecycle-2026", mapping_version="bill_mapping.csv@phase-4-legislative-lifecycle-2026", endpoint_name="legislation", extraction_id=run_id)
+        observed_at = datetime.now(timezone.utc)
+        raw_path, _ = persist_raw(
+            root=raw_root, endpoint=str(Path(args.fixture).resolve()),
+            params={"skip": 0, "limit": len(records)}, body=body, status=200,
+            retrieved_at=observed_at, ontology_version=versions["ontology_version"],
+            mapping_version=versions["mapping_version"],
+            endpoint_name="legislation", extraction_id=extraction_id)
+        _record_raw_page(args, store, endpoint="legislation", run_id=run_id,
+                         raw_path=raw_path, raw_root=raw_root, body=body,
+                         source_url=None, parameters={"skip": 0, "limit": len(records)},
+                         observed_at=observed_at, versions=versions)
+        fixture_value = json.loads(body)
+        base_pointer = "/results" if isinstance(fixture_value, dict) else ""
+        evidence.extend(_raw_contract_pointer(
+            raw_path, raw_root, body,
+            f"{base_pointer}/{index}" if base_pointer else f"/{index}")
+            for index, _ in enumerate(records))
+        report_path = raw_path.parent / "source-drift.json"
     else:
         records, advertised = [], None
         query = {"last_updated": window_start.isoformat()} if window_start else None
         client = ApiClient(settings.bills_api_url, retries=settings.retries, timeout=settings.timeout)
-        pages = client.harvest(limit=settings.limit, query_params=query) if query else client.harvest(limit=settings.limit)
+        pages = _safe_harvest(args, client, limit=settings.limit,
+                              query_params=query)
         for page in pages:
-            persist_raw(root=settings.raw_dir, endpoint=settings.bills_api_url, params=page.params, body=page.body, status=page.status, retrieved_at=datetime.now(timezone.utc), ontology_version="legislation.owl.ttl@phase-4-legislative-lifecycle-2026", mapping_version="bill_mapping.csv@phase-4-legislative-lifecycle-2026", endpoint_name="legislation", extraction_id=run_id)
-            decoded = json.loads(page.body)
-            if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list): raise ValueError("every Legislation API page must be an object envelope with a results list")
+            observed_at = datetime.now(timezone.utc)
+            raw_path, _ = persist_raw(
+                root=raw_root, endpoint=settings.bills_api_url, params=page.params,
+                body=page.body, status=page.status, retrieved_at=observed_at,
+                ontology_version=versions["ontology_version"],
+                mapping_version=versions["mapping_version"],
+                endpoint_name="legislation", extraction_id=extraction_id)
+            _record_raw_page(args, store, endpoint="legislation", run_id=run_id,
+                             raw_path=raw_path, raw_root=raw_root, body=page.body,
+                             source_url=settings.bills_api_url, parameters=page.params,
+                             observed_at=observed_at, versions=versions)
+            decoded = _decode_api_page(page.body, "Legislation", args)
+            envelope_report = _api_envelope_contract(
+                args, "legislation", decoded, run_id=source_run_id,
+                raw_path=raw_path, raw_root=raw_root, body=page.body,
+                count_field="billCount", expected_count=advertised)
+            _raise_on_envelope_failure(envelope_report, "Legislation")
+            if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list): raise _RunFailure("every Legislation API page must be an object envelope with a results list")
             count = decoded.get("head", {}).get("counts", {}).get("billCount") if isinstance(decoded.get("head"), dict) else None
-            if isinstance(count, bool) or not isinstance(count, int) or count < 0: raise ValueError("every Legislation API page must contain a nonnegative integer head.counts.billCount")
+            if isinstance(count, bool) or not isinstance(count, int) or count < 0: raise _RunFailure("every Legislation API page must contain a nonnegative integer head.counts.billCount")
             if advertised is None: advertised = count
-            elif advertised != count: raise ValueError("Bills advertised count changed during scan")
+            elif advertised != count: raise _RunFailure("Bills advertised count changed during scan")
+            evidence.extend(_raw_contract_pointer(
+                raw_path, raw_root, page.body, f"/results/{index}")
+                for index in range(len(decoded["results"])))
+            report_path = raw_path.parent / "source-drift.json"
+            last_api_page = (raw_path, page.body, decoded)
             records.extend(decoded["results"])
+    contract_report = _source_contract(
+        args, "legislation", records, run_id=source_run_id,
+        evidence=evidence, report_path=report_path)
+    failed_indices = set(contract_report["failed_record_indices"])
+    if contract_report["source_failed"]:
+        raise _RunFailure("Legislation source container violates the source contract")
+    source_pointers_by_identity = {}
+    for index, wrapper in enumerate(records):
+        bill = wrapper.get("bill") if isinstance(wrapper, dict) else None
+        identity = bill.get("uri") if isinstance(bill, dict) else None
+        if isinstance(identity, str):
+            source_pointers_by_identity.setdefault(identity, evidence[index])
+    retry_candidates = _retry_candidates(store, "legislation")
+    retry_candidates_by_hash = _retry_candidates_by_hash(
+        store, "legislation") if complete and not args.fixture and not args.offline else {}
+    allow_unidentified_retry = complete and not args.fixture and not args.offline
+    if failed_indices:
+        for index in sorted(failed_indices):
+            wrapper = records[index]
+            pointer = evidence[index]
+            bill = wrapper.get("bill") if isinstance(wrapper, dict) else None
+            identity = bill.get("uri") if isinstance(bill, dict) else None
+            digest = (bill_source_hash(bill) if isinstance(bill, dict)
+                      else hashlib.sha256(json.dumps(
+                          wrapper, ensure_ascii=False, sort_keys=True,
+                          separators=(",", ":"), default=str).encode()).hexdigest())
+            source_error = "; ".join(
+                item["change"] + " at " + item["json_pointer"]
+                for item in contract_report["findings"]
+                if item.get("severity") == "record" and item.get("record_index") == index)
+            page_metadata = json.loads(
+                (raw_root / pointer["path"]).with_name(
+                    Path(pointer["path"]).name.removesuffix(".json") + ".meta.json")
+                .read_text(encoding="utf-8"))
+            resource_path = raw_root / pointer["path"]
+            _record_quarantine(
+                store, endpoint="legislation", run_id=run_id, source_hash=digest,
+                observed_at=page_metadata["retrieved_at"],
+                evidence_pointer=_raw_resource_pointer(resource_path, pointer["json_pointer"]),
+                stage="source_contract", error=source_error or "record violates source contract",
+                resource_iri=identity if isinstance(identity, str) else None,
+                classification="record_source_contract_failure", versions=versions)
+            started = _start_retries(
+                store, _retry_rows_for_record(
+                    retry_candidates, retry_candidates_by_hash,
+                    identity if isinstance(identity, str) else None, digest,
+                    include_unidentified=allow_unidentified_retry), run_id)
+            _finish_retries(store, started, run_id, success=False,
+                            error="record still violates the source contract", args=args)
+        _degrade_run(args, error=f"{len(failed_indices)} Bill record(s) failed source contract",
+                     classification="record_source_contract_failure")
+        records = [record for index, record in enumerate(records) if index not in failed_indices]
     if not complete:
         # The API may interpret last_updated at day granularity and does not
         # guarantee an upper filter. Keep the fixed run boundary locally.
-        if advertised is not None and len(records) != advertised:
-            raise ValueError("Legislation incremental extraction count changed during scan")
+        if advertised is not None and not failed_indices and len(records) != advertised:
+            if last_api_page is not None:
+                last_path, last_body, last_envelope = last_api_page
+                envelope_report = _api_envelope_contract(
+                    args, "legislation", last_envelope, run_id=source_run_id,
+                    raw_path=last_path, raw_root=raw_root, body=last_body,
+                    count_field="billCount", observed_record_count=len(records))
+                _raise_on_envelope_failure(envelope_report, "Legislation")
+            raise _RunFailure("Legislation incremental extraction count changed during scan")
         records = [record for record in records if _bill_source_time(record) <= upper]
         records = _deduplicate_bills(records, None, allow_empty=True)
     else:
-        records = _deduplicate_bills(records, advertised,
-                                     allow_empty=bool(store is not None and complete and advertised == 0))
+        try:
+            records = _deduplicate_bills(
+                records, None if failed_indices else advertised,
+                allow_empty=bool(
+                    (store is not None and complete and advertised == 0)
+                    or (failed_indices and not records)))
+        except _AdvertisedCountMismatch as error:
+            if last_api_page is not None:
+                last_path, last_body, last_envelope = last_api_page
+                envelope_report = _api_envelope_contract(
+                    args, "legislation", last_envelope, run_id=source_run_id,
+                    raw_path=last_path, raw_root=raw_root, body=last_body,
+                    count_field="billCount", observed_record_count=error.observed)
+                _raise_on_envelope_failure(envelope_report, "Legislation")
+            raise _RunFailure(
+                "Legislation advertised billCount does not match unique observed records",
+                scope="source", classification="api_envelope_contract_failure") from error
     work = []
+    record_transform_failures = 0
+    retry_started_by_identity: dict[str, list[str]] = {}
     for wrapper in records:
         bill = wrapper["bill"]; identity, digest, graph_iri = bill["uri"], bill_source_hash(bill), bill_graph_iri(bill)
         prior = store.get_resource("legislation", identity) if store is not None else None
-        old = (store.observe_resource("legislation", identity, graph_iri, digest, run_id)
-               if store is not None and run_id is not None else {})
+        pointer = source_pointers_by_identity.get(identity)
+        if store is not None and run_id is not None:
+            if pointer is None:
+                raise RuntimeError(f"Bill {identity} has no immutable raw source pointer")
+            metadata = json.loads(
+                (raw_root / pointer["path"]).with_name(
+                    Path(pointer["path"]).name.removesuffix(".json") + ".meta.json")
+                .read_text(encoding="utf-8"))
+            old = store.observe_resource(
+                "legislation", identity, graph_iri, digest, run_id,
+                observed_at=metadata["retrieved_at"],
+                evidence_pointer=_raw_resource_pointer(
+                    raw_root / pointer["path"], pointer["json_pointer"]),
+                request_parameters=metadata["params"], versions=versions,
+            )
+        else:
+            old = {}
+        retry_ids = _start_retries(
+            store, _retry_rows_for_record(
+                retry_candidates, retry_candidates_by_hash, identity, digest,
+                include_unidentified=allow_unidentified_retry), run_id)
+        if retry_ids:
+            retry_started_by_identity[identity] = retry_ids
+            context = _run_context(args, run_id=run_id)
+            if context is not None:
+                context.setdefault("retry_attempts", []).extend(retry_ids)
         # Hash-first source gate; unchanged Bills never construct RDF or invoke a loader.
-        omissions = validate_bill_source(wrapper)
-        if (not args.offline and old.get("publication_state") == "clean"
-                and old.get("contract_version") == 1
-                and old.get("published_source_hash") == digest and old.get("graph_iri") == graph_iri):
-            work.append((wrapper, None, identity, digest, omissions, "skipped")); continue
-        graph, report = transform_bill_with_report(wrapper); validate_bill(wrapper, graph)
-        work.append((wrapper, graph, identity, digest, report, "changed" if prior else "new"))
+        try:
+            omissions = validate_bill_source(wrapper)
+            if (not args.offline and old.get("publication_state") == "clean"
+                    and old.get("contract_version") == 1
+                    and old.get("published_source_hash") == digest
+                    and old.get("graph_iri") == graph_iri):
+                work.append((wrapper, None, identity, digest, omissions, "skipped"))
+                continue
+            graph, report = transform_bill_with_report(wrapper)
+            validate_bill(wrapper, graph)
+        except Exception as error:
+            record_transform_failures += 1
+            metadata = (_raw_page_metadata(raw_root, pointer) if pointer is not None else {})
+            _record_quarantine(
+                store, endpoint="legislation", run_id=run_id, source_hash=digest,
+                observed_at=metadata.get("retrieved_at", datetime.now(timezone.utc).isoformat()),
+                evidence_pointer=(_raw_resource_pointer(
+                    raw_root / pointer["path"], pointer["json_pointer"])
+                    if pointer is not None else "unknown-source-pointer"),
+                stage="bill_transform", error=f"{type(error).__name__}: {error}",
+                resource_iri=identity, classification="record_transform_failure",
+                versions=versions)
+            _finish_retries(store, retry_ids, run_id, success=False,
+                            error=f"{type(error).__name__}: {error}", args=args)
+            _degrade_run(args, error=f"Bill {identity} failed transformation: {error}")
+            continue
+        work.append((wrapper, graph, identity, digest, report,
+                     "changed" if prior else "new"))
     if args.output_nq: Path(args.output_nq).write_text("".join(nquads(graph, bill_graph_iri(wrapper["bill"])) for wrapper, graph, *_ in work if graph is not None), encoding="utf-8")
     if getattr(args, "output_ttl", None): Path(args.output_ttl).write_text("\n".join(turtle(graph) for _, graph, *_ in work if graph is not None), encoding="utf-8")
     endpoint = None if args.offline else (args.fuseki_gsp_url or settings.fuseki_gsp_url); query_endpoint = None if args.offline else (args.fuseki_sparql_url or settings.fuseki_sparql_url)
@@ -1984,6 +3627,10 @@ def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = Non
         if store is None:
             raise RuntimeError("online Bill publication requires durable core ETL state")
         loader = FusekiGraphStoreLoader(endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout); client = FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
+        context = _run_context(args, run_id=run_id)
+        if context is not None:
+            context.update(loader=loader, client=client)
+            context["safe_publication"] = True
         for wrapper, graph, identity, digest, _, status in work:
             if graph is None:
                 prior = store.get_resource("legislation", identity)
@@ -2019,7 +3666,24 @@ def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = Non
     identities = {kind: sorted(identity for _, _, identity, _, _, status in work if status == kind) for kind in ("new", "changed", "skipped")}
     identities["skipped"] = sorted(set(identities["skipped"]) - set(repaired))
     identities["changed"] = sorted(set(identities["changed"]) | set(repaired))
+    successful_identities = {identity for _, _, identity, _, _, _status in work}
+    for identity, retry_ids in retry_started_by_identity.items():
+        if identity in successful_identities:
+            _finish_retries(store, retry_ids, run_id, success=True, args=args)
     print(json.dumps({"records": len(records), "published": published, "skipped": skipped, "new": identities["new"], "changed": identities["changed"], "skipped_identities": identities["skipped"], "omitted": [item for *_, report, _ in work for item in report]}, sort_keys=True))
+    context = _run_context(args, run_id=run_id)
+    if context is not None and endpoint:
+        context["safe_publication"] = True
+    _set_run_metrics(args, counters={
+        "extracted": len(records) + len(failed_indices),
+        "changed": len(identities["changed"]),
+        "unchanged": len(identities["skipped"]),
+        "published_graphs": published,
+        "quarantined": len(failed_indices) + record_transform_failures,
+        "validation_failures": len(failed_indices) + record_transform_failures,
+        "api_requests": 0 if args.fixture else len({pointer["path"] for pointer in evidence}),
+        "api_failures": 0, "publication_succeeded": int(bool(endpoint)),
+    })
     return 0
 
 
@@ -2036,27 +3700,40 @@ def _run_bills(args: argparse.Namespace, store: CoreStateStore | None = None) ->
     previous = store.incremental_cursor()
     window_start = (datetime.fromisoformat(previous) - timedelta(seconds=overlap)) if previous and not complete else None
     authoritative_scan = not bool(args.fixture)
+    versions = _run_versions("legislation", settings)
     run_id = store.start_run("legislation", ("complete_source_reconciliation" if authoritative_scan
                                                    else "full_refresh") if complete else "incremental_refresh",
                              is_complete=complete and authoritative_scan,
                              parameters={"source": "fixture" if args.fixture else "api",
                                          "fixture": str(Path(args.fixture).resolve()) if args.fixture else None,
                                          "api_url": None if args.fixture else settings.bills_api_url,
-                                         "limit": settings.limit, "cursor_before": previous,
-                                         "window_start": window_start.isoformat() if window_start else None,
-                                         "upper_boundary": upper.isoformat(), "overlap_seconds": overlap,
-                                         "complete": complete})
+                                          "limit": settings.limit, "cursor_before": previous,
+                                          "window_start": window_start.isoformat() if window_start else None,
+                                          "upper_boundary": upper.isoformat(), "overlap_seconds": overlap,
+                                          "complete": complete}, versions=versions)
+    _begin_run_context(args, run_id, "legislation", versions)
+    context = _run_context(args, run_id=run_id)
+    context["incremental_cursor"] = (
+        upper.isoformat() if authoritative_scan and not complete else None)
+    context["complete_scan"] = complete and authoritative_scan
     try:
         result = _run_bills_impl(args, store, run_id, window_start=window_start,
                                  upper=upper, complete=complete)
+        context = _run_context(args, run_id=run_id)
+        _finalize_run(store, args, run_id=run_id, endpoint="legislation",
+                      versions=versions,
+                      loader=context.get("loader") if context else None,
+                      client=context.get("client") if context else None)
     except Exception as error:
-        store.finish_run(run_id, success=False, error=f"{type(error).__name__}: {error}")
+        context = _run_context(args, run_id=run_id)
+        if (context is not None and not context.get("finished")
+                and not context.get("catalog_state_unresolved")):
+            scope = getattr(error, "scope", "system")
+            classification = getattr(error, "classification", "system_failure")
+            _record_fatal_run(
+                store, args, run_id=run_id, endpoint="legislation", error=error,
+                failure_scope=scope, failure_classification=classification)
         raise
-    # A developer fixture can exercise publication, but cannot attest to the
-    # completeness or source-time boundary of the authoritative API dataset.
-    store.finish_run(run_id, success=True,
-                     incremental_cursor=upper.isoformat() if authoritative_scan and not complete else None,
-                     complete_scan=complete and authoritative_scan)
     return result
 
 
@@ -2129,7 +3806,8 @@ def run_debates(args: argparse.Namespace) -> int:
 
     if not getattr(args, "publish", False):
         # Default behavior has no access to a GSP loader and does not open Core
-        # State for writing. It can preserve/validate sources and emit local RDF.
+        # State for writing. Both online acquisition and exact offline replay
+        # preserve/validate sources and emit local RDF only.
         sources = _load_debate_sources(raw_root, source_urls, replay_hashes, settings)
         outcomes = run_debate_batch(sources)
         _write_debate_outputs(outcomes, args)
@@ -2140,6 +3818,7 @@ def run_debates(args: argparse.Namespace) -> int:
     sparql_endpoint = getattr(args, "fuseki_sparql_url", None) or settings.fuseki_sparql_url
     if not gsp_endpoint or not sparql_endpoint:
         raise ValueError("--publish requires both Fuseki GSP and SPARQL verification endpoints")
+    versions = _run_versions("debates", settings)
     with state_lock(database):
         with CoreStateStore(database, legacy_members=settings.members_legacy_state_file,
                             legacy_bills=settings.bills_legacy_state_file) as store:
@@ -2151,27 +3830,68 @@ def run_debates(args: argparse.Namespace) -> int:
                     "replay_sha256": replay_hashes,
                     "raw_root": str(raw_root.resolve()),
                     "supplied_count": len(source_urls) + len(replay_hashes),
-                },
+                }, versions=versions,
             )
+            _begin_run_context(args, run_id, "debates", versions)
             try:
                 # Evidence is persisted before source validation or RDF work.
+                _set_run_metrics(args, counters={
+                    "api_requests": len(source_urls), "api_failures": 0})
                 sources = _load_debate_sources(raw_root, source_urls, replay_hashes, settings)
+                _set_run_metrics(args, counters={
+                    "extracted": len(sources), "changed": 0, "unchanged": 0,
+                    "quarantined": 0, "validation_failures": 0,
+                })
+                observed_at = datetime.now(timezone.utc).isoformat()
+                for source in sources:
+                    store.record_source_observation(
+                        "debates", source.source_sha256, observed_at,
+                        run_id=run_id,
+                        evidence_pointer=source.raw_path.resolve().as_uri(),
+                        source_url=(source.source_urls[0] if source.source_urls else None),
+                        request_parameters={
+                            "source": "explicit-akn-main-xml-batch",
+                            "source_sha256": source.source_sha256,
+                        },
+                        versions=versions,
+                    )
                 loader = FusekiGraphStoreLoader(
                     gsp_endpoint, user=settings.fuseki_user,
                     password=settings.fuseki_password, timeout=settings.timeout)
                 client = FusekiSparqlClient(
                     sparql_endpoint, user=settings.fuseki_user,
                     password=settings.fuseki_password, timeout=settings.timeout)
+                context = _run_context(args, run_id=run_id)
+                if context is not None:
+                    context.update(loader=loader, client=client, safe_publication=True)
                 outcomes = run_debate_batch(
                     sources, store=store, run_id=run_id, publish=True,
                     loader=loader, client=client,
                 )
                 _write_debate_outputs(outcomes, args)
+                context = _run_context(args, run_id=run_id)
+                _set_run_metrics(args, counters={
+                    "extracted": len(sources),
+                    "changed": sum(item.status == "changed" for item in outcomes),
+                    "unchanged": sum(item.status == "skipped" for item in outcomes),
+                    "published_graphs": sum(item.status != "skipped" for item in outcomes),
+                    "quarantined": 0, "validation_failures": 0,
+                    "api_requests": len(source_urls), "api_failures": 0,
+                    "publication_succeeded": 1})
+                _finalize_run(store, args, run_id=run_id, endpoint="debates",
+                              versions=versions, loader=loader, client=client)
             except Exception as error:
-                store.finish_run(run_id, success=False,
-                                 error=f"{type(error).__name__}: {error}")
+                context = _run_context(args, run_id=run_id)
+                if (context is not None and not context.get("finished")
+                        and not context.get("catalog_state_unresolved")):
+                    scope = "source" if isinstance(error, DebateSourceError) else "system"
+                    classification = ("debate_source_failure" if scope == "source"
+                                      else "system_failure")
+                    _record_fatal_run(
+                        store, args, run_id=run_id, endpoint="debates", error=error,
+                        failure_scope=scope,
+                        failure_classification=classification)
                 raise
-            store.finish_run(run_id, success=True)
     return _debate_result(outcomes, run_id=run_id, published=True)
 
 
@@ -2420,23 +4140,23 @@ def run_reconcile_members(args: argparse.Namespace) -> int:
             raise ValueError("--offline reconciliation forbids --publish")
     if args.fixture:
         records, _, advertised = _members_fixture_records(Path(args.fixture))
+        last_api_page = None
     else:
         settings = Settings.from_environment()
-        records, advertised = [], None
-        for page in ApiClient(settings.members_api_url, retries=settings.retries, timeout=settings.timeout).harvest(limit=settings.limit):
-            decoded = json.loads(page.body)
-            if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list):
-                raise ValueError("every Members API page must be an object envelope with a results list")
-            counts = decoded.get("head", {}).get("counts") if isinstance(decoded.get("head"), dict) else None
-            count = counts.get("memberCount") if isinstance(counts, dict) else None
-            if isinstance(count, bool) or not isinstance(count, int) or count < 0:
-                raise ValueError("every Members API page must contain a nonnegative integer head.counts.memberCount")
-            if advertised is None:
-                advertised = count
-            elif advertised != count:
-                raise ValueError("Members advertised count changed during scan")
-            records.extend(decoded["results"])
-    records = _deduplicate_members(records, advertised)
+        records, advertised, last_api_page, raw_root, source_run_id = _capture_api_pages(
+            args, "members", settings.members_api_url, settings,
+            count_field="memberCount")
+    try:
+        records = _deduplicate_members(records, advertised)
+    except _AdvertisedCountMismatch as error:
+        if last_api_page is not None:
+            raw_path, body, decoded = last_api_page
+            report = _api_envelope_contract(
+                args, "members", decoded, run_id=source_run_id,
+                raw_path=raw_path, raw_root=raw_root, body=body,
+                count_field="memberCount", observed_record_count=error.observed)
+            _raise_on_envelope_failure(report, "Members")
+        raise
     decisions, review_hash = load_review(Path(args.review_file or "reconciliation/member-decisions.json"))
     if args.responses_file:
         data = json.loads(Path(args.responses_file).read_text(encoding="utf-8"))
@@ -2488,23 +4208,26 @@ def run_reconcile_parties(args: argparse.Namespace) -> int:
             raise ValueError("--offline Party reconciliation forbids --publish")
     if args.fixture:
         records, _, advertised = _party_fixture_records(Path(args.fixture))
+        last_api_page = None
     else:
         settings = Settings.from_environment()
-        records, advertised = [], None
-        for page in ApiClient(settings.parties_api_url, retries=settings.retries, timeout=settings.timeout).harvest(limit=settings.limit):
-            decoded = json.loads(page.body)
-            if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list):
-                raise ValueError("every Parties API page must be an object envelope with a results list")
-            counts = decoded.get("head", {}).get("counts") if isinstance(decoded.get("head"), dict) else None
-            count = counts.get("partyCount") if isinstance(counts, dict) else None
-            if isinstance(count, bool) or not isinstance(count, int) or count < 0:
-                raise ValueError("every Parties API page must contain a nonnegative integer head.counts.partyCount")
-            if advertised is None:
-                advertised = count
-            elif count != advertised:
-                raise ValueError("Parties advertised count changed during scan")
-            records.extend(decoded["results"])
-    records = deduplicate_party_records(records, advertised)
+        records, advertised, last_api_page, raw_root, source_run_id = _capture_api_pages(
+            args, "parties", settings.parties_api_url, settings,
+            count_field="partyCount")
+    try:
+        records = deduplicate_party_records(records, advertised)
+    except ValueError as error:
+        count_mismatch = ("unique count" in str(error)
+                          and "does not match advertised count" in str(error))
+        if last_api_page is not None and count_mismatch:
+            unique_count = len({wrapper["party"]["uri"] for wrapper in records})
+            raw_path, body, decoded = last_api_page
+            report = _api_envelope_contract(
+                args, "parties", decoded, run_id=source_run_id,
+                raw_path=raw_path, raw_root=raw_root, body=body,
+                count_field="partyCount", observed_record_count=unique_count)
+            _raise_on_envelope_failure(report, "Parties")
+        raise
     decisions, review_hash = load_party_review(Path(args.review_file or "reconciliation/party-decisions.json"))
     if args.responses_file:
         data = json.loads(Path(args.responses_file).read_text(encoding="utf-8"))
@@ -2889,6 +4612,15 @@ def _office_raw_pointer(raw_path: Path, raw_root: Path, body: bytes, json_pointe
             "sha256": hashlib.sha256(body).hexdigest(), "json_pointer": json_pointer}
 
 
+def _raw_page_metadata(raw_root: Path, pointer: dict) -> dict:
+    raw_path = raw_root / pointer["path"]
+    meta_path = raw_path.with_name(raw_path.name.removesuffix(".json") + ".meta.json")
+    metadata = json.loads(meta_path.read_text(encoding="utf-8"))
+    if metadata.get("sha256") != pointer.get("sha256"):
+        raise ValueError("raw source pointer does not match its immutable page metadata")
+    return metadata
+
+
 def run_reconcile_offices(args: argparse.Namespace) -> int:
     """Extract every Member office report and reconcile only against local review data."""
     if args.offline and not args.fixture:
@@ -2912,6 +4644,7 @@ def run_reconcile_offices(args: argparse.Namespace) -> int:
     run_id = str(uuid.uuid4())
     records_with_pointers: list[tuple[dict, dict]] = []
     advertised: int | None = None
+    last_api_page: tuple[Path, bytes, object] | None = None
 
     if args.fixture:
         fixture = Path(args.fixture)
@@ -2939,6 +4672,11 @@ def run_reconcile_offices(args: argparse.Namespace) -> int:
                 mapping_version=MEMBER_MAPPING_VERSION, endpoint_name="members",
                 extraction_id=run_id)
             decoded = json.loads(page.body)
+            envelope_report = _api_envelope_contract(
+                args, "members", decoded, run_id=run_id,
+                raw_path=raw_path, raw_root=raw_root, body=page.body,
+                count_field="memberCount", expected_count=advertised)
+            _raise_on_envelope_failure(envelope_report, "Members")
             if not isinstance(decoded, dict) or not isinstance(decoded.get("results"), list):
                 raise ValueError("every Members API page must be an object envelope with a results list")
             counts = decoded.get("head", {}).get("counts") if isinstance(decoded.get("head"), dict) else None
@@ -2949,13 +4687,25 @@ def run_reconcile_offices(args: argparse.Namespace) -> int:
                 advertised = count
             elif count != advertised:
                 raise ValueError("Members advertised count changed during office scan")
+            last_api_page = (raw_path, page.body, decoded)
             for index, wrapper in enumerate(decoded["results"]):
                 records_with_pointers.append((
                     wrapper, _office_raw_pointer(raw_path, raw_root, page.body, f"/results/{index}")))
 
     # Reuse the established duplicate/collision/count rules without discarding
     # duplicate raw contexts before office observations are extracted.
-    _deduplicate_members([wrapper for wrapper, _pointer in records_with_pointers], advertised)
+    try:
+        _deduplicate_members([wrapper for wrapper, _pointer in records_with_pointers],
+                             advertised)
+    except _AdvertisedCountMismatch as error:
+        if last_api_page is not None:
+            raw_path, body, decoded = last_api_page
+            envelope_report = _api_envelope_contract(
+                args, "members", decoded, run_id=run_id,
+                raw_path=raw_path, raw_root=raw_root, body=body,
+                count_field="memberCount", observed_record_count=error.observed)
+            _raise_on_envelope_failure(envelope_report, "Members")
+        raise
     observations = extract_office_observations(records_with_pointers)
     state_path = Path(args.office_state_file or OFFICE_OCCURRENCE_STATE_DB_FILE).expanduser()
     with OfficeOccurrenceStore(state_path) as store:
@@ -3084,6 +4834,41 @@ def run_state_status(args: argparse.Namespace) -> int:
     with CoreStateStore(state_db, legacy_members=settings.members_legacy_state_file,
                         legacy_bills=settings.bills_legacy_state_file) as store:
         print(json.dumps(store.status(), sort_keys=True))
+    return 0
+
+
+def run_quarantine(args: argparse.Namespace) -> int:
+    """Inspect unresolved record evidence or enqueue an explicit retry."""
+    settings = Settings.from_environment()
+    database = Path(getattr(args, "state_db", None)
+                    or settings.core_state_db_file).expanduser()
+    with state_lock(database):
+        with CoreStateStore(database, legacy_members=settings.members_legacy_state_file,
+                            legacy_bills=settings.bills_legacy_state_file) as store:
+            if args.quarantine_action == "list":
+                result = store.quarantine_records(
+                    endpoint=getattr(args, "endpoint", None),
+                    status=getattr(args, "status", None))
+            elif args.quarantine_action == "show":
+                rows = [row for row in store.quarantine_records()
+                        if row["quarantine_id"] == args.quarantine_id]
+                if not rows:
+                    raise ValueError(f"unknown quarantine record: {args.quarantine_id}")
+                result = {"record": rows[0],
+                          "history": store.quarantine_history(args.quarantine_id)}
+            elif args.quarantine_action == "retry":
+                store.request_quarantine_retry(
+                    args.quarantine_id, requested_by=args.requested_by,
+                    reason=args.reason)
+                result = {"quarantine_id": args.quarantine_id,
+                          "retry_state": "requested",
+                          "message": "will retry automatically on the next applicable endpoint run"}
+                _json_log("quarantine_retry_requested",
+                          quarantine_id=args.quarantine_id,
+                          requested_by=args.requested_by)
+            else:
+                raise ValueError(f"unsupported quarantine action: {args.quarantine_action}")
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
     return 0
 
 
@@ -3644,6 +5429,21 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--coverage-report", help="write deterministic reference census JSON")
     state = sub.add_parser("state"); state_sub = state.add_subparsers(dest="state_command", required=True)
     state_status = state_sub.add_parser("status"); state_status.add_argument("--state-db")
+    quarantine = sub.add_parser("quarantine", help="inspect or retry quarantined ETL records")
+    quarantine_sub = quarantine.add_subparsers(dest="quarantine_action", required=True)
+    quarantine_list = quarantine_sub.add_parser("list")
+    quarantine_list.add_argument("--state-db")
+    quarantine_list.add_argument("--endpoint", choices=["houses", "parties", "constituencies",
+                                                         "members", "legislation", "debates"])
+    quarantine_list.add_argument("--status", choices=["quarantined", "resolved"])
+    quarantine_show = quarantine_sub.add_parser("show")
+    quarantine_show.add_argument("quarantine_id")
+    quarantine_show.add_argument("--state-db")
+    quarantine_retry = quarantine_sub.add_parser("retry")
+    quarantine_retry.add_argument("quarantine_id")
+    quarantine_retry.add_argument("--requested-by", required=True)
+    quarantine_retry.add_argument("--reason")
+    quarantine_retry.add_argument("--state-db")
     dev = sub.add_parser(
         "dev", help="explicitly non-authoritative local-development commands")
     dev_sub = dev.add_subparsers(dest="dev_command", required=True)
@@ -3672,7 +5472,21 @@ def main(argv: list[str] | None = None) -> int:
     if (args.command == "run" and args.endpoint != "debates"
             and (args.source_url or args.replay or args.publish)):
         parser.error("--source-url, --replay, and --publish are only available for run debates")
+    # Library callers supply argv and retain exceptions for diagnosis. The
+    # installed command calls main() without argv: never let a source-supplied
+    # exception message escape in a Python traceback on that process boundary.
+    if argv is None:
+        try:
+            return _dispatch_command(args)
+        except Exception as error:
+            _json_log("command_failed", error=_safe_error_message(error))
+            return 1
+    return _dispatch_command(args)
+
+
+def _dispatch_command(args: argparse.Namespace) -> int:
     if args.command == "state": return run_state_status(args)
+    if args.command == "quarantine": return run_quarantine(args)
     if args.command == "dev": return _run_development_bootstrap(args)
     if args.command == "reconcile":
         if args.endpoint == "offices": return run_reconcile_offices(args)

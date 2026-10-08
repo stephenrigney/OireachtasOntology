@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import json
+
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import RDF, SKOS
 
@@ -31,6 +34,34 @@ KNOWN_CONFLICT_COMMITTEE = (
     "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/"
     "select_committee_on_the_implementation_of_the_good_friday_agreement"
 )
+REFERENCE_VERSIONS = {
+    "etl_version": "0.1.0",
+    "ontology_version": "members.owl.ttl@test-reference-publication",
+    "mapping_version": "party_mapping.csv@test-reference-publication",
+}
+
+
+def _party_entity_lineage(store, run_id: str, *, source_endpoint: str,
+                          observed_at: str) -> dict[str, dict]:
+    party_iri = CURRENT_PARTY["party"]["uri"]
+    body = json.dumps({"results": [{"party": CURRENT_PARTY["party"]}]},
+                      sort_keys=True).encode()
+    source_hash = hashlib.sha256(body).hexdigest()
+    page_pointer = f"file:///raw/{source_endpoint}/{run_id}/{source_hash}.json"
+    api_url = f"https://api.oireachtas.ie/v1/{source_endpoint}"
+    observation = store.record_source_observation(
+        source_endpoint, source_hash, observed_at, run_id=run_id,
+        evidence_pointer=page_pointer, source_url=api_url,
+        request_parameters={"skip": 0, "limit": 100},
+        versions=REFERENCE_VERSIONS)
+    return {party_iri: {
+        "sources": [{
+            "source_hash": source_hash,
+            "observed_at": observation["observed_at"],
+            "evidence_pointer": page_pointer + "#/results/0",
+        }],
+        "prior_payload_hash": None,
+    }}
 
 
 def _member(committee: dict | None = None) -> dict:
@@ -163,7 +194,7 @@ def test_known_committee_conflict_blocks_authoritative_candidates_but_is_quarant
 
 
 def test_dirty_shared_reference_graph_replays_the_exact_hash_verified_payload(
-        tmp_path, monkeypatch):
+        tmp_path):
     import hashlib
     import json
 
@@ -171,47 +202,37 @@ def test_dirty_shared_reference_graph_replays_the_exact_hash_verified_payload(
     from oireachtas_etl.config import PARTIES_GRAPH
     from oireachtas_etl.serialization import ntriples
     from oireachtas_etl.state import CoreStateStore
+    from tests._in_memory_fuseki import InMemoryFuseki
 
     graph = transform_parties([CURRENT_PARTY])
     payload = ntriples(graph)
     digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
-    replacements = []
-    verifications = []
-
-    class Loader:
-        def replace(self, graph_iri, raw, *, content_type):
-            replacements.append((graph_iri, raw, content_type))
-
-    class Client:
-        def construct_graph(self, graph_iri):
-            assert graph_iri != PARTIES_GRAPH
-            return Graph()
-
-    monkeypatch.setattr(
-        cli, "verify_core_graph",
-        lambda client, graph_iri, raw: verifications.append((graph_iri, raw)))
+    fuseki = InMemoryFuseki()
     with CoreStateStore(tmp_path / "core.sqlite") as store:
         assert store.mark_endpoint_dirty(
             "parties", PARTIES_GRAPH, payload,
             coverage_authoritative=True) == digest
-        previous = cli._previous_reference_graphs(store, Client(), Loader())
+        previous = cli._previous_reference_graphs(store, fuseki, fuseki)
         metadata = store.endpoint_publication("parties")
         assert metadata["publication_state"] == "clean"
         assert metadata["published_payload"] == payload
         assert metadata["coverage_authoritative"] is True
         assert set(previous["parties"]) == set(graph)
-    assert replacements == [(PARTIES_GRAPH, payload, "application/n-triples")]
-    assert verifications == [(PARTIES_GRAPH, payload)]
+    assert fuseki.replacements == [
+        (PARTIES_GRAPH, payload, "application/n-triples")]
+    assert set(fuseki.construct_graph(PARTIES_GRAPH)) == set(graph)
+    assert len(fuseki.queries) == 1
 
 
 def test_legacy_clean_reference_state_recovers_remote_graph_by_payload_hash(
-        tmp_path, monkeypatch):
+        tmp_path):
     import json
 
     from oireachtas_etl import cli
     from oireachtas_etl.config import PARTIES_GRAPH
     from oireachtas_etl.serialization import ntriples
     from oireachtas_etl.state import CoreStateStore
+    from tests._in_memory_fuseki import InMemoryFuseki
 
     graph = transform_parties([CURRENT_PARTY])
     payload = ntriples(graph)
@@ -220,11 +241,9 @@ def test_legacy_clean_reference_state_recovers_remote_graph_by_payload_hash(
         def replace(self, *_args, **_kwargs):
             raise AssertionError("a clean legacy graph must not be replaced during recovery")
 
-    class Client:
-        def construct_graph(self, graph_iri):
-            if graph_iri == PARTIES_GRAPH:
-                return graph
-            return Graph()
+    fuseki = InMemoryFuseki()
+    fuseki.replace(PARTIES_GRAPH, payload, content_type="application/n-triples")
+    fuseki.replacements.clear()
 
     with CoreStateStore(tmp_path / "core.sqlite") as store:
         digest = store.mark_endpoint_dirty("parties", PARTIES_GRAPH, payload)
@@ -234,63 +253,77 @@ def test_legacy_clean_reference_state_recovers_remote_graph_by_payload_hash(
         store.connection.execute(
             "UPDATE endpoint_state SET publication_metadata_json=? WHERE endpoint='parties'",
             (json.dumps(metadata, sort_keys=True),))
-        monkeypatch.setattr(cli, "verify_core_graph", lambda *_args: None)
-        previous = cli._previous_reference_graphs(store, Client(), Loader())
+        previous = cli._previous_reference_graphs(store, fuseki, Loader())
         assert set(previous["parties"]) == set(graph)
+    assert fuseki.replacements == []
 
 
 def test_identical_graph_can_gain_complete_member_coverage_after_verification(
-        tmp_path, monkeypatch):
+        tmp_path):
     from oireachtas_etl import cli
     from oireachtas_etl.config import PARTIES_GRAPH
     from oireachtas_etl.serialization import ntriples
     from oireachtas_etl.state import CoreStateStore
+    from tests._in_memory_fuseki import InMemoryFuseki
 
     graph = transform_parties([CURRENT_PARTY])
     payload = ntriples(graph)
-    puts = []
-
-    class Loader:
-        def replace(self, graph_iri, raw, **kwargs):
-            puts.append((graph_iri, raw))
-
-    monkeypatch.setattr(cli, "verify_core_graph", lambda *_args: None)
+    fuseki = InMemoryFuseki()
     with CoreStateStore(tmp_path / "core.sqlite") as store:
+        initial_run = store.start_run(
+            "parties", "full_refresh", is_complete=True,
+            parameters={"source": "api"}, versions=REFERENCE_VERSIONS,
+            started_at="2026-10-04T00:00:00+00:00")
+        initial_lineage = _party_entity_lineage(
+            store, initial_run, source_endpoint="parties",
+            observed_at="2026-10-04T00:00:01+00:00")
         digest = store.mark_endpoint_dirty(
-            "parties", PARTIES_GRAPH, payload, coverage_authoritative=False)
+            "parties", PARTIES_GRAPH, payload, coverage_authoritative=False,
+            run_id=initial_run, entity_lineage=initial_lineage)
         store.complete_endpoint_publication(
-            "parties", PARTIES_GRAPH, digest, coverage_authoritative=False)
+            "parties", PARTIES_GRAPH, digest, coverage_authoritative=False,
+            publishing_run_id=initial_run)
+        store.finish_run(initial_run, success=True)
+
+        upgrade_run = store.start_run(
+            "parties", "full_refresh", is_complete=True,
+            parameters={"source": "api"}, versions=REFERENCE_VERSIONS,
+            started_at="2026-10-04T00:01:00+00:00")
+        upgrade_lineage = _party_entity_lineage(
+            store, upgrade_run, source_endpoint="parties",
+            observed_at="2026-10-04T00:01:01+00:00")
         count = cli._publish_reference_graphs(
-            {"parties": graph}, store=store, loader=Loader(), client=object(),
-            coverage_authoritative=True, endpoints=("parties",))
-        assert count == 1 and puts == [(PARTIES_GRAPH, payload)]
+            {"parties": graph}, store=store, loader=fuseki, client=fuseki,
+            coverage_authoritative=True, endpoints=("parties",),
+            publishing_run_id=upgrade_run,
+            entity_lineage_by_endpoint={"parties": upgrade_lineage})
+        assert count == 1
+        assert fuseki.replacements == [
+            (PARTIES_GRAPH, payload, "application/n-triples")]
         assert store.endpoint_publication("parties")["coverage_authoritative"] is True
+        store.finish_run(upgrade_run, success=True)
 
         # A fixture that produces byte-identical RDF cannot invalidate the
         # already accepted complete-source evidence or cause needless PUTs.
         count = cli._publish_reference_graphs(
-            {"parties": graph}, store=store, loader=Loader(), client=object(),
-            coverage_authoritative=False, endpoints=("parties",))
-        assert count == 0 and len(puts) == 1
+            {"parties": graph}, store=store, loader=fuseki, client=fuseki,
+            coverage_authoritative=False, endpoints=("parties",),
+            entity_lineage_by_endpoint={"parties": upgrade_lineage})
+        assert count == 0 and len(fuseki.replacements) == 1
         assert store.endpoint_publication("parties")["coverage_authoritative"] is True
 
 
 def test_older_member_capture_cannot_regress_owner_graph_after_failed_run(
-        tmp_path, monkeypatch):
+        tmp_path):
     from oireachtas_etl import cli
     from oireachtas_etl.config import PARTIES_GRAPH
     from oireachtas_etl.serialization import ntriples
     from oireachtas_etl.state import CoreStateStore
+    from tests._in_memory_fuseki import InMemoryFuseki
 
     graph = transform_parties([CURRENT_PARTY])
     payload = ntriples(graph)
-    puts = []
-
-    class Loader:
-        def replace(self, graph_iri, raw, **kwargs):
-            puts.append((graph_iri, raw))
-
-    monkeypatch.setattr(cli, "verify_core_graph", lambda *_args: None)
+    fuseki = InMemoryFuseki()
     with CoreStateStore(tmp_path / "core.sqlite") as store:
         first = store.start_run(
             "members", "full_refresh", is_complete=True,
@@ -310,20 +343,28 @@ def test_older_member_capture_cannot_regress_owner_graph_after_failed_run(
 
         with pytest.raises(ValueError, match="older Members run"):
             cli._publish_reference_graphs(
-                {"parties": graph}, store=store, loader=Loader(), client=object(),
+                {"parties": graph}, store=store, loader=fuseki, client=fuseki,
                 coverage_authoritative=True, endpoints=("parties",),
                 member_source_run_id=first)
-        assert puts == []
+        assert fuseki.replacements == []
         assert store.endpoint_publication("parties")["member_source_run_id"] == newer_failed
 
         newest = store.start_run(
             "members", "full_refresh", is_complete=True,
-            parameters={"source": "api"},
+            parameters={"source": "api"}, versions=REFERENCE_VERSIONS,
             started_at="2026-10-03T00:00:00+00:00")
+        entity_lineage = _party_entity_lineage(
+            store, newest, source_endpoint="members",
+            observed_at="2026-10-03T00:00:01+00:00")
         count = cli._publish_reference_graphs(
-            {"parties": graph}, store=store, loader=Loader(), client=object(),
+            {"parties": graph}, store=store, loader=fuseki, client=fuseki,
             coverage_authoritative=True, endpoints=("parties",),
-            member_source_run_id=newest)
-        assert count == 0 and puts == []
+            member_source_run_id=newest, publishing_run_id=newest,
+            entity_lineage_by_endpoint={"parties": entity_lineage})
+        assert count == 1
+        assert fuseki.replacements == [
+            (PARTIES_GRAPH, payload, "application/n-triples")]
         assert store.endpoint_publication("parties")["member_source_run_id"] == newest
+        gaps = store.provenance_incomplete_records(include_resolved=True)
+        assert len(gaps) == 1 and gaps[0]["status"] == "resolved"
         store.finish_run(newest, success=True)

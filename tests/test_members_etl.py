@@ -856,10 +856,16 @@ def test_online_member_change_composes_previously_accepted_party_evidence(tmp_pa
     _mock_online(monkeypatch, third_calls)
     verify_calls = []
 
-    def mismatch_then_repair(*args):
+    real_verify = cli.verify_core_graph
+
+    def mismatch_then_repair(client, graph_iri, payload):
+        if graph_iri == "https://data.oireachtas.ie/graph/provenance":
+            return real_verify(client, graph_iri, payload)
+        args = (client, graph_iri, payload)
         verify_calls.append(args)
         if len(verify_calls) == 1:
             raise ValueError("remote graph mismatch")
+        return real_verify(client, graph_iri, payload)
 
     monkeypatch.setattr(cli, "verify_core_graph", mismatch_then_repair)
     assert cli.run_members(second_args) == 0
@@ -1100,17 +1106,32 @@ def _member_state(tmp_path, identity=WRAPPER["member"]["uri"]):
         return store.get_resource("members", identity)
 
 
+def _in_memory_fuseki(monkeypatch):
+    from tests._in_memory_fuseki import InMemoryFuseki
+
+    fuseki = getattr(monkeypatch, "_members_fuseki", None)
+    if fuseki is None:
+        fuseki = InMemoryFuseki()
+        monkeypatch._members_fuseki = fuseki
+    return fuseki
+
+
 def _mock_online(monkeypatch, calls, *, competency=None):
     from oireachtas_etl import cli
+    from oireachtas_etl.state import PROVENANCE_GRAPH_IRI
+
+    fuseki = _in_memory_fuseki(monkeypatch)
+
     class Loader:
         def __init__(self, *args, **kwargs): pass
-        def replace(self, *args, **kwargs): calls.append(args)
-    class Client:
-        def __init__(self, *args, **kwargs): pass
+        def replace(self, graph_iri, payload, **kwargs):
+            fuseki.replace(graph_iri, payload, **kwargs)
+            if graph_iri != PROVENANCE_GRAPH_IRI:
+                calls.append((graph_iri, payload))
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
-    monkeypatch.setattr(cli, "FusekiSparqlClient", Client)
+    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: fuseki)
     monkeypatch.setattr(cli, "verify_member_competency", competency or (lambda *args: None))
-    monkeypatch.setattr(cli, "verify_core_graph", lambda *args: None)
+    return fuseki
 
 
 def _report(capsys):
@@ -1128,6 +1149,7 @@ def _run_mocked_live_pages(tmp_path, monkeypatch, pages, *, limit, construction_
     """Run the live path while retaining ApiClient.harvest pagination logic."""
     from oireachtas_etl import cli
 
+    fuseki = _in_memory_fuseki(monkeypatch)
     constructed = []
 
     class Loader:
@@ -1137,12 +1159,11 @@ def _run_mocked_live_pages(tmp_path, monkeypatch, pages, *, limit, construction_
                 construction_sink.append(True)
 
         def replace(self, *args, **kwargs):
-            pass
+            fuseki.replace(*args, **kwargs)
 
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
-    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
+    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: fuseki)
     monkeypatch.setattr(cli, "verify_member_competency", lambda *args, **kwargs: None)
-    monkeypatch.setattr(cli, "verify_core_graph", lambda *args: None)
     monkeypatch.setenv("OIR_API_LIMIT", str(limit))
 
     client = ApiClient("https://example.test/members")
@@ -1245,27 +1266,32 @@ def test_manifest_lock_blocks_second_process_until_first_releases(tmp_path):
 
 def test_online_members_run_holds_manifest_lock_during_loader_publication(tmp_path, monkeypatch):
     from oireachtas_etl import cli
+    from oireachtas_etl.state import PROVENANCE_GRAPH_IRI
+
+    fuseki = _in_memory_fuseki(monkeypatch)
     lock_seen = []
 
     class Loader:
         def __init__(self, *args, **kwargs): pass
-        def replace(self, *args, **kwargs):
-            lock_path = Path(_online_args(tmp_path).state_db).with_name("state.sqlite.lock")
-            with lock_path.open("a+") as handle:
-                try:
-                    fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                except BlockingIOError:
-                    lock_seen.append(True)
-                else:
-                    lock_seen.append(False)
-                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        def replace(self, graph_iri, payload, **kwargs):
+            if graph_iri != PROVENANCE_GRAPH_IRI:
+                lock_path = Path(_online_args(tmp_path).state_db).with_name("state.sqlite.lock")
+                with lock_path.open("a+") as handle:
+                    try:
+                        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    except BlockingIOError:
+                        lock_seen.append(True)
+                    else:
+                        lock_seen.append(False)
+                        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            fuseki.replace(graph_iri, payload, **kwargs)
 
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
-    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
+    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: fuseki)
     monkeypatch.setattr(cli, "verify_member_competency", lambda *args, **kwargs: None)
-    monkeypatch.setattr(cli, "verify_core_graph", lambda *args: None)
     assert cli.run_members(_online_args(tmp_path)) == 0
     assert lock_seen == [True]
+    assert len(fuseki.construct_graph(PROVENANCE_GRAPH_IRI)) > 0
 
 
 def test_offline_members_run_does_not_acquire_lock_or_publish_state(tmp_path, monkeypatch):
@@ -1279,12 +1305,14 @@ def test_offline_members_run_does_not_acquire_lock_or_publish_state(tmp_path, mo
 
 def test_members_online_first_run_is_new_and_writes_published_state(tmp_path, monkeypatch, capsys):
     from oireachtas_etl import cli
-    calls = []; _mock_online(monkeypatch, calls)
+    from oireachtas_etl.state import PROVENANCE_GRAPH_IRI
+    calls = []; fuseki = _mock_online(monkeypatch, calls)
     assert cli.run_members(_online_args(tmp_path)) == 0
     result, identity = _report(capsys), WRAPPER["member"]["uri"]
     assert result["new"] == [identity] and result["changed"] == [] and result["skipped_identities"] == []
     assert result["published"] == 1 and len(calls) == 1
     assert _member_state(tmp_path, identity)["published_source_hash"] == source_hash(WRAPPER["member"])
+    assert len(fuseki.construct_graph(PROVENANCE_GRAPH_IRI)) > 0
 
 
 def test_members_online_unchanged_skips_before_transform_and_put_but_reports_omissions(tmp_path, monkeypatch, capsys):
@@ -1374,7 +1402,6 @@ def test_members_put_failure_is_dirty_and_retry_publishes_clean_current_state(tm
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", FailingLoader)
     monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
     monkeypatch.setattr(cli, "verify_member_competency", lambda *args, **kwargs: None)
-    monkeypatch.setattr(cli, "verify_core_graph", lambda *args: None)
     args = _online_args(tmp_path)
     with pytest.raises(RuntimeError, match="PUT failed"): cli.run_members(args)
     dirty = _member_state(tmp_path)

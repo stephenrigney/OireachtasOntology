@@ -187,35 +187,45 @@ def test_bills_cli_offline_never_writes_state(tmp_path):
 
 def test_online_bill_hash_skip_and_dirty_replacement_state(tmp_path, monkeypatch):
     from oireachtas_etl import cli
+    from oireachtas_etl.state import PROVENANCE_GRAPH_IRI
+    from tests._in_memory_fuseki import InMemoryFuseki
+
     fixture = tmp_path / "bill.json"; fixture.write_text(json.dumps({"head": {"counts": {"billCount": 1}}, "results": [RECORD]}))
     args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(tmp_path / "state.sqlite"), output_nq=None, output_ttl=None, fuseki_gsp_url="http://example.test/data", fuseki_sparql_url="http://example.test/query")
     calls = []
+    fuseki = InMemoryFuseki()
     class Loader:
         def __init__(self, *args, **kwargs): pass
-        def replace(self, *args, **kwargs): calls.append(args)
+        def replace(self, graph_iri, payload, **kwargs):
+            fuseki.replace(graph_iri, payload, **kwargs)
+            if graph_iri != PROVENANCE_GRAPH_IRI:
+                calls.append((graph_iri, payload))
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
-    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
+    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: fuseki)
     monkeypatch.setattr(cli, "verify_bill_competency", lambda *args: None)
-    monkeypatch.setattr(cli, "verify_core_graph", lambda *args: None)
     assert cli.run_bills(args) == 0 and len(calls) == 1
     from oireachtas_etl.state import CoreStateStore
     with CoreStateStore(Path(args.state_db)) as store:
         state = store.get_resource("legislation", RECORD["bill"]["uri"])
     assert state["publication_state"] == "clean" and state["published_source_hash"] == source_hash(RECORD["bill"])
     assert state["published_payload_hash"] and state["pending_payload"] is None
+    assert len(fuseki.construct_graph(PROVENANCE_GRAPH_IRI)) > 0
+    assert any(f"GRAPH <{PROVENANCE_GRAPH_IRI}>" in query for query in fuseki.queries)
     monkeypatch.setattr(cli, "transform_bill_with_report", lambda value: (_ for _ in ()).throw(AssertionError("unchanged bill transformed")))
     assert cli.run_bills(args) == 0 and len(calls) == 1
 
 
 def test_bill_publication_failure_and_competency_failure_are_dirty_and_retry(tmp_path, monkeypatch):
     from oireachtas_etl import cli
+    from tests._in_memory_fuseki import InMemoryFuseki
+
     fixture = tmp_path / "bill.json"; fixture.write_text(json.dumps({"head": {"counts": {"billCount": 1}}, "results": [RECORD]}))
     args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"), state_db=str(tmp_path / "state.sqlite"), output_nq=None, output_ttl=None, fuseki_gsp_url="http://example.test/data", fuseki_sparql_url="http://example.test/query")
+    fuseki = InMemoryFuseki()
     class FailingLoader:
         def __init__(self, *args, **kwargs): pass
         def replace(self, *args, **kwargs): raise RuntimeError("PUT failed")
-    monkeypatch.setattr(cli, "FusekiGraphStoreLoader", FailingLoader); monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
-    monkeypatch.setattr(cli, "verify_core_graph", lambda *args: None)
+    monkeypatch.setattr(cli, "FusekiGraphStoreLoader", FailingLoader); monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: fuseki)
     with pytest.raises(RuntimeError, match="PUT failed"): cli.run_bills(args)
     from oireachtas_etl.state import CoreStateStore
     with CoreStateStore(Path(args.state_db)) as store:
@@ -225,7 +235,8 @@ def test_bill_publication_failure_and_competency_failure_are_dirty_and_retry(tmp
     assert entry["pending_payload"] and entry["pending_payload_hash"]
     class Loader:
         def __init__(self, *args, **kwargs): pass
-        def replace(self, *args, **kwargs): pass
+        def replace(self, graph_iri, payload, **kwargs):
+            fuseki.replace(graph_iri, payload, **kwargs)
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader); monkeypatch.setattr(cli, "verify_bill_competency", lambda *args: (_ for _ in ()).throw(ValueError("competency failed")))
     with pytest.raises(ValueError, match="competency failed"): cli.run_bills(args)
     with CoreStateStore(Path(args.state_db)) as store:
@@ -239,7 +250,8 @@ def test_bill_publication_failure_and_competency_failure_are_dirty_and_retry(tmp
 def test_bills_full_scan_replays_durable_dirty_payload_for_unobserved_bill(tmp_path, monkeypatch, capsys):
     from oireachtas_etl import cli
     from oireachtas_etl.serialization import ntriples
-    from oireachtas_etl.state import CoreStateStore
+    from oireachtas_etl.state import CoreStateStore, PROVENANCE_GRAPH_IRI
+    from tests._in_memory_fuseki import InMemoryFuseki
 
     identity = "https://data.oireachtas.ie/ie/oireachtas/bill/2026/999"
     graph_iri = "https://data.oireachtas.ie/graph/bill/2026/999"
@@ -256,13 +268,16 @@ def test_bills_full_scan_replays_durable_dirty_payload_for_unobserved_bill(tmp_p
         store.finish_run(run_id, success=False, error="interrupted before verification")
 
     calls = []
+    fuseki = InMemoryFuseki()
     class Loader:
         def __init__(self, *args, **kwargs): pass
-        def replace(self, *args, **kwargs): calls.append(args)
+        def replace(self, graph_iri, raw, **kwargs):
+            fuseki.replace(graph_iri, raw, **kwargs)
+            if graph_iri != PROVENANCE_GRAPH_IRI:
+                calls.append((graph_iri, raw))
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
-    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: object())
+    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: fuseki)
     monkeypatch.setattr(cli, "verify_bill_competency", lambda *args, **kwargs: None)
-    monkeypatch.setattr(cli, "verify_core_graph", lambda *args: None)
     fixture = ROOT / "data/api_examples/bill.json"
     args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"),
                      state_db=str(database), output_nq=None, output_ttl=None,
@@ -272,6 +287,8 @@ def test_bills_full_scan_replays_durable_dirty_payload_for_unobserved_bill(tmp_p
     result = json.loads(capsys.readouterr().out)
     assert result["published"] == 2
     assert (graph_iri, payload) in calls
+    assert len(fuseki.construct_graph(PROVENANCE_GRAPH_IRI)) > 0
+    assert any(f"GRAPH <{PROVENANCE_GRAPH_IRI}>" in query for query in fuseki.queries)
     with CoreStateStore(database) as store:
         recovered = store.get_resource("legislation", identity)
         assert recovered["publication_state"] == "clean"

@@ -520,6 +520,9 @@ def test_dirty_member_payload_hash_and_graph_boundary_are_checked_before_put(tmp
 
 def test_member_manifest_contract_bump_republishes_unchanged_graph(tmp_path, monkeypatch, capsys):
     from oireachtas_etl import cli
+    from oireachtas_etl.state import PROVENANCE_GRAPH_IRI
+    from tests._in_memory_fuseki import InMemoryFuseki
+
     from oireachtas_etl.transforms.members import member_graph_iri, source_hash
     wrapper = json.loads((ROOT / "data/api_examples/member.json").read_text())
     fixture = tmp_path / "member.json"; fixture.write_text(json.dumps(wrapper))
@@ -529,15 +532,15 @@ def test_member_manifest_contract_bump_republishes_unchanged_graph(tmp_path, mon
         "source_hash": source_hash(wrapper["member"]), "published_hash": source_hash(wrapper["member"]),
         "graph_iri": member_graph_iri(wrapper["member"]), "contract_version": 1, "status": "clean"}}}))
     puts=[]
+    fuseki = InMemoryFuseki()
     class Loader:
         def __init__(self, *args, **kwargs): pass
-        def replace(self, graph_iri, payload, **kwargs): puts.append((graph_iri, payload))
-    class Client:
-        def __init__(self, *args, **kwargs): pass
+        def replace(self, graph_iri, payload, **kwargs):
+            puts.append((graph_iri, payload))
+            fuseki.replace(graph_iri, payload, **kwargs)
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
-    monkeypatch.setattr(cli, "FusekiSparqlClient", Client)
+    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: fuseki)
     monkeypatch.setattr(cli, "verify_member_competency", lambda *args, **kwargs: None)
-    monkeypatch.setattr(cli, "verify_core_graph", lambda *args, **kwargs: None)
     state_db = tmp_path / "core-state.sqlite"
     assert cli.main(["run", "members", "--fixture", str(fixture), "--state-db", str(state_db),
                          "--reconciliation-state-file", str(tmp_path / "reconciliation.sqlite"),
@@ -549,7 +552,9 @@ def test_member_manifest_contract_bump_republishes_unchanged_graph(tmp_path, mon
     from oireachtas_etl.state import CoreStateStore
     with CoreStateStore(state_db) as state:
         saved = state.get_resource("members", identity)
-    assert result["changed"] == [identity] and len(puts) == 1
+    member_puts = [call for call in puts if not call[0].endswith("/provenance")]
+    assert result["changed"] == [identity] and len(member_puts) == 1
+    assert len(fuseki.construct_graph(PROVENANCE_GRAPH_IRI)) > 0
     assert saved["published_source_hash"] == source_hash(wrapper["member"])
     assert saved["contract_version"] == 3 and saved["publication_state"] == "clean"
     assert json.loads(manifest.read_text())["members"][identity]["contract_version"] == 1

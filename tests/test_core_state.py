@@ -8,7 +8,8 @@ from argparse import Namespace
 
 import pytest
 
-from oireachtas_etl.state import CoreStateError, CoreStateStore
+from oireachtas_etl.state import (CoreStateError, CoreStateStore,
+                                  PROVENANCE_GRAPH_IRI, SHARED_GRAPHS)
 from oireachtas_etl.transforms.bills import bill_graph_iri
 from oireachtas_etl.transforms.members import member_graph_iri
 
@@ -154,7 +155,7 @@ def test_core_schema_v1_upgrades_resources_and_reopens(tmp_path):
             hashlib.sha256(pending_payload.encode()).hexdigest(), 1))
 
     with CoreStateStore(database) as store:
-        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 5
+        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 8
         clean = store.get_resource("members", member_identity)
         dirty = store.get_resource("legislation", bill_identity)
         assert clean["publication_state"] == "clean"
@@ -175,9 +176,34 @@ def test_core_schema_v1_upgrades_resources_and_reopens(tmp_path):
         assert store.incremental_cursor() is None
 
     with CoreStateStore(database) as reopened:
-        assert reopened.connection.execute("PRAGMA user_version").fetchone()[0] == 5
+        assert reopened.connection.execute("PRAGMA user_version").fetchone()[0] == 8
         assert reopened.get_resource("members", member_identity)["published_source_hash"] == "b" * 64
         assert reopened.get_resource("legislation", bill_identity)["pending_source_hash"] == "e" * 64
+
+
+def test_core_schema_v6_adds_catalog_failure_recovery_state_without_losing_dirty_payload(tmp_path):
+    database = tmp_path / "core-v6.sqlite"
+    payload = "<https://example.test/pending> <https://example.test/p> <https://example.test/o> .\n"
+    with CoreStateStore(database) as store:
+        store.mark_catalog_dirty(PROVENANCE_GRAPH_IRI, payload)
+        store.connection.execute("DROP TRIGGER IF EXISTS catalog_publication_attempt_no_update")
+        store.connection.execute("DROP TRIGGER IF EXISTS catalog_publication_attempt_no_delete")
+        store.connection.execute("DROP TABLE catalog_publication_attempt")
+        store.connection.execute("DROP TABLE catalog_run_finalization")
+        store.connection.execute("DROP INDEX IF EXISTS provenance_incomplete_status")
+        store.connection.execute("DROP TABLE provenance_incomplete")
+        store.connection.execute("PRAGMA user_version=6")
+
+    with CoreStateStore(database) as migrated:
+        assert migrated.connection.execute("PRAGMA user_version").fetchone()[0] == 8
+        tables = {row[0] for row in migrated.connection.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'")}
+        assert {"catalog_run_finalization", "catalog_publication_attempt",
+                "provenance_incomplete"} <= tables
+        pending = migrated.catalog_publication()
+        assert pending["publication_state"] == "dirty"
+        assert pending["pending_payload"] == payload
+        assert pending["pending_payload_hash"] == hashlib.sha256(payload.encode()).hexdigest()
 
 
 def test_core_schema_v2_migration_preserves_runs_and_adds_registry_endpoints(tmp_path):
@@ -224,7 +250,7 @@ def test_core_schema_v2_migration_preserves_runs_and_adds_registry_endpoints(tmp
           VALUES ('houses','prior-run','prior-run',NULL,NULL,'2026-01-01T00:00:01+00:00')""")
 
     with CoreStateStore(database) as store:
-        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 5
+        assert store.connection.execute("PRAGMA user_version").fetchone()[0] == 8
         prior = store.connection.execute("SELECT endpoint,status FROM etl_run WHERE run_id='prior-run'").fetchone()
         assert (prior["endpoint"], prior["status"]) == ("houses", "succeeded")
         assert store.endpoint_publication("houses") is None
@@ -370,11 +396,11 @@ def test_core_state_cli_status_reports_database_without_reconciliation_state(tmp
     database = tmp_path / "core.sqlite"
     assert main(["state", "status", "--state-db", str(database)]) == 0
     output = json.loads(capsys.readouterr().out)
-    assert output["schema_version"] == 5 and output["database"] == str(database)
+    assert output["schema_version"] == 8 and output["database"] == str(database)
     assert output["endpoints"] == [] and output["recent_runs"] == []
 
 
-def test_fresh_v5_schema_has_reference_report_columns_and_pair_checks(tmp_path):
+def test_fresh_v6_schema_has_reference_report_columns_and_pair_checks(tmp_path):
     with CoreStateStore(tmp_path / "fresh.sqlite") as store:
         columns = {row[1] for row in store.connection.execute(
             "PRAGMA table_info(resource_state)")}
@@ -516,4 +542,7 @@ def test_shared_graph_cli_verification_failure_recovers_without_clean_state(
     with CoreStateStore(database) as store:
         assert store.endpoint_publication(endpoint)["publication_state"] == "clean"
         assert store.status()["recent_runs"][0]["status"] == "succeeded"
-    assert len(published) == 2
+    assert published.count(SHARED_GRAPHS[endpoint]) == 2
+    # The failed run's exact catalog projection is staged first, then replayed
+    # before the recovery run publishes its refreshed catalog.
+    assert published.count(PROVENANCE_GRAPH_IRI) == 3

@@ -22,7 +22,7 @@ from oireachtas_etl.reconciliation import (
     resolve_institution,
     resolve_party,
 )
-from oireachtas_etl.state import CoreStateStore
+from oireachtas_etl.state import CoreStateStore, PROVENANCE_GRAPH_IRI
 from oireachtas_etl.transforms.common import MEMBERS
 
 
@@ -37,23 +37,28 @@ QID = "Q832321"
 
 
 class _FusekiLoader:
-    def __init__(self, calls):
+    def __init__(self, calls, fuseki):
         self.calls = calls
+        self.fuseki = fuseki
 
-    def replace(self, graph_iri, payload, **_kwargs):
+    def replace(self, graph_iri, payload, **kwargs):
         self.calls.append((graph_iri, payload))
-
-
-class _NoopClient:
-    def __init__(self, *_args, **_kwargs):
-        pass
+        self.fuseki.replace(graph_iri, payload, **kwargs)
 
 
 def _mock_core_publication(monkeypatch, calls):
-    monkeypatch.setattr(cli, "FusekiGraphStoreLoader", lambda *a, **k: _FusekiLoader(calls))
-    monkeypatch.setattr(cli, "FusekiSparqlClient", _NoopClient)
+    from tests._in_memory_fuseki import InMemoryFuseki
+
+    fuseki = InMemoryFuseki()
+    monkeypatch.setattr(cli, "FusekiGraphStoreLoader",
+                        lambda *a, **k: _FusekiLoader(calls, fuseki))
+    monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *a, **k: fuseki)
     monkeypatch.setattr(cli, "verify_member_competency", lambda *_: None)
-    monkeypatch.setattr(cli, "verify_core_graph", lambda *_: None)
+    return fuseki
+
+
+def _authoritative_graph_calls(calls):
+    return [call for call in calls if call[0] != PROVENANCE_GRAPH_IRI]
 
 
 def _member_args(tmp_path, fixture=None):
@@ -143,10 +148,12 @@ def test_member_core_publication_hands_off_due_and_external_retry_is_independent
     tmp_path, monkeypatch, capsys,
 ):
     core_calls = []
-    _mock_core_publication(monkeypatch, core_calls)
+    fuseki = _mock_core_publication(monkeypatch, core_calls)
     args = _member_args(tmp_path)
     assert cli.run_members(args) == 0
     capsys.readouterr()
+    assert len(fuseki.construct_graph(PROVENANCE_GRAPH_IRI)) > 0
+    assert any(f"GRAPH <{PROVENANCE_GRAPH_IRI}>" in query for query in fuseki.queries)
 
     identity = MEMBER["member"]["uri"]
     with ReconciliationStore(Path(args.reconciliation_state_file)) as store:
@@ -176,7 +183,7 @@ def test_member_core_publication_hands_off_due_and_external_retry_is_independent
     # nor transforms/publishes the authoritative graph again.
     assert cli.run_members(args) == 0
     capsys.readouterr()
-    assert len(core_calls) == 1
+    assert len(_authoritative_graph_calls(core_calls)) == 1
     with ReconciliationStore(Path(args.reconciliation_state_file)) as store:
         assert store.get_record("member", identity)["next_recheck_at"] == retry_deadline
 
@@ -200,7 +207,7 @@ def test_member_core_publication_hands_off_due_and_external_retry_is_independent
         assert row["next_recheck_at"] > (datetime.now(timezone.utc) + timedelta(days=89)).isoformat()
     assert recovered.lookup_calls == 1 and recovered.entity_calls == 1
     assert len(publisher.calls) == 1
-    assert len(core_calls) == 1
+    assert len(_authoritative_graph_calls(core_calls)) == 1
     with CoreStateStore(Path(args.state_db)) as state:
         current = state.get_resource("members", identity)
         assert current["publication_state"] == "clean"
@@ -292,7 +299,7 @@ def test_parties_core_handoff_uses_policy_fingerprint_and_preserves_recheck_cade
 
     # Freshness is independent: later external recovery does not regenerate
     # the authoritative Party graph.
-    core_puts_before_recovery = len(core_calls)
+    core_puts_before_recovery = len(_authoritative_graph_calls(core_calls))
     with ReconciliationStore(Path(args.reconciliation_state_file)) as store:
         store.connection.execute(
             "UPDATE reconciliation_record SET next_recheck_at='2000-01-01T00:00:00+00:00' "
@@ -309,7 +316,7 @@ def test_parties_core_handoff_uses_policy_fingerprint_and_preserves_recheck_cade
             datetime.now(timezone.utc) + timedelta(days=89)
         ).isoformat()
         assert recovered_wd.entity_calls == [QID]
-    assert len(core_calls) == core_puts_before_recovery
+    assert len(_authoritative_graph_calls(core_calls)) == core_puts_before_recovery
 
 
 @pytest.mark.parametrize("endpoint", ["members", "parties"])
@@ -349,7 +356,7 @@ def test_reconciliation_handoff_failure_does_not_fail_core_publication(
     # neither fail the run nor leave authoritative resource/endpoint state dirty.
     assert (cli.run_members(args) if endpoint == "members" else cli.run_reference(args)) == 0
     capsys.readouterr()
-    assert len(core_calls) == 1
+    assert len(_authoritative_graph_calls(core_calls)) == 1
     with CoreStateStore(Path(args.state_db)) as state:
         if kind == "members":
             assert state.get_resource(kind, identity)["publication_state"] == "clean"
@@ -384,7 +391,7 @@ def test_reconciliation_handoff_failure_does_not_fail_core_publication(
         assert row["publication_state"] == "clean"
         assert row["next_recheck_at"] > datetime.now(timezone.utc).isoformat()
     assert len(publisher.calls) == 1
-    assert len(core_calls) == 1
+    assert len(_authoritative_graph_calls(core_calls)) == 1
 
 
 @pytest.mark.parametrize(

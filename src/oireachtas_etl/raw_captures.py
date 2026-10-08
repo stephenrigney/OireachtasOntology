@@ -3,12 +3,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import sqlite3
 
+from .source_contract import classify_source_envelope
 from .transforms.common import iri
 from .transforms.members import member_graph_iri, source_hash
+from .transforms.common import iri
 from .state import AUTHORITATIVE_COMPLETE_SOURCES
 
 
@@ -18,6 +21,37 @@ COUNT_FIELDS = {
     "parties": "partyCount",
     "constituencies": "constituencyCount",
 }
+
+
+def _persist_envelope_report(raw_path: Path, directory: Path, run_id: str,
+                             page: object, body: bytes, endpoint: str, *,
+                             expected_count: int | None = None,
+                             observed_record_count: int | None = None) -> None:
+    """Retain count/container drift beside the immutable capture page."""
+    evidence = {
+        "path": raw_path.relative_to(directory.parent).as_posix(),
+        "sha256": hashlib.sha256(body).hexdigest(),
+        "json_pointer": "",
+    }
+    report = classify_source_envelope(
+        endpoint, page, run_id=run_id, source_evidence=evidence,
+        count_field=COUNT_FIELDS[endpoint], expected_count=expected_count,
+        observed_record_count=observed_record_count,
+    )
+    if not report.findings:
+        return
+    target = raw_path.with_name(
+        raw_path.name.removesuffix(".json") + ".source-envelope-drift.json")
+    payload = (json.dumps(report.as_dict(), ensure_ascii=False,
+                          sort_keys=True, indent=2) + "\n").encode("utf-8")
+    if target.exists():
+        if target.read_bytes() != payload:
+            raise ValueError(f"immutable source-envelope report conflicts with capture evidence: {target}")
+        return
+    with target.open("xb") as handle:
+        handle.write(payload)
+        handle.flush()
+        os.fsync(handle.fileno())
 
 
 def load_complete_capture(directory: Path, endpoint: str) -> tuple[list[dict], int]:
@@ -35,6 +69,7 @@ def load_complete_capture(directory: Path, endpoint: str) -> tuple[list[dict], i
 
     records: list[dict] = []
     advertised: int | None = None
+    last_page: tuple[Path, object, bytes] | None = None
     expected_skip = 0
     for page_index, raw_path in enumerate(raw_pages):
         filename_match = re.fullmatch(r"skip-([0-9]{6,})\.json", raw_path.name)
@@ -52,6 +87,9 @@ def load_complete_capture(directory: Path, endpoint: str) -> tuple[list[dict], i
         if (meta.get("run_id") != run_id or meta.get("status") != 200
                 or meta.get("sha256") != hashlib.sha256(body).hexdigest()):
             raise ValueError(f"{endpoint} raw page metadata/run/hash is not authoritative: {raw_path}")
+        _persist_envelope_report(
+            raw_path, directory, run_id, page, body, endpoint,
+            expected_count=advertised)
         params = meta.get("params")
         if (not isinstance(params, dict) or type(params.get("skip")) is not int
                 or type(params.get("limit")) is not int or params["limit"] < 1
@@ -75,6 +113,7 @@ def load_complete_capture(directory: Path, endpoint: str) -> tuple[list[dict], i
         if page_index == len(raw_pages) - 1 and len(results) == params["limit"]:
             raise ValueError(f"{endpoint} capture is missing the terminal pagination page")
         records.extend(results)
+        last_page = (raw_path, page, body)
         expected_skip += params["limit"]
 
     if advertised is None:
@@ -106,6 +145,11 @@ def load_complete_capture(directory: Path, endpoint: str) -> tuple[list[dict], i
             unique[identity] = wrapper
         records = [unique[identity] for identity in sorted(unique)]
     if len(records) != advertised:
+        if last_page is not None:
+            raw_path, page, body = last_page
+            _persist_envelope_report(
+                raw_path, directory, run_id, page, body, endpoint,
+                observed_record_count=len(records))
         raise ValueError(
             f"{endpoint} capture contains {len(records)} unique records, not its advertised {advertised}")
     return records, advertised
@@ -164,6 +208,70 @@ def load_latest_complete_capture(raw_root: Path, store, endpoint: str) -> tuple[
         raise ValueError(
             f"expected one immutable {endpoint} raw capture for successful run {run_id}; found {len(matches)}")
     return load_authoritative_capture(matches[0], endpoint, store)
+
+
+def capture_record_pointers(directory: Path, raw_root: Path,
+                            endpoint: str) -> dict[str, list[dict[str, str]]]:
+    """Index exact immutable page/record pointers for a verified source capture.
+
+    The identity map deliberately retains all duplicate observations for
+    Parties/Constituencies. Members may contain exact duplicate wrappers across
+    pages; callers use the first deterministic occurrence, matching their
+    identity-based deduplication without losing its original page location.
+    """
+    if endpoint not in {"members", "parties", "constituencies"}:
+        raise ValueError(f"record evidence pointers are not defined for {endpoint}")
+    directory = Path(directory).expanduser().resolve()
+    raw_root = Path(raw_root).expanduser().resolve()
+    records, _advertised = load_complete_capture(directory, endpoint)
+    record_identities: set[str] = set()
+    for wrapper in records:
+        if endpoint == "members":
+            item = wrapper.get("member") if isinstance(wrapper, dict) else None
+        elif endpoint == "parties":
+            item = wrapper.get("party") if isinstance(wrapper, dict) else None
+        else:
+            item = (wrapper.get("constituencyOrPanel")
+                    if isinstance(wrapper, dict) else None)
+        if isinstance(item, dict) and item.get("uri") is not None:
+            record_identities.add(str(iri(item["uri"])))
+
+    result: dict[str, list[dict[str, str]]] = {}
+    raw_pages = sorted(path for path in directory.glob("skip-*.json")
+                       if not path.name.endswith(".meta.json"))
+    for raw_path in raw_pages:
+        body = raw_path.read_bytes()
+        meta_path = raw_path.with_name(raw_path.name.removesuffix(".json") + ".meta.json")
+        metadata = json.loads(meta_path.read_text(encoding="utf-8"))
+        if metadata.get("sha256") != hashlib.sha256(body).hexdigest():
+            raise ValueError(f"{endpoint} capture page hash changed: {raw_path}")
+        page = json.loads(body)
+        page_records = page.get("results") if isinstance(page, dict) else page
+        if not isinstance(page_records, list):
+            raise ValueError(f"{endpoint} capture page has no results array: {raw_path}")
+        try:
+            relative = raw_path.resolve().relative_to(raw_root).as_posix()
+        except ValueError as error:
+            raise ValueError(f"{endpoint} capture page is outside the raw evidence root") from error
+        page_hash = metadata["sha256"]
+        for index, wrapper in enumerate(page_records):
+            if endpoint == "members":
+                item = wrapper.get("member") if isinstance(wrapper, dict) else None
+            elif endpoint == "parties":
+                item = wrapper.get("party") if isinstance(wrapper, dict) else None
+            else:
+                item = (wrapper.get("constituencyOrPanel")
+                        if isinstance(wrapper, dict) else None)
+            if not isinstance(item, dict) or item.get("uri") is None:
+                continue
+            identity = str(iri(item["uri"]))
+            if identity not in record_identities:
+                continue
+            pointer = {"path": relative, "sha256": page_hash,
+                       "json_pointer": f"/results/{index}"}
+            result.setdefault(identity, []).append(pointer)
+    return {identity: sorted(pointers, key=lambda item: (
+        item["path"], item["json_pointer"])) for identity, pointers in result.items()}
 
 
 class _ReadOnlyCoreCaptureIndex:
