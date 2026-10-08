@@ -2042,11 +2042,16 @@ positive competencies; their mappings remain inactive and source references
 auditable. The **initial production scope is approved**: all Dáil, Seanad and
 committee debate Works dated **2011-01-01 onward**, with written answers
 excluded, irrespective of Bill linkage. This is a scope decision, **not**
-authorization for broad ingestion. The production-readiness gate remains open
-pending configurable Phase 6 operational limits, an exact inventory/disposition
-of in-scope malformed sources, and operational acceptance. Tranche 4 supports
-explicit AKN acquisition/replay and opt-in supplied-batch publication; it
-does not implement production enumeration or scheduling.
+authorization for broad ingestion. The exact inventory of the preserved
+2011+ `/v1/debates` census is complete: 10,913 Works, 10,649 eligible and 264
+quarantined. See `documentation/debates-production-readiness.md` and its
+per-Work `documentation/debates-initial-production-inventory.json`. The gate
+remains open pending human exception dispositions, approval of proposed Phase 6
+operational limits, a decision on the accepted source-listing/Expression
+completeness boundary, and staged operational acceptance. The exact inventory
+does not prove global Work/Expression completeness. Tranche 4 supports explicit
+AKN acquisition/replay and opt-in supplied-batch publication; it does not
+implement production enumeration or scheduling.
 
 Settled boundaries include:
 
@@ -2109,9 +2114,11 @@ publishing a graph from one Expression alone. The full rules are in
    in-scope XML (including `writtens`), runtime and RDF output/working storage
    required before broad ingestion has been measured and is recorded in
    `documentation/debates-production-benchmark.md`. The initial 2011+
-   debates-only scope is now selected; operational limits, exact quarantine
-   inventory and production-scale acceptance remain outstanding. Production
-   scanning cadence and scheduling policy remain Phase 6 work.
+   debates-only scope is now selected and its exact preserved-census inventory
+   is complete (see the readiness report and inventory JSON). Human exception
+   dispositions, operational limits, the completeness-boundary decision and
+   staged acceptance remain outstanding. Production scanning cadence and
+   scheduling policy remain Phase 6 work.
 
 #### Debates backlog
 
@@ -2128,24 +2135,32 @@ publishing a graph from one Expression alone. The full rules are in
   resource assessment: **Dáil, Seanad and committee debate Works from
   2011-01-01 onward, excluding written answers**; no Bill-only filter.
   This decision does not close the production-readiness gate.
-- [ ] **Before initial ingestion — exact quarantine inventory:** inspect every
-  in-scope Work and record affected source URL, Work/Expression IRI, preserved
-  SHA-256, failure category, source evidence, review status and decision.
-  Quarantine without modifying source or publishing partial RDF. The
-  2026-10-06 scoped assessment estimated approximately 301 exceptions, not
-  301 confirmed records: reconcile the earlier seven 2011–2012 failures with
-  the later eight exact pre-2013 exceptions (including a URL/Expression mismatch)
-  and determine the exact post-2012 committee count. Preserve the inventory
-  and link its report here when available.
+- [x] **Exact preserved-census exception inventory:** all 10,913 selected Works
+  were inspected; source URLs, Work/Expression identities where established,
+  preserved SHA-256 values, failure stage/category, source evidence and review
+  status are recorded per Work in
+  `documentation/debates-initial-production-inventory.json`. The scan confirms
+  264 quarantined Works: 2 duplicate decoded eIds, 261 empty `sectionName`
+  failures and 1 source URL/Expression mismatch. This is 8 pre-2013 exceptions
+  plus 256 post-2012 empty-section failures; it supersedes the 2026-10-06
+  sample-based estimate of approximately 301. Assessment outcomes do not write
+  production quarantine state or repair source bytes. **Human review and
+  disposition of all 264 exceptions remain required before ingestion.** See
+  `documentation/debates-production-readiness.md`.
 - [ ] **Before initial ingestion — operational limits:** approve configurable
   Phase 6 warning/stop thresholds and space headroom for Fuseki/TDB2, raw XML,
   immutable reference-report sidecars, Core State, temporary data and backups.
-  Values suggested by the scoped assessment are proposals, not yet approved.
+  The exact scan now provides full-scope source, RDF serialization and no-owner
+  report sizes; actual TDB2/full Core State amplification and production-owner
+  report sizes still require staged measurement. Values in the readiness report
+  are proposals, not approved settings.
 - [ ] **Before initial ingestion — production readiness:** complete safe
   enumeration/selection of the approved period through the Phase 6 operational
-  pathway and staged acceptance of publication, verification, quarantine and
-  recovery. Tranche 4's explicit-record CLI is not a production census or
-  scheduling facility.
+  pathway, confirm whether the `/v1/debates` census is the accepted completeness
+  boundary, and complete staged acceptance of publication, verification,
+  quarantine and recovery. One listed Expression does not prove a Work's global
+  Expression completeness. Tranche 4's explicit-record CLI and this preserved
+  census inventory are not a production enumeration or scheduling facility.
 
 **Deferred beyond the initial 2011+ debates-only load (not prerequisites
 unless new evidence affects its safety):**
