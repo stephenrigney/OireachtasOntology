@@ -20,11 +20,15 @@ Subcommands::
     python -m tools.debates_scope_assessment census   --out DIR [--start-year 2011]
     python -m tools.debates_scope_assessment acquire  --out DIR --raw-root DIR [--workers 8]
     python -m tools.debates_scope_assessment scan     --out DIR --raw-root DIR [--limit N]
+    python -m tools.debates_scope_assessment inventory --assessment-dir DIR --raw-root DIR \
+        --output INVENTORY.json
     python -m tools.debates_scope_assessment publish  --out DIR --raw-root DIR --state-db F \
         --gsp URL --sparql URL [--sample-per-category N]
 
-Network is required for ``census`` and ``acquire``; ``scan`` and ``publish``
-replay the exact preserved objects offline.
+Network is required for ``census`` and ``acquire``; ``scan``, ``inventory`` and
+``publish`` replay preserved objects offline. ``inventory`` is the exact,
+non-publishing check of the approved 2011+ debates-only source selection. It
+can be reproduced from its committed ``selection`` list with ``--selection-file``.
 """
 from __future__ import annotations
 
@@ -33,8 +37,10 @@ import hashlib
 import json
 import os
 import resource
+import shutil
 import statistics
 import sys
+import tempfile
 import time
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -49,6 +55,7 @@ from oireachtas_etl import competency  # noqa: E402
 from oireachtas_etl.config import COMMITTEES_GRAPH, HOUSES_GRAPH  # noqa: E402
 from oireachtas_etl.debates_pipeline import run_debate_batch  # noqa: E402
 from oireachtas_etl.debates_raw import (  # noqa: E402
+    DebateRawSource,
     DebateSourceError,
     fetch_main_xml,
     load_main_xml,
@@ -58,6 +65,8 @@ from oireachtas_etl.loader import FusekiGraphStoreLoader, FusekiSparqlClient  # 
 from oireachtas_etl.serialization import nquads, ntriples  # noqa: E402
 from oireachtas_etl.state import CoreStateStore  # noqa: E402
 from oireachtas_etl.transforms.committees import transform_committees  # noqa: E402
+from oireachtas_etl.transforms.common import OIR  # noqa: E402
+from oireachtas_etl.transforms.debates import inspect_debate_source_identity  # noqa: E402
 from oireachtas_etl.transforms.houses import transform_houses  # noqa: E402
 from oireachtas_etl.transforms.members import member_graph_iri, transform_member  # noqa: E402
 from oireachtas_etl.validation.committees import validate_committees  # noqa: E402
@@ -407,6 +416,448 @@ def command_scan(args) -> int:
     _write(out / name, results)
     print(json.dumps(scan_summary(results, time.perf_counter() - started,
                                   rss_peak, args.scenario), indent=1))
+    return 0
+
+
+# --------------------------------------------------------------------------
+# exact approved-scope source inventory
+
+_INVENTORY_SCHEMA = "debates-initial-production-inventory-v1"
+_APPROVED_START_DATE = "2011-01-01"
+_APPROVED_CATEGORIES = {"dail", "seanad", "committee"}
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _source_listing_key(row: dict) -> str:
+    return str(row.get("xml_uri") or "")
+
+
+def _build_exact_selection(assessment_dir: Path) -> dict:
+    """Reconcile the census, HEAD census, scenario manifest and acquisition."""
+    names = (
+        "census_debates_raw.json",
+        "census_debates_head.json",
+        "scenario_manifest.json",
+        "acquisition.json",
+    )
+    inputs = {name: assessment_dir / name for name in names}
+    missing = [name for name, path in inputs.items() if not path.is_file()]
+    if missing:
+        raise ValueError(f"assessment input is missing required files: {', '.join(missing)}")
+    input_hashes = {name: _sha256_file(path) for name, path in inputs.items()}
+    census = _read(inputs["census_debates_raw.json"], [])
+    heads = _read(inputs["census_debates_head.json"], [])
+    manifest = _read(inputs["scenario_manifest.json"], {})
+    acquisitions = _read(inputs["acquisition.json"], [])
+
+    if not isinstance(census, list) or not isinstance(heads, list):
+        raise ValueError("debates census and HEAD census must be JSON arrays")
+    if not isinstance(manifest, dict) or not isinstance(manifest.get("scenario_a"), list):
+        raise ValueError("scenario manifest does not contain scenario_a records")
+    if not isinstance(acquisitions, list):
+        raise ValueError("acquisition manifest must be a JSON array")
+
+    scope_observations: dict[str, list[dict]] = defaultdict(list)
+    for row in census:
+        date = row.get("date") or ""
+        if date < _APPROVED_START_DATE:
+            continue
+        category = _category(row)
+        if row.get("debate_type") != "debate" or category not in _APPROVED_CATEGORIES:
+            raise ValueError(
+                f"in-scope census row has an unapproved debate type/category: {row!r}")
+        url = _source_listing_key(row)
+        if not url:
+            raise ValueError(f"in-scope debate listing row has no XML URL: {row!r}")
+        scope_observations[url].append(row)
+
+    unique_listing = {}
+    for url, observations in sorted(scope_observations.items()):
+        signatures = {
+            (row.get("date"), _category(row), row.get("work_uri"))
+            for row in observations
+        }
+        if len(signatures) != 1:
+            raise ValueError(f"duplicate API listing observations conflict for {url}")
+        unique_listing[url] = observations[0]
+
+    head_by_url: dict[str, list[dict]] = defaultdict(list)
+    for row in heads:
+        if row.get("url"):
+            head_by_url[row["url"]].append(row)
+    acquisitions_by_url: dict[str, list[dict]] = defaultdict(list)
+    for row in acquisitions:
+        if row.get("url"):
+            acquisitions_by_url[row["url"]].append(row)
+
+    scenario_rows = manifest["scenario_a"]
+    scenario_by_url: dict[str, dict] = {}
+    for row in scenario_rows:
+        url = row.get("url")
+        if not url or url in scenario_by_url:
+            raise ValueError("scenario_a contains a missing or duplicate source URL")
+        scenario_by_url[url] = row
+        if (row.get("date", "") < _APPROVED_START_DATE
+                or row.get("category") not in _APPROVED_CATEGORIES
+                or "/writtens/" in url):
+            raise ValueError(f"scenario_a contains an out-of-scope row: {row!r}")
+
+    if set(scenario_by_url) != set(unique_listing):
+        missing = sorted(set(unique_listing) - set(scenario_by_url))[:5]
+        extra = sorted(set(scenario_by_url) - set(unique_listing))[:5]
+        raise ValueError(
+            "scenario_a does not exactly cover the unique 2011+ debates listing "
+            f"(missing={missing}, extra={extra})")
+
+    records = []
+    for url, row in sorted(scenario_by_url.items()):
+        listing = unique_listing[url]
+        head_matches = head_by_url.get(url, [])
+        acquisition_matches = acquisitions_by_url.get(url, [])
+        if len(head_matches) != 1 or head_matches[0].get("status") != 200:
+            raise ValueError(f"source does not have exactly one successful HEAD result: {url}")
+        if head_matches[0].get("bytes") != row.get("bytes"):
+            raise ValueError(f"scenario byte length differs from HEAD census: {url}")
+        if len(acquisition_matches) != 1:
+            raise ValueError(f"source does not have exactly one acquisition result: {url}")
+        acquisition = acquisition_matches[0]
+        if (acquisition.get("status") != "ok"
+                or acquisition.get("fetched_bytes") != row.get("bytes")
+                or acquisition.get("source_sha256") is None):
+            raise ValueError(f"source acquisition failed or disagrees with census: {url}")
+        records.append({
+            "url": url,
+            "date": row["date"],
+            "category": row["category"],
+            "house_code": row.get("house_code"),
+            "api_work_uri": listing.get("work_uri"),
+            "listing_observations": len(scope_observations[url]),
+            "source_bytes": row["bytes"],
+            "source_sha256": acquisition["source_sha256"],
+        })
+
+    all_listing_urls = {
+        _source_listing_key(row) for row in census if _source_listing_key(row)
+    }
+    return {
+        "contract": {
+            "census_window_start_inclusive": _APPROVED_START_DATE,
+            "date_from_inclusive": _APPROVED_START_DATE,
+            "categories": ["committee", "dail", "seanad"],
+            "written_answers": "excluded",
+            "bill_linkage_filter": "none",
+            "source_listing": "/v1/debates per-calendar-year census",
+            "selection_key": "unique official main.xml URL",
+            "census_duplicate_listing_observations": len(census) - len(all_listing_urls),
+            "in_scope_listing_observations": sum(map(len, scope_observations.values())),
+            "in_scope_duplicate_listing_observations": (
+                sum(map(len, scope_observations.values())) - len(scope_observations)),
+        },
+        "input_sha256": input_hashes,
+        "records": records,
+    }
+
+
+def _selection_from_file(path: Path) -> dict:
+    data = _read(path)
+    selection = data.get("selection") if isinstance(data, dict) else None
+    if not isinstance(selection, dict) or not isinstance(selection.get("records"), list):
+        raise ValueError("selection file does not contain selection.records")
+    records = selection["records"]
+    if len({row.get("url") for row in records}) != len(records):
+        raise ValueError("selection file contains duplicate source URLs")
+    return selection
+
+
+def _failure_category(outcome) -> str:
+    detail = outcome.error or ""
+    if "duplicate decoded eId" in detail:
+        return "duplicate_decoded_eid"
+    if "sectionName must not be empty" in detail:
+        return "empty_section_name"
+    if "not the main.xml object for its exact FRBRExpression" in detail:
+        return "source_url_expression_mismatch"
+    return outcome.failure_classification or "unclassified_record_failure"
+
+
+def _inventory_file(raw_root: Path, temp_root: Path,
+                    source_records: list[dict]) -> list[dict]:
+    """Inspect a Work group through the non-publishing Tranche 4 path.
+
+    A scratch hard link/copy is passed to the pipeline so its immutable report
+    sidecar writes never touch the preserved source directory. The original
+    raw XML and metadata are only read and hash-verified.
+    """
+    loaded = []
+    temporary_sources = []
+    for index, row in enumerate(source_records):
+        source = load_main_xml(raw_root, row["source_sha256"])
+        if row["url"] not in source.source_urls:
+            raise ValueError(f"preserved metadata does not identify selected URL: {row['url']}")
+        if len(source.body) != row["source_bytes"]:
+            raise ValueError(f"preserved source byte length differs from census: {row['url']}")
+        metadata_digest = hashlib.sha256(row["url"].encode("utf-8")).hexdigest()
+        metadata_path = source.raw_path.parent / f"{source.source_sha256}.{metadata_digest}.meta.json"
+        if not metadata_path.is_file():
+            raise ValueError(f"preserved source URL metadata is missing: {row['url']}")
+        metadata = _read(metadata_path)
+        if (metadata.get("source_sha256") != source.source_sha256
+                or metadata.get("byte_length") != len(source.body)
+                or metadata.get("source_url") != row["url"]):
+            raise ValueError(f"preserved source URL metadata is invalid: {row['url']}")
+
+        scratch_path = temp_root / f"{index:05d}-{source.source_sha256}.xml"
+        try:
+            os.link(source.raw_path, scratch_path)
+        except OSError:
+            shutil.copyfile(source.raw_path, scratch_path)
+        temporary_sources.append(DebateRawSource(
+            source.source_sha256, scratch_path, source.source_urls, source.body))
+        loaded.append((row, source, metadata_path, scratch_path))
+
+    outcomes = run_debate_batch(temporary_sources, store=None, publish=False)
+    by_hash: dict[str, list] = defaultdict(list)
+    for outcome in outcomes:
+        by_hash[outcome.source_sha256].append(outcome)
+    expected_hashes = {row["source_sha256"] for row in source_records}
+    if set(by_hash) != expected_hashes:
+        raise RuntimeError(
+            "Tranche 4 inventory outcomes do not cover the supplied sources exactly")
+
+    result = []
+    derived_by_hash = {}
+    for row, source, metadata_path, scratch_path in loaded:
+        digest = row["source_sha256"]
+        derived = derived_by_hash.get(digest)
+        if derived is None:
+            matches = by_hash[digest]
+            if len(matches) != 1:
+                raise RuntimeError(f"a source hash produced {len(matches)} outcomes: {row['url']}")
+            outcome = matches[0]
+            sidecars = sorted(temp_root.glob(f"{digest}.*.reference-report.json"))
+            report = None
+            payload = b""
+            report_digest = None
+            if outcome.status == "quarantined":
+                if sidecars:
+                    raise RuntimeError(
+                        "quarantined source unexpectedly produced a reference report")
+                try:
+                    identity = inspect_debate_source_identity(source.body)
+                except Exception:
+                    identity = {}
+            else:
+                if len(sidecars) != 1:
+                    raise RuntimeError(
+                        f"eligible source did not produce exactly one reference report: {row['url']}")
+                payload = sidecars[0].read_bytes()
+                report_digest = hashlib.sha256(payload).hexdigest()
+                if not sidecars[0].name.startswith(f"{digest}."):
+                    raise RuntimeError("reference report filename is not source-addressed")
+                report = json.loads(payload.decode("utf-8"))
+                if report.get("source_sha256") != digest:
+                    raise RuntimeError("reference report is not linked to the source SHA-256")
+                identity = report.get("source_identity") or {}
+
+            if outcome.status == "quarantined":
+                status = "quarantined"
+                failure_category = _failure_category(outcome)
+                disposition = (
+                    "quarantine; source unchanged; no RDF publication; human review pending")
+            elif outcome.status in {"new", "changed", "skipped"}:
+                status = "eligible"
+                failure_category = None
+                disposition = (
+                    "source and current transform/integration checks passed; no publication "
+                    "authorization; global Expression completeness is not established by one listing entry")
+            else:
+                raise RuntimeError(f"unexpected Tranche 4 inventory status: {outcome.status}")
+
+            expression_iri = None
+            if status == "eligible":
+                expression = next(iter(outcome.graph.objects(
+                    __import__("rdflib").URIRef(outcome.work_iri), OIR.hasExpression)), None)
+                expression_iri = str(expression) if expression is not None else None
+            else:
+                expression_iri = identity.get("expression_iri")
+            if status == "eligible" and not expression_iri:
+                raise RuntimeError(f"eligible Work lacks a DebateExpression identity: {row['url']}")
+
+            derived = {
+                "outcome": outcome,
+                "identity": identity,
+                "expression_iri": expression_iri,
+                "status": status,
+                "failure_category": failure_category,
+                "disposition": disposition,
+                "report_digest": report_digest,
+                "report_bytes": len(payload),
+            }
+            derived_by_hash[digest] = derived
+
+        outcome = derived["outcome"]
+        identity = derived["identity"]
+        status = derived["status"]
+
+        entry = {
+            "source_url": row["url"],
+            "date": row["date"],
+            "category": row["category"],
+            "house_code": row.get("house_code"),
+            "api_work_uri": row.get("api_work_uri"),
+            "listing_observations": row.get("listing_observations", 1),
+            "work_iri": outcome.work_iri or identity.get("work_iri"),
+            "expression_iri": derived["expression_iri"],
+            "source_work_frbruri": (identity.get("work_frbruri")
+                                     or identity.get("source_work_uri")),
+            "source_expression_frbruri": (identity.get("expression_frbruri")
+                                           or identity.get("source_expression_uri")),
+            "source_sha256": row["source_sha256"],
+            "source_bytes": row["source_bytes"],
+            "source_evidence_path": str(
+                Path("debates") / "sha256" / row["source_sha256"][:2]
+                / f"{row['source_sha256']}.xml"),
+            "metadata_evidence_path": str(
+                Path("debates") / "sha256" / row["source_sha256"][:2]
+                / metadata_path.name),
+            "metadata_sha256": _sha256_file(metadata_path),
+            "source_sha256_verified": True,
+            "metadata_verified": True,
+            "status": status,
+            "failure_stage": outcome.failure_stage,
+            "failure_classification": outcome.failure_classification,
+            "failure_category": derived["failure_category"],
+            "failure_detail": outcome.error,
+            "review_status": "pending" if status == "quarantined" else "automated_pass",
+            "disposition": derived["disposition"],
+            "triples": len(outcome.graph) if status == "eligible" else 0,
+            "ntriples_bytes": (len(ntriples(outcome.graph).encode("utf-8"))
+                               if status == "eligible" else 0),
+            "nquads_bytes": (len(nquads(outcome.graph, outcome.graph_iri).encode("utf-8"))
+                             if status == "eligible" else 0),
+            "reference_report_sha256": derived["report_digest"],
+            "reference_report_bytes": derived["report_bytes"],
+            "reference_report_retained": False,
+            "reference_report_measurement_context": (
+                "no-owner measurement resolver; report created in disposable scratch"
+                if derived["report_digest"] is not None else None),
+        }
+        result.append(entry)
+    for sidecar in temp_root.glob("*.reference-report.json"):
+        sidecar.unlink(missing_ok=True)
+    for _, _, _, scratch_path in loaded:
+        scratch_path.unlink(missing_ok=True)
+    return result
+
+
+def command_inventory(args) -> int:
+    raw_root = Path(args.raw_root).expanduser()
+    if args.selection_file:
+        selection = _selection_from_file(Path(args.selection_file))
+    else:
+        selection = _build_exact_selection(Path(args.assessment_dir))
+
+    source_records = selection.get("records", [])
+    if not source_records:
+        raise ValueError("exact source selection is empty")
+    if any(row.get("category") not in _APPROVED_CATEGORIES
+           or row.get("date", "") < _APPROVED_START_DATE
+           or "/writtens/" in row.get("url", "") for row in source_records):
+        raise ValueError("selection file contains a source outside the approved scope")
+
+    by_api_work: dict[str, list[dict]] = defaultdict(list)
+    for row in source_records:
+        key = row.get("api_work_uri") or row["url"]
+        by_api_work[key].append(row)
+
+    scratch_base = Path(args.scratch_root).expanduser()
+    scratch_base.mkdir(parents=True, exist_ok=True)
+    inspected = []
+    started = time.perf_counter()
+    rss_peak = 0
+    with tempfile.TemporaryDirectory(prefix="scope-inventory-", dir=scratch_base) as temp_name:
+        temp_root = Path(temp_name)
+        groups = sorted(by_api_work.items())
+        for group_index, (work_uri, rows) in enumerate(groups, start=1):
+            inspected.extend(_inventory_file(
+                raw_root, temp_root, sorted(rows, key=lambda r: r["url"])))
+            rss_peak = max(rss_peak, _peak_rss_kib())
+            if group_index % 250 == 0:
+                print(f"inventory {group_index}/{len(groups)} listed Works", flush=True)
+
+    inspected.sort(key=lambda row: row["source_url"])
+    if len(inspected) != len(source_records):
+        raise RuntimeError("inventory output count differs from exact source selection")
+    statuses = Counter(row["status"] for row in inspected)
+    exceptions_by_stage = Counter(
+        row["failure_stage"] for row in inspected if row["status"] == "quarantined")
+    exceptions_by_category = Counter(
+        row["failure_category"] for row in inspected if row["status"] == "quarantined")
+    category_counts = Counter(row["category"] for row in inspected)
+    unique_hashes = {}
+    for row in inspected:
+        prior = unique_hashes.setdefault(row["source_sha256"], row["source_bytes"])
+        if prior != row["source_bytes"]:
+            raise RuntimeError("one source hash has conflicting byte lengths")
+    summary = {
+        "listed_source_records": len(inspected),
+        "unique_api_work_uris": len({row.get("api_work_uri") for row in source_records}),
+        "unique_source_hashes": len(unique_hashes),
+        "status_counts": dict(sorted(statuses.items())),
+        "category_counts": dict(sorted(category_counts.items())),
+        "exception_counts_by_stage": dict(sorted(exceptions_by_stage.items())),
+        "exception_counts_by_category": dict(sorted(exceptions_by_category.items())),
+        "source_bytes_by_status": {
+            status: sum(row["source_bytes"] for row in inspected if row["status"] == status)
+            for status in ("eligible", "quarantined")
+        },
+        "source_bytes_listed": sum(row["source_bytes"] for row in inspected),
+        "unique_content_addressed_xml_bytes": sum(unique_hashes.values()),
+        "metadata_bytes_selected": sum(
+            Path(raw_root / row["metadata_evidence_path"]).stat().st_size for row in inspected),
+        "exact_triples_transformable_records": sum(row["triples"] for row in inspected),
+        "exact_ntriples_bytes": sum(row["ntriples_bytes"] for row in inspected),
+        "exact_nquads_bytes": sum(row["nquads_bytes"] for row in inspected),
+        "exact_reference_report_bytes_no_owner_resolver": sum(
+            row["reference_report_bytes"] for row in inspected),
+    }
+    document = {
+        "schema": _INVENTORY_SCHEMA,
+        "selection": selection,
+        "measurement": {
+            "path": "current-branch run_debate_batch(publish=False, store=None)",
+            "publication_performed": False,
+            "core_state_opened": False,
+            "source_evidence_mutated": False,
+            "reference_reports_persisted": False,
+            "inventory_code_sha256": _sha256_file(Path(__file__)),
+            "pipeline_code_sha256": {
+                rel: _sha256_file(REPOSITORY_ROOT / rel)
+                for rel in (
+                    "src/oireachtas_etl/debates_pipeline.py",
+                    "src/oireachtas_etl/debates_raw.py",
+                    "src/oireachtas_etl/transforms/debates.py",
+                    "src/oireachtas_etl/validation/debates_integration.py",
+                )
+            },
+        },
+        "summary": summary,
+        "records": inspected,
+    }
+    output = Path(args.output)
+    _write(output, document)
+    print(json.dumps({
+        **summary,
+        "elapsed_seconds_this_run": round(time.perf_counter() - started, 3),
+        "peak_rss_kib_this_run": rss_peak,
+    }, indent=1, sort_keys=True))
     return 0
 
 
@@ -841,6 +1292,20 @@ def main(argv: list[str] | None = None) -> int:
     merge.add_argument("--scenario", default="B")
     merge.set_defaults(func=command_merge_scan)
 
+    inventory = sub.add_parser(
+        "inventory",
+        help="exactly inspect the approved 2011+ debates selection without publishing",
+    )
+    inventory.add_argument("--assessment-dir", help="directory with census/acquisition outputs")
+    inventory.add_argument("--selection-file", help="frozen selection from a prior inventory JSON")
+    inventory.add_argument("--raw-root", required=True)
+    inventory.add_argument("--output", required=True)
+    inventory.add_argument(
+        "--scratch-root", default="/tmp/oireachtasontology/debates-readiness",
+        help="disposable sidecar/output scratch directory (default: approved /tmp path)",
+    )
+    inventory.set_defaults(func=command_inventory)
+
     publish = sub.add_parser("publish", help="Tranche 4 publication sample to disposable Fuseki")
     publish.add_argument("--out", required=True)
     publish.add_argument("--raw-root", required=True)
@@ -864,6 +1329,8 @@ def main(argv: list[str] | None = None) -> int:
     analyze.set_defaults(func=command_analyze)
 
     args = parser.parse_args(argv)
+    if args.command == "inventory" and bool(args.assessment_dir) == bool(args.selection_file):
+        parser.error("inventory requires exactly one of --assessment-dir or --selection-file")
     return args.func(args)
 
 

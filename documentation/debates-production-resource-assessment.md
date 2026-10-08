@@ -146,10 +146,14 @@ not fixed, here.
 | Written 2013+ | 500 | 0 | 0% | 0–0.7% | 0 | 0 |
 
 All post-2012 failures observed were empty `sectionName` (committees) or empty
-`sectionName` (Dáil). **Scenario A quarantine estimate: ~301 records, ~49 MiB**
-(8 exact pre-2013 + ~293 estimated 2013+). The written-answer increment shows no
-observed quarantine (500/500 clean). These records remain quarantined and are
-excluded from the RDF/runtime estimates below (they still require preservation).
+`sectionName` (Dáil). **Historical Scenario A estimate: ~301 records, ~49 MiB**
+(8 exact pre-2013 + ~293 estimated 2013+). This sample-based count was
+superseded by the complete 2026-10-08 inventory in
+[`debates-production-readiness.md`](debates-production-readiness.md): 264
+confirmed exceptions (8 pre-2013 + 256 post-2012). The written-answer increment
+shows no observed quarantine (500/500 clean). Exceptions remain withheld and
+require human disposition; the exact scan did not modify source or write
+production quarantine state.
 
 ## 6. Transform, validation and RDF volume (Tranche 4 path, sampled + extrapolated)
 
@@ -274,9 +278,11 @@ profiled (host headroom was ample); this is noted as a limitation.
 
 ## 10. Corpus exceptions recorded (not fixed)
 
-- **2011–2012 malformed records:** 8 records / 4.78 MiB, table in 5.1.
-- **Post-2012 quarantine:** ~293 records / ~46 MiB, almost entirely committee
-  empty-`sectionName`, plus a handful of Dáil records (5.2).
+- **2011–2012 malformed records:** 8 records / 4.78 MiB, table in 5.1; these
+  eight remain the exact pre-2013 count in the later inventory.
+- **Post-2012 quarantine:** the ~293-record / ~46 MiB sample estimate in 5.2
+  was superseded by 256 confirmed empty-`sectionName` failures in the complete
+  2026-10-08 inventory (see `debates-production-readiness.md`).
 - **Earlier duplicate-eId records outside scope:** the 2004–2007 era remains
   out of scope (separate future corpus work).
 - **Fragmented pre-2013 written answers:** ~5.43 GB of section-level AKN with no

@@ -12,22 +12,30 @@ or schedule the production corpus.
 
 **Initial production scope approved (2026-10-07):** Dáil, Seanad and
 committee debate Works dated **2011-01-01 onward**, with written answers
-excluded. The corpus benchmark is in
+excluded, without a Bill-linkage filter. The exact inventory of the preserved
+2011+ `/v1/debates` census is complete and recorded in
+[`debates-production-readiness.md`](debates-production-readiness.md), with its
+per-Work source hashes in
+[`debates-initial-production-inventory.json`](debates-initial-production-inventory.json).
+The corpus benchmark is in
 [`debates-production-benchmark.md`](debates-production-benchmark.md);
 the separate 2026-10-06 scoped resource assessment informed the selection.
-This closes the *initial scope decision*, not the production-readiness gate:
-configurable operational limits, an exact in-scope quarantine inventory,
-Phase 6 execution policy and staged operational acceptance remain pending.
-No broad production ingestion or graph publication is claimed.
+The exact scan found 264 quarantined Works; human dispositions, approval of
+proposed operational limits, the completeness-boundary decision, and staged
+acceptance remain pending. The inventory is limited to the preserved API census
+and does not prove global Work/Expression completeness. Inventory completion
+does not close the production-readiness gate or authorize ingestion or graph
+publication.
 
 The Tranche 4 scoped resource measurement (2011+ debates only versus adding
 2013+ whole-record written answers) is recorded in
 [`debates-production-resource-assessment.md`](debates-production-resource-assessment.md).
-Its resource measurements informed the approved scope; the exact quarantine
-inventory, approved operational limits, Phase 6 execution policy and staged
-operational acceptance remain open. See the
+Its resource measurements informed the approved scope. The complete
+non-publishing inventory now supersedes its sampled quarantine estimate; human
+exception disposition, operational-limit approval, source-listing completeness
+decision and staged operational acceptance remain open. See the
 [`Debates production-readiness report`](debates-production-readiness.md) for
-the verified inventory and remaining gate decisions.
+the exact counts, measured resource totals and remaining gate decisions.
 
 This note records the approved Phase 7 design for the Debates vertical slice.
 It complements the ontology-specific material in
@@ -45,9 +53,12 @@ It complements the ontology-specific material in
   are separate expansion items; this does not change the semantic model.
 - The all-years census/benchmark is retained in
   [`debates-production-benchmark.md`](debates-production-benchmark.md).
-  Selecting the initial scope does not authorize ingestion: the exact
-  malformed-source inventory, operational resource limits and Phase 6
-  production execution/validation gate remain outstanding.
+  The exact 2011+ scope inventory is complete (10,913 listed Works, 10,649
+  eligible and 264 quarantined) in
+  [`debates-production-readiness.md`](debates-production-readiness.md).
+  Selecting the initial scope and completing its inventory do not authorize
+  ingestion: human exception disposition, operational budgets and Phase 6
+  production execution/validation acceptance remain outstanding.
 - The Debates slice owns parliamentary questions and divisions/votes found in
   the AKN debate record. They are not separate Phase 7 publication owners.
 - Raw AKN source must be preserved so the RDF can be regenerated and source
@@ -292,11 +303,14 @@ The initial all-years and Bill-linked census/benchmark was recorded in
 A subsequent scoped assessment measured the Tranche 4 publication/storage
 path and compared 2011+ debates with and without 2013+ complete written
 answers. The approved initial selection is **2011+ debates only**, with
-written answers deferred. Quarantine and source-fragmentation findings remain
-separate backlog items, while configurable operational budgets and staged
-production acceptance remain open. Phase 6 retains scan cadence, scheduling
-and reconciliation policy. See `documentation/etl-plan.md`'s Debates backlog
-for required pre-ingestion actions and reopening conditions.
+written answers deferred. The exact non-publishing census inventory is now
+complete: it records 264 quarantined Works and exact source/RDF/report sizes.
+Human exception dispositions, configurable operational budgets, accepted
+source-listing completeness behavior and staged production acceptance remain
+open. Historical-source and pre-2013 written-answer fragmentation findings
+remain separate expansion work. Phase 6 retains scan cadence, scheduling and
+reconciliation policy. See `documentation/etl-plan.md`'s Debates backlog for
+required pre-ingestion actions and reopening conditions.
 
 ### Tranche 3 — Cross-dataset integration and validation
 
@@ -400,9 +414,11 @@ implementation recorded below**. At that earlier point Tranche 4 ingestion,
 state and publication had not started. The supplied-batch mechanics are now
 complete, but production-readiness acceptance remains open. The two unsupported
 positive crosswalk competencies are deliberate, evidence-backed **future
-reconciliation work**, not blockers to the agreed first production scope.
-The 2004–2007 duplicate-eId cases, empty section names and pre-2013 fragmented
-written answers remain separately tracked corpus work.
+reconciliation work**, not blockers to the agreed first production scope. The
+later exact 2011+ inventory is recorded in
+`documentation/debates-production-readiness.md`; the 2004–2007 duplicate-eId
+cases and pre-2013 fragmented written answers remain separate historical/source
+expansion work.
 
 ### Tranche 4 — Source ingestion, state and publication mechanics
 
