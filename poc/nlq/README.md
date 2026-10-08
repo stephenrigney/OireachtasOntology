@@ -362,6 +362,58 @@ and owners, emitted RDF patterns, entity-specific label predicates,
 cross-graph joins, optional reviewed external identity links, reasoning
 assumptions, known unavailable patterns, and the local safety policy.
 
+### Structured query-plan contract (Phase 2A)
+
+The semantic plan contract is `poc/specs/query-plan-contract.json` (contract
+version `1.0.0`, schema version `1`). Its manifest schema is
+`poc/specs/query-plan-contract.schema.json`; the plan-instance schema is
+`poc/specs/query-plan.schema.json`. Seven representative plans are under
+`poc/specs/query-plan-examples/`. Plans include intent, local Oireachtas source,
+referenced entities, requested facts/relations, semantic filters, temporal
+constraints, optional aggregation, and answer shape. They contain no SPARQL,
+named graph identifiers, or SPARQL variable names.
+
+Entity references retain their type and user label. `resolved` entities carry
+one local Oireachtas IRI; `ambiguous` entities carry multiple distinct local
+candidates and no selected IRI; `unresolved` entities carry neither an IRI nor
+candidates. A HouseTerm reference uses its concrete `DailTerm` or `SeanadTerm`
+type; the contract does not introduce a generic HouseTerm RDF type. Temporal
+constraints distinguish `on`, `before`, `after`, `during`, `interval`, and
+`current`. The initial aggregation operation is `count`, with
+explicit target and optional grouping; answer shapes include boolean, entity,
+entities, label, fact, list, count, and grouped result. Source scope is fixed to
+local Oireachtas data; source selection and federation are not part of this
+contract.
+
+Requirements, filters, and temporal constraints are conjunctive. Repeated
+references to one entity ID denote that same entity; repeated type-only
+participants of one type denote one result role (schema v1 does not express two
+independent unbound roles of the same type). Ambiguous or unresolved references
+are valid plan states, not executable identity bindings: a later consumer must
+clarify or resolve them and must not choose a candidate or drop a dependent
+constraint. Filter fields and operators are semantic; equality is exact, with
+no implied fuzzy or label-matching behavior. The validator checks that IRIs
+use the Oireachtas namespace but does not manufacture IRIs or independently
+check the resolver's entity-type/IRI assignment. Unknown compatible optional
+fields may be ignored and must not be treated as query, graph, variable, source,
+or endpoint instructions.
+
+`poc.nlq.plan_contract` exposes `load_query_plan_contract`,
+`validate_query_plan`, and `load_query_plan`. Its deterministic validation is
+not yet used by the browser or direct NL-to-SPARQL runtime. To test the contract
+artifacts, examples, and validator:
+
+```bash
+uv run --locked --extra test python -m pytest tests/test_nlq_query_plan.py
+```
+
+Contract major version `1` allows additive optional extensions that preserve
+existing meanings. A breaking change to field meaning, resolution states, or
+validation expectations requires a major bump. Consumers reject unsupported
+schema versions and contract majors. The separate realistic-question benchmark
+is deferred until an initial planner path can be evaluated meaningfully; the
+controlled Phase 1 benchmark remains the capability/regression suite.
+
 At startup, RDFLib reads the repository's `ontology/*.owl.ttl` modules and the
 pinned ELI/ELI-DL vocabularies to add ontology descriptions, domains, ranges,
 and comments for terms selected by the contract. Active mapping files still

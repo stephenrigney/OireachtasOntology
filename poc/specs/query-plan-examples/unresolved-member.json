@@ -1,0 +1,26 @@
+{
+  "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "intent": "identify_member",
+  "source": "oireachtas",
+  "entities": [
+    {
+      "id": "member",
+      "type": "Member",
+      "label": "Unknown Member",
+      "resolution": "unresolved"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "member-identity",
+      "fact": "Member identity",
+      "subject": {"entity": "member"}
+    }
+  ],
+  "filters": [],
+  "temporalConstraints": [],
+  "aggregation": null,
+  "answerShape": {"kind": "entity", "entityType": "Member"}
+}

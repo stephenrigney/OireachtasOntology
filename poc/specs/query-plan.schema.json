@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://data.oireachtas.ie/specs/query-plan.schema.json",
+  "title": "Oireachtas Semantic Query Plan",
+  "description": "A versioned semantic plan for a local Oireachtas query. It contains no executable SPARQL or graph implementation details.",
+  "type": "object",
+  "required": [
+    "contractId",
+    "schemaVersion",
+    "contractVersion",
+    "intent",
+    "source",
+    "entities",
+    "requirements",
+    "filters",
+    "temporalConstraints",
+    "aggregation",
+    "answerShape"
+  ],
+  "properties": {
+    "contractId": {"const": "https://data.oireachtas.ie/specs/query-plan-contract"},
+    "schemaVersion": {"const": 1},
+    "contractVersion": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"},
+    "intent": {"type": "string", "minLength": 1},
+    "source": {"const": "oireachtas"},
+    "entities": {"type": "array", "items": {"$ref": "#/$defs/entity"}},
+    "requirements": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/requirement"}
+    },
+    "filters": {"type": "array", "items": {"$ref": "#/$defs/filter"}},
+    "temporalConstraints": {"type": "array", "items": {"$ref": "#/$defs/temporalConstraint"}},
+    "aggregation": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/aggregation"}
+      ]
+    },
+    "answerShape": {"$ref": "#/$defs/answerShape"}
+  },
+  "allOf": [
+    {"$ref": "#/$defs/noImplementationFields"},
+    {
+      "if": {
+        "properties": {"answerShape": {"properties": {"kind": {"const": "count"}}, "required": ["kind"]}},
+        "required": ["answerShape"]
+      },
+      "then": {
+        "properties": {"aggregation": {"type": "object", "properties": {"groupBy": {"maxItems": 0}}}}
+      }
+    },
+    {
+      "if": {
+        "properties": {"answerShape": {"properties": {"kind": {"const": "grouped_result"}}, "required": ["kind"]}},
+        "required": ["answerShape"]
+      },
+      "then": {
+        "properties": {"aggregation": {"type": "object", "properties": {"groupBy": {"minItems": 1}}}}
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "answerShape": {
+            "properties": {"kind": {"enum": ["boolean", "entity", "entities", "label", "fact", "list"]}},
+            "required": ["kind"]
+          }
+        },
+        "required": ["answerShape"]
+      },
+      "then": {"properties": {"aggregation": {"type": "null"}}}
+    }
+  ],
+  "$defs": {
+    "identifier": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
+    "entityType": {
+      "enum": [
+        "Member",
+        "House",
+        "DailTerm",
+        "SeanadTerm",
+        "ParliamentaryMemberCollection",
+        "DailConstituency",
+        "SeanadPanel",
+        "Committee"
+      ]
+    },
+    "localIri": {"type": "string", "pattern": "^https://data\\.oireachtas\\.ie/[^\\s?#]+$"},
+    "noImplementationFields": {
+      "not": {
+        "anyOf": [
+          {"required": ["sparql"]},
+          {"required": ["query"]},
+          {"required": ["queryText"]},
+          {"required": ["queryFragment"]},
+          {"required": ["graph"]},
+          {"required": ["graphs"]},
+          {"required": ["graphIri"]},
+          {"required": ["graphIris"]},
+          {"required": ["namedGraph"]},
+          {"required": ["namedGraphs"]},
+          {"required": ["graphPattern"]},
+          {"required": ["triplePatterns"]},
+          {"required": ["variable"]},
+          {"required": ["variableName"]},
+          {"required": ["variables"]},
+          {"required": ["prefix"]},
+          {"required": ["prefixes"]},
+          {"required": ["endpoint"]},
+          {"required": ["dataset"]},
+          {"required": ["datasetId"]},
+          {"required": ["sourceSelection"]},
+          {"required": ["sources"]},
+          {"required": ["endpoints"]},
+          {"required": ["orderBy"]},
+          {"required": ["limit"]},
+          {"required": ["offset"]},
+          {"required": ["select"]},
+          {"required": ["ask"]},
+          {"required": ["where"]}
+        ]
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "required": ["iri", "label"],
+      "properties": {
+        "iri": {"$ref": "#/$defs/localIri"},
+        "label": {"type": "string", "minLength": 1}
+      },
+      "allOf": [{"$ref": "#/$defs/noImplementationFields"}]
+    },
+    "entity": {
+      "type": "object",
+      "required": ["id", "type", "label", "resolution"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "type": {"$ref": "#/$defs/entityType"},
+        "label": {"type": "string", "minLength": 1},
+        "resolution": {"enum": ["resolved", "ambiguous", "unresolved"]},
+        "iri": {"$ref": "#/$defs/localIri"},
+        "candidates": {"type": "array", "minItems": 2, "uniqueItems": true, "items": {"$ref": "#/$defs/candidate"}}
+      },
+      "allOf": [
+        {"$ref": "#/$defs/noImplementationFields"},
+        {
+          "not": {
+            "anyOf": [
+              {"required": ["selected"]},
+              {"required": ["selectedIri"]},
+              {"required": ["resolvedIri"]},
+              {"required": ["resolvedEntityIri"]},
+              {"required": ["selectedCandidate"]},
+              {"required": ["chosenCandidate"]}
+            ]
+          }
+        },
+        {
+          "if": {"properties": {"resolution": {"const": "resolved"}}, "required": ["resolution"]},
+          "then": {"required": ["iri"], "not": {"required": ["candidates"]}}
+        },
+        {
+          "if": {"properties": {"resolution": {"const": "ambiguous"}}, "required": ["resolution"]},
+          "then": {"required": ["candidates"], "not": {"required": ["iri"]}}
+        },
+        {
+          "if": {"properties": {"resolution": {"const": "unresolved"}}, "required": ["resolution"]},
+          "then": {"not": {"anyOf": [{"required": ["iri"]}, {"required": ["candidates"]}]}}
+        }
+      ]
+    },
+    "participant": {
+      "allOf": [{"$ref": "#/$defs/noImplementationFields"}],
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["entity"],
+          "properties": {"entity": {"$ref": "#/$defs/identifier"}},
+          "not": {"required": ["type"]}
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {"type": {"$ref": "#/$defs/entityType"}},
+          "not": {"required": ["entity"]}
+        }
+      ]
+    },
+    "requirement": {
+      "type": "object",
+      "required": ["id", "fact", "subject"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "fact": {"type": "string", "minLength": 1},
+        "subject": {"$ref": "#/$defs/participant"},
+        "object": {"$ref": "#/$defs/participant"}
+      },
+      "allOf": [
+        {"$ref": "#/$defs/noImplementationFields"},
+        {"not": {"anyOf": [{"required": ["source"]}, {"required": ["sources"]}]}}
+      ]
+    },
+    "filterValue": {
+      "oneOf": [
+        {"type": "string"},
+        {"type": "number"},
+        {"type": "boolean"},
+        {
+          "type": "object",
+          "required": ["entity"],
+          "properties": {"entity": {"$ref": "#/$defs/identifier"}},
+          "not": {"required": ["type"]},
+          "allOf": [{"$ref": "#/$defs/noImplementationFields"}]
+        }
+      ]
+    },
+    "filter": {
+      "type": "object",
+      "required": ["requirement", "field", "operator"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "minLength": 1},
+        "operator": {"enum": ["equals", "not_equals", "greater_than", "greater_than_or_equal", "less_than", "less_than_or_equal", "exists"]},
+        "value": {"$ref": "#/$defs/filterValue"}
+      },
+      "allOf": [
+        {"$ref": "#/$defs/noImplementationFields"},
+        {
+          "if": {"properties": {"operator": {"const": "exists"}}, "required": ["operator"]},
+          "then": {"not": {"required": ["value"]}}
+        },
+        {
+          "if": {"properties": {"operator": {"enum": ["equals", "not_equals", "greater_than", "greater_than_or_equal", "less_than", "less_than_or_equal"]}}, "required": ["operator"]},
+          "then": {"required": ["value"]}
+        }
+      ]
+    },
+    "dateWindow": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": {"type": "string", "format": "date"},
+        "end": {"type": "string", "format": "date"}
+      },
+      "not": {"required": ["entity"]},
+      "allOf": [{"$ref": "#/$defs/noImplementationFields"}]
+    },
+    "temporalPeriod": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["entity"],
+          "properties": {"entity": {"$ref": "#/$defs/identifier"}},
+          "not": {"required": ["start"]},
+          "allOf": [{"$ref": "#/$defs/noImplementationFields"}]
+        },
+        {"$ref": "#/$defs/dateWindow"}
+      ]
+    },
+    "temporalConstraint": {
+      "type": "object",
+      "required": ["target", "kind"],
+      "properties": {
+        "target": {"$ref": "#/$defs/identifier"},
+        "kind": {"enum": ["on", "before", "after", "during", "interval", "current"]},
+        "date": {"type": "string", "format": "date"},
+        "period": {"$ref": "#/$defs/temporalPeriod"},
+        "start": {"type": "string", "format": "date"},
+        "end": {"type": "string", "format": "date"}
+      },
+      "allOf": [
+        {"$ref": "#/$defs/noImplementationFields"},
+        {
+          "if": {"properties": {"kind": {"enum": ["on", "before", "after"]}}, "required": ["kind"]},
+          "then": {"required": ["date"], "not": {"anyOf": [{"required": ["period"]}, {"required": ["start"]}, {"required": ["end"]}]}}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "during"}}, "required": ["kind"]},
+          "then": {"required": ["period"], "not": {"anyOf": [{"required": ["date"]}, {"required": ["start"]}, {"required": ["end"]}]}}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "interval"}}, "required": ["kind"]},
+          "then": {"required": ["start", "end"], "not": {"anyOf": [{"required": ["date"]}, {"required": ["period"]}]}}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "current"}}, "required": ["kind"]},
+          "then": {"not": {"anyOf": [{"required": ["date"]}, {"required": ["period"]}, {"required": ["start"]}, {"required": ["end"]}]}}
+        }
+      ]
+    },
+    "aggregationReference": {
+      "type": "object",
+      "required": ["requirement", "participant"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "participant": {"enum": ["subject", "object"]}
+      },
+      "allOf": [{"$ref": "#/$defs/noImplementationFields"}]
+    },
+    "aggregation": {
+      "type": "object",
+      "required": ["operation", "target", "groupBy"],
+      "properties": {
+        "operation": {"enum": ["count"]},
+        "target": {"$ref": "#/$defs/aggregationReference"},
+        "groupBy": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/aggregationReference"}}
+      },
+      "allOf": [{"$ref": "#/$defs/noImplementationFields"}]
+    },
+    "answerShape": {
+      "allOf": [{"$ref": "#/$defs/noImplementationFields"}],
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind"],
+          "properties": {"kind": {"const": "boolean"}},
+          "not": {"anyOf": [{"required": ["target"]}, {"required": ["entityType"]}]}
+        },
+        {
+          "type": "object",
+          "required": ["kind", "entityType"],
+          "properties": {
+            "kind": {"enum": ["entity", "entities"]},
+            "entityType": {"$ref": "#/$defs/entityType"}
+          },
+          "not": {"required": ["target"]}
+        },
+        {
+          "type": "object",
+          "required": ["kind", "target"],
+          "properties": {
+            "kind": {"enum": ["label", "fact", "list"]},
+            "target": {"$ref": "#/$defs/identifier"}
+          },
+          "not": {"required": ["entityType"]}
+        },
+        {
+          "type": "object",
+          "required": ["kind", "target"],
+          "properties": {
+            "kind": {"enum": ["count", "grouped_result"]},
+            "target": {"const": "aggregation"}
+          },
+          "not": {"required": ["entityType"]}
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "intent": "find_membership_during_interval",
+  "source": "oireachtas",
+  "entities": [
+    {
+      "id": "member",
+      "type": "Member",
+      "label": "Micheál Martin",
+      "resolution": "resolved",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Micheál-Martin.D.1989-06-29"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "membership",
+      "fact": "Dáil membership",
+      "subject": {"entity": "member"},
+      "object": {"type": "DailTerm"}
+    }
+  ],
+  "filters": [],
+  "temporalConstraints": [
+    {"target": "membership", "kind": "interval", "start": "2020-01-01", "end": "2021-12-31"}
+  ],
+  "aggregation": null,
+  "answerShape": {"kind": "list", "target": "membership"}
+}

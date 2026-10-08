@@ -1,0 +1,37 @@
+{
+  "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "intent": "find_member_collection_in_term",
+  "source": "oireachtas",
+  "entities": [
+    {
+      "id": "member",
+      "type": "Member",
+      "label": "Timmy Dooley",
+      "resolution": "resolved",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12"
+    },
+    {
+      "id": "term",
+      "type": "DailTerm",
+      "label": "34th Dáil",
+      "resolution": "resolved",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "membership",
+      "fact": "Member's parliamentary collection membership",
+      "subject": {"entity": "member"},
+      "object": {"type": "ParliamentaryMemberCollection"}
+    }
+  ],
+  "filters": [],
+  "temporalConstraints": [
+    {"target": "membership", "kind": "during", "period": {"entity": "term"}}
+  ],
+  "aggregation": null,
+  "answerShape": {"kind": "list", "target": "membership"}
+}

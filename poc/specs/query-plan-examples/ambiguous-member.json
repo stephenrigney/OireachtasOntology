@@ -1,0 +1,36 @@
+{
+  "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "intent": "identify_member",
+  "source": "oireachtas",
+  "entities": [
+    {
+      "id": "member",
+      "type": "Member",
+      "label": "Michael Collins",
+      "resolution": "ambiguous",
+      "candidates": [
+        {
+          "iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.1919-01-21",
+          "label": "Michael Collins"
+        },
+        {
+          "iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.1997-06-26",
+          "label": "Michael Collins"
+        }
+      ]
+    }
+  ],
+  "requirements": [
+    {
+      "id": "member-identity",
+      "fact": "Member identity",
+      "subject": {"entity": "member"}
+    }
+  ],
+  "filters": [],
+  "temporalConstraints": [],
+  "aggregation": null,
+  "answerShape": {"kind": "entity", "entityType": "Member"}
+}

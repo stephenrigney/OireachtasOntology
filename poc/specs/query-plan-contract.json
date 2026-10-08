@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+  "contractSchema": "poc/specs/query-plan-contract.schema.json",
+  "planSchema": "poc/specs/query-plan.schema.json",
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "description": "Versioned semantic contract for structured Oireachtas query plans. Plans describe the user's requested meaning, not executable SPARQL.",
+  "compatibility": {
+    "schemaVersion": "The consumer supports plan schema version 1 and rejects other schema versions.",
+    "compatibleChanges": "Additive optional fields that preserve existing meanings may remain within contract major version 1. Consumers ignore unknown optional fields.",
+    "breakingChanges": "Changing an existing field's meaning, required semantics, supported resolution states, or validation expectations requires a contract major version bump.",
+    "consumerSupport": "Consumers reject unsupported schema versions and contract major versions. A newer minor or patch version within major 1 is compatible when it uses only supported semantic states."
+  },
+  "scope": {
+    "source": "oireachtas",
+    "localOnly": true,
+    "sourceSelection": false,
+    "federation": false,
+    "purpose": "Capture intent, referenced entities, requested facts and relations, filters, temporal meaning, aggregation, and answer shape before query generation.",
+    "notIncluded": [
+      "SPARQL syntax or query fragments",
+      "named graph identifiers or graph patterns",
+      "SPARQL variable names",
+      "general source selection or federation",
+      "presentation and rendering instructions"
+    ]
+  },
+  "planSemantics": {
+    "conjunction": "Every requirement, filter, and temporal constraint in one plan applies conjunctively.",
+    "participantIdentity": "Entity participants with the same entity id refer to the same entity. Type-only participants of the same type refer to one semantic result role throughout the plan; separate unbound roles of the same type are not represented in schema version 1.",
+    "resolutionReadiness": "Ambiguous and unresolved entities are valid semantic plan states but are not executable identity bindings. Consumers must clarify or resolve them and must not select a candidate arbitrarily or drop a dependent constraint.",
+    "filterMeaning": "Filter fields, operators, and values express semantic constraints, not SPARQL FILTER syntax or label-matching heuristics. Equality means semantic equality; no fuzzy matching is implied.",
+    "unknownExtensions": "Consumers may ignore unknown optional fields for compatible major-version extensions and must not treat them as SPARQL, graph, variable, endpoint, or source-selection instructions.",
+    "iriValidation": "The contract checks the local Oireachtas IRI namespace but does not manufacture identifiers or independently verify the resolver's entity-type-to-IRI assignment."
+  }
+}

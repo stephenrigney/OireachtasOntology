@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://data.oireachtas.ie/specs/query-plan-contract.schema.json",
+  "title": "Oireachtas Query-Plan Contract Manifest",
+  "description": "Structural schema for the repository-owned query-plan contract manifest. Query-plan instances are validated by query-plan.schema.json and the deterministic runtime validator.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "contractId",
+    "contractSchema",
+    "planSchema",
+    "schemaVersion",
+    "contractVersion",
+    "description",
+    "compatibility",
+    "scope",
+    "planSemantics"
+  ],
+  "properties": {
+    "$schema": {"const": "https://json-schema.org/draft/2020-12/schema"},
+    "contractId": {"const": "https://data.oireachtas.ie/specs/query-plan-contract"},
+    "contractSchema": {"const": "poc/specs/query-plan-contract.schema.json"},
+    "planSchema": {"const": "poc/specs/query-plan.schema.json"},
+    "schemaVersion": {"const": 1},
+    "contractVersion": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"},
+    "description": {"type": "string", "minLength": 1},
+    "compatibility": {
+      "type": "object",
+      "required": ["schemaVersion", "compatibleChanges", "breakingChanges", "consumerSupport"],
+      "properties": {
+        "schemaVersion": {"type": "string", "minLength": 1},
+        "compatibleChanges": {"type": "string", "minLength": 1},
+        "breakingChanges": {"type": "string", "minLength": 1},
+        "consumerSupport": {"type": "string", "minLength": 1}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "required": ["source", "localOnly", "sourceSelection", "federation", "purpose", "notIncluded"],
+      "properties": {
+        "source": {"const": "oireachtas"},
+        "localOnly": {"const": true},
+        "sourceSelection": {"const": false},
+        "federation": {"const": false},
+        "purpose": {"type": "string", "minLength": 1},
+        "notIncluded": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "planSemantics": {
+      "type": "object",
+      "required": ["conjunction", "participantIdentity", "resolutionReadiness", "filterMeaning", "unknownExtensions", "iriValidation"],
+      "properties": {
+        "conjunction": {"type": "string", "minLength": 1},
+        "participantIdentity": {"type": "string", "minLength": 1},
+        "resolutionReadiness": {"type": "string", "minLength": 1},
+        "filterMeaning": {"type": "string", "minLength": 1},
+        "unknownExtensions": {"type": "string", "minLength": 1},
+        "iriValidation": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

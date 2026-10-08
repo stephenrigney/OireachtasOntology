@@ -1,0 +1,41 @@
+{
+  "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "intent": "count_members_in_collection",
+  "source": "oireachtas",
+  "entities": [
+    {
+      "id": "collection",
+      "type": "ParliamentaryMemberCollection",
+      "label": "Fianna Fáil",
+      "resolution": "resolved",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil"
+    },
+    {
+      "id": "term",
+      "type": "DailTerm",
+      "label": "34th Dáil",
+      "resolution": "resolved",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "membership",
+      "fact": "Membership in a parliamentary collection",
+      "subject": {"type": "Member"},
+      "object": {"entity": "collection"}
+    }
+  ],
+  "filters": [],
+  "temporalConstraints": [
+    {"target": "membership", "kind": "during", "period": {"entity": "term"}}
+  ],
+  "aggregation": {
+    "operation": "count",
+    "target": {"requirement": "membership", "participant": "subject"},
+    "groupBy": []
+  },
+  "answerShape": {"kind": "count", "target": "aggregation"}
+}

@@ -495,32 +495,20 @@ Separate question interpretation from executable SPARQL generation.
 
 ### Initial plan shape
 
-The first plan representation should remain deliberately small. For example:
-
-```json
-{
-  "intent": "find_member_birthplace",
-  "entities": [
-    {"type": "Member", "label": "Micheal Martin"}
-  ],
-  "requirements": [
-    {"fact": "member identity", "source": "oireachtas"},
-    {"fact": "place of birth", "source": "external"}
-  ],
-  "filters": [],
-  "answer_shape": ["member", "place"]
-}
-```
-
-The exact schema is an implementation decision for this phase, but it should
-capture semantics rather than SPARQL syntax.
+The initial semantic contract is defined by
+[`poc/specs/query-plan-contract.json`](query-plan-contract.json), with its
+manifest schema, plan-instance schema, runtime validator, and representative
+plans. It is local Oireachtas-only and deliberately contains no SPARQL or graph
+implementation details. Source selection remains Phase 3 work.
 
 ### Backlog
 
-- [ ] Define the versioned query-plan schema.
-- [ ] Represent entities, requested relations/facts, filters, temporal
-      constraints, aggregation and answer shape.
-- [ ] Represent unresolved/ambiguous interpretation explicitly.
+- [x] Define the versioned query-plan contract and plan JSON Schema.
+- [x] Represent entities, requested relations/facts, filters, temporal
+      constraints, aggregation, answer shape, and local Oireachtas source scope.
+- [x] Represent resolved, ambiguous, and unresolved entity state explicitly.
+- [x] Add deterministic contract/plan loading and validation, examples, and
+      focused tests.
 - [ ] Validate model-produced plans before SPARQL generation.
 - [ ] Split planner and SPARQL-generator responsibilities.
 - [ ] Generate local SPARQL from the validated plan.
@@ -529,11 +517,16 @@ capture semantics rather than SPARQL syntax.
       baseline.
 - [ ] Keep a simple fallback/debug path during migration if useful.
 
+Phase 2A is complete as a contract-only tranche. The artifact and examples are
+under `poc/specs/query-plan-*`; `poc.nlq.plan_contract` loads and validates them.
+No plan production or validation is connected to the live NLQ path, and no
+SPARQL generation is implemented.
+
 #### Realistic-question evaluation
 
-- [ ] Add a separate realistic-question benchmark before the Phase 2 exit
-      gate. Preserve the Phase 1 controlled benchmark as the capability and
-      regression suite rather than replacing it.
+- [ ] Add a separate realistic-question benchmark after an initial planner path
+      exists and before the Phase 2 exit gate. Preserve the Phase 1 controlled
+      benchmark as the capability and regression suite rather than replacing it.
 - [ ] Include user-like wording that does not mirror ontology terminology,
       including implicit or colloquial references, ambiguous phrasing,
       temporal language, plural/set-valued questions, multi-hop relationships,

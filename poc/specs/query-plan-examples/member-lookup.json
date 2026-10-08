@@ -1,0 +1,27 @@
+{
+  "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "intent": "identify_member",
+  "source": "oireachtas",
+  "entities": [
+    {
+      "id": "member",
+      "type": "Member",
+      "label": "Micheál Martin",
+      "resolution": "resolved",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Micheál-Martin.D.1989-06-29"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "member-name",
+      "fact": "Member full name",
+      "subject": {"entity": "member"}
+    }
+  ],
+  "filters": [],
+  "temporalConstraints": [],
+  "aggregation": null,
+  "answerShape": {"kind": "label", "target": "member-name"}
+}
