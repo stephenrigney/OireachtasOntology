@@ -725,6 +725,8 @@ def test_deterministic_planner_benchmark_cases_are_scored_without_sparql_generat
         "by_failure_class": {"source_data_coverage": 1},
     }
     unsupported = next(item for item in results if item["case_id"] == "plan.unsupported.member-favourite-colour")
+    # This supported fake draft exercises only the manual-review/not-scored
+    # accounting path; it is not evidence that a model recognizes unsupported wording.
     assert unsupported["evaluation"] == "not_scored"
     assert unsupported["planner_result"]["status"] == "validated_plan"
     unavailable = next(item for item in results if item["case_id"] == "plan.coverage.unavailable-bill")

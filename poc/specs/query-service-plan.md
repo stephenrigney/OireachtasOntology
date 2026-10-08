@@ -537,6 +537,17 @@ model call without automatic repair/retry. Deterministic local exact-label
 resolution reuses the Phase 1 Unicode/case-insensitive behavior, preserves
 distinct same-name resources, and produces resolved, ambiguous or unresolved
 entities. A converted final plan is accepted only after Phase 2A validation.
+For duplicate Member labels, exact local HouseTerm/constituency context also
+reuses Phase 1 narrowing: one contextual match resolves, multiple matches remain
+ambiguous, and no match preserves the original ambiguous candidate set. The
+planner does not yet carry Phase 1's explicit set-valued Member-reference gate.
+If a plural request is drafted as a named Member entity, contextual narrowing
+can therefore produce a single resolved record even though the question is
+set-valued. This is a Phase 2B limitation, not support for set-valued identity
+binding. Before Phase 2C binds resolved Member IRIs into SPARQL, it must preserve
+set-valued intent or fail closed, with corresponding benchmark coverage. The
+current final plan also omits the context labels that justified narrowing; make
+that decision inspectable before Phase 2C relies on contextual identity binding.
 
 Planner evaluation is a separate controlled path in
 `poc/nlq/planner_benchmark.py` using selected Phase 1 cases, semantic plan
@@ -548,6 +559,9 @@ review because the Phase 2A contract has no explicit unsupported-question
 state. Phase 2B does not complete plan-to-SPARQL generation, planner-driven
 execution, the realistic-question benchmark, data-surface expansion or the
 Phase 2 exit criteria.
+The deterministic unsupported-request test injects a supported draft and checks
+only that the manual-review case remains unscored; it does not test whether a
+model recognizes unsupported wording.
 
 #### Realistic-question evaluation
 

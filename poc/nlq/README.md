@@ -443,6 +443,17 @@ Phase 1 NFC-normalised, case-insensitive, diacritic-preserving behavior. It
 supports the current controlled entity types and returns exactly one local IRI,
 distinct ambiguous candidates, or unresolved state. It does not fuzzy-match,
 merge same-name resources, manufacture identifiers or use external services.
+For duplicate Member labels, exact local HouseTerm/constituency context reuses
+Phase 1 narrowing: one contextual match resolves, multiple matches remain
+ambiguous, and no match preserves all original candidates. The planner does not
+yet apply Phase 1's explicit set-valued Member-reference gate. If a plural
+request is drafted as a named Member entity, contextual narrowing can produce a
+single resolved record even though the question is set-valued; this must not be
+treated as safe set-valued identity binding. Before Phase 2C binds resolved
+Member IRIs into SPARQL, preserve set-valued intent or fail closed and add
+benchmark coverage. The current plan also omits which context labels justified
+a narrowing, so that evidence should be made inspectable before Phase 2C relies
+on contextual identity binding.
 The planner inserts those results into a final plan and always calls the
 authoritative Phase 2A validator before accepting it. Ambiguity returns
 `clarification_required`; an absent local label returns `unresolved_entity`.
@@ -469,7 +480,10 @@ resolved non-secret model/endpoint configuration beneath the ignored
 `var/nlq-planner-benchmark/runs/` directory. Ordinary automated tests use fake
 model output and do not require an LLM. Unsupported requests remain manual
 review because Phase 2A does not define an explicit unsupported-question plan
-state. The separate realistic-question benchmark remains future work.
+state. The deterministic test for the unsupported manual-review case injects a
+supported draft and checks only the not-scored accounting path; it does not test
+whether a model recognizes unsupported wording. The separate realistic-question
+benchmark remains future work.
 
 `poc.nlq.plan_contract` exposes `load_query_plan_contract`,
 `validate_query_plan`, and `load_query_plan`. Its deterministic validation is
