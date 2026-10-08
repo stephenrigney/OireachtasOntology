@@ -1,9 +1,10 @@
-"""Bounded, local-only Member name resolution for the NLQ pipeline.
+"""Bounded, deterministic local entity resolution for the NLQ POC.
 
 This is deliberately not an identity-merging layer. It finds exact local
-``foaf:name`` labels mentioned by the user, groups the resulting RDF resources
-by their real local Member IRI, and asks for clarification when multiple
-records remain credible.
+labels mentioned by the user, retains the actual RDF resources, and reports
+ambiguity rather than selecting or merging distinct identities. The Phase 1
+Member-question gate remains unchanged; the typed single-label resolver is used
+by the independent structured-planner path.
 """
 
 from __future__ import annotations
@@ -32,6 +33,53 @@ _MEMBER_GRAPH_PREFIX = next(
     for family in _CONTRACT["graphFamilies"]
     if family["id"] == "member-records"
 )
+
+_ENTITY_CLASSES = {
+    "Member": "agents:Member",
+    "House": "agents:House",
+    "DailTerm": "agents:DailTerm",
+    "SeanadTerm": "agents:SeanadTerm",
+    "ParliamentaryMemberCollection": "members:ParliamentaryMemberCollection",
+    "DailConstituency": "members:DailConstituency",
+    "SeanadPanel": "members:SeanadPanel",
+    "Committee": "members:Committee",
+}
+_ENTITY_GRAPH_FAMILIES = {
+    "Member": "member-records",
+    "House": "houses",
+    "DailTerm": "houses",
+    "SeanadTerm": "houses",
+    "ParliamentaryMemberCollection": "parties",
+    "DailConstituency": "constituencies",
+    "SeanadPanel": "constituencies",
+    "Committee": "committees",
+}
+_ENTITY_GRAPH_CONFIG = {
+    family["id"]: family["graph"] for family in _CONTRACT["graphFamilies"]
+}
+_LOCAL_IRI = re.compile(r"^https://data\.oireachtas\.ie/[^\s?#]+$")
+
+
+class UnsupportedLocalEntityType(ValueError):
+    """The controlled type has no deterministic local label lookup."""
+
+
+@dataclass(frozen=True)
+class LocalEntityCandidate:
+    """One distinct, locally returned resource and its actual label."""
+
+    iri: str
+    label: str
+
+
+@dataclass(frozen=True)
+class LocalEntityResolution:
+    """Exact-label resolution without fuzzy matching or identity merging."""
+
+    state: str
+    candidates: tuple[LocalEntityCandidate, ...] = ()
+
+
 @dataclass(frozen=True)
 class MemberCandidate:
     """One actual local Member resource and its safely displayable context."""
@@ -83,6 +131,156 @@ def _normalise_text(value: str) -> str:
     # Canonical Unicode composition and case folding retain (rather than strip)
     # Irish diacritics. No accent-removal or approximate spelling is performed.
     return unicodedata.normalize("NFC", value).casefold()
+
+
+def _entity_label_predicate(entity_type: str) -> str:
+    labels = _CONTRACT.get("labelsByEntityType", {}).get(entity_type)
+    if not isinstance(labels, dict):
+        raise UnsupportedLocalEntityType(
+            f"No local label predicate is defined for entity type {entity_type!r}."
+        )
+    qualified = labels.get("predicate")
+    if not isinstance(qualified, str) or ":" not in qualified:
+        raise UnsupportedLocalEntityType(
+            f"No local label predicate is defined for entity type {entity_type!r}."
+        )
+    prefix, local_name = qualified.split(":", 1)
+    namespace = _NAMESPACES.get(prefix)
+    if not namespace or not local_name:
+        raise UnsupportedLocalEntityType(
+            f"The local label predicate for entity type {entity_type!r} is unsupported."
+        )
+    return f"<{namespace}{local_name}>"
+
+
+def _entity_lookup_query(entity_type: str, label: str) -> str:
+    """Build a bounded lookup only from the reviewed local type/label map."""
+    class_name = _ENTITY_CLASSES.get(entity_type)
+    graph_config = _ENTITY_GRAPH_CONFIG.get(_ENTITY_GRAPH_FAMILIES.get(entity_type, ""))
+    if class_name is None or not isinstance(graph_config, dict):
+        raise UnsupportedLocalEntityType(
+            f"No deterministic local resolver is available for entity type {entity_type!r}."
+        )
+    predicate = _entity_label_predicate(entity_type)
+    query_label = Literal(unicodedata.normalize("NFC", label)).n3()
+    if graph_config.get("kind") == "resource-pattern" and entity_type == "Member":
+        pattern = (
+            f"GRAPH ?entityGraph {{ ?entity a {class_name} ; {predicate} ?label . }}\n"
+            f'  FILTER(STRSTARTS(STR(?entityGraph), "{_MEMBER_GRAPH_PREFIX}"))'
+        )
+    elif graph_config.get("kind") == "fixed":
+        graph_iri = graph_config.get("iri")
+        if not isinstance(graph_iri, str):
+            raise UnsupportedLocalEntityType(
+                f"No fixed local graph is defined for entity type {entity_type!r}."
+            )
+        pattern = f"GRAPH <{graph_iri}> {{ ?entity a {class_name} ; {predicate} ?label . }}"
+    else:
+        raise UnsupportedLocalEntityType(
+            f"The local graph pattern for entity type {entity_type!r} is unsupported."
+        )
+    return f'''PREFIX agents: <{_NAMESPACES["agents"]}>
+PREFIX members: <{_NAMESPACES["members"]}>
+SELECT DISTINCT ?entity ?label WHERE {{
+  {pattern}
+  FILTER(CONTAINS(LCASE(STR(?label)), LCASE(STR({query_label}))))
+}}
+LIMIT 100'''
+
+
+def resolve_local_entity_label(
+    entity_type: str,
+    label: str,
+    fuseki,
+    *,
+    supported_predicates=None,
+    question_context: str | None = None,
+) -> LocalEntityResolution:
+    """Resolve one exact user label to zero, one, or many distinct local IRIs.
+
+    The Fuseki query is a bounded, type-scoped substring prefilter; acceptance
+    uses the Phase 1 NFC/casefold exact-label rule in Python. Thus the prefilter
+    cannot turn a partial, fuzzy, or accent-folded match into a resolution.
+    """
+    if entity_type not in _ENTITY_CLASSES:
+        raise UnsupportedLocalEntityType(
+            f"No deterministic local resolver is available for entity type {entity_type!r}."
+        )
+    query = _checked_local_query(
+        _entity_lookup_query(entity_type, label),
+        supported_predicates=supported_predicates,
+    )
+    result = fuseki.query(query)
+    if result.kind != "select" or not {"entity", "label"} <= set(result.columns):
+        raise NLQError("Fuseki returned an unexpected response to local entity resolution.")
+    if len(result.rows) >= 100:
+        raise NLQError(
+            f"Local {entity_type} label resolution reached its 100-row safety cap; "
+            "no entity was selected."
+        )
+
+    exact_by_iri: dict[str, set[str]] = {}
+    for row in result.rows:
+        iri = _binding_value(row, result.columns, "entity")
+        raw_label = _binding_value(row, result.columns, "label")
+        if not iri or not raw_label:
+            continue
+        actual_label = _context_label(raw_label)
+        if _normalise_text(actual_label) != _normalise_text(label):
+            continue
+        try:
+            parsed = urlsplit(iri)
+        except ValueError:
+            continue
+        if (
+            not _LOCAL_IRI.fullmatch(iri)
+            or parsed.scheme != "https"
+            or parsed.netloc != "data.oireachtas.ie"
+            or parsed.query
+            or parsed.fragment
+        ):
+            continue
+        exact_by_iri.setdefault(iri, set()).add(actual_label)
+
+    candidates = tuple(sorted(
+        (
+            LocalEntityCandidate(
+                iri=iri,
+                # A resource can carry duplicate language/case variants of a
+                # label; preserve one deterministic actual literal per IRI.
+                label=sorted(labels, key=lambda value: (value.casefold(), value))[0],
+            )
+            for iri, labels in exact_by_iri.items()
+        ),
+        key=lambda candidate: (_normalise_text(candidate.label), candidate.iri),
+    ))
+    if entity_type == "Member" and question_context and len(candidates) > 1:
+        # Preserve Phase 1's deterministic HouseTerm/constituency contextual
+        # narrowing before reporting duplicate Member labels to the planner.
+        enriched = tuple(
+            _load_context(
+                MemberCandidate(candidate.iri, candidate.label), fuseki,
+                supported_predicates=supported_predicates,
+            )
+            for candidate in candidates
+        )
+        matches_by_iri = {
+            candidate.member_iri: _non_overlapping_context_matches(
+                question_context, set(candidate.house_terms) | set(candidate.representations),
+            )
+            for candidate in enriched
+        }
+        contextual = tuple(
+            LocalEntityCandidate(candidate.member_iri, candidate.name)
+            for candidate in enriched
+            if matches_by_iri[candidate.member_iri]
+        )
+        if len(contextual) == 1:
+            candidates = contextual
+        elif len(contextual) > 1:
+            candidates = contextual
+    state = "unresolved" if not candidates else "resolved" if len(candidates) == 1 else "ambiguous"
+    return LocalEntityResolution(state, candidates)
 
 
 def _label_position(question: str, label: str) -> int | None:

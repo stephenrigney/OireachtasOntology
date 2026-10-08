@@ -420,6 +420,57 @@ entity-type/IRI assignment. Unknown compatible optional fields may be ignored
 and must not be treated as query, graph, variable, source, or endpoint
 instructions.
 
+### Structured planner path (Phase 2B)
+
+`poc/specs/query-plan-draft.schema.json` defines the strict model-output shape
+used by `poc.nlq.structured_planner.StructuredPlanner`. It contains the same
+controlled facts, filters, temporal constraints, aggregation and answer shapes
+as the Phase 2A contract, but its entities are only `{id, type, label}` user
+mentions. It has no final-plan metadata, source override, resolution state,
+candidate list or entity IRI. Required `null` slots are the strict Responses
+schema's encoding for omitted optional values; the planner removes only those
+documented nulls before semantic validation.
+
+The planner uses the configured Responses-compatible endpoint's strict
+`json_schema` output mode. Its prompt is built narrowly from the Phase 2A
+semantic vocabulary and type/fact/filter descriptions; it contains no RDF
+predicates, graph patterns or query-schema dump. Invalid JSON, invalid draft
+structure, unsupported vocabulary and inconsistent semantics fail visibly.
+There is one model request only: no automatic repair, regeneration or retry.
+
+After draft validation, deterministic local exact-label resolution reuses the
+Phase 1 NFC-normalised, case-insensitive, diacritic-preserving behavior. It
+supports the current controlled entity types and returns exactly one local IRI,
+distinct ambiguous candidates, or unresolved state. It does not fuzzy-match,
+merge same-name resources, manufacture identifiers or use external services.
+The planner inserts those results into a final plan and always calls the
+authoritative Phase 2A validator before accepting it. Ambiguity returns
+`clarification_required`; an absent local label returns `unresolved_entity`.
+Resolver/data unavailability, unsupported resolver types, draft failures and
+final-plan failures have separate result classes.
+
+This is a separate callable/development-evaluation path. It is not wired to
+`/ask`, does not add a model request to normal browser queries, and stops after
+plan validation: no plan-to-SPARQL generation or query execution occurs.
+
+Planner evaluation uses selected Phase 1 controlled cases and semantic plan
+invariants from `poc/nlq/benchmarks/planner-benchmark-v1.json`. It checks source
+prerequisites with the existing Phase 1 coverage contract before scoring; an
+unavailable prerequisite is recorded separately as source-data coverage. The
+planner result is evaluated independently of query results. Run a measured,
+capture-backed planner evaluation with:
+
+```bash
+uv run --locked --extra nlq python scripts/run-nlq-planner-benchmark.py
+```
+
+The runner uses disposable loopback Fuseki and records run/dataset identity and
+resolved non-secret model/endpoint configuration beneath the ignored
+`var/nlq-planner-benchmark/runs/` directory. Ordinary automated tests use fake
+model output and do not require an LLM. Unsupported requests remain manual
+review because Phase 2A does not define an explicit unsupported-question plan
+state. The separate realistic-question benchmark remains future work.
+
 `poc.nlq.plan_contract` exposes `load_query_plan_contract`,
 `validate_query_plan`, and `load_query_plan`. Its deterministic validation is
 not yet used by the browser or direct NL-to-SPARQL runtime. To test the contract
@@ -434,8 +485,8 @@ reviewed entity types, semantic facts, or filter fields when existing meanings
 and validation behavior are unchanged. A breaking change to an existing field's
 meaning, supported resolution states, or validation expectations requires a
 major bump. Consumers reject unsupported schema versions, contract majors, and
-semantic vocabulary values. The separate realistic-question benchmark is
-deferred until an initial planner path can be evaluated meaningfully; the
+semantic vocabulary values. The realistic-question benchmark remains deferred
+until after the initial planner path and before the Phase 2 exit gate; the
 controlled Phase 1 benchmark remains the capability/regression suite.
 
 At startup, RDFLib reads the repository's `ontology/*.owl.ttl` modules and the

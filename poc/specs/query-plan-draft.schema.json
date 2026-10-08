@@ -1,0 +1,262 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://data.oireachtas.ie/specs/query-plan-draft.schema.json",
+  "title": "Oireachtas Semantic Query-Plan Draft",
+  "description": "Strict model-output shape for a semantic draft that is resolved and converted locally to query-plan-contract 1.0.0. Draft entities are user-label mentions only; they never carry IRIs, resolution states, or candidates. Nulls in optional slots are the Responses strict-schema encoding of omission and are removed before semantic validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "draftSchemaVersion",
+    "intent",
+    "entities",
+    "requirements",
+    "filters",
+    "temporalConstraints",
+    "aggregation",
+    "answerShape"
+  ],
+  "properties": {
+    "draftSchemaVersion": {"type": "integer", "const": 1},
+    "intent": {"type": "string", "minLength": 1},
+    "entities": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/entityMention"}
+    },
+    "requirements": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/requirement"}
+    },
+    "filters": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/filter"}
+    },
+    "temporalConstraints": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/temporalConstraint"}
+    },
+    "aggregation": {
+      "anyOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/aggregation"}
+      ]
+    },
+    "answerShape": {"$ref": "#/$defs/answerShape"}
+  },
+  "$defs": {
+    "identifier": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
+    "entityType": {
+      "type": "string",
+      "enum": [
+        "Member",
+        "House",
+        "DailTerm",
+        "SeanadTerm",
+        "ParliamentaryMemberCollection",
+        "DailConstituency",
+        "SeanadPanel",
+        "Committee"
+      ]
+    },
+    "factId": {
+      "type": "string",
+      "enum": [
+        "member_identity",
+        "member_full_name",
+        "member_house_term_membership",
+        "member_parliamentary_membership_start_date",
+        "member_parliamentary_membership_end_date",
+        "member_collection_membership",
+        "member_constituency_representation",
+        "member_committee_membership",
+        "house_label",
+        "parliamentary_term_label",
+        "parliamentary_term_number",
+        "parliamentary_collection_label",
+        "constituency_panel_label",
+        "committee_label",
+        "committee_code"
+      ]
+    },
+    "filterFieldId": {
+      "type": "string",
+      "enum": [
+        "member_name",
+        "parliamentary_term_number",
+        "parliamentary_collection",
+        "committee_code"
+      ]
+    },
+    "filterOperator": {
+      "type": "string",
+      "enum": [
+        "equals",
+        "not_equals",
+        "greater_than",
+        "greater_than_or_equal",
+        "less_than",
+        "less_than_or_equal",
+        "exists"
+      ]
+    },
+    "temporalKind": {
+      "type": "string",
+      "enum": ["on", "before", "after", "during", "interval", "current"]
+    },
+    "answerKind": {
+      "type": "string",
+      "enum": [
+        "boolean",
+        "entity",
+        "entities",
+        "label",
+        "fact",
+        "list",
+        "count",
+        "grouped_result"
+      ]
+    },
+    "nullableEntityReference": {
+      "anyOf": [
+        {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
+        {"type": "null"}
+      ]
+    },
+    "nullableEntityType": {
+      "anyOf": [
+        {"$ref": "#/$defs/entityType"},
+        {"type": "null"}
+      ]
+    },
+    "entityMention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "label"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "type": {"$ref": "#/$defs/entityType"},
+        "label": {"type": "string", "minLength": 1}
+      }
+    },
+    "participant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity", "type"],
+      "properties": {
+        "entity": {"$ref": "#/$defs/nullableEntityReference"},
+        "type": {"$ref": "#/$defs/nullableEntityType"}
+      }
+    },
+    "requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fact", "subject", "object"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "fact": {"$ref": "#/$defs/factId"},
+        "subject": {"$ref": "#/$defs/participant"},
+        "object": {
+          "anyOf": [
+            {"$ref": "#/$defs/participant"},
+            {"type": "null"}
+          ]
+        }
+      }
+    },
+    "filterEntityReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity"],
+      "properties": {"entity": {"$ref": "#/$defs/identifier"}}
+    },
+    "filterValue": {
+      "anyOf": [
+        {"type": "string"},
+        {"type": "number"},
+        {"type": "boolean"},
+        {"$ref": "#/$defs/filterEntityReference"},
+        {"type": "null"}
+      ]
+    },
+    "filter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"$ref": "#/$defs/filterFieldId"},
+        "operator": {"$ref": "#/$defs/filterOperator"},
+        "value": {"$ref": "#/$defs/filterValue"}
+      }
+    },
+    "dateWindow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": {"type": ["string", "null"]},
+        "end": {"type": ["string", "null"]}
+      }
+    },
+    "temporalPeriod": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity", "start", "end"],
+      "properties": {
+        "entity": {"$ref": "#/$defs/nullableEntityReference"},
+        "start": {"type": ["string", "null"]},
+        "end": {"type": ["string", "null"]}
+      }
+    },
+    "temporalConstraint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "kind", "date", "period", "start", "end"],
+      "properties": {
+        "target": {"$ref": "#/$defs/identifier"},
+        "kind": {"$ref": "#/$defs/temporalKind"},
+        "date": {"type": ["string", "null"]},
+        "period": {
+          "anyOf": [
+            {"$ref": "#/$defs/temporalPeriod"},
+            {"type": "null"}
+          ]
+        },
+        "start": {"type": ["string", "null"]},
+        "end": {"type": ["string", "null"]}
+      }
+    },
+    "aggregationReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirement", "participant"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "participant": {"type": "string", "enum": ["subject", "object"]}
+      }
+    },
+    "aggregation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation", "target", "groupBy"],
+      "properties": {
+        "operation": {"type": "string", "enum": ["count"]},
+        "target": {"$ref": "#/$defs/aggregationReference"},
+        "groupBy": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/aggregationReference"}
+        }
+      }
+    },
+    "answerShape": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "target", "entityType"],
+      "properties": {
+        "kind": {"$ref": "#/$defs/answerKind"},
+        "target": {"$ref": "#/$defs/nullableEntityReference"},
+        "entityType": {"$ref": "#/$defs/nullableEntityType"}
+      }
+    }
+  }
+}

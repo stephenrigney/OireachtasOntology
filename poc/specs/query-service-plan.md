@@ -509,7 +509,7 @@ implementation details. Source selection remains Phase 3 work.
 - [x] Represent resolved, ambiguous, and unresolved entity state explicitly.
 - [x] Add deterministic contract/plan loading and validation, examples, and
       focused tests.
-- [ ] Validate model-produced plans before SPARQL generation.
+- [x] Validate model-produced plans before SPARQL generation.
 - [ ] Split planner and SPARQL-generator responsibilities.
 - [ ] Generate local SPARQL from the validated plan.
 - [ ] Show the plan alongside the interpretation and generated query.
@@ -527,6 +527,27 @@ entity-type vocabulary remains controlled by the artifact. Adding a reviewed
 supported entity type is an additive contract-major-1 extension when existing
 meanings and validation behavior are unchanged. This does not predeclare Bill,
 office, or Debate semantics; their data-surface evaluation remains future work.
+
+Phase 2B is complete as the first separate model-produced planning path. The
+draft JSON Schema at `poc/specs/query-plan-draft.schema.json` constrains the model
+to semantic facts, filters, temporal meaning, aggregation, answer shape and
+`{id, type, label}` entity mentions, with no model-supplied entity IRIs. The
+Responses-compatible planner uses strict JSON Schema output and performs one
+model call without automatic repair/retry. Deterministic local exact-label
+resolution reuses the Phase 1 Unicode/case-insensitive behavior, preserves
+distinct same-name resources, and produces resolved, ambiguous or unresolved
+entities. A converted final plan is accepted only after Phase 2A validation.
+
+Planner evaluation is a separate controlled path in
+`poc/nlq/planner_benchmark.py` using selected Phase 1 cases, semantic plan
+invariants, and the existing source-coverage checks. It scores planning only;
+it does not generate or execute SPARQL. The path is callable for tests and
+evaluation but is not wired into the normal browser request, so Phase 1 direct
+NL-to-SPARQL behavior is unchanged. Unsupported requests remain unscored/manual
+review because the Phase 2A contract has no explicit unsupported-question
+state. Phase 2B does not complete plan-to-SPARQL generation, planner-driven
+execution, the realistic-question benchmark, data-surface expansion or the
+Phase 2 exit criteria.
 
 #### Realistic-question evaluation
 

@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "benchmark_id": "oireachtas-semantic-planner",
+  "benchmark_version": "0.1.0",
+  "source_benchmark": {
+    "path": "poc/nlq/benchmarks/benchmark-v3.json",
+    "benchmark_version": "0.3.0"
+  },
+  "cases": [
+    {
+      "id": "plan.lookup.aengus-name",
+      "source_case_id": "lookup.aengus-name",
+      "expectation": "validated_plan",
+      "required_entities": [
+        {"type": "Member", "label": "Aengus Ó Snodaigh", "resolution": "resolved"}
+      ],
+      "required_requirements": [
+        {"fact": "member_full_name", "subject_type": "Member", "object_type": null}
+      ],
+      "answer_shape": {"kind": "fact"}
+    },
+    {
+      "id": "plan.term.aengus-dail-33",
+      "source_case_id": "term.aengus-dail-33",
+      "expectation": "validated_plan",
+      "required_entities": [
+        {"type": "Member", "label": "Aengus Ó Snodaigh", "resolution": "resolved"}
+      ],
+      "required_requirements": [
+        {"fact": "member_house_term_membership", "subject_type": "Member", "object_type": "DailTerm"}
+      ],
+      "answer_shape": {"kind": "entities", "entityType": "DailTerm"}
+    },
+    {
+      "id": "plan.collection.timmy-dail-34",
+      "source_case_id": "collection.timmy-dail-34",
+      "expectation": "validated_plan",
+      "required_entities": [
+        {"type": "Member", "label": "Timmy Dooley", "resolution": "resolved"},
+        {"type": "DailTerm", "label": "34th Dáil", "resolution": "resolved"}
+      ],
+      "required_requirements": [
+        {"fact": "member_house_term_membership", "subject_type": "Member", "object_type": "DailTerm"},
+        {"fact": "member_collection_membership", "subject_type": "Member", "object_type": "ParliamentaryMemberCollection"}
+      ],
+      "required_temporal_constraints": [
+        {"kind": "during", "target_fact": "member_collection_membership", "period_entity_type": "DailTerm", "period_entity_label": "34th Dáil"}
+      ],
+      "answer_shape": {"kind": "entities", "entityType": "ParliamentaryMemberCollection"}
+    },
+    {
+      "id": "plan.representation.timmy-seanad-26-panel",
+      "source_case_id": "representation.timmy-seanad-26-panel",
+      "expectation": "validated_plan",
+      "required_entities": [
+        {"type": "Member", "label": "Timmy Dooley", "resolution": "resolved"},
+        {"type": "SeanadTerm", "label": "26th Seanad", "resolution": "resolved"}
+      ],
+      "required_requirements": [
+        {"fact": "member_house_term_membership", "subject_type": "Member", "object_type": "SeanadTerm"},
+        {"fact": "member_constituency_representation", "subject_type": "Member", "object_type": "SeanadPanel"}
+      ],
+      "required_temporal_constraints": [
+        {"kind": "during", "target_fact": "member_constituency_representation", "period_entity_type": "SeanadTerm", "period_entity_label": "26th Seanad"}
+      ],
+      "answer_shape": {"kind": "entities", "entityType": "SeanadPanel"}
+    },
+    {
+      "id": "plan.committee.transport-code",
+      "source_case_id": "committee.timmy-transport-code",
+      "expectation": "validated_plan",
+      "required_entities": [
+        {"type": "Committee", "label": "Joint Committee on Transport and Communications", "resolution": "resolved"}
+      ],
+      "required_requirements": [
+        {"fact": "committee_code", "subject_type": "Committee", "object_type": null}
+      ],
+      "answer_shape": {"kind": "fact"}
+    },
+    {
+      "id": "plan.temporal.aengus-dail-33",
+      "source_case_id": "term.aengus-dail-33",
+      "question": "Was Aengus Ó Snodaigh a Member during the 33rd Dáil?",
+      "expectation": "validated_plan",
+      "required_entities": [
+        {"type": "Member", "label": "Aengus Ó Snodaigh", "resolution": "resolved"},
+        {"type": "DailTerm", "label": "33rd Dáil", "resolution": "resolved"}
+      ],
+      "required_requirements": [
+        {"fact": "member_house_term_membership", "subject_type": "Member", "object_type": "DailTerm"}
+      ],
+      "required_temporal_constraints": [
+        {"kind": "during", "target_fact": "member_house_term_membership", "period_entity_type": "DailTerm", "period_entity_label": "33rd Dáil"}
+      ],
+      "answer_shape": {"kind": "boolean"}
+    },
+    {
+      "id": "plan.aggregate.dail-term-count",
+      "source_case_id": "aggregate.dail-term-count",
+      "expectation": "validated_plan",
+      "required_requirements": [
+        {"fact": "parliamentary_term_label", "subject_type": "DailTerm", "object_type": null}
+      ],
+      "aggregation": {
+        "operation": "count",
+        "target_fact": "parliamentary_term_label",
+        "target_participant": "subject",
+        "group_by_count": 0
+      },
+      "answer_shape": {"kind": "count"}
+    },
+    {
+      "id": "plan.ambiguous.duplicate-michael-collins",
+      "source_case_id": "ambiguous.duplicate-michael-collins",
+      "expectation": "clarification_required",
+      "required_entities": [
+        {"type": "Member", "label": "Michael Collins", "resolution": "ambiguous", "minimum_candidates": 3}
+      ]
+    },
+    {
+      "id": "plan.unresolved.local-member-label",
+      "source_case_id": "lookup.aengus-name",
+      "question": "What is the full name of Ada Never-Matched Example?",
+      "expectation": "unresolved_entity",
+      "required_entities": [
+        {"type": "Member", "label": "Ada Never-Matched Example", "resolution": "unresolved"}
+      ],
+      "required_requirements": [
+        {"fact": "member_full_name", "subject_type": "Member", "object_type": null}
+      ]
+    },
+    {
+      "id": "plan.unsupported.member-favourite-colour",
+      "source_case_id": "unsupported.member-favourite-colour",
+      "expectation": "manual_review",
+      "not_scored_reason": "Phase 2A has no explicit unsupported-question plan state; this case records the planner outcome without scoring it as a valid semantic plan."
+    },
+    {
+      "id": "plan.coverage.unavailable-bill",
+      "source_case_id": "unavailable.bill-status",
+      "expectation": "source_data_coverage"
+    }
+  ]
+}

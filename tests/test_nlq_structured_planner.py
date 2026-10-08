@@ -1,0 +1,743 @@
+from __future__ import annotations
+
+import copy
+import json
+import unicodedata
+from pathlib import Path
+
+import httpx
+import pytest
+from jsonschema import Draft202012Validator
+
+from poc.nlq.errors import NLQError
+from poc.nlq.member_resolution import (
+    UnsupportedLocalEntityType,
+    resolve_local_entity_label,
+)
+from poc.nlq.plan_contract import QueryPlanContractError, load_query_plan_contract, validate_query_plan
+from poc.nlq.planner_benchmark import (
+    load_planner_benchmark,
+    run_planner_cases,
+    summarize_planner_results,
+)
+from poc.nlq.benchmark import CoverageAssessment
+from poc.nlq.results import QueryResult
+from poc.nlq.structured_planner import (
+    DRAFT_SCHEMA_PATH,
+    ResponsesPlanGenerator,
+    StructuredPlanner,
+    _response_schema,
+    build_planner_instructions,
+)
+
+
+ROOT = Path(__file__).resolve().parents[1]
+PLAN_CONTRACT = load_query_plan_contract()
+
+
+def _output_draft(
+    *,
+    question: str = "What is the full name of Timmy Dooley?",
+    entity_type: str = "Member",
+    label: str = "Timmy Dooley",
+    fact: str = "member_full_name",
+) -> dict:
+    return {
+        "draftSchemaVersion": 1,
+        "intent": "Return the requested semantic fact.",
+        "entities": [{"id": "member", "type": entity_type, "label": label}],
+        "requirements": [{
+            "id": "requested-fact",
+            "fact": fact,
+            "subject": {"entity": "member", "type": None},
+            "object": None,
+        }],
+        "filters": [],
+        "temporalConstraints": [],
+        "aggregation": None,
+        "answerShape": {"kind": "fact", "target": "requested-fact", "entityType": None},
+    }
+
+
+class FakeGenerator:
+    def __init__(self, output: str | dict):
+        self.output = output if isinstance(output, str) else json.dumps(output, ensure_ascii=False)
+        self.calls = 0
+
+    def generate(self, _question: str) -> str:
+        self.calls += 1
+        return self.output
+
+    def close(self):
+        pass
+
+
+class LocalResolverFuseki:
+    def __init__(
+        self,
+        rows: tuple[tuple[str, str], ...] = (),
+        *,
+        contexts: dict[str, tuple[tuple[str, str], ...]] | None = None,
+    ):
+        self.rows = rows
+        self.contexts = contexts or {}
+        self.queries: list[str] = []
+        self.fail = False
+
+    def query(self, sparql: str) -> QueryResult:
+        self.queries.append(sparql)
+        if self.fail:
+            raise NLQError("Fuseki query timed out.")
+        if "VALUES ?member" in sparql:
+            iri = next((candidate for candidate, _label in self.rows if f"<{candidate}>" in sparql), None)
+            return QueryResult(
+                kind="select", columns=("contextType", "contextLabel"),
+                rows=self.contexts.get(iri, ()),
+            )
+        assert "SELECT DISTINCT ?entity ?label" in sparql
+        return QueryResult(
+            kind="select", columns=("entity", "label"), rows=self.rows,
+        )
+
+
+def _planner(output: str | dict, fuseki: LocalResolverFuseki):
+    generator = FakeGenerator(output)
+    planner = StructuredPlanner(generator, fuseki)
+    return planner, generator
+
+
+def test_draft_schema_is_valid_closed_and_vocabularies_match_phase_2a():
+    schema = json.loads(DRAFT_SCHEMA_PATH.read_text(encoding="utf-8"))
+    Draft202012Validator.check_schema(schema)
+    response_schema = _response_schema()
+    assert response_schema["additionalProperties"] is False
+    assert set(response_schema["required"]) == set(response_schema["properties"])
+    vocabulary = PLAN_CONTRACT["semanticVocabulary"]
+    assert set(schema["$defs"]["entityType"]["enum"]) == set(vocabulary["entityTypes"])
+    assert set(schema["$defs"]["factId"]["enum"]) == {
+        fact["id"] for fact in vocabulary["facts"]
+    }
+    assert set(schema["$defs"]["filterFieldId"]["enum"]) == {
+        field["id"] for field in vocabulary["filterFields"]
+    }
+    assert set(schema["$defs"]["temporalKind"]["enum"]) == {
+        "on", "before", "after", "during", "interval", "current",
+    }
+    assert set(schema["$defs"]["answerKind"]["enum"]) == {
+        "boolean", "entity", "entities", "label", "fact", "list", "count", "grouped_result",
+    }
+
+    draft = _output_draft()
+    errors = list(Draft202012Validator(schema).iter_errors(draft))
+    assert errors == []
+    draft["entities"][0]["iri"] = "https://data.oireachtas.ie/ie/oireachtas/member/id/guess"
+    assert list(Draft202012Validator(schema).iter_errors(draft))
+
+    validator = Draft202012Validator(schema)
+    for case_id in (
+        "plan.collection.timmy-dail-34",
+        "plan.representation.timmy-seanad-26-panel",
+        "plan.temporal.aengus-dail-33",
+        "plan.aggregate.dail-term-count",
+    ):
+        assert list(validator.iter_errors(_expected_case_draft(case_id))) == [], case_id
+
+
+def test_responses_plan_generator_uses_strict_schema_and_makes_one_call():
+    output = json.dumps(_output_draft(), ensure_ascii=False)
+    requests = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        body = json.loads(request.content)
+        assert request.url.path == "/v1/responses"
+        assert request.headers["authorization"] == "Bearer test-key"
+        assert body["text"]["format"]["type"] == "json_schema"
+        assert body["text"]["format"]["strict"] is True
+        assert body["text"]["format"]["schema"]["additionalProperties"] is False
+        assert "member_full_name" in body["instructions"]
+        assert "graph/houses" not in body["instructions"]
+        assert "foaf:name" not in body["instructions"]
+        assert body["input"] == "What is the full name of Timmy Dooley?"
+        return httpx.Response(200, json={"status": "completed", "output_text": output})
+
+    generator = ResponsesPlanGenerator(
+        "test-key", "https://llm.example/v1", "test-model",
+        transport=httpx.MockTransport(handler),
+    )
+    try:
+        assert generator.generate("What is the full name of Timmy Dooley?") == output
+        assert len(requests) == 1
+    finally:
+        generator.close()
+
+
+def test_planner_prompt_is_limited_to_semantic_vocabulary_and_no_rdf_mapping_detail():
+    prompt = build_planner_instructions()
+    assert "member_collection_membership" in prompt
+    assert "committee_code" in prompt
+    assert "DailTerm" in prompt
+    assert "SPARQL" in prompt  # explicit prohibition, not an implementation recipe
+    assert "https://data.oireachtas.ie/graph/" not in prompt
+    assert "foaf:name" not in prompt
+    assert "members:hasMembersMembership" not in prompt
+
+
+def test_valid_draft_resolves_locally_and_is_validated_as_a_final_phase_2a_plan():
+    member_iri = "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12"
+    fuseki = LocalResolverFuseki(((member_iri, "Timmy Dooley"),))
+    planner, generator = _planner(_output_draft(), fuseki)
+
+    result = planner.plan("What is the full name of Timmy Dooley?")
+
+    assert result.status == "validated_plan"
+    assert result.accepted
+    assert result.plan["entities"] == [{
+        "id": "member", "type": "Member", "label": "Timmy Dooley",
+        "resolution": "resolved", "iri": member_iri,
+    }]
+    assert validate_query_plan(result.plan) == result.plan
+    assert len(fuseki.queries) == 1
+    assert generator.calls == 1
+    assert "sparql" not in result.as_dict()
+
+
+def test_ambiguous_entity_becomes_valid_clarification_plan_with_distinct_actual_iris():
+    records = tuple(
+        (f"https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.{year}-01-21",
+         "Michael Collins")
+        for year in ("1919", "1997", "2016")
+    )
+    fuseki = LocalResolverFuseki(records)
+    draft = _output_draft(label="Michael Collins")
+    planner, _ = _planner(draft, fuseki)
+
+    result = planner.plan("Who is Michael Collins?")
+
+    assert result.status == "clarification_required"
+    assert validate_query_plan(result.plan) == result.plan
+    member = result.plan["entities"][0]
+    assert member["resolution"] == "ambiguous"
+    assert "iri" not in member
+    assert len({candidate["iri"] for candidate in member["candidates"]}) == 3
+    assert {candidate["label"] for candidate in member["candidates"]} == {"Michael Collins"}
+
+
+def test_unresolved_entity_becomes_valid_unresolved_plan_without_iri_or_candidates():
+    fuseki = LocalResolverFuseki()
+    planner, _ = _planner(_output_draft(), fuseki)
+
+    result = planner.plan("What is the full name of Timmy Dooley?")
+
+    assert result.status == "unresolved_entity"
+    assert validate_query_plan(result.plan) == result.plan
+    assert result.plan["entities"][0] == {
+        "id": "member", "type": "Member", "label": "Timmy Dooley",
+        "resolution": "unresolved",
+    }
+
+
+def test_model_supplied_iri_is_rejected_before_local_resolution():
+    draft = _output_draft()
+    draft["entities"][0]["iri"] = "https://data.oireachtas.ie/ie/oireachtas/member/id/guess"
+    fuseki = LocalResolverFuseki((("https://data.oireachtas.ie/ie/oireachtas/member/id/guess", "Timmy Dooley"),))
+    planner, _ = _planner(draft, fuseki)
+
+    result = planner.plan("What is the full name of Timmy Dooley?")
+
+    assert result.status == "invalid_draft_structure"
+    assert result.failure_class == "invalid_draft_structure"
+    assert "entity-resolution field 'iri'" in result.diagnostic
+    assert fuseki.queries == []
+
+
+@pytest.mark.parametrize(
+    "mutate, phrase",
+    [
+        (lambda draft: draft["requirements"][0].update(fact="member_favourite_colour"), "unsupported"),
+        (lambda draft: draft["entities"][0].update(type="Bill"), "unsupported"),
+        (lambda draft: draft["filters"].append({
+            "requirement": "requested-fact", "field": "party_name", "operator": "equals",
+            "value": "Fine Gael",
+        }), "unsupported"),
+    ],
+)
+def test_unsupported_semantic_vocabulary_fails_before_entity_lookup(mutate, phrase):
+    draft = _output_draft()
+    mutate(draft)
+    fuseki = LocalResolverFuseki()
+    planner, _ = _planner(draft, fuseki)
+
+    result = planner.plan("What is the full name of Timmy Dooley?")
+
+    assert result.status == "unsupported_vocabulary"
+    assert result.failure_stage == "draft_validation"
+    assert phrase in result.diagnostic.lower()
+    assert fuseki.queries == []
+
+
+def test_malformed_json_and_duplicate_keys_are_classified_without_retry():
+    for output in ('{"draftSchemaVersion":1', '{"x":1,"x":2}'):
+        fuseki = LocalResolverFuseki()
+        planner, generator = _planner(output, fuseki)
+
+        result = planner.plan("What is the full name of Timmy Dooley?")
+
+        assert result.status == "invalid_model_output"
+        assert result.failure_class == "invalid_model_json"
+        assert generator.calls == 1
+        assert fuseki.queries == []
+
+
+@pytest.mark.parametrize("invalid_kind", ["temporal", "aggregation"])
+def test_invalid_temporal_or_aggregation_semantics_fail_before_resolution(invalid_kind):
+    question = "Was Timmy Dooley a Member during the 34th Dáil?"
+    draft = _output_draft(question=question)
+    draft["entities"].append({"id": "term", "type": "DailTerm", "label": "34th Dáil"})
+    draft["requirements"] = [{
+        "id": "membership", "fact": "member_house_term_membership",
+        "subject": {"entity": "member", "type": None},
+        "object": {"entity": None, "type": "DailTerm"},
+    }]
+    if invalid_kind == "temporal":
+        draft["temporalConstraints"] = [{
+            "target": "membership", "kind": "interval",
+            "date": None, "period": None,
+            "start": "2021-02-01", "end": "2020-01-01",
+        }]
+        draft["answerShape"] = {"kind": "boolean", "target": None, "entityType": None}
+    else:
+        draft["aggregation"] = {
+            "operation": "count",
+            "target": {"requirement": "membership", "participant": "subject"},
+            "groupBy": [{"requirement": "membership", "participant": "object"}],
+        }
+        draft["answerShape"] = {"kind": "count", "target": "aggregation", "entityType": None}
+    fuseki = LocalResolverFuseki()
+    planner, _ = _planner(draft, fuseki)
+
+    result = planner.plan(question)
+
+    assert result.status == "invalid_draft_semantics"
+    assert result.failure_stage == "draft_validation"
+    assert fuseki.queries == []
+
+
+def test_resolver_reuses_nfc_casefold_matching_without_accent_folding_or_fuzzy_match():
+    decomposed = unicodedata.normalize("NFD", "Micheál Martin")
+    iri = "https://data.oireachtas.ie/ie/oireachtas/member/id/Micheal-Martin.D.1989-06-29"
+    fuseki = LocalResolverFuseki(((iri, "Micheál Martin@en"),))
+
+    exact = resolve_local_entity_label("Member", decomposed, fuseki)
+    no_accent = resolve_local_entity_label(
+        "Member", "Micheal Martin", LocalResolverFuseki(((iri, "Micheál Martin"),)),
+    )
+    partial = resolve_local_entity_label(
+        "Member", "Micheál", LocalResolverFuseki(((iri, "Micheál Martin"),)),
+    )
+
+    assert exact.state == "resolved"
+    assert exact.candidates[0].label == "Micheál Martin"
+    assert no_accent.state == "unresolved"
+    assert partial.state == "unresolved"
+
+
+@pytest.mark.parametrize(
+    "entity_type, class_name, graph",
+    [
+        ("House", "agents:House", "https://data.oireachtas.ie/graph/houses"),
+        ("DailTerm", "agents:DailTerm", "https://data.oireachtas.ie/graph/houses"),
+        ("SeanadTerm", "agents:SeanadTerm", "https://data.oireachtas.ie/graph/houses"),
+        ("ParliamentaryMemberCollection", "members:ParliamentaryMemberCollection", "https://data.oireachtas.ie/graph/parties"),
+        ("DailConstituency", "members:DailConstituency", "https://data.oireachtas.ie/graph/constituencies"),
+        ("SeanadPanel", "members:SeanadPanel", "https://data.oireachtas.ie/graph/constituencies"),
+        ("Committee", "members:Committee", "https://data.oireachtas.ie/graph/committees"),
+    ],
+)
+def test_generalised_resolver_uses_supported_type_and_owner_graph(entity_type, class_name, graph):
+    iri = "https://data.oireachtas.ie/ie/oireachtas/reference/one"
+    fuseki = LocalResolverFuseki(((iri, "Sample Local Label@en"),))
+
+    result = resolve_local_entity_label(entity_type, "sample local label", fuseki)
+
+    assert result.state == "resolved"
+    assert result.candidates == (type(result.candidates[0])(iri, "Sample Local Label"),)
+    assert class_name in fuseki.queries[0]
+    assert graph in fuseki.queries[0]
+
+
+def test_unimplemented_local_resolver_type_is_reported_explicitly():
+    with pytest.raises(UnsupportedLocalEntityType, match="No deterministic local resolver"):
+        resolve_local_entity_label("Bill", "Finance Bill", LocalResolverFuseki())
+
+
+def test_local_resolver_deduplicates_same_iri_but_preserves_distinct_resources():
+    first = "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12"
+    second = "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2020-02-01"
+    result = resolve_local_entity_label(
+        "Member", "Timmy Dooley", LocalResolverFuseki((
+            (first, "Timmy Dooley@en"), (first, "Timmy Dooley"), (second, "Timmy Dooley"),
+        )),
+    )
+    assert result.state == "ambiguous"
+    assert {candidate.iri for candidate in result.candidates} == {first, second}
+
+
+def test_member_resolver_uses_exact_local_house_term_context_to_narrow_duplicates():
+    first = "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.1919-01-21"
+    second = "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.1997-06-26"
+    third = "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.2016-10-03"
+    fuseki = LocalResolverFuseki(
+        ((first, "Michael Collins"), (second, "Michael Collins"), (third, "Michael Collins")),
+        contexts={
+            first: (("house_term", "1st Dáil@en"),),
+            second: (("house_term", "28th Dáil@en"),),
+            third: (("house_term", "34th Dáil@en"),),
+        },
+    )
+
+    result = resolve_local_entity_label(
+        "Member", "Michael Collins", fuseki,
+        question_context="What did Michael Collins do in the 28th Dáil?",
+    )
+
+    assert result.state == "resolved"
+    assert result.candidates == (type(result.candidates[0])(second, "Michael Collins"),)
+    assert len(fuseki.queries) == 4  # name lookup followed by all local context checks
+
+
+def test_member_resolver_keeps_all_context_matches_ambiguous():
+    first = "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.1997-06-26"
+    second = "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.2016-10-03"
+    fuseki = LocalResolverFuseki(
+        ((first, "Michael Collins"), (second, "Michael Collins")),
+        contexts={
+            first: (("house_term", "28th Dáil@en"),),
+            second: (("house_term", "28th Dáil@en"),),
+        },
+    )
+
+    result = resolve_local_entity_label(
+        "Member", "Michael Collins", fuseki,
+        question_context="What did Michael Collins do in the 28th Dáil?",
+    )
+
+    assert result.state == "ambiguous"
+    assert {candidate.iri for candidate in result.candidates} == {first, second}
+
+
+def test_final_phase_2a_validation_runs_for_accepted_plans_and_failure_is_visible(monkeypatch):
+    import poc.nlq.structured_planner as planner_module
+
+    original = planner_module.validate_query_plan
+    calls = []
+
+    def counted(plan, *, contract=None):
+        calls.append(plan)
+        return original(plan, contract=contract)
+
+    monkeypatch.setattr(planner_module, "validate_query_plan", counted)
+    fuseki = LocalResolverFuseki((
+        ("https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12", "Timmy Dooley"),
+    ))
+    planner, _ = _planner(_output_draft(), fuseki)
+    result = planner.plan("What is the full name of Timmy Dooley?")
+    assert result.accepted
+    assert len(calls) == 2  # provisional semantic check, then final accepted plan
+
+    def reject_final(plan, *, contract=None):
+        if plan["entities"] and plan["entities"][0].get("resolution") == "resolved":
+            raise QueryPlanContractError("injected final-contract failure")
+        return original(plan, contract=contract)
+
+    monkeypatch.setattr(planner_module, "validate_query_plan", reject_final)
+    planner, _ = _planner(_output_draft(), fuseki)
+    rejected = planner.plan("What is the full name of Timmy Dooley?")
+    assert rejected.status == "final_plan_validation_failure"
+    assert rejected.failure_class == "final_plan_validation_failure"
+    assert not rejected.accepted
+
+
+def test_fuseki_prerequisite_failure_is_not_collapsed_into_unresolved_entity():
+    fuseki = LocalResolverFuseki()
+    fuseki.fail = True
+    planner, _ = _planner(_output_draft(), fuseki)
+
+    result = planner.plan("What is the full name of Timmy Dooley?")
+
+    assert result.status == "source_data_prerequisite_unavailable"
+    assert result.failure_class == "source_data_prerequisite_unavailable"
+
+
+def test_unmentioned_model_entity_label_is_invalid_draft_semantics():
+    fuseki = LocalResolverFuseki()
+    planner, _ = _planner(_output_draft(label="Aengus Ó Snodaigh"), fuseki)
+
+    result = planner.plan("What is the full name of Timmy Dooley?")
+
+    assert result.status == "invalid_draft_semantics"
+    assert "not an exact user-supplied label mention" in result.diagnostic
+    assert fuseki.queries == []
+
+
+def test_planner_benchmark_separates_coverage_and_never_executes_a_plan_query():
+    benchmark = load_planner_benchmark()
+    source_path = ROOT / "poc/nlq/benchmarks/benchmark-v3.json"
+    source = json.loads(source_path.read_text(encoding="utf-8"))
+    selected = copy.deepcopy(next(
+        case for case in benchmark["cases"] if case["id"] == "plan.lookup.aengus-name"
+    ))
+    one_case = {**benchmark, "cases": [selected]}
+
+    class EvaluationFuseki(LocalResolverFuseki):
+        def query(self, sparql):
+            if "ASK {" in sparql:
+                self.queries.append(sparql)
+                return QueryResult(kind="ask", boolean=True)
+            return super().query(sparql)
+
+    iri = "https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06"
+    fuseki = EvaluationFuseki(((iri, "Aengus Ó Snodaigh"),))
+    baseline = {
+        "schema_version": 1,
+        "dataset": {"id": "sha256:" + "a" * 64},
+        "rdf_resource_counts": {"members": 1},
+        "graph_families_loaded": [{"name": "members"}],
+        "quarantined_conflicted_identities": [],
+        "unresolved_references": [],
+    }
+
+    class PlannerFactory:
+        def __call__(self, _case, local_fuseki):
+            draft = _output_draft(label="Aengus Ó Snodaigh")
+            draft["requirements"][0]["fact"] = "member_full_name"
+            return StructuredPlanner(FakeGenerator(draft), local_fuseki)
+
+    outcomes = run_planner_cases(
+        one_case, source, baseline, fuseki=fuseki, supported_predicates=None,
+        planner_factory=PlannerFactory(),
+    )
+
+    assert outcomes[0]["evaluation"] == "passed"
+    assert outcomes[0]["planner_result"]["status"] == "validated_plan"
+    assert "execution_result" not in outcomes[0]
+    assert all("sparql" not in outcome["planner_result"] for outcome in outcomes)
+    assert any("ASK {" in query for query in fuseki.queries)  # coverage only
+    assert all("SELECT DISTINCT ?entity ?label" in query or "ASK {" in query
+               for query in fuseki.queries)
+    assert summarize_planner_results(outcomes) == {
+        "total_cases": 1, "passed": 1, "failed": 0, "not_scored": 0,
+        "by_failure_class": {},
+    }
+
+
+def test_planner_benchmark_has_required_supported_and_boundary_cases():
+    benchmark = load_planner_benchmark()
+    case_ids = {case["id"] for case in benchmark["cases"]}
+    assert {
+        "plan.lookup.aengus-name",
+        "plan.term.aengus-dail-33",
+        "plan.collection.timmy-dail-34",
+        "plan.representation.timmy-seanad-26-panel",
+        "plan.committee.transport-code",
+        "plan.temporal.aengus-dail-33",
+        "plan.aggregate.dail-term-count",
+        "plan.ambiguous.duplicate-michael-collins",
+        "plan.unresolved.local-member-label",
+        "plan.unsupported.member-favourite-colour",
+        "plan.coverage.unavailable-bill",
+    } <= case_ids
+
+
+def _expected_case_draft(case_id: str) -> dict:
+    def entity(entity_id, entity_type, label):
+        return {"id": entity_id, "type": entity_type, "label": label}
+
+    def ref(entity_id):
+        return {"entity": entity_id, "type": None}
+
+    def role(entity_type):
+        return {"entity": None, "type": entity_type}
+
+    def requirement(requirement_id, fact, subject, object_value=None):
+        return {
+            "id": requirement_id, "fact": fact, "subject": subject,
+            "object": object_value,
+        }
+
+    result = _output_draft()
+    if case_id == "plan.lookup.aengus-name":
+        result["entities"] = [entity("member", "Member", "Aengus Ó Snodaigh")]
+    elif case_id == "plan.term.aengus-dail-33":
+        result["entities"] = [entity("member", "Member", "Aengus Ó Snodaigh")]
+        result["requirements"] = [requirement(
+            "membership", "member_house_term_membership", ref("member"), role("DailTerm"),
+        )]
+        result["answerShape"] = {"kind": "entities", "target": None, "entityType": "DailTerm"}
+    elif case_id == "plan.collection.timmy-dail-34":
+        result["entities"] = [
+            entity("member", "Member", "Timmy Dooley"),
+            entity("term", "DailTerm", "34th Dáil"),
+        ]
+        result["requirements"] = [
+            requirement("term-membership", "member_house_term_membership", ref("member"), ref("term")),
+            requirement("collection-membership", "member_collection_membership", ref("member"), role("ParliamentaryMemberCollection")),
+        ]
+        result["temporalConstraints"] = [{
+            "target": "collection-membership", "kind": "during", "date": None,
+            "period": {"entity": "term", "start": None, "end": None},
+            "start": None, "end": None,
+        }]
+        result["answerShape"] = {
+            "kind": "entities", "target": None, "entityType": "ParliamentaryMemberCollection",
+        }
+    elif case_id == "plan.representation.timmy-seanad-26-panel":
+        result["entities"] = [
+            entity("member", "Member", "Timmy Dooley"),
+            entity("term", "SeanadTerm", "26th Seanad"),
+        ]
+        result["requirements"] = [
+            requirement("term-membership", "member_house_term_membership", ref("member"), ref("term")),
+            requirement("representation", "member_constituency_representation", ref("member"), role("SeanadPanel")),
+        ]
+        result["temporalConstraints"] = [{
+            "target": "representation", "kind": "during", "date": None,
+            "period": {"entity": "term", "start": None, "end": None},
+            "start": None, "end": None,
+        }]
+        result["answerShape"] = {"kind": "entities", "target": None, "entityType": "SeanadPanel"}
+    elif case_id == "plan.committee.transport-code":
+        result["entities"] = [entity(
+            "committee", "Committee", "Joint Committee on Transport and Communications",
+        )]
+        result["requirements"] = [requirement(
+            "committee-code", "committee_code", ref("committee"), None,
+        )]
+        result["answerShape"] = {"kind": "fact", "target": "committee-code", "entityType": None}
+    elif case_id == "plan.temporal.aengus-dail-33":
+        result["entities"] = [
+            entity("member", "Member", "Aengus Ó Snodaigh"),
+            entity("term", "DailTerm", "33rd Dáil"),
+        ]
+        result["requirements"] = [requirement(
+            "membership", "member_house_term_membership", ref("member"), ref("term"),
+        )]
+        result["temporalConstraints"] = [{
+            "target": "membership", "kind": "during", "date": None,
+            "period": {"entity": "term", "start": None, "end": None},
+            "start": None, "end": None,
+        }]
+        result["answerShape"] = {"kind": "boolean", "target": None, "entityType": None}
+    elif case_id == "plan.aggregate.dail-term-count":
+        result["entities"] = []
+        result["requirements"] = [requirement(
+            "term-label", "parliamentary_term_label", role("DailTerm"), None,
+        )]
+        result["aggregation"] = {
+            "operation": "count",
+            "target": {"requirement": "term-label", "participant": "subject"},
+            "groupBy": [],
+        }
+        result["answerShape"] = {"kind": "count", "target": "aggregation", "entityType": None}
+    elif case_id == "plan.ambiguous.duplicate-michael-collins":
+        result["entities"] = [entity("member", "Member", "Michael Collins")]
+    elif case_id == "plan.unresolved.local-member-label":
+        result["entities"] = [entity("member", "Member", "Ada Never-Matched Example")]
+    elif case_id == "plan.unsupported.member-favourite-colour":
+        result["entities"] = [entity("member", "Member", "Aengus Ó Snodaigh")]
+    else:
+        raise AssertionError(f"no deterministic plan fixture for {case_id}")
+    return result
+
+
+def test_deterministic_planner_benchmark_cases_are_scored_without_sparql_generation(monkeypatch):
+    import poc.nlq.planner_benchmark as planner_benchmark_module
+
+    benchmark = load_planner_benchmark()
+    source = json.loads((ROOT / "poc/nlq/benchmarks/benchmark-v3.json").read_text())
+
+    class FixtureFuseki:
+        def __init__(self):
+            self.queries = []
+            self.labels = {
+                "Aengus Ó Snodaigh": (
+                    ("https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06", "Aengus Ó Snodaigh"),
+                ),
+                "Timmy Dooley": (
+                    ("https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12", "Timmy Dooley"),
+                ),
+                "34th Dáil": (
+                    ("https://data.oireachtas.ie/ie/oireachtas/house/dail/34", "34th Dáil@en"),
+                ),
+                "33rd Dáil": (
+                    ("https://data.oireachtas.ie/ie/oireachtas/house/dail/33", "33rd Dáil@en"),
+                ),
+                "26th Seanad": (
+                    ("https://data.oireachtas.ie/ie/oireachtas/house/seanad/26", "26th Seanad@en"),
+                ),
+                "Joint Committee on Transport and Communications": (
+                    ("https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/joint_committee_on_transport_and_communications", "Joint Committee on Transport and Communications@en"),
+                ),
+                "Michael Collins": tuple(
+                    (f"https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.{year}-01-21", "Michael Collins")
+                    for year in ("1919", "1997", "2016")
+                ),
+            }
+
+        def query(self, sparql):
+            self.queries.append(sparql)
+            if "VALUES ?member" in sparql:
+                return QueryResult(kind="select", columns=("contextType", "contextLabel"), rows=())
+            for label, rows in self.labels.items():
+                if f'STR("{label}")' in sparql:
+                    return QueryResult(
+                        kind="select", columns=("entity", "label"), rows=rows,
+                    )
+            return QueryResult(kind="select", columns=("entity", "label"), rows=())
+
+    def coverage(case, _baseline, **_kwargs):
+        if case["id"] == "unavailable.bill-status":
+            return CoverageAssessment("unavailable", "Bill graph unavailable", "source_data_coverage")
+        return CoverageAssessment("available")
+
+    monkeypatch.setattr(planner_benchmark_module, "assess_dataset_prerequisites", coverage)
+    fuseki = FixtureFuseki()
+
+    def planner_factory(case, local_fuseki):
+        return StructuredPlanner(
+            FakeGenerator(_expected_case_draft(case["id"])), local_fuseki,
+        )
+
+    results = run_planner_cases(
+        benchmark, source,
+        {"schema_version": 1, "dataset": {"id": "sha256:" + "b" * 64}},
+        fuseki=fuseki, supported_predicates=None, planner_factory=planner_factory,
+    )
+
+    unexpected_failures = [item for item in results if item["passed"] is False]
+    assert not unexpected_failures, [
+        (item["case_id"], item["failure_reason"], item["planner_result"])
+        for item in unexpected_failures
+    ]
+    summary = summarize_planner_results(results)
+    assert summary == {
+        "total_cases": 11, "passed": 9, "failed": 0, "not_scored": 2,
+        "by_failure_class": {"source_data_coverage": 1},
+    }
+    unsupported = next(item for item in results if item["case_id"] == "plan.unsupported.member-favourite-colour")
+    assert unsupported["evaluation"] == "not_scored"
+    assert unsupported["planner_result"]["status"] == "validated_plan"
+    unavailable = next(item for item in results if item["case_id"] == "plan.coverage.unavailable-bill")
+    assert unavailable["planner_result"] is None
+    assert unavailable["failure_class"] == "source_data_coverage"
+    assert all("sparql" not in item["planner_result"] for item in results if item["planner_result"])
+    assert all(
+        "SELECT DISTINCT ?entity ?label" in query
+        or "SELECT DISTINCT ?contextType ?contextLabel" in query
+        for query in fuseki.queries
+    )
+
+
+def test_phase_1_benchmark_is_not_changed_by_planner_cases():
+    assert PLAN_CONTRACT["contractVersion"] == "1.0.0"
+    assert "Bill" not in PLAN_CONTRACT["semanticVocabulary"]["entityTypes"]
