@@ -529,13 +529,33 @@ capture semantics rather than SPARQL syntax.
       baseline.
 - [ ] Keep a simple fallback/debug path during migration if useful.
 
+#### Realistic-question evaluation
+
+- [ ] Add a separate realistic-question benchmark before the Phase 2 exit
+      gate. Preserve the Phase 1 controlled benchmark as the capability and
+      regression suite rather than replacing it.
+- [ ] Include user-like wording that does not mirror ontology terminology,
+      including implicit or colloquial references, ambiguous phrasing,
+      temporal language, plural/set-valued questions, multi-hop relationships,
+      and questions combining multiple constraints.
+- [ ] Use the realistic benchmark to distinguish interpretation/planning
+      failures from SPARQL-generation failures.
+- [ ] Compare the planned architecture with the Phase 1 direct-generation
+      baseline on realistic questions as well as on the controlled benchmark.
+- [ ] Treat success on the controlled benchmark as necessary but insufficient
+      evidence of good real-user query experience.
+
 ### Exit criteria
 
 - Every supported query has a validated structured plan before execution.
 - SPARQL generation no longer has to infer the complete user intent directly
   from prose.
 - The visible plan makes planning errors distinguishable from SPARQL errors.
-- Local benchmark quality is at least comparable with the Phase 1 baseline.
+- Local controlled-benchmark quality is at least comparable with the Phase 1
+  baseline.
+- A separate realistic-question benchmark exists and provides evidence that
+  the planner handles representative user-like questions; Phase 2 is not
+  considered successful solely from the controlled capability benchmark.
 
 ## 9. Phase 3 — Source selection and provenance
 
