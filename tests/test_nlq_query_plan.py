@@ -77,11 +77,26 @@ def test_contract_manifest_plan_schema_and_all_examples_are_valid():
     contract = load_query_plan_contract()
     assert contract["contractId"] == CONTRACT_ID
     assert contract["schemaVersion"] == 1
-    assert contract["contractVersion"] == "1.0.0"
+    assert contract["contractVersion"] == "1.0.1"
     assert contract["contractSchema"] == "poc/specs/query-plan-contract.schema.json"
     assert contract["planSchema"] == "poc/specs/query-plan.schema.json"
     assert "conjunctively" in contract["planSemantics"]["conjunction"]
     assert "not executable identity bindings" in contract["planSemantics"]["resolutionReadiness"]
+    answer_shape_guidance = {
+        item["kind"]: item["description"]
+        for item in contract["planSemantics"]["answerShapes"]
+    }
+    assert set(answer_shape_guidance) == {
+        "boolean", "entity", "entities", "label", "fact", "list", "count",
+        "grouped_result",
+    }
+    assert "Member's full name" in answer_shape_guidance["fact"]
+    assert "Committee's code" in answer_shape_guidance["fact"]
+    assert "which panel" in answer_shape_guidance["entities"]
+    assert "label fact" in answer_shape_guidance["entities"]
+    assert "label or name property" in answer_shape_guidance["label"]
+    assert "entity resolution" in contract["planSemantics"]["entityMentionMeaning"]
+    assert "time-dependent fact" in contract["planSemantics"]["temporalScoping"]
     vocabulary = contract["semanticVocabulary"]
     assert set(vocabulary["entityTypes"]) == set(plan_schema["$defs"]["entityType"]["enum"])
     assert {fact["id"] for fact in vocabulary["facts"]} == set(plan_schema["$defs"]["factId"]["enum"])
@@ -169,6 +184,8 @@ def test_plan_versions_scope_and_public_semantic_boundary_fail_closed(mutate, me
         (lambda manifest: manifest.update(contractVersion="01.0.0"), "semantic version"),
         (lambda manifest: manifest.update(planSchema="poc/specs/other.schema.json"), "planSchema"),
         (lambda manifest: manifest["scope"].update(sourceSelection=True), "must not enable source selection"),
+        (lambda manifest: manifest["planSemantics"]["answerShapes"].pop(), "must describe every supported answer shape"),
+        (lambda manifest: manifest["planSemantics"]["answerShapes"][0].update(kind="unknown"), "unsupported value"),
     ],
 )
 def test_contract_manifest_rejects_unsupported_compatibility_and_scope(tmp_path, mutate, message):

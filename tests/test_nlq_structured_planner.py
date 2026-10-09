@@ -16,6 +16,7 @@ from poc.nlq.member_resolution import (
 )
 from poc.nlq.plan_contract import QueryPlanContractError, load_query_plan_contract, validate_query_plan
 from poc.nlq.planner_benchmark import (
+    _semantic_mismatches,
     load_planner_benchmark,
     run_planner_cases,
     summarize_planner_results,
@@ -493,6 +494,38 @@ def test_planner_prompt_is_limited_to_semantic_vocabulary_and_no_rdf_mapping_det
     assert "members:hasMembersMembership" not in prompt
 
 
+def test_planner_answer_shape_and_query_grounding_is_rendered_from_contract_metadata():
+    default_prompt = build_planner_instructions()
+    shape_descriptions = {
+        shape["kind"]: shape["description"]
+        for shape in PLAN_CONTRACT["planSemantics"]["answerShapes"]
+    }
+    assert all(description in default_prompt for description in shape_descriptions.values())
+    assert "Member's full name" in shape_descriptions["fact"]
+    assert "Committee's code" in shape_descriptions["fact"]
+    assert "which panel or which parliamentary collection" in shape_descriptions["entities"]
+    assert "resource occupying the requested semantic participant role" in shape_descriptions["entity"]
+    assert "label/name property" in shape_descriptions["label"]
+    assert "in the 34th Dáil" in default_prompt
+    assert "during the 26th Seanad" in default_prompt
+    assert "attach the temporal constraint to the requirement" in default_prompt
+    assert "does not scope another fact" in default_prompt
+    assert "do not restate the same name as a name/label filter" in default_prompt
+
+    contract = copy.deepcopy(PLAN_CONTRACT)
+    shapes = contract["planSemantics"]["answerShapes"]
+    fact_shape = next(shape for shape in shapes if shape["kind"] == "fact")
+    fact_shape["description"] = "CONTRACT-OWNED fact answer guidance."
+    contract["planSemantics"]["entityMentionMeaning"] = "CONTRACT-OWNED entity mention guidance."
+    contract["planSemantics"]["temporalScoping"] = "CONTRACT-OWNED temporal scoping guidance."
+
+    prompt = build_planner_instructions(contract)
+
+    assert "CONTRACT-OWNED fact answer guidance." in prompt
+    assert "CONTRACT-OWNED entity mention guidance." in prompt
+    assert "CONTRACT-OWNED temporal scoping guidance." in prompt
+
+
 def test_valid_draft_resolves_locally_and_is_validated_as_a_final_phase_2a_plan():
     member_iri = "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12"
     fuseki = LocalResolverFuseki(((member_iri, "Timmy Dooley"),))
@@ -525,6 +558,7 @@ def test_ambiguous_entity_becomes_valid_clarification_plan_with_distinct_actual_
     result = planner.plan("Who is Michael Collins?")
 
     assert result.status == "clarification_required"
+    assert result.draft_plan["filters"] == []
     assert validate_query_plan(result.plan) == result.plan
     member = result.plan["entities"][0]
     assert member["resolution"] == "ambiguous"
@@ -864,6 +898,7 @@ def test_planner_benchmark_separates_coverage_and_never_executes_a_plan_query():
 
 def test_planner_benchmark_has_required_supported_and_boundary_cases():
     benchmark = load_planner_benchmark()
+    assert benchmark["benchmark_version"] == "0.2.1"
     case_ids = {case["id"] for case in benchmark["cases"]}
     assert {
         "plan.lookup.aengus-name",
@@ -910,10 +945,9 @@ def _expected_case_draft(case_id: str) -> dict:
             entity("member", "Member", "Timmy Dooley"),
             entity("term", "DailTerm", "34th Dáil"),
         ]
-        result["requirements"] = [
-            requirement("term-membership", "member_house_term_membership", ref("member"), ref("term")),
-            requirement("collection-membership", "member_collection_membership", ref("member"), role("ParliamentaryMemberCollection")),
-        ]
+        result["requirements"] = [requirement(
+            "collection-membership", "member_collection_membership", ref("member"), role("ParliamentaryMemberCollection"),
+        )]
         result["temporalConstraints"] = [{
             "target": "collection-membership", "kind": "during", "date": None,
             "period": {"entity": "term", "start": None, "end": None},
@@ -927,10 +961,9 @@ def _expected_case_draft(case_id: str) -> dict:
             entity("member", "Member", "Timmy Dooley"),
             entity("term", "SeanadTerm", "26th Seanad"),
         ]
-        result["requirements"] = [
-            requirement("term-membership", "member_house_term_membership", ref("member"), ref("term")),
-            requirement("representation", "member_constituency_representation", ref("member"), role("SeanadPanel")),
-        ]
+        result["requirements"] = [requirement(
+            "representation", "member_constituency_representation", ref("member"), role("SeanadPanel"),
+        )]
         result["temporalConstraints"] = [{
             "target": "representation", "kind": "during", "date": None,
             "period": {"entity": "term", "start": None, "end": None},
@@ -953,11 +986,6 @@ def _expected_case_draft(case_id: str) -> dict:
         result["requirements"] = [requirement(
             "membership", "member_house_term_membership", ref("member"), ref("term"),
         )]
-        result["temporalConstraints"] = [{
-            "target": "membership", "kind": "during", "date": None,
-            "period": {"entity": "term", "start": None, "end": None},
-            "start": None, "end": None,
-        }]
         result["answerShape"] = {"kind": "boolean", "target": None, "entityType": None}
     elif case_id == "plan.aggregate.dail-term-count":
         result["entities"] = []
@@ -979,6 +1007,137 @@ def _expected_case_draft(case_id: str) -> dict:
     else:
         raise AssertionError(f"no deterministic plan fixture for {case_id}")
     return result
+
+
+def test_corrected_aengus_term_membership_benchmark_requires_direct_entity_link_not_temporal_scope():
+    benchmark = load_planner_benchmark()
+    case = next(
+        case for case in benchmark["cases"]
+        if case["id"] == "plan.temporal.aengus-dail-33"
+    )
+    assert "Was Aengus Ó Snodaigh a Member" in case["question"]
+    assert case.get("required_temporal_constraints", []) == []
+    expectation = case["required_requirements"][0]
+    assert expectation["fact"] == "member_house_term_membership"
+    assert expectation["subject_entity_label"] == "Aengus Ó Snodaigh"
+    assert expectation["object_entity_label"] == "33rd Dáil"
+    draft = _expected_case_draft("plan.temporal.aengus-dail-33")
+    assert draft["temporalConstraints"] == []
+    assert draft["filters"] == []
+    assert draft["requirements"][0]["subject"] == {"entity": "member", "type": None}
+    assert draft["requirements"][0]["object"] == {"entity": "term", "type": None}
+
+    plan = {
+        "entities": [
+            {"id": "member", "type": "Member", "label": "Aengus Ó Snodaigh", "resolution": "resolved"},
+            {"id": "term", "type": "DailTerm", "label": "33rd Dáil", "resolution": "resolved"},
+        ],
+        "requirements": [{
+            "id": "membership",
+            "fact": "member_house_term_membership",
+            "subject": {"entity": "member"},
+            "object": {"entity": "term"},
+        }],
+        "temporalConstraints": [],
+        "answerShape": {"kind": "boolean"},
+    }
+    assert _semantic_mismatches(plan, case) == []
+
+    # A type-only term role does not prove membership in the referenced 33rd Dáil.
+    plan["requirements"][0]["object"] = {"type": "DailTerm"}
+    assert any(
+        "entity-linked participant labels" in mismatch
+        for mismatch in _semantic_mismatches(plan, case)
+    )
+
+
+def _minimal_term_scoped_plan(case: dict) -> dict:
+    entities = []
+    participant_by_type = {}
+    for expected in case["required_entities"]:
+        entity_id = "member" if expected["type"] == "Member" else "term"
+        participant_by_type[expected["type"]] = entity_id
+        entities.append({
+            "id": entity_id,
+            "type": expected["type"],
+            "label": expected["label"],
+            "resolution": expected["resolution"],
+        })
+    requirement_expectation = case["required_requirements"][0]
+    requirement_id = "requested-fact"
+    temporal_expectation = case["required_temporal_constraints"][0]
+    return {
+        "entities": entities,
+        "requirements": [{
+            "id": requirement_id,
+            "fact": requirement_expectation["fact"],
+            "subject": {"entity": participant_by_type[requirement_expectation["subject_type"]]},
+            "object": {"type": requirement_expectation["object_type"]},
+        }],
+        "temporalConstraints": [{
+            "target": requirement_id,
+            "kind": temporal_expectation["kind"],
+            "period": {"entity": participant_by_type[temporal_expectation["period_entity_type"]]},
+        }],
+        "answerShape": copy.deepcopy(case["answer_shape"]),
+    }
+
+
+def test_collection_and_representation_need_only_requested_fact_scoped_to_the_term():
+    benchmark = load_planner_benchmark()
+    expected = {
+        "plan.collection.timmy-dail-34": (
+            "member_collection_membership", "DailTerm", "34th Dáil",
+            "ParliamentaryMemberCollection",
+        ),
+        "plan.representation.timmy-seanad-26-panel": (
+            "member_constituency_representation", "SeanadTerm", "26th Seanad", "SeanadPanel",
+        ),
+    }
+    cases = {case["id"]: case for case in benchmark["cases"]}
+    for case_id, (requested_fact, period_type, period_label, answer_type) in expected.items():
+        case = cases[case_id]
+        assert [item["fact"] for item in case["required_requirements"]] == [requested_fact]
+        assert not any(
+            item["fact"] == "member_house_term_membership"
+            for item in case["required_requirements"]
+        )
+        assert case["answer_shape"] == {"kind": "entities", "entityType": answer_type}
+        temporal = case["required_temporal_constraints"]
+        assert temporal == [{
+            "kind": "during", "target_fact": requested_fact,
+            "period_entity_type": period_type, "period_entity_label": period_label,
+        }]
+
+        draft = _expected_case_draft(case_id)
+        assert [item["fact"] for item in draft["requirements"]] == [requested_fact]
+        constraint = draft["temporalConstraints"][0]
+        target = next(
+            requirement for requirement in draft["requirements"]
+            if requirement["id"] == constraint["target"]
+        )
+        assert target["fact"] == requested_fact
+        assert constraint["period"]["entity"] == "term"
+
+        plan = _minimal_term_scoped_plan(case)
+        assert _semantic_mismatches(plan, case) == []
+
+        missing_fact = copy.deepcopy(plan)
+        missing_fact["requirements"] = []
+        mismatches = _semantic_mismatches(missing_fact, case)
+        assert any(f"missing requirement {requested_fact}" in mismatch for mismatch in mismatches)
+
+        missing_temporal = copy.deepcopy(plan)
+        missing_temporal["temporalConstraints"] = []
+        assert any(
+            f"missing during temporal constraint on {requested_fact}" in mismatch
+            for mismatch in _semantic_mismatches(missing_temporal, case)
+        )
+
+        wrong_answer_shape = copy.deepcopy(plan)
+        wrong_answer_shape["answerShape"] = {"kind": "fact", "target": "requested-fact"}
+        assert any("answer shape did not match" in mismatch
+                   for mismatch in _semantic_mismatches(wrong_answer_shape, case))
 
 
 def test_deterministic_planner_benchmark_cases_are_scored_without_sparql_generation(monkeypatch):
@@ -1072,5 +1231,5 @@ def test_deterministic_planner_benchmark_cases_are_scored_without_sparql_generat
 
 
 def test_phase_1_benchmark_is_not_changed_by_planner_cases():
-    assert PLAN_CONTRACT["contractVersion"] == "1.0.0"
+    assert PLAN_CONTRACT["contractVersion"] == "1.0.1"
     assert "Bill" not in PLAN_CONTRACT["semanticVocabulary"]["entityTypes"]

@@ -265,6 +265,27 @@ def _validate_contract_manifest(document: Any) -> dict[str, Any]:
         "unknownExtensions", "iriValidation",
     ):
         _nonempty_string(semantics.get(field), f"contract planSemantics.{field}")
+    if "answerShapes" in semantics:
+        answer_shapes = _array(semantics["answerShapes"], "contract planSemantics.answerShapes")
+        described_shapes: set[str] = set()
+        for index, raw_shape in enumerate(answer_shapes):
+            where = f"planSemantics.answerShapes[{index}]"
+            shape = _object(raw_shape, f"contract {where}")
+            _required_fields(shape, ("kind", "description"), f"contract {where}")
+            kind = _enum(shape["kind"], ANSWER_SHAPES, f"contract {where}.kind")
+            if kind in described_shapes:
+                _error(f"Query-plan contract {where}.kind duplicates answer shape {kind!r}.")
+            described_shapes.add(kind)
+            _nonempty_string(shape["description"], f"contract {where}.description")
+        if described_shapes != ANSWER_SHAPES:
+            missing = sorted(ANSWER_SHAPES - described_shapes)
+            _error(
+                "Query-plan contract planSemantics.answerShapes must describe every supported "
+                f"answer shape; missing: {', '.join(missing)}."
+            )
+    for field in ("entityMentionMeaning", "temporalScoping"):
+        if field in semantics:
+            _nonempty_string(semantics[field], f"contract planSemantics.{field}")
     _validate_semantic_vocabulary(manifest.get("semanticVocabulary"))
     return manifest
 

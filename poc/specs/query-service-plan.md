@@ -567,6 +567,76 @@ structural failures remained. The run provides usable planner evidence, while
 the remaining semantic failures are retained as planner-quality work rather
 than changing benchmark expectations.
 
+The Phase 2B semantic-quality tranche adds reviewed answer-shape descriptions,
+entity-mention/filter guidance, and term-scoping guidance to query-plan contract
+version `1.0.1`. `build_planner_instructions` renders this guidance from the
+contract, while Phase 2A validation and deterministic entity resolution remain
+unchanged. The planner is grounded to distinguish entity resources from their
+display labels and from fact values, to scope a time-dependent fact itself to a
+named term, and not to repeat a resolved entity mention as a name filter.
+
+The planner benchmark is now `oireachtas-semantic-planner@0.2.0`. Its Aengus / 33rd
+Dáil membership case requires the `member_house_term_membership` fact to link
+Aengus Ó Snodaigh directly to the referenced Dáil entity; it no longer requires
+a separate `during` constraint on that same fact. This is a contract-based
+expectation correction: the HouseTerm object already expresses the membership
+period, so the extra temporal constraint was redundant, not a requirement
+removed to accommodate a model result. This does not generalize to other
+time-dependent facts; collection membership and representation remain
+explicitly scoped to their requested term. The benchmark artifact SHA-256 is
+`e6091586b98047b940373bf10e898e913c663080711c94af8f3dd0dca841b9ad`.
+
+The measured rerun `bd580949-fc87-40c8-aa37-2fe38278f2ad` used
+`oireachtas-semantic-planner@0.2.0`, the benchmark artifact above, dataset
+`sha256:1d849ec68168b6c456a38756ea812a23a218644204eb44d9bc55ddb3992b814d`,
+model `gpt-6-luna` (repository dotenv), and the default
+`https://opencode.ai/inference/openai/v1` endpoint (45-second timeout and
+2,000-token output limit): 7 passed, 2 failed, and 2 not scored. No structural
+output failures remained. The Aengus full-name and term cases, collection and
+representation answer shapes, Committee code, aggregate, and duplicate-Michael
+ambiguity case passed. The two scored failures were
+`plan.collection.timmy-dail-34` and
+`plan.representation.timmy-seanad-26-panel`: both plans correctly selected the
+requested fact, answer shape, and term-scoped temporal constraint, but omitted
+the separately benchmark-required `member_house_term_membership` requirement.
+This is a repeated requirement-omission class, not an answer-shape or temporal
+scoping failure. Determining whether those extra membership requirements are
+semantically mandatory or over-constrained requires review; no further
+benchmark expectation had been changed at that point. The unavailable-Bill case
+remained expected source-coverage-not-scored, and the unsupported-question case
+remained manual-review-not-scored. This `0.2.0` result is an interim run and was
+followed by the semantic review and corrections below.
+
+Semantic review approved that a HouseTerm used only as the temporal scope of
+another requested fact does not automatically require a separate
+`member_house_term_membership` requirement. That fact remains required when
+service in the term is itself asked about or independently needed to express
+the question. Accordingly, planner benchmark `0.2.1` removes that redundant
+requirement from the collection-membership and Seanad-representation cases,
+while retaining each requested fact, its `during` constraint on the requested
+fact, and its entity answer shape. Direct questions about whether a Member
+served in a term continue to require `member_house_term_membership`, as in the
+Aengus / 33rd Dáil case. These are semantic benchmark corrections, not
+score-driven changes; no other temporal expectation is removed. Version `0.2.1`
+has SHA-256
+`140a6055a83a710f85188985c41ec81d53c160217eb3390dc463aafd1b9c0c85`.
+
+Measured acceptance rerun `7e90554a-e527-4f7d-88b9-78021c30f24e` used
+`oireachtas-semantic-planner@0.2.1`, dataset
+`sha256:1d849ec68168b6c456a38756ea812a23a218644204eb44d9bc55ddb3992b814d`,
+model `gpt-6-luna` (repository dotenv), and the default
+`https://opencode.ai/inference/openai/v1` endpoint (45-second timeout and
+2,000-token output limit): 9 passed, 0 failed, and 2 not scored. All scored
+cases passed, including collection membership, Seanad representation, direct
+Member-term membership, and duplicate-Michael ambiguity; there were no
+structural-output failures. The two not-scored cases remain the expected
+unsupported-question manual review and unavailable-Bill source-coverage case.
+This accepts the Phase 2B semantic-quality tranche against the controlled
+benchmark. Phase 2C has not started. Before Phase 2C can bind resolved Member
+IRIs, set-valued Member-reference intent must be preserved or fail closed, and
+contextual Member-narrowing evidence must be inspectable; these known
+pre-2C limitations remain open.
+
 Planner evaluation is a separate controlled path in
 `poc/nlq/planner_benchmark.py` using selected Phase 1 cases, semantic plan
 invariants, and the existing source-coverage checks. It scores planning only;

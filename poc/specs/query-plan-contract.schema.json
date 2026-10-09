@@ -56,7 +56,22 @@
         "resolutionReadiness": {"type": "string", "minLength": 1},
         "filterMeaning": {"type": "string", "minLength": 1},
         "unknownExtensions": {"type": "string", "minLength": 1},
-        "iriValidation": {"type": "string", "minLength": 1}
+        "iriValidation": {"type": "string", "minLength": 1},
+        "answerShapes": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "required": ["kind", "description"],
+            "properties": {
+              "kind": {"enum": ["boolean", "entity", "entities", "label", "fact", "list", "count", "grouped_result"]},
+              "description": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "entityMentionMeaning": {"type": "string", "minLength": 1},
+        "temporalScoping": {"type": "string", "minLength": 1}
       }
     },
     "semanticVocabulary": {

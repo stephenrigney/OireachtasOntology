@@ -36,7 +36,7 @@ PLANNER_SYSTEM_GUIDANCE = """Interpret one natural-language question as a draft 
 
 Your role is semantic interpretation only. Do not produce or discuss SPARQL, RDF predicates, graph names/patterns, variables, endpoints, source selection, or query execution. Do not create, guess, copy, or return any IRI. Entity entries are only user-supplied type-and-label mentions; application code resolves them against local data.
 
-Use only the supplied entity types, fact identifiers, filter identifiers/operators, temporal kinds, aggregation operations, and answer shapes. Do not substitute a nearby supported fact when the request is unsupported. If a fact or relationship is requested, express it with a supported semantic fact and correctly typed participants. Give each referenced user entity a stable semantic id; use an entity reference for that same entity throughout the plan, and use a type-only participant for an unbound result role. Requirements, filters, and temporal constraints are conjunctive.
+Use only the supplied entity types, fact identifiers, filter identifiers/operators, temporal kinds, aggregation operations, and answer shapes. Interpret in this order: identify semantic entities and requested facts/relations; determine the requested answer role or value; apply actual filters and temporal scope; produce the draft. Do not substitute a nearby supported fact when the request is unsupported. If a fact or relationship is requested, express it with a supported semantic fact and correctly typed participants. Give each referenced user entity a stable semantic id; use an entity reference for that same entity throughout the plan, and use a type-only participant for an unbound result role. Requirements, filters, and temporal constraints are conjunctive.
 
 Use temporal constraints only for temporal meaning actually expressed by the question. A `during` period is either a referenced DailTerm/SeanadTerm entity or a start/end date window. Date values use ISO YYYY-MM-DD. Aggregation currently supports only `count`; its target and optional groupBy refer to participants in requirements. Do not infer local data facts or entity identity from the question.
 
@@ -112,6 +112,7 @@ def build_planner_instructions(contract: dict[str, Any] | None = None) -> str:
     """Ground the model only in the controlled semantic vocabulary."""
     active = contract if contract is not None else load_query_plan_contract()
     vocabulary = active["semanticVocabulary"]
+    semantics = active["planSemantics"]
     entities = ", ".join(vocabulary["entityTypes"])
     facts = "\n".join(
         f"- {fact['id']}: {fact['description']} "
@@ -125,6 +126,15 @@ def build_planner_instructions(contract: dict[str, Any] | None = None) -> str:
         f"operators {', '.join(field['operators'])})"
         for field in vocabulary["filterFields"]
     )
+    answer_shapes = "\n".join(
+        f"- {shape['kind']}: {shape['description']}"
+        for shape in semantics.get("answerShapes", [])
+    )
+    guidance = []
+    if semantics.get("entityMentionMeaning"):
+        guidance.append("Entity mentions: " + semantics["entityMentionMeaning"])
+    if semantics.get("temporalScoping"):
+        guidance.append("Temporal scoping: " + semantics["temporalScoping"])
     return (
         PLANNER_SYSTEM_GUIDANCE
         + "\n\nControlled entity types: " + entities
@@ -132,7 +142,8 @@ def build_planner_instructions(contract: dict[str, Any] | None = None) -> str:
         + "\n\nControlled filter fields:\n" + filters
         + "\n\nTemporal kinds: on, before, after, during, interval, current."
         + "\nAggregation operation: count."
-        + "\nAnswer shapes: boolean, entity, entities, label, fact, list, count, grouped_result."
+        + ("\n\nAnswer shape meanings:\n" + answer_shapes if answer_shapes else "")
+        + ("\n\n" + "\n".join(guidance) if guidance else "")
     )
 
 

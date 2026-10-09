@@ -90,6 +90,20 @@ def _participant_type(participant: dict[str, Any], entities: dict[str, dict[str,
     return participant.get("type")
 
 
+def _participant_matches_entity_label(
+    participant: dict[str, Any] | None,
+    expected_label: str,
+    entities: dict[str, dict[str, Any]],
+) -> bool:
+    if not isinstance(participant, dict) or "entity" not in participant:
+        return False
+    entity = entities.get(participant["entity"])
+    return (
+        entity is not None
+        and _normalise_label(entity["label"]) == _normalise_label(expected_label)
+    )
+
+
 def _semantic_mismatches(plan: dict[str, Any], case: dict[str, Any]) -> list[str]:
     mismatches: list[str] = []
     plan_entities = {entity["id"]: entity for entity in plan["entities"]}
@@ -132,13 +146,25 @@ def _semantic_mismatches(plan: dict[str, Any], case: dict[str, Any]) -> list[str
             )
             if (subject_type == expected["subject_type"]
                     and object_type == expected.get("object_type")):
-                matched = True
-                break
+                matched = all(
+                    _participant_matches_entity_label(
+                        requirement.get(participant), expected[label_key], plan_entities,
+                    )
+                    for participant, label_key in (
+                        ("subject", "subject_entity_label"),
+                        ("object", "object_entity_label"),
+                    )
+                    if label_key in expected
+                )
+                if matched:
+                    break
         if not matched:
             mismatches.append(
                 f"missing requirement {expected['fact']} with participant types "
                 f"{expected['subject_type']} -> {expected.get('object_type')}"
             )
+            if "subject_entity_label" in expected or "object_entity_label" in expected:
+                mismatches[-1] += " and required entity-linked participant labels"
 
     for expected in case.get("required_temporal_constraints", []):
         matched = False

@@ -4,7 +4,7 @@
   "contractSchema": "poc/specs/query-plan-contract.schema.json",
   "planSchema": "poc/specs/query-plan.schema.json",
   "schemaVersion": 1,
-  "contractVersion": "1.0.0",
+  "contractVersion": "1.0.1",
   "description": "Versioned semantic contract for structured Oireachtas query plans. Plans describe the user's requested meaning, not executable SPARQL.",
   "compatibility": {
     "schemaVersion": "The consumer supports plan schema version 1 and rejects other schema versions.",
@@ -30,9 +30,21 @@
     "conjunction": "Every requirement, filter, and temporal constraint in one plan applies conjunctively.",
     "participantIdentity": "Entity participants with the same entity id refer to the same entity. Type-only participants of the same type refer to one semantic result role throughout the plan; separate unbound roles of the same type are not represented in schema version 1.",
     "resolutionReadiness": "Ambiguous and unresolved entities are valid semantic plan states but are not executable identity bindings. Consumers must clarify or resolve them and must not select a candidate arbitrarily or drop a dependent constraint.",
-    "filterMeaning": "Filter fields are controlled semantic identifiers supported only for the facts listed in semanticVocabulary. Operators and typed values express semantic constraints, not SPARQL FILTER syntax or label-matching heuristics. Equality means semantic equality; no fuzzy matching is implied.",
+    "filterMeaning": "Filter fields are controlled semantic identifiers supported only for the facts listed in semanticVocabulary. Filters express actual query constraints, not repetitions of a named entity mention supplied for deterministic entity resolution. Operators and typed values express semantic constraints, not SPARQL FILTER syntax or label-matching heuristics. Equality means semantic equality; no fuzzy matching is implied.",
     "unknownExtensions": "Consumers may ignore unknown optional fields for compatible major-version extensions and must not treat them as SPARQL, graph, variable, endpoint, or source-selection instructions.",
-    "iriValidation": "The contract checks the local Oireachtas IRI namespace but does not manufacture identifiers or independently verify the resolver's entity-type-to-IRI assignment."
+    "iriValidation": "The contract checks the local Oireachtas IRI namespace but does not manufacture identifiers or independently verify the resolver's entity-type-to-IRI assignment.",
+    "answerShapes": [
+      {"kind": "boolean", "description": "Return a yes/no result."},
+      {"kind": "entity", "description": "Return the resource occupying the requested semantic participant role."},
+      {"kind": "entities", "description": "Return the resources occupying the requested semantic participant role. A question asking which panel or which parliamentary collection requests an entity, even if a later display may show its label; do not add a label fact just for display."},
+      {"kind": "label", "description": "Return a resource's label/name property when the requested value is specifically its label or name property."},
+      {"kind": "fact", "description": "Return the value of a requested semantic fact, such as a Member's full name or a Committee's code; text-valued facts are not labels merely because their values are text."},
+      {"kind": "list", "description": "List requested fact values rather than the entity resources occupying participant roles."},
+      {"kind": "count", "description": "Return an aggregation count."},
+      {"kind": "grouped_result", "description": "Return grouped aggregation output."}
+    ],
+    "entityMentionMeaning": "Named entity mentions are type-and-label inputs to deterministic local entity resolution. Keep them as entity mentions; do not restate the same name as a name/label filter merely to identify that entity. A repeated name filter is appropriate only when the question independently asks for that semantic constraint.",
+    "temporalScoping": "When wording such as 'in the 34th Dáil' or 'during the 26th Seanad' (or equivalent term-scoped phrasing) scopes a time-dependent fact, attach the temporal constraint to the requirement expressing the fact being asked about; a separate Member-to-HouseTerm membership requirement does not scope another fact such as collection membership or representation. If member_house_term_membership itself answers the question by linking the Member to the referenced term entity, that link expresses the term and needs no redundant during constraint."
   },
   "semanticVocabulary": {
     "entityTypes": [

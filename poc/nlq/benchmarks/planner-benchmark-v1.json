@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "benchmark_id": "oireachtas-semantic-planner",
-  "benchmark_version": "0.1.0",
+  "benchmark_version": "0.2.1",
   "source_benchmark": {
     "path": "poc/nlq/benchmarks/benchmark-v3.json",
     "benchmark_version": "0.3.0"
@@ -40,7 +40,6 @@
         {"type": "DailTerm", "label": "34th Dáil", "resolution": "resolved"}
       ],
       "required_requirements": [
-        {"fact": "member_house_term_membership", "subject_type": "Member", "object_type": "DailTerm"},
         {"fact": "member_collection_membership", "subject_type": "Member", "object_type": "ParliamentaryMemberCollection"}
       ],
       "required_temporal_constraints": [
@@ -57,7 +56,6 @@
         {"type": "SeanadTerm", "label": "26th Seanad", "resolution": "resolved"}
       ],
       "required_requirements": [
-        {"fact": "member_house_term_membership", "subject_type": "Member", "object_type": "SeanadTerm"},
         {"fact": "member_constituency_representation", "subject_type": "Member", "object_type": "SeanadPanel"}
       ],
       "required_temporal_constraints": [
@@ -87,10 +85,13 @@
         {"type": "DailTerm", "label": "33rd Dáil", "resolution": "resolved"}
       ],
       "required_requirements": [
-        {"fact": "member_house_term_membership", "subject_type": "Member", "object_type": "DailTerm"}
-      ],
-      "required_temporal_constraints": [
-        {"kind": "during", "target_fact": "member_house_term_membership", "period_entity_type": "DailTerm", "period_entity_label": "33rd Dáil"}
+        {
+          "fact": "member_house_term_membership",
+          "subject_type": "Member",
+          "subject_entity_label": "Aengus Ó Snodaigh",
+          "object_type": "DailTerm",
+          "object_entity_label": "33rd Dáil"
+        }
       ],
       "answer_shape": {"kind": "boolean"}
     },
