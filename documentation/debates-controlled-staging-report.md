@@ -293,13 +293,16 @@ Members, 65 HouseTerms and 267 Committees in the Debates owner resolver. The
 development closure remains non-authoritative/incomplete, and the known
 materially conflicting Committee identity remained quarantined and unresolved.
 
-In disposable Fuseki/Core State, 51 unique manifest-selected Debates Works were
-exercised: 25 new Committee graphs published; a second 25-Work batch published
-24 and withheld one inventoried exception; representative 2011 Dáil and Seanad
-graphs both published; and exact replay left all 25 graphs unchanged. Every
-Debate owner snapshot fingerprint, reference report, graph payload and the
-provenance catalog was checked against the isolated dataset. For the 49 Works
-shared with the fixture run, 7,670 Member-reference outcomes previously
+In disposable Fuseki/Core State, **52 unique manifest-selected Debates Works**
+were exercised: 25 new Committee graphs published; a second 25-Work batch
+published 24 and withheld one inventoried exception; representative 2011 Dáil
+and Seanad graphs both published; and exact replay left all 25 graphs unchanged.
+Thus the source-backed selections yielded 51 clean published Debate graphs and
+one separate quarantine. The earlier fixture-only acceptance's 49 graphs are a
+different staging run, not the source-backed publication count. Every Debate
+owner snapshot fingerprint, reference report, graph payload and the provenance
+catalog was checked against the isolated dataset. For the 49 Works shared with
+the fixture run, 7,670 Member-reference outcomes previously
 unresolved for lack of an example owner now resolved; 6,301 source-placeholder
 Member outcomes remained unresolved. Committee outcomes were 18 resolved and
 31 unresolved over three exact historical hrefs. These unresolved historical
@@ -318,7 +321,8 @@ required.
 ## Assessment and remaining gates
 
 **Staging mechanics and representative source-backed owner evidence passed;
-production readiness remains BLOCKED pending human decisions.** The disposable
+production readiness remains BLOCKED pending human decisions and an unverified
+production backup/restore prerequisite.** The disposable
 Fuseki/Core State path, resource controls, bounded batches, quarantine,
 warnings/hard stop, idempotent replay, dirty/pending recovery, catalog
 verification and graph preservation passed. The source-backed staging confirms
@@ -332,3 +336,10 @@ Technical completion of these staging mechanics is **not** authorization to
 publish production data. No production ingestion, Phase 6 Tranche B work,
 source repair, ontology/mapping change or semantic acceptance change was
 performed.
+
+The operator-ready execution and recovery sequence, exact inventory pin,
+production owner-snapshot pinning procedure, resource ceilings and backup/restore
+go/no-go criteria are in
+[`debates-production-execution-plan.md`](debates-production-execution-plan.md).
+That plan concludes **BLOCKED** until a coordinated backup can be restored and
+all human gates are closed. It authorizes no production mutation.

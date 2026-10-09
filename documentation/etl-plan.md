@@ -2062,6 +2062,18 @@ therefore remains **blocked**; see
 `documentation/debates-controlled-staging-report.md` for limitations and the
 remaining acceptance plan. This update authorizes no production publication.
 
+**2026-10-09 final preparation update:** source-backed representative staging
+and resource guards are verified; source-backed test selections reconcile to
+52 unique Works (51 clean published graphs plus one inventory quarantine; the
+49-graph count belongs to the earlier fixture-only exercise). The operator
+execution/recovery plan is in
+`documentation/debates-production-execution-plan.md`. Production remains
+**BLOCKED**: coordinated backup/restore is not implemented or verified, and
+human decisions on the 264 inventory exceptions, census/Expression completeness
+boundary, resource limits, current authoritative owner evidence and explicit
+publication authorization remain open. No initial production ingestion is
+complete or authorized.
+
 Settled boundaries include:
 
 - representative transformation includes Dáil, Seanad, committees and

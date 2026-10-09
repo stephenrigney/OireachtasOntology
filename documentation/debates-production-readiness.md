@@ -295,12 +295,14 @@ and existing `run_debate_batch` validation/publication machinery:
 | Seanad 2011-01-12 | 1 graph published; source SHA-256 `5daacfd7ae5c034974b1c2500304b7795f7f7ee36a18e05a86b4b95146e57300` |
 | Exact replay of Committee batch 0 | 25 unchanged, 0 changed; same owner snapshot fingerprint |
 
-The four selections yielded 51 unique reference reports (49 overlap the earlier
-fixture-only run). All 51 Debate resources were clean in isolated Core State;
-the inventory exception remained separately quarantined and did not publish a
-graph. Exact owner and Debate payloads, reference-report hashes, owner-snapshot
-fingerprints and the provenance catalog were verified against disposable
-Fuseki. Debate graphs contained no Member, HouseTerm or Committee owner
+The four selections covered 52 unique Works: 25 in Committee batch 0, 25 in
+Committee batch 9 (24 eligible plus one withheld exception), and the two
+representative House Works. They yielded 51 clean published Debate resources
+and one separately quarantined Work; the quarantine did not publish a graph.
+The 51 published Works yielded 51 unique reference reports, 49 of which overlap
+the earlier fixture-only comparison. Exact owner and Debate payloads,
+reference-report hashes, owner-snapshot fingerprints and the provenance
+catalog were verified against disposable Fuseki. Debate graphs contained no Member, HouseTerm or Committee owner
 descriptions. The source snapshot therefore exercised, rather than bypassed,
 the existing RDF ownership boundary.
 
@@ -349,6 +351,13 @@ limits. Those evidence-limited outcomes are not by themselves defects or safety
 blockers, but remain visible for human review. Human budget approval, inventory
 exception disposition, source-listing/Expression completeness review and
 separate operational authorization remain mandatory.
+
+The operator sequence and recovery prerequisites are recorded in
+[`debates-production-execution-plan.md`](debates-production-execution-plan.md).
+Its final assessment is **BLOCKED** because no coordinated production backup
+and restore facility has been verified; it also lists the remaining human
+decisions and exact preflight criteria. This report and plan authorize no
+production publication.
 
 ## Reproduction
 
