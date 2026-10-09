@@ -1,0 +1,10 @@
+services:
+  fuseki:
+    image: stain/jena-fuseki:5.1.0
+    environment:
+      FUSEKI_DATASET_1: semantic_enrichment
+      ADMIN_PASSWORD: ${FUSEKI_ADMIN_PASSWORD:-semantic-enrichment-local}
+    ports:
+      - "127.0.0.1:13036:3030"
+    tmpfs:
+      - /fuseki:rw,noexec,nosuid,size=4g,uid=100,gid=101,mode=0770

@@ -1,0 +1,20 @@
+# Values are rendered by run.py from the frozen question set.
+# Exact EuroVoc subject only: narrower concepts are deliberately not included.
+PREFIX oir: <https://data.oireachtas.ie/ontology#>
+PREFIX poc: <https://data.oireachtas.ie/poc/semantic-enrichment#>
+
+SELECT DISTINCT ?speech ?work ?date ?assigned ?similarity WHERE {
+  GRAPH <{{ enrichment_graph }}> {
+    ?assessment poc:contribution ?speech ; poc:hasSuggestion ?suggestion .
+    ?suggestion poc:concept ?assigned .
+    OPTIONAL { ?suggestion poc:similarity ?similarity }
+  }
+  FILTER(?assigned = <{{ concept_uri }}>)
+  GRAPH <{{ debate_graph }}> {
+    VALUES ?work { <{{ work_iri }}> }
+    ?work a oir:DebateRecord ; oir:debateDate ?date ; oir:hasSection ?topSection .
+    ?topSection (oir:hasSubSection)* ?section .
+    ?section oir:hasSpeech ?speech .
+  }
+}
+ORDER BY ?work ?speech

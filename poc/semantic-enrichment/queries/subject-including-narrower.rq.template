@@ -1,0 +1,22 @@
+# Narrower traversal is opt-in and uses the pinned English/hierarchy projection.
+PREFIX oir: <https://data.oireachtas.ie/ontology#>
+PREFIX poc: <https://data.oireachtas.ie/poc/semantic-enrichment#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+SELECT DISTINCT ?speech ?work ?date ?assigned ?similarity WHERE {
+  GRAPH <{{ enrichment_graph }}> {
+    ?assessment poc:contribution ?speech ; poc:hasSuggestion ?suggestion .
+    ?suggestion poc:concept ?assigned .
+    OPTIONAL { ?suggestion poc:similarity ?similarity }
+  }
+  GRAPH <{{ taxonomy_graph }}> {
+    ?assigned skos:broader* <{{ broader_concept_uri }}> .
+  }
+  GRAPH <{{ debate_graph }}> {
+    VALUES ?work { <{{ work_iri }}> }
+    ?work a oir:DebateRecord ; oir:debateDate ?date ; oir:hasSection ?topSection .
+    ?topSection (oir:hasSubSection)* ?section .
+    ?section oir:hasSpeech ?speech .
+  }
+}
+ORDER BY ?work ?speech ?assigned

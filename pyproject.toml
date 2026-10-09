@@ -33,6 +33,9 @@ test = [
   "python-multipart>=0.0.9,<1",
   "python-dotenv>=1.0,<2",
 ]
+semantic-enrichment = [
+  "fastembed==0.9.0",
+]
 nlq = [
   "fastapi>=0.115,<1",
   "httpx>=0.27,<1",

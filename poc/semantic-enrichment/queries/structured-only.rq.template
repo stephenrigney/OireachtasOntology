@@ -1,0 +1,16 @@
+# Control query: existing debate/date/House structure only; no enrichment graph.
+PREFIX oir: <https://data.oireachtas.ie/ontology#>
+
+SELECT DISTINCT ?speech ?work ?date WHERE {
+  GRAPH <{{ debate_graph }}> {
+    VALUES ?work { <{{ work_iri }}> }
+    ?work a oir:DebateRecord ; oir:debateDate ?date ;
+          oir:recordOfHouseTerm ?houseTerm ; oir:hasSection ?topSection .
+    ?topSection (oir:hasSubSection)* ?section .
+    ?section oir:hasSpeech ?speech .
+  }
+  GRAPH <{{ houses_graph }}> {
+    ?houseTerm oir:houseCode "{{ house_code }}" ; oir:termNo {{ house_term }} .
+  }
+}
+ORDER BY ?work ?speech

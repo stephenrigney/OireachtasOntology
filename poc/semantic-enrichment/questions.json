@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "frozen_before_method_comparison": true,
+  "questions": [
+    {
+      "id": "q1-historical-health-policy",
+      "question": "Which contributions in the 2009 Joint Committee on Health and Children record are substantively about health policy?",
+      "mode": "subject",
+      "concept_uri": "http://eurovoc.europa.eu/2479",
+      "concept_label": "health policy",
+      "include_narrower": false,
+      "source_ids": ["committee-health-2009"],
+      "date": "2009-01-29",
+      "house": null,
+      "review_criteria": "Relevant when the contribution substantively discusses health-sector policy, service organization, planning, regulation or public provision; incidental use of the word health is not enough."
+    },
+    {
+      "id": "q2-seanad-fisheries-policy",
+      "question": "Which Seanad contributions on 27 February 2025 concern fisheries policy?",
+      "mode": "subject",
+      "concept_uri": "http://eurovoc.europa.eu/2476",
+      "concept_label": "fisheries policy",
+      "include_narrower": false,
+      "source_ids": ["seanad-2025-02-27"],
+      "date": "2025-02-27",
+      "house": {"code": "seanad", "term": 27},
+      "review_criteria": "Relevant when the contribution substantively concerns fisheries policy, management or regulation; a passing reference to fishing or the marine sector is not sufficient."
+    },
+    {
+      "id": "q3-seanad-fishing-narrower",
+      "question": "Find Seanad contributions in 2025 about fishing industry topics, explicitly including narrower EuroVoc concepts.",
+      "mode": "subject",
+      "concept_uri": "http://eurovoc.europa.eu/1372",
+      "concept_label": "fishing industry",
+      "include_narrower": true,
+      "source_ids": ["seanad-2025-02-27"],
+      "date": "2025-02-27",
+      "house": {"code": "seanad", "term": 27},
+      "review_criteria": "Relevant when fishing, fisheries or fishing-industry activity is a material subject, including a specific narrower activity. A passing reference to coastal or marine matters is insufficient."
+    },
+    {
+      "id": "q4-dail-climate-change",
+      "question": "Which Dáil contributions from 25 February 2026 discuss climate change?",
+      "mode": "subject",
+      "concept_uri": "http://eurovoc.europa.eu/5482",
+      "concept_label": "climate change",
+      "include_narrower": false,
+      "source_ids": ["dail-2026-02-25"],
+      "date": "2026-02-25",
+      "house": {"code": "dail", "term": 34},
+      "review_criteria": "Relevant when climate change or its impacts are a substantive topic; weather, energy or environmental mentions without a climate link are not sufficient."
+    },
+    {
+      "id": "q5-public-health-cross-period",
+      "question": "Compare contributions relating to public health in the 2009 health committee record and the 2026 Public Accounts record, explicitly including narrower EuroVoc topics.",
+      "mode": "subject",
+      "concept_uri": "http://eurovoc.europa.eu/3885",
+      "concept_label": "public health",
+      "include_narrower": true,
+      "source_ids": ["committee-health-2009", "committee-pac-2026-09-24"],
+      "date": null,
+      "house": null,
+      "review_criteria": "Relevant when population health, prevention, public-health systems or a directly narrower public-health topic is materially discussed; private/individual medical care alone is not enough."
+    },
+    {
+      "id": "q6-dail-education-policy-ambiguous",
+      "question": "Which Dáil contributions from 25 February 2026 are about education policy, rather than merely mentioning a school or education?",
+      "mode": "subject",
+      "concept_uri": "http://eurovoc.europa.eu/2467",
+      "concept_label": "education policy",
+      "include_narrower": false,
+      "source_ids": ["dail-2026-02-25"],
+      "date": "2026-02-25",
+      "house": {"code": "dail", "term": 34},
+      "review_criteria": "Relevant only when education-system policy, governance, access, funding or organization is a substantive topic. Mentions of schools or education as incidental context are irrelevant; mark genuine ambiguity uncertain."
+    },
+    {
+      "id": "q7-structured-only-control",
+      "question": "Which contributions are present in the sampled Seanad debate from 27 February 2025?",
+      "mode": "structured-only",
+      "concept_uri": null,
+      "concept_label": null,
+      "include_narrower": false,
+      "source_ids": ["seanad-2025-02-27"],
+      "date": "2025-02-27",
+      "house": {"code": "seanad", "term": 27},
+      "review_criteria": "Control query answered from the transformed debate structure and validated HouseTerm owner graph; no subject classifier is used. Results are limited to the selected sample, not all source speeches."
+    }
+  ]
+}
