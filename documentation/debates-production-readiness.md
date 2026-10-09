@@ -1,7 +1,8 @@
 # Debates initial-production readiness assessment
 
-Assessment date: 2026-10-08. This report completes the exact source/exception
-inventory and recommends operational limits for the approved initial scope. The
+Assessment date: 2026-10-09. This report records the exact source/exception
+inventory, recommends provisional operational limits for the approved initial
+scope, and records source-backed representative owner staging. The
 manifest-driven controlled-ingestion implementation is recorded in
 [`debates-controlled-staging-report.md`](debates-controlled-staging-report.md).
 It does **not** authorize controlled ingestion, publish RDF, or close the human
@@ -184,7 +185,7 @@ Recurring schedules, unattended deployment, monitoring/alert wiring and backup
 automation/restore remain Phase 6 Tranche B responsibilities. They are not part
 of production enumeration and were not implemented here.
 
-### 2026-10-09 staging/resource update
+### 2026-10-09 staging/resource update (superseded by owner-evidence update below)
 
 The previously missing resource controls are now implemented in
 `src/oireachtas_etl/resource_budget.py` and required for manifest-driven
@@ -196,35 +197,158 @@ warnings/hard-stop, quarantine and recovery tests are in
 and `tests/test_debates_staging_acceptance.py`.
 
 Real disposable Fuseki/Core State staging passed against representative
-validated example owner graphs, but the examples are not current authoritative
-owner captures. The available preserved Members pages are single-record
-partial pages, and no suitable complete preserved Houses/Committee owner
-snapshot was established. Across 49 staged reports, 42 distinct Member and 4
-Committee owner hrefs remained absent. Therefore these staging results prove
-mechanics only; they do not meet the source-validated owner-snapshot acceptance
-or establish owner-resolution readiness. The acceptance report remains
-**BLOCKED** pending isolated owner evidence from current preserved source
-captures and its review. The default resource thresholds remain provisional
-until human review; staged small-batch measurements do not recalibrate
-corpus-scale limits.
+validated example owner graphs, but those examples were not current source
+captures. At that point source-validated owner evidence remained outstanding;
+the 2026-10-09 owner-evidence update below supersedes that assessment. The
+default resource thresholds remain provisional until human review; the staged
+small-batch measurements do not recalibrate corpus-scale limits.
 
 ## Gate decision and outstanding approvals
 
-**Readiness gate remains BLOCKED. Do not begin controlled ingestion.** Before
-any authorization, a human must:
+**Readiness gate remains BLOCKED. Do not begin controlled ingestion.** The
+source-backed owner-evidence blocker is now materially reduced by the
+representative isolated staging recorded below, but that evidence is not
+production authorization or proof of corpus-wide historical owner resolution.
+Before any authorization, a human must:
 
 - review and disposition the exact quarantined Works without silent source
   correction or partial Work graphs;
 - approve or revise the warning/stop budgets and batch caps above;
 - confirm the approved source-listing/Expression-completeness behavior;
-- establish an isolated current source-validated owner snapshot (the staging
-  mechanics are tested, but the reviewed example bootstrap is not sufficient)
-  and review the measured capacity/recovery evidence; and
+- review the isolated source-backed owner snapshot, its exclusions and
+  reference-resolution measurements, and the measured capacity/recovery
+  evidence; and
 - authorize the resulting operational execution plan separately from Phase 6
   Tranche B deployment/scheduling.
 
 No ontology, mapping, identity/ownership contract, source fixture or production
 Core State/Fuseki graph was changed. The work ends at this human gate.
+
+### 2026-10-09 source-backed owner-evidence update
+
+The remaining example-owner limitation was investigated using preserved,
+complete API captures and the existing non-authoritative `oir-etl dev bootstrap`
+path. The captures passed the existing run/provenance, immutable-page hash,
+source-envelope and completeness checks. A disposable Fuseki dataset and an
+isolated Core State copy were used for the Debates integration; the original
+Core State was read-only. No production endpoint or production publication
+path was used. This closes the **technical evidence gap for a representative
+source-backed staging exercise**, not the overall human readiness gate.
+
+| Owner/source | Preserved successful complete API run | Records | Capture evidence fingerprint (SHA-256) |
+|---|---|---:|---|
+| Members (includes nested Committee observations) | `d2c089d0-5203-40f1-97b8-ae0d8285e74d` (2026-10-04) | 1,928 | `177a0cbfe0db70e6208a3798e7ca368b1d33dadaf3865198c2f9e0a46aae65fe` |
+| Houses | `896630a4-9389-4a8f-bf58-65c16a05425c` (2026-10-05) | 68 | `264e0f5d3b47a92f01cf7e82d7ac47981e38560422d3567ded802086a5f81f70` |
+| Parties (census input) | `91255248-e348-4d60-a8d6-73a26df49f8b` (2026-10-04) | 11 | `b71ce8368b26594208783b6873b435008f7f967b7759763a3b2f2cb2e9f5d145` |
+| Constituencies (census input) | `e6a472b1-b6e0-4e02-8304-9e6cfa73c44d` (2026-10-04) | 8 | `dbc047946a75aa8726285204970509d0a94be31e033a91183145e7943d8d6356` |
+
+Each capture fingerprint is SHA-256 over the sorted page/metadata filenames and
+their individual SHA-256 values. Members consists of 20 pages/metadata pairs;
+each other capture has one page/metadata pair. The selected capture run IDs
+resolve to successful, complete API runs in the read-only Core State index.
+The owner captures were read from
+`/var/home/stephen/Projects/OireachtasOntology/data/raw`; the source-run index
+was `/var/home/stephen/.local/share/oireachtas-etl/core-state.sqlite`. The
+preserved Debate XML and metadata came from
+`/var/home/stephen/.cache/oireachtas-assessment/raw`. These local immutable
+inputs and all disposable staging databases/reports remain outside this
+worktree; only their identifying provenance and hashes are recorded here.
+Normal Houses transformation/validation produced 65 numbered HouseTerms. The
+Debates owner snapshot indexed 1,928 Member graphs, 65 HouseTerms and 267
+Committee identities. Committee descriptions were synthesized from the nested
+Committee observations in the complete Members capture using the existing
+reference census/candidate builder; there is no independent Committee endpoint
+in this evidence set.
+
+The development census reported one materially conflicting Committee identity
+(the Dáil 33 Select Committee on the Implementation of the Good Friday
+Agreement, disagreeing on `committeeCode`, `committeeDateRange`, `committeeID`
+and `committeePurposes`). The existing conflict policy excluded it from the
+candidate graph and retained it as one unresolved, explicitly quarantined
+reference. No values were selected, repaired or published for that identity.
+The development reference closure remains explicitly **NOT authoritative / not
+complete**. Consequently, this snapshot is evidence for exact existing-owner
+resolution and safe conflict exclusion; it is not a declaration that every
+historical or future Debate owner is covered.
+
+Capture selection and snapshot fingerprints:
+
+- Development dataset identity: `sha256:e250a5cfc8f0cc4973c5b677f20218267aca6039fdfaae336623bfd582b951b3`.
+- Debates owner-RDF snapshot hash: `cb9863fd2aa8651e97019e2aef7a1ae27ea69466e70bc0682891d6ee48d09f0f`.
+- Resolver version: `owner-rdf-registry-v1:3a9446ce66a805d28987dd04ad1a74839491e9d309fb58f562ddb95c7cf0bfe`.
+- Canonical owner graph payload SHA-256: Houses `6e028f4f774437860b666a8a400b88b91cfedbe99ef59dd67583fddef9b71aaa`; Committees `96c2d3e9bae050bbdf830b95f929d48729f8136f6d50ef3882e809364d1e0d4a`.
+- The 1,928 clean contract-3 Member publications were copied from a read-only
+  database snapshot into disposable Core State. Every Member source identity,
+  source hash, graph IRI and serialized payload hash was checked against the
+  complete Members capture. Houses and Committees were validated with their
+  existing RDF/SHACL/quality validation before publication. Whole-graph
+  verification against disposable Fuseki passed for owner and Debate graphs.
+
+Representative manifest-selected integration used exact preserved Debate XML
+and existing `run_debate_batch` validation/publication machinery:
+
+| Selection | Result in disposable Core State/Fuseki |
+|---|---|
+| Committee batch 0, 25 Works / 2,867,321 source bytes | 25 new graphs published; 0 quarantined |
+| Committee batch 9, 25 Works / 6,101,138 source bytes | 24 graphs published; 1 inventory-withheld exception remained quarantined; degraded outcome, as designed |
+| Dáil 2011-01-12 | 1 graph published; source SHA-256 `cf1ca86b43d6d413be773f2d2624478c1811892aed2187e5eaa3a28f676340df` |
+| Seanad 2011-01-12 | 1 graph published; source SHA-256 `5daacfd7ae5c034974b1c2500304b7795f7f7ee36a18e05a86b4b95146e57300` |
+| Exact replay of Committee batch 0 | 25 unchanged, 0 changed; same owner snapshot fingerprint |
+
+The four selections yielded 51 unique reference reports (49 overlap the earlier
+fixture-only run). All 51 Debate resources were clean in isolated Core State;
+the inventory exception remained separately quarantined and did not publish a
+graph. Exact owner and Debate payloads, reference-report hashes, owner-snapshot
+fingerprints and the provenance catalog were verified against disposable
+Fuseki. Debate graphs contained no Member, HouseTerm or Committee owner
+descriptions. The source snapshot therefore exercised, rather than bypassed,
+the existing RDF ownership boundary.
+
+#### Resolution outcomes and interpretation
+
+The following compares reports for the **same 49 Works** in the fixture-only
+stage and source-backed stage. Counts are reference outcomes, not unique
+entities. In the fixture stage, 7,670 Member-reference outcomes lacked an
+owner match; with the captured source-backed Members, all 7,670 resolved.
+Another 6,301 Member references were source placeholders in both runs and
+remain unresolved. The earlier 42 distinct absent Member hrefs are therefore
+not source-backed owner gaps in this test set.
+
+| Outcome category (49 shared Works) | Fixture-only | Source-backed | Explanation |
+|---|---:|---:|---|
+| Member resolved | 0 | 7,670 | 42 previously absent exact Member hrefs now resolve |
+| Member unresolved | 13,971 | 6,301 | All remaining outcomes are source placeholders, not missing owner matches |
+| Committee resolved / unresolved | 0 / 49 | 18 / 31 | One observed Committee href resolves; three distinct older Committee hrefs remain unmatched |
+| Non-numbered HouseTerm-author references | 49 unresolved | 49 unresolved | These source hrefs identify committee authors, not numbered HouseTerms; classified as historical/evidence-limited, not guessed |
+| Participation-role crosswalk | 240 unresolved | 240 unresolved | Existing Tranche 2 crosswalk is not configured; non-owner mapping limitation |
+| Malformed role fragments | 152 malformed | 152 malformed | Existing reviewed-local-NCName constraint; not modified |
+
+The two additional Dáil/Seanad Works resolved two House owners, two numbered
+HouseTerms, and 2,448 additional Member-reference outcomes (all 2,448 exact
+matches); the Committee outcome totals were unchanged. Across all 51 reports,
+exact outcome totals were 10,118 resolved Member
+references and 6,305 source-placeholder Member references; 18 resolved and 31
+unresolved Committee references (three unmatched exact hrefs); and two each
+resolved House and numbered-HouseTerm references. The 49 historical
+committee-author href outcomes remained unresolved as non-numbered HouseTerm
+references. All outcome statuses across the 51 reports were 10,349 resolved,
+8,249 unresolved, 14,876 expected absent optional attributes, and 503 malformed
+role fragments. Unresolved non-owner counts/reasons were 1,144 role
+crosswalk-not-configured, 713 deferred question recipients, 4 deferred vote
+targets and 3 deferred Bill-event links. Malformed outcomes (342 speech-role and
+161 question-recipient fragments) were all `not-a-reviewed-local-NCName-fragment`.
+These are not owner-evidence failures and were neither suppressed nor rewritten.
+
+This result supports the approved 2011+ scope as a **bounded, reviewable,
+manifest-driven ingestion candidate**: exact modern owners resolve, absent
+historical committee evidence remains auditable and unresolved, the known
+conflict remains fail-closed, and replay/change detection is deterministic.
+It does not prove complete historical owner coverage, resolve the 31 Committee
+outcomes, authorize exception decisions, or calibrate corpus-scale resource
+limits. Those evidence-limited outcomes are not by themselves defects or safety
+blockers, but remain visible for human review. Human budget approval, inventory
+exception disposition, source-listing/Expression completeness review and
+separate operational authorization remain mandatory.
 
 ## Reproduction
 

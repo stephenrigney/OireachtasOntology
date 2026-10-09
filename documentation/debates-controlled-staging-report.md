@@ -281,21 +281,52 @@ independent guard behavior.
   final pending-dirty-stop assertion was added; that updated opt-in staging test
   subsequently passed against real Fuseki.
 
+## Source-backed owner evidence (2026-10-09)
+
+The fixture-only evidence above is superseded on owner coverage by the
+source-backed isolated staging recorded in
+[`debates-production-readiness.md`](debates-production-readiness.md#2026-10-09-source-backed-owner-evidence-update).
+That exercise used successful complete preserved API captures (1,928 Members,
+68 Houses, 11 Parties and 8 Constituencies), source-derived conflict-excluded
+Committee candidates, and a read-only-copy Core State snapshot. It indexed 1,928
+Members, 65 HouseTerms and 267 Committees in the Debates owner resolver. The
+development closure remains non-authoritative/incomplete, and the known
+materially conflicting Committee identity remained quarantined and unresolved.
+
+In disposable Fuseki/Core State, 51 unique manifest-selected Debates Works were
+exercised: 25 new Committee graphs published; a second 25-Work batch published
+24 and withheld one inventoried exception; representative 2011 Dáil and Seanad
+graphs both published; and exact replay left all 25 graphs unchanged. Every
+Debate owner snapshot fingerprint, reference report, graph payload and the
+provenance catalog was checked against the isolated dataset. For the 49 Works
+shared with the fixture run, 7,670 Member-reference outcomes previously
+unresolved for lack of an example owner now resolved; 6,301 source-placeholder
+Member outcomes remained unresolved. Committee outcomes were 18 resolved and
+31 unresolved over three exact historical hrefs. These unresolved historical
+references are auditable evidence limitations, not silently guessed owners or
+automatic safety blockers; detailed classifications and the full comparison
+are in the linked readiness assessment.
+
+This supersedes the former claim below that the example owner inputs were the
+only staging evidence. The source-backed result closes the technical
+representative owner-evidence gap but does not prove corpus-wide historical
+owner resolution or authorize controlled ingestion. Resource budgets remain
+provisional, and inventory exception disposition, source-listing/Expression
+completeness review and separate human operational authorization are still
+required.
+
 ## Assessment and remaining gates
 
-**BLOCKED — staging mechanics passed, but the original controlled-ingestion
-tranche acceptance is not fully met.** The disposable Fuseki/Core State path,
-resource controls, 5/10/25 progressive batches, quarantine, warnings/hard stop,
-idempotent replay, dirty/pending recovery, catalog verification, and graph
-preservation passed for this representative test. The owner inputs were
-validated checked-in examples rather than a current source-validated owner
-snapshot, and 42 Member plus 4 Committee owner identities remained unresolved.
-Therefore this evidence is not a basis for claiming controlled-corpus
-owner-resolution readiness. The smallest remaining technical step is to
-construct an isolated snapshot from current, preserved source-validated
-Members/Houses/Committee captures and repeat the same representative owner
-coverage test. Human review of the approved resource budgets and a separate
-controlled-production execution plan are also required.
+**Staging mechanics and representative source-backed owner evidence passed;
+production readiness remains BLOCKED pending human decisions.** The disposable
+Fuseki/Core State path, resource controls, bounded batches, quarantine,
+warnings/hard stop, idempotent replay, dirty/pending recovery, catalog
+verification and graph preservation passed. The source-backed staging confirms
+exact modern Member/House/Committee owner resolution and preserves fail-closed
+handling for the conflicting Committee identity. It does not establish complete
+historical coverage or production-scale resource behavior. Human review of the
+approved resource budgets, inventory exceptions and source completeness, plus a
+separate controlled-production execution plan, remain required.
 
 Technical completion of these staging mechanics is **not** authorization to
 publish production data. No production ingestion, Phase 6 Tranche B work,
