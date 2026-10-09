@@ -32,11 +32,19 @@ manifest-driven selection and bounded batch indexing are implemented using the
 preserved inventory and existing Core State run/quarantine/publication
 machinery. See
 [`debates-controlled-staging-report.md`](debates-controlled-staging-report.md).
-This is not staged acceptance: the locally available Core State does not
-provide a current source-validated owner snapshot, so actual disposable-Fuseki
-calibration was not run. Resource preflight/runtime guards also remain
-unimplemented. Production readiness remains blocked and no production load is
-authorized.
+The 2026-10-09 update below supersedes its staging/guard status.
+
+**Controlled-staging update (2026-10-09):** configurable disk, temporary-space,
+ETL/Fuseki RSS and host-memory guards are implemented. Real disposable-Fuseki
+Core State staging passed progressively at 5/10/25 Works, including quarantine,
+resource warnings/hard stop, interruption/recovery and graph preservation. It
+used validated checked-in example owners, not a current authoritative owner
+snapshot; 42 Member and 4 Committee identities were unresolved. See the detailed
+staging measurements and owner limitations in
+[`debates-controlled-staging-report.md`](debates-controlled-staging-report.md).
+The original tranche acceptance remains **BLOCKED** pending suitable current
+source-validated owner evidence and human review of the provisional budgets.
+No production ingestion is authorized.
 
 The Tranche 4 scoped resource measurement (2011+ debates only versus adding
 2013+ whole-record written answers) is recorded in

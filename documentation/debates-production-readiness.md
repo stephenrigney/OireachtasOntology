@@ -113,9 +113,10 @@ source evidence. A production owner snapshot may change report and RDF sizes.
 | Host/rebuild headroom | Upper TDB2 projection plus canonical source/report/state storage and a second TDB2 during rebuild | Warn below 80 GiB free | Do not start below 65 GiB free on the ETL/Fuseki host |
 | Backup/restore capacity | Exact no-owner canonical artefact total is ~10.92 GiB from raw XML, metadata, reference reports and serialized N-Triples; database amplification and production-owner report changes remain unmeasured. TDB2 is a rebuildable projection, not canonical backup | Warn below 35 GiB free on separate backup target | Reserve at least 30 GiB for a Debate full backup plus restore/staging copy; retention-growth capacity remains to be measured |
 
-These numbers are **proposals for human approval**, not existing settings or
-automatically enforced controls. Stop values leave headroom below each reserved
-capacity. The backup estimate excludes unrelated ETL data and does not prove
+These numbers are **provisional defaults for human approval** and are now
+enforced by the manifest-publication resource guard; they are not calibrated
+production limits. Stop values leave headroom below each reserved capacity. The
+backup estimate excludes unrelated ETL data and does not prove
 capacity for Phase 6's 30 daily / 12 monthly recovery points; that policy uses
 deduplicating/incremental backups and still needs a measured retention-growth
 budget. The 65 GiB host reservation includes a second TDB2-sized working copy
@@ -148,7 +149,7 @@ no-owner-resolver path, not a production-owner run or full publication test.
   clean. Failed PUT/verification remains replayable. No production state or
   graph was used for this assessment.
 
-### Smallest missing capabilities
+### Original tranche requirements (historical status before implementation)
 
 1. **Deterministic one-time enumeration/selection:** production CLI accepts
    explicit URLs or replay hashes only. Add a manually invoked, versioned
@@ -169,33 +170,56 @@ no-owner-resolver path, not a production-owner run or full publication test.
    replacement, clean/dirty recovery and replay under the approved budgets.
     This is not a corpus-wide benchmark and must not touch production.
 
-### 2026-10-08 implementation update
+### 2026-10-08 implementation update (superseded by 2026-10-09 below)
 
 Manifest selection and deterministic 25-Work/64-MiB batch calculation are now
 implemented in `src/oireachtas_etl/debates_readiness.py` and manually invoked via
 `oir-etl run debates --inventory-file ... --batch-index N`. Inventory-marked
-exceptions are withheld through the existing Phase 6 quarantine callback. This
-does not complete the remaining capabilities: resource preflight/runtime
-enforcement is not implemented, and actual disposable-Fuseki staging with a
-source-validated owner snapshot was blocked because no suitable snapshot is
-available in the current Core State evidence. No staging metrics were captured.
-See `debates-controlled-staging-report.md`; the production gate remains open.
+exceptions are withheld through the existing Phase 6 quarantine callback. At
+that date resource enforcement and disposable staging remained outstanding; the
+next dated update records their completion and the remaining owner-evidence
+blocker.
 
 Recurring schedules, unattended deployment, monitoring/alert wiring and backup
 automation/restore remain Phase 6 Tranche B responsibilities. They are not part
 of production enumeration and were not implemented here.
 
+### 2026-10-09 staging/resource update
+
+The previously missing resource controls are now implemented in
+`src/oireachtas_etl/resource_budget.py` and required for manifest-driven
+publication. They check configured TDB2, raw/reference-report, Core State,
+temporary, host-disk and memory thresholds before runs and around each graph
+publication. Exact staged results, 5/10/25 batch measurements, deliberate
+warnings/hard-stop, quarantine and recovery tests are in
+[`debates-controlled-staging-report.md`](debates-controlled-staging-report.md)
+and `tests/test_debates_staging_acceptance.py`.
+
+Real disposable Fuseki/Core State staging passed against representative
+validated example owner graphs, but the examples are not current authoritative
+owner captures. The available preserved Members pages are single-record
+partial pages, and no suitable complete preserved Houses/Committee owner
+snapshot was established. Across 49 staged reports, 42 distinct Member and 4
+Committee owner hrefs remained absent. Therefore these staging results prove
+mechanics only; they do not meet the source-validated owner-snapshot acceptance
+or establish owner-resolution readiness. The acceptance report remains
+**BLOCKED** pending isolated owner evidence from current preserved source
+captures and its review. The default resource thresholds remain provisional
+until human review; staged small-batch measurements do not recalibrate
+corpus-scale limits.
+
 ## Gate decision and outstanding approvals
 
-**Readiness gate remains OPEN. Do not begin controlled ingestion.** Before any
-authorization, a human must:
+**Readiness gate remains BLOCKED. Do not begin controlled ingestion.** Before
+any authorization, a human must:
 
 - review and disposition the exact quarantined Works without silent source
   correction or partial Work graphs;
 - approve or revise the warning/stop budgets and batch caps above;
 - confirm the approved source-listing/Expression-completeness behavior;
-- complete the bounded disposable staging acceptance using the production
-  owner snapshot and verify capacity/recovery headroom; and
+- establish an isolated current source-validated owner snapshot (the staging
+  mechanics are tested, but the reviewed example bootstrap is not sufficient)
+  and review the measured capacity/recovery evidence; and
 - authorize the resulting operational execution plan separately from Phase 6
   Tranche B deployment/scheduling.
 
