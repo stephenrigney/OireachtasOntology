@@ -1138,7 +1138,12 @@ def test_planner_benchmark_separates_coverage_and_never_executes_a_plan_query():
 
 def test_planner_benchmark_has_required_supported_and_boundary_cases():
     benchmark = load_planner_benchmark()
-    assert benchmark["benchmark_version"] == "0.2.1"
+    assert benchmark["benchmark_version"] == "0.2.2"
+    temporal_case = next(
+        case for case in benchmark["cases"]
+        if case["id"] == "plan.temporal.aengus-dail-33"
+    )
+    assert temporal_case["expected_result"] == {"kind": "ask", "boolean": True}
     case_ids = {case["id"] for case in benchmark["cases"]}
     assert {
         "plan.lookup.aengus-name",

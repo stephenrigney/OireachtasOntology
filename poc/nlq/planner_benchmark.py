@@ -55,7 +55,7 @@ def load_planner_benchmark(path: str | Path = DEFAULT_PLANNER_BENCHMARK_PATH) ->
         allowed = {
             "id", "source_case_id", "question", "expectation", "required_entities",
             "required_requirements", "required_temporal_constraints", "aggregation",
-            "answer_shape", "not_scored_reason",
+            "answer_shape", "not_scored_reason", "expected_result",
         }
         if not {"id", "source_case_id", "expectation"} <= set(case) or set(case) - allowed:
             raise PlannerBenchmarkError(f"{where} has missing or unknown fields")
@@ -73,6 +73,14 @@ def load_planner_benchmark(path: str | Path = DEFAULT_PLANNER_BENCHMARK_PATH) ->
             isinstance(case.get("not_scored_reason"), str) and case["not_scored_reason"].strip()
         ):
             raise PlannerBenchmarkError(f"{where} manual_review needs a not_scored_reason")
+        if "expected_result" in case:
+            expected_result = case["expected_result"]
+            if not isinstance(expected_result, dict) or expected_result.get("kind") not in {"ask", "select"}:
+                raise PlannerBenchmarkError(f"{where}.expected_result must be an ASK or SELECT oracle")
+            if expected_result["kind"] == "ask" and not isinstance(expected_result.get("boolean"), bool):
+                raise PlannerBenchmarkError(f"{where}.expected_result ASK oracle needs a boolean")
+            if expected_result["kind"] == "select" and not isinstance(expected_result.get("invariants"), dict):
+                raise PlannerBenchmarkError(f"{where}.expected_result SELECT oracle needs invariants")
         for field in ("required_entities", "required_requirements", "required_temporal_constraints"):
             if field in case and not isinstance(case[field], list):
                 raise PlannerBenchmarkError(f"{where}.{field} must be an array")

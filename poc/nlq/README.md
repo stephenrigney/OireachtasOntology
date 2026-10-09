@@ -445,31 +445,33 @@ distinct ambiguous candidates, or unresolved state. It does not fuzzy-match,
 merge same-name resources, manufacture identifiers or use external services.
 For duplicate Member labels, exact local HouseTerm/constituency context reuses
 Phase 1 narrowing: one contextual match resolves, multiple matches remain
-ambiguous, and no match preserves all original candidates. The planner does not
-yet apply Phase 1's explicit set-valued Member-reference gate. If a plural
-request is drafted as a named Member entity, contextual narrowing can produce a
-single resolved record even though the question is set-valued; this must not be
-treated as safe set-valued identity binding. Before Phase 2C binds resolved
-Member IRIs into SPARQL, preserve set-valued intent or fail closed and add
-benchmark coverage. The current plan also omits which context labels justified
-a narrowing, so that evidence should be made inspectable before Phase 2C relies
-on contextual identity binding.
+ambiguous, and no match preserves all original candidates. The planner also
+applies Phase 1's explicit set-valued Member-reference gate before accepting a
+final plan. If a plural request is drafted as a named Member
+entity, it returns `set_valued_member_identity` without selecting an IRI. For
+duplicate Member labels, application-generated `binding_evidence` records the
+initial candidates, matched local context labels, deterministic narrowing rule
+and decision, and the selected IRI only when exactly one candidate matches.
+This evidence is separate from the semantic plan.
 The planner inserts those results into a final plan and always calls the
 authoritative Phase 2A validator before accepting it. Ambiguity returns
 `clarification_required`; an absent local label returns `unresolved_entity`.
 Resolver/data unavailability, unsupported resolver types, draft failures and
 final-plan failures have separate result classes.
 
-This is a separate callable/development-evaluation path. It is not wired to
-`/ask`, does not add a model request to normal browser queries, and stops after
-plan validation: no plan-to-SPARQL generation or query execution occurs.
+This remains a separate callable/development-evaluation path. It is not wired
+to `/ask` and does not add a model request to normal browser queries. Phase 2C
+adds a deterministic compiler that accepts only a `validated_plan`
+`PlannerResult`, revalidates the final plan, and either returns safety-validated
+local SPARQL with a mapping trace or a fail-closed outcome. It does not alter
+the Phase 1 browser/query path.
 
-Planner evaluation uses selected Phase 1 controlled cases and semantic plan
-invariants from `poc/nlq/benchmarks/planner-benchmark-v1.json`. It checks source
-prerequisites with the existing Phase 1 coverage contract before scoring; an
-unavailable prerequisite is recorded separately as source-data coverage. The
-planner result is evaluated independently of query results. Run a measured,
-capture-backed planner evaluation with:
+Phase 2B planner-only evaluation uses selected Phase 1 controlled cases and
+semantic plan invariants from `poc/nlq/benchmarks/planner-benchmark-v1.json`. It
+checks source prerequisites with the existing Phase 1 coverage contract before
+scoring; an unavailable prerequisite is recorded separately as source-data
+coverage. This path scores planning only. Run a measured, capture-backed
+planner-only evaluation with:
 
 ```bash
 uv run --locked --extra nlq python scripts/run-nlq-planner-benchmark.py
@@ -485,10 +487,54 @@ supported draft and checks only the not-scored accounting path; it does not test
 whether a model recognizes unsupported wording. The separate realistic-question
 benchmark remains future work.
 
+### Deterministic plan generation (Phase 2C)
+
+`poc.nlq.plan_sparql.PlanSparqlGenerator` compiles only accepted, validated
+plans. Its explicit semantic-fact dispatch maps to emitted query-schema patterns,
+contract-owned graph families and allowlisted predicates; unsupported facts,
+entity bindings, temporal translations, answer shapes and aggregations fail
+closed. The supported `during` translation is restricted to a referenced
+Dáil/Seanad term for reviewed Member membership, collection-membership and
+representation paths. Date windows, `current`/`on` temporal meanings,
+HouseTerm-owned temporal references and Committee-membership temporal joins are
+not inferred. Generated entity answers remain resource IRIs; a separate
+contract-grounded label lookup is used only by the evaluator when comparing
+resource results against existing label-valued benchmark invariants.
+
+The evaluation path is `poc.nlq.plan_benchmark.run_plan_cases`; it keeps
+planner, validation, binding, generation, safety, Fuseki execution and result
+scoring outcomes separate. A result oracle must match the generated query form:
+the runner does not borrow a coverage probe as an answer oracle. The controlled
+Boolean plan has its own explicit ASK result oracle. Run measured planner →
+generator → Fuseki evaluation, optionally alongside the Phase 1 direct
+generation comparison, against a disposable capture-backed dataset with:
+
+```bash
+uv run --locked --extra nlq python scripts/run-nlq-plan-benchmark.py \
+  --raw-dir /path/to/preserved/complete-captures --compare-phase1
+```
+
+The measured report and known limitation are recorded in
+[`benchmarks/phase-2c-report.md`](benchmarks/phase-2c-report.md). Ordinary
+compiler/evaluator tests use deterministic plans and a fake Fuseki client. The
+opt-in capture-backed Fuseki acceptance is:
+
+```bash
+OIR_NLQ_CAPTURE_RAW_DIR=/path/to/preserved/complete-captures \
+OIR_RUN_NLQ_PLAN_FUSEKI_TESTS=1 \
+uv run --locked --extra test --extra nlq pytest tests/test_nlq_plan_sparql_fuseki.py
+```
+
+The generator/evaluator are not connected to the browser pipeline. This
+completes the Phase 2C local compilation/evaluation tranche, not the Phase 2
+exit gate: visible plan integration and a separate realistic-question benchmark
+remain future work.
+
 `poc.nlq.plan_contract` exposes `load_query_plan_contract`,
-`validate_query_plan`, and `load_query_plan`. Its deterministic validation is
-not yet used by the browser or direct NL-to-SPARQL runtime. To test the contract
-artifacts, examples, and validator:
+`validate_query_plan`, and `load_query_plan`. Phase 2C calls this authoritative
+validator before compilation; it is still not used by the browser or direct
+Phase 1 NL-to-SPARQL runtime. To test the contract artifacts, examples, and
+validator:
 
 ```bash
 uv run --locked --extra test python -m pytest tests/test_nlq_query_plan.py
@@ -623,11 +669,10 @@ In particular:
 - historic facts can only be returned when the required source data has been loaded;
 - exact local Member-label ambiguity handling is bounded to the shared NLQ
   pipeline; it does not provide general fuzzy search or same-person merging;
-- a matching local HouseTerm or constituency/panel label can narrow duplicate
-  Member candidates enough to continue, but the selected Member IRI is not
-  mechanically bound into the later LLM-generated answer query. That query must
-  still apply the context correctly; inspect its generated SPARQL before relying
-  on a context-disambiguated answer;
+- the Phase 1 direct-generation path does not mechanically bind the local
+  Member IRI selected by contextual narrowing; that live path remains unchanged.
+  The separate Phase 2C path binds only the singular IRI in a validated plan and
+  rejects ambiguous, unresolved and set-valued Member identity outcomes;
 - there is no conversational follow-up state;
 - there is no authentication or production hardening;
 - the schema grounding is not a full reasoner or query planner.

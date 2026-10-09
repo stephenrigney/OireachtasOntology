@@ -510,10 +510,10 @@ implementation details. Source selection remains Phase 3 work.
 - [x] Add deterministic contract/plan loading and validation, examples, and
       focused tests.
 - [x] Validate model-produced plans before SPARQL generation.
-- [ ] Split planner and SPARQL-generator responsibilities.
-- [ ] Generate local SPARQL from the validated plan.
+- [x] Split planner and SPARQL-generator responsibilities.
+- [x] Generate local SPARQL from the validated plan.
 - [ ] Show the plan alongside the interpretation and generated query.
-- [ ] Compare planned generation against the Phase 1 direct-generation
+- [x] Compare planned generation against the Phase 1 direct-generation
       baseline.
 - [ ] Keep a simple fallback/debug path during migration if useful.
 
@@ -549,8 +549,8 @@ The planner result now carries application-layer `binding_evidence` for
 context-checked duplicates, including the initial candidates, each candidate's
 matched local context labels, the rule and decision, and a selected IRI only
 when exactly one candidate matched. This evidence is generated locally, not by
-the model, and is not part of the semantic plan. Phase 2C plan-to-SPARQL
-generation has not started.
+the model, and is not part of the semantic plan. The live Phase 1 query path
+remains unchanged.
 
 The Phase 2B corrective tranche aligned the strict draft schema and local
 normalizer on participant XOR, kind-specific answer fields, filter values,
@@ -637,18 +637,74 @@ unsupported-question manual review and unavailable-Bill source-coverage case.
 This accepts the Phase 2B semantic-quality tranche against the controlled
 benchmark. The pre-2C Member-binding safety tranche documented above closes the
 known set-valued binding and contextual-evidence gaps. Phase 2C plan-to-SPARQL
-generation has not started.
+generation is implemented in a separate deterministic compiler; the Phase 1
+runtime remains untouched.
+
+### Phase 2C — deterministic local SPARQL generation
+
+Phase 2C adds `poc.nlq.plan_sparql.PlanSparqlGenerator`, a separate deterministic
+compiler that accepts only a `PlannerResult` with `validated_plan` status,
+revalidates it, and either returns safety-validated local SELECT/ASK SPARQL with
+a mapping trace or a structured fail-closed outcome. The compiler has explicit
+fact, entity-type, graph-family and filter dispatch grounded in the current
+query-schema contract and active predicate allowlist. It preserves named-graph
+ownership, binds resolved local entity IRIs only, and does not change ontology,
+mapping, graph, or IRI semantics. Ambiguous, unresolved, set-valued, unsupported,
+or incompatible plans do not produce executable SPARQL.
+
+Reviewed `during` translations use a referenced Dáil/Seanad term on Member
+parliamentary membership, collection membership, or representation. The
+membership term type is kept consistent with the referenced HouseTerm type.
+Date-window, `current`/`on`, HouseTerm-owned temporal-reference, and
+Committee-membership temporal translations remain unsupported; the compiler
+does not infer `dct:temporal` or unreviewed cross-fact joins. Resource answer
+shapes return IRIs without presentation-label joins. A separate contract-based
+label lookup is used only by the evaluator to compare resource answers with
+existing label-valued benchmark invariants.
+
+`poc.nlq.plan_benchmark` evaluates planner, final validation, entity binding,
+generation, SPARQL safety, Fuseki execution, and result scoring separately. It
+does not borrow coverage probes as answer oracles; the 33rd Dáil Boolean plan
+has an explicit ASK oracle in planner-benchmark version `0.2.2`. Phase 1 direct
+generation is compared only for cases whose question exactly matches the source
+benchmark oracle. The generator and evaluator remain outside the browser path.
+Phase 1 direct generation is unchanged and remains available during migration.
+
+Measured run `1f789eda-8216-4d23-8e3f-daefac70b94c` used
+`oireachtas-semantic-planner@0.2.2` (artifact SHA-256
+`5417f1d5db2d21ad2f1b12a3394cbe36236e0a527f382bc9de3f419d23d01276`), source
+benchmark `0.3.0`, dataset
+`sha256:1d849ec68168b6c456a38756ea812a23a218644204eb44d9bc55ddb3992b814d`,
+`gpt-6-luna` (repository dotenv), and the default Responses-compatible endpoint
+`https://opencode.ai/inference/openai/v1` (45-second timeout; 2,000-token
+output limit). The 11 planner cases resulted in 8 passed, 1 failed, and 2 not
+scored. Six cases reached generated-query execution and result scoring; all six
+matched their result oracle. One planner case failed before generation because
+the model returned answer shape `entity` where the benchmark requires
+`entities` for the Seanad-panel question. This remains a planner semantic
+mismatch; the compiler and benchmark expectation were not broadened to hide it.
+The unsupported-question manual-review and unavailable-Bill source-coverage
+cases remain not scored.
+
+The same run's Phase 1 direct-generation comparison passed all 7 comparable
+cases. The Boolean planner case has an intentional question override and is not
+included in the Phase 1 comparison. The opt-in capture-backed Phase 0A Fuseki
+acceptance exercises representative Member, HouseTerm, collection,
+representation, Committee, Boolean, and count plans; see
+[`poc/nlq/benchmarks/phase-2c-report.md`](../nlq/benchmarks/phase-2c-report.md)
+for the run record and limitations. This completes the Phase 2C compiler and
+controlled-evaluation tranche, not the Phase 2 exit gate: visible plan
+integration and the realistic-question benchmark remain outstanding.
 
 Planner evaluation is a separate controlled path in
 `poc/nlq/planner_benchmark.py` using selected Phase 1 cases, semantic plan
-invariants, and the existing source-coverage checks. It scores planning only;
-it does not generate or execute SPARQL. The path is callable for tests and
-evaluation but is not wired into the normal browser request, so Phase 1 direct
-NL-to-SPARQL behavior is unchanged. Unsupported requests remain unscored/manual
-review because the Phase 2A contract has no explicit unsupported-question
-state. Phase 2B does not complete plan-to-SPARQL generation, planner-driven
-execution, the realistic-question benchmark, data-surface expansion or the
-Phase 2 exit criteria.
+invariants, and the existing source-coverage checks. That Phase 2B path scores
+planning only. The separate Phase 2C path adds generation and execution without
+being wired into normal browser requests. Unsupported requests remain
+unscored/manual review because the Phase 2A contract has no explicit
+unsupported-question state. Phase 2C does not complete visible plan integration,
+the realistic-question benchmark, data-surface expansion or the Phase 2 exit
+criteria.
 The deterministic unsupported-request test injects a supported draft and checks
 only that the manual-review case remains unscored; it does not test whether a
 model recognizes unsupported wording.
