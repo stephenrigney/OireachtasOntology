@@ -12,6 +12,7 @@ from jsonschema import Draft202012Validator
 from poc.nlq.errors import NLQError
 from poc.nlq.member_resolution import (
     UnsupportedLocalEntityType,
+    is_set_valued_member_reference,
     resolve_local_entity_label,
 )
 from poc.nlq.plan_contract import QueryPlanContractError, load_query_plan_contract, validate_query_plan
@@ -769,6 +770,18 @@ def test_member_resolver_uses_exact_local_house_term_context_to_narrow_duplicate
     assert result.state == "resolved"
     assert result.candidates == (type(result.candidates[0])(second, "Michael Collins"),)
     assert len(fuseki.queries) == 4  # name lookup followed by all local context checks
+    evidence = result.contextual_evidence.as_dict(entity_id="member")
+    assert evidence["decision"] == "resolved_by_unique_context_match"
+    assert evidence["rule"] == "select_only_if_exact_context_matches_one_candidate"
+    assert evidence["selectedIri"] == second
+    assert [candidate["iri"] for candidate in evidence["initialCandidates"]] == [
+        first, second, third,
+    ]
+    assert evidence["contextMatches"] == [
+        {"iri": first, "matchedLabels": []},
+        {"iri": second, "matchedLabels": ["28th Dáil"]},
+        {"iri": third, "matchedLabels": []},
+    ]
 
 
 def test_member_resolver_keeps_all_context_matches_ambiguous():
@@ -789,6 +802,233 @@ def test_member_resolver_keeps_all_context_matches_ambiguous():
 
     assert result.state == "ambiguous"
     assert {candidate.iri for candidate in result.candidates} == {first, second}
+    assert result.contextual_evidence.decision == "ambiguous_multiple_context_matches"
+    assert result.contextual_evidence.selected_iri is None
+
+
+@pytest.mark.parametrize(
+    ("question", "set_valued"),
+    [
+        ("Who is Michael Collins?", False),
+        ("Which Members are named Michael Collins?", True),
+        ("How many Members named Michael Collins are there?", True),
+        ("What terms did Michael Collins serve in?", False),
+    ],
+)
+def test_phase1_member_set_valued_intent_is_shared_with_structured_planner(question, set_valued):
+    assert is_set_valued_member_reference(question, "Michael Collins") is set_valued
+
+
+def test_singular_member_questions_remain_ordinary_duplicate_name_ambiguity():
+    first = "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.1997-06-26"
+    second = "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.2016-10-03"
+    cases = [
+        ("Who is Michael Collins?", _output_draft(label="Michael Collins")),
+        ("Which terms did Michael Collins serve in?", {
+            **_output_draft(
+                question="Which terms did Michael Collins serve in?",
+                label="Michael Collins",
+            ),
+            "requirements": [{
+                "id": "membership", "fact": "member_house_term_membership",
+                "subject": {"entity": "member", "type": None},
+                "object": {"entity": None, "type": "DailTerm"},
+            }],
+            "answerShape": {
+                "kind": "entities", "target": None, "entityType": "DailTerm",
+            },
+        }),
+    ]
+    for question, draft in cases:
+        fuseki = LocalResolverFuseki(
+            ((first, "Michael Collins"), (second, "Michael Collins")),
+        )
+        planner, _ = _planner(draft, fuseki)
+
+        result = planner.plan(question)
+
+        assert result.status == "clarification_required"
+        assert result.plan["entities"][0]["resolution"] == "ambiguous"
+        assert len(result.plan["entities"][0]["candidates"]) == 2
+
+
+def test_set_valued_member_context_does_not_narrow_even_inside_local_resolver():
+    first = "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.1997-06-26"
+    second = "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.2016-10-03"
+    fuseki = LocalResolverFuseki(
+        ((first, "Michael Collins"), (second, "Michael Collins")),
+        contexts={
+            first: (("house_term", "28th Dáil@en"),),
+            second: (("house_term", "34th Dáil@en"),),
+        },
+    )
+
+    result = resolve_local_entity_label(
+        "Member", "Michael Collins", fuseki,
+        question_context="Which Members named Michael Collins served in the 28th Dáil?",
+    )
+
+    assert result.state == "ambiguous"
+    assert {candidate.iri for candidate in result.candidates} == {first, second}
+    assert len(fuseki.queries) == 1  # explicit set intent skips contextual narrowing
+    assert result.contextual_evidence is None
+
+
+@pytest.mark.parametrize(
+    ("contextual_rows", "expected_decision", "expected_context_matches"),
+    [
+        (
+            {"first": (("house_term", "1st Dáil@en"),),
+             "second": (("representation", "Limerick West@en"),)},
+            "ambiguous_no_context_match",
+            {"first": [], "second": []},
+        ),
+        (
+            {"first": (("house_term", "28th Dáil@en"),),
+             "second": (("house_term", "28th Dáil@en"),)},
+            "ambiguous_multiple_context_matches",
+            {"first": ["28th Dáil"], "second": ["28th Dáil"]},
+        ),
+    ],
+)
+def test_planner_retains_context_evidence_when_duplicates_remain_ambiguous(
+    contextual_rows, expected_decision, expected_context_matches,
+):
+    first = "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.1997-06-26"
+    second = "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.2016-10-03"
+    question = "What did Michael Collins do in the 28th Dáil?"
+    fuseki = LocalResolverFuseki(
+        ((first, "Michael Collins"), (second, "Michael Collins")),
+        contexts={
+            first: contextual_rows["first"],
+            second: contextual_rows["second"],
+        },
+    )
+    planner, _ = _planner(_output_draft(question=question, label="Michael Collins"), fuseki)
+
+    result = planner.plan(question)
+
+    assert result.status == "clarification_required"
+    assert result.plan["entities"][0]["resolution"] == "ambiguous"
+    assert [candidate["iri"] for candidate in result.plan["entities"][0]["candidates"]] == [
+        first, second,
+    ]
+    [evidence] = result.as_dict()["binding_evidence"]
+    assert evidence["entityId"] == "member"
+    assert evidence["inputLabel"] == "Michael Collins"
+    assert evidence["decision"] == expected_decision
+    assert "selectedIri" not in evidence
+    assert [candidate["iri"] for candidate in evidence["initialCandidates"]] == [
+        first, second,
+    ]
+    assert {
+        item["iri"]: item["matchedLabels"] for item in evidence["contextMatches"]
+    } == {
+        first: expected_context_matches["first"],
+        second: expected_context_matches["second"],
+    }
+
+
+def test_planner_exposes_deterministic_evidence_for_unique_context_binding():
+    first = "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.1919-01-21"
+    second = "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.1997-06-26"
+    third = "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.2016-10-03"
+    question = "What did Michael Collins do in the 28th Dáil from Limerick West?"
+    rows = ((first, "Michael Collins"), (second, "Michael Collins"), (third, "Michael Collins"))
+    contexts = {
+        first: (("house_term", "1st Dáil@en"),),
+        second: (
+            ("house_term", "28th Dáil@en"),
+            ("representation", "Limerick West@en"),
+        ),
+        third: (("house_term", "34th Dáil@en"),),
+    }
+
+    def run(candidate_rows, candidate_contexts):
+        fuseki = LocalResolverFuseki(candidate_rows, contexts=candidate_contexts)
+        planner, _ = _planner(
+            _output_draft(question=question, label="Michael Collins"), fuseki,
+        )
+        return planner.plan(question)
+
+    result = run(rows, contexts)
+    reordered = run(tuple(reversed(rows)), dict(reversed(tuple(contexts.items()))))
+
+    assert result.status == "validated_plan"
+    member = result.plan["entities"][0]
+    assert member["resolution"] == "resolved"
+    assert member["iri"] == second
+    assert "binding_evidence" not in result.plan
+    [evidence] = result.as_dict()["binding_evidence"]
+    assert set(evidence) == {
+        "entityId", "entityType", "inputLabel", "initialCandidates",
+        "contextMatches", "decision", "rule", "selectedIri",
+    }
+    assert evidence["entityType"] == "Member"
+    assert evidence["decision"] == "resolved_by_unique_context_match"
+    assert evidence["rule"] == "select_only_if_exact_context_matches_one_candidate"
+    assert evidence["selectedIri"] == member["iri"]
+    assert [candidate["iri"] for candidate in evidence["initialCandidates"]] == [
+        first, second, third,
+    ]
+    assert [match["matchedLabels"] for match in evidence["contextMatches"]] == [
+        [], ["28th Dáil", "Limerick West"], [],
+    ]
+    assert result.as_dict()["binding_evidence"] == reordered.as_dict()["binding_evidence"]
+
+
+@pytest.mark.parametrize(
+    ("question", "answer_kind"),
+    [
+        ("Which Members are named Michael Collins?", "entities"),
+        ("How many Members named Michael Collins are there?", "count"),
+        (
+            "Which Members named Michael Collins served in the 28th Dáil?",
+            "entities",
+        ),
+    ],
+)
+def test_set_valued_named_member_request_is_non_executable(question, answer_kind):
+    draft = _output_draft(question=question, label="Michael Collins")
+    if answer_kind == "count":
+        draft["requirements"][0]["fact"] = "member_identity"
+        draft["aggregation"] = {
+            "operation": "count",
+            "target": {"requirement": "requested-fact", "participant": "subject"},
+            "groupBy": [],
+        }
+        draft["answerShape"] = {
+            "kind": "count", "target": "aggregation", "entityType": None,
+        }
+    fuseki = LocalResolverFuseki(
+        (
+            ("https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.1997-06-26", "Michael Collins"),
+            ("https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.2016-10-03", "Michael Collins"),
+        ),
+        contexts={
+            "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.1997-06-26": (
+                ("house_term", "28th Dáil@en"),
+            ),
+            "https://data.oireachtas.ie/ie/oireachtas/member/id/Michael-Collins.D.2016-10-03": (
+                ("house_term", "34th Dáil@en"),
+            ),
+        },
+    )
+    planner, _ = _planner(draft, fuseki)
+
+    result = planner.plan(question)
+
+    assert result.status == "set_valued_member_identity"
+    assert result.failure_stage == "entity_resolution"
+    assert result.failure_class == "set_valued_member_identity"
+    assert not result.accepted
+    assert result.plan is None
+    assert result.draft_plan["entities"] == [
+        {"id": "member", "type": "Member", "label": "Michael Collins"},
+    ]
+    assert "no singular local Member IRI was selected" in result.diagnostic
+    assert result.as_dict()["binding_evidence"] == []
+    assert fuseki.queries == []
 
 
 def test_final_phase_2a_validation_runs_for_accepted_plans_and_failure_is_visible(monkeypatch):

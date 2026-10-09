@@ -73,11 +73,51 @@ class LocalEntityCandidate:
 
 
 @dataclass(frozen=True)
+class MemberContextCandidateEvidence:
+    """Question-matched local context labels for one initial Member candidate."""
+
+    iri: str
+    matched_labels: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class MemberContextResolutionEvidence:
+    """Deterministic evidence for narrowing an exact duplicate Member label."""
+
+    input_label: str
+    initial_candidates: tuple[LocalEntityCandidate, ...]
+    context_matches: tuple[MemberContextCandidateEvidence, ...]
+    decision: str
+    selected_iri: str | None = None
+
+    def as_dict(self, *, entity_id: str) -> dict:
+        evidence = {
+            "entityId": entity_id,
+            "entityType": "Member",
+            "inputLabel": self.input_label,
+            "initialCandidates": [
+                {"iri": candidate.iri, "label": candidate.label}
+                for candidate in self.initial_candidates
+            ],
+            "contextMatches": [
+                {"iri": match.iri, "matchedLabels": list(match.matched_labels)}
+                for match in self.context_matches
+            ],
+            "decision": self.decision,
+            "rule": "select_only_if_exact_context_matches_one_candidate",
+        }
+        if self.selected_iri is not None:
+            evidence["selectedIri"] = self.selected_iri
+        return evidence
+
+
+@dataclass(frozen=True)
 class LocalEntityResolution:
     """Exact-label resolution without fuzzy matching or identity merging."""
 
     state: str
     candidates: tuple[LocalEntityCandidate, ...] = ()
+    contextual_evidence: MemberContextResolutionEvidence | None = None
 
 
 @dataclass(frozen=True)
@@ -254,7 +294,13 @@ def resolve_local_entity_label(
         ),
         key=lambda candidate: (_normalise_text(candidate.label), candidate.iri),
     ))
+    contextual_evidence = None
     if entity_type == "Member" and question_context and len(candidates) > 1:
+        # An explicit set of same-name Member identities cannot be converted
+        # into a singular binding by otherwise matching local context.
+        if is_set_valued_member_reference(question_context, label):
+            return LocalEntityResolution("ambiguous", candidates)
+
         # Preserve Phase 1's deterministic HouseTerm/constituency contextual
         # narrowing before reporting duplicate Member labels to the planner.
         enriched = tuple(
@@ -276,11 +322,36 @@ def resolve_local_entity_label(
             if matches_by_iri[candidate.member_iri]
         )
         if len(contextual) == 1:
+            decision = "resolved_by_unique_context_match"
+            selected_iri = contextual[0].iri
+        elif len(contextual) > 1:
+            decision = "ambiguous_multiple_context_matches"
+            selected_iri = None
+        else:
+            decision = "ambiguous_no_context_match"
+            selected_iri = None
+        contextual_evidence = MemberContextResolutionEvidence(
+            input_label=label,
+            initial_candidates=candidates,
+            context_matches=tuple(
+                MemberContextCandidateEvidence(
+                    iri=candidate.member_iri,
+                    matched_labels=tuple(sorted(
+                        matches_by_iri[candidate.member_iri],
+                        key=lambda value: (_normalise_text(value), value),
+                    )),
+                )
+                for candidate in enriched
+            ),
+            decision=decision,
+            selected_iri=selected_iri,
+        )
+        if len(contextual) == 1:
             candidates = contextual
         elif len(contextual) > 1:
             candidates = contextual
     state = "unresolved" if not candidates else "resolved" if len(candidates) == 1 else "ambiguous"
-    return LocalEntityResolution(state, candidates)
+    return LocalEntityResolution(state, candidates, contextual_evidence)
 
 
 def _label_position(question: str, label: str) -> int | None:
@@ -294,7 +365,7 @@ def _label_position(question: str, label: str) -> int | None:
     return match.start() if match else None
 
 
-def _set_valued_member_reference(question: str, label: str) -> bool:
+def is_set_valued_member_reference(question: str, label: str) -> bool:
     """Recognise explicit requests for a set of Member records.
 
     Listing a person's terms or memberships is not enough to make the person
@@ -530,7 +601,7 @@ def resolve_member_ambiguity(
     )
     for mention in mentions:
         candidates = mention["candidates"]
-        if len(candidates) < 2 or _set_valued_member_reference(question, mention["label"]):
+        if len(candidates) < 2 or is_set_valued_member_reference(question, mention["label"]):
             continue
 
         enriched = tuple(

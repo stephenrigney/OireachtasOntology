@@ -540,14 +540,17 @@ entities. A converted final plan is accepted only after Phase 2A validation.
 For duplicate Member labels, exact local HouseTerm/constituency context also
 reuses Phase 1 narrowing: one contextual match resolves, multiple matches remain
 ambiguous, and no match preserves the original ambiguous candidate set. The
-planner does not yet carry Phase 1's explicit set-valued Member-reference gate.
-If a plural request is drafted as a named Member entity, contextual narrowing
-can therefore produce a single resolved record even though the question is
-set-valued. This is a Phase 2B limitation, not support for set-valued identity
-binding. Before Phase 2C binds resolved Member IRIs into SPARQL, it must preserve
-set-valued intent or fail closed, with corresponding benchmark coverage. The
-current final plan also omits the context labels that justified narrowing; make
-that decision inspectable before Phase 2C relies on contextual identity binding.
+pre-2C Member-binding safety tranche reuses Phase 1's explicit set-valued
+Member-reference detector and returns a non-accepted
+`set_valued_member_identity` result when a named Member is requested as a set;
+the schema-v1 semantic plan remains unchanged and no singular IRI is selected.
+Ordinary singular duplicate-name resolution remains deterministic and exact.
+The planner result now carries application-layer `binding_evidence` for
+context-checked duplicates, including the initial candidates, each candidate's
+matched local context labels, the rule and decision, and a selected IRI only
+when exactly one candidate matched. This evidence is generated locally, not by
+the model, and is not part of the semantic plan. Phase 2C plan-to-SPARQL
+generation has not started.
 
 The Phase 2B corrective tranche aligned the strict draft schema and local
 normalizer on participant XOR, kind-specific answer fields, filter values,
@@ -632,10 +635,9 @@ Member-term membership, and duplicate-Michael ambiguity; there were no
 structural-output failures. The two not-scored cases remain the expected
 unsupported-question manual review and unavailable-Bill source-coverage case.
 This accepts the Phase 2B semantic-quality tranche against the controlled
-benchmark. Phase 2C has not started. Before Phase 2C can bind resolved Member
-IRIs, set-valued Member-reference intent must be preserved or fail closed, and
-contextual Member-narrowing evidence must be inspectable; these known
-pre-2C limitations remain open.
+benchmark. The pre-2C Member-binding safety tranche documented above closes the
+known set-valued binding and contextual-evidence gaps. Phase 2C plan-to-SPARQL
+generation has not started.
 
 Planner evaluation is a separate controlled path in
 `poc/nlq/planner_benchmark.py` using selected Phase 1 cases, semantic plan

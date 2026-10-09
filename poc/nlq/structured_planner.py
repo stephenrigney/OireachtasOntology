@@ -19,8 +19,10 @@ from .config import LLM_MAX_OUTPUT_TOKENS, LLM_TIMEOUT_SECONDS
 from .errors import NLQError
 from .member_resolution import (
     LocalEntityResolution,
+    MemberContextResolutionEvidence,
     UnsupportedLocalEntityType,
     _label_position,
+    is_set_valued_member_reference,
     resolve_local_entity_label,
 )
 from .plan_contract import QueryPlanContractError, validate_query_plan, load_query_plan_contract
@@ -60,6 +62,17 @@ class DraftSemanticError(ValueError):
 
 
 @dataclass(frozen=True)
+class PlannerBindingEvidence:
+    """Application-layer explanation of deterministic contextual Member binding."""
+
+    entity_id: str
+    contextual_resolution: MemberContextResolutionEvidence
+
+    def as_dict(self) -> dict[str, Any]:
+        return self.contextual_resolution.as_dict(entity_id=self.entity_id)
+
+
+@dataclass(frozen=True)
 class PlannerResult:
     """Inspectable terminal state of one structured-planner call."""
 
@@ -70,6 +83,7 @@ class PlannerResult:
     failure_class: str | None = None
     diagnostic: str | None = None
     debug_output: str | None = None
+    binding_evidence: tuple[PlannerBindingEvidence, ...] = ()
 
     @property
     def accepted(self) -> bool:
@@ -86,6 +100,7 @@ class PlannerResult:
             "failure_class": self.failure_class,
             "diagnostic": self.diagnostic,
             "debug_output": self.debug_output,
+            "binding_evidence": [evidence.as_dict() for evidence in self.binding_evidence],
         }
 
 
@@ -618,6 +633,51 @@ def _resolution_entity(
     return entity
 
 
+def _planner_binding_evidence(
+    mention: dict[str, Any],
+    resolution: LocalEntityResolution,
+) -> PlannerBindingEvidence | None:
+    evidence = resolution.contextual_evidence
+    if evidence is None:
+        return None
+
+    initial_iris = tuple(candidate.iri for candidate in evidence.initial_candidates)
+    match_iris = tuple(match.iri for match in evidence.context_matches)
+    if len(initial_iris) < 2 or match_iris != initial_iris:
+        raise ValueError("Contextual Member evidence does not match its initial candidate set")
+
+    matched_iris = tuple(match.iri for match in evidence.context_matches if match.matched_labels)
+    resolved_iris = tuple(candidate.iri for candidate in resolution.candidates)
+    if evidence.decision == "resolved_by_unique_context_match":
+        if (
+            len(matched_iris) != 1
+            or evidence.selected_iri != matched_iris[0]
+            or resolution.state != "resolved"
+            or resolved_iris != (evidence.selected_iri,)
+        ):
+            raise ValueError("Selected Member IRI disagrees with contextual resolution evidence")
+    elif evidence.decision == "ambiguous_multiple_context_matches":
+        if (
+            len(matched_iris) < 2
+            or evidence.selected_iri is not None
+            or resolution.state != "ambiguous"
+            or resolved_iris != matched_iris
+        ):
+            raise ValueError("Ambiguous Member candidates disagree with contextual evidence")
+    elif evidence.decision == "ambiguous_no_context_match":
+        if (
+            matched_iris
+            or evidence.selected_iri is not None
+            or resolution.state != "ambiguous"
+            or resolved_iris != initial_iris
+        ):
+            raise ValueError("Unmatched Member candidates disagree with contextual evidence")
+    else:
+        raise ValueError(f"Unsupported contextual Member decision {evidence.decision!r}")
+
+    return PlannerBindingEvidence(mention["id"], evidence)
+
+
 class StructuredPlanner:
     """Interpret, locally resolve, and validate one semantic plan."""
 
@@ -693,7 +753,27 @@ class StructuredPlanner:
                 diagnostic=str(error), debug_output=format_debug_text(output),
             )
 
+        set_valued_members = [
+            mention for mention in draft["entities"]
+            if mention["type"] == "Member"
+            and is_set_valued_member_reference(question, mention["label"])
+        ]
+        if set_valued_members:
+            labels = ", ".join(repr(mention["label"]) for mention in set_valued_members)
+            return PlannerResult(
+                "set_valued_member_identity",
+                draft_plan=draft,
+                failure_stage="entity_resolution",
+                failure_class="set_valued_member_identity",
+                diagnostic=(
+                    "Query-plan schema v1 cannot represent set-valued identity binding "
+                    f"for named Member reference(s) {labels}; no singular local Member "
+                    "IRI was selected."
+                ),
+            )
+
         resolved_entities = []
+        binding_evidence = []
         for mention in draft["entities"]:
             try:
                 resolution = resolve_local_entity_label(
@@ -701,24 +781,30 @@ class StructuredPlanner:
                     supported_predicates=self.supported_predicates,
                     question_context=question,
                 )
+                evidence = _planner_binding_evidence(mention, resolution)
+                if evidence is not None:
+                    binding_evidence.append(evidence)
                 resolved_entities.append(_resolution_entity(mention, resolution))
             except UnsupportedLocalEntityType as error:
                 return PlannerResult(
                     "entity_resolution_failure", draft_plan=draft,
                     failure_stage="entity_resolution",
                     failure_class="unsupported_entity_resolution", diagnostic=str(error),
+                    binding_evidence=tuple(binding_evidence),
                 )
             except NLQError as error:
                 return PlannerResult(
                     "source_data_prerequisite_unavailable", draft_plan=draft,
                     failure_stage="entity_resolution",
                     failure_class="source_data_prerequisite_unavailable", diagnostic=str(error),
+                    binding_evidence=tuple(binding_evidence),
                 )
             except ValueError as error:
                 return PlannerResult(
                     "entity_resolution_failure", draft_plan=draft,
                     failure_stage="entity_resolution", failure_class="entity_resolution_failure",
                     diagnostic=str(error),
+                    binding_evidence=tuple(binding_evidence),
                 )
 
         final_plan = {
@@ -733,7 +819,7 @@ class StructuredPlanner:
             return PlannerResult(
                 "final_plan_validation_failure", draft_plan=draft,
                 failure_stage="final_validation", failure_class="final_plan_validation_failure",
-                diagnostic=str(error),
+                diagnostic=str(error), binding_evidence=tuple(binding_evidence),
             )
 
         resolutions = {entity["resolution"] for entity in resolved_entities}
@@ -743,4 +829,7 @@ class StructuredPlanner:
             status = "unresolved_entity"
         else:
             status = "validated_plan"
-        return PlannerResult(status, plan=accepted_plan, draft_plan=draft)
+        return PlannerResult(
+            status, plan=accepted_plan, draft_plan=draft,
+            binding_evidence=tuple(binding_evidence),
+        )
