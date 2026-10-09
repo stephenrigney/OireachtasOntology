@@ -1,6 +1,6 @@
 # Entity Linking — Bounded Evaluation Plan
 
-**Status:** Design plan for review; implementation not yet authorised.
+**Status:** Bounded PoC implementation completed under the task authorization; production integration remains unauthorised.
 **Repository:** `stephenrigney/OireachtasOntology`
 **Working branch:** `entity-linking-evaluation`
 **Decision gate:** Review evidence before any production integration or corpus expansion.

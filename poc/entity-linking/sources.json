@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "sample_seed": "entity-linking-sample-v1",
+  "sample_size": 736,
+  "selection": "Reuse the seven hash-pinned EuroVoc debate Works and their per-Work development/evaluation allocation. Within each Work, rank stable transformed Speech IRIs by SHA-256(seed, source checksum, contribution IRI), retaining source order. No Work crosses splits.",
+  "maximum_contributions": 1000,
+  "sources": [
+    {
+      "id": "committee-health-2009",
+      "label": "Joint Committee on Health and Children, 2009-01-29",
+      "official_url": "https://data.oireachtas.ie/akn/ie/debateRecord/joint_committee_on_health_and_children/2009-01-29/debate/mul@/main.xml",
+      "fixture": null,
+      "cache_filename": "2009-01-29_debate_joint_committee_on_health_and_children.xml",
+      "sha256": "62192e167006b3a974654be417c62e98da02fd1c77da210049f1f8fb7f132ff3",
+      "bytes": 292276,
+      "expected_speeches": 313,
+      "sample_count": 64,
+      "split": "evaluation",
+      "period": "historical-pre-2011",
+      "body_kind": "committee",
+      "house_code": null,
+      "house_term": null
+    },
+    {
+      "id": "dail-2025-02-27",
+      "label": "Dáil debate, 2025-02-27",
+      "official_url": "https://data.oireachtas.ie/akn/ie/debateRecord/dail/2025-02-27/debate/mul@/main.xml",
+      "fixture": null,
+      "cache_filename": "2025-02-27_debate_dail.xml",
+      "sha256": "fb5167c2cefb3d468c03ac0418a46de8a71c2cda078daec859d8ed4a454380e6",
+      "bytes": 624644,
+      "expected_speeches": 472,
+      "sample_count": 180,
+      "split": "development",
+      "period": "post-2011",
+      "body_kind": "dail",
+      "house_code": "dail",
+      "house_term": 34
+    },
+    {
+      "id": "seanad-2025-02-27",
+      "label": "Seanad debate, 2025-02-27",
+      "official_url": "https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2025-02-27/debate/mul@/main.xml",
+      "fixture": null,
+      "cache_filename": "2025-02-27_debate_seanad.xml",
+      "sha256": "aff86778d8f0804224c8c0042c8fefe27060135843c3fd1a311d0d1fee14d0eb",
+      "bytes": 165299,
+      "expected_speeches": 102,
+      "sample_count": 60,
+      "split": "evaluation",
+      "period": "post-2011",
+      "body_kind": "seanad",
+      "house_code": "seanad",
+      "house_term": 27
+    },
+    {
+      "id": "committee-finance-2026-09-30",
+      "label": "Joint Committee on Finance, Public Expenditure, Public Service Reform and Digitalisation, 2026-09-30",
+      "official_url": "https://data.oireachtas.ie/akn/ie/debateRecord/joint_committee_on_finance_public_expenditure_public_service_reform_and_digitalisation_and_taoiseach/2026-09-30/debate/mul@/main.xml",
+      "fixture": null,
+      "cache_filename": "2026-09-30_debate_joint_committee_on_finance_public_expenditure_public_service_reform_and_digitalisation_and_taoiseach.xml",
+      "sha256": "53d196077a672cd36fdea8e28b76e1950dff6e836eb0c5d73719cc3a2e453ab7",
+      "bytes": 31489,
+      "expected_speeches": 36,
+      "sample_count": 36,
+      "split": "development",
+      "period": "post-2011",
+      "body_kind": "committee",
+      "house_code": null,
+      "house_term": null
+    },
+    {
+      "id": "seanad-2026-09-30",
+      "label": "Seanad debate, 2026-09-30",
+      "official_url": "https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2026-09-30/debate/mul@/main.xml",
+      "fixture": null,
+      "cache_filename": "2026-09-30_debate_seanad.xml",
+      "sha256": "bf3c338fa4cb2b230d4f180e2af5189a903662660bb6732c1ae93c53e9c45eb2",
+      "bytes": 333151,
+      "expected_speeches": 103,
+      "sample_count": 60,
+      "split": "development",
+      "period": "post-2011",
+      "body_kind": "seanad",
+      "house_code": "seanad",
+      "house_term": 27
+    },
+    {
+      "id": "committee-pac-2026-09-24",
+      "label": "Committee of Public Accounts, 2026-09-24",
+      "official_url": "https://data.oireachtas.ie/akn/ie/debateRecord/committee_of_public_accounts/2026-09-24/debate/mul@/main.xml",
+      "fixture": "data/debates_examples/committee_public_accounts_2026-09-24.akn.xml",
+      "cache_filename": "committee_public_accounts_2026-09-24.akn.xml",
+      "sha256": "690dada15afa1cb76ece7dd8387b973b00b43804023521b9ffb821d8944ff60e",
+      "bytes": 408509,
+      "expected_speeches": 929,
+      "sample_count": 160,
+      "split": "evaluation",
+      "period": "post-2011",
+      "body_kind": "committee",
+      "house_code": null,
+      "house_term": null
+    },
+    {
+      "id": "dail-2026-02-25",
+      "label": "Dáil debate, 2026-02-25",
+      "official_url": "https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-02-25/debate/mul@/main.xml",
+      "fixture": "data/debates_examples/dail_2026-02-26.akn.xml",
+      "cache_filename": "dail_2026-02-26.akn.xml",
+      "sha256": "1e6762bae013b22c37a4167f630530189bbf8f7057214b0676e699d97ed946ad",
+      "bytes": 964819,
+      "expected_speeches": 428,
+      "sample_count": 176,
+      "split": "evaluation",
+      "period": "post-2011",
+      "body_kind": "dail",
+      "house_code": "dail",
+      "house_term": 34
+    }
+  ],
+  "identity_inputs": {
+    "member": {
+      "path": "data/api_examples/member.json",
+      "sha256": "a74c366c1a49c6b1011b76a8c994002d469c927b4e6b9456803c144a4f051d93",
+      "bytes": 19975,
+      "count": 1,
+      "authority": "validated preserved Members API example; one Member only, not a complete Member census"
+    },
+    "bill": {
+      "path": "data/api_examples/bill.json",
+      "sha256": "52ad74759b45f8bee5c0e6ee8eb2fb8d3cf85cbad5090747d2cd8145a2527a03",
+      "bytes": 37054,
+      "count": 1,
+      "authority": "validated preserved Bill API example; one Bill only, not a complete Bill census"
+    },
+    "houses": {
+      "path": "data/api_examples/houses.json",
+      "sha256": "b1f928b74526d7e5186a3ad68a7192a742f1c05eff0543503f78326cf18d21c1",
+      "bytes": 1854,
+      "authority": "validated preserved Houses API example"
+    },
+    "committee_owner": {
+      "path": "tests/fixtures/committee-owner.json",
+      "sha256": "8a888c2dfba038bff30366b2fe25ec845af9566b59029f6481c42ea2ec0a2df0",
+      "bytes": 439,
+      "authority": "validated Committee owner fixture; it does not resolve every sampled committee Work"
+    },
+    "registry": {
+      "path": "registries/ministerial-office-registry.json",
+      "sha256": "00f9cc73f8e82fe2560e931b9ac07a605ad27e0f41186017f828db9b381f1d5a",
+      "bytes": 3589,
+      "authority": "positively reviewed local NamedOffice/AdministrativeUnit registry"
+    }
+  },
+  "note": "Five source Works are acquired from the exact official URL allowlist when absent; two are hash-verified repository AKN examples. Full transcript bytes remain outside Git."
+}

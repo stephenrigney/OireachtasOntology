@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "frozen_before_method_comparison": true,
+  "reviewer_policy": "Prefer two independent human reviewers for a future confirmatory study. For this bounded PoC, agent review is allowed only as explicitly provisional evidence; it is not a human gold standard or independent human validation.",
+  "blinding": "Prepare the evaluation review packet before running either resolver. The packet contains deterministic hash-random contributions plus a category-name-stratified selection derived from the frozen identity catalogue; it contains no method outputs, candidate IRIs, or predicted decisions. Reviewers assess the text without seeing method results.",
+  "sampling": {
+    "random_per_evaluation_work": 4,
+    "name_stratified_max_per_category": 4,
+    "seed": "entity-linking-blind-review-v1",
+    "cap": 64,
+    "limitations": "The reviewed set is small and intentionally includes both random contributions and identity-name opportunities. It is not representative of the full debate corpus; report its strata and denominators."
+  },
+  "mention_labels": [
+    "explicit-identity-mention",
+    "generic-unresolved-reference",
+    "ambiguous-office-or-holder",
+    "out-of-registry-named-entity",
+    "no-in-scope-mention",
+    "uncertain"
+  ],
+  "resolution_labels": [
+    "correct-existing-identity",
+    "wrong-existing-identity",
+    "ambiguous",
+    "out-of-registry",
+    "abstained-correctly",
+    "abstained-incorrectly",
+    "not-applicable"
+  ],
+  "detection_metrics": "For reviewed spans only, count exact boundary/category matches against explicit-identity-mention, generic-unresolved-reference, ambiguous-office-or-holder, and out-of-registry-named-entity annotations. Report each label separately as well as combined TP/FP/FN counts; no-in-scope-mention and uncertain cases are not positive spans. Do not extrapolate beyond reviewed contributions.",
+  "resolution_metrics": "For reviewed explicit named mentions with an existing supported target, align predictions only within the same contribution/category when spans are exact or one span fully contains the other; ambiguous alignments count as misses. Compare accepted target IRIs with the reviewed target and report correct, wrong, ambiguous, out-of-registry, abstained and missed separately. Keep exact-boundary detection metrics independent. Precision uses all accepted resolved links in reviewed contributions (unsupported links count as incorrect); coverage is resolved/eligible reviewed mentions. Uncertain labels and explicit references without a supported target are excluded from target-resolution denominators and reported separately.",
+  "incremental_retrieval": "Report each frozen question's graph, structured-only, and offline exact-phrase results. A result is incremental only if it is not already returned by the equivalent structured relationship (including :speaker/participation and a source-supported Bill section link). Exact-phrase search is an offline lexical comparator, not a measured Elasticsearch deployment. Report relevant/irrelevant/uncertain reviewed results separately; counts alone are not utility evidence.",
+  "provenance_and_safety": [
+    "Preserve exact source Work, contribution IRI, source hash, source pointer, text hash, code-point offsets and surface form.",
+    "Never put complete transcript text in RDF, Git, or durable evaluation reports.",
+    "Only validated existing owner or registry IRIs may be resolution targets.",
+    "A speaker, participation, Bill section, source role, officeholder, or thematic relation is not itself evidence of a transcript mention.",
+    "Generic 'the Minister', 'the Deputy', 'the Bill', and 'the Department' are abstentions unless a unique source-local antecedent is demonstrable.",
+    "Record every ambiguity, abstention, out-of-registry case, and method failure; do not tune on evaluation labels."
+  ]
+}

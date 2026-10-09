@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "frozen_before_method_comparison": true,
+  "freeze_policy": "Questions and relevance rules are fixed before either resolver is run. All queries are restricted to evaluation-split contributions and use only target IRIs in the validated local identity snapshot.",
+  "questions": [
+    {
+      "id": "members-mentioned-not-just-speaking",
+      "category": "Member",
+      "question": "Which evaluation-split contributions explicitly name Timmy Dooley, excluding contributions where he is already the structured speaker? What HouseTerm membership relationships can be joined from the mention?",
+      "target_iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12",
+      "structured_baseline": "Direct :speaker and ELI-DL participation-person relations in the Debate graph; these are not transcript-mention assertions.",
+      "full_text_query": "Timmy Dooley",
+      "relationship_join": "members:hasMembersMembership / members:inHouseTerm / existing HouseTerm houseCode and termNo",
+      "relevance_rule": "A returned contribution is relevant only if the transcript contains an explicit, entity-directed mention of this Member. A structured speaker relation is recorded as pre-existing information and excluded from incremental-result totals; it is not used as a substitute for a text mention."
+    },
+    {
+      "id": "members-historical-validity",
+      "category": "Member",
+      "question": "Which sampled contributions mention this Member during a period supported by the existing membership record, and what historic HouseTerm can be joined?",
+      "target_iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12",
+      "structured_baseline": "The Debate graph's existing speaker/participation links and the Member owner's dated memberships.",
+      "full_text_query": "Timmy Dooley",
+      "relationship_join": "dated Member membership / HouseTerm / enduring House",
+      "relevance_rule": "Temporal identity support must come from a validated membership interval; a name-only match outside those intervals is an abstention/error case, not a historical identity assertion."
+    },
+    {
+      "id": "bills-finance-bill-2025",
+      "category": "Bill",
+      "question": "Which evaluation-split contributions explicitly identify Finance Bill 2025 (Bill 2025/60), and what status or legislative-process relationships can be joined?",
+      "target_iri": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/60",
+      "structured_baseline": "DebateSection :refersToEvent links, if present and joined to the existing Bill graph; the Debate's section title alone is not a Bill identity.",
+      "full_text_query": "Finance Bill 2025",
+      "relationship_join": "Bill Work / eli-dl:LegislativeProcess / process_status / latest_activity",
+      "relevance_rule": "Exact title/identifier wording is a mention candidate. Do not resolve against a Bill identity before the first source-supported legislative event; generic 'the Bill' remains unresolved without a unique source-local antecedent."
+    },
+    {
+      "id": "bills-generic-bill-abstention",
+      "category": "Bill",
+      "question": "Where do sampled contributions refer only to 'the Bill', and does the resolver correctly abstain instead of selecting Finance Bill 2025 from topic or debate context?",
+      "target_iri": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/60",
+      "structured_baseline": "Existing Bill section links only; no identity is inferred from generic wording.",
+      "full_text_query": "the Bill",
+      "relationship_join": "No Bill join is valid unless an explicit, unique source-local antecedent is demonstrated.",
+      "relevance_rule": "A generic Bill reference is a detected unresolved mention. Linking it to the sole candidate in this intentionally tiny registry is a false resolution."
+    },
+    {
+      "id": "offices-taoiseach-office-vs-holder",
+      "category": "NamedOffice",
+      "question": "Which evaluation contributions explicitly refer to the Taoiseach office as an office, rather than merely naming or referring to its incumbent, and what office-type relationship can be joined?",
+      "target_iri": "https://data.oireachtas.ie/office/o-000001",
+      "structured_baseline": "No Debate transcript-mention predicate exists; existing Member office holdings are separate source facts and do not assert that a contribution mentions the office.",
+      "full_text_query": "Taoiseach",
+      "relationship_join": "NamedOffice / members:hasRoleType / registered OfficeType",
+      "relevance_rule": "A bare title can denote an office-holder. Accept only an explicit office/appointment context with a valid registry alias and date; otherwise retain an abstention."
+    },
+    {
+      "id": "offices-finance-office-headship",
+      "category": "NamedOffice",
+      "question": "Which evaluation contributions unambiguously discuss the Minister for Finance office, and which reviewed AdministrativeUnit does that office head?",
+      "target_iri": "https://data.oireachtas.ie/office/o-000003",
+      "structured_baseline": "The reviewed office-to-unit relationship exists independently of speech text; there is no structured Debate-to-office mention link.",
+      "full_text_query": "Minister for Finance",
+      "relationship_join": "members:headsAdministrativeUnit to the existing Department of Finance identity",
+      "relevance_rule": "A person/title metonym is ambiguous unless local wording establishes the institutional office as the referent. Respect the registry alias's candidate-matching validity start; it is not an office-establishment date."
+    },
+    {
+      "id": "administrative-units-department-finance",
+      "category": "AdministrativeUnit",
+      "question": "Which evaluation contributions explicitly name the Department of Finance, and which reviewed ministerial office has the existing headship relation to it?",
+      "target_iri": "https://data.oireachtas.ie/administrative-unit/u-000001",
+      "structured_baseline": "No Debate transcript-mention relation exists. Do not infer a department from general finance subject matter.",
+      "full_text_query": "Department of Finance",
+      "relationship_join": "reverse members:headsAdministrativeUnit to the reviewed Minister for Finance office",
+      "relevance_rule": "The explicit reviewed unit name is a positive mention; similar administrative bodies and unnamed/generic Departments remain unresolved."
+    },
+    {
+      "id": "administrative-units-generic-department",
+      "category": "AdministrativeUnit",
+      "question": "Where do contributions refer only to 'the Department', and does the resolver avoid assigning that expression to the Department of Finance without a unique local antecedent?",
+      "target_iri": "https://data.oireachtas.ie/administrative-unit/u-000001",
+      "structured_baseline": "No structured Debate-to-AdministrativeUnit mention relation exists.",
+      "full_text_query": "the Department",
+      "relationship_join": "No unit relationship is valid without an explicit unique identity or antecedent.",
+      "relevance_rule": "Generic Department references are detected as unresolved by default; topic similarity is not identity evidence."
+    }
+  ]
+}
