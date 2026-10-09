@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "status": "evidence-selection-only",
+  "purpose": "Record exact official Debates source objects selected for reproducible local Query Service development-data evaluation.",
+  "constraints": [
+    "This manifest is not a complete-corpus assertion, authoritative source inventory, or production-ingestion instruction.",
+    "Replay requires the exact object to be present in the local immutable raw store and verified against source_sha256.",
+    "This selection does not implement or extend development-bootstrap source selection."
+  ],
+  "sources": [
+    {
+      "endpoint": "debates",
+      "house_or_committee": "dail",
+      "date": "2015-07-02",
+      "source_url": "https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/debate/mul@/main.xml",
+      "source_sha256": "720bf72e40ed824c9d01efc8a919713e524e6b058794e75fab56c20b6858fff5",
+      "byte_length": 905547,
+      "raw_object_key": "debates/sha256/72/720bf72e40ed824c9d01efc8a919713e524e6b058794e75fab56c20b6858fff5.xml",
+      "work_iri": "https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/debate",
+      "graph_iri": "https://data.oireachtas.ie/graph/debate/dail/2015-07-02/debate"
+    },
+    {
+      "endpoint": "debates",
+      "house_or_committee": "seanad",
+      "date": "2015-07-02",
+      "source_url": "https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2015-07-02/debate/mul@/main.xml",
+      "source_sha256": "6e2920af4b97aa0f692162f9fcd94324a18a1c26495399e8600a5ca450d762c0",
+      "byte_length": 230459,
+      "raw_object_key": "debates/sha256/6e/6e2920af4b97aa0f692162f9fcd94324a18a1c26495399e8600a5ca450d762c0.xml",
+      "work_iri": "https://data.oireachtas.ie/akn/ie/debateRecord/seanad/2015-07-02/debate",
+      "graph_iri": "https://data.oireachtas.ie/graph/debate/seanad/2015-07-02/debate"
+    },
+    {
+      "endpoint": "debates",
+      "house_or_committee": "committee_of_public_accounts",
+      "date": "2026-09-24",
+      "source_url": "https://data.oireachtas.ie/akn/ie/debateRecord/committee_of_public_accounts/2026-09-24/debate/mul@/main.xml",
+      "source_sha256": "690dada15afa1cb76ece7dd8387b973b00b43804023521b9ffb821d8944ff60e",
+      "byte_length": 408509,
+      "raw_object_key": "debates/sha256/69/690dada15afa1cb76ece7dd8387b973b00b43804023521b9ffb821d8944ff60e.xml",
+      "work_iri": "https://data.oireachtas.ie/akn/ie/debateRecord/committee_of_public_accounts/2026-09-24/debate",
+      "graph_iri": "https://data.oireachtas.ie/graph/debate/committee_of_public_accounts/2026-09-24/debate"
+    }
+  ]
+}
