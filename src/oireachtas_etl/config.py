@@ -34,6 +34,8 @@ class Settings:
     members_api_url: str = MEMBERS_API_URL
     core_state_db_file: Path = CORE_STATE_DB_FILE
     reconciliation_state_db_file: Path = RECONCILIATION_STATE_DB_FILE
+    office_occurrence_state_db_file: Path = OFFICE_OCCURRENCE_STATE_DB_FILE
+    bill_sponsor_state_db_file: Path = BILL_SPONSOR_STATE_DB_FILE
     members_legacy_state_file: Path = MEMBERS_LEGACY_STATE_FILE
     bills_api_url: str = BILLS_API_URL
     bills_legacy_state_file: Path = BILLS_LEGACY_STATE_FILE
@@ -42,10 +44,20 @@ class Settings:
     fuseki_sparql_url: str | None = None
     fuseki_user: str | None = None
     fuseki_password: str | None = None
+    operation_lock_file: Path | None = None
     limit: int = 100
     bills_cursor_overlap_seconds: int = 3600
     retries: int = 3
     timeout: float = 30.0
+    external_http_retries: int = 3
+    external_http_backoff_base_seconds: float = 0.5
+    external_http_backoff_max_seconds: float = 8.0
+    wikidata_cache_ttl_seconds: float = 300.0
+    wikidata_cache_max_entries: int = 256
+    wikidata_requests_per_second: float = 2.0
+    dbpedia_cache_ttl_seconds: float = 300.0
+    dbpedia_cache_max_entries: int = 128
+    dbpedia_requests_per_second: float = 1.0
     ontology_version: str = "agents.owl.ttl@phase-1-houses-2026"
     mapping_version: str = "houses_mapping.csv@phase-1-houses-2026"
 
@@ -59,6 +71,10 @@ class Settings:
             core_state_db_file=Path(os.getenv("OIR_ETL_STATE_DB", str(cls.core_state_db_file))),
             reconciliation_state_db_file=Path(os.getenv(
                 "OIR_RECONCILIATION_STATE_DB", str(cls.reconciliation_state_db_file))),
+            office_occurrence_state_db_file=Path(os.getenv(
+                "OIR_OFFICE_OCCURRENCE_STATE_DB", str(OFFICE_OCCURRENCE_STATE_DB_FILE))),
+            bill_sponsor_state_db_file=Path(os.getenv(
+                "OIR_BILL_SPONSOR_STATE_DB", str(BILL_SPONSOR_STATE_DB_FILE))),
             members_legacy_state_file=Path(os.getenv("OIR_MEMBERS_STATE_FILE", str(cls.members_legacy_state_file))),
             bills_api_url=os.getenv("OIR_BILLS_API_URL", cls.bills_api_url),
             bills_legacy_state_file=Path(os.getenv("OIR_BILLS_STATE_FILE", str(cls.bills_legacy_state_file))),
@@ -67,10 +83,23 @@ class Settings:
             fuseki_sparql_url=os.getenv("OIR_FUSEKI_SPARQL_URL"),
             fuseki_user=os.getenv("OIR_FUSEKI_USER"),
             fuseki_password=os.getenv("OIR_FUSEKI_PASSWORD"),
+            operation_lock_file=(Path(os.environ["OIR_OPERATION_LOCK_FILE"])
+                                 if os.getenv("OIR_OPERATION_LOCK_FILE") else None),
             limit=int(os.getenv("OIR_API_LIMIT", "100")),
             bills_cursor_overlap_seconds=int(os.getenv("OIR_BILLS_CURSOR_OVERLAP_SECONDS", "3600")),
             retries=int(os.getenv("OIR_API_RETRIES", "3")),
             timeout=float(os.getenv("OIR_API_TIMEOUT", "30")),
+            external_http_retries=int(os.getenv("OIR_EXTERNAL_HTTP_RETRIES", "3")),
+            external_http_backoff_base_seconds=float(os.getenv(
+                "OIR_EXTERNAL_HTTP_BACKOFF_BASE_SECONDS", "0.5")),
+            external_http_backoff_max_seconds=float(os.getenv(
+                "OIR_EXTERNAL_HTTP_BACKOFF_MAX_SECONDS", "8")),
+            wikidata_cache_ttl_seconds=float(os.getenv("OIR_WIKIDATA_CACHE_TTL_SECONDS", "300")),
+            wikidata_cache_max_entries=int(os.getenv("OIR_WIKIDATA_CACHE_MAX_ENTRIES", "256")),
+            wikidata_requests_per_second=float(os.getenv("OIR_WIKIDATA_REQUESTS_PER_SECOND", "2")),
+            dbpedia_cache_ttl_seconds=float(os.getenv("OIR_DBPEDIA_CACHE_TTL_SECONDS", "300")),
+            dbpedia_cache_max_entries=int(os.getenv("OIR_DBPEDIA_CACHE_MAX_ENTRIES", "128")),
+            dbpedia_requests_per_second=float(os.getenv("OIR_DBPEDIA_REQUESTS_PER_SECOND", "1")),
             ontology_version=os.getenv("OIR_ONTOLOGY_VERSION", cls.ontology_version),
             mapping_version=os.getenv("OIR_MAPPING_VERSION", cls.mapping_version),
         )

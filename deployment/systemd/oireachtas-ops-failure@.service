@@ -1,0 +1,6 @@
+[Unit]
+Description=Record failed Oireachtas operational unit %I
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/logger --priority user.err --tag oireachtas-ops "Scheduled unit %I failed; inspect journalctl -u %I and run `oir-ops backup check` for recovery-point status."

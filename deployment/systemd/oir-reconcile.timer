@@ -1,0 +1,13 @@
+[Unit]
+Description=Daily external identity reconciliation timer
+Documentation=file:/opt/oireachtas-etl/documentation/production-operations.md
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+RandomizedDelaySec=15m
+AccuracySec=1m
+Unit=oir-reconcile.service
+
+[Install]
+WantedBy=timers.target

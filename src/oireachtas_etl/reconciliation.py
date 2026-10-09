@@ -8,11 +8,18 @@ from __future__ import annotations
 import hashlib
 import inspect
 import json
+import math
+import random
 import re
+import socket
 import sqlite3
+import threading
+import time
+from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote, unquote, urlsplit
 from urllib.request import Request, urlopen
 
@@ -31,6 +38,7 @@ WIKIPEDIA = "https://en.wikipedia.org/wiki/"
 DBPEDIA = "https://dbpedia.org/resource/"
 OFFICE_BASE = "https://data.oireachtas.ie/office/"
 STATES = frozenset(("accepted", "rejected", "ambiguous", "pending"))
+TRANSIENT_HTTP_STATUSES = frozenset({408, 425, 429, 500, 502, 503, 504})
 
 # This allow-list is the complete initial institutional scope.  In particular,
 # neither Government resources nor numbered HouseTerms are valid policy inputs.
@@ -1261,18 +1269,213 @@ def load_review(path: Path) -> tuple[dict[str, dict], str]:
     return decisions, _hash(value)
 
 
+@dataclass(frozen=True)
+class ExternalServicePolicy:
+    """In-process response-cache and request-rate policy for one authority."""
+
+    cache_ttl_seconds: float = 300.0
+    cache_max_entries: int = 256
+    requests_per_second: float = 1.0
+
+
+class ExternalHttpTransport:
+    """Small command-scoped HTTP cache, rate limiter and bounded retry layer.
+
+    Only successful response bodies are cached, in memory, for the lifetime of
+    the reconciliation process. No response or scheduling state is persisted.
+    """
+
+    def __init__(self, *, retries: int = 3, backoff_base_seconds: float = 0.5,
+                 backoff_max_seconds: float = 8.0,
+                 service_policies: dict[str, ExternalServicePolicy] | None = None):
+        if isinstance(retries, bool) or not isinstance(retries, int) or not 0 <= retries <= 10:
+            raise ValueError("external HTTP retries must be an integer from 0 through 10")
+        if (not math.isfinite(backoff_base_seconds) or not math.isfinite(backoff_max_seconds)
+                or backoff_base_seconds < 0 or backoff_max_seconds < 0
+                or backoff_base_seconds > backoff_max_seconds):
+            raise ValueError("external HTTP backoff settings must be finite, non-negative, and ordered")
+        policies = service_policies or {
+            "wikidata": ExternalServicePolicy(300.0, 256, 2.0),
+            "dbpedia": ExternalServicePolicy(300.0, 128, 1.0),
+        }
+        for service, policy in policies.items():
+            if (not isinstance(service, str) or not service or not isinstance(policy, ExternalServicePolicy)
+                    or not math.isfinite(policy.cache_ttl_seconds)
+                    or not math.isfinite(policy.requests_per_second)
+                    or policy.cache_ttl_seconds < 0 or policy.requests_per_second < 0
+                    or isinstance(policy.cache_max_entries, bool)
+                    or not isinstance(policy.cache_max_entries, int)
+                    or policy.cache_max_entries < 0):
+                raise ValueError("invalid external HTTP policy for " + str(service))
+        self.retries = retries
+        self.backoff_base_seconds = backoff_base_seconds
+        self.backoff_max_seconds = backoff_max_seconds
+        self.service_policies = dict(policies)
+        self._cache: OrderedDict[tuple, tuple[float, bytes]] = OrderedDict()
+        self._last_request: dict[str, float] = {}
+        self._lock = threading.Lock()
+        self._metrics = {
+            service: {"requests": 0, "cache_hits": 0, "cache_misses": 0,
+                      "retries": 0, "failures": 0, "rate_limit_wait_seconds": 0.0}
+            for service in self.service_policies
+        }
+
+    @staticmethod
+    def _request_key(service: str, request: Request) -> tuple:
+        headers = tuple(sorted((key.lower(), str(value)) for key, value in request.header_items()))
+        body = request.data if request.data is not None else b""
+        return service, request.get_method(), request.full_url, headers, body
+
+    def _cached(self, service: str, key: tuple, policy: ExternalServicePolicy) -> bytes | None:
+        now = time.monotonic()
+        with self._lock:
+            found = self._cache.get(key)
+            if found is None:
+                self._metrics[service]["cache_misses"] += 1
+                return None
+            expires_at, body = found
+            if expires_at <= now:
+                del self._cache[key]
+                self._metrics[service]["cache_misses"] += 1
+                return None
+            self._cache.move_to_end(key)
+            self._metrics[service]["cache_hits"] += 1
+            return body
+
+    def _cache_response(self, service: str, key: tuple, body: bytes,
+                        policy: ExternalServicePolicy) -> None:
+        if policy.cache_ttl_seconds <= 0 or policy.cache_max_entries <= 0:
+            return
+        with self._lock:
+            self._cache[key] = (time.monotonic() + policy.cache_ttl_seconds, body)
+            self._cache.move_to_end(key)
+            service_entries = sum(1 for cache_key in self._cache if cache_key[0] == service)
+            while service_entries > policy.cache_max_entries:
+                oldest = next(cache_key for cache_key in self._cache if cache_key[0] == service)
+                del self._cache[oldest]
+                service_entries -= 1
+
+    def _acquire(self, service: str, policy: ExternalServicePolicy) -> None:
+        if policy.requests_per_second <= 0:
+            return
+        interval = 1.0 / policy.requests_per_second
+        with self._lock:
+            now = time.monotonic()
+            previous = self._last_request.get(service)
+            wait = max(0.0, previous + interval - now) if previous is not None else 0.0
+            if wait:
+                time.sleep(wait)
+                self._metrics[service]["rate_limit_wait_seconds"] += wait
+                now = time.monotonic()
+            self._last_request[service] = now
+
+    def _retry_delay(self, failed_attempt: int) -> float:
+        ceiling = min(self.backoff_max_seconds,
+                      self.backoff_base_seconds * (2 ** max(0, failed_attempt - 1)))
+        return random.uniform(0.0, ceiling) if ceiling else 0.0
+
+    def _increment(self, service: str, counter: str) -> None:
+        with self._lock:
+            self._metrics[service][counter] += 1
+
+    @staticmethod
+    def _is_transient(error: Exception) -> bool:
+        if isinstance(error, HTTPError):
+            return error.code in TRANSIENT_HTTP_STATUSES
+        return isinstance(error, (URLError, TimeoutError, socket.timeout, ConnectionError))
+
+    def get_bytes(self, service: str, request: Request, *, timeout: float,
+                  cacheable: bool = True) -> bytes:
+        try:
+            policy = self.service_policies[service]
+        except KeyError as error:
+            raise ValueError("external HTTP service has no configured policy: " + service) from error
+        key = self._request_key(service, request)
+        if cacheable:
+            cached = self._cached(service, key, policy)
+            if cached is not None:
+                return cached
+
+        for attempt in range(1, self.retries + 2):
+            self._acquire(service, policy)
+            self._increment(service, "requests")
+            try:
+                with urlopen(request, timeout=timeout) as response:
+                    status = getattr(response, "status", getattr(response, "code", 200))
+                    body = response.read()
+                if isinstance(status, int) and status >= 400:
+                    raise HTTPError(request.full_url, status, "external service returned an error", None, None)
+                if not isinstance(body, bytes):
+                    raise ReconciliationError("external service response body is not bytes")
+                if cacheable:
+                    self._cache_response(service, key, body, policy)
+                return body
+            except Exception as error:
+                transient = self._is_transient(error)
+                if isinstance(error, HTTPError) and getattr(error, "fp", None) is not None:
+                    error.close()
+                if not transient or attempt > self.retries:
+                    self._increment(service, "failures")
+                    raise
+                self._increment(service, "retries")
+                delay = self._retry_delay(attempt)
+                if delay:
+                    time.sleep(delay)
+        raise AssertionError("bounded external HTTP retry loop exited unexpectedly")
+
+    def summary(self) -> dict[str, dict[str, int | float]]:
+        """Return request/cache counters without exposing URLs or response data."""
+        with self._lock:
+            return {service: {**counters,
+                              "rate_limit_wait_seconds": round(counters["rate_limit_wait_seconds"], 6)}
+                    for service, counters in sorted(self._metrics.items())}
+
+
+def external_http_transport(settings) -> ExternalHttpTransport:
+    """Construct a transport from the application's validated environment settings."""
+    return ExternalHttpTransport(
+        retries=settings.external_http_retries,
+        backoff_base_seconds=settings.external_http_backoff_base_seconds,
+        backoff_max_seconds=settings.external_http_backoff_max_seconds,
+        service_policies={
+            "wikidata": ExternalServicePolicy(
+                settings.wikidata_cache_ttl_seconds,
+                settings.wikidata_cache_max_entries,
+                settings.wikidata_requests_per_second),
+            "dbpedia": ExternalServicePolicy(
+                settings.dbpedia_cache_ttl_seconds,
+                settings.dbpedia_cache_max_entries,
+                settings.dbpedia_requests_per_second),
+        })
+
+
+def create_external_service_clients(settings):
+    """Create the shared per-command Wikidata/DBpedia clients and transport."""
+    transport = external_http_transport(settings)
+    return (WikidataClient(timeout=settings.timeout, transport=transport),
+            DbpediaClient(timeout=settings.timeout, transport=transport), transport)
+
+
+def _default_external_http_transport() -> ExternalHttpTransport:
+    from .config import Settings
+    return external_http_transport(Settings.from_environment())
+
+
 class WikidataClient:
     """Mockable stdlib client; production calls use Wikidata's entity API."""
-    def __init__(self, endpoint="https://www.wikidata.org/w/api.php", lookup_endpoint="https://query.wikidata.org/sparql", timeout=20): self.endpoint, self.lookup_endpoint, self.timeout = endpoint, lookup_endpoint, timeout
-    def _get(self, params):
+    def __init__(self, endpoint="https://www.wikidata.org/w/api.php", lookup_endpoint="https://query.wikidata.org/sparql", timeout=20, transport=None):
+        self.endpoint, self.lookup_endpoint, self.timeout = endpoint, lookup_endpoint, timeout
+        self.transport = transport or _default_external_http_transport()
+    def _get(self, params, *, cacheable=True):
         from urllib.parse import urlencode
-        with urlopen(Request(self.endpoint + "?" + urlencode(params), headers={"Accept":"application/json"}), timeout=self.timeout) as response: return json.loads(response.read())
+        request = Request(self.endpoint + "?" + urlencode(params), headers={"Accept":"application/json"})
+        return json.loads(self.transport.get_bytes("wikidata", request, timeout=self.timeout,
+                                                   cacheable=cacheable))
     def lookup_member_code(self, member_code: str) -> list[str]:
         from urllib.parse import urlencode
         query = "SELECT ?item WHERE { ?item wdt:P4690 " + json.dumps(member_code) + " }"
         request = Request(self.lookup_endpoint + "?" + urlencode({"query": query, "format": "json"}), headers={"Accept":"application/sparql-results+json", "User-Agent":"oireachtas-etl/phase-3.5"})
-        with urlopen(request, timeout=self.timeout) as response:
-            payload = json.loads(response.read())
+        payload = json.loads(self.transport.get_bytes("wikidata", request, timeout=self.timeout))
         try: bindings = payload["results"]["bindings"]
         except (KeyError, TypeError) as error: raise ReconciliationError("malformed Wikidata SPARQL response") from error
         if not isinstance(bindings, list): raise ReconciliationError("malformed Wikidata SPARQL response")
@@ -1315,8 +1518,7 @@ SELECT DISTINCT ?item ?label ?instanceType ?jurisdiction ?inception ?dissolution
         from urllib.parse import urlencode
         request = Request(self.lookup_endpoint + "?" + urlencode({"query": query, "format": "json"}),
                           headers={"Accept": "application/sparql-results+json", "User-Agent": "oireachtas-etl/phase-4.5"})
-        with urlopen(request, timeout=self.timeout) as response:
-            payload = json.loads(response.read())
+        payload = json.loads(self.transport.get_bytes("wikidata", request, timeout=self.timeout))
         try:
             rows = payload["results"]["bindings"]
         except (KeyError, TypeError) as error:
@@ -1426,8 +1628,7 @@ SELECT DISTINCT ?item ?label ?matchedOn ?discoveryMethod ?description ?instanceT
         from urllib.parse import urlencode
         request = Request(self.lookup_endpoint + "?" + urlencode({"query": query, "format": "json"}),
                           headers={"Accept": "application/sparql-results+json", "User-Agent": "oireachtas-etl/phase-4.5"})
-        with urlopen(request, timeout=self.timeout) as response:
-            payload = json.loads(response.read())
+        payload = json.loads(self.transport.get_bytes("wikidata", request, timeout=self.timeout))
         try:
             rows = payload["results"]["bindings"]
         except (KeyError, TypeError) as error:
@@ -1572,8 +1773,7 @@ SELECT DISTINCT ?item ?label ?matchedOn ?description ?instanceType ?instanceType
         request = Request(self.lookup_endpoint + "?" + urlencode({"query": query, "format": "json"}),
                           headers={"Accept": "application/sparql-results+json",
                                    "User-Agent": "oireachtas-etl/phase-7"})
-        with urlopen(request, timeout=self.timeout) as response:
-            payload = json.loads(response.read())
+        payload = json.loads(self.transport.get_bytes("wikidata", request, timeout=self.timeout))
         try:
             rows = payload["results"]["bindings"]
         except (KeyError, TypeError) as error:
@@ -1657,11 +1857,17 @@ SELECT DISTINCT ?item ?label ?matchedOn ?description ?instanceType ?instanceType
             result.append(candidate)
         return result
 
-    def entity(self, qid: str) -> dict: return self._get({"action":"wbgetentities", "ids":qid, "format":"json"})
+    def entity(self, qid: str) -> dict:
+        # Reviewed target verification is freshness-sensitive. Do not let a
+        # cached pre-redirect/pre-deletion response hide a changed authority.
+        return self._get({"action":"wbgetentities", "ids":qid, "format":"json"},
+                         cacheable=False)
 
 
 class DbpediaClient:
-    def __init__(self, endpoint="https://dbpedia.org/sparql", timeout=20): self.endpoint, self.timeout = endpoint, timeout
+    def __init__(self, endpoint="https://dbpedia.org/sparql", timeout=20, transport=None):
+        self.endpoint, self.timeout = endpoint, timeout
+        self.transport = transport or _default_external_http_transport()
     def resolve_wikidata(self, qid: str) -> list[dict]:
         from urllib.parse import urlencode
         # Both linkage and person typing are required; title similarity is never used.
@@ -1671,7 +1877,7 @@ class DbpediaClient:
                   a ?type . FILTER(?type IN (<http://xmlns.com/foaf/0.1/Person>, <http://dbpedia.org/ontology/Person>))
         }""" % wd
         request = Request(self.endpoint + "?" + urlencode({"query":query,"format":"json"}), headers={"Accept":"application/sparql-results+json", "User-Agent":"oireachtas-etl/phase-3.5"})
-        with urlopen(request, timeout=self.timeout) as response: payload = json.loads(response.read())
+        payload = json.loads(self.transport.get_bytes("dbpedia", request, timeout=self.timeout))
         try: rows = payload["results"]["bindings"]
         except (KeyError, TypeError) as error: raise ReconciliationError("malformed DBpedia SPARQL response") from error
         if not isinstance(rows, list): raise ReconciliationError("malformed DBpedia SPARQL response")
@@ -2611,10 +2817,15 @@ def _replay_pending(row, policy, publish, competency_client, store):
 
 def reconcile_entities(records: list[dict], store: ReconciliationStore, review: dict[str, dict], review_hash: str,
                        wikidata_client, dbpedia_client=None, *, policy, all_records=False, publish=None,
-                       competency_client=None) -> list[tuple[object, Resolution, Graph]]:
+                       competency_client=None, run_metrics: dict | None = None) -> list[tuple[object, Resolution, Graph]]:
     """Shared state, audit, scheduling and publication engine for entity policies."""
     if publish is not None and competency_client is None:
         raise ReconciliationError("external graph publication requires a competency client")
+    if run_metrics is not None:
+        run_metrics.clear()
+        run_metrics.update({"due": 0, "stale": 0, "recovered": 0, "forced": 0,
+                            "manual_revocations": 0})
+    run_started_at = _now()
     entities, seen = [], set()
     reviewable_keys = set()
     for wrapper in records:
@@ -2634,6 +2845,7 @@ def reconcile_entities(records: list[dict], store: ReconciliationStore, review: 
     # graphs before any new reconciliation or lookup. Every stored payload is
     # validated before a PUT.
     recovered = {}
+    due_counted = set()
     for entity in entities:
         if not policy.eligible(entity):
             continue
@@ -2642,6 +2854,11 @@ def reconcile_entities(records: list[dict], store: ReconciliationStore, review: 
         if old is not None and old["publication_state"] == "dirty":
             _, _, replay_graph, replay_resolution = _replay_pending(old, policy, publish, competency_client, store)
             recovered[local_iri] = (replay_resolution, replay_graph)
+            if run_metrics is not None:
+                run_metrics["due"] += 1
+                due_counted.add(local_iri)
+            if run_metrics is not None and publish is not None:
+                run_metrics["recovered"] += 1
     results = []
     for entity in entities:
         if not policy.eligible(entity):
@@ -2650,6 +2867,16 @@ def reconcile_entities(records: list[dict], store: ReconciliationStore, review: 
         entity_key = policy.entity_key(entity)
         fingerprint = policy.fingerprint(entity)
         old = store.get_record(policy.entity_kind, local_iri)
+        naturally_due = (old is None or old["identity_hash"] != fingerprint
+                         or store.is_due(old, review_hash))
+        if (run_metrics is not None and old is not None
+                and old["next_recheck_at"] <= run_started_at):
+            run_metrics["stale"] += 1
+        decision = review.get(policy.review_key(entity))
+        if (run_metrics is not None and decision is not None
+                and decision.get("status") == "rejected" and old is not None
+                and old["state"] == "accepted" and bool(old["review_applied"])):
+            run_metrics["manual_revocations"] += 1
         if local_iri in recovered:
             replay_resolution, replay_graph = recovered[local_iri]
             if publish is None:
@@ -2658,9 +2885,13 @@ def reconcile_entities(records: list[dict], store: ReconciliationStore, review: 
             if old["identity_hash"] == fingerprint and old["review_hash"] == review_hash and not all_records:
                 results.append((entity, replay_resolution, replay_graph))
                 continue
-        selected = all_records or old is None or old["identity_hash"] != fingerprint or store.is_due(old, review_hash)
+        selected = all_records or naturally_due
         if not selected:
             continue
+        if run_metrics is not None and local_iri not in due_counted:
+            run_metrics["due"] += 1
+            if all_records and not naturally_due:
+                run_metrics["forced"] += 1
         result = policy.resolve(entity, review, wikidata_client, dbpedia_client, old)
         graph = policy.links_graph(entity, result)
         payload = ntriples(graph)
@@ -2686,37 +2917,38 @@ def reconcile_entities(records: list[dict], store: ReconciliationStore, review: 
 
 def reconcile_records(records: list[dict], store: ReconciliationStore, review: dict[str, dict], review_hash: str,
                       wikidata_client, dbpedia_client, *, all_records=False, publish=None,
-                      competency_client=None) -> list[tuple[dict, Resolution, Graph]]:
+                      competency_client=None, run_metrics: dict | None = None) -> list[tuple[dict, Resolution, Graph]]:
     """Backward-compatible Member policy entry point."""
     return reconcile_entities(records, store, review, review_hash, wikidata_client, dbpedia_client,
-                              policy=_MemberPolicy(), all_records=all_records, publish=publish,
-                              competency_client=competency_client)
+                               policy=_MemberPolicy(), all_records=all_records, publish=publish,
+                               competency_client=competency_client, run_metrics=run_metrics)
 
 
 def reconcile_party_records(records: list[dict], store: ReconciliationStore, review: dict[str, dict], review_hash: str,
                             wikidata_client, *, all_records=False, publish=None,
-                            competency_client=None) -> list[tuple[dict, Resolution, Graph]]:
+                            competency_client=None, run_metrics: dict | None = None) -> list[tuple[dict, Resolution, Graph]]:
     """Reconcile only API-derived ParliamentaryParty instances; Independent is excluded."""
     validated = deduplicate_party_records(records)
     return reconcile_entities(validated, store, review, review_hash, wikidata_client,
-                              policy=_PartyPolicy(), all_records=all_records, publish=publish,
-                              competency_client=competency_client)
+                               policy=_PartyPolicy(), all_records=all_records, publish=publish,
+                               competency_client=competency_client, run_metrics=run_metrics)
 
 
 def reconcile_institution_records(records: list[dict], store: ReconciliationStore, review: dict[str, dict], review_hash: str,
                                   wikidata_client, *, all_records=False, publish=None,
-                                  competency_client=None) -> list[tuple[dict, Resolution, Graph]]:
+                                  competency_client=None, run_metrics: dict | None = None) -> list[tuple[dict, Resolution, Graph]]:
     """Reconcile only the three authoritative enduring institutional IRIs."""
     validated = deduplicate_institution_records(records)
     return reconcile_entities(validated, store, review, review_hash, wikidata_client,
-                              policy=_InstitutionPolicy(), all_records=all_records, publish=publish,
-                              competency_client=competency_client)
+                               policy=_InstitutionPolicy(), all_records=all_records, publish=publish,
+                               competency_client=competency_client, run_metrics=run_metrics)
 
 
 def reconcile_office_records(records: list[dict], store: ReconciliationStore, review: dict[str, dict],
-                              review_hash: str, wikidata_client, *, registry: object,
-                              all_records=False, publish=None, competency_client=None
-                              ) -> list[tuple[dict, Resolution, Graph]]:
+                               review_hash: str, wikidata_client, *, registry: object,
+                               all_records=False, publish=None, competency_client=None,
+                               run_metrics: dict | None = None
+                               ) -> list[tuple[dict, Resolution, Graph]]:
     """Reconcile registered NamedOffice identities through the shared engine.
 
     The office registry controls local subject validation, review-key
@@ -2727,14 +2959,14 @@ def reconcile_office_records(records: list[dict], store: ReconciliationStore, re
     if not isinstance(records, list) or not records:
         raise ValueError("office reconciliation input must be a non-empty list")
     return reconcile_entities(records, store, review, review_hash, wikidata_client,
-                              policy=policy, all_records=all_records, publish=publish,
-                              competency_client=competency_client)
+                               policy=policy, all_records=all_records, publish=publish,
+                               competency_client=competency_client, run_metrics=run_metrics)
 
 
 def reconcile_external_office_records(records: list[dict], store: ReconciliationStore,
-                                      review: dict[str, dict], review_hash: str,
-                                      wikidata_client, *, all_records=False, publish=None,
-                                      competency_client=None
+                                       review: dict[str, dict], review_hash: str,
+                                       wikidata_client, *, all_records=False, publish=None,
+                                       competency_client=None, run_metrics: dict | None = None
                                       ) -> list[tuple[dict, Resolution, Graph]]:
     """Registry-record convenience entry point used by CLI and fixture callers."""
     validated_records = deduplicate_external_office_records(records)
@@ -2746,5 +2978,6 @@ def reconcile_external_office_records(records: list[dict], store: Reconciliation
         raise ValueError("external office records do not share one registry snapshot")
     registry = registries[0]
     return reconcile_office_records(validated_records, store, review, review_hash, wikidata_client,
-                                    registry=registry, all_records=all_records,
-                                    publish=publish, competency_client=competency_client)
+                                     registry=registry, all_records=all_records,
+                                     publish=publish, competency_client=competency_client,
+                                     run_metrics=run_metrics)

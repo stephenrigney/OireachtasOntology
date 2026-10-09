@@ -1,0 +1,13 @@
+[Unit]
+Description=External identity reconciliation refresh
+Documentation=file:/opt/oireachtas-etl/documentation/production-operations.md
+Requires=oir-fuseki.service
+After=oir-fuseki.service docker.service
+OnFailure=oireachtas-ops-failure@%n.service
+
+[Service]
+Type=oneshot
+Environment=OIR_RUNTIME_ENV_FILE=/etc/oireachtas-etl/production.env
+ExecStart=/opt/oireachtas-etl/scripts/production-compose.sh run-reconciliation
+TimeoutStartSec=0
+Nice=10

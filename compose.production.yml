@@ -1,0 +1,123 @@
+# Production-oriented Compose stack; the local-development compose file remains
+# unchanged. Fuseki is loopback-bound and requires a runtime-supplied password.
+services:
+  fuseki:
+    image: stain/jena-fuseki:5.1.0
+    restart: unless-stopped
+    environment:
+      FUSEKI_DATASET_1: houses
+      ADMIN_PASSWORD: ${FUSEKI_ADMIN_PASSWORD:?set FUSEKI_ADMIN_PASSWORD in the protected runtime env file}
+    ports:
+      - "127.0.0.1:${FUSEKI_BIND_PORT:-3030}:3030"
+    volumes:
+      - fuseki-data:/fuseki
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          curl --fail --silent --show-error
+          --user "admin:$${ADMIN_PASSWORD}"
+          http://127.0.0.1:3030/$$/ping >/dev/null
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    security_opt:
+      - no-new-privileges:true
+
+  etl:
+    image: oireachtas-etl:${OIR_ETL_IMAGE_TAG:-phase6}
+    build:
+      context: .
+      args:
+        OIR_GIT_COMMIT: ${OIR_GIT_COMMIT:-unknown}
+    profiles: [production]
+    user: "${OIR_CONTAINER_UID:-10001}:${OIR_CONTAINER_GID:-10001}"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=${OIR_TMPFS_SIZE:-4g},mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      fuseki:
+        condition: service_healthy
+    volumes:
+      - ${OIR_DURABLE_PARENT:?set OIR_DURABLE_PARENT}:/var/lib/oireachtas-etl-root:rw
+      - ./reconciliation:/app/reconciliation:ro
+      - ./registries:/app/registries:ro
+    environment:
+      OIR_PROJECT_ROOT: /app
+      OIR_OPERATION_LOCK_FILE: /var/lib/oireachtas-etl-root/operations.lock
+      OIR_ETL_STATE_DB: /var/lib/oireachtas-etl-root/live/core-state.sqlite
+      OIR_RECONCILIATION_STATE_DB: /var/lib/oireachtas-etl-root/live/reconciliation.sqlite
+      OIR_OFFICE_OCCURRENCE_STATE_DB: /var/lib/oireachtas-etl-root/live/office-occurrences.sqlite
+      OIR_BILL_SPONSOR_STATE_DB: /var/lib/oireachtas-etl-root/live/bill-sponsors.sqlite
+      OIR_RAW_DIR: /var/lib/oireachtas-etl-root/live/raw
+      OIR_FUSEKI_GSP_URL: http://fuseki:3030/houses/data
+      OIR_FUSEKI_SPARQL_URL: http://fuseki:3030/houses/query
+      OIR_FUSEKI_USER: admin
+      OIR_FUSEKI_PASSWORD: ${FUSEKI_ADMIN_PASSWORD:?set FUSEKI_ADMIN_PASSWORD in the protected runtime env file}
+      OIR_API_LIMIT: ${OIR_API_LIMIT:-100}
+      OIR_API_RETRIES: ${OIR_API_RETRIES:-3}
+      OIR_API_TIMEOUT: ${OIR_API_TIMEOUT:-30}
+      OIR_BILLS_CURSOR_OVERLAP_SECONDS: ${OIR_BILLS_CURSOR_OVERLAP_SECONDS:-3600}
+      OIR_EXTERNAL_HTTP_RETRIES: ${OIR_EXTERNAL_HTTP_RETRIES:-3}
+      OIR_EXTERNAL_HTTP_BACKOFF_BASE_SECONDS: ${OIR_EXTERNAL_HTTP_BACKOFF_BASE_SECONDS:-0.5}
+      OIR_EXTERNAL_HTTP_BACKOFF_MAX_SECONDS: ${OIR_EXTERNAL_HTTP_BACKOFF_MAX_SECONDS:-8}
+      OIR_WIKIDATA_CACHE_TTL_SECONDS: ${OIR_WIKIDATA_CACHE_TTL_SECONDS:-300}
+      OIR_WIKIDATA_CACHE_MAX_ENTRIES: ${OIR_WIKIDATA_CACHE_MAX_ENTRIES:-256}
+      OIR_WIKIDATA_REQUESTS_PER_SECOND: ${OIR_WIKIDATA_REQUESTS_PER_SECOND:-2}
+      OIR_DBPEDIA_CACHE_TTL_SECONDS: ${OIR_DBPEDIA_CACHE_TTL_SECONDS:-300}
+      OIR_DBPEDIA_CACHE_MAX_ENTRIES: ${OIR_DBPEDIA_CACHE_MAX_ENTRIES:-128}
+      OIR_DBPEDIA_REQUESTS_PER_SECOND: ${OIR_DBPEDIA_REQUESTS_PER_SECOND:-1}
+    entrypoint: [oir-etl]
+
+  ops:
+    image: oireachtas-etl:${OIR_ETL_IMAGE_TAG:-phase6}
+    build:
+      context: .
+      args:
+        OIR_GIT_COMMIT: ${OIR_GIT_COMMIT:-unknown}
+    profiles: [production]
+    user: "${OIR_CONTAINER_UID:-10001}:${OIR_CONTAINER_GID:-10001}"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=${OIR_TMPFS_SIZE:-4g},mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${OIR_DURABLE_PARENT:?set OIR_DURABLE_PARENT}:/var/lib/oireachtas-etl-root:rw
+      - ${OIR_BACKUP_DIR:?set OIR_BACKUP_DIR}:/var/backups/oireachtas-etl:rw
+      - ${OIR_RESTIC_PASSWORD_SOURCE:?set OIR_RESTIC_PASSWORD_SOURCE}:/run/secrets/restic-password:ro
+      - ./reconciliation:/app/reconciliation:ro
+      - ./registries:/app/registries:ro
+    environment:
+      OIR_PROJECT_ROOT: /app
+      OIR_OPERATION_LOCK_FILE: /var/lib/oireachtas-etl-root/operations.lock
+      OIR_ETL_STATE_DB: /var/lib/oireachtas-etl-root/live/core-state.sqlite
+      OIR_RECONCILIATION_STATE_DB: /var/lib/oireachtas-etl-root/live/reconciliation.sqlite
+      OIR_OFFICE_OCCURRENCE_STATE_DB: /var/lib/oireachtas-etl-root/live/office-occurrences.sqlite
+      OIR_BILL_SPONSOR_STATE_DB: /var/lib/oireachtas-etl-root/live/bill-sponsors.sqlite
+      OIR_RAW_DIR: /var/lib/oireachtas-etl-root/live/raw
+      OIR_RESTIC_REPOSITORY: /var/backups/oireachtas-etl/restic
+      OIR_RESTIC_PASSWORD_FILE: /run/secrets/restic-password
+      RESTIC_CACHE_DIR: /tmp/restic-cache
+      OIR_BACKUP_KEEP_DAILY: ${OIR_BACKUP_KEEP_DAILY:-30}
+      OIR_BACKUP_KEEP_MONTHLY: ${OIR_BACKUP_KEEP_MONTHLY:-12}
+      OIR_BACKUP_RPO_HOURS: ${OIR_BACKUP_RPO_HOURS:-24}
+      OIR_FUSEKI_GSP_URL: http://fuseki:3030/houses/data
+      OIR_FUSEKI_SPARQL_URL: http://fuseki:3030/houses/query
+      OIR_FUSEKI_USER: admin
+      OIR_FUSEKI_PASSWORD: ${FUSEKI_ADMIN_PASSWORD:?set FUSEKI_ADMIN_PASSWORD in the protected runtime env file}
+      OIR_API_TIMEOUT: ${OIR_API_TIMEOUT:-30}
+    entrypoint: [oir-ops]
+
+volumes:
+  fuseki-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${OIR_FUSEKI_DATA_DIR:?set OIR_FUSEKI_DATA_DIR to a durable host directory}

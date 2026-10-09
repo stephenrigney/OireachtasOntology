@@ -7,10 +7,9 @@ from urllib.parse import urlsplit
 import hashlib
 from .api import ApiClient, HousesApiClient
 from .config import (ADMINISTRATIVE_UNITS_GRAPH, COMMITTEES_GRAPH,
-                     CONSTITUENCIES_GRAPH, HOUSES_GRAPH,
-                     OFFICES_GRAPH, OFFICE_REGISTRY_FILE, OFFICE_DECISIONS_FILE,
-                     BILL_SPONSOR_DECISIONS_FILE, BILL_SPONSOR_STATE_DB_FILE,
-                     OFFICE_OCCURRENCE_STATE_DB_FILE, PARTIES_GRAPH,
+                      CONSTITUENCIES_GRAPH, HOUSES_GRAPH,
+                      OFFICES_GRAPH, OFFICE_REGISTRY_FILE, OFFICE_DECISIONS_FILE,
+                      BILL_SPONSOR_DECISIONS_FILE, PARTIES_GRAPH,
                      REFERENCE_ONTOLOGY_VERSION, Settings)
 from .loader import FusekiGraphStoreLoader
 from .loader import FusekiSparqlClient
@@ -42,8 +41,9 @@ from .state import (CoreStateStore, expected_graph_iri, read_resource_state,
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import RDF, PROV, XSD
 from .transforms.common import ELIDL, OIR
-from .reconciliation import (DbpediaClient, ReconciliationStore, WikidataClient,
-                              FixtureResponseError, external_graph_iri, party_external_graph_iri,
+from .reconciliation import (ReconciliationStore, WikidataClient,
+                               create_external_service_clients,
+                               FixtureResponseError, external_graph_iri, party_external_graph_iri,
                                load_party_review, load_review, normalize_party_candidate,
                                deduplicate_party_records, reconcile_party_records, reconcile_records, valid_qid,
                                _enwiki, _fetch_wikidata_target,
@@ -79,7 +79,8 @@ from .provenance import (ETL, build_provenance_catalog,
                           validate_provenance_catalog)
 from .source_contract import classify_source_contract, classify_source_envelope
 from .state import (PROVENANCE_GRAPH_IRI, catalog_publication_boundary,
-                    run_resource_iri)
+                     run_resource_iri)
+from .operations import exclusive_operation_lock
 
 
 MEMBER_MAPPING_VERSION = "member_mapping.csv@reference-coverage-2026"
@@ -3195,7 +3196,7 @@ def run_members(args: argparse.Namespace) -> int:
     state_db = Path(getattr(args, "state_db", None) or settings.core_state_db_file).expanduser()
     legacy_members = _legacy_override(args) or settings.members_legacy_state_file
     office_state = Path(getattr(args, "office_state_file", None)
-                        or OFFICE_OCCURRENCE_STATE_DB_FILE).expanduser()
+                        or settings.office_occurrence_state_db_file).expanduser()
     with state_lock(state_db):
         with CoreStateStore(state_db, legacy_members=legacy_members,
                             legacy_bills=settings.bills_legacy_state_file) as store:
@@ -4253,17 +4254,129 @@ def _validate_institution_fixture_responses(data: object, records: list[dict], d
         raise ValueError("response fixture contains unrequested Wikidata entities: " + ", ".join(unknown_entities))
 
 
+def _reconciliation_run_summary(records, store, entity_kind, review, review_hash,
+                               run_metrics, *, local_iri, review_key, eligible=None,
+                               transport=None):
+    """Summarize one identified input snapshot against its current state rows.
+
+    Coverage uses the complete validated command input, not only records which
+    happened to be due in this incremental invocation. Cache/request statistics
+    are process-local and never written to Core State or reconciliation SQLite.
+    """
+    eligible = eligible or (lambda _record: True)
+    snapshot_records = [record for record in records if eligible(record)]
+    rows = []
+    for record in snapshot_records:
+        iri = local_iri(record)
+        rows.append((record, store.get_record(entity_kind, iri)))
+
+    state_counts = {state: 0 for state in ("accepted", "rejected", "ambiguous", "pending")}
+    accepted_graphs_verified = degraded = candidate_yield = candidate_count = 0
+    lookup_failures = excluded_candidates = historical_conflicts = 0
+    review_counts = {"accepted": 0, "rejected": 0}
+
+    for record, row in rows:
+        decision = review.get(review_key(record))
+        if decision is not None and decision.get("status") in review_counts:
+            review_counts[decision["status"]] += 1
+        if row is None:
+            state_counts["pending"] += 1
+            degraded += 1
+            continue
+
+        state = row["state"] if row["state"] in state_counts else "pending"
+        state_counts[state] += 1
+        if (state == "accepted" and row["publication_state"] == "clean"
+                and row["published_links_hash"]):
+            accepted_graphs_verified += 1
+        if (state in {"pending", "ambiguous"}
+                or row["enrichment_status"] != "complete"
+                or row["publication_state"] != "clean"):
+            degraded += 1
+
+        try:
+            evidence = json.loads(row["evidence_json"])
+        except (TypeError, json.JSONDecodeError):
+            evidence = {}
+        if not isinstance(evidence, dict):
+            evidence = {}
+        candidates = evidence.get("candidates")
+        if isinstance(candidates, list):
+            candidate_count += len(candidates)
+            if candidates:
+                candidate_yield += 1
+            historical_conflicts += sum(
+                bool(candidate.get("historical_conflicts"))
+                for candidate in candidates if isinstance(candidate, dict))
+        excluded = evidence.get("excluded_candidates")
+        if isinstance(excluded, list):
+            excluded_candidates += len(excluded)
+        target_check = evidence.get("target_verification")
+        if (evidence.get("errors") or evidence.get("reason") == "lookup-error"
+                or (isinstance(target_check, dict)
+                    and target_check.get("status") == "retry")):
+            lookup_failures += 1
+
+    total = len(snapshot_records)
+    proportions = {state: round(count / total, 6) if total else 0.0
+                   for state, count in state_counts.items()}
+    snapshot_hash = hashlib.sha256(json.dumps(
+        records, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")).hexdigest()
+    if transport is None:
+        external_http = {
+            service: {"requests": 0, "cache_hits": 0, "cache_misses": 0,
+                      "retries": 0, "failures": 0, "rate_limit_wait_seconds": 0.0}
+            for service in ("wikidata", "dbpedia")
+        }
+    else:
+        external_http = transport.summary()
+    return {
+        "due": run_metrics.get("due", 0),
+        "stale": run_metrics.get("stale", 0),
+        "degraded": degraded,
+        "recovered": run_metrics.get("recovered", 0),
+        "forced": run_metrics.get("forced", 0),
+        "input_snapshot": {
+            "entity_kind": entity_kind,
+            "sha256": snapshot_hash,
+            "eligible": total,
+            "review_sha256": review_hash,
+        },
+        "coverage": {
+            **state_counts,
+            "state_proportions": proportions,
+            "accepted_graphs_verified": accepted_graphs_verified,
+            "accepted_graph_coverage": (round(accepted_graphs_verified / total, 6)
+                                        if total else 0.0),
+            "candidate_yield_count": candidate_yield,
+            "candidate_yield": round(candidate_yield / total, 6) if total else 0.0,
+            "candidate_count": candidate_count,
+            "lookup_failures": lookup_failures,
+            "excluded_candidates": excluded_candidates,
+            "historical_conflicts": historical_conflicts,
+        },
+        "review": {
+            "manual_decisions": sum(review_counts.values()),
+            "manual_accepted": review_counts["accepted"],
+            "manual_rejected": review_counts["rejected"],
+            "manual_revocations": run_metrics.get("manual_revocations", 0),
+        },
+        "external_http": external_http,
+    }
+
+
 def run_reconcile_members(args: argparse.Namespace) -> int:
     if args.offline:
         if not args.fixture or not args.responses_file:
             raise ValueError("--offline reconciliation requires --fixture and --responses-file")
         if args.publish:
             raise ValueError("--offline reconciliation forbids --publish")
+    settings = Settings.from_environment()
     if args.fixture:
         records, _, advertised = _members_fixture_records(Path(args.fixture))
         last_api_page = None
     else:
-        settings = Settings.from_environment()
         records, advertised, last_api_page, raw_root, source_run_id = _capture_api_pages(
             args, "members", settings.members_api_url, settings,
             count_field="memberCount")
@@ -4283,9 +4396,9 @@ def run_reconcile_members(args: argparse.Namespace) -> int:
         data = json.loads(Path(args.responses_file).read_text(encoding="utf-8"))
         _validate_fixture_responses(data, records, decisions)
         wikidata, dbpedia = _FixtureWikidataClient(data), _FixtureDbpediaClient(data)
+        transport = None
     else:
-        wikidata, dbpedia = WikidataClient(timeout=Settings.from_environment().timeout), DbpediaClient(timeout=Settings.from_environment().timeout)
-    settings = Settings.from_environment()
+        wikidata, dbpedia, transport = create_external_service_clients(settings)
     store = ReconciliationStore(_reconciliation_state_path(args, settings))
     try:
         loader = None
@@ -4304,7 +4417,11 @@ def run_reconcile_members(args: argparse.Namespace) -> int:
                     return upstream_loader.replace(*replace_args, **replace_kwargs)
             loader = CountingLoader()
             competency_client = FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
-        results = reconcile_records(records, store, decisions, review_hash, wikidata, dbpedia, all_records=args.all, publish=loader, competency_client=competency_client)
+        run_metrics = {}
+        results = reconcile_records(records, store, decisions, review_hash, wikidata, dbpedia,
+                                    all_records=args.all, publish=loader,
+                                    competency_client=competency_client,
+                                    run_metrics=run_metrics)
         if args.output_nq:
             Path(args.output_nq).write_text("".join(nquads(graph, external_graph_iri(member)) for member, _, graph in results), encoding="utf-8")
         summary = {state: sum(r.state == state for _, r, _ in results) for state in ("accepted", "rejected", "ambiguous", "pending")}
@@ -4313,9 +4430,15 @@ def run_reconcile_members(args: argparse.Namespace) -> int:
         unresolved_members = sorted(member["memberCode"] for member, result, _ in results
                                     if result.state in {"pending", "ambiguous"}
                                     or result.enrichment_status in {"retry", "ambiguous", "unresolved"})
+        run_summary = _reconciliation_run_summary(
+            records, store, "member", decisions, review_hash, run_metrics,
+            local_iri=lambda wrapper: wrapper["member"]["uri"],
+            review_key=lambda wrapper: wrapper["member"]["memberCode"],
+            transport=transport)
         print(json.dumps({"processed":len(results), "published":publication_count,
                           "unresolved":unresolved, "unresolved_members":unresolved_members,
-                          "enrichment":enrichment, **summary}, sort_keys=True))
+                          "enrichment":enrichment, "run_summary":run_summary,
+                          **summary}, sort_keys=True))
         return 1 if unresolved else 0
     finally: store.close()
 
@@ -4327,11 +4450,11 @@ def run_reconcile_parties(args: argparse.Namespace) -> int:
             raise ValueError("--offline Party reconciliation requires --fixture and --responses-file")
         if args.publish:
             raise ValueError("--offline Party reconciliation forbids --publish")
+    settings = Settings.from_environment()
     if args.fixture:
         records, _, advertised = _party_fixture_records(Path(args.fixture))
         last_api_page = None
     else:
-        settings = Settings.from_environment()
         records, advertised, last_api_page, raw_root, source_run_id = _capture_api_pages(
             args, "parties", settings.parties_api_url, settings,
             count_field="partyCount")
@@ -4354,11 +4477,11 @@ def run_reconcile_parties(args: argparse.Namespace) -> int:
         data = json.loads(Path(args.responses_file).read_text(encoding="utf-8"))
         _validate_party_fixture_responses(data, records, decisions)
         wikidata = _FixturePartyWikidataClient(data)
+        transport = None
     elif args.offline:
         raise ValueError("--offline Party reconciliation requires --responses-file")
     else:
-        wikidata = WikidataClient(timeout=Settings.from_environment().timeout)
-    settings = Settings.from_environment()
+        wikidata, _dbpedia, transport = create_external_service_clients(settings)
     store = ReconciliationStore(_reconciliation_state_path(args, settings))
     try:
         loader = None
@@ -4380,18 +4503,27 @@ def run_reconcile_parties(args: argparse.Namespace) -> int:
                     return upstream_loader.replace(*replace_args, **replace_kwargs)
             loader = CountingLoader()
             competency_client = FusekiSparqlClient(query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password, timeout=settings.timeout)
+        run_metrics = {}
         results = reconcile_party_records(records, store, decisions, review_hash, wikidata,
-                                          all_records=args.all, publish=loader,
-                                          competency_client=competency_client)
+                                           all_records=args.all, publish=loader,
+                                           competency_client=competency_client,
+                                           run_metrics=run_metrics)
         if args.output_nq:
             Path(args.output_nq).write_text("".join(nquads(graph, party_external_graph_iri(wrapper)) for wrapper, _, graph in results), encoding="utf-8")
         summary = {state: sum(result.state == state for _, result, _ in results) for state in ("accepted", "rejected", "ambiguous", "pending")}
         unresolved_records = sorted(wrapper["party"]["uri"] for wrapper, result, _ in results
-                                   if result.state in {"pending", "ambiguous"}
-                                   or result.enrichment_status in {"retry", "ambiguous", "unresolved"})
+                                    if result.state in {"pending", "ambiguous"}
+                                    or result.enrichment_status in {"retry", "ambiguous", "unresolved"})
+        run_summary = _reconciliation_run_summary(
+            records, store, "party", decisions, review_hash, run_metrics,
+            local_iri=lambda wrapper: wrapper["party"]["uri"],
+            review_key=lambda wrapper: wrapper["party"]["uri"],
+            eligible=lambda wrapper: wrapper["party"]["partyCode"] != "Independent",
+            transport=transport)
         print(json.dumps({"processed": len(results), "excluded_independent": sum(wrapper["party"]["partyCode"] == "Independent" for wrapper in records),
                           "published": publication_count, "unresolved": len(unresolved_records),
-                          "unresolved_parties": unresolved_records, **summary}, sort_keys=True))
+                          "unresolved_parties": unresolved_records,
+                          "run_summary":run_summary, **summary}, sort_keys=True))
         return 1 if unresolved_records else 0
     finally:
         store.close()
@@ -4404,6 +4536,7 @@ def run_reconcile_institutions(args: argparse.Namespace) -> int:
             raise ValueError("--offline institutional reconciliation requires --responses-file")
         if args.publish:
             raise ValueError("--offline institutional reconciliation forbids --publish")
+    settings = Settings.from_environment()
     records = _institution_fixture_records(Path(args.fixture)) if args.fixture else institution_records()
     records = deduplicate_institution_records(records)
     decisions, review_hash = load_institution_review(Path(args.review_file or "reconciliation/institution-decisions.json"))
@@ -4414,12 +4547,12 @@ def run_reconcile_institutions(args: argparse.Namespace) -> int:
         data = json.loads(Path(args.responses_file).read_text(encoding="utf-8"))
         _validate_institution_fixture_responses(data, records, decisions)
         wikidata = _FixtureInstitutionWikidataClient(data)
+        transport = None
     elif args.offline:
         raise ValueError("--offline institutional reconciliation requires --responses-file")
     else:
-        wikidata = WikidataClient(timeout=Settings.from_environment().timeout)
+        wikidata, _dbpedia, transport = create_external_service_clients(settings)
 
-    settings = Settings.from_environment()
     store = ReconciliationStore(_reconciliation_state_path(args, settings))
     try:
         loader = None
@@ -4443,9 +4576,11 @@ def run_reconcile_institutions(args: argparse.Namespace) -> int:
             loader = CountingLoader()
             competency_client = FusekiSparqlClient(query_endpoint, user=settings.fuseki_user,
                                                    password=settings.fuseki_password, timeout=settings.timeout)
+        run_metrics = {}
         results = reconcile_institution_records(records, store, decisions, review_hash, wikidata,
                                                 all_records=args.all, publish=loader,
-                                                competency_client=competency_client)
+                                                competency_client=competency_client,
+                                                run_metrics=run_metrics)
         if args.output_nq:
             Path(args.output_nq).write_text("".join(
                 nquads(graph, institution_external_graph_iri(entity))
@@ -4457,9 +4592,15 @@ def run_reconcile_institutions(args: argparse.Namespace) -> int:
                             or result.enrichment_status in {"retry", "ambiguous", "unresolved"})
         excluded_candidates = sum(len(result.evidence.get("excluded_candidates", []))
                                   for _, result, _ in results if isinstance(result.evidence, dict))
+        run_summary = _reconciliation_run_summary(
+            records, store, "institution", decisions, review_hash, run_metrics,
+            local_iri=lambda entity: entity["institution"]["uri"],
+            review_key=lambda entity: entity["institution"]["uri"],
+            transport=transport)
         print(json.dumps({"processed": len(results), "published": publication_count,
                           "unresolved": len(unresolved), "unresolved_institutions": unresolved,
-                          "excluded_candidates": excluded_candidates, **summary}, sort_keys=True))
+                          "excluded_candidates": excluded_candidates,
+                          "run_summary":run_summary, **summary}, sort_keys=True))
         return 1 if unresolved else 0
     finally:
         store.close()
@@ -4642,18 +4783,19 @@ def run_reconcile_office_external(args: argparse.Namespace) -> int:
     if stale:
         raise ValueError("external office review decisions do not match the current registry: "
                          + ", ".join(stale))
+    settings = Settings.from_environment()
     if args.responses_file:
         data = json.loads(Path(args.responses_file).read_text(encoding="utf-8"),
                           object_pairs_hook=_unique_json_object)
         _validate_external_office_fixture_responses(
             data, records, decisions, registered_office_iris, registry)
         wikidata = _FixtureExternalOfficeWikidataClient(data)
+        transport = None
     elif args.offline:
         raise ValueError("--offline external office reconciliation requires --responses-file")
     else:
-        wikidata = WikidataClient(timeout=Settings.from_environment().timeout)
+        wikidata, _dbpedia, transport = create_external_service_clients(settings)
 
-    settings = Settings.from_environment()
     store = ReconciliationStore(_reconciliation_state_path(args, settings))
     try:
         loader = None
@@ -4681,11 +4823,13 @@ def run_reconcile_office_external(args: argparse.Namespace) -> int:
                 query_endpoint, user=settings.fuseki_user, password=settings.fuseki_password,
                 timeout=settings.timeout)
 
+        scoped_review = {iri: decision for iri, decision in decisions.items()
+                         if iri in scoped_iris}
+        run_metrics = {}
         results = reconcile_external_office_records(
-            records, store, {iri: decision for iri, decision in decisions.items()
-                             if iri in scoped_iris}, review_hash, wikidata,
+            records, store, scoped_review, review_hash, wikidata,
             all_records=args.all, publish=loader,
-            competency_client=competency_client)
+            competency_client=competency_client, run_metrics=run_metrics)
         if args.output_nq:
             Path(args.output_nq).write_text("".join(
                 nquads(graph, office_external_graph_iri(record, registry))
@@ -4700,11 +4844,16 @@ def run_reconcile_office_external(args: argparse.Namespace) -> int:
         excluded_candidates = sum(
             len(result.evidence.get("excluded_candidates", []))
             for _, result, _ in results if isinstance(result.evidence, dict))
+        run_summary = _reconciliation_run_summary(
+            records, store, "office", scoped_review, review_hash, run_metrics,
+            local_iri=_external_office_local_iri,
+            review_key=_external_office_local_iri, transport=transport)
         print(json.dumps({"processed": len(results), "published": publication_count,
                           "unresolved": len(unresolved),
                           "unresolved_offices": unresolved,
                           "excluded_candidates": excluded_candidates,
-                          "scope": sorted(scoped_iris), **summary}, sort_keys=True))
+                          "scope": sorted(scoped_iris), "run_summary":run_summary,
+                          **summary}, sort_keys=True))
         return 1 if unresolved else 0
     finally:
         store.close()
@@ -4828,7 +4977,7 @@ def run_reconcile_offices(args: argparse.Namespace) -> int:
             _raise_on_envelope_failure(envelope_report, "Members")
         raise
     observations = extract_office_observations(records_with_pointers)
-    state_path = Path(args.office_state_file or OFFICE_OCCURRENCE_STATE_DB_FILE).expanduser()
+    state_path = Path(args.office_state_file or settings.office_occurrence_state_db_file).expanduser()
     with OfficeOccurrenceStore(state_path) as store:
         result = store.reconcile(observations, registry, decisions, review_hash, run_id=run_id)
 
@@ -4863,9 +5012,9 @@ def run_reconcile_bills_local(args: argparse.Namespace) -> int:
     # Source and review errors must fail before any remote graph replacement.
     for wrapper in records:
         validate_bill_source(wrapper)
-    state_path = Path(args.bill_state_file or BILL_SPONSOR_STATE_DB_FILE).expanduser()
+    state_path = Path(args.bill_state_file or settings.bill_sponsor_state_db_file).expanduser()
     core_path = Path(args.state_db or settings.core_state_db_file).expanduser()
-    office_path = Path(args.office_state_file or OFFICE_OCCURRENCE_STATE_DB_FILE).expanduser()
+    office_path = Path(args.office_state_file or settings.office_occurrence_state_db_file).expanduser()
     query_url = args.fuseki_sparql_url or settings.fuseki_sparql_url
     gsp_url = args.fuseki_gsp_url or settings.fuseki_gsp_url
     if args.publish and (not query_url or not gsp_url):
@@ -5598,10 +5747,25 @@ def main(argv: list[str] | None = None) -> int:
     # exception message escape in a Python traceback on that process boundary.
     if argv is None:
         try:
-            return _dispatch_command(args)
+            return _dispatch_with_operation_lock(args)
         except Exception as error:
             _json_log("command_failed", error=_safe_error_message(error))
             return 1
+    return _dispatch_with_operation_lock(args)
+
+
+def _dispatch_with_operation_lock(args: argparse.Namespace) -> int:
+    """Coordinate state-mutating CLI work with multi-component backups."""
+    settings = Settings.from_environment()
+    lock_path = settings.operation_lock_file
+    mutates_durable_state = (
+        args.command in {"run", "reconcile"}
+        or (args.command == "quarantine"
+            and getattr(args, "quarantine_action", None) == "retry")
+    )
+    if lock_path is not None and mutates_durable_state:
+        with exclusive_operation_lock(lock_path):
+            return _dispatch_command(args)
     return _dispatch_command(args)
 
 

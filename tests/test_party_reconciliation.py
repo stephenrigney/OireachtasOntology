@@ -264,8 +264,10 @@ def test_party_dirty_replay_precedes_changed_review_source_and_all(tmp_path):
         publisher = Publisher()
         reject = {local: {"status": "rejected"}}
         calls_to_lookup = PartyWD()
+        run_metrics = {}
         results = reconcile_party_records([changed_source], store, reject, "rejected", calls_to_lookup,
-                                          all_records=True, publish=publisher, competency_client=Gate(publisher))
+                                          all_records=True, publish=publisher, competency_client=Gate(publisher),
+                                          run_metrics=run_metrics)
         graph_iri = party_external_graph_iri(PARTY)
         assert [call for call, _ in publisher.calls] == [graph_iri, graph_iri]
         assert publisher.calls[0][1] == expected
@@ -273,6 +275,8 @@ def test_party_dirty_replay_precedes_changed_review_source_and_all(tmp_path):
         assert not calls_to_lookup.calls
         assert results[0][1].state == "rejected" and len(results[0][2]) == 0
         assert store.get_record("party", local)["publication_state"] == "clean"
+        assert run_metrics["recovered"] == 1 and run_metrics["due"] == 1
+        assert run_metrics["manual_revocations"] == 1
     finally:
         store.close()
 
@@ -382,7 +386,17 @@ def test_party_cli_offline_reviewed_run_is_deterministic_and_preflights_fixture(
     assert "graph/party/dail/31/Fine_Gael/external-links" in first
     assert "recognisedAsParty" in first and "owl#sameAs" not in first and "specializationOf" not in first
     assert main(args) == 0 and output.read_text() == first
-    assert json.loads(capsys.readouterr().out.splitlines()[-1])["excluded_independent"] == 1
+    cli_summary = json.loads(capsys.readouterr().out.splitlines()[-1])
+    assert cli_summary["excluded_independent"] == 1
+    run_summary = cli_summary["run_summary"]
+    assert run_summary["input_snapshot"]["eligible"] == 1
+    assert run_summary["input_snapshot"]["sha256"]
+    assert run_summary["due"] == 1 and run_summary["stale"] == 0
+    assert run_summary["degraded"] == 1 and run_summary["recovered"] == 0
+    assert run_summary["coverage"]["accepted"] == 1
+    assert run_summary["coverage"]["accepted_graph_coverage"] == 0.0
+    assert run_summary["review"]["manual_accepted"] == 1
+    assert run_summary["external_http"]["wikidata"]["requests"] == 0
 
     bad_responses = tmp_path / "bad-responses.json"
     bad_responses.write_text(json.dumps({"wikidata": {"party_candidates": {}}}))
