@@ -125,9 +125,12 @@ machine-readable summary under the disposable `artifacts/` directory. Query
 templates and the run script are sufficient to regenerate retrieval examples.
 No source text, full taxonomy, or model binary belongs in Git.
 
-The final measured results, query counts, provisional review, resource
-measurements and limitations are documented in
-[`results/eurovoc-evaluation.md`](results/eurovoc-evaluation.md).
+## Evaluation results
+
+Read the [evaluation summary](results/summary.md) for the main findings and
+limitations. The [detailed technical report](results/eurovoc-evaluation.md)
+records the methods, query results, provisional review, resource measurements
+and reproduction evidence.
 
 Focused tests:
 
