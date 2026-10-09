@@ -368,6 +368,8 @@ def run_debate_batch(sources: list[DebateRawSource], *,
                      store: CoreStateStore | None = None, run_id: str | None = None,
                      publish: bool = False, loader=None, client=None,
                      on_record_failure=None,
+                     before_publish=None,
+                     after_publish=None,
                      withheld_records: list[tuple[DebateRawSource, str | None,
                                                   str | None, str | None]] | None = None
                      ) -> list[DebateBatchOutcome]:
@@ -417,6 +419,8 @@ def run_debate_batch(sources: list[DebateRawSource], *,
                 on_record_failure(outcome)
     if publish:
         for item in work_items:
+            if before_publish is not None:
+                before_publish(item)
             digest = store.mark_publication_dirty(
                 "debates", item["work_iri"], source_hash=item["source_sha256"],
                 graph_iri=item["graph_iri"], payload=item["payload"],
@@ -439,4 +443,6 @@ def run_debate_batch(sources: list[DebateRawSource], *,
                 graph_iri=item["graph_iri"], payload_hash=digest,
                 contract_version=DEBATES_PUBLICATION_CONTRACT,
             )
+            if after_publish is not None:
+                after_publish(item)
     return outcomes

@@ -20,6 +20,7 @@ from .debates_raw import (DebateSourceError, fetch_main_xml, load_main_xml,
                           persist_main_xml)
 from .debates_pipeline import run_debate_batch
 from .debates_readiness import load_manifest, make_batches, load_batch_sources
+from .resource_budget import ResourceBudget, ResourceBudgetError
 from .serialization import nquads, ntriples, turtle
 from .transforms.houses import PERSISTENT_HOUSES, transform_houses_with_report
 from .transforms.parties import transform_parties
@@ -3891,6 +3892,19 @@ def run_debates(args: argparse.Namespace) -> int:
     sparql_endpoint = getattr(args, "fuseki_sparql_url", None) or settings.fuseki_sparql_url
     if not gsp_endpoint or not sparql_endpoint:
         raise ValueError("--publish requires both Fuseki GSP and SPARQL verification endpoints")
+    resource_budget = None
+    if selected_batch is not None:
+        budget_file = getattr(args, "resource_budget_file", None)
+        if not budget_file:
+            raise ResourceBudgetError(
+                "manifest-driven Debates publication requires --resource-budget-file")
+        resource_budget = ResourceBudget.from_file(
+            budget_file, raw_root=raw_root, state_db=database,
+            observation_path=getattr(args, "resource_report", None))
+        preflight_measurement = resource_budget.observe("preflight")
+        for warning in preflight_measurement["warnings"]:
+            _json_log("resource_budget_warning", endpoint="debates",
+                      warning=warning, stage="preflight")
     versions = _run_versions("debates", settings)
     with state_lock(database):
         with CoreStateStore(database, legacy_members=settings.members_legacy_state_file,
@@ -3907,6 +3921,10 @@ def run_debates(args: argparse.Namespace) -> int:
                     "selection_batch_source_bytes": selected_batch.source_bytes if selected_batch else None,
                     "selection_batch_max_works": getattr(args, "batch_max_works", None),
                     "selection_batch_max_source_bytes": getattr(args, "batch_max_source_bytes", None),
+                    "resource_budget_file": str(Path(args.resource_budget_file).expanduser().resolve())
+                    if resource_budget else None,
+                    "resource_observation_file": str(resource_budget.observation_path)
+                    if resource_budget else None,
                     "raw_root": str(raw_root.resolve()),
                     "supplied_count": len(source_urls) + len(replay_hashes),
                 }, versions=versions,
@@ -3940,6 +3958,29 @@ def run_debates(args: argparse.Namespace) -> int:
                     nonlocal api_failures
                     api_failures += 1
                     _set_run_metrics(args, counters={"api_failures": api_failures})
+
+                def check_publication_budget(item: dict) -> None:
+                    if resource_budget is None:
+                        return
+                    measurement = resource_budget.observe(
+                        f"before_graph_put:{item['work_iri']}",
+                        expected_payload_bytes=len(item["payload"].encode("utf-8")),
+                        expected_triples=len(item["result"].graph),
+                    )
+                    for warning in measurement["warnings"]:
+                        _json_log("resource_budget_warning", run_id=run_id,
+                                  endpoint="debates", warning=warning,
+                                  stage=measurement["stage"])
+
+                def check_completed_budget(item: dict) -> None:
+                    if resource_budget is None:
+                        return
+                    measurement = resource_budget.observe(
+                        f"after_graph_verified:{item['work_iri']}")
+                    for warning in measurement["warnings"]:
+                        _json_log("resource_budget_warning", run_id=run_id,
+                                  endpoint="debates", warning=warning,
+                                  stage=measurement["stage"])
 
                 if selected_batch:
                     loaded_sources = load_batch_sources(selected_batch, raw_root)
@@ -4028,6 +4069,8 @@ def run_debates(args: argparse.Namespace) -> int:
                     loader=loader, client=client,
                     on_record_failure=persist_debate_failure,
                     withheld_records=withheld_records,
+                    before_publish=check_publication_budget,
+                    after_publish=check_completed_budget,
                 )
                 _write_debate_outputs(outcomes, args)
                 for item in outcomes:
@@ -5748,6 +5791,10 @@ def main(argv: list[str] | None = None) -> int:
                      help="inventory batch record ceiling (default: 25)")
     run.add_argument("--batch-max-source-bytes", type=int, default=64 * 1024 * 1024,
                      help="inventory batch source XML byte ceiling (default: 67108864)")
+    run.add_argument("--resource-budget-file",
+                     help="required resource guard paths/limits for manifest-driven publication")
+    run.add_argument("--resource-report",
+                     help="JSONL resource observation path (default is adjacent to budget config)")
     run.add_argument("--publish", action="store_true",
                      help="explicitly opt in to validated Debates graph replacement")
     run.add_argument("--registry-file", help="version-controlled office/unit registry JSON")
