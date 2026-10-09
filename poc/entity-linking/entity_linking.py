@@ -661,8 +661,14 @@ def score_reference(
                         refs_by_span[key].append(mention)
                     elif mention.get("label") == "uncertain":
                         uncertain_spans.add(key)
-            if set(refs_by_span) & uncertain_spans:
-                raise ValueError("a reference span cannot be both positive and uncertain")
+            if any(
+                positive_contribution == uncertain_contribution
+                and positive_start < uncertain_end
+                and positive_end > uncertain_start
+                for positive_contribution, positive_start, positive_end in refs_by_span
+                for uncertain_contribution, uncertain_start, uncertain_end in uncertain_spans
+            ):
+                raise ValueError("positive and uncertain reference spans cannot overlap")
             all_category_predictions = [row for row in predicted if row["category"] == category]
             uncertain_prediction_indices = {
                 index for index, prediction in enumerate(all_category_predictions)

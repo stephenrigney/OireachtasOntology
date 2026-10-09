@@ -67,9 +67,11 @@ mention annotations (39 Member, 2 Bill, 27 NamedOffice, 17 AdministrativeUnit),
 of which 15 were marked uncertain and excluded from positive metrics. Only one
 reviewed mention had an existing supported target: Department of Finance.
 There was no supported Member, Bill, or NamedOffice resolution denominator.
-Predictions overlapping an uncertain annotation of the same category in the
-same contribution were excluded from scoring; this removed three NamedOffice
-predictions from each method.
+As an additional prediction-side scoring rule beyond the frozen annotation
+labels, predictions overlapping an uncertain annotation of the same category
+in the same contribution were excluded from scoring; this removed three
+NamedOffice predictions from each method. The frozen rubric was not changed,
+and reviewer labels were not relabelled.
 
 ## 3. Evaluation outcomes
 
@@ -159,26 +161,26 @@ supported unit identity.
   short contributions. No transcript literal was found. Only source pointers,
   checksums, code-point offsets, mention surfaces, status/evidence, and
   supported target links are stored in provisional RDF.
-- The latest fresh-Fuseki run (with the external source cache already populated)
-  took 22.17 seconds wall time; measured linking-process peak RSS was 1,030 MiB
-  (Fuseki container RSS is not included). A preceding source-acquisition run
-  took 104.25 seconds and measured 167.99 MiB peak RSS, so observed process
-  memory varied between runs; both measurements were below the 4 GiB limit.
-  Latest artifact output was 32,078,024 bytes (about 30.6 MiB, excluding the
-  external raw AKN cache). Fuseki upload took 2.14 seconds; the 96
-  representative SPARQL calls took 3.62 seconds total. Across per-source query
-  calls, median timings were 0.017 s structured-only, 0.018 s exact, and 0.017 s
-  contextual; maximums were 0.269 s, 0.132 s, and 0.190 s, respectively. These
-  are local disposable-store timings, not production or Elasticsearch
-  performance.
-- Two fresh-Fuseki runs before the scoring adjustment matched on sample/run
-  IDs, decision-file checksums, derived graph hashes, graph counts, question
-  results, joins, and mention outcomes. A further fresh-Fuseki run with the
-  uncertainty-exclusion scoring change reproduced the same decisions, graph
-  hashes, counts and question results; only the provisional reference scores
-  changed. The comparison fingerprint covers source/identity inputs, decisions,
-  graphs and retrieval outcomes, not reviewer-score output:
-  `f4abd29058f47257f70aa74f19c250399eb8db62e4f1fcd68d5c19b2bb6124ca`.
+- The final fresh-Fuseki run, after adding the overlapping-reference guard and
+  with the external source cache populated, took 35.22 seconds wall time;
+  measured linking-process peak RSS was 172.91 MiB (Fuseki container RSS is not
+  included). Earlier runs measured 167.99 MiB and 1,030 MiB, so process memory
+  varied substantially; all were below the 4 GiB limit. Final artifact output
+  was 32,078,584 bytes (about 30.6 MiB, excluding the external raw AKN cache).
+  Fuseki upload took 3.26 seconds; the 96 representative SPARQL calls took 5.41
+  seconds total. Across per-source query calls, median timings were 0.029 s
+  structured-only, 0.038 s exact, and 0.029 s contextual; maximums were 0.235 s,
+  0.273 s, and 0.206 s, respectively. These are local disposable-store timings,
+  not production or Elasticsearch performance.
+- Two fresh-Fuseki runs before the uncertainty-scoring adjustment matched on
+  sample/run IDs, decision-file checksums, derived graph hashes, graph counts,
+  question results, joins, and mention outcomes. The post-adjustment run and the
+  final run with the overlapping-reference guard preserved the same decisions,
+  graph hashes, counts, and question result sets; the uncertainty exclusion
+  changed only the provisional reference scores, while the guard does not affect
+  the valid frozen labels. The comparison digest reported during execution had
+  no retained calculation recipe or manifest, so it is not presented as a
+  reproducible fingerprint here.
 - Environment: Python 3.12.14, CPU-only Linux; Fuseki image
   `stain/jena-fuseki:5.1.0` (local image ID
   `sha256:b1d0c96f19adddef417520184471ac816cf36c6e72936a88ea02b29f4305929a`).
@@ -194,7 +196,7 @@ supported unit identity.
 | `review-rubric.json` | `0a641aa74fe13b663319c2ff9b55c9ddb23e9a2718897ae76868f42dcfd40efd` |
 | Provisional reference | `0318f2602593c13646643f1c38a27a6dc6c25e80bbbc1274d068459a0de88ab8` |
 | Validated identity-input fingerprint | `9dedc6510e0e7f4f4958ead4cd370301bd9a54611d34ecc0468407ea8279d625` |
-| `entity_linking.py` | `65b3e3580da8e4e7fda4f64ad7736e7becb123b5da3d54ecb1d310aae90fa7b6` |
+| `entity_linking.py` | `385d2f8460e9451d2423996c79d2206d3008e62322e5e36555ffecc1d45f78f0` |
 | `run.py` | `b1fa88de63685dbd4fbf0f8ec08e2909fdf4de1df3fe82595d7656bd7c6013b6` |
 | Deterministic run ID | `a179cb9586d58e94e156` |
 

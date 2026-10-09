@@ -76,13 +76,13 @@ reviewer-supported resolution set had only one eligible target: Department of
 Finance, resolved correctly by both methods. Members, Bills, and NamedOffices
 had no supported target-resolution denominator in that review set.
 
-The latest fresh-Fuseki run completed on CPU in about 22 seconds with 1,030 MiB
+The latest fresh-Fuseki run completed on CPU in about 35 seconds with 173 MiB
 measured peak RSS for the linking process (the Fuseki container's RSS was not
-included); an earlier source-acquisition run measured 168 MiB. Both were below
-the 4 GiB process limit, though peak memory varied across runs. It
-loaded 21 isolated named graphs, including eight provisional graphs, with
-69,554 triples total. Source, decisions, derived graph hashes, and SPARQL result
-fingerprints matched across three fresh disposable Fuseki runs, including one
-after the uncertainty-scoring adjustment. Full details, denominators, hashes,
-and limitations are in
+included); earlier runs measured up to 1,030 MiB. All were below the 4 GiB
+process limit, though peak memory varied across runs. It loaded 21 isolated
+named graphs, including eight provisional graphs, with 69,554 triples total.
+Source, decisions, derived graph hashes, and question-level SPARQL result sets
+matched across four fresh disposable Fuseki runs, including one after the
+uncertainty-scoring adjustment and the final reference-consistency guard. Full
+details, denominators, hashes, and limitations are in
 [`entity-linking-evaluation.md`](entity-linking-evaluation.md).

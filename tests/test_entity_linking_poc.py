@@ -208,6 +208,35 @@ def test_reference_scoring_separates_detection_from_resolution_and_counts_false_
     assert judgments["Member"]["resolution"]["precision_on_accepted_links"] == 0
 
 
+@pytest.mark.parametrize(
+    ("positive_span", "uncertain_span"),
+    [((10, 20), (10, 20)), ((10, 20), (19, 25))],
+)
+def test_reference_scoring_rejects_overlapping_positive_and_uncertain_spans(
+    positive_span: tuple[int, int], uncertain_span: tuple[int, int],
+):
+    reference = {
+        "blind_to_method_outputs": True,
+        "contributions": [{
+            "contribution_iri": "speech-1",
+            "mentions": [
+                {
+                    "category": "AdministrativeUnit", "label": "explicit-identity-mention",
+                    "start_offset": positive_span[0], "end_offset": positive_span[1],
+                    "target_iri": UNIT,
+                },
+                {
+                    "category": "AdministrativeUnit", "label": "uncertain",
+                    "start_offset": uncertain_span[0], "end_offset": uncertain_span[1],
+                },
+            ],
+        }],
+    }
+
+    with pytest.raises(ValueError, match="positive and uncertain reference spans cannot overlap"):
+        el.score_reference(reference, {"method": []}, methods=("method",))
+
+
 def test_reference_scoring_excludes_predictions_overlapping_uncertain_spans():
     reference = {
         "blind_to_method_outputs": True,
