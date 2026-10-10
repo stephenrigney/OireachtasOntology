@@ -22,6 +22,8 @@ The roadmap deliberately separates:
 The current implementation remains under `poc/nlq/` until the service boundary
 is stable enough to extract into a separate repository.
 
+The proposed cloud-hosted, invitation-only SME evaluation deployment is governed by [Private Beta Deployment Plan](../../documentation/private-beta-deployment-plan.md). Its security and access-control gates are separate from Query Service functional acceptance and do not settle the eventual RDF store or institutional hosting architecture.
+
 ## 2. Current baseline
 
 The proof of concept currently provides:
