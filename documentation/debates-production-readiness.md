@@ -8,6 +8,17 @@ manifest-driven controlled-ingestion implementation is recorded in
 It does **not** authorize controlled ingestion, publish RDF, or close the human
 readiness gate.
 
+**Status reconciliation (2026-10-12):** Phase 6 Tranches A–C are implemented
+and accepted, including a successful hosted disposable release gate with real
+Restic backup, independent restore and fresh Fuseki reconstruction. The
+manifest-driven Debates resource guards and representative source-backed
+staging are also complete, and the post-rebase opt-in staging test passed.
+The operational **production-host** recovery/credentials/container verification
+and the Debates human decisions below remain open. Generic Phase 6 recovery
+acceptance is not a verified backup of the intended production dataset. See
+[Phase 6 Tranche C](phase-6-tranche-c.md) and the
+[Debates execution plan](debates-production-execution-plan.md).
+
 ## Approved source scope and exact inventory
 
 The approved scope is all Dáil, Seanad and committee Debate Works dated
@@ -181,9 +192,12 @@ that date resource enforcement and disposable staging remained outstanding; the
 next dated update records their completion and the remaining owner-evidence
 blocker.
 
-Recurring schedules, unattended deployment, monitoring/alert wiring and backup
-automation/restore remain Phase 6 Tranche B responsibilities. They are not part
-of production enumeration and were not implemented here.
+That 2026-10-08 selection tranche did not implement recurring scheduling,
+monitoring, alerts or backup/restore. Phase 6 Tranches B/C subsequently
+implemented and accepted that generic operational functionality on 2026-10-12.
+Actual production-host configuration, timer operation and recovery acceptance
+remain separately unverified; Debates is excluded from unattended scheduled
+endpoint lists pending explicit ingestion approval.
 
 ### 2026-10-09 staging/resource update (superseded by owner-evidence update below)
 
@@ -205,10 +219,10 @@ small-batch measurements do not recalibrate corpus-scale limits.
 
 ## Gate decision and outstanding approvals
 
-**Readiness gate remains BLOCKED. Do not begin controlled ingestion.** The
-source-backed owner-evidence blocker is now materially reduced by the
-representative isolated staging recorded below, but that evidence is not
-production authorization or proof of corpus-wide historical owner resolution.
+**Readiness gate remains BLOCKED. Do not begin controlled ingestion.**
+Representative source-backed owner staging and Phase 6 implementation acceptance
+have passed, but the staged owner snapshot is non-authoritative and does not
+prove complete historical owner coverage or production readiness.
 Before any authorization, a human must:
 
 - review and disposition the exact quarantined Works without silent source
@@ -354,10 +368,11 @@ separate operational authorization remain mandatory.
 
 The operator sequence and recovery prerequisites are recorded in
 [`debates-production-execution-plan.md`](debates-production-execution-plan.md).
-Its final assessment is **BLOCKED** because no coordinated production backup
-and restore facility has been verified; it also lists the remaining human
-decisions and exact preflight criteria. This report and plan authorize no
-production publication.
+Its final assessment remains **BLOCKED** because the intended host has no
+verified coordinated production backup and isolated restore, despite Phase 6's
+successful disposable implementation recovery test. It also lists the remaining
+human decisions, authoritative owner approval and exact preflight criteria.
+This report and plan authorize no production publication.
 
 ## Reproduction
 
