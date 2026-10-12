@@ -1988,14 +1988,20 @@ Turn the complete Phase 6 operating contract into a repeatable deployment gate.
 #### Tranche C acceptance record
 
 The reproducible invocation, CI workflow, acceptance boundaries and deployment
-limitations are documented in `documentation/phase-6-tranche-c.md`. The
-machine-readable result from the completed disposable run is recorded in
-`documentation/evidence/phase-6-tranche-c-release-gate.json`. It includes the
-exact tested revision and Compose configuration hash, each mandatory group,
-infrastructure and duration, zero skipped mandatory tests, a real Restic
-backup/integrity/independent-restore result, fresh Fuseki graph verification,
-and failure-injection outcomes. The gate uses real disposable Fuseki and Restic;
-it does not contact external authorities or production services.
+limitations are documented in `documentation/phase-6-tranche-c.md`. The local
+machine-readable result is recorded in
+`documentation/evidence/phase-6-tranche-c-release-gate.json`; it records the
+tested implementation revision, Compose configuration hash, mandatory groups,
+zero mandatory skips, real Restic backup/integrity/independent restore, fresh
+Fuseki graph verification and failure-injection outcomes. The gate uses
+disposable Fuseki and Restic and does not contact external authorities or
+production services.
+
+The implementation was accepted and fast-forward merged to `master` at
+`d9b65080efcfae0cb16b0cc6ae0e16ad97782572`. The local release gate passed on
+`5b324a27620fea33dc3eef2602e5a267c239271b`; hosted release-gate and routine
+validation results for the merged revision are recorded in
+`documentation/phase-6-tranche-c.md`.
 
 Systemd unit/timer and wrapper invocation contracts are exercised by automated
 tests, but CI does not enable/run host timers and does not claim static
@@ -2032,6 +2038,15 @@ Phase 6 is complete when:
 - operational schedules, retention and alert thresholds remain configurable;
   and
 - the layered CI release gate passes against disposable infrastructure.
+
+### Implementation completion record (2026-10-12)
+
+**Phase 6 implementation complete — production deployment not yet authorised.**
+Tranches A, B and C are accepted and merged at
+`d9b65080efcfae0cb16b0cc6ae0e16ad97782572`. This implementation status does not
+claim production-host provisioning, deployment acceptance, private-beta
+approval, or Debates production-ingestion authorisation. Outstanding deployment
+gates are listed in `documentation/phase-6-tranche-c.md` and remain mandatory.
 
 ## Phase 7 — Extend dataset coverage
 

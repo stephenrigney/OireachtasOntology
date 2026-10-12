@@ -676,10 +676,12 @@ provided; and projection recovery uses an offline, unserved staging dataset
 before filesystem cutover. These are implementation paths, not evidence that
 the site's alert destination is configured, that the timers have been enabled,
 or that a production-host drill has passed. Configure and test the hook and
-drill prerequisites before enabling their timers. Do not claim the complete
-Phase 6 exit: Tranche C's disposable release gate and production/external
-service acceptance remain separate, and this guide does not claim Debates
-production ingestion/readiness.
+drill prerequisites before enabling their timers. Phase 6 implementation is
+complete following Tranche C's accepted disposable release gate; that result
+does not constitute production deployment acceptance. Production-host and
+external-service acceptance remain separate, and this guide does not claim
+Debates production ingestion/readiness. The implementation status and remaining
+deployment prerequisites are recorded in `documentation/phase-6-tranche-c.md`.
 
 ### Independent review finding disposition
 

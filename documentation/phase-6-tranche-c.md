@@ -87,3 +87,76 @@ test groups and durations, isolated infrastructure, backup/restore/rebuild
 summary, failure injection, and zero mandatory skips. A new release candidate
 must rerun the gate; do not reuse this evidence as acceptance for a different
 revision or deployment configuration.
+
+## Final implementation acceptance record — 2026-10-12
+
+**Phase 6 implementation complete — production deployment not yet authorised.**
+Tranches A, B and C are accepted and merged into `master`. The exact accepted
+implementation revision is
+`d9b65080efcfae0cb16b0cc6ae0e16ad97782572` (Tranche C implementation commit
+`5b324a27620fea33dc3eef2602e5a267c239271b`; evidence commit
+`d9b65080efcfae0cb16b0cc6ae0e16ad97782572`).
+
+- The local disposable release gate passed on `5b324a27620fea33dc3eef2602e5a267c239271b`; its committed evidence is
+  [`evidence/phase-6-tranche-c-release-gate.json`](evidence/phase-6-tranche-c-release-gate.json).
+- The hosted **Production release gate** passed against the merged revision in
+  [GitHub Actions run 38304245816](https://github.com/stephenrigney/OireachtasOntology/actions/runs/38304245816).
+  Job `disposable-full-stack-acceptance` passed all steps. The uploaded artifact
+  is `phase-6-tranche-c-release-gate-d9b65080efcfae0cb16b0cc6ae0e16ad97782572`
+  (artifact ID `11772055770`). Its report matches the tested revision and
+  Compose hash, reports all ten groups PASS, cleanup PASS, and zero mandatory
+  skips. The mandatory integrated acceptance reported 32 tests with no skips,
+  failures or errors; the mandatory real-Fuseki Debates test reported one test
+  with no skip. The report records four backed-up SQLite stores, independent
+  restore with Core State integrity `ok`, two rebuilt/verified graphs and 283
+  triples, exact dirty-payload replay, and fail-closed rejection of a non-empty
+  rebuild. Both Compose projects and disposable storage were removed; no
+  production credentials/services or external authorities were used.
+- The routine **Validation** workflow also passed on the merged revision in
+  [GitHub Actions run 38304223589](https://github.com/stephenrigney/OireachtasOntology/actions/runs/38304223589).
+  Its broader optional regression suite reported 939 passed and 16 skipped;
+  those optional skips do not alter the zero-skip result for mandatory release
+  acceptance tests.
+
+### Non-blocking acceptance limitations
+
+- The release gate runs ETL tests from the host `.venv` and invokes the runner's
+  installed Restic binary. It validates the production Compose configuration
+  and starts real disposable Fuseki services, while wrapper/systemd invocation
+  tests use deterministic Docker doubles; it does not build and run the
+  production `etl`/`ops` container image. The workflow installs Restic through
+  the runner package manager, whereas the production image pins Restic 0.19.1.
+  The production image/runtime path therefore remains for deployment-specific
+  verification.
+- The script's default evidence destination is reused across invocations
+  (`scripts/production-release-gate.sh:30,82-105`). A failed rerun with clean
+  cleanup can leave an earlier PASS file in place, while a cleanup failure can
+  rewrite an earlier result to BLOCKED without that file describing the failed
+  attempt. Early preflight failures can also produce misleading Compose-cleanup
+  diagnostics because cleanup is attempted before runtime env files exist
+  (`scripts/production-release-gate.sh:54-81`). The accepted run is supported
+  by its revision-bound hosted artifact and the committed local evidence; this
+  low-severity evidence-lifecycle/diagnostic issue is a follow-up, not a reason
+  to reuse a result for another revision.
+
+### Separate deployment and beta gates
+
+Implementation acceptance does not authorize production deployment. The
+following deployment-specific prerequisites remain outstanding and must not be
+treated as complete:
+
+- provisioned production host and protected runtime configuration;
+- production credentials, notification destination and backup repository;
+- verified installed systemd services and timers;
+- a successful deployment-specific backup/restore drill;
+- production endpoint access controls and security review;
+- separate private-beta deployment approval; and
+- separate Debates production-ingestion authorisation, including approved
+  operational budgets, corpus-completeness boundary, owner authority and
+  exception dispositions.
+
+The private-beta design, staging-security, controlled-launch and evaluation
+gates in `documentation/private-beta-deployment-plan.md` remain separate. The
+controlled Debates production plan remains blocked pending its own decisions and
+evidence. No production deployment, private beta, or Debates production
+ingestion is authorised by this implementation acceptance.
