@@ -2073,44 +2073,40 @@ The approved Debates design is recorded in
 remains `documentation/debates_ontology_outline.md` and
 `ontology/debates.owl.ttl`.
 
-**Status:** Debates Tranches 1–4 are complete for the bounded representative
-scope. The Tranche 3 evidence review in `documentation/phase-7-debates.md`
-explicitly defers unsupported legislative-section and question-recipient
-positive competencies; their mappings remain inactive and source references
-auditable. The **initial production scope is approved**: all Dáil, Seanad and
-committee debate Works dated **2011-01-01 onward**, with written answers
-excluded, irrespective of Bill linkage. This is a scope decision, **not**
-authorization for broad ingestion. The exact inventory of the preserved
-2011+ `/v1/debates` census is complete: 10,913 Works, 10,649 eligible and 264
-quarantined. See `documentation/debates-production-readiness.md` and its
-per-Work `documentation/debates-initial-production-inventory.json`. The gate
-remains open pending human exception dispositions, approval of proposed Phase 6
-operational limits, a decision on the accepted source-listing/Expression
-completeness boundary, and staged operational acceptance. The exact inventory
-does not prove global Work/Expression completeness. Tranche 4 supports explicit
-AKN acquisition/replay and opt-in supplied-batch publication; it does not
-  implement production enumeration or scheduling.
+**Status (2026-10-12):** Debates Tranches 1–4 and the subsequent
+manifest-driven controlled-ingestion readiness implementation are complete.
+The approved **initial production scope** is Dáil, Seanad and committee Debate
+Works dated **2011-01-01 onward**, excluding written answers and without a
+Bill-linkage filter. The preserved 2011+ `/v1/debates` census has **10,913
+Works: 10,649 inventory-eligible and 264 exceptions withheld for human
+disposition**. Its source-listing inventory does not prove global
+Work/Expression completeness. See
+[the readiness assessment](debates-production-readiness.md),
+[the controlled-staging report](debates-controlled-staging-report.md) and
+[the execution plan](debates-production-execution-plan.md).
 
-The 2026-10-08 follow-up implements only deterministic manifest-driven
-selection and bounded batch indexing, reusing Phase 6 run/quarantine and the
-existing Debates publication path. It does not implement resource-budget
-enforcement or complete disposable staging acceptance: a current
-source-validated owner snapshot was unavailable. The controlled-ingestion gate
-therefore remains **blocked**; see
-`documentation/debates-controlled-staging-report.md` for limitations and the
-remaining acceptance plan. This update authorizes no production publication.
+The approved follow-up implements frozen-manifest selection, deterministic
+bounded batches (up to 25 Works / 64 MiB of source XML), configurable resource
+guards and shared Phase 6 quarantine/recovery; it does **not** add live corpus
+enumeration or unattended Debates scheduling. Representative source-backed
+staging against disposable Fuseki and isolated Core State exercised **52 unique
+Works: 51 graph-verified publications and one inventoried quarantine**, with
+replay, interruption/recovery and fail-closed conflict handling. The source
+snapshot was explicitly non-authoritative for production. Post-rebase opt-in
+staging acceptance also passed on 2026-10-12. Phase 6 Tranches A–C are now
+implementation-complete; the hosted Tranche C release gate verified real
+disposable Fuseki, Restic backup, independent restore and a small fresh-store
+rebuild. This is **not** evidence of a configured production host or a
+production-scale recovery point.
 
-**2026-10-09 final preparation update:** source-backed representative staging
-and resource guards are verified; source-backed test selections reconcile to
-52 unique Works (51 clean published graphs plus one inventory quarantine; the
-49-graph count belongs to the earlier fixture-only exercise). The operator
-execution/recovery plan is in
-`documentation/debates-production-execution-plan.md`. Production remains
-**BLOCKED**: coordinated backup/restore is not implemented or verified, and
-human decisions on the 264 inventory exceptions, census/Expression completeness
-boundary, resource limits, current authoritative owner evidence and explicit
-publication authorization remain open. No initial production ingestion is
-complete or authorized.
+**Controlled Debates ingestion remains BLOCKED and unauthorised.** Before
+publication, obtain decisions on the 264 exceptions, approved resource budgets,
+the census/Expression-completeness boundary, and current authoritative owner
+graphs/fingerprint; verify the intended host, production container/runtime path,
+backup destination and coordinated isolated restore; then obtain explicit human
+publication authorisation. Phase 7's unsupported legislative-section and
+question-recipient crosswalks remain evidence-deferred, not silently accepted.
+No initial production ingestion has occurred.
 
 Settled boundaries include:
 
@@ -2176,8 +2172,11 @@ publishing a graph from one Expression alone. The full rules are in
    debates-only scope is now selected and its exact preserved-census inventory
    is complete (see the readiness report and inventory JSON). Human exception
    dispositions, operational limits, the completeness-boundary decision and
-   staged acceptance remain outstanding. Production scanning cadence and
-   scheduling policy remain Phase 6 work.
+   production-host acceptance remain outstanding. Subsequent manifest-driven
+   selection, resource guards and representative source-backed staging have
+   passed; no live complete-corpus enumeration or unattended Debates schedule
+   was introduced. The generic Phase 6 operational implementation is complete,
+   but site-specific deployment and Debates publication remain separately gated.
 
 #### Debates backlog
 
@@ -2213,13 +2212,19 @@ publishing a graph from one Expression alone. The full rules are in
   report sizes; actual TDB2/full Core State amplification and production-owner
   report sizes still require staged measurement. Values in the readiness report
   are proposals, not approved settings.
-- [ ] **Before initial ingestion — production readiness:** complete safe
-  enumeration/selection of the approved period through the Phase 6 operational
-  pathway, confirm whether the `/v1/debates` census is the accepted completeness
-  boundary, and complete staged acceptance of publication, verification,
-  quarantine and recovery. One listed Expression does not prove a Work's global
-  Expression completeness. Tranche 4's explicit-record CLI and this preserved
-  census inventory are not a production enumeration or scheduling facility.
+- [x] **Controlled-ingestion implementation and staging:** implement frozen
+  manifest selection and bounded batches, enforce resource guards and shared
+  quarantine, and verify source-backed owner resolution, graph publication,
+  quarantine and recovery against disposable Fuseki/isolated Core State.
+  Representative acceptance passed; the staged owner snapshot is
+  non-authoritative and does not close the production gate.
+- [ ] **Before initial ingestion — production readiness:** decide whether the
+  `/v1/debates` census is the accepted Work/Expression completeness boundary;
+  review all inventory exceptions, approve resource limits and current
+  authoritative production owners, and verify the intended host/container,
+  coordinated backup/isolated restore and explicit publication authority.
+  Frozen-manifest selection is implemented; there is no live complete-source
+  enumeration, completeness inference or unattended Debates scheduling.
 
 **Deferred beyond the initial 2011+ debates-only load (not prerequisites
 unless new evidence affects its safety):**
