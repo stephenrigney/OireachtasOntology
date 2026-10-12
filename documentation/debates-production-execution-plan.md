@@ -1,9 +1,15 @@
 # Debates controlled-production execution and recovery plan
 
-Assessment date: 2026-10-09. This is an operator procedure for the approved
-initial corpus, not an authorization to publish. The final decision is
-**BLOCKED** until the explicit prerequisites and human decisions below are
-closed. No production operation was performed to prepare this plan.
+Assessment date: 2026-10-09; status reconciled 2026-10-12. This is an operator
+procedure for the approved initial corpus, not authorization to publish.
+**BLOCKED** remains the final decision until the host-specific prerequisites
+and human decisions below are closed. Phase 6 Tranches A–C have since passed
+implementation and hosted disposable acceptance, including representative
+Restic backup/restore and a fresh Fuseki rebuild; the intended production
+host, coordinated recovery point and Debates publication remain unverified
+and unauthorised. See [Phase 6 Tranche C](phase-6-tranche-c.md) and
+[production operations](production-operations.md). No production operation
+was performed to prepare this plan.
 
 ## Scope and acceptance evidence
 
@@ -122,18 +128,35 @@ clean status alone does not make development/bootstrap data authoritative.
 
 ## Backup gate and recovery
 
-Phase 6 defines SQLite/Core State as canonical operational state and Fuseki as a
-rebuildable projection. Phase 6 Tranche B backup scheduling, retention,
-monitoring and restore automation are not implemented. No production backup
-or restore facility was verified for this task. This is a **production blocker**:
-before authorization, the operator must supply and test an approved recovery
-mechanism, not merely run ad-hoc commands or assume TDB2 files are a backup.
+Phase 6 defines SQLite/Core State, the other durable application stores and
+preserved source/graph evidence as the canonical recovery boundary; Fuseki/TDB2
+is a rebuildable projection. Tranches B/C now provide encrypted Restic backup,
+retention and monitoring, isolated staged restore/activation, and guarded offline
+fresh-Fuseki reconstruction through the production operations wrapper.
+The hosted Tranche C gate passed a **representative disposable** backup
+(four SQLite stores), independent restore and verified fresh projection (two
+graphs / 283 triples), including failure injection. It did **not** run the
+production `etl`/`ops` image or prove restoration of the intended host's
+complete dataset.
+
+**The deployment-specific coordinated recovery gate remains a production
+blocker.** Before initial ingestion, provision protected backup storage
+(including protection against host loss), secrets, notifications and timers;
+exercise the actual deployed container/runtime path; take a consistent
+recovery point with writers coordinated; and independently restore/rebuild
+the complete intended dataset, including pre-existing owners, Debate graphs and
+provenance. Do not assume TDB2 snapshots are the canonical backup. See
+[production operations](production-operations.md) for the implemented
+commands and their limits.
 
 The minimum acceptable controlled recovery point, taken during a maintenance
 window with all ETL/owner writers stopped, must preserve:
 
-- the complete live Fuseki dataset/graphs, including the pre-existing
-  provenance catalog and all unrelated owner graphs;
+- canonical durable source and verified graph payloads sufficient to rebuild
+  **every** live Fuseki named graph, including unrelated owners and the
+  provenance catalog, plus a complete graph inventory/hash baseline for
+  comparison; an optional offline Fuseki snapshot is supplementary, not
+  authoritative recovery state;
 - Core State plus SQLite WAL/journal state using a transactionally consistent
   SQLite backup (do not copy a live database file alone);
 - the immutable Debate XML objects, their metadata, and all retained reference
@@ -141,35 +164,45 @@ window with all ETL/owner writers stopped, must preserve:
 - the exact inventory and SHA-256, approved budget/configuration, code revision,
   Fuseki dataset/configuration identity, and protected credential references.
 
-Store the recovery point on a separate protected target with at least 30 GiB
-free before backup and at least 35 GiB free as the warning threshold. Capacity
-and retention growth beyond this one-run recovery point remain unmeasured.
-Restrict credentials and backup access. Record inventory, SQLite backup,
-Fuseki snapshot and raw/report checksums; verify the backup is readable. Then
-restore to isolated Fuseki and Core State resources, compare the graph inventory
-and exact graph hashes, inspect state with the read-only snapshot tool, and prove that the
-restored Core State agrees with restored Fuseki, including the provenance
-catalog. Only a successful isolated restore test closes this gate.
+Store the recovery point on separately protected storage with at least 30 GiB
+free before backup and at least 35 GiB free as the warning threshold. The
+initial Compose Restic repository is a local host path: ensure an approved
+off-host copy/protection against host loss. Capacity and retention growth
+beyond the measured representative release-gate test remain unmeasured.
+Restrict credential and backup access. Record the inventory, exact backup ID,
+SQLite/Restic integrity evidence and raw/report/graph hashes. Restore the
+protected backup to isolated canonical state, rebuild a **fresh unserved**
+Fuseki projection and compare the full graph inventory and exact graph hashes,
+including the provenance catalog. Inspect state with the read-only snapshot
+tool and prove the restored Core State agrees with the rebuilt projection.
+Only a successful **deployment-specific complete-state** isolated recovery
+test closes this gate.
 
-At present, no repository CLI or documented deployment facility performs this
-coordinated production backup/restore, and no restore has been proven. Operator
-must identify the actual approved storage/snapshot mechanism and demonstrate
-the isolated restore before publication; otherwise stop. Do not introduce
-Tranche B automation as part of this task.
+The repository now supplies backup, check, stage/activate-restore and
+fresh-projection rebuild tooling described in
+[production operations](production-operations.md). The operator must
+configure and validate that implementation on the intended host, provide the
+approved protected backup destination, demonstrate coordinated full-state
+recovery in isolation, and pin the recovery-point evidence before publication;
+otherwise stop. The disposable Phase 6 acceptance does not close this gate.
 
-Rollback means restoring the **whole coordinated recovery point**, not deleting
-Debate graphs, reversing only the last graph, or copying TDB2 internals while
-Fuseki is live. Freeze writers; preserve failed-run logs/observations and dirty
-Core State for diagnosis; restore Core State and the complete Fuseki projection
-from the same recovery point; verify graph hashes and catalog; then resume only
-after human approval. Because graph publication is per-Work and not a corpus
-transaction, a partial load is expected and remains recoverable only through
-this tested restore procedure plus deterministic replay.
+Rollback means restoring the **whole coordinated canonical recovery point**,
+not deleting Debate graphs, reversing only the last graph, or copying TDB2
+internals while Fuseki is live. Freeze writers; preserve failed-run
+logs/observations and dirty Core State for diagnosis; stage and activate the
+approved full-state backup with the implemented safeguards, then reconstruct a
+fresh unserved Fuseki projection and verify every expected graph and catalog
+entry before cutover. Resume only after human approval. Since publication is
+per-Work rather than a corpus transaction, a partial load requires this tested
+restore/rebuild procedure or bounded deterministic replay; neither provides
+a one-command atomic corpus rollback.
 
-The staging suite **did** verify a different, narrower capability: dirty graph
-replay after interruption, PUT/verification failures, unchanged replay,
-quarantine retention, and provenance-catalog verification against disposable
-Fuseki/Core State. That is not backup or whole-store restoration evidence.
+The Debates-specific staging suite also verified dirty graph replay after
+interruption, PUT/verification failure, unchanged replay, quarantine retention,
+and provenance-catalog verification against disposable Fuseki/Core State.
+The later Phase 6 release gate tested representative backup/restore/rebuild;
+neither exercise establishes that the intended production host can restore
+its full authoritative owner/Debates graph set.
 
 ## Resource limits and monitoring
 
@@ -256,8 +289,9 @@ Go only when each of the following is objectively true:
   observer is present;
 - no other ETL, owner publisher, Fuseki maintenance or deployment is active.
 
-Any failed or unknown criterion is **NO-GO**. In particular, the backup gate is
-currently unverified, so execution cannot start.
+Any failed or unknown criterion is **NO-GO**. In particular, the
+deployment-specific coordinated backup/rebuild gate is currently unverified,
+so execution cannot start.
 
 ### 2. Publish progressively
 
@@ -370,17 +404,21 @@ representative source-backed owner integration; no-owner-description boundary;
 resource guard behavior; disposable Fuseki graph/catalog verification;
 interruption, dirty replay, quarantine retention and exact replay evidence.
 
-Still requiring operator/human verification: disposition/review of the 264
-exceptions; acceptance of the census/Expression-completeness boundary; approval
-of budgets and current host capacity; the production source-backed owner graph
-and its authority/provenance; target/configuration/credential setup; a current
-owner fingerprint pin; and a coordinated production backup with successful
-isolated restore. No production backup or restore facility was verified; that
-is the immediate technical blocker. No production ingestion, production Core
-State mutation, production RDF publication, ontology/mapping change or Tranche
-B work is approved by this plan.
+Phase 6 Tranches A–C implementation and hosted disposable release acceptance
+are complete. Manifest-driven batch selection, guards, representative
+source-backed staging and the generic Restic/restore/rebuild mechanisms are
+implemented. This does **not** supply deployment-specific recovery evidence.
 
-**Decision: BLOCKED.** Do not publish until the backup/restore capability is
-demonstrated and all go/no-go items and human approvals are recorded. Production
-publication requires separate explicit human authorization after those gates;
+Still requiring operator/human verification: disposition of the 264 exceptions;
+acceptance of the census/Expression-completeness boundary; budget/host-capacity
+approval; clean authoritative source-backed production owner graphs and their
+provenance/fingerprint; target configuration, credentials, secured endpoints,
+production ETL/ops container runtime and timers; an approved protected backup
+destination; and a coordinated backup with independent complete-state recovery
+on the intended deployment. No production ingestion, production Core State
+mutation or RDF publication is authorised by this plan.
+
+**Decision: BLOCKED.** Do not publish until deployment-specific recovery,
+owner/source authority and all human go/no-go approvals have been demonstrated
+and recorded. Production publication requires separate explicit authorization;
 this document is not that authorization.
