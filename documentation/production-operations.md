@@ -707,3 +707,11 @@ These paths have focused regression coverage. A deployment must still complete
 a successful manual recovery drill with its actual protected paths and secrets
 before enabling the scheduled drill timer; this guide is not a production-host
 acceptance result.
+
+Corrective acceptance verification also exercised full disposable Restic
+restore/activation/rebuild/cutover/post-cutover verification once with a
+legitimately empty Core State inventory and once with a seeded published Member
+graph. A separate disposable Compose run crossed the reconciliation alert
+threshold, delivered the JSON event through a temporary hook, acknowledged it,
+and confirmed a subsequent check did not redeliver it. No production services,
+credentials or data were used.
