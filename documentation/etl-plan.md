@@ -1974,20 +1974,43 @@ the same path; and backup age/integrity is observable.
 
 Turn the complete Phase 6 operating contract into a repeatable deployment gate.
 
-- Retain fast checks for normal development.
-- Add disposable full-stack production-simulation CI.
-- Exercise clean/incremental/idempotent runs, quarantine/recovery, schema drift,
+- [x] Retain fast checks for normal development.
+- [x] Add explicitly invoked disposable full-stack production-simulation CI.
+- [x] Exercise clean/incremental/idempotent runs, quarantine/recovery, schema drift,
   external outage/staleness, provenance/run summaries and graph boundaries.
-- Exercise interrupted publication and deterministic replay.
-- Restore a retained test backup into disposable infrastructure and rebuild a
+- [x] Exercise interrupted publication and deterministic replay.
+- [x] Restore a retained test backup into disposable infrastructure and rebuild a
   fresh triple store.
-- Exercise the configured scheduling/operational path sufficiently to prove it
-  invokes the same application behaviour as manual execution.
-- Document the release-gate command/workflow and failure diagnostics.
+- [x] Exercise the configured scheduling/operational path sufficiently to prove
+  manual and scheduled invocation wiring is equivalent.
+- [x] Document the release-gate command/workflow and failure diagnostics.
 
-**Exit:** the complete release gate passes from a clean environment and
-demonstrates unattended execution, safe failure, traceable publication,
-recoverable durable state and independent external enrichment.
+#### Tranche C acceptance record
+
+The reproducible invocation, CI workflow, acceptance boundaries and deployment
+limitations are documented in `documentation/phase-6-tranche-c.md`. The
+machine-readable result from the completed disposable run is recorded in
+`documentation/evidence/phase-6-tranche-c-release-gate.json`. It includes the
+exact tested revision and Compose configuration hash, each mandatory group,
+infrastructure and duration, zero skipped mandatory tests, a real Restic
+backup/integrity/independent-restore result, fresh Fuseki graph verification,
+and failure-injection outcomes. The gate uses real disposable Fuseki and Restic;
+it does not contact external authorities or production services.
+
+Systemd unit/timer and wrapper invocation contracts are exercised by automated
+tests, but CI does not enable/run host timers and does not claim static
+validation proves unattended operation. Production-host provisioning, secret
+and notification setup, deployment-specific timer execution, security review,
+and deployment authorization remain separate human gates. Private-beta gates
+and the Debates controlled-production decision are unchanged.
+
+**Implementation exit:** the complete release gate passes from a clean
+environment and demonstrates safe failure, traceable publication, recoverable
+durable state, independent external enrichment, and equivalent manual/scheduled
+invocation wiring. This proves the implementation and its unattended-execution
+configuration; it does not prove that a particular production host has been
+provisioned, authorized, or operated unattended. Those deployment-specific
+checks remain a separate human gate.
 
 ### Phase 6 exit criteria
 

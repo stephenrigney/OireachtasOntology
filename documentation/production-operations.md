@@ -2,10 +2,12 @@
 
 This is an operations guide to the implementation currently in this checkout.
 It describes the initial single-host Compose deployment, systemd jobs, backup
-and restore commands, and Fuseki projection reconstruction. It is not a
-production acceptance result: Tranche C's disposable release gate and
-production/ external-service testing are not claimed here. Debates production
-ingestion is explicitly out of scope.
+and restore commands, and Fuseki projection reconstruction. It is not itself a
+production acceptance result. Tranche C's disposable implementation acceptance
+and its limits are recorded in `documentation/phase-6-tranche-c.md` and the
+linked machine-readable evidence; production-host provisioning, external
+service acceptance, security review and deployment authorization remain
+separate. Debates production ingestion is explicitly out of scope.
 
 ## Operating boundaries
 
@@ -659,9 +661,10 @@ drill timer until its separate paths/password have been tested with a manual
   disjoint from production.
 - Backups are local-path Restic snapshots in this Compose deployment; no
   off-host copy, RTO, or automatic full recovery orchestration is configured.
-  The backup checker is not a complete disaster-recovery proof. Production
-  acceptance, disposable full-stack release testing, external/production
-  testing, and Debates ingestion/readiness are not claimed by this guide.
+  The backup checker is not a complete disaster-recovery proof. Production-host
+  acceptance, external/production testing, and Debates ingestion/readiness are
+  not claimed by this guide; the disposable implementation acceptance is
+  separately documented in `documentation/phase-6-tranche-c.md`.
 
 ## Tranche B implementation status and deployment prerequisites
 
