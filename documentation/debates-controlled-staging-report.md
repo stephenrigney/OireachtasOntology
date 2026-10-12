@@ -1,7 +1,12 @@
 # Debates controlled-ingestion implementation and staging report
 
-Assessment date: 2026-10-09. This report records implementation and disposable
-staging evidence. It does **not** authorize production publication.
+Assessment date: 2026-10-09; status reconciled 2026-10-12. This report records
+implementation and disposable staging evidence. The 2026-10-09 source-backed
+owner update supersedes the earlier fixture-only limitation. Subsequent
+post-rebase opt-in staging acceptance and Phase 6 A–C implementation/release
+acceptance also passed. None of these tests authorizes production publication
+or establishes a deployed, recoverable production host. See
+[Phase 6 Tranche C](phase-6-tranche-c.md).
 
 ## Implemented
 
@@ -322,7 +327,7 @@ required.
 
 **Staging mechanics and representative source-backed owner evidence passed;
 production readiness remains BLOCKED pending human decisions and an unverified
-production backup/restore prerequisite.** The disposable
+deployment-specific coordinated backup/restore prerequisite.** The disposable
 Fuseki/Core State path, resource controls, bounded batches, quarantine,
 warnings/hard stop, idempotent replay, dirty/pending recovery, catalog
 verification and graph preservation passed. The source-backed staging confirms
@@ -333,13 +338,16 @@ approved resource budgets, inventory exceptions and source completeness, plus a
 separate controlled-production execution plan, remain required.
 
 Technical completion of these staging mechanics is **not** authorization to
-publish production data. No production ingestion, Phase 6 Tranche B work,
-source repair, ontology/mapping change or semantic acceptance change was
-performed.
+publish production data. This staging exercise performed no production
+ingestion, source repair, ontology/mapping change or semantic acceptance
+change. Phase 6 Tranches B/C were subsequently completed and verified using
+disposable recovery infrastructure; the production-host gate remains open.
 
 The operator-ready execution and recovery sequence, exact inventory pin,
 production owner-snapshot pinning procedure, resource ceilings and backup/restore
 go/no-go criteria are in
 [`debates-production-execution-plan.md`](debates-production-execution-plan.md).
-That plan concludes **BLOCKED** until a coordinated backup can be restored and
-all human gates are closed. It authorizes no production mutation.
+That plan concludes **BLOCKED** until a coordinated backup from the intended
+deployment can be restored into isolated infrastructure and all human gates
+are closed. Phase 6's representative disposable restore is not that test.
+This plan authorizes no production mutation.
