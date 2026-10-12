@@ -1,0 +1,13 @@
+[Unit]
+Description=Evaluate repeated degraded Oireachtas ETL runs and dispatch alerts
+Documentation=file:/opt/oireachtas-etl/documentation/production-operations.md
+Requires=docker.service
+After=docker.service oir-etl.service oir-reconcile.service
+OnFailure=oireachtas-ops-failure@%n.service
+
+[Service]
+Type=oneshot
+Environment=OIR_RUNTIME_ENV_FILE=/etc/oireachtas-etl/production.env
+ExecStart=/opt/oireachtas-etl/scripts/production-compose.sh alerts-check
+TimeoutStartSec=0
+Nice=15

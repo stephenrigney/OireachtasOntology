@@ -1,0 +1,13 @@
+[Unit]
+Description=Weekly disposable Oireachtas recovery drill
+Documentation=file:/opt/oireachtas-etl/documentation/production-operations.md
+
+[Timer]
+OnCalendar=Sun *-*-* 06:00:00
+Persistent=true
+RandomizedDelaySec=15m
+AccuracySec=1m
+Unit=oir-recovery-drill.service
+
+[Install]
+WantedBy=timers.target

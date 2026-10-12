@@ -8,6 +8,7 @@ OnFailure=oireachtas-ops-failure@%n.service
 [Service]
 Type=oneshot
 Environment=OIR_RUNTIME_ENV_FILE=/etc/oireachtas-etl/production.env
+Environment=OIR_SCHEDULED_ETL=1
 ExecStart=/opt/oireachtas-etl/scripts/production-compose.sh run-reconciliation
 TimeoutStartSec=0
 Nice=10

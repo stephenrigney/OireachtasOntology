@@ -48,8 +48,10 @@ Example host-side locations (the values are deployment choices):
 | `/etc/oireachtas-etl/restic-password` | Restic encryption password file, mounted read-only into the ops container. |
 | `/var/lib/oireachtas-etl-root` | Durable ETL state parent and shared `operations.lock`; Compose mounts it at `/var/lib/oireachtas-etl-root`. |
 | `/var/lib/oireachtas-etl-root/live` | Four live SQLite stores and `raw/` evidence. |
+| `/var/lib/oireachtas-etl-root/alerts` | Degraded-run alert delivery state; deliberately outside `live/` so restore activation does not replace it. |
 | `/var/lib/oireachtas-fuseki` | Example persistent Fuseki/TDB2 directory, separate from canonical state and backups. |
 | `/var/backups/oireachtas-etl` | Host directory mounted by ops; the configured Restic repository is `restic/` below it. |
+| Dedicated drill root | Isolated temporary recovery inputs and Compose data; must not overlap production state, backups, Fuseki, secrets, or the project checkout. |
 
 Keep the durable state, Fuseki data, Restic repository, and runtime secrets in
 separate protected locations. `OIR_BACKUP_DIR` must not be inside the ETL
@@ -100,10 +102,11 @@ copy of required runtime settings and credentials outside that backup.
    For the example paths and default ETL/ops identity, host setup can start with:
 
    ```sh
-   sudo install -d -o 10001 -g 10001 -m 0750 \
-     /var/lib/oireachtas-etl-root /var/lib/oireachtas-etl-root/live/raw \
-     /var/backups/oireachtas-etl
-   sudo install -d -m 0750 /var/lib/oireachtas-fuseki
+    sudo install -d -o 10001 -g 10001 -m 0750 \
+      /var/lib/oireachtas-etl-root /var/lib/oireachtas-etl-root/live/raw \
+      /var/backups/oireachtas-etl
+    sudo install -d -o root -g root -m 0750 /var/lib/oireachtas-etl-drills
+    sudo install -d -m 0750 /var/lib/oireachtas-fuseki
    ```
 
    Adjust the ETL/ops owner/group if configured UID/GID differs. Set the
@@ -132,9 +135,18 @@ copy of required runtime settings and credentials outside that backup.
    as `/run/secrets/restic-password`; make it readable by the configured
    container UID/GID (for example, root-owned with read permission only for the
    container's dedicated group; with defaults, `root:10001` and mode `0440`),
-    and not readable by other host users. Preserve both secrets through an
-    approved secret-management channel. Losing the Restic password makes
-    encrypted backups unusable.
+     and not readable by other host users. Preserve both secrets through an
+     approved secret-management channel. Losing the Restic password makes
+     encrypted backups unusable.
+   Configure `OIR_ALERT_HOOK` to an absolute, executable, root-controlled
+   dispatcher path. Configure `OIR_DRILL_ROOT` as a separate provisioned
+   directory, `OIR_DRILL_COMPOSE_PROJECT` as a dedicated project prefix, and
+   `OIR_DRILL_FUSEKI_BIND_PORT` as a free loopback port. Provide
+   `OIR_DRILL_RESTIC_PASSWORD_SOURCE` as a separately controlled protected file
+   containing the password needed to read a copied recovery repository. The
+   drill does not copy the production password file. Keep the drill root,
+   password, and alert program outside ordinary backup inputs and production
+   paths.
 6. Install the systemd files listed below, then initialize durable stores and
    the Restic repository before enabling timers. Follow the first-start
    sequence in the next section.
@@ -155,6 +167,11 @@ set the default path explicitly. Required host-side settings are:
 | `FUSEKI_ADMIN_PASSWORD` | Non-empty Fuseki admin password; also used by ETL/ops. |
 | `OIR_DAILY_ENDPOINTS` | Non-empty, whitespace-separated endpoint tokens for the scheduled `oir-etl run` invocations. Choose and review the deployment set; do not include `debates`. |
 | `OIR_RECONCILIATION_ENDPOINTS` | Non-empty, whitespace-separated endpoint tokens for scheduled `oir-etl reconcile ENDPOINT --publish` invocations. Choose and review the set. |
+| `OIR_ALERT_HOOK` | Absolute path to an executable, root-controlled notification program. It receives one argument: a JSON event-file path, and must return zero only after successful dispatch. Configure and test it before enabling scheduled jobs. |
+| `OIR_DRILL_ROOT` | Existing dedicated host directory for disposable recovery drills, disjoint from every production path. |
+| `OIR_DRILL_COMPOSE_PROJECT` | Dedicated lowercase Compose project-name prefix; every drill adds a unique suffix. |
+| `OIR_DRILL_FUSEKI_BIND_PORT` | Unused loopback port for the disposable Fuseki service, different from the production port. The private rebuild instance has no host-published port. |
+| `OIR_DRILL_RESTIC_PASSWORD_SOURCE` | Separate protected file containing the recovery-repository password; it must not be the production password file or live under the drill root. |
 
 The supported `run` endpoint tokens include `houses`, `parties`,
 `constituencies`, `committees`, `administrative-units`, `offices`, `members`,
@@ -176,6 +193,7 @@ Compose/runtime defaults which may be overridden in the same file:
 | `OIR_BILLS_CURSOR_OVERLAP_SECONDS` | `3600` |
 | `OIR_BACKUP_KEEP_DAILY` / `OIR_BACKUP_KEEP_MONTHLY` | `30` / `12` |
 | `OIR_BACKUP_RPO_HOURS` | `24` |
+| `OIR_ALERT_DEGRADED_RUN_THRESHOLD` | `2` consecutive degraded runs per endpoint |
 
 Compose fixes the in-container paths: operation lock at
 `/var/lib/oireachtas-etl-root/operations.lock`, the four SQLite stores and
@@ -193,7 +211,9 @@ Install these files into `/etc/systemd/system/`:
 - `oir-reconcile.service` and `oir-reconcile.timer`
 - `oir-backup.service` and `oir-backup.timer`
 - `oir-backup-check.service` and `oir-backup-check.timer`
-- `oirechtas-ops-failure@.service`
+- `oir-alert-check.service` and `oir-alert-check.timer`
+- `oir-recovery-drill.service` and `oir-recovery-drill.timer`
+- `oireachtas-ops-failure@.service`
 
 For example, install the supplied unit files with:
 
@@ -204,13 +224,17 @@ sudo systemctl daemon-reload
 ```
 
 Do not enable the timers until the initial durable stores and first backup have
-been checked. The one-shot ETL/reconcile/backup services are started by their
-timers, not enabled directly. The supplied local times are
-02:00 ETL, 03:00 reconciliation, 04:00 backup, and 05:00 backup check. Timers
-are persistent across downtime; ETL/reconciliation have up to 15 minutes and
-backup/check up to 10 minutes randomized delay (with 1-minute accuracy).
-Schedules use the host's systemd calendar/timezone. The code does not provide a
-site-specific endpoint list or alert threshold.
+been checked, the alert hook has been tested, and the separate drill root,
+password, project prefix, and port have been provisioned. The one-shot
+ETL/reconcile/backup services are started by their timers, not enabled directly.
+The supplied local times are 02:00 ETL, 03:00 reconciliation, 04:00 backup,
+05:00 backup check, and 06:00 degraded-run alert evaluation. A full disposable
+restore/rebuild drill runs weekly on Sunday at approximately 06:00. Timers are
+persistent across downtime; ETL/reconciliation have up to 15 minutes and
+backup/check/alert evaluation up to 10 minutes randomized delay (with 1-minute
+accuracy); the drill has up to 15 minutes. Schedules use the host's systemd
+calendar/timezone. The code does not supply a site-specific endpoint list,
+notification destination, or drill paths.
 
 ### First start
 
@@ -225,12 +249,14 @@ sudo systemctl enable --now oir-fuseki.service
 sudo /opt/oireachtas-etl/scripts/production-compose.sh ops backup init
 sudo /opt/oireachtas-etl/scripts/production-compose.sh ops backup create
 sudo /opt/oireachtas-etl/scripts/production-compose.sh ops backup check
+sudo /opt/oireachtas-etl/scripts/production-compose.sh alerts-check
+sudo /opt/oireachtas-etl/scripts/production-compose.sh recovery-drill
 sudo systemctl enable --now oir-etl.timer oir-reconcile.timer oir-backup.timer \
-  oir-backup-check.timer
+  oir-backup-check.timer oir-alert-check.timer oir-recovery-drill.timer
 ```
 
 `state initialize` creates/migrates all four stores under the configured
-durable root. It and backup creation use the shared operation lock. `backup
+durable root. It and all configured Restic commands use the shared operation lock. `backup
 init` explicitly initializes the encrypted Restic repository; it is not
 implicit. A successful `backup check` is required before relying on the first
 recovery point. Fuseki is started separately by systemd; the ETL wrapper also
@@ -239,13 +265,17 @@ ensures Fuseki is healthy before a normal ETL/reconciliation invocation.
 ## Manual operations, updates, and locking
 
 Examples (run as an account permitted to use the Docker daemon; the supplied
-systemd units run the wrapper as root):
+systemd units run the wrapper as root). Projection cutover and recovery-drill
+commands also need host permission to stop/remove Fuseki containers, rename the
+data directory, and match the Fuseki UID/GID; use the documented `sudo` path.
 
 ```sh
 sudo /opt/oireachtas-etl/scripts/production-compose.sh run-etl houses members bills
 sudo /opt/oireachtas-etl/scripts/production-compose.sh run-reconciliation members parties
 sudo /opt/oireachtas-etl/scripts/production-compose.sh etl state status
 sudo /opt/oireachtas-etl/scripts/production-compose.sh ops backup status
+sudo /opt/oireachtas-etl/scripts/production-compose.sh alerts-check
+sudo /opt/oireachtas-etl/scripts/production-compose.sh recovery-drill
 ```
 
 With no explicit endpoint arguments, `run-etl` and `run-reconciliation` use
@@ -265,7 +295,8 @@ To update, stop the timers first so no new job starts; let any active one-shot
 finish rather than killing it mid-publication:
 
 ```sh
-sudo systemctl stop oir-etl.timer oir-reconcile.timer oir-backup.timer oir-backup-check.timer
+sudo systemctl stop oir-etl.timer oir-reconcile.timer oir-backup.timer \
+  oir-backup-check.timer oir-alert-check.timer oir-recovery-drill.timer
 sudo systemctl list-jobs
 ```
 
@@ -281,7 +312,7 @@ sudo /opt/oireachtas-etl/scripts/production-compose.sh ops backup check
 # If approved for this release window, run the configured endpoint set:
 sudo /opt/oireachtas-etl/scripts/production-compose.sh run-etl
 sudo systemctl enable --now oir-etl.timer oir-reconcile.timer oir-backup.timer \
-  oir-backup-check.timer
+  oir-backup-check.timer oir-alert-check.timer oir-recovery-drill.timer
 ```
 
 The build uses `docker compose build --pull`
@@ -292,22 +323,19 @@ No automatic image-update or rollback mechanism is supplied.
 
 The ETL CLI acquires `OIR_OPERATION_LOCK_FILE` for state-mutating `run`,
 `reconcile`, and quarantine-retry commands when configured. Production Compose
-sets all these clients to the same host-mounted lock. `oir-ops backup create`
-holds that lock across SQLite snapshots, file capture, Restic snapshot and
-retention. State initialization and restore activation also use it. This
-prevents a coordinated writer from changing inputs during the backup and
-serializes activation and projection reconstruction with an active writer.
-Projection reconstruction holds it from the consistent SQLite read through
-the final graph verification. It is an advisory POSIX lock on one host only.
-Keep schedules stopped through a restore and projection verification: taking
-the lock does not prevent a timer from starting a new run immediately after it
-is released.
+sets all clients to the same host-mounted lock. Every configured Restic command
+uses that lock as well: backup creation holds it across SQLite snapshots, file
+capture, snapshot and retention; checks, listing and staged restore also
+serialize on the repository so a drill copy cannot race another configured
+Restic process. State initialization and restore activation use it. The
+`rebuild-projection` wrapper holds it from before Fuseki is stopped through
+private reconstruction, verification, directory cutover and Fuseki health
+recovery. It is an advisory POSIX lock on one host only.
 
-Not every ops command takes the lock: snapshot listing/status/check and staged
-`backup restore` do not change live state. In a recovery, stop
-ETL/reconciliation timers and wait for active jobs before activation and
-reconstruction. The lock prevents overlap with a running writer, but does not
-prevent a new scheduled job from starting as soon as the command releases it.
+In a recovery, stop ETL/reconciliation timers and wait for active jobs before
+durable-state activation and projection reconstruction. The lock prevents
+overlap with a running writer, but does not prevent a new scheduled job from
+starting as soon as the command releases it.
 Do not add a second host or run writers outside the wrapper and expect this lock
 to coordinate them.
 
@@ -390,9 +418,10 @@ Restoration is staged and explicit. It never overwrites live files as part of
 be new, and the staged manifest, content hashes and SQLite integrity are
 validated before the destination is created.
 
-1. Stop the ETL, reconciliation, backup and backup-check timers. Let any active
-   one-shot finish; do not kill an ETL job during publication. Keep timers
-   stopped until restore and projection verification complete. Check
+1. Stop ETL, reconciliation, backup, backup-check, alert-check and recovery-drill
+   timers. Let any active one-shot finish; do not kill an ETL job during
+   publication. Keep timers stopped until restore and projection verification
+   complete. Check
    `backup check` and choose the intended explicit snapshot with `backup list`.
 2. Stage it at a unique path under the durable parent but **outside** `live/`;
    the command path is inside the ops container and maps to the host bind mount:
@@ -417,9 +446,9 @@ validated before the destination is created.
     activation preserves the old live directory rather than deleting it.
 4. After reviewing the chosen snapshot and stopping scheduled ETL, activate it
     with both the explicit configured target and the confirmation flag. Stop
-    `oir-fuseki.service` before activation and keep it stopped until the restored
-    canonical state has been projected into a fresh dataset. This avoids serving
-    the old projection as if it matched the restored state.
+    `oir-fuseki.service` before activation and leave it stopped until the
+    verified replacement has been cut over. This avoids serving the old
+    projection as if it matched the restored canonical state.
 
     ```sh
     sudo /opt/oireachtas-etl/scripts/production-compose.sh ops state activate-restore \
@@ -447,14 +476,35 @@ reconstruction procedure below.
 
 ## Fresh Fuseki projection reconstruction
 
-`oir-ops projection rebuild --confirm-empty-target` rebuilds from the exact
-published payloads held in Core State and the saved reconciliation state. It
-requires the current supported Core State schema, the reconciliation SQLite
-file, the versioned `registries/ministerial-office-registry.json`, and valid
-Fuseki GSP/query endpoints and credentials. It first requires an empty Fuseki
-dataset. It validates payload hashes and RDF before PUTs, then replaces and
-whole-graph verifies each named graph and checks the final graph inventory.
-There are no API/Wikidata/DBpedia calls during reconstruction.
+Use the production wrapper only:
+
+```sh
+sudo /opt/oireachtas-etl/scripts/production-compose.sh rebuild-projection \
+  --confirm-offline-cutover
+```
+
+The wrapper takes the shared operation lock, stops the loopback-published
+Fuseki service and removes its stopped container (preserving its data volume),
+creates a new TDB2 directory beside `OIR_FUSEKI_DATA_DIR`, and starts a private
+Compose Fuseki instance with **no host-published port**. The
+ops container can reach this temporary service only over the Compose network.
+The wrapper reconstructs and validates the full graph inventory there, stops
+the private instance, preserves the previous TDB2 directory under a unique
+`.previous.*` name, then renames the verified directory into the configured
+Fuseki path and force-recreates the serving container so its bind mount points
+at the new directory. The filesystem rename is on the
+same host filesystem; this is an offline fresh-only procedure with downtime,
+not a live TDB transaction or zero-downtime service. Fuseki is not exposed with
+the replacement until every graph and the final graph inventory have passed.
+
+The CLI rebuild uses exact published payloads held in Core State and saved
+reconciliation state. It requires the current supported Core State schema,
+reconciliation SQLite file, versioned
+`registries/ministerial-office-registry.json`, and valid GSP/query endpoints
+and credentials. It first requires an empty dataset, validates payload hashes
+and RDF before PUTs, then replaces and whole-graph verifies each named graph
+and checks the final graph inventory. There are no API/Wikidata/DBpedia calls
+during reconstruction.
 
 For authoritative graphs it uses the clean published payload, or, for a dirty
 publication, the exact hash-checked pending payload as the recovery boundary.
@@ -466,64 +516,77 @@ use their saved pending payload. Missing/corrupt hashes or insufficient
 publication history fail closed rather than inventing assertions.
 
 After durable restore or Fuseki loss, keep ETL/reconciliation schedules stopped
-and ensure the target is a fresh empty TDB2 directory. The configured data
-directory is the host path `OIR_FUSEKI_DATA_DIR`; preserve any old directory
-under a unique name rather than deleting it or using `docker compose down -v`.
-With `oir-fuseki.service` stopped, move the failed/old directory aside, create
-an empty directory at the configured host path with write access for the
-Fuseki image, and start the service. Confirm its Compose health check, then run:
+and wait for active jobs. For a durable-state restore, `oir-fuseki.service`
+must already have been stopped before activation; keep it stopped until the
+wrapper finishes. For Fuseki-only loss, stop the service before invoking the
+wrapper. The wrapper also stops the Compose Fuseki container itself, so do not
+manually replace or delete `OIR_FUSEKI_DATA_DIR`, and do not use
+`docker compose down -v`. The directory must exist, be a non-symlink directory,
+and be writable by the Fuseki image; staging is created beside it so cutover
+renames stay on one filesystem.
 
-```sh
-sudo /opt/oireachtas-etl/scripts/production-compose.sh ops projection rebuild \
-  --confirm-empty-target
-```
-
-Success reports verified graph and triple counts and whether the provenance
-graph was present. If it fails after any PUT, it may have left a partial
-projection. Do not resume ETL or treat that dataset as rebuilt; stop Fuseki,
-preserve the partial data directory, make another fresh empty directory at the
-configured path, and retry after diagnosing the failure. Only resume schedules
-after the rebuild command succeeds and the operator has inspected its result,
-Core State status and systemd/journal health.
-
-**Important recovery limitation:** reconstruction writes graph-by-graph into
-the empty dataset; there is no whole-dataset transaction, separate staging
-Fuseki, or atomic cutover command. The Compose Fuseki port is loopback-bound,
-but local clients can still observe a rebuild in progress. Therefore this tool
-is not a safe atomic replacement of a live non-empty production dataset. If
-production requires uninterrupted/atomic serving during recovery, stop and
-obtain an approved cutover design rather than inventing one with these
-commands.
+On success the output reports verified graph/triple counts and the preserved
+previous-data path. After stopping `oir-fuseki.service` for a restore or
+Fuseki-only recovery, start it after the wrapper reports success. Do not resume
+ETL/reconciliation timers until that service is healthy and Core State status
+and the rebuild summary have been inspected. If private reconstruction fails,
+the production service remains stopped and its container absent, the old
+directory stays in place, and the partial staging directory is left unserved
+for diagnosis. A durable `projection-rebuild-required` marker prevents later
+ETL startup wrappers from bringing Fuseki online until a rebuild has completed
+and passed post-cutover verification. If the verified directory cannot be activated, the wrapper
+restores the prior directory but leaves Fuseki stopped; it does not serve a
+potentially stale projection. Fix the cause and rebuild into another fresh
+staging directory. Direct
+`production-compose.sh ops projection rebuild` is blocked; it cannot safely
+perform the offline stop/build/cutover protocol by itself.
 
 ## Recovery drill
 
 The supplied `oir-backup-check.timer` verifies Restic repository/read-data
-integrity and restores the latest snapshot to a temporary directory for
-manifest/hash/SQLite checks. It does **not** activate a restore or rebuild a
-Fuseki dataset. There is no supplied automated restore/rebuild drill timer.
-Phase 6 calls for periodic disposable restore/rebuild verification; until that
-is implemented and accepted, arrange a separately approved manual drill
-cadence and record its results.
+integrity and temporarily restores the latest snapshot for manifest/hash/SQLite
+checks. In addition, `oir-recovery-drill.timer` runs a full disposable recovery
+drill weekly. Configure `OIR_DRILL_ROOT`, `OIR_DRILL_COMPOSE_PROJECT`,
+`OIR_DRILL_FUSEKI_BIND_PORT`, and a separately managed
+`OIR_DRILL_RESTIC_PASSWORD_SOURCE` before enabling it.
+That file must contain the credential for the copied repository, managed as a
+separate protected copy; the drill never mounts or copies the production
+password file.
 
-Run a drill only against disposable state, backup-repository and TDB paths and
-a distinct `OIR_COMPOSE_PROJECT`; use the same reviewed application release.
-Use a separately controlled copy of an encrypted recovery repository and its
-password—never let a drill run backup creation/retention against the production
-repository. Set a non-conflicting loopback `FUSEKI_BIND_PORT`. Initialize
-empty disposable stores and `raw/` first, because staged restore currently
-requires the configured source paths to exist; stage a selected snapshot,
-activate to that disposable `live/`, create a fresh disposable Fuseki data
-directory, and run the same projection rebuild command. Verify its graph
-summary, backup check against the drill repository, and captured journal
-output. Do not install/enable production systemd timers in the drill project.
+Each run takes a unique Compose project and work directory, copies the encrypted
+production Restic repository while holding the shared operation lock, and uses
+only that copy and the separate drill password. It initializes disposable
+stores/raw paths, runs a full backup check on the copy, stages the latest
+snapshot, activates it into the disposable durable root, rebuilds the Fuseki
+projection through the private unserved service, and performs a second backup
+check. The drill never calls backup creation or retention and never starts or
+connects to the production Fuseki service. On success it removes the disposable
+Compose project and work directory; on failure it stops the project and retains
+the work directory for diagnosis. The systemd journal records the command
+outputs, including the verified projection graph summary. Do not enable the
+drill timer until its separate paths/password have been tested with a manual
+`recovery-drill` run.
 
 ## Monitoring, troubleshooting, and limitations
 
 - Inspect scheduled execution with `systemctl list-timers 'oir-*'`,
   `systemctl status`, and `journalctl -u UNIT`. The supplied
-  `oirechtas-ops-failure@.service` writes a local syslog error on systemd unit
-  failure, with a pointer to the journal and backup check. It does not send
-  email, page an operator, or call an external alert service.
+  `oireachtas-ops-failure@.service` dispatches a `failed_unit` JSON event to
+  `OIR_ALERT_HOOK` whenever a scheduled systemd unit fails. ETL/reconciliation
+  failures from manual production-wrapper invocations are dispatched as
+  `failed_run` events by the wrapper; scheduled jobs leave unit-level reporting
+  to `OnFailure`. The hook is a
+  deployment-provided executable (not a repository-selected vendor or
+  destination); it must be absolute, root-controlled, and return success only
+  after delivery. A local syslog message is retained if it is missing or fails.
+- `oir-alert-check.timer` evaluates persisted Core State outcomes per endpoint.
+  Once the configured number of consecutive degraded runs is reached, it sends
+  one `degraded_run_streak` event for that episode. The JSON event file includes
+  the threshold, endpoint, run IDs and event ID. It remains pending until the
+  hook succeeds and the wrapper acknowledges delivery; a failed hook is retried
+  later. Hook implementations should deduplicate by `event_id`; a crash after
+  delivery but before file removal/acknowledgment can result in at-least-once
+  dispatch for either event type.
 - ETL emits structured JSON Lines to stderr and persists run summaries/outcomes
   in Core State. Use `scripts/production-compose.sh etl state status` and inspect
   its run, dirty/missing publication, quarantine, catalog and
@@ -547,33 +610,32 @@ output. Do not install/enable production systemd timers in the drill project.
   current code/schema compatibility, all four staged stores, and that
   `--target-root` is precisely the configured Core State directory. The
   confirmation flag is mandatory; it is not a substitute for stopping timers.
-- Projection rebuild refusal: verify the dataset is truly empty, the matching
-  Core State schema, reconciliation database and office registry exist, and
-  all persisted publication hashes/history validate. Never point the command
-  at a non-empty production dataset to “repair” it.
+- Projection rebuild refusal: verify the private staging directory is new and
+  writable, the matching Core State schema, reconciliation database and office
+  registry exist, and all persisted publication hashes/history validate. The
+  wrapper intentionally leaves Fuseki stopped and preserves any partial stage
+  after failure. Never point the internal rebuild command at a serving dataset.
+- Recovery drill failure: inspect the `oir-recovery-drill.service` journal and
+  retained run directory under `OIR_DRILL_ROOT`. Confirm that its copied Restic
+  repository is complete, its separate password is readable by the configured
+  container UID/GID, and all three drill paths are disjoint from production.
 - Backups are local-path Restic snapshots in this Compose deployment; no
   off-host copy, RTO, or automatic full recovery orchestration is configured.
   The backup checker is not a complete disaster-recovery proof. Production
   acceptance, disposable full-stack release testing, external/production
   testing, and Debates ingestion/readiness are not claimed by this guide.
 
-## Contract gaps to resolve before production acceptance
+## Tranche B implementation status and deployment prerequisites
 
-The implementation is documented as-is above. These gaps should be reviewed;
-this guide does not invent a substitute behavior:
-
-1. Phase 6 requires failed-run alerting and alerting for persistent/repeated
-   degraded runs. Current `OnFailure` handling only writes a local syslog entry
-   when systemd sees a failed unit. It has no notification transport or
-   persistent-degradation threshold; degraded ETL outcomes are persisted/logged
-   but are not necessarily systemd failures. An operator monitoring/alert
-   policy is still needed.
-2. Phase 6 calls for periodic disposable restore/rebuild verification. Current
-   systemd units only check Restic integrity and temporary latest-snapshot
-   restoration; no automated fresh Fuseki rebuild drill is scheduled.
-3. Phase 6's publication-safety contract says a failed build must not leave
-   Fuseki partially updated. `projection rebuild` targets an empty dataset but
-   PUTs and verifies graphs sequentially; interruption can leave that new
-   dataset partially populated, and no atomic whole-dataset activation exists.
-   The procedure above makes that limitation explicit rather than claiming an
-   atomic cutover.
+The earlier Tranche B gaps are addressed in this checkout: configurable
+failed-run/unit and repeated-degraded alert dispatch is wired through the
+production wrapper and systemd; a
+weekly disposable encrypted-backup restore/activation/rebuild drill is
+provided; and projection recovery uses an offline, unserved staging dataset
+before filesystem cutover. These are implementation paths, not evidence that
+the site's alert destination is configured, that the timers have been enabled,
+or that a production-host drill has passed. Configure and test the hook and
+drill prerequisites before enabling their timers. Do not claim the complete
+Phase 6 exit: Tranche C's disposable release gate and production/external
+service acceptance remain separate, and this guide does not claim Debates
+production ingestion/readiness.

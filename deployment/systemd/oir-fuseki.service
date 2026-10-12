@@ -3,7 +3,7 @@ Description=Oireachtas ETL Fuseki/TDB2 projection
 Documentation=file:/opt/oireachtas-etl/documentation/production-operations.md
 Requires=docker.service
 After=docker.service
-OnFailure=oirechtas-ops-failure@%n.service
+OnFailure=oireachtas-ops-failure@%n.service
 
 [Service]
 Type=oneshot

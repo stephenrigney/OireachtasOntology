@@ -1,6 +1,7 @@
 [Unit]
-Description=Record failed Oireachtas operational unit %I
+Description=Alert for failed Oireachtas operational unit %I
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/logger --priority user.err --tag oireachtas-ops "Scheduled unit %I failed; inspect journalctl -u %I and run `oir-ops backup check` for recovery-point status."
+Environment=OIR_RUNTIME_ENV_FILE=/etc/oireachtas-etl/production.env
+ExecStart=/opt/oireachtas-etl/scripts/production-compose.sh alert failed-unit %I

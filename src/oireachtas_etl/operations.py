@@ -402,6 +402,14 @@ class BackupEngine:
         return [{"snapshot_id": item["id"], "created_at": _timestamp(_snapshot_time(item["time"]))}
                 for item in snapshots]
 
+    def restore_latest(self, destination: str | Path) -> tuple[str, Path]:
+        """Stage the newest retained snapshot and return its full identifier."""
+        snapshots = sorted(self._snapshots(), key=lambda item: _snapshot_time(item["time"]))
+        if not snapshots:
+            raise BackupConfigurationError("backup repository contains no snapshots")
+        snapshot_id = str(snapshots[-1]["id"])
+        return snapshot_id, self.restore(snapshot_id, destination)
+
     def check_repository(self, *, read_data: bool = True) -> None:
         """Run restic's repository integrity check, optionally reading all pack data."""
         args = ["check"]

@@ -25,6 +25,32 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  # This instance is reachable only on the private Compose network. The
+  # production wrapper builds and verifies a complete projection here before
+  # swapping its host data directory into the loopback-published service.
+  fuseki-rebuild:
+    image: stain/jena-fuseki:5.1.0
+    profiles: [production]
+    restart: "no"
+    environment:
+      FUSEKI_DATASET_1: houses
+      ADMIN_PASSWORD: ${FUSEKI_ADMIN_PASSWORD:?set FUSEKI_ADMIN_PASSWORD in the protected runtime env file}
+    volumes:
+      - ${OIR_FUSEKI_REBUILD_DATA_DIR:-/tmp/oir-fuseki-rebuild-disabled}:/fuseki
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          curl --fail --silent --show-error
+          --user "admin:$${ADMIN_PASSWORD}"
+          http://127.0.0.1:3030/$$/ping >/dev/null
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    security_opt:
+      - no-new-privileges:true
+
   etl:
     image: oireachtas-etl:${OIR_ETL_IMAGE_TAG:-phase6}
     build:
@@ -107,6 +133,8 @@ services:
       OIR_BACKUP_KEEP_DAILY: ${OIR_BACKUP_KEEP_DAILY:-30}
       OIR_BACKUP_KEEP_MONTHLY: ${OIR_BACKUP_KEEP_MONTHLY:-12}
       OIR_BACKUP_RPO_HOURS: ${OIR_BACKUP_RPO_HOURS:-24}
+      OIR_ALERT_STATE_DIR: /var/lib/oireachtas-etl-root/alerts
+      OIR_ALERT_DEGRADED_RUN_THRESHOLD: ${OIR_ALERT_DEGRADED_RUN_THRESHOLD:-2}
       OIR_FUSEKI_GSP_URL: http://fuseki:3030/houses/data
       OIR_FUSEKI_SPARQL_URL: http://fuseki:3030/houses/query
       OIR_FUSEKI_USER: admin

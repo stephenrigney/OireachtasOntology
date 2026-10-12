@@ -166,6 +166,18 @@ def test_backup_uses_online_sqlite_snapshot_and_hashed_manifest(tmp_path):
     assert any("backup" in command for command, _ in fake.commands)
 
 
+def test_restore_latest_stages_the_newest_snapshot_and_returns_its_full_id(tmp_path):
+    engine, _fake, _source_db = make_engine(tmp_path)
+    engine.backup(operation_lock=nullcontext())
+    destination = tmp_path / "restore-latest"
+
+    snapshot_id, restored = engine.restore_latest(destination)
+
+    assert snapshot_id == "0" * 63 + "1"
+    assert restored == destination
+    assert (restored / MANIFEST_NAME).is_file()
+
+
 def test_retention_and_status_report_integrity_and_rpo(tmp_path):
     fake = FakeRestic(snapshot_time="2026-10-01T00:00:00Z")
     engine, fake, _ = make_engine(tmp_path, runner=fake)

@@ -341,13 +341,27 @@ def rebuild_empty_dataset(graphs: list[GraphPayload], loader, client) -> dict:
         loader.replace(item.graph_iri, item.payload, content_type="application/n-triples")
         verify_core_graph(client, item.graph_iri, item.payload)
 
+    return _verified_dataset_summary(graphs, client)
+
+
+def verify_existing_dataset(graphs: list[GraphPayload], client) -> dict:
+    """Verify an already-populated projection against its canonical payloads."""
+    if not graphs:
+        raise ProjectionError("no persisted graphs are available for reconstruction")
+    from .competency import verify_core_graph
+    for item in graphs:
+        verify_core_graph(client, item.graph_iri, item.payload)
+    return _verified_dataset_summary(graphs, client)
+
+
+def _verified_dataset_summary(graphs: list[GraphPayload], client) -> dict:
     rows = client.query("SELECT DISTINCT ?graph WHERE { GRAPH ?graph { ?s ?p ?o } }")
     actual_graphs = {row.get("graph", {}).get("value") for row in rows
                      if isinstance(row.get("graph"), dict)}
     expected_nonempty = {item.graph_iri for item in graphs
                          if len(Graph().parse(data=item.payload, format="nt")) > 0}
     if actual_graphs != expected_nonempty:
-        raise ProjectionError("rebuilt Fuseki graph inventory does not match durable state")
+        raise ProjectionError("Fuseki graph inventory does not match durable state")
     return {
         "graphs_verified": len(graphs),
         "authoritative_graphs": sum(not item.owner.startswith("external:") for item in graphs),
