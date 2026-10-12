@@ -1,0 +1,90 @@
+{
+  "backup_recovery": {
+    "backup_created_at": "2026-10-12T16:03:33.386112Z",
+    "backup_files": 14,
+    "backup_manifest_sha256": "6ac1914716d8a880c234cce87bab8f1e6d827f25fc4f666259b2a49786d0e111",
+    "backup_snapshot_id": "dfde008f5eaa8d077cfded5c5b49afbba1168d91618573202d8f6ec75d823f05",
+    "backup_sqlite_stores": 4,
+    "exact_graph_payload_sha256": {
+      "https://data.oireachtas.ie/graph/houses": "57282e27fbcba23f2dd865df4ffb113ac4f67cb177995395a8eacad63e8dd1bc",
+      "https://data.oireachtas.ie/graph/provenance": "e0748da07ee9267242ea8c6907fc73d7e25aba0f527385ab1828cb5b7a1220cc"
+    },
+    "failure_injection": "interrupted graph PUT recovered from exact dirty payload; non-empty rebuild rejected; verified projection retained",
+    "fresh_projection_graphs": 2,
+    "fresh_projection_triples": 283,
+    "restored_core_integrity": "ok",
+    "restored_to_independent_storage": true
+  },
+  "compose_production_sha256": "b28cb1e7e07bd12797028c6fed83f2f311f7eb251987994e0a0d85be32f155e0",
+  "disposable_cleanup": "PASS; both Compose projects and disposable storage removed",
+  "failure_injection": "interrupted graph PUT recovered from exact dirty payload; non-empty rebuild rejected; verified projection retained",
+  "finished_utc": "2026-10-12T16:03:40Z",
+  "gate": "Phase 6 Tranche C production acceptance",
+  "groups": [
+    {
+      "duration_seconds": 0,
+      "group": "compose-production-config",
+      "outcome": "PASS"
+    },
+    {
+      "duration_seconds": 6,
+      "group": "compose-production-startup",
+      "outcome": "PASS"
+    },
+    {
+      "duration_seconds": 6,
+      "group": "debates-compose-startup",
+      "outcome": "PASS"
+    },
+    {
+      "duration_seconds": 1,
+      "group": "ontology-hermit-mapping",
+      "outcome": "PASS"
+    },
+    {
+      "duration_seconds": 0,
+      "group": "mapping-integrity",
+      "outcome": "PASS"
+    },
+    {
+      "duration_seconds": 104,
+      "group": "repository-regression",
+      "outcome": "PASS"
+    },
+    {
+      "duration_seconds": 16,
+      "group": "full-stack-acceptance",
+      "outcome": "PASS"
+    },
+    {
+      "duration_seconds": 0,
+      "group": "mandatory-skip-check",
+      "outcome": "PASS"
+    },
+    {
+      "duration_seconds": 2,
+      "group": "debates-real-fuseki-acceptance",
+      "outcome": "PASS"
+    },
+    {
+      "duration_seconds": 0,
+      "group": "debates-mandatory-skip-check",
+      "outcome": "PASS"
+    }
+  ],
+  "infrastructure": {
+    "compose_project": "oir-phase6-gate-1791820885-230546",
+    "datasets": [
+      "houses",
+      "debates_t4"
+    ],
+    "disposable_compose_cleanup_required": true,
+    "external_authorities_contacted": false,
+    "fuseki_image": "stain/jena-fuseki:5.1.0",
+    "production_credentials_or_services_used": false
+  },
+  "mandatory_skips": 0,
+  "result": "PASS",
+  "revision": "5b324a27620fea33dc3eef2602e5a267c239271b",
+  "started_utc": "2026-10-12T16:01:25Z"
+}
