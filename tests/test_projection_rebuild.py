@@ -145,6 +145,44 @@ def test_projection_fails_closed_on_corrupt_core_payload_hash(tmp_path):
         authoritative_graph_payloads(state)
 
 
+def test_fresh_initialized_state_proves_a_legitimate_empty_inventory(tmp_path):
+    state = tmp_path / "core.sqlite"
+    with CoreStateStore(state):
+        pass
+
+    assert authoritative_graph_payloads(state) == []
+
+    class EmptyClient:
+        def query(self, _query):
+            return [{"triples": {"value": "0"}}]
+
+    class NoPutLoader:
+        def replace(self, *_args, **_kwargs):
+            raise AssertionError("empty rebuild must not publish a graph")
+
+    summary = rebuild_empty_dataset([], NoPutLoader(), EmptyClient(), allow_empty=True)
+    assert summary["graphs_verified"] == 0
+    assert summary["triples_verified"] == 0
+    assert summary["authoritative_graphs"] == 0
+    assert summary["external_graphs"] == 0
+
+
+def test_empty_inventory_with_core_run_history_fails_closed(tmp_path):
+    state = tmp_path / "core.sqlite"
+    with CoreStateStore(state) as store:
+        run_id = store.start_run(
+            "members", "full_refresh", is_complete=True,
+            parameters={"source": "fixture", "fixture": "empty-inventory-corruption"})
+        store.finish_run(run_id, outcome="failed", error="simulated interrupted run",
+                         failure_scope="run", failure_classification="test_failure")
+
+    with pytest.raises(ProjectionError, match="empty projection inventory conflicts"):
+        authoritative_graph_payloads(state)
+
+    with pytest.raises(ProjectionError, match="no persisted graphs"):
+        rebuild_empty_dataset([], object(), object())
+
+
 def test_projection_rebuild_rejects_nonempty_target_before_any_put():
     class NonemptyClient:
         def query(self, _query):

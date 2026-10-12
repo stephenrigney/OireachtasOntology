@@ -10,6 +10,7 @@ from oireachtas_etl.alerts import (
     mark_degraded_alert_delivered,
     prepare_degraded_alert,
 )
+from oireachtas_etl.reconciliation import ReconciliationStore, Resolution
 from oireachtas_etl.state import CoreStateStore
 
 
@@ -44,7 +45,7 @@ def test_alert_requires_consecutive_degraded_runs_and_deduplicates_episode(tmp_p
     assert pending["episodes"][0]["streak_start_run_id"] == first
     assert pending["episodes"][0]["latest_run_id"] == second
     assert pending["episodes"][0]["count"] == 2
-    assert (alert_dir / "pending.json").stat().st_mode & 0o777 == 0o600
+    assert (alert_dir / "pending.json").stat().st_mode & 0o777 == 0o640
 
     # A notification which hasn't been delivered is retried exactly as stored.
     assert prepare_degraded_alert(state_db, alert_dir, threshold=4) == pending
@@ -89,3 +90,115 @@ def test_pending_alert_delivery_rejects_corrupt_event(tmp_path):
     (alert_dir / "pending.json").write_text('{"event":"wrong"}', encoding="utf-8")
     with pytest.raises(AlertError, match="malformed"):
         mark_degraded_alert_delivered(alert_dir)
+
+
+def _save_reconciliation_attempt(store, local_iri: str, state: str, *, errors=()):
+    evidence = {"errors": list(errors)} if errors else {"reason": "unmatched"}
+    resolution = Resolution(
+        state, "test-reconciliation", evidence,
+        enrichment_status="unresolved" if errors else "complete",
+        enrichment_reason="lookup-error" if errors else "no-match")
+    store.save_record(
+        "member", local_iri, "test-member", "a" * 64, resolution, "review-hash",
+        None, None, None, dirty=False)
+
+
+def test_reconciliation_alert_uses_attempt_streaks_deduplicates_and_recovers(tmp_path):
+    core_db = tmp_path / "core-state.sqlite"
+    with CoreStateStore(core_db):
+        pass
+    reconciliation_db = tmp_path / "reconciliation.sqlite"
+    local_iri = "https://data.oireachtas.ie/ie/oireachtas/member/id/alert-test"
+    store = ReconciliationStore(reconciliation_db)
+    try:
+        _save_reconciliation_attempt(store, local_iri, "pending",
+                                     errors=("Wikidata unavailable",))
+    finally:
+        store.close()
+
+    alert_dir = tmp_path / "alerts"
+    assert prepare_degraded_alert(
+        core_db, alert_dir, threshold=2, reconciliation_db=reconciliation_db,
+        reconciliation_threshold=2) is None
+
+    store = ReconciliationStore(reconciliation_db)
+    try:
+        _save_reconciliation_attempt(store, local_iri, "pending",
+                                     errors=("Wikidata unavailable",))
+    finally:
+        store.close()
+
+    pending = prepare_degraded_alert(
+        core_db, alert_dir, threshold=2, reconciliation_db=reconciliation_db,
+        reconciliation_threshold=2)
+    assert pending is not None
+    episode = pending["episodes"][0]
+    assert episode["source"] == "reconciliation"
+    assert episode["entity_kind"] == "member"
+    assert episode["local_iri"] == local_iri
+    assert episode["count"] == 2
+    assert prepare_degraded_alert(
+        core_db, alert_dir, threshold=2, reconciliation_db=reconciliation_db,
+        reconciliation_threshold=2) == pending
+    delivered = mark_degraded_alert_delivered(alert_dir)
+    assert delivered["episodes"] == 1
+    assert prepare_degraded_alert(
+        core_db, alert_dir, threshold=2, reconciliation_db=reconciliation_db,
+        reconciliation_threshold=2) is None
+
+    store = ReconciliationStore(reconciliation_db)
+    try:
+        _save_reconciliation_attempt(store, local_iri, "accepted")
+    finally:
+        store.close()
+    assert prepare_degraded_alert(
+        core_db, alert_dir, threshold=2, reconciliation_db=reconciliation_db,
+        reconciliation_threshold=2) is None
+
+    store = ReconciliationStore(reconciliation_db)
+    try:
+        _save_reconciliation_attempt(store, local_iri, "pending",
+                                     errors=("Wikidata unavailable again",))
+        _save_reconciliation_attempt(store, local_iri, "pending",
+                                     errors=("Wikidata unavailable again",))
+    finally:
+        store.close()
+    next_pending = prepare_degraded_alert(
+        core_db, alert_dir, threshold=2, reconciliation_db=reconciliation_db,
+        reconciliation_threshold=2)
+    assert next_pending is not None
+    assert next_pending["episodes"][0]["streak_start_run_id"] != episode["streak_start_run_id"]
+
+
+def test_reconciliation_alert_threshold_is_configurable_and_store_fails_closed(tmp_path):
+    core_db = tmp_path / "core-state.sqlite"
+    with CoreStateStore(core_db):
+        pass
+    reconciliation_db = tmp_path / "reconciliation.sqlite"
+    store = ReconciliationStore(reconciliation_db)
+    try:
+        for _ in range(2):
+            _save_reconciliation_attempt(
+                store, "https://example.test/member/threshold", "ambiguous")
+    finally:
+        store.close()
+    assert prepare_degraded_alert(
+        core_db, tmp_path / "alerts", threshold=2,
+        reconciliation_db=reconciliation_db, reconciliation_threshold=3) is None
+    store = ReconciliationStore(reconciliation_db)
+    try:
+        _save_reconciliation_attempt(
+            store, "https://example.test/member/threshold", "ambiguous")
+    finally:
+        store.close()
+    pending = prepare_degraded_alert(
+        core_db, tmp_path / "alerts", threshold=2,
+        reconciliation_db=reconciliation_db, reconciliation_threshold=3)
+    assert pending is not None
+    assert pending["threshold"] == 2
+    assert pending["reconciliation_threshold"] == 3
+    mark_degraded_alert_delivered(tmp_path / "alerts")
+    with pytest.raises(AlertError, match="reconciliation"):
+        prepare_degraded_alert(
+            core_db, tmp_path / "alerts", threshold=2,
+            reconciliation_db=tmp_path / "missing-reconciliation.sqlite")

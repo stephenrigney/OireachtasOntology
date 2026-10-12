@@ -49,7 +49,10 @@ def _write_atomic(path: Path, value: dict) -> None:
                 mode="wb", dir=path.parent, prefix=f".{path.name}.",
                 delete=False) as handle:
             temporary = Path(handle.name)
-            os.fchmod(handle.fileno(), 0o600)
+            # The host dispatcher and non-root operators share a setgid alert
+            # directory with the ETL container group. Secrets are not stored in
+            # these event/episode files; group-read allows host-side delivery.
+            os.fchmod(handle.fileno(), 0o640)
             handle.write(payload)
             handle.flush()
             os.fsync(handle.fileno())
@@ -130,8 +133,77 @@ def _latest_degraded_episodes(state_db: Path, threshold: int) -> list[dict]:
     return result
 
 
+def _latest_reconciliation_degraded_episodes(
+        reconciliation_db: Path, threshold: int) -> list[dict]:
+    """Find repeated unresolved/degraded outcomes in existing attempt history.
+
+    Reconciliation has entity-level append-only attempts rather than a second
+    run ledger. A streak is therefore consecutive attempts for one entity;
+    accepted/rejected outcomes end that entity's degradation episode.
+    """
+    path = reconciliation_db.expanduser().resolve()
+    try:
+        connection = sqlite3.connect(path.as_uri() + "?mode=ro", uri=True, timeout=30)
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA busy_timeout=30000")
+        connection.execute("BEGIN")
+        versions = connection.execute(
+            "SELECT version FROM reconciliation_schema").fetchall()
+        if len(versions) != 1 or versions[0][0] != 4:
+            raise AlertError("reconciliation store has an unsupported alert-history schema")
+        rows = connection.execute("""SELECT attempt_id,entity_kind,local_iri,state,errors_json
+          FROM reconciliation_attempt
+          ORDER BY entity_kind,local_iri,attempt_id DESC""").fetchall()
+        connection.commit()
+    except AlertError:
+        raise
+    except (sqlite3.Error, OSError, ValueError) as error:
+        raise AlertError("could not read persisted reconciliation attempts") from error
+    finally:
+        if "connection" in locals():
+            connection.close()
+
+    grouped: dict[tuple[str, str], list[sqlite3.Row]] = {}
+    for row in rows:
+        grouped.setdefault((str(row["entity_kind"]), str(row["local_iri"])), []).append(row)
+
+    result = []
+    for (entity_kind, local_iri), history in sorted(grouped.items()):
+        streak = []
+        for row in history:
+            try:
+                errors = json.loads(row["errors_json"])
+            except (TypeError, json.JSONDecodeError) as error:
+                raise AlertError("reconciliation attempt errors are malformed") from error
+            if not isinstance(errors, list):
+                raise AlertError("reconciliation attempt errors are malformed")
+            if row["state"] not in {"accepted", "rejected", "ambiguous", "pending"}:
+                raise AlertError("reconciliation attempt outcome is malformed")
+            if row["state"] in {"pending", "ambiguous"} or errors:
+                streak.append(row)
+            else:
+                break
+        if len(streak) < threshold:
+            continue
+        endpoint = f"reconciliation:{entity_kind}"
+        result.append({
+            "endpoint": endpoint,
+            "episode_key": f"{endpoint}:{local_iri}",
+            "source": "reconciliation",
+            "entity_kind": entity_kind,
+            "local_iri": local_iri,
+            "count": len(streak),
+            "streak_start_run_id": str(streak[-1]["attempt_id"]),
+            "latest_run_id": str(streak[0]["attempt_id"]),
+            "run_ids": [str(row["attempt_id"]) for row in streak],
+        })
+    return result
+
+
 def prepare_degraded_alert(state_db: str | Path, state_dir: str | Path, *,
-                           threshold: int) -> dict | None:
+                           threshold: int,
+                           reconciliation_db: str | Path | None = None,
+                           reconciliation_threshold: int | None = None) -> dict | None:
     """Create or return one pending notification for a repeated degraded streak.
 
     Delivery is intentionally a separate host-side step.  The wrapper invokes
@@ -142,6 +214,10 @@ def prepare_degraded_alert(state_db: str | Path, state_dir: str | Path, *,
     if (isinstance(threshold, bool) or not isinstance(threshold, int)
             or threshold < 2):
         raise AlertError("degraded-run alert threshold must be an integer of at least 2")
+    rec_threshold = threshold if reconciliation_threshold is None else reconciliation_threshold
+    if (isinstance(rec_threshold, bool) or not isinstance(rec_threshold, int)
+            or rec_threshold < 2):
+        raise AlertError("reconciliation alert threshold must be an integer of at least 2")
     directory = Path(state_dir).expanduser()
     if directory.is_symlink():
         raise AlertError("alert state directory must not be a symlink")
@@ -154,13 +230,21 @@ def prepare_degraded_alert(state_db: str | Path, state_dir: str | Path, *,
         return pending
 
     alerted = _read_episode_state(state_path)
-    candidates = [episode for episode in _latest_degraded_episodes(
-        Path(state_db), threshold)
-        if alerted.get(episode["endpoint"]) != episode["streak_start_run_id"]]
+    candidates = _latest_degraded_episodes(Path(state_db), threshold)
+    if reconciliation_db is not None:
+        candidates.extend(_latest_reconciliation_degraded_episodes(
+            Path(reconciliation_db), rec_threshold))
+    candidates = [episode for episode in candidates
+                  if alerted.get(episode.get("episode_key", episode["endpoint"]))
+                  != episode["streak_start_run_id"]]
     if not candidates:
         return None
     created_at = datetime.now(timezone.utc).isoformat()
-    identity = {"threshold": threshold, "episodes": candidates}
+    identity = {
+        "threshold": threshold,
+        "reconciliation_threshold": rec_threshold,
+        "episodes": candidates,
+    }
     event_id = hashlib.sha256(_canonical_json(identity)).hexdigest()
     pending = {
         "format": 1,
@@ -168,6 +252,7 @@ def prepare_degraded_alert(state_db: str | Path, state_dir: str | Path, *,
         "event": "degraded_run_streak",
         "created_at": created_at,
         "threshold": threshold,
+        "reconciliation_threshold": rec_threshold,
         "episodes": candidates,
     }
     _write_atomic(pending_path, pending)
@@ -175,7 +260,9 @@ def prepare_degraded_alert(state_db: str | Path, state_dir: str | Path, *,
 
 
 def _validate_pending(value: dict) -> None:
-    if (set(value) != {"format", "event_id", "event", "created_at", "threshold", "episodes"}
+    required = {"format", "event_id", "event", "created_at", "threshold", "episodes"}
+    if (not required <= set(value)
+            or set(value) - required - {"reconciliation_threshold"}
             or value.get("format") != 1
             or not isinstance(value.get("event_id"), str)
             or len(value["event_id"]) != 64
@@ -184,6 +271,10 @@ def _validate_pending(value: dict) -> None:
             or isinstance(value.get("threshold"), bool)
             or not isinstance(value.get("threshold"), int)
             or value["threshold"] < 2
+            or ("reconciliation_threshold" in value
+                and (isinstance(value["reconciliation_threshold"], bool)
+                     or not isinstance(value["reconciliation_threshold"], int)
+                     or value["reconciliation_threshold"] < 2))
             or not isinstance(value.get("episodes"), list)
             or not value["episodes"]):
         raise AlertError("pending alert event is malformed")
@@ -193,6 +284,8 @@ def _validate_pending(value: dict) -> None:
                 or not isinstance(episode.get("streak_start_run_id"), str)
                 or not isinstance(episode.get("run_ids"), list)
                 or any(not isinstance(run_id, str) for run_id in episode["run_ids"])):
+            raise AlertError("pending alert event is malformed")
+        if ("episode_key" in episode and not isinstance(episode["episode_key"], str)):
             raise AlertError("pending alert event is malformed")
 
 
@@ -209,7 +302,7 @@ def mark_degraded_alert_delivered(state_dir: str | Path) -> dict:
     state_path = directory / "state.json"
     episodes = _read_episode_state(state_path)
     for episode in pending["episodes"]:
-        episodes[episode["endpoint"]] = episode["streak_start_run_id"]
+        episodes[episode.get("episode_key", episode["endpoint"])] = episode["streak_start_run_id"]
     _write_atomic(state_path, {"format": 1, "episodes": episodes})
     try:
         pending_path.unlink()

@@ -451,11 +451,12 @@ def test_etl_backup_and_restore_cli_paths_use_the_shared_operation_lock(monkeypa
         assert state["held"]
         return []
 
-    def rebuild(graphs, loader, client):
+    def rebuild(graphs, loader, client, *, allow_empty=False):
         assert state["held"]
         assert graphs == []
         assert loader == "loader"
         assert client == "client"
+        assert allow_empty is True
         return {"graphs_verified": 0}
 
     monkeypatch.setattr(ops_cli, "validate_registry_source", lambda value: value)

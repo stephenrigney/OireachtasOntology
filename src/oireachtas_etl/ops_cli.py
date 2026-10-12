@@ -180,7 +180,9 @@ def _rebuild(args: argparse.Namespace, settings: Settings) -> int:
         client = FusekiSparqlClient(
             query_url, user=settings.fuseki_user, password=settings.fuseki_password,
             timeout=settings.timeout)
-        summary = rebuild_empty_dataset(graphs, loader, client)
+        # An empty list is accepted only because rebuildable_graph_payloads
+        # proves the untouched current Core State has no publication history.
+        summary = rebuild_empty_dataset(graphs, loader, client, allow_empty=not graphs)
     _json({"event": "projection_rebuilt", **summary})
     return 0
 
@@ -213,7 +215,7 @@ def _verify_projection(args: argparse.Namespace, settings: Settings) -> int:
         client = FusekiSparqlClient(
             query_url, user=settings.fuseki_user, password=settings.fuseki_password,
             timeout=settings.timeout)
-        summary = verify_existing_dataset(graphs, client)
+        summary = verify_existing_dataset(graphs, client, allow_empty=not graphs)
     _json({"event": "projection_verified", **summary})
     return 0
 
@@ -224,8 +226,12 @@ def _alerts_command(args: argparse.Namespace, settings: Settings) -> int:
     with exclusive_operation_lock(_lock_path(settings)):
         if args.alerts_command == "check":
             threshold = _positive_int("OIR_ALERT_DEGRADED_RUN_THRESHOLD", 2, minimum=2)
+            reconciliation_threshold = _positive_int(
+                "OIR_ALERT_RECONCILIATION_DEGRADED_THRESHOLD", 2, minimum=2)
             pending = prepare_degraded_alert(
-                settings.core_state_db_file, state_dir, threshold=threshold)
+                settings.core_state_db_file, state_dir, threshold=threshold,
+                reconciliation_db=settings.reconciliation_state_db_file,
+                reconciliation_threshold=reconciliation_threshold)
             _json({"event": "degraded_run_alert_check",
                    "pending": pending is not None,
                    "pending_file": str(state_dir / "pending.json") if pending else None,

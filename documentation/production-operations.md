@@ -96,17 +96,34 @@ copy of required runtime settings and credentials outside that backup.
    container UID/GID must be able to write the durable parent and backup
    directory. With defaults, that is `10001:10001`; if changing
    `OIR_CONTAINER_UID`/`OIR_CONTAINER_GID`, make host ownership/access agree.
+   Manual host operators who are not root must belong to the dedicated group
+   whose GID is `OIR_CONTAINER_GID`. Pre-create `alerts/` as a setgid,
+   group-writable directory so the wrapper and ETL/ops container can queue,
+   read and remove notifications without runtime `chown`. Do not share this
+   group with untrusted accounts. For the default GID:
+
+    ```sh
+    sudo install -d -o root -g 10001 -m 2770 /var/lib/oireachtas-etl-root/alerts
+    sudo usermod -aG 10001 OPERATOR_ACCOUNT
+    ```
+
+   Start a new login session after adding operators to the group. Alert event
+   files are mode `0640` and contain notification metadata, not credentials. If
+   shared permissions are unavailable, a manual ETL error retains its original
+   exit status and the wrapper reports that its alert could not be queued.
    Ensure Fuseki's own container can write its host data directory; the Compose
    file does not set a host-side Fuseki UID. Create the `live/raw` directory
    before the first backup. Keep Fuseki's data directory separate and persistent.
    For the example paths and default ETL/ops identity, host setup can start with:
 
    ```sh
-    sudo install -d -o 10001 -g 10001 -m 0750 \
-      /var/lib/oireachtas-etl-root /var/lib/oireachtas-etl-root/live/raw \
-      /var/backups/oireachtas-etl
-    sudo install -d -o root -g root -m 0750 /var/lib/oireachtas-etl-drills
-    sudo install -d -m 0750 /var/lib/oireachtas-fuseki
+   sudo install -d -o 10001 -g 10001 -m 0750 \
+     /var/lib/oireachtas-etl-root /var/lib/oireachtas-etl-root/live/raw \
+     /var/backups/oireachtas-etl
+   sudo install -d -o root -g 10001 -m 2770 \
+     /var/lib/oireachtas-etl-root/alerts
+   sudo install -d -o root -g root -m 0750 /var/lib/oireachtas-etl-drills
+   sudo install -d -m 0750 /var/lib/oireachtas-fuseki
    ```
 
    Adjust the ETL/ops owner/group if configured UID/GID differs. Set the
@@ -127,26 +144,29 @@ copy of required runtime settings and credentials outside that backup.
    sudo chmod 0600 /etc/oireachtas-etl/production.env
    sudoedit /etc/oireachtas-etl/production.env
    ```
-5. Create a high-entropy `FUSEKI_ADMIN_PASSWORD` in that file. This same
-   credential is passed at runtime to Fuseki and ETL/ops; it is not built into
-   the image. Docker administrators can inspect container configuration, so
+5. Create a high-entropy `FUSEKI_ADMIN_PASSWORD` and a different high-entropy
+   `OIR_DRILL_FUSEKI_ADMIN_PASSWORD` in that file. The production credential is
+   passed at runtime to production Fuseki and ETL/ops; the drill credential is
+   used only inside the disposable drill Compose project, including its Fuseki
+   services and client. Neither is built into the image. Docker administrators
+   can inspect container configuration, so
    restrict host/Docker access as privileged access. Create the Restic
    password separately at `OIR_RESTIC_PASSWORD_SOURCE`. It is mounted read-only
    as `/run/secrets/restic-password`; make it readable by the configured
    container UID/GID (for example, root-owned with read permission only for the
    container's dedicated group; with defaults, `root:10001` and mode `0440`),
-     and not readable by other host users. Preserve both secrets through an
-     approved secret-management channel. Losing the Restic password makes
-     encrypted backups unusable.
+   and not readable by other host users. Preserve these secrets through an
+   approved secret-management channel. Losing the Restic password makes
+   encrypted backups unusable.
    Configure `OIR_ALERT_HOOK` to an absolute, executable, root-controlled
    dispatcher path. Configure `OIR_DRILL_ROOT` as a separate provisioned
    directory, `OIR_DRILL_COMPOSE_PROJECT` as a dedicated project prefix, and
    `OIR_DRILL_FUSEKI_BIND_PORT` as a free loopback port. Provide
    `OIR_DRILL_RESTIC_PASSWORD_SOURCE` as a separately controlled protected file
    containing the password needed to read a copied recovery repository. The
-   drill does not copy the production password file. Keep the drill root,
-   password, and alert program outside ordinary backup inputs and production
-   paths.
+   drill does not copy the production password file. Keep both drill passwords,
+   the drill root, and alert program outside ordinary backup inputs and
+   production paths.
 6. Install the systemd files listed below, then initialize durable stores and
    the Restic repository before enabling timers. Follow the first-start
    sequence in the next section.
@@ -168,10 +188,12 @@ set the default path explicitly. Required host-side settings are:
 | `OIR_DAILY_ENDPOINTS` | Non-empty, whitespace-separated endpoint tokens for the scheduled `oir-etl run` invocations. Choose and review the deployment set; do not include `debates`. |
 | `OIR_RECONCILIATION_ENDPOINTS` | Non-empty, whitespace-separated endpoint tokens for scheduled `oir-etl reconcile ENDPOINT --publish` invocations. Choose and review the set. |
 | `OIR_ALERT_HOOK` | Absolute path to an executable, root-controlled notification program. It receives one argument: a JSON event-file path, and must return zero only after successful dispatch. Configure and test it before enabling scheduled jobs. |
+| `OIR_ALERT_RECONCILIATION_DEGRADED_THRESHOLD` | Consecutive degraded attempts per reconciliation entity before notification; default `2`. |
 | `OIR_DRILL_ROOT` | Existing dedicated host directory for disposable recovery drills, disjoint from every production path. |
 | `OIR_DRILL_COMPOSE_PROJECT` | Dedicated lowercase Compose project-name prefix; every drill adds a unique suffix. |
 | `OIR_DRILL_FUSEKI_BIND_PORT` | Unused loopback port for the disposable Fuseki service, different from the production port. The private rebuild instance has no host-published port. |
 | `OIR_DRILL_RESTIC_PASSWORD_SOURCE` | Separate protected file containing the recovery-repository password; it must not be the production password file or live under the drill root. |
+| `OIR_DRILL_FUSEKI_ADMIN_PASSWORD` | High-entropy Fuseki password distinct from `FUSEKI_ADMIN_PASSWORD`, used only by disposable recovery-drill Fuseki services. Keep it in the protected runtime env file. |
 
 The supported `run` endpoint tokens include `houses`, `parties`,
 `constituencies`, `committees`, `administrative-units`, `offices`, `members`,
@@ -194,6 +216,7 @@ Compose/runtime defaults which may be overridden in the same file:
 | `OIR_BACKUP_KEEP_DAILY` / `OIR_BACKUP_KEEP_MONTHLY` | `30` / `12` |
 | `OIR_BACKUP_RPO_HOURS` | `24` |
 | `OIR_ALERT_DEGRADED_RUN_THRESHOLD` | `2` consecutive degraded runs per endpoint |
+| `OIR_ALERT_RECONCILIATION_DEGRADED_THRESHOLD` | `2` consecutive degraded attempts per reconciliation entity |
 
 Compose fixes the in-container paths: operation lock at
 `/var/lib/oireachtas-etl-root/operations.lock`, the four SQLite stores and
@@ -506,6 +529,14 @@ and RDF before PUTs, then replaces and whole-graph verifies each named graph
 and checks the final graph inventory. There are no API/Wikidata/DBpedia calls
 during reconstruction.
 
+An empty rebuild is accepted only when Core State is a freshly initialized,
+integrity-checked current schema and all source, run, quarantine, catalog,
+graph-version and migration-metadata tables are empty; the reconciliation
+store and Fuseki target are still validated. This supports the documented
+first-start drill before the first ETL publication. An empty payload list
+accompanied by any Core State history is treated as missing/corrupt evidence
+and fails closed.
+
 For authoritative graphs it uses the clean published payload, or, for a dirty
 publication, the exact hash-checked pending payload as the recovery boundary.
 It includes the persisted provenance catalog when present. For external-link
@@ -587,6 +618,12 @@ drill timer until its separate paths/password have been tested with a manual
   later. Hook implementations should deduplicate by `event_id`; a crash after
   delivery but before file removal/acknowledgment can result in at-least-once
   dispatch for either event type.
+- The same check reads existing reconciliation attempt history. Its separate
+  configurable threshold counts consecutive `pending`/`ambiguous` outcomes or
+  attempts with recorded errors for the same `(entity_kind, local_iri)`; a
+  successful `accepted`/`rejected` attempt ends that entity's episode. No
+  second reconciliation queue or run ledger is introduced. An isolated failed
+  lookup does not cross the default threshold.
 - ETL emits structured JSON Lines to stderr and persists run summaries/outcomes
   in Core State. Use `scripts/production-compose.sh etl state status` and inspect
   its run, dirty/missing publication, quarantine, catalog and
@@ -617,8 +654,9 @@ drill timer until its separate paths/password have been tested with a manual
   after failure. Never point the internal rebuild command at a serving dataset.
 - Recovery drill failure: inspect the `oir-recovery-drill.service` journal and
   retained run directory under `OIR_DRILL_ROOT`. Confirm that its copied Restic
-  repository is complete, its separate password is readable by the configured
-  container UID/GID, and all three drill paths are disjoint from production.
+  repository is complete, its separate Restic password is readable by the
+  configured container UID/GID, and the drill paths and credentials are
+  disjoint from production.
 - Backups are local-path Restic snapshots in this Compose deployment; no
   off-host copy, RTO, or automatic full recovery orchestration is configured.
   The backup checker is not a complete disaster-recovery proof. Production
@@ -639,3 +677,33 @@ drill prerequisites before enabling their timers. Do not claim the complete
 Phase 6 exit: Tranche C's disposable release gate and production/external
 service acceptance remain separate, and this guide does not claim Debates
 production ingestion/readiness.
+
+### Independent review finding disposition
+
+The corrective implementation closes the five findings recorded by the
+independent Tranche B review:
+
+1. Manual failed-run alerts no longer change directory ownership at runtime;
+   supported non-root operators use a pre-provisioned setgid alert directory.
+   Queue/delivery failures are reported while preserving the original ETL exit
+   status.
+2. A fresh initialized, integrity-checked Core State with no publication,
+   source, run, quarantine, catalog, graph-version or migration history proves
+   a legitimate empty inventory and can rebuild/verify an empty Fuseki dataset.
+   Any such persisted history with an
+   empty graph inventory fails closed. Rebuilding remains offline, fresh-only
+   and isolated from clients.
+3. The existing alert check evaluates repeated reconciliation-attempt
+   degradation from `reconciliation.sqlite`, with a separately configurable
+   threshold, episode suppression and reset after a successful resolved attempt.
+   Core State ETL alerts remain unchanged.
+4. Recovery drills require and use `OIR_DRILL_FUSEKI_ADMIN_PASSWORD`, which must
+   differ from the production Fuseki password. The private rebuild service has
+   no host-published port.
+5. `deployment/production.env.example` now matches the durable parent used by
+   clean-host provisioning and recovery commands.
+
+These paths have focused regression coverage. A deployment must still complete
+a successful manual recovery drill with its actual protected paths and secrets
+before enabling the scheduled drill timer; this guide is not a production-host
+acceptance result.

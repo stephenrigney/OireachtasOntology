@@ -56,29 +56,43 @@ queue_failed_alert() {
   local event_id="${1:?alert event ID is required}"
   local payload="${2:?alert JSON payload is required}"
   local alert_dir event_file temporary
-  local container_uid container_gid
   alert_dir="$OIR_DURABLE_PARENT/alerts"
-  mkdir -p "$alert_dir"
+  if ! mkdir -p "$alert_dir"; then
+    echo "could not create the shared operational alert directory: $alert_dir" >&2
+    return 1
+  fi
   if [[ ! -d "$alert_dir" || -L "$alert_dir" ]]; then
     echo "operational alert state path is not a regular directory" >&2
     return 1
   fi
-  chmod 0750 "$alert_dir"
-  container_uid="${OIR_CONTAINER_UID:-10001}"
-  container_gid="${OIR_CONTAINER_GID:-10001}"
-  if ! chown "$container_uid:$container_gid" "$alert_dir"; then
-    echo "could not set alert-state ownership for the ETL container" >&2
+  if [[ ! -w "$alert_dir" || ! -x "$alert_dir" ]]; then
+    echo "operational alert directory must be writable by this operator and the ETL group: $alert_dir" >&2
     return 1
   fi
   event_file="$alert_dir/pending-$event_id.json"
-  temporary="$(mktemp "$alert_dir/.pending-failure.XXXXXX")"
-  chmod 0600 "$temporary"
-  printf '%s\n' "$payload" >"$temporary"
-  mv -- "$temporary" "$event_file"
+  if ! temporary="$(mktemp "$alert_dir/.pending-failure.XXXXXX")"; then
+    echo "could not create the pending failed-run alert file" >&2
+    return 1
+  fi
+  if ! chmod 0640 "$temporary"; then
+    rm -f -- "$temporary"
+    echo "could not set shared alert-file permissions" >&2
+    return 1
+  fi
+  if ! printf '%s\n' "$payload" >"$temporary"; then
+    rm -f -- "$temporary"
+    echo "could not write the pending failed-run alert" >&2
+    return 1
+  fi
+  if ! mv -- "$temporary" "$event_file"; then
+    rm -f -- "$temporary"
+    echo "could not queue the pending failed-run alert" >&2
+    return 1
+  fi
   if dispatch_alert_file "$event_file"; then
     rm -f -- "$event_file"
   else
-    echo "failed-unit alert event retained for retry at $event_file" >&2
+    echo "alert event retained for retry at $event_file" >&2
     return 1
   fi
 }
@@ -113,7 +127,11 @@ run_etl_command() {
   # systemd's OnFailure handler emits the richer unit-level event for a
   # scheduled invocation; manual production-wrapper failures notify here.
   if [[ "${OIR_SCHEDULED_ETL:-0}" != "1" ]]; then
-    failed_manual_run_alert "$operation" || true
+    if ! failed_manual_run_alert "$operation"; then
+      echo "ETL operation failed with status $status; failed-run alert could not be delivered or queued" >&2
+      logger --priority user.err --tag oireachtas-ops \
+        "failed-run alert could not be delivered or queued for: $operation" 2>/dev/null || true
+    fi
   fi
   return "$status"
 }
@@ -126,7 +144,11 @@ ensure_fuseki_for_etl() {
     status=$?
   fi
   if [[ "${OIR_SCHEDULED_ETL:-0}" != "1" ]]; then
-    failed_manual_run_alert "$operation (Fuseki startup)" || true
+    if ! failed_manual_run_alert "$operation (Fuseki startup)"; then
+      echo "Fuseki startup failed with status $status; failed-run alert could not be delivered or queued" >&2
+      logger --priority user.err --tag oireachtas-ops \
+        "failed-run alert could not be delivered or queued for: $operation (Fuseki startup)" 2>/dev/null || true
+    fi
   fi
   return "$status"
 }
@@ -374,7 +396,7 @@ recovery_drill() {
   local drill_root prod_repository drill_project drill_port drill_pw
   local run_dir drill_durable drill_backup drill_fuseki drill_repository
   local host_lock drill_lock_fd operation_lock_fd stamp project_base path prod_password
-  local container_uid container_gid
+  local container_uid container_gid drill_fuseki_password
   [[ -n "${OIR_DRILL_ROOT:-}" && "$OIR_DRILL_ROOT" == /* \
      && -d "$OIR_DRILL_ROOT" && ! -L "$OIR_DRILL_ROOT" ]] || {
     echo "OIR_DRILL_ROOT must be a provisioned, non-symlink directory" >&2; return 2;
@@ -383,9 +405,13 @@ recovery_drill() {
     echo "OIR_DRILL_COMPOSE_PROJECT must name the isolated drill project" >&2; return 2;
   }
   [[ -n "${OIR_DRILL_RESTIC_PASSWORD_SOURCE:-}" \
-     && -f "$OIR_DRILL_RESTIC_PASSWORD_SOURCE" \
-     && ! -L "$OIR_DRILL_RESTIC_PASSWORD_SOURCE" ]] || {
+      && -f "$OIR_DRILL_RESTIC_PASSWORD_SOURCE" \
+      && ! -L "$OIR_DRILL_RESTIC_PASSWORD_SOURCE" ]] || {
     echo "OIR_DRILL_RESTIC_PASSWORD_SOURCE must be a separate protected password file" >&2; return 2;
+  }
+  [[ -n "${OIR_DRILL_FUSEKI_ADMIN_PASSWORD:-}" \
+      && "$OIR_DRILL_FUSEKI_ADMIN_PASSWORD" != "${FUSEKI_ADMIN_PASSWORD:-}" ]] || {
+    echo "OIR_DRILL_FUSEKI_ADMIN_PASSWORD must be set and differ from the production Fuseki password" >&2; return 2;
   }
   [[ -n "${OIR_DRILL_FUSEKI_BIND_PORT:-}" \
      && "$OIR_DRILL_FUSEKI_BIND_PORT" =~ ^[0-9]{1,5}$ \
@@ -468,13 +494,15 @@ recovery_drill() {
   exec {operation_lock_fd}>&-
 
   project="$drill_project"
+  drill_fuseki_password="$OIR_DRILL_FUSEKI_ADMIN_PASSWORD"
+  FUSEKI_ADMIN_PASSWORD="$drill_fuseki_password"
   OIR_DURABLE_PARENT="$drill_durable"
   OIR_BACKUP_DIR="$drill_backup"
   OIR_FUSEKI_DATA_DIR="$drill_fuseki"
   OIR_RESTIC_PASSWORD_SOURCE="$drill_pw"
   FUSEKI_BIND_PORT="$OIR_DRILL_FUSEKI_BIND_PORT"
   export OIR_DURABLE_PARENT OIR_BACKUP_DIR OIR_FUSEKI_DATA_DIR
-  export OIR_RESTIC_PASSWORD_SOURCE FUSEKI_BIND_PORT
+  export OIR_RESTIC_PASSWORD_SOURCE FUSEKI_BIND_PORT FUSEKI_ADMIN_PASSWORD
   DRILL_PROJECT_ACTIVE=1
 
   echo "recovery_drill_started project=$drill_project snapshot_source=isolated_encrypted_repository_copy"

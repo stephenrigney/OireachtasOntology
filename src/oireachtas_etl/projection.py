@@ -43,6 +43,44 @@ _SHARED_GRAPH_IRIS = {
     "administrative-units": ADMINISTRATIVE_UNITS_GRAPH,
 }
 
+_CORE_EMPTY_INVENTORY_TABLES = {
+    "catalog_publication_attempt", "catalog_publication_state",
+    "catalog_run_finalization", "endpoint_state", "entity_version",
+    "entity_version_source", "etl_run", "graph_version", "core_metadata",
+    "provenance_event", "provenance_incomplete", "quarantine_history",
+    "quarantine_record", "resource_state", "source_observation",
+}
+
+
+def _require_proven_empty_core_inventory(connection: sqlite3.Connection,
+                                         existing_tables: set[str]) -> None:
+    """Allow an empty projection only for a genuinely untouched initialized store.
+
+    A current Core State with no publication rows but with any run, source,
+    quarantine, catalog, or graph-version history is not evidence that the
+    projection was always empty: it may indicate lost/corrupt inventory. The
+    clean first-start state is uniquely evidenced by the current schema and all
+    of these durable history tables being empty.
+    """
+    if not _CORE_EMPTY_INVENTORY_TABLES <= existing_tables:
+        raise ProjectionError("Core State cannot prove an empty publication inventory")
+    try:
+        integrity = connection.execute("PRAGMA integrity_check").fetchall()
+    except sqlite3.Error as error:
+        raise ProjectionError("Core State cannot prove an empty publication inventory") from error
+    if len(integrity) != 1 or integrity[0][0] != "ok":
+        raise ProjectionError("Core State integrity check failed for empty publication inventory")
+    for table in sorted(_CORE_EMPTY_INVENTORY_TABLES):
+        try:
+            populated = connection.execute(
+                f'SELECT 1 FROM "{table}" LIMIT 1').fetchone()
+        except sqlite3.Error as error:
+            raise ProjectionError(
+                "Core State cannot prove an empty publication inventory") from error
+        if populated is not None:
+            raise ProjectionError(
+                "empty projection inventory conflicts with persisted Core State history")
+
 
 def _payload_graph(graph_iri: str, payload: str, expected_hash: str,
                    owner: str) -> GraphPayload:
@@ -175,6 +213,9 @@ def authoritative_graph_payloads(state_db: str | Path) -> list[GraphPayload]:
                     raise ProjectionError("provenance graph is duplicated in Core State")
                 selected.append(_payload_graph(
                     PROVENANCE_GRAPH_IRI, payload, payload_hash, "provenance"))
+
+        if not selected:
+            _require_proven_empty_core_inventory(connection, tables)
 
         connection.commit()
         return selected
@@ -323,9 +364,10 @@ def rebuildable_graph_payloads(state_db: str | Path, *,
     return graphs
 
 
-def rebuild_empty_dataset(graphs: list[GraphPayload], loader, client) -> dict:
+def rebuild_empty_dataset(graphs: list[GraphPayload], loader, client, *,
+                          allow_empty: bool = False) -> dict:
     """PUT and whole-graph-verify a complete candidate set into an empty store."""
-    if not graphs:
+    if not graphs and not allow_empty:
         raise ProjectionError("no persisted graphs are available for reconstruction")
     for query in (
             "SELECT (COUNT(*) AS ?triples) WHERE { GRAPH ?graph { ?s ?p ?o } }",
@@ -344,10 +386,20 @@ def rebuild_empty_dataset(graphs: list[GraphPayload], loader, client) -> dict:
     return _verified_dataset_summary(graphs, client)
 
 
-def verify_existing_dataset(graphs: list[GraphPayload], client) -> dict:
+def verify_existing_dataset(graphs: list[GraphPayload], client, *,
+                            allow_empty: bool = False) -> dict:
     """Verify an already-populated projection against its canonical payloads."""
-    if not graphs:
+    if not graphs and not allow_empty:
         raise ProjectionError("no persisted graphs are available for reconstruction")
+    if not graphs:
+        for query in (
+                "SELECT (COUNT(*) AS ?triples) WHERE { GRAPH ?graph { ?s ?p ?o } }",
+                "SELECT (COUNT(*) AS ?triples) WHERE { ?s ?p ?o }",
+        ):
+            rows = client.query(query)
+            if (len(rows) != 1 or not isinstance(rows[0].get("triples"), dict)
+                    or int(rows[0]["triples"].get("value", "-1")) != 0):
+                raise ProjectionError("empty durable inventory does not match Fuseki dataset")
     from .competency import verify_core_graph
     for item in graphs:
         verify_core_graph(client, item.graph_iri, item.payload)

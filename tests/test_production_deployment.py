@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import json
+import pwd
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -54,6 +55,17 @@ def test_manual_and_scheduled_etl_use_the_same_production_compose_path(tmp_path)
 
     service = (ROOT / "deployment/systemd/oir-etl.service").read_text(encoding="utf-8")
     assert "ExecStart=/opt/oireachtas-etl/scripts/production-compose.sh run-etl" in service
+
+
+def test_runtime_example_matches_clean_host_durable_storage_provisioning():
+    example = (ROOT / "deployment/production.env.example").read_text(encoding="utf-8")
+    operations = (ROOT / "documentation/production-operations.md").read_text(
+        encoding="utf-8")
+    durable = next(line.split("=", 1)[1] for line in example.splitlines()
+                   if line.startswith("OIR_DURABLE_PARENT="))
+    assert durable == "/var/lib/oireachtas-etl-root"
+    assert f"{durable} /var/lib/oireachtas-etl-root/live/raw" in operations
+    assert f"--target-root {durable}/live" in operations
 
 
 def _runtime_env(tmp_path: Path, *, extra: tuple[str, ...] = ()) -> Path:
@@ -109,6 +121,19 @@ def _launcher_env(tmp_path: Path, runtime_env: Path, fake_bin: Path, log: Path,
         "FAKE_DOCKER_LOG": str(log),
         **extra,
     }
+
+
+def _unprivileged_preexec():
+    if os.geteuid() != 0:
+        return None
+    nobody = pwd.getpwnam("nobody")
+
+    def drop_privileges():
+        os.setgroups([])
+        os.setgid(nobody.pw_gid)
+        os.setuid(nobody.pw_uid)
+
+    return drop_privileges
 
 
 def test_alert_dispatcher_passes_failed_unit_as_json_file_to_configured_hook(tmp_path):
@@ -182,6 +207,80 @@ if [[ "$*" == *" run --rm --no-deps etl run houses"* ]]; then exit 23; fi
     assert event["event"] == "failed_run"
     assert event["operation"] == "run houses"
     assert not list((tmp_path / "durable" / "alerts").glob("pending-failed-run-*.json"))
+
+
+def test_nonroot_manual_operator_queues_and_delivers_failed_run_alert(tmp_path):
+    hook_log = tmp_path / "hook.json"
+    hook = tmp_path / "notify-hook"
+    hook.write_text("#!/bin/sh\ncat \"$1\" > \"$ALERT_CAPTURE\"\n", encoding="utf-8")
+    hook.chmod(0o755)
+    runtime_env = _runtime_env(tmp_path, extra=(f"OIR_ALERT_HOOK={hook}",))
+    fake_bin, docker_log = _fake_docker(tmp_path, script="""#!/bin/bash
+printf '%s\\n' "$*" >> "$FAKE_DOCKER_LOG"
+if [[ "$*" == *" run --rm --no-deps etl run houses"* ]]; then exit 43; fi
+""")
+    chown_called = tmp_path / "chown-called"
+    (fake_bin / "chown").write_text(
+        f"#!/bin/sh\nprintf called > '{chown_called}'\nexit 99\n", encoding="utf-8")
+    (fake_bin / "chown").chmod(0o755)
+    tmp_path.chmod(0o755)
+    (tmp_path / "durable").chmod(0o777)
+    runtime_env.chmod(0o644)
+    hook_log.touch(mode=0o666)
+    hook_log.chmod(0o666)
+    env = _launcher_env(tmp_path, runtime_env, fake_bin, docker_log,
+                        ALERT_CAPTURE=str(hook_log))
+
+    result = subprocess.run(
+        [str(ROOT / "scripts/production-compose.sh"), "run-etl", "houses"],
+        env=env, capture_output=True, text=True, preexec_fn=_unprivileged_preexec())
+
+    assert result.returncode == 43
+    event = json.loads(hook_log.read_text(encoding="utf-8"))
+    assert event["event"] == "failed_run"
+    assert not chown_called.exists()
+    assert not list((tmp_path / "durable" / "alerts").glob("pending-failed-run-*.json"))
+
+
+def test_failed_alert_queue_reports_error_and_preserves_etl_status(tmp_path):
+    runtime_env = _runtime_env(tmp_path)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (tmp_path / "durable" / "alerts").symlink_to(outside, target_is_directory=True)
+    fake_bin, docker_log = _fake_docker(tmp_path, script="""#!/bin/bash
+printf '%s\\n' "$*" >> "$FAKE_DOCKER_LOG"
+if [[ "$*" == *" run --rm --no-deps etl run houses"* ]]; then exit 47; fi
+""")
+    env = _launcher_env(tmp_path, runtime_env, fake_bin, docker_log)
+
+    result = subprocess.run([str(ROOT / "scripts/production-compose.sh"),
+                             "run-etl", "houses"], env=env,
+                            capture_output=True, text=True)
+
+    assert result.returncode == 47
+    assert "failed-run alert could not be delivered or queued" in result.stderr
+    assert "operational alert state path" in result.stderr
+
+
+def test_manual_failed_run_hook_failure_is_reported_and_preserves_etl_status(tmp_path):
+    hook = tmp_path / "notify-hook"
+    hook.write_text("#!/bin/sh\nexit 19\n", encoding="utf-8")
+    hook.chmod(0o755)
+    runtime_env = _runtime_env(tmp_path, extra=(f"OIR_ALERT_HOOK={hook}",))
+    fake_bin, docker_log = _fake_docker(tmp_path, script="""#!/bin/bash
+printf '%s\\n' "$*" >> "$FAKE_DOCKER_LOG"
+if [[ "$*" == *" run --rm --no-deps etl run houses"* ]]; then exit 49; fi
+""")
+    env = _launcher_env(tmp_path, runtime_env, fake_bin, docker_log)
+
+    result = subprocess.run([str(ROOT / "scripts/production-compose.sh"),
+                             "run-etl", "houses"], env=env,
+                            capture_output=True, text=True)
+
+    assert result.returncode == 49
+    assert "failed-run alert could not be delivered or queued" in result.stderr
+    queued = list((tmp_path / "durable" / "alerts").glob("pending-failed-run-*.json"))
+    assert len(queued) == 1
 
 
 def test_scheduled_failed_etl_leaves_alert_dispatch_to_systemd_onfailure(tmp_path):
@@ -340,6 +439,7 @@ def test_recovery_drill_uses_isolated_project_and_copied_repository(tmp_path):
         "OIR_DRILL_COMPOSE_PROJECT=phase6-recovery-drill",
         "OIR_DRILL_FUSEKI_BIND_PORT=13031",
         f"OIR_DRILL_RESTIC_PASSWORD_SOURCE={tmp_path / 'drill-restic-password'}",
+        "OIR_DRILL_FUSEKI_ADMIN_PASSWORD=drill-only-password",
         "OIR_CONTAINER_UID=10001",
         "OIR_CONTAINER_GID=10001",
     ))
@@ -357,11 +457,16 @@ fi
 if [[ "$*" == *" projection rebuild "* ]]; then
   printf verified > "$OIR_FUSEKI_REBUILD_DATA_DIR/verified.marker"
 fi
+if [[ "$*" == *" up -d --wait fuseki-rebuild"* ]]; then
+  [[ "$FUSEKI_ADMIN_PASSWORD" == "drill-only-password" ]] || exit 45
+  printf isolated > "$FUSEKI_ADMIN_PASSWORD_CAPTURE"
+fi
 """)
     fake_chown = fake_bin / "chown"
     fake_chown.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     fake_chown.chmod(0o755)
     env = _launcher_env(tmp_path, runtime_env, fake_bin, docker_log)
+    env["FUSEKI_ADMIN_PASSWORD_CAPTURE"] = str(tmp_path / "drill-password-isolated")
 
     subprocess.run([str(ROOT / "scripts/production-compose.sh"), "recovery-drill"],
                    env=env, check=True)
@@ -382,6 +487,31 @@ fi
     assert (source_repo / "config").read_text(encoding="utf-8") == "encrypted-repository-marker"
     assert not list((tmp_path / "drills").glob("run.*"))
     assert any(line.endswith(" down --volumes --remove-orphans") for line in calls)
+    assert (tmp_path / "drill-password-isolated").read_text() == "isolated"
+    assert "drill-only-password" not in "\n".join(calls)
+
+
+def test_recovery_drill_rejects_production_password_reuse(tmp_path):
+    runtime_env = _runtime_env(tmp_path, extra=(
+        f"OIR_DRILL_ROOT={tmp_path / 'drills'}",
+        "OIR_DRILL_COMPOSE_PROJECT=phase6-recovery-drill",
+        "OIR_DRILL_FUSEKI_BIND_PORT=13031",
+        f"OIR_DRILL_RESTIC_PASSWORD_SOURCE={tmp_path / 'drill-restic-password'}",
+        "OIR_DRILL_FUSEKI_ADMIN_PASSWORD=disposable-test-only",
+    ))
+    (tmp_path / "drills").mkdir()
+    (tmp_path / "drill-restic-password").write_text("separate\n", encoding="utf-8")
+    (tmp_path / "backups" / "restic").mkdir()
+    fake_bin, docker_log = _fake_docker(tmp_path)
+
+    result = subprocess.run(
+        [str(ROOT / "scripts/production-compose.sh"), "recovery-drill"],
+        env=_launcher_env(tmp_path, runtime_env, fake_bin, docker_log),
+        capture_output=True, text=True)
+
+    assert result.returncode != 0
+    assert "differ from the production Fuseki password" in result.stderr
+    assert not docker_log.exists()
 
 
 def test_recovery_drill_refuses_paths_overlapping_production(tmp_path):
@@ -390,6 +520,7 @@ def test_recovery_drill_refuses_paths_overlapping_production(tmp_path):
         "OIR_DRILL_COMPOSE_PROJECT=phase6-recovery-drill",
         "OIR_DRILL_FUSEKI_BIND_PORT=13031",
         f"OIR_DRILL_RESTIC_PASSWORD_SOURCE={tmp_path / 'drill-restic-password'}",
+        "OIR_DRILL_FUSEKI_ADMIN_PASSWORD=drill-only-password",
     ))
     (tmp_path / "backups" / "drill").mkdir()
     (tmp_path / "drill-restic-password").write_text("separate\n", encoding="utf-8")
