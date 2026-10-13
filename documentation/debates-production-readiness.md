@@ -28,13 +28,13 @@ production deployment, production mutation, or ingestion authorisation.
 
 | Decision | Owner position | Scope and qualification |
 |---|---|---|
-| **A — 264 exceptions** | **Approved** | Withhold all 264 inventoried Works from the initial publication (261 empty \`sectionName\`, two duplicate decoded eIds, one URL/FRBRExpression mismatch). Category-level withholding is accepted; preserve per-Work source/hash, classification and audit trace. No source repair, semantic compatibility rule, partial invalid Work graph, blanket retry, or permanent exclusion is approved. |
-| **B — census completeness** | **Approved** | Accept the frozen hash-identified 2011+ \`/v1/debates\` selection of 10,913 Dáil, Seanad and committee Works, excluding written answers, as the bounded initial-ingestion selection. Approval does not assert global Work or Expression completeness, resolve multiple-Expression conflicts, or authorise a changed manifest without review. |
+| **A — 264 exceptions** | **Approved** | Withhold all 264 inventoried Works from the initial publication (261 empty `sectionName`, two duplicate decoded eIds, one URL/FRBRExpression mismatch). Category-level withholding is accepted; preserve per-Work source/hash, classification and audit trace. No source repair, semantic compatibility rule, partial invalid Work graph, blanket retry, or permanent exclusion is approved. |
+| **B — census completeness** | **Approved** | Accept the frozen hash-identified 2011+ `/v1/debates` selection of 10,913 Dáil, Seanad and committee Works, excluding written answers, as the bounded initial-ingestion selection. Approval does not assert global Work or Expression completeness, resolve multiple-Expression conflicts, or authorise a changed manifest without review. |
 | **C — resources and batches** | **Provisionally approved** | Adopt the currently documented configurable warning/hard-stop limits and one publication worker, capped at **25 Works or 64 MiB of source XML per batch**, with controlled 5-, 10-, then 25-Work progression. Host capacity, production-owner-driven report/RDF size, container memory, backup/rebuild headroom and real batch observations must be verified before operational use or widening. No relaxation of guards is approved. |
 
 The specific frozen inventory is
-[\`debates-initial-production-inventory.json\`](debates-initial-production-inventory.json)
-(SHA-256 \`ae07dc7c293bcadef3d17fa52ea19e2b92db5368242a53aefd68ec8ca5f0c4d7\`).
+[`debates-initial-production-inventory.json`](debates-initial-production-inventory.json)
+(SHA-256 `ae07dc7c293bcadef3d17fa52ea19e2b92db5368242a53aefd68ec8ca5f0c4d7`).
 Approval of A permits **explicit initial withholding** of the 264 known
 exceptions, not publication of invalid Works. New or materially different
 exceptions still require review. The completion reconciliation must account
