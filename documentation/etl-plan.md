@@ -1068,16 +1068,16 @@ Wikipedia link is asserted. Nothing was published to production.
 
 ### Status and purpose
 
-**Implementation complete; technical validation complete; authoritative
-reference census complete; authoritative coverage acceptance blocked by one
-source conflict.** The deterministic census, historical-owner transforms,
-Committee vertical, pre-publication and remote closure checks, capture
-provenance, and Core State publication/recovery handling are implemented and
-regression-tested. Repository validation passed with the Java runtime pinned in
-`mise.toml`. The exact-IRI Committee conflict remains fail-closed. The global
-all-or-nothing conflict gate is deliberately retained; affected-graph/partial
-publication is deferred to a separate operational-design task. No production
-Graph Store publication has been performed.
+**Implementation complete; authoritative reference coverage accepted under one
+explicit, evidence-bound Committee decision.** The deterministic census,
+historical-owner transforms, Committee vertical, pre-publication and remote
+closure checks, capture provenance, and Core State publication/recovery
+handling are implemented and regression-tested. The approved Dáil 33 exception
+below accepts Committee ID 115 only for the exact reviewed source evidence; all
+other conflicts remain fail-closed. The global all-or-nothing conflict gate is
+retained. No generic authoritative quarantine or affected-graph/partial
+publication behavior is introduced. No production Graph Store publication has
+been performed.
 
 The acceptance statuses are distinct:
 
@@ -1085,14 +1085,14 @@ The acceptance statuses are distinct:
   documented limitations.
 - **Technical validation:** complete. Ontology and mapping-integrity
   validation, synthetic closure, publication/recovery, deterministic/golden,
-  SHACL, and full-suite checks passed under `mise`. The real-capture candidate
-  preflight correctly stops on the Committee conflict before closure
-  evaluation; authoritative graph-level closure has therefore **not** passed.
+  SHACL, and full-suite checks passed under `mise`. Real-capture candidate
+  construction and graph-level reference closure pass after applying the
+  evidence-bound Committee decision.
 - **Authoritative reference census:** complete. The integrity-checked complete
   source captures were inventoried and the counts are recorded below.
-- **Authoritative coverage acceptance:** blocked by the one unresolved
-  Committee source conflict. Candidate owner graphs are not published from
-  that conflicting census.
+- **Authoritative coverage acceptance:** accepted for the reviewed complete
+  Members capture; all 2,175 reference identities are closable and candidate
+  graph closure has zero unresolved closable references.
 - **Production publication:** not performed.
 
 This corrective tranche closes a source-coverage assumption in the implemented
@@ -1206,9 +1206,9 @@ Members is corroborating evidence, not duplicate RDF.
 A material conflict is never resolved by majority vote or source-order
 accident. Record the competing source observations and fail the affected
 candidate owner-graph build before publication. The last clean published graph
-therefore remains intact. A later reviewed source correction or explicit
-policy change may resolve the conflict; this tranche does not add a generic
-manual identity-merging mechanism.
+therefore remains intact, except for the single project-owner decision recorded
+below. No generic manual identity-merging or authoritative quarantine
+mechanism is part of this contract.
 
 Re-use the existing Party and Constituency source-to-RDF contracts by
 normalizing accepted Member observations into their existing logical record
@@ -1351,8 +1351,10 @@ Implementation is complete only when:
 - every closable Committee reference has a description in the new Committee
   owner graph;
 - repeated identical Member observations deduplicate deterministically;
-- a material cross-observation conflict prevents the affected shared graph
-  replacement and preserves the previous clean graph;
+- an unapproved material cross-observation conflict prevents shared graph
+  replacement and preserves the previous clean graph; the sole reviewed
+  Dáil 33 exception applies only when its complete evidence fingerprint
+  matches;
 - a Committee's term context is taken from its own source IRI rather than from
   the Member who references it;
 - Member graphs still contain no descriptive triples for Party,
@@ -1387,10 +1389,9 @@ placeholder owner is emitted. The census consolidates 367 historical
 Party/Independent owners absent from the standalone Parties capture and 1,521
 historical constituency/panel owners absent from the standalone Constituencies
 capture; 11 Party and 8 representation IRIs overlap concordantly with their
-standalone captures. It also consolidates 267 closable Committee owners. These
-are source-grounded candidate records, not evidence that a shared graph was
-published: the material Committee conflict currently blocks candidate graph
-construction and authoritative coverage acceptance.
+standalone captures. It also consolidates 267 closable Committee owners
+before applying the owner decision below. These are source-grounded candidate
+records, not evidence that a shared graph was published.
 
 #### Raw evidence for the single Committee conflict
 
@@ -1523,7 +1524,72 @@ official pages expose **neither** numeric ID. The official evidence identifies
 the named 33rd-term Committee, but does not establish that either Members
 observation is erroneous or authorize temporal/version interpretation of the
 same-IRI rows. No defensible resolution is established. The conflict remains an
-upstream/source-data blocker; authoritative publication remains fail-closed.
+upstream/source-data blocker as of the 2026-10-05 evidence review.
+
+#### Project-owner decision — accept ID 115 for this exact reviewed evidence
+
+The project owner has explicitly decided to accept Committee ID **115** and
+disregard the conflicting ID **156** observation for Committee-owner
+consolidation. This decision supersedes the previous unresolved-blocker
+disposition above, but does not change the exact-IRI identity model or claim
+that the upstream API is internally consistent.
+
+The exception is restricted to the exact Committee IRI shown above and the
+complete reviewed observation set: thirteen observations with `committeeCode`
+`"115"` / `committeeID` `115`, and the single adjacent Fergus O'Dowd
+observation with `committeeCode` `"156"` / `committeeID` `156`. At runtime the
+exception is usable only for a complete authoritative Members capture whose
+fourteen source observations have the reviewed evidence fingerprint
+`06fb58595b879dc206e2bb50aa95014c41718275f1e251d3a5696a1830ccbdb2` (SHA-256
+of canonicalized source observations, including each full nested Committee
+object, source Member and membership identity, HouseTerm context, Committee
+fields, relationship date range and role). Any addition, removal or material
+change to those reviewed observations (including newly malformed evidence)
+fails closed and requires renewed review; any conflict on another IRI remains
+a publication blocker.
+
+Only owner consolidation filters the reviewed ID 156 observation. The census
+retains all fourteen original source observations and identifies the excluded
+row and decision for audit. Member transformation is unchanged: the ID 156
+object remains in source input, and its Member-owned Committee membership,
+`memberDateRange`, role and role tenure are neither deleted nor reinterpreted.
+The thirteen ID 115 observations alone supply the Committee owner description,
+including code/ID, classification, operational date range and names. This is a
+single evidence-bound exception, not a reusable conflict policy, general
+quarantine, override registry, or source-data correction. The existing
+development-only non-authoritative conflict behavior is unchanged and is not
+used to establish authoritative coverage.
+
+The exception also supersedes the earlier proposed general-purpose
+authoritative quarantine approach: authoritative publication continues to fail
+closed for every unapproved material conflict under the existing all-or-nothing
+gate. No partial graph publication, conflict registry or new publication/state
+contract is introduced.
+
+#### Resolved authoritative census and closure
+
+Re-running `tools/reference_census.py` against the same hash-verified complete
+Members capture and the 2026-10-04 standalone Parties and Constituencies
+captures after this decision reports 17,557 observations and **2,175 distinct,
+closable identities**: 378 Party/Independent collections, 1,529
+constituency/panel identities and 268 Committees. It reports zero conflicting
+identities, zero insufficient-evidence identities, 18 malformed observations
+(including the excluded ID 156 row's null operational dates), and 24
+Committee-name ambiguity diagnostics. Party coverage remains 367 Members-only
+plus 11 concordant overlaps; representation coverage remains 1,521 Members-only
+plus 8 concordant overlaps; all 268 Committee identities are Members-only.
+
+Candidate construction from the complete 1,928-Member capture succeeds with
+the existing owner validators and SHACL. The disputed Committee has one
+`members:Committee` description with `committeeCode` and `committeeID` 115,
+the ID 115 `Shadow Department` classification, the 2020-07-23–2024-11-08
+operational range and the selected names. The complete candidate Member graph
+retains all Committee references and their Member-owned tenure/role evidence.
+Reference closure checks 2,488 distinct Member reference edges: all 2,488 are
+closed, with zero unresolved closable references. Existing malformed
+observation diagnostics remain visible and do not create placeholders. These
+are candidate-graph results only; no authoritative production graph was
+published.
 
 #### Independent audit dispositions and retained contract decisions
 
@@ -1551,17 +1617,14 @@ upstream/source-data blocker; authoritative publication remains fail-closed.
   across HouseTerms. `committeeID` uniqueness is also not an approved identity
   rule. The IRI remains the only consolidation key; no cross-IRI merge is
   performed.
-- **Global conflict gate deliberately retained.** Per the accepted tranche
-  decision, `build_reference_candidates` rejects the full candidate set when
-  any identity conflicts. This Committee conflict therefore blocks publication
-  of unconflicted Party/Constituency candidates and current Member graphs as
-  well as the Committee graph, and defers their normal dirty-resource retry
-  until the preflight passes. Affected-graph/partial publication is not part of
-  this tranche. It is deferred to a separate operational-design task if needed,
-  because it would create a new contract for mixed source epochs, Member
-  publication against partially refreshed references, closure exceptions,
-  recovery ordering and authoritative-state semantics. The global
-  all-or-nothing behavior is intentional, not an unresolved policy decision.
+- **Global conflict gate deliberately retained.** After the exact reviewed
+  Dáil 33 observation set is resolved by the project-owner decision above,
+  `build_reference_candidates` rejects the full candidate set for every other
+  material identity conflict. Affected-graph/partial publication is not part
+  of this tranche; it would create a new contract for mixed source epochs,
+  Member publication against partially refreshed references, closure
+  exceptions, recovery ordering and authoritative-state semantics. The
+  all-or-nothing behavior remains intentional.
 - The audit's proposed cross-IRI `committeeCode` guard is not added because
   code reuse is present in the authoritative capture and the mapping contract
   defines exact IRI—not code—as identity. Duplicate `committeeID` values are
@@ -1574,19 +1637,24 @@ upstream/source-data blocker; authoritative publication remains fail-closed.
   literal named-graph IRI, following the repository's existing query-resource
   pattern; it is not used as runtime publication configuration.
 
-Automated technical validation passed using pinned `temurin-8.0.504+1` through
-`mise exec`: ontology validation reported 2,504 triples; mapping-integrity
-validation passed; the full suite passed with 580 passed and 9 expected skips.
-Synthetic closure, publication/recovery, deterministic/golden and SHACL tests
-also passed. The authoritative census was rerun after source review; its raw
-capture hash, pagination, endpoint-URL, advertised-count and state-run
-provenance checks passed and its counts remain as recorded above. Real-capture
-candidate construction correctly stops on the Committee conflict before
-closure evaluation. Accordingly, authoritative graph-level closure and
-coverage acceptance are not claimed as passing. No production Graph Store was
-contacted. Implementation and technical validation are complete; the
-authoritative census is complete; authoritative coverage acceptance remains
-blocked by this one conflict.
+Before the owner decision, the real-capture candidate preflight stopped on the
+Committee conflict, so authoritative graph closure was not then claimed. After
+the decision, `tools/reference_census.py` was run twice against the preserved
+complete Members, Parties and Constituencies captures. The two complete JSON
+reports were byte-identical (SHA-256
+`a9d714c7d1c236aecba7ae8454c73b188fa0b5bbb084294e25d3a64f41c1f9f3`); raw
+page hashes, pagination, endpoint URL, advertised counts and Core State
+successful-run provenance checks passed.
+
+Verification after resolution passed with pinned `temurin-8.0.504+1` through
+`mise exec`: `tests/validate.py` reported ontology consistency at 2,504 triples;
+mapping-integrity tests passed in the full suite, which reported **945 passed
+and 16 skipped**. Candidate construction validated all three reference graphs,
+including SHACL, and complete-capture closure reported 2,488/2,488 edges closed,
+zero unresolved closable references and zero owner-description leaks. Focused
+publication and dirty-state recovery tests used disposable in-memory Fuseki and
+temporary Core State. No production Graph Store was contacted. Production
+publication remains a separate acceptance step.
 
 
 ## Phase 5 — Incremental refresh and ETL state

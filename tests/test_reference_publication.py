@@ -32,7 +32,7 @@ CURRENT_COMMITTEE = {
 }
 KNOWN_CONFLICT_COMMITTEE = (
     "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/"
-    "select_committee_on_the_implementation_of_the_good_friday_agreement"
+    "unrelated_conflicted_committee"
 )
 REFERENCE_VERSIONS = {
     "etl_version": "0.1.0",
@@ -222,6 +222,90 @@ def test_dirty_shared_reference_graph_replays_the_exact_hash_verified_payload(
         (PARTIES_GRAPH, payload, "application/n-triples")]
     assert set(fuseki.construct_graph(PARTIES_GRAPH)) == set(graph)
     assert len(fuseki.queries) == 1
+
+
+def test_committee_graph_publication_and_dirty_recovery_use_isolated_state(
+        tmp_path):
+    from oireachtas_etl import cli
+    from oireachtas_etl.config import COMMITTEES_GRAPH
+    from oireachtas_etl.serialization import ntriples
+    from oireachtas_etl.state import CoreStateStore
+    from tests._in_memory_fuseki import InMemoryFuseki
+
+    versions = REFERENCE_VERSIONS
+    committee_iri = (
+        "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/"
+        "select_committee_on_the_implementation_of_the_good_friday_agreement")
+    body = json.dumps({"results": [{"committee": committee_iri}]},
+                      sort_keys=True).encode()
+    source_hash = hashlib.sha256(body).hexdigest()
+    page_pointer = f"file:///raw/members/member-run/{source_hash}.json"
+    source_url = "https://api.oireachtas.ie/v1/members"
+    fuseki = InMemoryFuseki()
+    record = {
+        "uri": committee_iri,
+        "committeeCode": "115", "committeeID": 115,
+        "committeeDateRange": {"start": "2020-07-23", "end": "2024-11-08"},
+        "committeeName": [{"nameEn": "Accepted Committee"}],
+        "committeeType": ["Shadow Department"],
+    }
+    graph = transform_committees([record])
+    lineage = None
+
+    with CoreStateStore(tmp_path / "committee-core.sqlite") as store:
+        members_run = store.start_run(
+            "members", "full_refresh", is_complete=True,
+            parameters={"source": "api", "api_url": source_url},
+            versions=versions, started_at="2026-10-10T00:00:00+00:00")
+        source = store.record_source_observation(
+            "members", source_hash, "2026-10-10T00:00:01+00:00",
+            run_id=members_run, evidence_pointer=page_pointer,
+            source_url=source_url, request_parameters={"skip": 0, "limit": 100},
+            versions=versions)
+        store.finish_run(members_run, success=True)
+        lineage = {committee_iri: {
+            "sources": [{
+                "source_hash": source_hash,
+                "observed_at": source["observed_at"],
+                "evidence_pointer": page_pointer + "#/results/0",
+            }],
+            "prior_payload_hash": None,
+        }}
+
+        first_run = store.start_run(
+            "committees", "full_refresh", is_complete=True,
+            parameters={"source": "members", "source_run_id": members_run},
+            versions=versions, started_at="2026-10-10T00:00:02+00:00")
+        published = cli._publish_reference_graphs(
+            {"committees": graph}, store=store, loader=fuseki, client=fuseki,
+            coverage_authoritative=True, endpoints=("committees",),
+            member_source_run_id=members_run, publishing_run_id=first_run,
+            entity_lineage_by_endpoint={"committees": lineage})
+        assert published == 1
+        store.finish_run(first_run, success=True)
+
+        # Model a process interruption after the next candidate was committed
+        # to Core State but before its Graph Store replacement.
+        changed = {**record, "committeeName": [{"nameEn": "Recovered Committee"}]}
+        pending_graph = transform_committees([changed])
+        second_run = store.start_run(
+            "committees", "full_refresh", is_complete=True,
+            parameters={"source": "members", "source_run_id": members_run},
+            versions=versions, started_at="2026-10-10T00:01:00+00:00")
+        pending_payload = ntriples(pending_graph)
+        store.mark_endpoint_dirty(
+            "committees", COMMITTEES_GRAPH, pending_payload,
+            coverage_authoritative=True, member_source_run_id=members_run,
+            run_id=second_run,
+            entity_lineage=lineage)
+        recovered = cli._previous_reference_graphs(store, fuseki, fuseki,
+                                                   publishing_run_id=second_run)
+        assert set(recovered["committees"]) == set(pending_graph)
+        assert store.endpoint_publication("committees")["publication_state"] == "clean"
+        assert set(fuseki.construct_graph(COMMITTEES_GRAPH)) == set(pending_graph)
+        assert (URIRef(committee_iri), SKOS.prefLabel,
+                Literal("Recovered Committee", lang="en")) in recovered["committees"]
+        store.finish_run(second_run, success=True)
 
 
 def test_legacy_clean_reference_state_recovers_remote_graph_by_payload_hash(

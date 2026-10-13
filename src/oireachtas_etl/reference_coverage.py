@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
+import hashlib
 import json
 import re
 import unicodedata
@@ -29,6 +30,68 @@ HOUSE_TERM_RE = re.compile(r"^https://data\.oireachtas\.ie/ie/oireachtas/house/(
 
 COMMITTEE_TYPES = {"Select", "Joint", "Special"}
 COMMITTEE_PURPOSES = {"Policy", "Shadow Department"}
+
+# Project-owner decision documented in documentation/etl-plan.md.  This hash
+# binds the exception to the complete, reviewed raw observations (including
+# Member-owned role and membership evidence), not merely to their numeric IDs.
+_APPROVED_COMMITTEE_IRI = (
+    "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/"
+    "select_committee_on_the_implementation_of_the_good_friday_agreement"
+)
+_APPROVED_COMMITTEE_EVIDENCE_SHA256 = (
+    "06fb58595b879dc206e2bb50aa95014c41718275f1e251d3a5696a1830ccbdb2"
+)
+
+
+def _approved_committee_evidence_fingerprint(group: list[dict]) -> str:
+    """Fingerprint all reviewed observations without pagination-local paths."""
+    fields = ("canonical_iri", "member_iri", "source_record",
+              "house_term_context", "owner_relevant_fields", "source_fields")
+    evidence = [{field: item.get(field) for field in fields} for item in group]
+    evidence.sort(key=lambda item: json.dumps(
+        item, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+    payload = json.dumps(evidence, ensure_ascii=False, sort_keys=True,
+                         separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _approved_committee_owner_observations(group: list[dict]) -> tuple[list[dict], dict | None]:
+    """Apply the sole reviewed Committee-ID decision, failing closed on drift."""
+    if not group or group[0].get("canonical_iri") != _APPROVED_COMMITTEE_IRI:
+        return group, None
+    if not all(item.get("source_capture_complete_authoritative") for item in group):
+        # Incomplete/non-authoritative runs retain the ordinary conflict path;
+        # they cannot apply or advance the approved authoritative resolution.
+        return group, None
+    fingerprint = _approved_committee_evidence_fingerprint(group)
+    if fingerprint != _APPROVED_COMMITTEE_EVIDENCE_SHA256:
+        raise ValueError(
+            "approved Dáil 33 Committee resolution evidence changed; review is required")
+    included = [item for item in group
+                if item["owner_relevant_fields"].get("committeeID") == 115
+                and item["owner_relevant_fields"].get("committeeCode") == "115"]
+    excluded = [item for item in group
+                if item["owner_relevant_fields"].get("committeeID") == 156
+                and item["owner_relevant_fields"].get("committeeCode") == "156"]
+    if len(included) != 13 or len(excluded) != 1 or len(included) + len(excluded) != len(group):
+        raise ValueError(
+            "approved Dáil 33 Committee resolution observation set changed; review is required")
+    for item in included:
+        item["owner_consolidation_decision"] = "accepted_by_approved_committee_resolution"
+    for item in excluded:
+        item["owner_consolidation_decision"] = "excluded_by_approved_committee_resolution"
+    decision = {
+        "canonical_iri": _APPROVED_COMMITTEE_IRI,
+        "selected_committee_id": 115,
+        "selected_observation_count": 13,
+        "excluded_committee_id": 156,
+        "excluded_observation_count": 1,
+        "excluded_member_iri": excluded[0].get("member_iri"),
+        "excluded_json_pointer": excluded[0].get("json_pointer"),
+        "reviewed_source_evidence_sha256": fingerprint,
+        "decision": "Use the thirteen concordant ID 115 observations for Committee-owner consolidation; retain but exclude the ID 156 observation from owner consolidation.",
+    }
+    return included, decision
 
 
 def _source_iri(value: object) -> str:
@@ -571,16 +634,49 @@ def build_reference_census(*, member_records: list[dict],
     ambiguities: list[dict] = []
     malformed: list[dict] = list(invalid)
     identity_results: list[dict] = []
+    approved_resolutions: list[dict] = []
 
     for (kind, identity), group in sorted(by_identity.items()):
         group.sort(key=lambda item: (item["observation_source"],
                                      item.get("member_iri") or "",
                                      item["json_pointer"],
-                                     json.dumps(item["source_fields"], ensure_ascii=False,
-                                                sort_keys=True, separators=(",", ":"))))
+                                      json.dumps(item["source_fields"], ensure_ascii=False,
+                                                 sort_keys=True, separators=(",", ":"))))
+        owner_group, approved_resolution = _approved_committee_owner_observations(group)
+        if approved_resolution:
+            approved_resolutions.append(approved_resolution)
+            for item in group:
+                if item in owner_group:
+                    continue
+                # Keep source-quality diagnostics for the excluded row visible,
+                # but never add its normalized values to owner comparison or
+                # selection.
+                try:
+                    _base_validation(item)
+                except (TypeError, ValueError) as error:
+                    diagnostic = {
+                        "category": "malformed_observation",
+                        "reference_kind": kind,
+                        "canonical_iri": identity,
+                        "observation_source": item["observation_source"],
+                        "member_iri": item.get("member_iri"),
+                        "path": item["json_pointer"],
+                        "reason": str(error),
+                    }
+                    item.setdefault("diagnostics", []).append(diagnostic)
+                    malformed.append(diagnostic)
+                else:
+                    malformed.extend({
+                        "reference_kind": kind,
+                        "canonical_iri": identity,
+                        "observation_source": item["observation_source"],
+                        "member_iri": item.get("member_iri"),
+                        **diagnostic,
+                    } for diagnostic in item.get("diagnostics", [])
+                      if diagnostic.get("category") == "malformed_observation")
         valid: list[tuple[dict, dict]] = []
         partial: list[tuple[dict, dict]] = []
-        for item in group:
+        for item in owner_group:
             try:
                 _, normalized = _base_validation(item)
                 valid.append((item, normalized))
@@ -638,7 +734,7 @@ def build_reference_census(*, member_records: list[dict],
             "committeeDateRange": (
                 "committeeDateRange.start", "committeeDateRange.end"),
         }
-        for item in group:
+        for item in owner_group:
             for field, raw_values in sorted(
                     item.get("uncomparable_owner_fields", {}).items()):
                 if field in conflict_fields:
@@ -757,6 +853,7 @@ def build_reference_census(*, member_records: list[dict],
             "canonical_iri": identity,
             "sources": sources,
             "observation_count": len(group),
+            "owner_observation_count": len(owner_group),
             "valid_observation_count": len(valid),
             "coverage_class": result,
             "consolidation_result": "conflicting" if is_conflict else
@@ -765,6 +862,8 @@ def build_reference_census(*, member_records: list[dict],
             "missing_owner_fields": missing,
             "conflicts": identity_conflicts,
         }
+        if approved_resolution:
+            identity_entry["approved_resolution"] = approved_resolution
         identity_results.append(identity_entry)
         for item in group:
             item["consolidation_result"] = identity_entry["consolidation_result"]
@@ -900,6 +999,7 @@ def build_reference_census(*, member_records: list[dict],
         "committee_name_ambiguities": sorted(ambiguities, key=lambda item: (
             item.get("canonical_iri", ""), item.get("language", ""),
             item.get("valid_from", ""))),
+        "approved_identity_resolutions": approved_resolutions,
     }
     return {"report": report, "records": consolidated}
 

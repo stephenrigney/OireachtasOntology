@@ -148,6 +148,103 @@ def test_material_committee_identity_conflict_is_reported_and_not_consolidated()
     assert all(len(field["evidence"]) == 2 for field in conflict["conflicts"])
 
 
+def test_approved_dail_33_resolution_uses_115_without_losing_member_evidence(monkeypatch):
+    from oireachtas_etl import reference_coverage
+    from oireachtas_etl.transforms.members import transform_member
+    from oireachtas_etl.transforms.common import MEMBERS, OIR
+    from oireachtas_etl.transforms.committees import transform_committees
+    from rdflib import Graph, URIRef
+    from rdflib.namespace import RDF
+
+    records = []
+    for index in range(14):
+        committee_id = 156 if index == 13 else 115
+        member = _member({
+            "uri": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/"
+                  "select_committee_on_the_implementation_of_the_good_friday_agreement",
+            "houseCode": "dail", "houseNo": 33,
+            "committeeCode": str(committee_id), "committeeID": committee_id,
+            "committeeType": (["Shadow Department", "Policy"] if committee_id == 156
+                               else ["Shadow Department"]),
+            "committeeDateRange": ({"start": None, "end": None} if committee_id == 156
+                                    else {"start": "2020-07-23", "end": "2024-11-08"}),
+            "committeeName": [{"dateRange": {"start": "2020-07-23", "end": None},
+                               "nameEn": "Select Committee on the Implementation of the Good Friday Agreement"}],
+            "memberDateRange": {"start": "2020-09-08", "end": "2024-11-08"},
+            "role": ({"title": "Cathaoirleach",
+                      "dateRange": {"start": "2020-09-08", "end": "2020-09-18"}}
+                     if committee_id == 156 else []),
+        })
+        member["member"]["uri"] += str(index)
+        member["member"]["memberCode"] = member["member"]["uri"].rsplit("/", 1)[-1]
+        member["member"]["image"] = False
+        membership = member["member"]["memberships"][0]["membership"]
+        membership["uri"] = member["member"]["uri"] + "/house/dail/35"
+        membership["dateRange"] = {"start": "2020-01-01", "end": None}
+        records.append(member)
+
+    observations = reference_coverage.extract_member_observations(records, complete=True)
+    target = "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/" \
+             "select_committee_on_the_implementation_of_the_good_friday_agreement"
+    target_observations = [item for item in observations
+                           if item["canonical_iri"] == target]
+    monkeypatch.setattr(
+        reference_coverage, "_APPROVED_COMMITTEE_EVIDENCE_SHA256",
+        reference_coverage._approved_committee_evidence_fingerprint(target_observations))
+
+    census = build_reference_census(member_records=records, member_capture_complete=True)
+    committee = census["records"]["committees"][0]
+    assert committee["committeeID"] == 115
+    assert committee["committeeCode"] == "115"
+    assert committee["committeeType"] == ["Shadow Department"]
+    committee_owner = transform_committees(census["records"]["committees"])
+    assert list(committee_owner.objects(URIRef(target), MEMBERS.committeeID)) == [
+        __import__("rdflib").Literal(115)]
+    from oireachtas_etl.transforms.committees import PURPOSE_CONCEPTS
+    assert (URIRef(target), OIR.hasCommitteePurpose,
+            PURPOSE_CONCEPTS["Policy"]) not in committee_owner
+    assert (URIRef(target), RDF.type, MEMBERS.Committee) in committee_owner
+    assert census["report"]["conflicts"] == []
+    resolution = census["report"]["approved_identity_resolutions"][0]
+    assert resolution["selected_observation_count"] == 13
+    assert resolution["excluded_observation_count"] == 1
+    assert resolution["excluded_committee_id"] == 156
+    assert len([item for item in census["report"]["observations"]
+                if item["canonical_iri"] == target]) == 14
+    assert next(item for item in census["report"]["observations"]
+                if item["canonical_iri"] == target
+                and item["owner_relevant_fields"].get("committeeID") == 156)[
+                    "owner_consolidation_decision"] == "excluded_by_approved_committee_resolution"
+    assert any(item["canonical_iri"] == target
+               and item["reason"] == "committeeDateRange.start is required"
+               for item in census["report"]["malformed_observations"])
+
+    # The exception affects only the Committee owner census. Member-owned
+    # membership, role, and tenure facts are still emitted from all source rows.
+    member_graph = Graph()
+    for record in records:
+        member_graph += transform_member(record)
+    committee_memberships = {subject for subject, _predicate, _target in
+                             member_graph.triples((None, MEMBERS.isCommitteeMembershipOf,
+                                                   URIRef(target)))}
+    assert len(committee_memberships) == 14
+    assert all(list(member_graph.objects(subject, MEMBERS.hasMembershipDateRange))
+               for subject in committee_memberships)
+    assert sum(len(list(member_graph.objects(subject, MEMBERS.hasCommitteeRole)))
+               for subject in committee_memberships) == 1
+
+    changed = copy.deepcopy(records)
+    changed[-1]["member"]["memberships"][0]["membership"]["committees"][0][
+        "committeeType"] = ["Shadow Department"]
+    with __import__("pytest").raises(ValueError, match="evidence changed"):
+        build_reference_census(member_records=changed, member_capture_complete=True)
+
+    incomplete = build_reference_census(
+        member_records=records, member_capture_complete=False)
+    assert incomplete["report"]["approved_identity_resolutions"] == []
+    assert incomplete["report"]["conflicting_identities"] == 1
+
+
 def test_fatal_committee_observation_keeps_independently_comparable_conflicts():
     first = _member()
     second = copy.deepcopy(first)
