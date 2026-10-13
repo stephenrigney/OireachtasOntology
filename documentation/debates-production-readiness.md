@@ -87,10 +87,12 @@ All 10,913 selected Works were inspected; zero selected Works remain
 uninspected. The earlier all-years benchmark's single duplicate listing
 observation was dated 2007 and is outside this scope.
 
-The 264 quarantined rows below are assessment findings and proposed withheld
-Work outcomes only. This offline inventory did not open Core State, persist
-production quarantine state, or publish graphs; every exception remains pending
-human review.
+The 264 rows below originated as offline assessment findings. The project owner
+approved withholding all of them from the initial ingestion on 2026-10-13;
+source repair or later publication has **not** been approved. The offline
+inventory did not open Core State, persist production quarantine state or
+publish graphs. Approved withholding must still be applied and reconciled by
+the eventual controlled production run.
 The quarantined source bytes total 52,803,197 B (5,010,054 B pre-2013 and
 47,793,143 B from 2013 onward); the 10,649 eligible sources account for
 2,616,433,956 B.
@@ -106,8 +108,9 @@ been published.
 Accordingly, the exact count is an exact census of the preserved 2011+
 `/v1/debates` selection, not proof that the API exposes every global Work or
 Expression. Production enumeration must preserve that boundary and fail closed
-on known Expression conflicts; whether this endpoint census alone is the
-approved completeness boundary remains a human gate decision.
+on known Expression conflicts. The owner accepted this **bounded census**
+as the initial selection on 2026-10-13; that acceptance is not a claim of
+global Work or Expression completeness.
 
 ### Exception reconciliation
 
@@ -125,18 +128,19 @@ in the inventory:
 
 | Failure category | Stage | Confirmed Works | Scope disposition |
 |---|---|---:|---|
-| Duplicate decoded eId | `debate_transform` | **2** | Quarantine; review pending; no source repair |
-| Empty `sectionName` | `integration_validation` | **261** (5 pre-2013; 256 from 2013 onward) | Quarantine; review pending; no source repair |
-| Source URL / FRBRExpression mismatch | `source_identity` | **1** | Quarantine; review pending; no source repair |
+| Duplicate decoded eId | `debate_transform` | **2** | Initial withholding approved; no source repair |
+| Empty `sectionName` | `integration_validation` | **261** (5 pre-2013; 256 from 2013 onward) | Initial withholding approved; no source repair |
+| Source URL / FRBRExpression mismatch | `source_identity` | **1** | Initial withholding approved; no source repair |
 | Other | exact per-record stage | **0** | No other failure category was observed |
-| **Total** |  | **264** | All remain withheld pending human disposition |
+| **Total** |  | **264** | All withheld under approved initial policy |
 
 The exact failure split is 8 pre-2013 (2 duplicate decoded eIds, 5 empty
 `sectionName` values and 1 source URL/Expression mismatch) and 256 from 2013
 onward (all empty `sectionName`). The inventory reports, but does not write,
-quarantine state. No source bytes were edited or repaired, and each exception
-is withheld from transformation/publication under the current contract pending
-human disposition.
+quarantine state. No source bytes were edited or repaired; each exception
+remains withheld from transformation/publication under the approved initial
+policy. Any later repair, mapping reinterpretation or publication needs a
+separate evidence-backed disposition.
 
 ## Resource measurements and proposed configurable limits
 
