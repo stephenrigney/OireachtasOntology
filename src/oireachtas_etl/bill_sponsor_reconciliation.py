@@ -200,7 +200,7 @@ def extract_bill_sponsor_observations(wrapper: dict) -> list[dict]:
         observations.append({
             "bill_iri": bill_iri,
             "observation_key": observation_key,
-            "source_index": index,
+            "source_index": source_index,
             "participation_iri": participation_iri,
             "role_text": role_text,
             "role_uri": role.get("uri"),

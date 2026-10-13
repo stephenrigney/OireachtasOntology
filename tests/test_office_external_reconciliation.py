@@ -544,6 +544,19 @@ def test_offline_scope_and_response_fixtures_publish_no_live_service_calls(
         f"<{OFFICE_IRI}> <{OWL.sameAs}> <{WIKIDATA + QID}> <{GRAPH_IRI}> .")
 
 
+def test_external_office_cli_rejects_duplicate_registry_json_keys_before_state(tmp_path):
+    from oireachtas_etl import cli
+
+    registry_path = tmp_path / "registry.json"
+    registry_path.write_text('{"version": 1, "administrative_units": [], '
+                             '"offices": [], "offices": []}', encoding="utf-8")
+    state_path = tmp_path / "state.sqlite"
+    with pytest.raises(ValueError, match="duplicate JSON object key: offices"):
+        cli.main(["reconcile", "office-external", "--registry-file", str(registry_path),
+                  "--reconciliation-state-file", str(state_path)])
+    assert not state_path.exists()
+
+
 def _binding_graph(client, graph_iri: str) -> Graph:
     result = Graph()
     for row in client.query(f"SELECT ?s ?p ?o WHERE {{ GRAPH <{graph_iri}> {{ ?s ?p ?o }} }}"):

@@ -35,6 +35,12 @@ These are reviewed identities, not hard-coded lookup seeds or permission to
 publish Wikidata's tenure, succession or department assertions locally. The
 CLI never creates or edits a human decision.
 
+Wikidata currently records an inception of 1919 on Q4294945, whereas the
+local registry cites the 1924 Act as evidence for the departmental headship.
+Neither date is imported as a local office-establishment or `OfficeHolding`
+date. The approved contemporary identity link does not settle detailed
+pre-1924 continuity; that historical grounding remains deferred for review.
+
 The policy derives the replaceable graph from the registered stable office key:
 `https://data.oireachtas.ie/graph/office/{office-key}/external-links`.
 Only the office itself is the subject of its approved `owl:sameAs` assertion;
@@ -110,7 +116,13 @@ inferred from the registry or fixture.
 ## Online operation and publication
 
 Without `--offline`, the command uses the Wikidata client unless
-`--responses-file` is supplied. Reconciliation state uses the same generic
+`--responses-file` is supplied. **`--responses-file` with `--publish` is a
+fixture-backed publication run, not a live Wikidata check**: it may PUT the
+version-controlled, human-reviewed links after verification against the local
+response fixture. Use it only with an isolated/test Fuseki dataset, or when
+the operator deliberately accepts this verification boundary; it does not
+establish fresh live external evidence. `--offline` always forbids publication.
+Reconciliation state uses the same generic
 `ReconciliationStore` and `--reconciliation-state-file` as the other external
 reconciliation commands. `--all` requests a full pass over the selected office
 scope.

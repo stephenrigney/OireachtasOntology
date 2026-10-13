@@ -4710,18 +4710,10 @@ def run_reconcile_institutions(args: argparse.Namespace) -> int:
 
 def _external_office_local_iri(record: dict) -> str:
     """Read a policy record's registered local identity without using its label."""
-    containers = [record]
-    containers.extend(record.get(name) for name in ("office", "named_office", "entity")
-                      if isinstance(record.get(name), dict))
-    for value in containers:
-        for name in ("uri", "local_iri", "office_iri"):
-            iri = value.get(name)
-            if isinstance(iri, str):
-                return iri
-        key = value.get("key")
-        if isinstance(key, str):
-            return str(office_iri(key))
-    raise ValueError("external office record has no registered local office identity")
+    value = record.get("office", record) if isinstance(record, dict) else None
+    if not isinstance(value, dict) or not isinstance(value.get("uri"), str):
+        raise ValueError("external office record requires a full local office IRI")
+    return value["uri"]
 
 
 def _unique_json_object(pairs):
@@ -4860,8 +4852,9 @@ def run_reconcile_office_external(args: argparse.Namespace) -> int:
 
     registry_path = Path(args.registry_file or OFFICE_REGISTRY_FILE)
     try:
-        registry = json.loads(registry_path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        registry = json.loads(registry_path.read_text(encoding="utf-8"),
+                              object_pairs_hook=_unique_json_object)
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as error:
         raise ValueError(f"invalid office registry: {error}") from error
     validate_registry_source(registry)
     registered_office_iris = {
