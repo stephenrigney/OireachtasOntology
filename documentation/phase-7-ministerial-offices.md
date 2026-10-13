@@ -349,10 +349,10 @@ disposable Fuseki dataset verified the exact one-assertion graph for each and
 unchanged office, unit, Member, Bill, Debate and other-entity graphs; nothing
 was published to production. Fixture-backed tests and CLI runs do not depend
 on external service availability. With pinned Java, ontology and active-mapping
-validation passed, and the full test suite passed (600 passed, 10 optional
+validation passed, and the full test suite passed (599 passed, 10 optional
 Fuseki tests skipped); the focused office suite against isolated Fuseki passed
-(21 tests) and the related reconciliation/Fuseki integration selection passed
-(61 tests). No ISAD office identity was accepted: the registry contains no
+(20 tests) and the related reconciliation/Fuseki integration selection passed
+(60 tests). No ISAD office identity was accepted: the registry contains no
 reviewed ISAD office identifier, and unit/event identifiers cannot determine
 local office identity.
 
