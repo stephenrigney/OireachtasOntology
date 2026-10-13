@@ -14,10 +14,45 @@ Restic backup, independent restore and fresh Fuseki reconstruction. The
 manifest-driven Debates resource guards and representative source-backed
 staging are also complete, and the post-rebase opt-in staging test passed.
 The operational **production-host** recovery/credentials/container verification
-and the Debates human decisions below remain open. Generic Phase 6 recovery
+and the remaining Debates deployment/authorisation gates remain open.
+Owner policy positions A–C were recorded on 2026-10-13 below. Generic Phase 6 recovery
 acceptance is not a verified backup of the intended production dataset. See
 [Phase 6 Tranche C](phase-6-tranche-c.md) and the
 [Debates execution plan](debates-production-execution-plan.md).
+
+## Owner policy decision record — 2026-10-13
+
+The project owner explicitly recorded the following positions after reviewing
+the initial-production decision pack. These are policy decisions, **not**
+production deployment, production mutation, or ingestion authorisation.
+
+| Decision | Owner position | Scope and qualification |
+|---|---|---|
+| **A — 264 exceptions** | **Approved** | Withhold all 264 inventoried Works from the initial publication (261 empty \`sectionName\`, two duplicate decoded eIds, one URL/FRBRExpression mismatch). Category-level withholding is accepted; preserve per-Work source/hash, classification and audit trace. No source repair, semantic compatibility rule, partial invalid Work graph, blanket retry, or permanent exclusion is approved. |
+| **B — census completeness** | **Approved** | Accept the frozen hash-identified 2011+ \`/v1/debates\` selection of 10,913 Dáil, Seanad and committee Works, excluding written answers, as the bounded initial-ingestion selection. Approval does not assert global Work or Expression completeness, resolve multiple-Expression conflicts, or authorise a changed manifest without review. |
+| **C — resources and batches** | **Provisionally approved** | Adopt the currently documented configurable warning/hard-stop limits and one publication worker, capped at **25 Works or 64 MiB of source XML per batch**, with controlled 5-, 10-, then 25-Work progression. Host capacity, production-owner-driven report/RDF size, container memory, backup/rebuild headroom and real batch observations must be verified before operational use or widening. No relaxation of guards is approved. |
+
+The specific frozen inventory is
+[\`debates-initial-production-inventory.json\`](debates-initial-production-inventory.json)
+(SHA-256 \`ae07dc7c293bcadef3d17fa52ea19e2b92db5368242a53aefd68ec8ca5f0c4d7\`).
+Approval of A permits **explicit initial withholding** of the 264 known
+exceptions, not publication of invalid Works. New or materially different
+exceptions still require review. The completion reconciliation must account
+for all 10,913 selected Works, distinguish 10,649 inventory-eligible candidates
+from the 264 withheld, and report any additional runtime failures separately.
+The eligible count is not a promise that all candidates will pass production
+owner resolution.
+
+**Still open — D, E and F:** establish authoritative production owner captures,
+published owner graphs, conflict/exclusion policy and fingerprint; verify the
+intended deployment's secured runtime and capacity plus a protected, coordinated
+canonical-state backup and independent full restore/rebuild; and obtain an
+explicit, separate owner go/no-go for the first five-Work production publication.
+Progression to 10 and 25 Works requires review of the preceding batch's clean
+graph verification, quarantine, provenance, warnings, resources and recovery
+evidence. Freeze/pin the approved inventory and owner fingerprint, stop on
+material mismatch or guard breach, and never treat this record as permission
+to initiate ingestion.
 
 ## Approved source scope and exact inventory
 
@@ -220,20 +255,21 @@ small-batch measurements do not recalibrate corpus-scale limits.
 ## Gate decision and outstanding approvals
 
 **Readiness gate remains BLOCKED. Do not begin controlled ingestion.**
-Representative source-backed owner staging and Phase 6 implementation acceptance
-have passed, but the staged owner snapshot is non-authoritative and does not
-prove complete historical owner coverage or production readiness.
-Before any authorization, a human must:
+Owner policy decisions A and B are approved, and C is provisionally approved
+as recorded above. Representative source-backed owner staging and Phase 6
+implementation acceptance have passed, but staging is non-authoritative
+and does not prove production readiness. Before publication a human must:
 
-- review and disposition the exact quarantined Works without silent source
-  correction or partial Work graphs;
-- approve or revise the warning/stop budgets and batch caps above;
-- confirm the approved source-listing/Expression-completeness behavior;
-- review the isolated source-backed owner snapshot, its exclusions and
-  reference-resolution measurements, and the measured capacity/recovery
-  evidence; and
-- authorize the resulting operational execution plan separately from Phase 6
-  Tranche B deployment/scheduling.
+- ensure the frozen inventory, approved 264-Work withholding and bounded
+  completeness policy are applied unchanged, with no silent correction;
+- verify provisional warning/stop budgets and batch ceilings against the
+  target environment and revise them only with explicit approval;
+- accept authoritative production owner graph publication, provenance,
+  conflict exclusions, reference outcomes and an exact owner fingerprint;
+- accept the deployment-specific secure runtime, protected coordinated backup,
+  independent complete-state restore/rebuild and capacity evidence; and
+- separately authorise the first five-Work publication and subsequent
+  progression gates on observed results.
 
 No ontology, mapping, identity/ownership contract, source fixture or production
 Core State/Fuseki graph was changed. The work ends at this human gate.
@@ -362,9 +398,10 @@ conflict remains fail-closed, and replay/change detection is deterministic.
 It does not prove complete historical owner coverage, resolve the 31 Committee
 outcomes, authorize exception decisions, or calibrate corpus-scale resource
 limits. Those evidence-limited outcomes are not by themselves defects or safety
-blockers, but remain visible for human review. Human budget approval, inventory
-exception disposition, source-listing/Expression completeness review and
-separate operational authorization remain mandatory.
+blockers, but remain visible for human review. Owner decisions on the exception-withholding and bounded-completeness policies
+were subsequently approved, and the resource policy provisionally approved,
+on 2026-10-13 (see decision record above). Deployment verification and separate
+operational authorisation remain mandatory.
 
 The operator sequence and recovery prerequisites are recorded in
 [`debates-production-execution-plan.md`](debates-production-execution-plan.md).
