@@ -58,7 +58,11 @@ local-graph replacement. `rejected` and `unresolved` also emit no links.
 Unresolved/review-required cases return exit code 1 after safe publication;
 input, evidence or state corruption fails closed with an error. The reviewer
 can inspect `bill-sponsor` observation keys, evidence fingerprints and event
-dates from the state report before supplying a reviewed decision.
+dates from the state report before supplying a reviewed decision. Each
+observation retains the original source index selected for its Participation
+group; validation independently resolves that `bill.sponsors` entry before
+publication. Regression coverage checks distinct sponsors and repeated entries
+for the same Participation, including the prior-position review gate.
 
 The observation key is based on the source-derived Participation identity,
 not array position; a changed role/person/primary value creates a new key and
@@ -73,6 +77,19 @@ Neither `lastUpdated` nor external-office links can authorize a holding.
 
 No Tranche 6 final acceptance, Debate work or production publication is
 performed by this tranche.
+
+The source index is reconciliation metadata: correcting it does not change a
+Participation IRI or RDF for unchanged input. Distinct-sponsor index errors
+fail the independent source-to-RDF validator before the CLI publishes that
+Bill graph. However, repeated source entries for one Participation could pass
+validation with the old later index; a later identity change at the group's
+first source position could then miss the prior-position review gate and be
+automatically accepted. A targeted corrective Bill-local publication is
+therefore warranted only if publication history confirms that sequence; there
+is no basis for a blanket replay. The checked-in acceptance evidence uses a
+disposable Fuseki dataset, and production Core State/graph history was not
+inspected, so whether that narrow case occurred in production remains an
+operator audit item.
 
 ## Verification and deliberately narrow coverage
 
