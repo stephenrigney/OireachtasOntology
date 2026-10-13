@@ -11,6 +11,16 @@ and unauthorised. See [Phase 6 Tranche C](phase-6-tranche-c.md) and
 [production operations](production-operations.md). No production operation
 was performed to prepare this plan.
 
+**Owner policy record (2026-10-13):** Decision A (withhold the 264
+inventory exceptions without source repair or partial invalid graphs) and
+Decision B (accept this frozen 2011+ API selection as a bounded completeness
+boundary) are **approved**. Decision C (existing configurable resource
+warnings/stops, one worker, maximum 25 Works or 64 MiB XML per batch, and
+5/10/25-Work progression) is **provisionally approved**, subject to
+production-host resource and recovery evidence. See the
+[readiness owner decision record](debates-production-readiness.md#owner-policy-decision-record--2026-10-13).
+None of these decisions grants a publication go/no-go.
+
 ## Scope and acceptance evidence
 
 Use the versioned inventory
@@ -409,14 +419,28 @@ are complete. Manifest-driven batch selection, guards, representative
 source-backed staging and the generic Restic/restore/rebuild mechanisms are
 implemented. This does **not** supply deployment-specific recovery evidence.
 
-Still requiring operator/human verification: disposition of the 264 exceptions;
-acceptance of the census/Expression-completeness boundary; budget/host-capacity
-approval; clean authoritative source-backed production owner graphs and their
-provenance/fingerprint; target configuration, credentials, secured endpoints,
-production ETL/ops container runtime and timers; an approved protected backup
-destination; and a coordinated backup with independent complete-state recovery
-on the intended deployment. No production ingestion, production Core State
-mutation or RDF publication is authorised by this plan.
+The owner approved the **initial withholding** of the 264 inventoried
+exceptions and the **bounded frozen census** on 2026-10-13; no repair, invalid
+publication, alternative-Expression inference or new manifest is approved.
+Provisional resource/batch policy approval still requires target-host
+capacity, real runtime resource observations and recovery headroom to be checked
+against the documented thresholds. Previously approved budgets are not
+permission to loosen the guards.
+
+Still requiring operator/human verification: clean **authoritative** source-backed
+production owner graphs with provenance, fail-closed conflicts, acceptable
+unresolved-reference outcomes and pinned owner fingerprint; secure target
+configuration, credentials and monitored endpoints; actual production ETL/ops
+container path, schedule/timer controls and capacity; a separately protected
+backup destination; and a coordinated canonical-state backup with independent
+complete-state restore/rebuild on the intended deployment.
+
+After those gates pass, the project owner must issue a **separate explicit
+go/no-go for the first five-Work production batch**. Expansion to 10-Work and
+then 25-Work batches requires review of preceding publication, graph/state
+verification, resources, quarantine and recovery evidence; it is not automatic.
+No production ingestion, production Core State mutation or RDF publication is
+authorised by this plan.
 
 **Decision: BLOCKED.** Do not publish until deployment-specific recovery,
 owner/source authority and all human go/no-go approvals have been demonstrated
