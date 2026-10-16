@@ -1,0 +1,29 @@
+{
+  "capture_run_id": "dbaf2d97-deab-477a-b359-972c769fb3e5",
+  "method_uri": "https://data.oireachtas.ie/ie/oireachtas/def/bill-method/by-application",
+  "method": "By Application",
+  "bill_identities": [
+    "1950/P1",
+    "1951/P1",
+    "1952/P1",
+    "1953/P2",
+    "1955/P1",
+    "1957/P1",
+    "1958/P1",
+    "1959/P1",
+    "1959/P2",
+    "1959/P3",
+    "1963/P1",
+    "1963/P2",
+    "1964/P1",
+    "1965/P1",
+    "1965/P3",
+    "1969/P1",
+    "1973/P1",
+    "1990/P1",
+    "1990/P2",
+    "1997/P1",
+    "2002/P1",
+    "2023/85"
+  ]
+}

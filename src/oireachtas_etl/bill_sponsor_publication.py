@@ -95,7 +95,7 @@ class BillSponsorPublication:
             raise ValueError("dirty Bill local graph has no intact replayable payload")
         graph = Graph().parse(data=payload, format="nt")
         allowed = {MEMBERS.reconciledSponsorOffice, MEMBERS.reconciledSponsorHolding}
-        if any(not isinstance(s, URIRef) or not str(s).startswith(bill_iri + "#process#sponsor-")
+        if any(not isinstance(s, URIRef) or not str(s).startswith(bill_iri + "#process%23sponsor-")
                or p not in allowed or not isinstance(o, URIRef)
                for s, p, o in graph):
             raise ValueError("dirty Bill local graph violates link-only ownership")

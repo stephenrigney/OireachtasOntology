@@ -170,7 +170,7 @@ Activity-level participation (who moved a bill, who was rapporteur) is expressed
 | `members:MoverRole` | `eli-dl:ParticipationRole` | The Member who moves a Bill, amendment, or motion. Replaces the former `agents:Mover` class. |
 | `members:RapporteurRole` | `eli-dl:ParticipationRole` | A Member appointed as rapporteur. Alternatively use `eli-dl:had_responsible_person` as a shorthand. |
 
-The boolean property `agents:isPrimarySponsor` (`xsd:boolean`) on `eli-dl:Participation` records whether a sponsor is the primary sponsor (`bill.sponsors[].sponsor.isPrimary` in the API).
+The optional, zero-or-one Boolean property `agents:isPrimarySponsor` (`xsd:boolean`) on `eli-dl:Participation` records whether a sponsor is the primary sponsor (`bill.sponsors[].sponsor.isPrimary` in the API). A null API value is unknown: retain the Participation and omit the property rather than defaulting it.
 
 ---
 

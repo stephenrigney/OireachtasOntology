@@ -1,13 +1,14 @@
-# Query Service development-data evidence (2026-10-09)
+# Query Service development-data evidence (updated 2026-10-16)
 
 ## Outcome and boundary
 
-This note records preserved local source evidence for a later Query Service
-development-bootstrap expansion. It does **not** implement that expansion,
-change capture selection, establish new ontology or mapping semantics, or claim
-production/authoritative dataset coverage. The exact three-Work Debate selection
-is in [`development-source-selection.json`](development-source-selection.json).
-Raw XML and API pages remain outside Git in the immutable local raw store.
+This note records local source evidence for a later Query Service
+development-bootstrap decision. The Bills section documents the accepted ETL
+lifecycle correction and complete-capture selector; neither it nor the Debate
+evidence expands the development bootstrap or claims production/authoritative
+dataset coverage. The exact three-Work Debate selection is in
+[`development-source-selection.json`](development-source-selection.json). Raw
+XML and API pages remain outside Git in the immutable local raw store.
 
 ## Debates: preserved and replayed
 
@@ -28,48 +29,63 @@ objects can be replayed when present in the local raw store, for example:
 oir-etl run debates --replay 720bf72e40ed824c9d01efc8a919713e524e6b058794e75fab56c20b6858fff5 --offline
 ```
 
-## Bills: acquisition failed acceptance; do not treat as a successful capture
+## Bills: lifecycle correction accepted (2026-10-14; fresh capture 2026-10-13)
 
-Run `dbaf2d97-deab-477a-b359-972c769fb3e5` (2026-10-09) used the copied
-evaluation Core State and reached all 61 API pages, with 6,048 records
-advertised and 6,048 records harvested/deduplicated. The pages and metadata are
-preserved in the local raw store at relative key
-`legislation/2026-10-09/run-dbaf2d97-deab-477a-b359-972c769fb3e5`.
-However, the ETL run is **failed**, not a successful complete API scan: the
-transformation stopped on the official event URI
-`https://data.oireachtas.ie/ie/oireachtas/def/bill-event/bill-lapsed` before
-the Bill publication loop. The copied Core State contains six observed
-legislation resource rows from the failed run; none has a published payload.
-No Bills RDF was published.
+The original ETL run `dbaf2d97-deab-477a-b359-972c769fb3e5` (2026-10-09)
+remains recorded as failed: before the lifecycle correction, transformation
+stopped on the then-unsupported `bill-lapsed` event URI. Its complete raw API
+capture is still valid immutable source evidence. After the approved Bills
+lifecycle correction, both that preserved capture and a fresh complete capture
+passed replay and publication acceptance under Bills publication contract v1.
+This acceptance does not infer `stageOutcome` or an amendment-list
+`ProcessStage` relation for unresolved stage references.
 
-The source has 1,491 `bill-lapsed` event occurrences. Other observed event URI
-suffixes not supported by the current `transforms/bills.py` `EVENTS` table are:
+### Preserved capture
 
-| Event URI suffix | Occurrences |
-| --- | ---: |
-| `admissibility-for-introduction` | 333 |
-| `approved-for-initiation` | 156 |
-| `bill-defeated` | 293 |
-| `bill-lapsed` | 1,491 |
-| `bill-restored` | 217 |
-| `bill-withdrawn` | 180 |
-| `other-procedural-event` | 1 |
-| `recommittal` | 2 |
-| `referendum` | 35 |
-| `referral-to-supreme-court-art-26` | 16 |
+The 2026-10-09 capture contains 6,048 records across all 61 pages, at local raw
+store key
+`legislation/2026-10-09/run-dbaf2d97-deab-477a-b359-972c769fb3e5`. Two offline
+replays matched byte-for-byte. The deterministic N-Quads output parsed as
+917,254 quads in 6,044 named graphs; its SHA-256 is
+`ca575065fc2bc44db2403f1c03f6d4d776ca594b1deb88312a08a3600c2a1202`.
+There were four reviewed source quarantines, 26 diagnostic-only unresolved
+stage-reference occurrences, and no unexplained transformation or validation
+failures.
 
-`EVENTS` currently accepts only `published` and `enacted`. The active mapping
-row for `eventURI` specifies a controlled Bill-event `ActivityType`, but does not
-settle the intended identities for these source event types. Semantic review of
-the mapping/ontology is required; this work did not drop events, infer a
-replacement, edit the transformer, or retry the Bills run. The raw acquisition
-does not satisfy the requested successful-complete-capture prerequisite.
+### Fresh complete capture and preflight
 
-Separately, `raw_captures.py` currently defines complete/development capture
-count fields only for Houses, Members, Parties and Constituencies. It does not
-support the `legislation` endpoint's `billCount`, so selector acceptance for a
-future Bills development bootstrap remains unverified. This note does not add
-that support.
+The fresh API capture is run `7bab00fc-4637-463e-a42e-fdb7ce626439`
+(2026-10-13), preserved at
+`legislation/2026-10-13/run-7bab00fc-4637-463e-a42e-fdb7ce626439`. It contains
+the advertised 6,048 records across 61 pages. Preflight found no added or
+removed Bill identities, no structural-path/type delta, no unsupported
+vocabulary, and no unexplained validation failures. The same four reviewed
+source records were quarantined; all other 6,044 Bill graphs were represented.
+
+The fresh capture contains 28 unresolved amendment-list stage-reference
+occurrences. Two are additional occurrences for Bills `2026/54` (`/dail/4`)
+and `2026/95` (`/dail/3`); both match the existing diagnostic-only pattern.
+They remain diagnostics only: no `ProcessStage` relation or `stageOutcome` is
+inferred.
+
+### Publication and deterministic replay
+
+All 6,044 represented graphs were published to an empty, disposable Fuseki
+dataset and passed per-graph Bill competency and whole-graph verification. The
+fresh dataset contains 6,044 named graphs and 917,294 triples. The disposable
+Core State records a successful complete legislation run, 6,044 clean rows at
+contract version 1, and zero dirty or pending rows. The complete-capture
+selector accepts this exact run and all 6,048 source records.
+
+Two fresh offline replays matched byte-for-byte. The N-Quads output is
+246,585,209 bytes, parses as 917,294 quads in 6,044 graphs, and has SHA-256
+`d884884c08a328a374e402578fc92f57525439a66eb3d6b36cf74d05a064bc66`. Parsing
+validated 145,635 unique Bill-owned IRIs against the one-literal-`#` contract.
+The four quarantined Bills have neither a Core State row nor a Fuseki graph.
+N-Triples/N-Quads serialization now uses RDFLib output with deterministic sorted
+lines; other endpoints may consequently produce different payload bytes/hashes
+when next republished, without a change to their RDF meaning. No other endpoint
+was republished as part of this acceptance.
 
 ## Office evidence availability
 
@@ -95,23 +111,20 @@ before/after comparison for those databases cannot be claimed.
   remains `edc08ab4d2195269372fd6a184b356d7bd77d589754c0e6f1781f499ff315214`,
   equal to the pre-run value. SQLite integrity is `ok`; it still has 20 runs
   and zero legislation runs/resources.
-- The ETL run used the SQLite-backup copy at
-  `~/.local/share/oireachtas-etl/query-service-evaluation/core-state.sqlite`
-  (mode `0600`), not the authoritative Core State. Its Bills run is failed as
-  recorded above.
-- The disposable Fuseki container `oir-query-service-eval-bills`, bound only to
-  `127.0.0.1:13045`, has been stopped and removed. No production Fuseki endpoint
-  was configured for the Bills run. Other unrelated local service containers
-  were left untouched.
+- Bills acceptance used disposable Core State copies under
+  `/tmp/oireachtasontology/bills-complete-capture-20261013/`, not the
+  authoritative Core State.
+- Fresh publication used the isolated Fuseki container
+  `oir-bills-acceptance-run3-20261013`, bound only to `127.0.0.1:13050`. No
+  production Fuseki endpoint was configured or modified.
 - The selected Debate raw XML objects and the Bills API pages are local
   immutable evidence and are not tracked in Git.
 
 ## Deferred work / handoff
 
-1. Obtain semantic review for the unsupported official Bill event types before
-   any retry; do not reinterpret or discard them to force success.
-2. In a later approved tranche, extend Bills complete-capture selection only
-   after the successful-complete Core State contract is implemented and tested.
-3. Decide separately whether and how the three selected Debate sources and the
+1. Decide separately whether and how the three selected Debate sources and the
    reviewed office evidence belong in a development-bootstrap dataset. No such
    bootstrap expansion is implemented or accepted here.
+2. This Bills acceptance establishes mapping, publication, and complete-capture
+   selector behavior; it does not claim production dataset coverage or expand
+   Query Service bootstrap semantics.

@@ -34,7 +34,8 @@ from .transforms.members import (member_graph_iri, prior_party_membership_eviden
 from .transforms.common import MEMBERS, datetime_literal
 from .transforms.offices import office_iri
 from .transforms.bills import bill_graph_iri, source_hash as bill_source_hash, transform_bill_with_report
-from .validation.bills import validate_bill_source
+from .validation.bills import (known_bill_source_quarantines,
+                               validate_bill_source)
 from .state import CoreStateStore, expected_graph_iri, state_lock
 from rdflib import Graph, URIRef
 from rdflib.namespace import RDF
@@ -1958,9 +1959,30 @@ def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = Non
         records = _deduplicate_bills(records, advertised,
                                      allow_empty=bool(store is not None and complete and advertised == 0))
     work = []
+    source_quarantines = []
+    quarantined_identities = set()
     for wrapper in records:
         bill = wrapper["bill"]; identity, digest, graph_iri = bill["uri"], bill_source_hash(bill), bill_graph_iri(bill)
         prior = store.get_resource("legislation", identity) if store is not None else None
+        quarantine = known_bill_source_quarantines(wrapper)
+        if quarantine:
+            quarantined_identities.add(identity)
+            accepted_before = bool(prior and (
+                prior.get("published_source_hash")
+                or prior.get("published_payload") is not None
+                or prior.get("last_published_at")
+            ))
+            for diagnostic in quarantine:
+                diagnostic["preservation_status"] = (
+                    "previous_accepted_graph_retained" if accepted_before
+                    else "no_bill_graph_constructed")
+            source_quarantines.extend(quarantine)
+            # Keep complete-scan presence evidence for an existing resource,
+            # without creating a clean Core State entry for an unrepresented Bill.
+            if prior is not None and store is not None and run_id is not None:
+                store.observe_resource("legislation", identity, graph_iri,
+                                       digest, run_id)
+            continue
         old = (store.observe_resource("legislation", identity, graph_iri, digest, run_id)
                if store is not None and run_id is not None else {})
         # Hash-first source gate; unchanged Bills never construct RDF or invoke a loader.
@@ -1978,7 +2000,8 @@ def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = Non
     published = skipped = 0
     repaired: list[str] = []
     known = store.resources("legislation") if store is not None else []
-    seen = {identity for _, _, identity, _, _, _ in work}
+    seen = ({identity for _, _, identity, _, _, _ in work}
+            | quarantined_identities)
     if endpoint:
         if store is None:
             raise RuntimeError("online Bill publication requires durable core ETL state")
@@ -2018,7 +2041,21 @@ def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = Non
     identities = {kind: sorted(identity for _, _, identity, _, _, status in work if status == kind) for kind in ("new", "changed", "skipped")}
     identities["skipped"] = sorted(set(identities["skipped"]) - set(repaired))
     identities["changed"] = sorted(set(identities["changed"]) | set(repaired))
-    print(json.dumps({"records": len(records), "published": published, "skipped": skipped, "new": identities["new"], "changed": identities["changed"], "skipped_identities": identities["skipped"], "omitted": [item for *_, report, _ in work for item in report]}, sort_keys=True))
+    print(json.dumps({
+        "records": len(records),
+        "source_records_observed": len(records),
+        "represented_bill_graphs": len(records) - len(quarantined_identities),
+        "source_quarantined_bill_count": len(quarantined_identities),
+        "source_quarantined_bills": sorted(quarantined_identities),
+        "source_quarantines": sorted(source_quarantines,
+                                      key=lambda item: (item["bill_identity"], item["path"])),
+        "published": published,
+        "skipped": skipped,
+        "new": identities["new"],
+        "changed": identities["changed"],
+        "skipped_identities": identities["skipped"],
+        "omitted": [item for *_, report, _ in work for item in report],
+    }, sort_keys=True))
     return 0
 
 

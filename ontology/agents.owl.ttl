@@ -99,13 +99,14 @@
 
 ###  https://data.oireachtas.ie/ontology#isPrimarySponsor
 
-:isPrimarySponsor rdf:type owl:DatatypeProperty ;
+:isPrimarySponsor rdf:type owl:DatatypeProperty ,
+                           owl:FunctionalProperty ;
 
                   rdfs:domain eli-dl:Participation ;
 
                   rdfs:range xsd:boolean ;
 
-                  rdfs:comment "True if this participation represents the primary sponsor of a Bill (the minister or member in whose name the Bill was presented). False or absent for secondary/co-sponsors."@en ;
+                  rdfs:comment "Optional Boolean indicating whether this participation represents the primary sponsor of a Bill (the minister or member in whose name the Bill was presented). When the source value is unknown, the property is absent; at most one value may be stated. False identifies a secondary/co-sponsor."@en ;
 
                   skos:prefLabel "Is primary sponsor"@en .
 

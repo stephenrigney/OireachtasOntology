@@ -8,21 +8,27 @@ import pytest
 
 from oireachtas_etl.raw_captures import (load_complete_capture,
                                          load_latest_complete_capture,
-                                         load_authoritative_capture)
+                                         load_authoritative_capture,
+                                         load_latest_development_capture)
+from oireachtas_etl.state import CoreStateStore
 
 
 RUN = "12345678-1234-4234-8234-123456789abc"
+ROOT = Path(__file__).resolve().parents[1]
+BILL_WRAPPER = json.loads((ROOT / "data/api_examples/bill.json").read_text())["results"][0]
 
 
-def _page(directory: Path, *, skip: int, limit: int, records: list[dict], total: int) -> None:
-    body = json.dumps({"head": {"counts": {"partyCount": total}},
+def _page(directory: Path, *, skip: int, limit: int, records: list[dict], total: int,
+          endpoint: str = "parties", count_field: str = "partyCount",
+          run_id: str = RUN) -> None:
+    body = json.dumps({"head": {"counts": {count_field: total}},
                        "results": records}, sort_keys=True).encode()
     raw = directory / f"skip-{skip:06d}.json"
     raw.write_bytes(body)
     (directory / f"skip-{skip:06d}.meta.json").write_text(json.dumps({
-        "run_id": RUN, "status": 200,
+        "run_id": run_id, "status": 200,
         "sha256": hashlib.sha256(body).hexdigest(),
-        "endpoint": "https://api.oireachtas.ie/v1/parties",
+        "endpoint": f"https://api.oireachtas.ie/v1/{endpoint}",
         "params": {"skip": skip, "limit": limit},
     }))
 
@@ -140,3 +146,77 @@ def test_members_capture_rejects_distinct_source_iris_with_one_member_graph(
 
     with pytest.raises(ValueError, match="Member (memberCode|graph IRI) collision"):
         load_complete_capture(directory, "members")
+
+
+def test_legislation_capture_deduplicates_with_bill_identity_and_source_hash_rules(
+        tmp_path):
+    directory = tmp_path / f"run-{RUN}"
+    directory.mkdir()
+    duplicate = json.loads(json.dumps(BILL_WRAPPER))
+    _page(directory, skip=0, limit=3, records=[BILL_WRAPPER, duplicate], total=1,
+          endpoint="legislation", count_field="billCount")
+    loaded, count = load_complete_capture(directory, "legislation")
+    assert loaded == [BILL_WRAPPER] and count == 1
+
+
+def test_legislation_capture_rejects_conflicting_duplicate_bill_and_graph_alias(
+        tmp_path):
+    directory = tmp_path / f"run-{RUN}"
+    directory.mkdir()
+    changed = json.loads(json.dumps(BILL_WRAPPER))
+    changed["bill"]["longTitleEn"] = "Conflicting source version"
+    _page(directory, skip=0, limit=3, records=[BILL_WRAPPER, changed], total=1,
+          endpoint="legislation", count_field="billCount")
+    with pytest.raises(ValueError, match="conflicting duplicate Bill source identity"):
+        load_complete_capture(directory, "legislation")
+
+    aliased = json.loads(json.dumps(BILL_WRAPPER))
+    aliased["bill"]["uri"] = aliased["bill"]["uri"].removesuffix("60") + "%36%30"
+    _page(directory, skip=0, limit=3, records=[BILL_WRAPPER, aliased], total=2,
+          endpoint="legislation", count_field="billCount")
+    with pytest.raises(ValueError, match="Bill graph IRI collision"):
+        load_complete_capture(directory, "legislation")
+
+
+def test_development_selector_loads_successful_complete_legislation_read_only(
+        tmp_path):
+    state_path = tmp_path / "core.sqlite"
+    raw_root = tmp_path / "raw"
+    api_url = "https://api.oireachtas.ie/v1/legislation"
+    with CoreStateStore(state_path) as store:
+        run_id = store.start_run(
+            "legislation", "complete_source_reconciliation", is_complete=True,
+            parameters={"source": "api", "api_url": api_url, "limit": 2},
+        )
+        store.finish_run(run_id, success=True)
+    directory = raw_root / "legislation" / "2026-10-12" / f"run-{run_id}"
+    directory.mkdir(parents=True)
+    _page(directory, skip=0, limit=2, records=[BILL_WRAPPER], total=1,
+          endpoint="legislation", count_field="billCount", run_id=run_id)
+
+    before = hashlib.sha256(state_path.read_bytes()).hexdigest()
+    loaded, evidence = load_latest_development_capture(
+        raw_root, state_path, "legislation")
+    after = hashlib.sha256(state_path.read_bytes()).hexdigest()
+    assert loaded == [BILL_WRAPPER]
+    assert evidence["run_id"] == run_id and evidence["advertised_count"] == 1
+    assert before == after
+
+
+def test_failed_complete_legislation_run_is_not_selectable(tmp_path):
+    state_path = tmp_path / "core.sqlite"
+    raw_root = tmp_path / "raw"
+    api_url = "https://api.oireachtas.ie/v1/legislation"
+    with CoreStateStore(state_path) as store:
+        run_id = store.start_run(
+            "legislation", "complete_source_reconciliation", is_complete=True,
+            parameters={"source": "api", "api_url": api_url, "limit": 2},
+        )
+        store.finish_run(run_id, success=False, error="transformation failed")
+    directory = raw_root / "legislation" / "2026-10-12" / f"run-{run_id}"
+    directory.mkdir(parents=True)
+    _page(directory, skip=0, limit=2, records=[BILL_WRAPPER], total=1,
+          endpoint="legislation", count_field="billCount", run_id=run_id)
+
+    with pytest.raises(ValueError, match="no successful complete API legislation capture"):
+        load_latest_development_capture(raw_root, state_path, "legislation")

@@ -9,6 +9,7 @@ import sqlite3
 
 from .transforms.common import iri
 from .transforms.members import member_graph_iri, source_hash
+from .transforms.bills import bill_graph_iri, source_hash as bill_source_hash
 from .state import AUTHORITATIVE_COMPLETE_SOURCES
 
 
@@ -17,6 +18,7 @@ COUNT_FIELDS = {
     "members": "memberCount",
     "parties": "partyCount",
     "constituencies": "constituencyCount",
+    "legislation": "billCount",
 }
 
 
@@ -102,6 +104,27 @@ def load_complete_capture(directory: Path, endpoint: str) -> tuple[list[dict], i
             fingerprint = source_hash(member)
             if identity in fingerprints and fingerprints[identity] != fingerprint:
                 raise ValueError(f"conflicting duplicate Member source identity: {identity}")
+            fingerprints[identity] = fingerprint
+            unique[identity] = wrapper
+        records = [unique[identity] for identity in sorted(unique)]
+    elif endpoint == "legislation":
+        unique: dict[str, dict] = {}
+        fingerprints: dict[str, str] = {}
+        graph_iris: dict[str, str] = {}
+        for wrapper in records:
+            if not isinstance(wrapper, dict) or not isinstance(wrapper.get("bill"), dict):
+                raise ValueError("every Legislation capture result must contain a bill object")
+            bill = wrapper["bill"]
+            identity = bill.get("uri")
+            if not isinstance(identity, str):
+                raise ValueError("every captured Bill requires its source URI")
+            graph_iri = bill_graph_iri(bill)
+            if graph_iri in graph_iris and graph_iris[graph_iri] != identity:
+                raise ValueError(f"Bill graph IRI collision (including URI aliases): {graph_iri}")
+            graph_iris[graph_iri] = identity
+            fingerprint = bill_source_hash(bill)
+            if identity in fingerprints and fingerprints[identity] != fingerprint:
+                raise ValueError(f"conflicting duplicate Bill source identity: {identity}")
             fingerprints[identity] = fingerprint
             unique[identity] = wrapper
         records = [unique[identity] for identity in sorted(unique)]

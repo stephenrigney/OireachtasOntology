@@ -71,7 +71,7 @@
 
                skos:prefLabel "Bill type table"@en ;
 
-               rdfs:comment "Whether a Bill is a Public or Private Bill. Members: :PublicBill, :PrivateBill (defined in legislation.owl)."@en .
+                rdfs:comment "The controlled Bill process type. Members: :PublicBill, :PrivateBill, :HybridBill (defined in legislation.owl)."@en .
 
 
 ###  https://data.oireachtas.ie/ontology#AmendmentListTypeTable
@@ -81,7 +81,7 @@
 
                         skos:prefLabel "Amendment list type table"@en ;
 
-                        rdfs:comment "The format/type of an amendment list. Members: :NumberedAmendmentList, :UnnumberedAmendmentList (defined in legislation.owl)."@en .
+                         rdfs:comment "The format/type of an amendment list. Members: :NumberedAmendmentList, :UnnumberedAmendmentList, :CreamList (defined in legislation.owl)."@en .
 
 
 ###  https://data.oireachtas.ie/ontology#CommitteeTypeTable

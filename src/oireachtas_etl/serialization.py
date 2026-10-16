@@ -6,11 +6,16 @@ def turtle(graph: Graph) -> str:
 
 def nquads(graph: Graph, graph_iri: str) -> str:
     context = URIRef(graph_iri)
-    lines = [f"{s.n3()} {p.n3()} {o.n3()} {context.n3()} .\n" for s, p, o in graph]
-    return "".join(sorted(lines))
+    dataset = Dataset()
+    target = dataset.graph(context)
+    for triple in graph:
+        target.add(triple)
+    serialized = dataset.serialize(format="nquads", encoding="utf-8")
+    return "".join(sorted(line + "\n" for line in serialized.decode("utf-8").splitlines()))
 
 def ntriples(graph: Graph) -> str:
-    return "".join(sorted(f"{s.n3()} {p.n3()} {o.n3()} .\n" for s, p, o in graph))
+    serialized = graph.serialize(format="nt", encoding="utf-8")
+    return "".join(sorted(line + "\n" for line in serialized.decode("utf-8").splitlines()))
 
 def trig(graph: Graph, graph_iri: str) -> str:
     dataset = Dataset()

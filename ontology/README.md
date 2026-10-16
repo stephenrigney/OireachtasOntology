@@ -66,7 +66,7 @@ Defines the organisations, roles and persons involved in the legislative process
 >
 > **Government three-tier refactoring (2026):** `:Government` gains `skos:altLabel "Cabinet"@en` and an updated `rdfs:comment` explaining the constitutional basis and three-tier structure. See `members.owl` for the new `:GovernmentBenches`, `:GovernmentExecutive` and `:MinisterOfState` classes.
 >
-> **bill.json alignment (2026):** Named individuals `<.../def/bill-source/government>` (typed `:GovernmentBillSource`, a controlled concept distinct from the constitutional Government) and `<.../def/bill-source/private-member>` (typed `:PrivateMember`) use the API `def/` URIs directly, so `eli-dl:was_submitted_by` can point to the JSON URI without describing it in a Bill graph. `:hasCommitteeType` object property added (domain `members:Committee`, range `skos:Concept`). Committee type individuals `:SelectCommitteeType`, `:JointCommitteeType`, `:SpecialCommitteeType` added as `eli-dl:ProcessType` + `skos:Concept` members of `:CommitteeTypeTable`. URI pattern convention for committee instances annotated on `members:Committee`.
+> **bill.json alignment (2026):** Named individuals `<.../def/bill-source/government>` (typed `:GovernmentBillSource`, a controlled concept distinct from the constitutional Government) and `<.../def/bill-source/private-member>` (typed `:PrivateMember`) use the API `def/` URIs directly, so `eli-dl:was_submitted_by` can point to the JSON URI without describing it in a Bill graph. `:ReferralToSupremeCourtArt26` is the shared `eli-dl:ActivityType`/`eli-dl:ProcessStage` concept for both the Article 26 referral event URI and its corresponding Bill-stage URI. `:hasCommitteeType` object property added (domain `members:Committee`, range `skos:Concept`). Committee type individuals `:SelectCommitteeType`, `:JointCommitteeType`, `:SpecialCommitteeType` added as `eli-dl:ProcessType` + `skos:Concept` members of `:CommitteeTypeTable`. URI pattern convention for committee instances annotated on `members:Committee`.
 >
 > **member.json alignment (2026):** Six person-level datatype properties added on `:Member`: `:memberCode`, `:pId`, `:gender` (plain `xsd:string`), `:dateOfDeath` (`xsd:dateTime`), `:wikiTitle`, `:hasImage` (`xsd:boolean`). `:hasCommitteePurpose` object property added (domain `members:Committee`, range `skos:Concept`, range from `:CommitteePurposeTable`). Purpose concept individuals `:PolicyPurpose` and `:ShadowDepartmentPurpose` added as `skos:Concept` members of `:CommitteePurposeTable`. `members:Committee` annotation updated to reference both `:hasCommitteeType` and `:hasCommitteePurpose`.
 >
@@ -284,7 +284,7 @@ Defines the detailed membership, role and parliamentary collection structures of
 
 Defines the procedural events that occur during a Bill's lifecycle, including stages, delivery methods and outcomes.
 
-> **bill.json alignment (2026):** `:progressStage` and `:stageNo` datatype properties represent cross-house stage ordering and per-house amendment list stage number. `stageURI` maps a concrete stage occurrence to the corresponding controlled individual via both `eli-dl:occured_at_stage` and `eli-dl:had_activity_type`; those controlled stage values are `eli-dl:ProcessStage` and `eli-dl:ActivityType` concepts. `eventURI` and `methodURI` map through `eli-dl:had_activity_type` to controlled `eli-dl:ActivityType` concepts. Amendment source stage references resolve to the same controlled ProcessStage as their associated concrete stage occurrence. `:Published` and `:Enacted` are controlled values, never occurrence instances.
+> **bill.json alignment (2026):** `:progressStage` and `:stageNo` datatype properties represent cross-house stage ordering and per-house amendment list stage number; neither determines controlled stage identity. `stageURI` maps a concrete stage occurrence to the corresponding controlled individual via both `eli-dl:occured_at_stage` and `eli-dl:had_activity_type`; those controlled stage values are `eli-dl:ProcessStage` and `eli-dl:ActivityType` concepts. Source `bill-stage/6` maps to `:CreamListStage`, distinct from amendment-list type `:CreamList`. A structurally valid same-Bill amendment stage reference ending exactly in `/6` may use `:CreamListStage` when its occurrence is absent, without minting an occurrence. `eventURI` and `methodURI` map through `eli-dl:had_activity_type` to controlled `eli-dl:ActivityType` concepts. Amendment source stage references otherwise resolve through the same controlled ProcessStage as their associated concrete stage occurrence. `:ReferralToSupremeCourtArt26` is shared by the Article 26 referral event and stage mappings. `:Published`, `:Enacted` and controlled stage concepts are values, never occurrence instances.
 >
 > **Correction (Feb 2026):** `:mostRecentStage` removed — duplicated `eli-dl:latest_activity`. `eli-dl:latest_activity` is now annotated in `legislation.owl` for Oireachtas usage (maps to `bill.mostRecentStage`).
 
@@ -355,9 +355,9 @@ Defines the legislative documents published by the Oireachtas, including Bills, 
 
 > **ELI-DL migration (2026):** All local subclasses have been eliminated. Each is now replaced by the appropriate ELI-DL or ELI class used directly. The local `metalex` import has been replaced by `eli-dl`. The `:OriginalTitle` data property has been removed in favour of `dct:alternative`.
 >
-> **bill.json alignment (2026):** `:dateSigned` (sub-property of `eli:date_document`, `xsd:date`) added for presidential signature date. `:statuteBookURI` (sub-property of `dct:relation`) added for Irish Statute Book cross-references. `:hasAmendmentListType` property and `:NumberedAmendmentList` / `:UnnumberedAmendmentList` individuals added. `:Errata` and `:Gluais` resource type individuals added. `dct:modified` annotated for API record update timestamps.
+> **bill.json alignment (2026):** `:dateSigned` (sub-property of `eli:date_document`, `xsd:date`) added for presidential signature date. `:statuteBookURI` (sub-property of `dct:relation`) added for Irish Statute Book cross-references. `:hasAmendmentListType` property and `:NumberedAmendmentList`, `:UnnumberedAmendmentList`, and `:CreamList` individuals added. `:Errata`, `:Gluais`, and `:BillDigest` resource type individuals cover Bill-owned related documents. `dct:modified` annotated for API record update timestamps.
 >
-> **Corrections and additions (Feb 2026):** `:hasBillType` removed — replaced by `eli-dl:process_type`; `:PublicBill` and `:PrivateBill` retyped as `eli-dl:ProcessType`. `:originHouse` object property added (domain `eli-dl:DraftLegislationWork`, range `:House`) for bill house of introduction. `:legislativeYear` datatype property added (`xsd:integer`) for the year component of `eli:id_local`. Six `eli-dl`/ELI property annotations added: `eli-dl:process_number`, `eli:id_local`, `eli-dl:process_status`, `eli:type_document`, `eli-dl:process_type`, `eli-dl:latest_activity`.
+> **Corrections and additions (Feb 2026):** `:hasBillType` removed — replaced by `eli-dl:process_type`; `:PublicBill`, `:PrivateBill`, and `:HybridBill` are peer `eli-dl:ProcessType` individuals. `:originHouse` object property added (domain `eli-dl:DraftLegislationWork`, range `:House`) for bill house of introduction. `:legislativeYear` datatype property added (`xsd:integer`) for the year component of `eli:id_local`. Six `eli-dl`/ELI property annotations added: `eli-dl:process_number`, `eli:id_local`, `eli-dl:process_status`, `eli:type_document`, `eli-dl:process_type`, `eli-dl:latest_activity`.
 
 #### Eliminated local classes — use ELI-DL/ELI equivalents directly
 
@@ -382,16 +382,16 @@ Defines the legislative documents published by the Oireachtas, including Bills, 
 | `dct:modified` | Timestamp of last API record update; applied to `eli-dl:DraftLegislationWork` instances (`xsd:dateTime`) |
 | `eli-dl:process_number` | For Oireachtas bills: bill/act number component of `eli:id_local` (e.g. `"60"`); maps `billNo` / `actNo` |
 | `eli:id_local` | For Oireachtas bills: full compound identifier (e.g. `"2025/60"`); year via `:legislativeYear`, number via `eli-dl:process_number` |
-| `eli-dl:process_status` | `stages[].stageOutcome "Enacted"` maps here as `:EnactedBill`, not a `BillEventOutcome`; `stageCompleted` remains source evidence and `eli-dl:latest_activity` identifies the latest completed activity |
+| `eli-dl:process_status` | Set on the Bill's `eli-dl:LegislativeProcess` from controlled `bill.statusURI`; `stageOutcome` remains source evidence only and does not set process status or assert a `BillEventOutcome` |
 | `eli:type_document` | Work-level only (`DraftLegislationWork` or `LegalResource`); `versions[].docType = "act"` signals an Act `eli:LegalResource` |
-| `eli-dl:process_type` | Set to `:PublicBill` or `:PrivateBill`; replaces removed `:hasBillType` |
+| `eli-dl:process_type` | Set to one of the peer `:PublicBill`, `:PrivateBill`, or `:HybridBill` individuals; replaces removed `:hasBillType` |
 | `eli-dl:latest_activity` | Maps to `bill.mostRecentStage`; replaces removed `:mostRecentStage` (see `events.owl`) |
 
 #### Object Properties
 
 | Property | Domain | Range | Notes |
 |---|---|---|---|
-| `:hasAmendmentListType` | `eli-dl:AmendmentToDraftLegislationWork` | `skos:Concept` | Numbered or unnumbered list type, drawn from `:AmendmentListTypeTable` |
+| `:hasAmendmentListType` | `eli-dl:AmendmentToDraftLegislationWork` | `skos:Concept` | Numbered, unnumbered, or Cream list type, drawn from `:AmendmentListTypeTable` |
 | `:originHouse` | `eli-dl:DraftLegislationWork` | `:House` | House where the Bill was first introduced; distinct from `eli-dl:was_submitted_by` (submitting agent) |
 | `:statuteBookURI` | `eli:LegalResource` | `rdfs:Resource` | Cross-reference to the Irish Statute Book ELI URI; sub-property of `dct:relation` |
 
@@ -404,25 +404,25 @@ Defines the legislative documents published by the Oireachtas, including Bills, 
 
 #### Named Individuals — ELI Resource Types
 
-`Act`, `Bill`, `DraftBill` (Heads of Bill), `ExplanatoryMemo`, `Errata`, `Gluais`
+`Act`, `Bill`, `DraftBill` (Heads of Bill), `ExplanatoryMemo`, `Errata`, `Gluais`, `BillDigest`
 
 #### Named Individuals — ELI-DL Process Types (`:BillTypeTable`)
 
-`:PublicBill`, `:PrivateBill` — typed `eli-dl:ProcessType`; members of `:BillTypeTable`. Used via `eli-dl:process_type` on `eli-dl:LegislativeProcess` instances.
+`:PublicBill`, `:PrivateBill`, `:HybridBill` — peer `eli-dl:ProcessType` individuals; members of `:BillTypeTable`. Used via `eli-dl:process_type` on `eli-dl:LegislativeProcess` instances.
 
 #### Named Individuals — Amendment List Types
 
-`NumberedAmendmentList`, `UnnumberedAmendmentList` — typed `skos:Concept`; members of `:AmendmentListTypeTable`.
+`NumberedAmendmentList`, `UnnumberedAmendmentList`, `CreamList` — typed `skos:Concept` and `owl:NamedIndividual`; members of `:AmendmentListTypeTable`.
 
 #### Named Individuals — Bill Versions
 
-Retyped as `eli-dl:LegislativeProcessWorkVersion`: `AsInitiated`, `VersionA` (2nd printing), `VersionB` (3rd), `VersionC` (4th), `VersionD` (5th)
+Retyped as `eli-dl:LegislativeProcessWorkVersion`: `AsInitiated`, `VersionA` (2nd printing), `VersionB` (3rd), `VersionC` (4th), `VersionD` (5th), and `VersionE` (labelled “As passed by both Houses of the Oireachtas” from the reviewed source meaning; not assigned a printing ordinal).
 
 All remain in `eli:VersionTable` via `skos:inScheme`.
 
 #### Named Individuals — Bill Statuses
 
-Retyped as `eli-dl:ProcessStatus`: `AwaitingSignatureBill`, `CurrentBill`, `DefeatedBill`, `DraftHeadsOfBill`, `EnactedBill`, `LapsedBill`, `RejectedAtReferendumBill`, `SubjectToReferendumBill`, `WithdrawnBill`
+Retyped as `eli-dl:ProcessStatus`: `AwaitingSignatureBill`, `CurrentBill`, `DefeatedBill`, `DeclaredRepugnantToConstitutionBill`, `DraftHeadsOfBill`, `EnactedBill`, `LapsedBill`, `RejectedAtReferendumBill`, `SubjectToReferendumBill`, `WithdrawnBill`. `DeclaredRepugnantToConstitutionBill` is the distinct terminal status for the reviewed Article 26 Supreme Court decision; it is not `DefeatedBill`, referendum rejection, or a Bill-event outcome.
 
 ---
 
@@ -439,8 +439,8 @@ Contains the SKOS `ConceptScheme` individuals that act as controlled vocabularie
 | `:BillDeliveryTable` | Bill delivery table | `events.owl` |
 | `:BillDeliveryOutcomeTable` | Bill delivery outcome table | `events.owl` |
 | `:BillStatusTable` | Bill status table | `legislation.owl` |
-| `:BillTypeTable` | Bill type table | `legislation.owl` — members: `:PublicBill` (ProcessType), `:PrivateBill` (ProcessType); used via `eli-dl:process_type` |
-| `:AmendmentListTypeTable` | Amendment list type table | `legislation.owl` — members: `:NumberedAmendmentList`, `:UnnumberedAmendmentList` |
+| `:BillTypeTable` | Bill type table | `legislation.owl` — members: `:PublicBill`, `:PrivateBill`, `:HybridBill` (ProcessType); used via `eli-dl:process_type` |
+| `:AmendmentListTypeTable` | Amendment list type table | `legislation.owl` — members: `:NumberedAmendmentList`, `:UnnumberedAmendmentList`, `:CreamList` |
 | `:CommitteeTypeTable` | Committee type table | `agents.owl` — members: `:SelectCommitteeType`, `:JointCommitteeType`, `:SpecialCommitteeType`; used via `:hasCommitteeType` on `members:Committee` instances |
 | `:CommitteePurposeTable` | Committee purpose table | `agents.owl` — members: `:PolicyPurpose`, `:ShadowDepartmentPurpose`; used via `:hasCommitteePurpose` on `members:Committee` instances |
 

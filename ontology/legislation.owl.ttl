@@ -56,13 +56,13 @@ eli-dl:process_number
     rdfs:comment "For Oireachtas bills: the full compound identifier, e.g. \"2025/60\" for the bill or \"2025/18\" for the resulting act (eli:LegalResource). The year component alone is expressed via :legislativeYear; the number component alone via eli-dl:process_number."@en .
 
 eli-dl:process_status
-    rdfs:comment "For Oireachtas bills: set on the eli-dl:LegislativeProcess instance. The stages[].stageOutcome string \"Enacted\" maps here as :EnactedBill, not as a :BillEventOutcome. ELI-DL 3.0 has no activity-completion boolean predicate; stageCompleted remains source evidence and eli-dl:latest_activity identifies the latest completed activity."@en .
+    rdfs:comment "For Oireachtas Bills, set on the eli-dl:LegislativeProcess from the controlled bill.statusURI source field. stages[].stageOutcome remains preserved source evidence only and does not set process_status or create BillEventOutcome assertions. ELI-DL 3.0 has no activity-completion boolean predicate; stageCompleted remains source evidence and eli-dl:latest_activity identifies the latest completed activity."@en .
 
 <http://data.europa.eu/eli/ontology#type_document>
     rdfs:comment "For Oireachtas bills: apply at Work level (eli-dl:DraftLegislationWork or eli:LegalResource) only. Bill-stage version expressions (eli:LegalExpression) do not carry eli:type_document — their document type is inferred from the Work. Exception: the enacted act is a separate eli:LegalResource (typed eli:type_document :Act) linked to the DraftLegislationWork via eli:basis_for. The JSON field versions[].docType = \"act\" signals this transition to the Act LegalResource."@en .
 
 eli-dl:process_type
-    rdfs:comment "For Oireachtas bills: set to :PublicBill or :PrivateBill on the eli-dl:LegislativeProcess instance. Replaces the former :hasBillType property (added in Feb 2026 session, now removed)."@en .
+    rdfs:comment "For Oireachtas bills: set to one of the peer :PublicBill, :PrivateBill, or :HybridBill eli-dl:ProcessType individuals on the eli-dl:LegislativeProcess instance. Replaces the former :hasBillType property (added in Feb 2026 session, now removed)."@en .
 
 eli-dl:latest_activity
     rdfs:comment "For Oireachtas bills: points to the most recently completed eli-dl:LegislativeActivity (stage) instance. Maps to the JSON field bill.mostRecentStage. Replaces the former :mostRecentStage property (added in Feb 2026 session, now removed)."@en .
@@ -204,7 +204,19 @@ dct:modified rdfs:comment "For Oireachtas bill records, dct:modified carries the
 
                  skos:topConceptOf <http://data.europa.eu/eli/ontology#ResourceTypeTable> ;
 
-                 skos:inScheme <http://data.europa.eu/eli/ontology#ResourceTypeTable> .
+                  skos:inScheme <http://data.europa.eu/eli/ontology#ResourceTypeTable> .
+
+
+###  https://data.oireachtas.ie/ontology#BillDigest
+
+:BillDigest rdf:type <http://data.europa.eu/eli/ontology#ResourceType> ,
+                     owl:NamedIndividual ;
+
+            skos:prefLabel "Bill Digest"@en ;
+
+            skos:topConceptOf <http://data.europa.eu/eli/ontology#ResourceTypeTable> ;
+
+            skos:inScheme <http://data.europa.eu/eli/ontology#ResourceTypeTable> .
 
 
 ###  https://data.oireachtas.ie/ontology#PublicBill
@@ -222,9 +234,21 @@ dct:modified rdfs:comment "For Oireachtas bill records, dct:modified carries the
 ###  https://data.oireachtas.ie/ontology#PrivateBill
 
 :PrivateBill rdf:type eli-dl:ProcessType ,
-                      owl:NamedIndividual ;
+                       owl:NamedIndividual ;
 
              skos:prefLabel "Private Bill"@en ;
+
+              skos:inScheme :BillTypeTable ;
+
+              skos:topConceptOf :BillTypeTable .
+
+
+###  https://data.oireachtas.ie/ontology#HybridBill
+
+:HybridBill rdf:type eli-dl:ProcessType ,
+                     owl:NamedIndividual ;
+
+             skos:prefLabel "Hybrid Bill"@en ;
 
              skos:inScheme :BillTypeTable ;
 
@@ -263,7 +287,8 @@ dct:modified rdfs:comment "For Oireachtas bill records, dct:modified carries the
 #
 #    Individuals — Bill Type (eli-dl:ProcessType, in :BillTypeTable)
 #
-#    Note: :PublicBill and :PrivateBill are typed eli-dl:ProcessType (not
+#    Note: :PublicBill, :PrivateBill, and :HybridBill are typed
+#    eli-dl:ProcessType (not
 #    eli:ResourceType). They belong to :BillTypeTable (a skos:ConceptScheme)
 #    and are used via eli-dl:process_type on the eli-dl:LegislativeProcess
 #    instance. The former :hasBillType property has been removed.
@@ -293,13 +318,27 @@ dct:modified rdfs:comment "For Oireachtas bill records, dct:modified carries the
 ###  https://data.oireachtas.ie/ontology#UnnumberedAmendmentList
 
 :UnnumberedAmendmentList rdf:type owl:NamedIndividual ,
-                                  skos:Concept ;
+                                   skos:Concept ;
 
                          skos:prefLabel "Unnumbered list"@en ;
 
                          skos:inScheme :AmendmentListTypeTable ;
 
-                         skos:topConceptOf :AmendmentListTypeTable .
+                          skos:topConceptOf :AmendmentListTypeTable .
+
+
+###  https://data.oireachtas.ie/ontology#CreamList
+
+:CreamList rdf:type owl:NamedIndividual ,
+                     skos:Concept ;
+
+            skos:prefLabel "Cream list"@en ;
+
+            rdfs:comment "A list of amendments passed by one House to a Bill initiated in the other House, requiring approval by the originating House."@en ;
+
+            skos:inScheme :AmendmentListTypeTable ;
+
+            skos:topConceptOf :AmendmentListTypeTable .
 
 
 #################################################################
@@ -391,13 +430,25 @@ dct:modified rdfs:comment "For Oireachtas bill records, dct:modified carries the
 ###  https://data.oireachtas.ie/ontology#VersionD
 
 :VersionD rdf:type eli-dl:LegislativeProcessWorkVersion ,
-                   owl:NamedIndividual ;
+                    owl:NamedIndividual ;
 
           skos:prefLabel "Fifth Printing"@en ;
 
           skos:topConceptOf <http://data.europa.eu/eli/ontology#VersionTable> ;
 
           skos:inScheme <http://data.europa.eu/eli/ontology#VersionTable> .
+
+
+###  https://data.oireachtas.ie/ontology#VersionE
+
+:VersionE rdf:type eli-dl:LegislativeProcessWorkVersion ,
+                    owl:NamedIndividual ;
+
+           skos:prefLabel "As passed by both Houses of the Oireachtas"@en ;
+
+           skos:topConceptOf <http://data.europa.eu/eli/ontology#VersionTable> ;
+
+           skos:inScheme <http://data.europa.eu/eli/ontology#VersionTable> .
 
 
 #################################################################
@@ -434,13 +485,27 @@ dct:modified rdfs:comment "For Oireachtas bill records, dct:modified carries the
 ###  https://data.oireachtas.ie/ontology#DefeatedBill
 
 :DefeatedBill rdf:type eli-dl:ProcessStatus ,
-                       owl:NamedIndividual ;
+                        owl:NamedIndividual ;
 
               skos:prefLabel "Defeated"@en ;
 
               skos:topConceptOf :BillStatusTable ;
 
-              skos:inScheme :BillStatusTable .
+               skos:inScheme :BillStatusTable .
+
+
+###  https://data.oireachtas.ie/ontology#DeclaredRepugnantToConstitutionBill
+
+:DeclaredRepugnantToConstitutionBill rdf:type eli-dl:ProcessStatus ,
+                                              owl:NamedIndividual ;
+
+                                     skos:prefLabel "Declared repugnant to the Constitution"@en ;
+
+                                     rdfs:comment "Terminal status of a Bill where, following reference under Article 26 of the Constitution, the Supreme Court decides that a provision of the Bill is repugnant to the Constitution and the President therefore declines to sign the Bill."@en ;
+
+                                     skos:inScheme :BillStatusTable ;
+
+                                     skos:topConceptOf :BillStatusTable .
 
 
 ###  https://data.oireachtas.ie/ontology#DraftHeadsOfBill
