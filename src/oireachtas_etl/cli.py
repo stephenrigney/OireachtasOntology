@@ -1224,6 +1224,8 @@ def _reference_inputs(*, endpoint_name: str, endpoint_records: list[dict] | None
     for observation in result["report"]["observations"]:
         if (not observation.get("canonical_iri")
                 or observation.get("consolidation_result") != "resolved"
+                or observation.get("owner_consolidation_decision") ==
+                   "excluded_by_approved_committee_resolution"
                 or any(item.get("category") == "malformed_observation"
                        for item in observation.get("diagnostics", []))):
             continue

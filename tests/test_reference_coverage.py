@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+from pathlib import Path
 
 from oireachtas_etl.reference_coverage import build_reference_census, summary
 
@@ -243,6 +244,44 @@ def test_approved_dail_33_resolution_uses_115_without_losing_member_evidence(mon
         member_records=records, member_capture_complete=False)
     assert incomplete["report"]["approved_identity_resolutions"] == []
     assert incomplete["report"]["conflicting_identities"] == 1
+
+
+def test_excluded_valid_observation_cannot_contribute_owner_source_lineage(monkeypatch):
+    from oireachtas_etl import cli
+
+    committee_iri = (
+        "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/"
+        "select_committee_on_the_implementation_of_the_good_friday_agreement")
+    member_iri = "https://data.oireachtas.ie/ie/oireachtas/member/id/Example.Member"
+    nested_pointer = (
+        "/results/0/member/memberships/0/membership/committees/0")
+    observation = {
+        "canonical_iri": committee_iri,
+        "consolidation_result": "resolved",
+        "owner_consolidation_decision":
+            "excluded_by_approved_committee_resolution",
+        "diagnostics": [],
+        "reference_kind": "committee",
+        "observation_source": "members",
+        "member_iri": member_iri,
+        "json_pointer": nested_pointer,
+    }
+    monkeypatch.setattr(
+        cli, "build_reference_census",
+        lambda **_kwargs: {"report": {"observations": [observation]}})
+
+    _census, provenance = cli._reference_inputs(
+        endpoint_name="committees", endpoint_records=[], member_records=[],
+        store=None, raw_root=Path("/unused"), endpoint_is_authoritative=False,
+        member_is_authoritative=True,
+        member_record_pointers={member_iri: [{
+            "path": "/raw/member-page.json",
+            "sha256": "a" * 64,
+            "json_pointer": "/results/0",
+        }]},
+    )
+
+    assert committee_iri not in provenance["entity_source_pointers"]["committees"]
 
 
 def test_fatal_committee_observation_keeps_independently_comparable_conflicts():
