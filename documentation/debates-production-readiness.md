@@ -20,6 +20,12 @@ acceptance is not a verified backup of the intended production dataset. See
 [Phase 6 Tranche C](phase-6-tranche-c.md) and the
 [Debates execution plan](debates-production-execution-plan.md).
 
+**Latest D/E/F reassessment (2026-10-16):** Decision D remains blocked by a
+Committee 217 provenance gap; the approved Committee ID 115 exception remains
+settled. Decision E's private-beta target is not provisioned or launch-ready,
+and Decision F remains **NO-GO**. See the dated assessments and consolidated
+readiness summary below.
+
 ## Owner policy decision record — 2026-10-13
 
 The project owner explicitly recorded the following positions after reviewing
@@ -43,8 +49,9 @@ from the 264 withheld, and report any additional runtime failures separately.
 The eligible count is not a promise that all candidates will pass production
 owner resolution.
 
-**Still open — D, E and F:** establish authoritative production owner captures,
-published owner graphs, conflict/exclusion policy and fingerprint; verify the
+**Still open at this 2026-10-13 baseline — D, E and F:** establish authoritative
+production owner captures, published owner graphs, conflict/exclusion policy
+and fingerprint; verify the
 intended deployment's secured runtime and capacity plus a protected, coordinated
 canonical-state backup and independent full restore/rebuild; and obtain an
 explicit, separate owner go/no-go for the first five-Work production publication.
@@ -440,3 +447,259 @@ external immutable content-addressed evidence; the inventory records their
 SHA-256 and relative paths rather than committing multi-gigabyte source files.
 The census/acquisition inputs used here were at
 `/var/home/stephen/.cache/oireachtas-assessment/out`.
+
+## Decision D evidence and readiness assessment — 2026-10-16
+
+**Decision D remains blocked; do not accept or publish this owner candidate yet.**
+The source-backed candidate census is reproducible and its reference-closure
+counts pass, but the existing source-lineage builder cannot attribute one
+Committee candidate to an exact source record. This is a production-provenance
+gap. It concerns Committee 217, **not** the separately approved and settled
+Dáil 33 Committee ID 115 resolution.
+
+### Existing acceptance evidence versus new verification
+
+The earlier 2026-10-09 source-backed staging is existing acceptance evidence
+for representative, disposable owner/Debates integration only. It used complete
+preserved captures and validated candidate graphs, but its owner snapshot was
+explicitly development-only/incomplete, its Committee conflict was then
+excluded, and it did not establish authoritative publication or a current
+production owner fingerprint. The Phase 6 Tranche C backup/restore/rebuild
+acceptance is likewise existing disposable implementation evidence, not a
+recovery test of the intended production dataset.
+
+New verification on 2026-10-16 used copies of the indexed complete source
+captures and source-run database under disposable temporary storage. The
+existing `tools/reference_census.py` passed complete-run, page-hash, pagination,
+advertised-count and source-URL checks for the Members, Parties and
+Constituencies runs. A second census was byte-identical; both reports have
+SHA-256
+`a9d714c7d1c236aecba7ae8454c73b188fa0b5bbb084294e25d3a64f41c1f9f3`, matching
+the prior report record. Verified source capture fingerprints are also the
+fingerprints recorded in the source-backed staging evidence above:
+
+| Capture | Indexed complete run | Records | Capture fingerprint |
+|---|---|---:|---|
+| Members | `d2c089d0-5203-40f1-97b8-ae0d8285e74d` | 1,928 | `177a0cbfe0db70e6208a3798e7ca368b1d33dadaf3865198c2f9e0a46aae65fe` |
+| Houses | `896630a4-9389-4a8f-bf58-65c16a05425c` | 68 | `264e0f5d3b47a92f01cf7e82d7ac47981e38560422d3567ded802086a5f81f70` |
+| Parties | `91255248-e348-4d60-a8d6-73a26df49f8b` | 11 | `b71ce8368b26594208783b6873b435008f7f967b7759763a3b2f2cb2e9f5d145` |
+| Constituencies | `e6a472b1-b6e0-4e02-8304-9e6cfa73c44d` | 8 | `dbc047946a75aa8726285204970509d0a94be31e033a91183145e7943d8d6356` |
+
+The current candidate builders and validators produced 721 Houses, 1,890
+Parties, 7,645 Constituencies and 2,810 Committees triples. All 65 HouseTerms
+referenced by Members exist in the Houses candidate. Census totals are 17,557
+observations across 2,175 identities: 378 Party/collection, 1,529
+constituency/panel and 268 Committee identities. Candidate closure reports
+2,488/2,488 closed and zero unresolved closable references, with zero candidate
+Member-description leaks. These are source-census/candidate-closure results,
+not proof that a publishable, provenance-complete graph set exists. The census
+still reports 18 malformed observations and 24 Committee-name ambiguities;
+those diagnostics remain visible and are not accepted or silently repaired.
+
+The source-lineage helper check found exact source pointers for all 378 Party
+and 1,529 Constituency candidates, but only 267 of 268 Committee candidates.
+For a historical sample, the earlier 51-Work Debate staging reported 18
+resolved and 31 unresolved Committee-reference outcomes (including three
+distinct unmatched older Committee hrefs). That sample is not a new full-corpus
+unresolved-reference report. A current owner snapshot and full manifest-aligned
+unresolved-reference report remain outstanding.
+
+### Settled Committee ID 115 verification — not reopened
+
+The census reproduced approved observation fingerprint
+`06fb58595b879dc206e2bb50aa95014c41718275f1e251d3a5696a1830ccbdb2` for the
+exact Dáil 33 Committee identity: 13 `committeeID`/code 115 observations and
+one ID/code 156 observation. The candidate graph retains ID/code 115, the Dáil
+33 term and the reviewed `Shadow Department` purpose. All 13 selected source
+pointers passed exact raw-page/hash/pointer verification; the excluded 156
+observation is not included in owner lineage. The Member transform continues
+to emit both Committee-membership edges to this identity, preserving their
+separate source date ranges. No contradictory evidence about the approved
+ID 115 resolution was found. **This decision remains settled.**
+
+### Escalation — Committee 217 source lineage
+
+The affected candidate is the Dáil 33 `joint_committee_on_remit_oversight`
+Committee identity (`committeeID`/code 217). Its 17 observations identify the
+same Committee, but each has `committeeDateRange.start = null` (end
+`2024-11-08`) and is reported as a malformed observation. In
+`src/oireachtas_etl/cli.py`, `_reference_inputs` omits observations with a
+`malformed_observation` diagnostic when it builds entity source pointers
+(around lines 1225–1230). Consequently the candidate census has no exact
+source-record lineage pointer for this Committee. Calling the existing
+`_build_shared_entity_lineage` fails closed before publication with:
+
+> `cannot safely establish source attribution for shared committees entity … joint_committee_on_remit_oversight: no exact source record pointer is available`
+
+**Issue:** candidate closure succeeds while source lineage for Committee 217
+does not. **Impact:** the owner dataset cannot satisfy required provenance and
+must not be treated as publishable or accepted for Debates resolution until
+this gap has an authorized disposition. **Evidence:** the 17 source observations,
+the omission in `_reference_inputs`, and the lineage-builder failure described
+above. **Options for review:** determine whether the exact immutable raw-record
+pointer can be retained under the existing provenance contract without
+interpreting the malformed date; if not, obtain an explicitly reviewed source
+disposition (such as withholding that owner identity) or approve a new complete
+authoritative capture and rerun the coverage checks. Any option that changes
+source scope or publication treatment requires human approval. **Recommendation:**
+keep Decision D and publication blocked; preserve the existing source bytes and
+the approved ID 115 outcome, and obtain provenance/authority review for
+Committee 217 before changing the lineage builder, excluding an owner or
+publishing any candidate.
+
+No RDF publication rehearsal was attempted after the lineage precondition
+failed. The read-only census source index was schema 4; its SQLite backup was
+migrated only in a temporary copy for the schema-8 owner-snapshot tool. That
+diagnostic snapshot fingerprint is
+`17bf0d2016517d193668f7d0580990988249f780e0d4bb2b711c4b52f10bae2e`, but it has
+no Committee graph, reports `coverage_authoritative=false` for Houses and
+pending legacy provenance gaps; the Debates snapshot tool also does not cover
+Parties or Constituencies. **It is not a D-acceptance or production fingerprint.**
+A later raw Members directory from 2026-10-09 has no matching successful
+complete-run record in the copied index and was not substituted for the
+reviewed indexed capture.
+
+The current in-memory owner candidates therefore have no publication payload
+hashes or whole-graph/Fuseki verification, and their exact publication replay
+and recovery have not been exercised. Existing source-backed staging did verify
+an exact replay of its earlier Committee batch, and Phase 6 passed its separate
+disposable backup/restore/fresh-projection gate; neither substitutes for a
+deterministic publication and recovery rehearsal of a provenance-complete D
+owner set. Do not treat either historical result or the diagnostic local
+snapshot as the missing D fingerprint.
+
+New focused checks passed: 125 reference-publication/Core State/provenance
+tests, five mapping-integrity tests, and `tests/validate.py` (HermiT and ontology
+validation at 2,504 triples). These checks do not close the Committee 217
+lineage gap. No production endpoint or Graph Store was accessed, no production
+Core State was opened or changed, and no source data or repository code was
+modified by the verification.
+
+## Decision E environment-readiness assessment — 2026-10-16
+
+**Assessment: not ready for a private-beta launch.** Repository evidence verifies
+an ETL operational baseline and a successful hosted disposable Phase 6 release
+gate; it does not verify a provisioned or secured beta environment. The
+[private-beta plan](private-beta-deployment-plan.md) remains a proposed baseline:
+no hosting provider, access gateway, production database or institutional
+integration has been selected. It explicitly prohibits external access until
+its staged security gate passes. This assessment selects no provider, gateway,
+store or topology, and does not authorize deployment.
+
+### Existing accepted implementation evidence
+
+- The accepted Phase 6 Tranche C revision is
+  `d9b65080efcfae0cb16b0cc6ae0e16ad97782572`. The hosted disposable release
+  gate (run `38304245816`) passed ten
+  groups with zero mandatory skips. Its revision-bound evidence records an
+  independent restore of four SQLite stores and a fresh projection of two
+  graphs / 283 triples, with Core State integrity `ok` and failure injection.
+- The production ETL/operations path documents non-root ETL/ops containers,
+  read-only container roots, dropped Linux capabilities, bounded temporary
+  storage, loopback-only Fuseki binding, protected runtime configuration, and
+  backup/restore/rebuild tooling. These are implementation/configuration checks,
+  not deployed-host security or cloud access evidence.
+- Phase 6 recovery defines canonical SQLite state and preserved source/evidence
+  as the recovery boundary and treats Fuseki/TDB2 as a rebuildable projection.
+  Its release gate is representative disposable evidence; it did not establish
+  the intended host's complete recovery or execute the production ETL/ops image
+  and host systemd timers.
+
+### New verification performed for this assessment
+
+- The current code revision is a descendant of the accepted Phase 6 revision,
+  and `compose.production.yml` still has SHA-256
+  `b28cb1e7e07bd12797028c6fed83f2f311f7eb251987994e0a0d85be32f155e0`.
+- `tests/test_production_deployment.py` passed (21 tests). These wrapper tests
+  use a Docker command double; they do not exercise a deployed host or cloud
+  security controls.
+
+### Outstanding environment and owner gates
+
+| Area | Verified now | Still required before private-beta launch |
+|---|---|---|
+| Runtime/configuration | Versioned ETL/ops Compose, wrapper and systemd implementation; example configuration only. | Provision the protected target runtime file, credentials, notification destination, dataset/application configuration and actual units; verify the deployed image/runtime and permissions. |
+| Cloud security/access | The plan defines HTTPS, individual invited identities, MFA where supported, private store/admin/publication endpoints and gateway protection. | Select provider/region and identity-aware gateway; provision network isolation, TLS, firewall/IAM, secret management, account invitation/revocation/session expiry and operator separation; test unauthenticated, revoked-user and direct-origin bypass cases. |
+| Application/query security | The NLQ POC has bounded read-only query checks and tests for forbidden operations. The ETL Compose stack is loopback-bound and injects Fuseki's admin credential into ETL/ops. | The POC has no application authentication or production hardening, and read-only queries are not a complete cost sandbox. The Compose configuration does not establish a separate read-only NLQ backend identity. Keep the POC local/isolated until the deployed gateway, private endpoints and independently read-only backend permissions pass adversarial staging tests. Add/verify query concurrency, resource and abuse controls; review diagnostics and model-provider data handling. |
+| Capacity | Debates ETL guard thresholds and corpus estimates exist; they are not an NLQ beta workload benchmark. | Owner must decide cohort, duration, expected concurrency, budget/cost ceiling and alerts; test application, query, model-call and storage capacity on the chosen target. |
+| Canonical backup | Restic, coordinated SQLite backup, isolated restore/activation and fresh-projection rebuild mechanisms are implemented; disposable acceptance passed. | Choose and provision separately protected off-host recovery storage and retention; protect runtime credentials/configuration separately; define whether the beta snapshot, ETL stores or both are canonical and assign refresh/recovery ownership. |
+| Restore/operations | A host-local advisory `flock` coordinates documented single-host operations; recovery tooling and procedures are tested in disposable infrastructure. | If beta and ETL are separate, decide and test their publication/snapshot handoff and writer coordination. Restore/rebuild the complete intended dataset on the target in isolation, compare the graph inventory/hashes, test alerts/timers and assign incident, suspension, rollback and teardown owners. |
+
+The deployment is not provisioned or authorized by these findings. The actual
+target's capacity, off-host backup, complete-state recovery, access control,
+security scan and deployed adversarial evidence remain unverified. Before
+provisioning, the beta sponsor must close Gate 1 decisions on cohort, duration,
+hosting region, budget, dataset snapshot/authority and refresh policy, enabled
+features/model provider, participant notice and data handling, logs/retention,
+rollback and stop conditions. Platform, identity, application/security, privacy
+and operations owners must then close the Gate 2 controls in the table, including
+deployment tests and recovery evidence. An independent security review and
+explicit Gate 3 launch approval remain separate. In particular, exposing the
+unauthenticated POC without the independently enforced gateway and
+origin-isolation controls would be unsafe; no external beta access should be
+enabled before the deployed security gate passes.
+
+## Decision F handover check — 2026-10-16
+
+This is an operational handover, not approval to ingest or publish Debates.
+Decisions A and B remain approved, Decision C remains provisional, and the
+frozen initial inventory remains the only approved selection. The complete
+preflight, stop/recovery procedure and separate progression approvals remain in
+the [controlled-production execution plan](debates-production-execution-plan.md).
+
+The current worktree's inventory hash was checked against the approved
+`ae07dc7c293bcadef3d17fa52ea19e2b92db5368242a53aefd68ec8ca5f0c4d7`. Its
+manifest loader reports 10,913 records: 10,649 inventory-eligible and 264
+withheld. Recomputing deterministic batches with the 64 MiB ceiling gives:
+
+| Work cap | Deterministic batches | Largest computed batch (source XML) |
+|---:|---:|---:|
+| 5 | 2,183 | 12,496,743 B |
+| 10 | 1,092 | 18,743,211 B |
+| 25 | 437 | 40,924,626 B |
+
+All computed batches remain below the 64 MiB ceiling; these are calculations
+from the frozen manifest, not production resource measurements. Changing the
+Work cap changes batch boundaries; restart at index 0 for each approved cap and
+reconcile progress by Work IRI/source hash, as described in the execution plan.
+The publication CLI also enforces the 25-Work/64-MiB maximum and requires a
+resource-budget file for manifest-driven publication. Publication was not run.
+
+Focused checks passed: `tests/test_debates_readiness.py`,
+`tests/test_resource_budget.py` and `tests/test_debates_owner_snapshot_tool.py`
+(15 tests total). This verifies selection/batch and read-only owner-snapshot
+mechanics; it does not verify any production host, owner dataset, backup or
+publication.
+
+F's direct Decision D dependency is a human-accepted, source-backed, clean and
+verified owner graph set with complete provenance, accepted Committee 217
+lineage treatment, the reviewed unresolved-reference report and an exact owner
+fingerprint. That prerequisite is **not met**. Its Decision E dependency is the
+secured, capacity-checked ETL/Fuseki/Core State target that will ingest and
+retain the dataset, plus a protected coordinated recovery point and successful
+target-specific isolated restore/rebuild. If that target is separate from the
+private-beta NLQ service, the owner must approve and test the dataset
+publication/snapshot handoff; neither target's readiness can be inferred from
+the other's. A private-beta Gate 3 launch approval is separate from Debates
+ingestion and is not granted by this handover.
+
+Only after D and the relevant E ingestion-environment gates pass may a human
+separately authorize the exact first five-Work production publication. Review of
+that result is required before a separate decision to progress to 10 Works, and
+again before 25 Works. Progression is never automatic.
+
+## Consolidated D/E/F readiness summary — 2026-10-16
+
+| Workstream | Completed evidence | Current status / blocker | Human approval still required |
+|---|---|---|---|
+| **D — authoritative owners** | Indexed complete capture provenance reproduced; candidate graph validation and 2,488/2,488 closure checks pass; approved Committee ID 115 outcome independently corroborated, with no contradiction. | **Blocked, not accepted.** Committee 217 has no exact source-lineage pointer under the current builder; no owner publication rehearsal, authoritative owner fingerprint or current full-corpus unresolved-reference report exists. | Provenance/authority disposition for Committee 217; then accept the exact owner capture set, candidate payloads/fingerprint, visible diagnostics/exclusions and unresolved-reference outcomes. Do not reopen ID 115. |
+| **E — private-beta environment** | Phase 6 disposable restore/rebuild and implementation checks pass; production deployment wrapper tests pass (21); the private-beta plan and staged security gates are documented. | **Not ready for launch.** No provider/gateway/target runtime is selected or provisioned; beta access control, deployed security, actual capacity, off-host canonical backup and target-specific full recovery are unverified. The POC remains unauthenticated and must not be exposed. | Gate 1 design approvals before provisioning; Gate 2 deployed security/operations and independent review; explicit Gate 3 beta launch decision. Separately accept the secure ETL ingestion runtime and its coordinated recovery evidence. |
+| **F — controlled Debates ingestion** | Frozen manifest/hash and A/B/C positions retained; deterministic 5/10/25 batch boundaries rechecked; existing controlled-staging and recovery mechanisms are documented. | **NO-GO.** Direct D and ingestion-environment E prerequisites are unmet; no Debates has been ingested or published. | After D/E prerequisites, separate explicit go/no-go for the exact five-Work batch; review that result before separate approvals to progress to 10 and 25 Works. |
+
+**What can proceed now:** human provenance review of Committee 217, review of the
+Decision D evidence, private-beta Gate 1 design decisions, and non-publishing
+preflight/operational preparation. **What remains blocked:** acceptance or
+publication of the current owner candidate, private-beta exposure, and any
+production Debates ingestion. The next human decision is the authorized
+provenance disposition for Committee 217; it must preserve the settled ID 115
+resolution and cannot itself approve D, E, F or production publication.
