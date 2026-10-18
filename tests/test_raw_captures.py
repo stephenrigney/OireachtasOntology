@@ -200,6 +200,11 @@ def test_development_selector_loads_successful_complete_legislation_read_only(
     after = hashlib.sha256(state_path.read_bytes()).hexdigest()
     assert loaded == [BILL_WRAPPER]
     assert evidence["run_id"] == run_id and evidence["advertised_count"] == 1
+    page_meta = json.loads(
+        (directory / "skip-000000.meta.json").read_text(encoding="utf-8"))
+    assert evidence["page_hashes"] == [{
+        "skip": 0, "sha256": page_meta["sha256"],
+    }]
     assert before == after
 
 

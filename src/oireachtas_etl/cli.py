@@ -1,5 +1,5 @@
 from __future__ import annotations
-import argparse, json, sys, uuid
+import argparse, json, re, sys, tempfile, uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -16,7 +16,8 @@ from .loader import FusekiSparqlClient
 from .competency import verify_member_competency, verify_bill_competency
 from .competency import verify_core_graph
 from .raw import persist_raw
-from .debates_raw import fetch_main_xml, load_main_xml, persist_main_xml
+from .debates_raw import (DebateRawSource, fetch_main_xml, load_main_xml,
+                          persist_main_xml)
 from .debates_pipeline import run_debate_batch
 from .serialization import nquads, ntriples, turtle
 from .transforms.houses import transform_houses_with_report
@@ -3128,38 +3129,294 @@ LOCAL_DEVELOPMENT_GRAPH_ORDER = (
     ("parties", PARTIES_GRAPH),
     ("constituencies", CONSTITUENCIES_GRAPH),
     ("committees", COMMITTEES_GRAPH),
+    ("administrative-units", ADMINISTRATIVE_UNITS_GRAPH),
+    ("offices", OFFICES_GRAPH),
+)
+
+LOCAL_DEVELOPMENT_DYNAMIC_GRAPH_FAMILIES = (
+    "members", "bill-records", "debates",
+)
+DEVELOPMENT_DEBATE_SELECTION = (
+    Path(__file__).resolve().parents[2]
+    / "poc/nlq/benchmarks/development-source-selection.json"
 )
 
 
-def _development_dataset_baseline(captures: dict, counts: dict,
-                                  development_status: dict) -> dict:
-    """Describe the capture-backed dataset written by the local bootstrap.
+def _development_member_office_inputs(
+        members: list[dict], member_capture: dict, raw_root: Path,
+        registry: dict, decisions: dict, review_hash: str,
+        office_types: dict[str, str]) -> tuple[dict[str, list[dict]], list[dict]]:
+    """Reuse the offline Member office-resolution contract without durable state."""
+    capture_dir = Path(member_capture["capture_directory"])
+    expected_pages = {item["skip"]: item["sha256"]
+                      for item in member_capture.get("page_hashes", [])}
+    pointers_by_member: dict[str, dict] = {}
+    for raw_path in sorted(capture_dir.glob("skip-*.json")):
+        if raw_path.name.endswith(".meta.json"):
+            continue
+        match = re.fullmatch(r"skip-([0-9]{6,})\.json", raw_path.name)
+        if match is None:
+            raise ValueError(f"invalid preserved Members page name: {raw_path}")
+        skip = int(match.group(1))
+        body = raw_path.read_bytes()
+        digest = hashlib.sha256(body).hexdigest()
+        if expected_pages.get(skip) != digest:
+            raise ValueError(f"preserved Members page differs from selected capture evidence: {raw_path}")
+        try:
+            page = json.loads(body)
+        except (UnicodeError, json.JSONDecodeError) as error:
+            raise ValueError(f"invalid preserved Members page: {raw_path}") from error
+        records = page.get("results") if isinstance(page, dict) else None
+        if not isinstance(records, list):
+            raise ValueError(f"preserved Members page has no results array: {raw_path}")
+        for index, wrapper in enumerate(records):
+            member = wrapper.get("member") if isinstance(wrapper, dict) else None
+            identity = member.get("uri") if isinstance(member, dict) else None
+            if not isinstance(identity, str):
+                raise ValueError("every selected Members source record requires a Member IRI")
+            pointers_by_member.setdefault(
+                identity,
+                _office_raw_pointer(raw_path, raw_root, body, f"/results/{index}"),
+            )
+    if set(expected_pages) != {
+            int(re.fullmatch(r"skip-([0-9]{6,})\.json", path.name).group(1))
+            for path in capture_dir.glob("skip-*.json")
+            if not path.name.endswith(".meta.json")}:
+        raise ValueError("selected Members capture page set changed during office evidence loading")
 
-    The stable identity is based on source run IDs and URLs, not local paths,
-    timestamps, or the Fuseki endpoint. The bootstrap has already
-    integrity-checked each preserved capture before this summary is built.
-    """
+    records_with_pointers = []
+    for wrapper in members:
+        identity = wrapper["member"]["uri"]
+        pointer = pointers_by_member.get(identity)
+        if pointer is None:
+            raise ValueError(f"selected Member has no pointer into its accepted raw capture: {identity}")
+        records_with_pointers.append((wrapper, pointer))
+    observations = extract_office_observations(records_with_pointers)
+
+    # This is the same ephemeral reconciliation route used by an offline
+    # Members transform. Only accepted current resolutions are passed onward;
+    # unresolved observations remain diagnostics and never become holdings.
+    with OfficeOccurrenceStore(":memory:") as office_store:
+        result = office_store.reconcile(
+            observations, registry, decisions, review_hash,
+            run_id="local-development-bootstrap",
+        )
+        current, _retained, _revoked = _accepted_office_ledger_rows(
+            result["records"], observations, decisions, allow_revocation=True)
+
+    accepted_evidence = []
+    for row in result["records"]:
+        resolution = row.get("last_accepted_resolution")
+        if (row.get("status") != "accepted" or row.get("source_presence") != "present"
+                or not isinstance(resolution, dict)
+                or resolution.get("fingerprint") != row.get("current_fingerprint")):
+            continue
+        snapshot = resolution.get("snapshot")
+        if not isinstance(snapshot, dict):
+            raise ValueError("accepted office resolution has no current source snapshot")
+        for office in resolution.get("office_iris", []):
+            if office not in office_types:
+                raise ValueError(
+                    f"accepted office target is absent from the current registry: {office}")
+            accepted_evidence.append({
+                "occurrence_key": row["occurrence_key"],
+                "member_iri": row["member_iri"],
+                "membership_iri": row["membership_iri"],
+                "observation_fingerprint": row["current_fingerprint"],
+                "office_iri": office,
+                "date_range": snapshot["date_range"],
+                "resolution_method": row["resolution_method"],
+                "decision_hash": resolution.get("decision_hash"),
+            })
+    accepted_evidence.sort(key=lambda item: (
+        item["member_iri"], item["occurrence_key"], item["office_iri"]))
+    # Check that the evidentiary summary is exactly what the existing Member
+    # transformation is authorized to emit, rather than all accepted-looking
+    # source rows or raw office observations.
+    transformed_keys = {
+        (item["member_iri"], item["occurrence_key"], str(item["office_iri"]))
+        for records in current.values() for item in records
+    }
+    evidence_keys = {
+        (item["member_iri"], item["occurrence_key"], item["office_iri"])
+        for item in accepted_evidence
+    }
+    if transformed_keys != evidence_keys:
+        raise ValueError("accepted office evidence differs from current Member transform inputs")
+    return current, accepted_evidence
+
+
+def _load_development_debates(raw_root: Path, scratch_root: Path) -> tuple[list, dict]:
+    """Replay exactly the pinned development Debate slice without acquisition."""
+    try:
+        manifest_bytes = DEVELOPMENT_DEBATE_SELECTION.read_bytes()
+        manifest = json.loads(manifest_bytes)
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"invalid pinned Query Service Debate selection: {error}") from error
+    if (not isinstance(manifest, dict) or manifest.get("schema_version") != 1
+            or manifest.get("status") != "evidence-selection-only"
+            or not isinstance(manifest.get("sources"), list)):
+        raise ValueError("pinned Query Service Debate selection has an unsupported shape")
+    selected = manifest["sources"]
+    if (len(selected) != 3
+            or sum(item.get("house_or_committee") == "dail" for item in selected) != 1
+            or sum(item.get("house_or_committee") == "seanad" for item in selected) != 1
+            or sum(item.get("house_or_committee") not in {"dail", "seanad"}
+                   for item in selected) != 1):
+        raise ValueError("pinned Debate selection must contain one Dáil, one Seanad, and one committee Work")
+
+    sources = []
+    for item in selected:
+        if (not isinstance(item, dict) or item.get("endpoint") != "debates"
+                or not isinstance(item.get("source_sha256"), str)
+                or not re.fullmatch(r"[0-9a-f]{64}", item["source_sha256"])
+                or item.get("raw_object_key") != (
+                    f"debates/sha256/{item['source_sha256'][:2]}/"
+                    f"{item['source_sha256']}.xml")):
+            raise ValueError("pinned Debate source identity is incomplete or invalid")
+        source = load_main_xml(raw_root, item["source_sha256"])
+        if (source.source_sha256 != item["source_sha256"]
+                or len(source.body) != item.get("byte_length")
+                or item.get("source_url") not in source.source_urls):
+            raise ValueError(
+                f"pinned Debate source evidence no longer matches its recorded hash: "
+                f"{item['source_sha256']}"
+            )
+        staged_path = (scratch_root / "debates" / "sha256"
+                       / item["source_sha256"][:2]
+                       / f"{item['source_sha256']}.xml")
+        staged_path.parent.mkdir(parents=True, exist_ok=True)
+        staged_path.write_bytes(source.body)
+        sources.append(DebateRawSource(
+            source.source_sha256, staged_path, source.source_urls, source.body))
+
+    outcomes = run_debate_batch(sources)
+    actual = {
+        (item.source_sha256, item.work_iri, item.graph_iri)
+        for item in outcomes
+    }
+    expected = {
+        (item["source_sha256"], item["work_iri"], item["graph_iri"])
+        for item in selected
+    }
+    if len(outcomes) != 3 or actual != expected:
+        raise ValueError("Debates replay did not yield exactly the three pinned Work graphs")
+    evidence = {
+        "selection_manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
+        "sources": [{key: item[key] for key in (
+            "house_or_committee", "source_url", "source_sha256", "byte_length",
+            "work_iri", "graph_iri")}
+            for item in sorted(selected, key=lambda value: value["graph_iri"])],
+    }
+    return outcomes, evidence
+
+
+def _development_graph_family(graph_iri: str) -> str | None:
+    fixed = {iri: name for name, iri in LOCAL_DEVELOPMENT_GRAPH_ORDER}
+    if graph_iri in fixed:
+        return fixed[graph_iri]
+    if re.fullmatch(r"https://data\.oireachtas\.ie/graph/member/[^/?#]+", graph_iri):
+        return "members"
+    if re.fullmatch(r"https://data\.oireachtas\.ie/graph/bill/[^/?#]+/[^/?#]+", graph_iri):
+        return "bill-records"
+    if re.fullmatch(
+            r"https://data\.oireachtas\.ie/graph/debate/[^/?#]+/"
+            r"[0-9]{4}-[0-9]{2}-[0-9]{2}/debate", graph_iri):
+        return "debates"
+    return None
+
+
+def _development_named_graphs(client: FusekiSparqlClient) -> set[str]:
+    rows = client.query(
+        "SELECT DISTINCT ?graph WHERE { GRAPH ?graph { ?subject ?predicate ?object } }"
+    )
+    graphs = set()
+    for row in rows:
+        value = row.get("graph", {}).get("value") if isinstance(row, dict) else None
+        if not isinstance(value, str):
+            raise ValueError("Fuseki named-graph inventory returned a non-IRI graph")
+        graphs.add(value)
+    return graphs
+
+
+def _replace_development_graph_set(loader: FusekiGraphStoreLoader,
+                                   client: FusekiSparqlClient,
+                                   graph_payloads: list[tuple[str, Graph, str]]) -> list[str]:
+    """Replace the bootstrap-owned graphs and remove only stale owned graphs."""
+    desired = {graph_iri for graph_iri, _graph, _family in graph_payloads}
+    if len(desired) != len(graph_payloads):
+        raise ValueError("two development graph payloads have the same named-graph IRI")
+    for graph_iri, graph, _family in graph_payloads:
+        payload = ntriples(graph)
+        loader.replace(graph_iri, payload, content_type="application/n-triples")
+        verify_core_graph(client, graph_iri, payload)
+
+    before_cleanup = _development_named_graphs(client)
+    # Fixed graph families are always desired. Only the dynamic graph patterns
+    # owned by this bootstrap are eligible for stale-graph deletion.
+    stale = sorted(
+        graph for graph in before_cleanup
+        if _development_graph_family(graph) in LOCAL_DEVELOPMENT_DYNAMIC_GRAPH_FAMILIES
+        and graph not in desired
+    )
+    unrelated_before = {
+        graph for graph in before_cleanup
+        if _development_graph_family(graph) is None
+    }
+    for graph in stale:
+        loader.delete(graph)
+
+    after_cleanup = _development_named_graphs(client)
+    if set(stale) & after_cleanup:
+        raise ValueError("stale bootstrap-owned graphs remain after Fuseki cleanup")
+    owned_after = {graph for graph in after_cleanup
+                   if _development_graph_family(graph) is not None}
+    if owned_after != desired:
+        raise ValueError("Fuseki bootstrap-owned graph set differs from validated payloads")
+    if not unrelated_before <= after_cleanup:
+        raise ValueError("development bootstrap changed an unrelated named graph")
+    return stale
+
+
+def _development_dataset_baseline(
+        captures: dict, graph_families: dict[str, list[tuple[str, Graph]]],
+        counts: dict, development_status: dict, office_inputs: dict,
+        accepted_holding_evidence: list[dict], debate_evidence: dict,
+        bills: dict) -> dict:
+    """Describe all stable source/run/hash inputs and graphs in the dev dataset."""
     source_captures = {}
     identity_captures = {}
     for endpoint in sorted(captures):
         _records, capture = captures[endpoint]
         parameters = capture["parameters"]
         source_url = parameters["api_url"]
-        run_id = capture["run_id"]
+        pages = capture["page_hashes"]
         source_captures[endpoint] = {
-            "run_id": run_id,
+            "run_id": capture["run_id"],
             "source": parameters["source"],
             "source_url": source_url,
             "record_count": capture["advertised_count"],
+            "pages": pages,
         }
         identity_captures[endpoint] = {
-            "run_id": run_id,
+            "run_id": capture["run_id"],
             "source_url": source_url,
+            "record_count": capture["advertised_count"],
+            "pages": pages,
         }
 
+    holding_evidence_sha256 = hashlib.sha256(json.dumps(
+        accepted_holding_evidence, ensure_ascii=False, sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")).hexdigest()
     identity_material = {
-        "identity_version": 1,
+        "identity_version": 2,
         "source_captures": identity_captures,
+        "office_registry_inputs": office_inputs,
+        "accepted_holding_evidence_sha256": holding_evidence_sha256,
+        "debate_selection_manifest_sha256": debate_evidence[
+            "selection_manifest_sha256"],
+        "debate_sources": debate_evidence["sources"],
     }
     identity_json = json.dumps(
         identity_material, ensure_ascii=False, sort_keys=True,
@@ -3167,29 +3424,52 @@ def _development_dataset_baseline(captures: dict, counts: dict,
     )
     dataset_id = "sha256:" + hashlib.sha256(identity_json.encode("utf-8")).hexdigest()
 
+    fixed_iris = {name: iri for name, iri in LOCAL_DEVELOPMENT_GRAPH_ORDER}
+    graph_rows = []
+    for name, entries in graph_families.items():
+        row = {
+            "name": name,
+            "graph_count": len(entries),
+            "triple_count": sum(len(graph) for _iri, graph in entries),
+        }
+        if name in fixed_iris:
+            row["graph_iri"] = fixed_iris[name]
+        elif name == "members":
+            row["graph_iri_pattern"] = "https://data.oireachtas.ie/graph/member/{percent-encoded-memberCode}"
+        elif name == "bill-records":
+            row["graph_iri_pattern"] = "https://data.oireachtas.ie/graph/bill/{year}/{number}"
+        elif name == "debates":
+            row["graph_iri_pattern"] = "https://data.oireachtas.ie/graph/debate/{house-or-committee}/{date}/debate"
+        graph_rows.append(row)
+
     return {
         "schema_version": 1,
         "dataset": {
             "id": dataset_id,
             "identity_method": (
-                "SHA-256 of canonical JSON containing each selected endpoint's "
-                "source URL and successful complete Core State run ID"
+                "SHA-256 of canonical JSON containing selected API run IDs, source URLs "
+                "and raw-page SHA-256 values; office registry/review content hashes; "
+                "accepted holding evidence; and the pinned Debate manifest and source hashes"
             ),
-            "authority": "non-authoritative development dataset",
+            "authority": "non-authoritative development/evaluation dataset",
             "authoritative_reference_closure_complete": False,
         },
         "source_captures": source_captures,
-        "graph_families_loaded": [
-            {"name": "houses", "graph_iri": HOUSES_GRAPH, "graph_count": 1},
-            {"name": "parties", "graph_iri": PARTIES_GRAPH, "graph_count": 1},
-            {"name": "constituencies", "graph_iri": CONSTITUENCIES_GRAPH,
-             "graph_count": 1},
-            {"name": "committees", "graph_iri": COMMITTEES_GRAPH,
-             "graph_count": 1},
-            {"name": "members",
-             "graph_iri_pattern": "https://data.oireachtas.ie/graph/member/{memberCode}",
-             "graph_count": counts["members"]},
-        ],
+        "office_registry_evidence": {
+            **office_inputs,
+            "office_count": counts["offices"],
+            "administrative_unit_count": counts["administrative_units"],
+            "review_decision_counts": counts["office_review_decisions"],
+        },
+        "accepted_holding_evidence": {
+            "accepted_holding_count": len(accepted_holding_evidence),
+            "accepted_observation_count": len({
+                item["occurrence_key"] for item in accepted_holding_evidence}),
+            "sha256": holding_evidence_sha256,
+            "authority": "only current accepted resolutions emitted by the existing Member transform",
+        },
+        "debate_selection": debate_evidence,
+        "graph_families_loaded": graph_rows,
         "source_record_counts": {
             endpoint: capture["advertised_count"]
             for endpoint, (_records, capture) in sorted(captures.items())
@@ -3200,6 +3480,19 @@ def _development_dataset_baseline(captures: dict, counts: dict,
             "party_owner_identities": counts["parties"],
             "constituency_panel_owner_identities": counts["constituencies"],
             "committee_owner_identities": counts["committees"],
+            "bills": counts["bills"],
+            "debates": counts["debates"],
+            "office_holdings": counts["office_holdings"],
+        },
+        "bill_source_quarantines": bills["quarantines"],
+        "bill_diagnostic_counts": {
+            "source_records": captures["legislation"][1]["advertised_count"],
+            "represented_graphs": counts["bills"],
+            "quarantined_bills": bills["quarantined_bills"],
+            "quarantine_diagnostic_paths": bills[
+                "quarantine_diagnostic_paths"],
+            "unresolved_amendment_stage_references": bills[
+                "unresolved_amendment_stage_references"],
         },
         "quarantined_conflict_count": development_status[
             "quarantined_conflict_count"],
@@ -3210,9 +3503,9 @@ def _development_dataset_baseline(captures: dict, counts: dict,
         "unresolved_references": development_status["unresolved_references"],
         "reference_closure": development_status["reference_closure"],
         "scope_note": (
-            "Counts describe the graph payloads written by this bootstrap. "
-            "This is not a live census of other or stale graphs already present "
-            "in a persistent Fuseki dataset."
+            "Counts describe the validated graph payloads owned by this bootstrap. "
+            "The dataset is development/evaluation data, not authoritative or a live "
+            "census of unrelated graphs in a persistent Fuseki dataset."
         ),
     }
 
@@ -3262,11 +3555,12 @@ def _require_loopback_fuseki_endpoint(label: str, endpoint: str | None) -> str:
 
 
 def _run_development_bootstrap(args: argparse.Namespace) -> int:
-    """Load validated, explicitly non-authoritative data into local Fuseki.
+    """Load preserved, validated sources into a loopback development dataset.
 
-    This path reads existing complete API captures and Core State pointers in
-    read-only mode. It neither opens ETL/reconciliation stores for writing nor
-    calls the authoritative publication helper.
+    Core State capture selection is read-only. Office acceptance is derived in
+    an in-memory occurrence ledger through the existing offline Member path;
+    pinned Debate XML is staged under a temporary directory for replay. This
+    command never publishes to Core State or external-reconciliation stores.
     """
     settings = Settings.from_environment()
     raw_root = Path(getattr(args, "raw_dir", None) or settings.raw_dir).expanduser()
@@ -3291,24 +3585,53 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
     # authority/coverage purposes.
     captures = {
         endpoint: load_latest_development_capture(raw_root, state_db, endpoint)
-        for endpoint in ("houses", "parties", "constituencies", "members")
+        for endpoint in (
+            "houses", "parties", "constituencies", "members", "legislation")
     }
     houses, _houses_capture = captures["houses"]
     parties, _parties_capture = captures["parties"]
     constituencies, _constituencies_capture = captures["constituencies"]
-    members, _members_capture = captures["members"]
+    members, members_capture = captures["members"]
+    bills, _bills_capture = captures["legislation"]
 
     houses_graph, _house_exclusions = transform_houses_with_report(houses)
     validate_houses(houses, houses_graph)
 
-    # Build and validate Member graphs using the ordinary Member mapping, but
-    # without office reconciliation or any Member/Core State publication.
+    registry, decisions, review_hash, office_types = _member_office_policy(args)
+    registry_path = Path(getattr(args, "registry_file", None)
+                         or OFFICE_REGISTRY_FILE).expanduser()
+    office_inputs = {
+        "registry_source": "ministerial-office-registry",
+        "registry_sha256": hashlib.sha256(registry_path.read_bytes()).hexdigest(),
+        "review_source": "reviewed-office-decisions",
+        "review_sha256": review_hash,
+    }
+    office_review_counts = {
+        status: sum(item["status"] == status for item in decisions.values())
+        for status in ("accepted", "rejected", "unresolved")
+    }
+    office_types_graph = transform_administrative_units(registry)
+    offices_graph = transform_offices(registry)
+    validate_administrative_units(registry, office_types_graph)
+    validate_offices(registry, offices_graph)
+
+    office_resolutions, accepted_holding_evidence = _development_member_office_inputs(
+        members, members_capture, raw_root, registry, decisions, review_hash,
+        office_types)
+
+    # Run the normal Member source and RDF contracts with only current accepted
+    # office resolutions. Unresolved observations remain report-only.
     member_graphs: list[tuple[str, Graph]] = []
     member_graph = Graph()
     for wrapper in members:
-        validate_member_source(wrapper)
-        graph, _diagnostics = transform_member_with_report(wrapper)
-        validate_member(wrapper, graph)
+        member_iri = str(wrapper["member"]["uri"])
+        resolutions = office_resolutions.get(member_iri, [])
+        validate_member_source(
+            wrapper, office_resolutions=resolutions, office_types=office_types)
+        graph, _diagnostics = transform_member_with_report(
+            wrapper, office_resolutions=resolutions, office_types=office_types)
+        validate_member(wrapper, graph, office_resolutions=resolutions,
+                        office_types=office_types)
         member_graph += graph
         member_graphs.append((member_graph_iri(wrapper["member"]), graph))
     member_graphs.sort(key=lambda item: item[0])
@@ -3325,25 +3648,38 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
         census, member_graph=member_graph)
     development_status = candidates["development_status"]
 
-    # All source and RDF validation finishes before the first local graph PUT.
-    client = FusekiSparqlClient(
-        sparql_url, user=settings.fuseki_user, password=settings.fuseki_password,
-        timeout=settings.timeout)
-    loader = FusekiGraphStoreLoader(
-        gsp_url, user=settings.fuseki_user, password=settings.fuseki_password,
-        timeout=settings.timeout)
-    graphs = {
-        "houses": houses_graph,
-        **candidates["graphs"],
-    }
-    for endpoint, graph_iri in LOCAL_DEVELOPMENT_GRAPH_ORDER:
-        payload = ntriples(graphs[endpoint])
-        loader.replace(graph_iri, payload, content_type="application/n-triples")
-        verify_core_graph(client, graph_iri, payload)
-    for graph_iri, graph in member_graphs:
-        payload = ntriples(graph)
-        loader.replace(graph_iri, payload, content_type="application/n-triples")
-        verify_core_graph(client, graph_iri, payload)
+    bill_graphs: list[tuple[str, Graph]] = []
+    bill_quarantines = []
+    unresolved_amendment_stage_references = 0
+    for wrapper in bills:
+        quarantines = known_bill_source_quarantines(wrapper)
+        if quarantines:
+            for diagnostic in quarantines:
+                diagnostic["preservation_status"] = "no_bill_graph_constructed"
+            bill_quarantines.extend(quarantines)
+            continue
+        validate_bill_source(wrapper)
+        graph, diagnostics = transform_bill_with_report(wrapper)
+        validate_bill(wrapper, graph)
+        unresolved_amendment_stage_references += sum(
+            item.get("category") == "unresolved_source_reference"
+            and item.get("path") == "bill.amendmentLists[].amendmentList.stage.uri"
+            for item in diagnostics
+        )
+        bill_graphs.append((bill_graph_iri(wrapper["bill"]), graph))
+    bill_graphs.sort(key=lambda item: item[0])
+
+    # The manifest and raw objects are strictly replay-only. run_debate_batch
+    # writes its immutable reference sidecars next to the raw source object, so
+    # stage exact verified bytes in a temporary directory rather than changing
+    # the preserved source store.
+    with tempfile.TemporaryDirectory(prefix="oir-dev-bootstrap-debates-") as scratch:
+        debate_outcomes, debate_evidence = _load_development_debates(
+            raw_root, Path(scratch))
+    debate_graphs = sorted(
+        ((item.graph_iri, item.graph) for item in debate_outcomes),
+        key=lambda item: item[0],
+    )
 
     counts = {
         "houses_terms": len(
@@ -3353,14 +3689,70 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
         "constituencies": len(census["records"]["constituencies"]),
         "committees": len(census["records"]["committees"]),
         "members": len(member_graphs),
+        "offices": len(registry["offices"]),
+        "administrative_units": len(registry["administrative_units"]),
+        "office_review_decisions": office_review_counts,
+        "office_holdings": sum(
+            sum(1 for _ in graph.subjects(RDF.type, MEMBERS.OfficeHolding))
+            for _graph_iri, graph in member_graphs),
+        "bills": len(bill_graphs),
+        "debates": len(debate_graphs),
     }
-    print("Local development reference bootstrap:")
+
+    graphs = {
+        "houses": houses_graph,
+        **candidates["graphs"],
+        "administrative-units": office_types_graph,
+        "offices": offices_graph,
+    }
+    graph_families = {
+        name: [(graph_iri, graphs[name])]
+        for name, graph_iri in LOCAL_DEVELOPMENT_GRAPH_ORDER
+    }
+    graph_families["members"] = member_graphs
+    graph_families["bill-records"] = bill_graphs
+    graph_families["debates"] = debate_graphs
+    graph_payloads = [
+        (graph_iri, graph, name)
+        for name, entries in graph_families.items()
+        for graph_iri, graph in entries
+    ]
+
+    # All source and RDF validation finishes before the first local graph PUT.
+    client = FusekiSparqlClient(
+        sparql_url, user=settings.fuseki_user, password=settings.fuseki_password,
+        timeout=settings.timeout)
+    loader = FusekiGraphStoreLoader(
+        gsp_url, user=settings.fuseki_user, password=settings.fuseki_password,
+        timeout=settings.timeout)
+    stale_graphs = _replace_development_graph_set(loader, client, graph_payloads)
+
+    bill_summary = {
+        "quarantines": sorted(bill_quarantines, key=lambda item: (
+            item["bill_identity"], item["path"])),
+        "quarantined_bills": len({
+            item["bill_identity"] for item in bill_quarantines}),
+        "quarantine_diagnostic_paths": len(bill_quarantines),
+        "unresolved_amendment_stage_references": unresolved_amendment_stage_references,
+    }
+    baseline = _development_dataset_baseline(
+        captures, graph_families, counts, development_status, office_inputs,
+        accepted_holding_evidence, debate_evidence, bill_summary)
+    print("Local development reference and evaluation bootstrap:")
     print(f"  Houses/HouseTerms: {len(houses)} source records; "
           f"{counts['houses_terms']} HouseTerms")
     print(f"  Members: {counts['members']} validated Member graphs")
     print(f"  Parties: {counts['parties']} owner identities")
     print(f"  Constituencies/panels: {counts['constituencies']} owner identities")
     print(f"  Committees: {counts['committees']} owner identities")
+    print(f"  Bills: {captures['legislation'][1]['advertised_count']} source records; "
+          f"{counts['bills']} graphs; {bill_summary['quarantined_bills']} quarantined Bills; "
+          f"{bill_summary['quarantine_diagnostic_paths']} quarantine diagnostic paths; "
+          f"{unresolved_amendment_stage_references} diagnostic unresolved amendment stages")
+    print(f"  Office/admin registry: {counts['offices']} offices; "
+          f"{counts['administrative_units']} administrative units; "
+          f"{counts['office_holdings']} accepted OfficeHolding records")
+    print(f"  Debates: {counts['debates']} pinned evaluation graphs")
     print(f"  Quarantined conflicts: {development_status['quarantined_conflict_count']}")
     for conflict in development_status["quarantined_conflicts"]:
         print(f"    {conflict['reference_kind']} {conflict['canonical_iri']}: "
@@ -3371,7 +3763,7 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
         print(f"    {reference['reference_kind']} {reference['canonical_iri']}: "
               f"{reference['reason']}")
     print(f"  Reference closure: {development_status['reference_closure']}")
-    baseline = _development_dataset_baseline(captures, counts, development_status)
+    print(f"  Stale bootstrap-owned graphs removed: {len(stale_graphs)}")
     print(f"  Dataset identity: {baseline['dataset']['id']}")
     if baseline_output_path:
         baseline_output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -3419,6 +3811,8 @@ def main(argv: list[str] | None = None) -> int:
     dev_bootstrap.add_argument("--state-db", help="read-only Core State capture index")
     dev_bootstrap.add_argument("--fuseki-gsp-url", help="loopback Fuseki Graph Store endpoint")
     dev_bootstrap.add_argument("--fuseki-sparql-url", help="loopback Fuseki SPARQL endpoint")
+    dev_bootstrap.add_argument("--registry-file", help="reviewed local office/admin registry JSON")
+    dev_bootstrap.add_argument("--review-file", help="reviewed local office decision JSON")
     dev_bootstrap.add_argument(
         "--dataset-baseline-output",
         help="write deterministic JSON describing the capture-backed development dataset",

@@ -97,12 +97,14 @@ uv run --locked oir-etl dev bootstrap \
   --dataset-baseline-output /tmp/oireachtas-nlq-dataset-baseline.json
 ```
 
-The baseline records the selected source capture run IDs, graph families and
-resource counts, quarantined identities, unresolved references, and the
-non-authoritative closure status. Its identity is derived from the source URLs
-and run IDs, so reusing the same preserved captures produces the same identity.
-It describes graph payloads written by the bootstrap; it is not a live census
-of other or stale graphs already in a persistent Fuseki dataset.
+The schema-version-1 baseline records selected source capture run IDs and page
+hashes, office registry/review inputs and accepted holdings, the pinned three-
+Debate evaluation slice, graph families and resource counts, quarantines, and
+unresolved references. Its stable identity is derived from those preserved
+source and review inputs. It describes graph payloads written by the bootstrap;
+it is not a live census of unrelated graphs in a persistent Fuseki dataset.
+The Debate slice is non-authoritative and does not imply complete Debate or
+cross-dataset owner-reference coverage.
 
 ## NLQ evaluation benchmark
 

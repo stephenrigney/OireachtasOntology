@@ -5,7 +5,7 @@
   "constraints": [
     "This manifest is not a complete-corpus assertion, authoritative source inventory, or production-ingestion instruction.",
     "Replay requires the exact object to be present in the local immutable raw store and verified against source_sha256.",
-    "This selection does not implement or extend development-bootstrap source selection."
+    "The local development bootstrap replays exactly these three pinned sources as a non-authoritative evaluation slice; this does not authorize source acquisition or production ingestion."
   ],
   "sources": [
     {

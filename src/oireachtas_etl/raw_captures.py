@@ -151,7 +151,7 @@ def load_authoritative_capture(directory: Path, endpoint: str, store) -> tuple[l
     expected_endpoint = run["parameters"].get("api_url")
     if endpoint in COUNT_FIELDS and not isinstance(expected_endpoint, str):
         raise ValueError(f"authoritative {endpoint} state lacks its API source URL")
-    raw_pages = [path for path in directory.glob("skip-*.meta.json")]
+    raw_pages = sorted(directory.glob("skip-*.meta.json"))
     page_files = [path for path in directory.glob("skip-*.json")
                   if not path.name.endswith(".meta.json")]
     expected_metadata = {
@@ -161,6 +161,7 @@ def load_authoritative_capture(directory: Path, endpoint: str, store) -> tuple[l
     if set(raw_pages) != expected_metadata:
         raise ValueError(f"{endpoint} capture has missing or orphan page metadata")
     expected_limit = run["parameters"].get("limit")
+    page_hashes = []
     for meta_path in raw_pages:
         metadata = json.loads(meta_path.read_text(encoding="utf-8"))
         params = metadata.get("params")
@@ -170,9 +171,11 @@ def load_authoritative_capture(directory: Path, endpoint: str, store) -> tuple[l
             raise ValueError(f"{endpoint} raw capture source URL differs from core run state")
         if expected_limit is not None and params.get("limit") != expected_limit:
             raise ValueError(f"{endpoint} raw capture page limit differs from core run state")
+        page_hashes.append({"skip": params["skip"], "sha256": metadata["sha256"]})
     return records, {"run_id": run_id, "advertised_count": advertised,
                      "capture_directory": str(directory),
-                     "parameters": run["parameters"]}
+                     "parameters": run["parameters"],
+                     "page_hashes": page_hashes}
 
 
 def load_latest_complete_capture(raw_root: Path, store, endpoint: str) -> tuple[list[dict], dict] | None:

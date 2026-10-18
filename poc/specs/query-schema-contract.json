@@ -3,7 +3,7 @@
   "contractId": "https://data.oireachtas.ie/specs/query-schema-contract",
   "contractSchema": "poc/specs/query-schema-contract.schema.json",
   "schemaVersion": 1,
-  "contractVersion": "1.0.0",
+  "contractVersion": "1.1.0",
   "description": "Queryable, currently emitted Oireachtas RDF patterns and local NLQ execution boundary.",
   "namespaces": {
     "agents": "https://data.oireachtas.ie/ontology#",
@@ -152,15 +152,15 @@
       "id": "offices",
       "graph": {"kind": "fixed", "iri": "https://data.oireachtas.ie/graph/offices"},
       "owner": "Office registry publication",
-      "availability": "registry-currently-empty",
-      "owns": "Registered NamedOffice descriptions when an office registry is populated."
+      "availability": "available-in-non-authoritative-development-bootstrap",
+      "owns": "Reviewed NamedOffice descriptions loaded from the local registry into the development dataset; this does not imply authoritative publication."
     },
     {
       "id": "administrative-units",
       "graph": {"kind": "fixed", "iri": "https://data.oireachtas.ie/graph/administrative-units"},
       "owner": "Administrative-unit registry publication",
-      "availability": "registry-currently-empty",
-      "owns": "Registered administrative-unit descriptions when the registry is populated."
+      "availability": "available-in-non-authoritative-development-bootstrap",
+      "owns": "Reviewed AdministrativeUnit descriptions loaded from the local registry into the development dataset; this does not imply authoritative publication."
     },
     {
       "id": "member-external-links",
@@ -193,6 +193,13 @@
       "owner": "Office reconciliation publication",
       "availability": "optional-reviewed-links",
       "owns": "Reviewed external office-identity links only."
+    },
+    {
+      "id": "debates",
+      "graph": {"kind": "resource-pattern", "iriTemplate": "https://data.oireachtas.ie/graph/debate/{house-or-committee}/{date}/debate"},
+      "owner": "Debates ETL",
+      "availability": "fixed-development-evaluation-slice-only",
+      "owns": "One DebateRecord Work graph per selected official AKN source. The local development bootstrap loads exactly one Dáil, one Seanad, and one committee graph; these graphs do not include transcript speech text and are not authoritative publication."
     }
   ],
   "labelsByEntityType": {
@@ -282,10 +289,10 @@
     {
       "id": "conditionally-resolved-office-holdings",
       "graphFamily": "member-records",
-      "availability": "conditional-on-reviewed-office-resolution",
+      "availability": "conditional-on-current-accepted-office-resolution",
       "queryableInLocalNlq": false,
       "triples": [["?member", "members:hasMembersMembership", "?holding"], ["?holding", "rdf:type", "members:OfficeHolding"], ["?holding", "members:heldOffice", "?office"]],
-      "note": "Do not infer an office tenure from raw office observations. Current local office registries are empty; this pattern is not part of the baseline populated query scope."
+      "note": "The development bootstrap loads the reviewed office and administrative-unit registries. Only current accepted office resolutions supplied through the existing Member transformation may produce a holding; never infer one from a raw observation. This pattern remains outside the current local NLQ predicate allowlist."
     },
     {
       "id": "reviewed-member-external-identities",
@@ -368,13 +375,13 @@
   },
   "unsupportedPatterns": [
     {"id": "generic-house-term-type", "status": "not-emitted", "detail": "HouseTerm records are asserted as agents:DailTerm or agents:SeanadTerm. No generic agents:HouseTerm type is emitted or inferred by this store."},
-    {"id": "debate-records", "status": "not-published", "detail": "The Debates ontology is present, but there is no current authoritative Debates ETL publishing debate instances."},
+    {"id": "debate-records", "status": "development-evaluation-slice-only-not-NLQ-grounded", "detail": "The local development bootstrap loads exactly three pinned DebateRecord graphs (one Dáil, one Seanad, one committee). They are non-authoritative, contain no transcript speech text, and do not add Debate classes or predicates to the current NLQ grounding contract. There is no authoritative Debates publication from this bootstrap."},
     {"id": "parliamentary-group-records", "status": "ontology-only-not-currently-populated", "detail": "members:ParliamentaryGroup and related party/group concepts are not emitted as current queryable group instances; do not infer a group identity or relationship from party collection membership."},
     {"id": "act-descriptions", "status": "not-published", "detail": "Bill graphs may link to an Act via eli:basis_for; Act descriptions are owned by a later Acts ETL."},
     {"id": "bill-availability", "status": "optional-data", "detail": "Bill query patterns work only when Bill graphs have actually been loaded."},
     {"id": "emitted-house-period-not-allowlisted", "status": "emitted-but-not-queryable", "detail": "The Houses ETL emits dct:temporal, but the current local NLQ predicate allowlist does not permit it."},
     {"id": "emitted-bill-document-links-not-allowlisted", "status": "emitted-but-not-queryable", "detail": "The Bills ETL emits eli:has_part and eli:is_realized_by, but they are not in the active property mappings or current local NLQ predicate allowlist."},
-    {"id": "office-registry-data", "status": "currently-empty", "detail": "Offices and administrative-unit registries are currently empty. OfficeHolding/CabinetMembership patterns require accepted office resolution and must not be inferred from observations."},
+    {"id": "office-registry-data", "status": "development-bootstrap-only", "detail": "The development bootstrap loads the reviewed local office and administrative-unit registries. OfficeHolding/CabinetMembership patterns require accepted office resolution; the bootstrap emits only current accepted resolutions and they must not be inferred from raw observations. This local data does not imply authoritative publication."},
     {"id": "executive-role-instances", "status": "not-currently-populated", "detail": "Ontology-only executive roles and unpopulated office-role patterns do not establish executive tenure. Deprecated MinisterOfStateMembership may appear in legacy datasets but is not emitted by the current canonical Member transformation."},
     {"id": "office-type-vocabulary", "status": "ontology-only-not-queryable", "detail": "members:OfficeType, members:hasRoleType, and TaoiseachRole/MinisterRole ontology concepts are outside the populated queryable model; registered NamedOffice descriptions and accepted OfficeHolding records are separate conditional patterns."},
     {"id": "collection-superclass-inference", "status": "not-inferred", "detail": "Do not rely on superclass type inference for ParliamentaryCollectionMembership; older published Member graphs may omit that explicit type. Prefer membership relationship predicates and specific PartyMembership type where applicable."}
