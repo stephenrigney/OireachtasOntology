@@ -26,6 +26,19 @@ settled. Decision E's private-beta target is not provisioned or launch-ready,
 and Decision F remains **NO-GO**. See the dated assessments and consolidated
 readiness summary below.
 
+**Decision D implementation follow-up (2026-10-18):** The lineage selector now
+allows a resolved, canonical observation to contribute its exact raw-record
+pointer even when an optional semantic field has a malformed-field diagnostic.
+It continues to reject unresolved/conflicting identities and explicit
+Committee-resolution exclusions. This corrects eligibility only; malformed
+values are not repaired or emitted. Focused reference/provenance tests pass.
+The complete authoritative candidate rebuild, verified 2,175/2,488 closure,
+Committee 217 exact-pointer validation, isolated publication/recovery rehearsal,
+owner fingerprint and current full-corpus unresolved-reference report have not
+yet been rerun after this correction. Therefore Decision D remains **blocked**
+pending that evidence and human owner acceptance; this implementation does not
+authorize publication.
+
 ## Owner policy decision record — 2026-10-13
 
 The project owner explicitly recorded the following positions after reviewing

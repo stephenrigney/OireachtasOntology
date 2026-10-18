@@ -246,7 +246,7 @@ def test_approved_dail_33_resolution_uses_115_without_losing_member_evidence(mon
     assert incomplete["report"]["conflicting_identities"] == 1
 
 
-def test_excluded_valid_observation_cannot_contribute_owner_source_lineage(monkeypatch):
+def test_malformed_optional_field_keeps_valid_identity_source_lineage(monkeypatch):
     from oireachtas_etl import cli
 
     committee_iri = (
@@ -258,9 +258,11 @@ def test_excluded_valid_observation_cannot_contribute_owner_source_lineage(monke
     observation = {
         "canonical_iri": committee_iri,
         "consolidation_result": "resolved",
-        "owner_consolidation_decision":
-            "excluded_by_approved_committee_resolution",
-        "diagnostics": [],
+        "diagnostics": [{
+            "category": "malformed_observation",
+            "path": nested_pointer + "/committeeDateRange/start",
+            "reason": "committeeDateRange.start is null",
+        }],
         "reference_kind": "committee",
         "observation_source": "members",
         "member_iri": member_iri,
@@ -281,7 +283,72 @@ def test_excluded_valid_observation_cannot_contribute_owner_source_lineage(monke
         }]},
     )
 
+    pointers = provenance["entity_source_pointers"]["committees"][committee_iri]
+    assert pointers == [{
+        "path": "/raw/member-page.json",
+        "sha256": "a" * 64,
+        "json_pointer": nested_pointer,
+    }]
+
+
+def test_explicit_committee_resolution_exclusion_cannot_contribute_lineage(monkeypatch):
+    from oireachtas_etl import cli
+
+    committee_iri = COMMITTEE_IRI
+    member_iri = MEMBER_IRI
+    nested_pointer = "/results/0/member/memberships/0/membership/committees/0"
+    observation = {
+        "canonical_iri": committee_iri,
+        "consolidation_result": "resolved",
+        "owner_consolidation_decision":
+            "excluded_by_approved_committee_resolution",
+        "diagnostics": [],
+        "reference_kind": "committee",
+        "observation_source": "members",
+        "member_iri": member_iri,
+        "json_pointer": nested_pointer,
+    }
+    monkeypatch.setattr(cli, "build_reference_census",
+                        lambda **_kwargs: {"report": {"observations": [observation]}})
+    _census, provenance = cli._reference_inputs(
+        endpoint_name="committees", endpoint_records=[], member_records=[],
+        store=None, raw_root=Path("/unused"), endpoint_is_authoritative=False,
+        member_is_authoritative=True,
+        member_record_pointers={member_iri: [{
+            "path": "/raw/member-page.json", "sha256": "a" * 64,
+            "json_pointer": "/results/0",
+        }]},
+    )
     assert committee_iri not in provenance["entity_source_pointers"]["committees"]
+
+
+def test_invalid_or_conflicting_identity_cannot_contribute_lineage(monkeypatch):
+    from oireachtas_etl import cli
+
+    base = {
+        "canonical_iri": COMMITTEE_IRI,
+        "consolidation_result": "resolved",
+        "diagnostics": [{"category": "malformed_observation", "reason": "bad optional date"}],
+        "reference_kind": "committee", "observation_source": "members",
+        "member_iri": MEMBER_IRI,
+        "json_pointer": "/results/0/member/memberships/0/membership/committees/0",
+    }
+    for observation in (
+        {**base, "canonical_iri": None},
+        {**base, "consolidation_result": "conflict"},
+    ):
+        monkeypatch.setattr(cli, "build_reference_census",
+                            lambda **_kwargs: {"report": {"observations": [observation]}})
+        _census, provenance = cli._reference_inputs(
+            endpoint_name="committees", endpoint_records=[], member_records=[],
+            store=None, raw_root=Path("/unused"), endpoint_is_authoritative=False,
+            member_is_authoritative=True,
+            member_record_pointers={MEMBER_IRI: [{
+                "path": "/raw/member-page.json", "sha256": "a" * 64,
+                "json_pointer": "/results/0",
+            }]},
+        )
+        assert provenance["entity_source_pointers"]["committees"] == {}
 
 
 def test_fatal_committee_observation_keeps_independently_comparable_conflicts():

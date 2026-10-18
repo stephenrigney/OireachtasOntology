@@ -1173,6 +1173,18 @@ The census report must distinguish:
 - overlap/conflicting; and
 - insufficient-evidence references.
 
+For shared-owner provenance, a source observation is eligible to supply an
+exact immutable record pointer when its canonical identity and HouseTerm
+context are valid and ordinary identity consolidation resolves without
+conflict. A malformed optional semantic field (for example a Committee date
+range with a null start) does not by itself invalidate that identity pointer.
+The malformed-field diagnostic must remain visible, and the malformed value
+must never be inferred, repaired, or emitted. Observations with invalid source
+identity, conflicting/unresolved consolidation, unverifiable raw-page hash or
+pointer, or an explicit `excluded_by_approved_committee_resolution` owner
+decision remain ineligible. This is a provenance-eligibility rule only; it does
+not relax owner candidate validation or semantic field validation.
+
 The report is reproducible audit output, not a second operational-state store
 and not semantic RDF. Record aggregate counts by reference kind and coverage
 class so a future source regression is visible.
