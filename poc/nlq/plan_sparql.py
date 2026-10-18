@@ -12,10 +12,15 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from rdflib import Literal, URIRef
+from rdflib.namespace import XSD
 
 from .contract import load_query_contract
 from .errors import NLQError
-from .plan_contract import QueryPlanContractError, validate_query_plan
+from .plan_contract import (
+    QueryPlanContractError,
+    load_query_plan_contract,
+    validate_query_plan,
+)
 from .safety import validate_sparql
 from .structured_planner import PlannerResult
 
@@ -24,6 +29,15 @@ _QUERY_SCHEMA = load_query_contract()
 _NAMESPACES: dict[str, str] = _QUERY_SCHEMA["namespaces"]
 _QUERYABLE_CLASSES = frozenset(_QUERY_SCHEMA["queryableClasses"])
 _QUERYABLE_PROPERTIES = frozenset(_QUERY_SCHEMA["queryableProperties"])
+_PLAN_CONTRACT = load_query_plan_contract()
+_PLAN_VOCABULARY = _PLAN_CONTRACT["semanticVocabulary"]
+_FILTER_FIELDS = {field["id"]: field for field in _PLAN_VOCABULARY["filterFields"]}
+_BILL_STATUS_VALUES = {
+    item["id"]: item for item in _FILTER_FIELDS["bill_status"].get("allowedValues", [])
+}
+_DEBATE_CHAMBER_VALUES = {
+    item["id"]: item for item in _FILTER_FIELDS["debate_chamber"].get("allowedValues", [])
+}
 _GRAPH_FAMILIES = {
     family["id"]: family for family in _QUERY_SCHEMA["graphFamilies"]
 }
@@ -36,8 +50,6 @@ _LOCAL_MEMBER_GRAPH_PREFIX = _GRAPH_FAMILIES["member-records"]["graph"][
     "iriTemplate"
 ].split("{", 1)[0]
 _MEMBER_EXTERNAL_GRAPH_SUFFIX = "/external-links"
-
-
 @dataclass(frozen=True)
 class _EntityTypeMapping:
     rdf_type: str
@@ -74,6 +86,9 @@ _ENTITY_TYPES: dict[str, _EntityTypeMapping] = {
     "DailConstituency": _EntityTypeMapping("members:DailConstituency", "constituencies"),
     "SeanadPanel": _EntityTypeMapping("members:SeanadPanel", "constituencies"),
     "Committee": _EntityTypeMapping("members:Committee", "committees", "committee-description"),
+    "Bill": _EntityTypeMapping("eli-dl:DraftLegislationWork", "bill-records", "bill-lifecycle"),
+    "NamedOffice": _EntityTypeMapping("members:NamedOffice", "offices", "named-office-description"),
+    "DebateRecord": _EntityTypeMapping("agents:DebateRecord", "debates", "debate-record-identity"),
 }
 
 _FACTS: dict[str, _FactMapping] = {
@@ -100,6 +115,13 @@ _FACTS: dict[str, _FactMapping] = {
     "constituency_panel_label": _FactMapping((), "label"),
     "committee_label": _FactMapping(("committee-description",), "label"),
     "committee_code": _FactMapping((), "literal", "members:committeeCode"),
+    "bill_title": _FactMapping(("bill-lifecycle",), "label", "eli:title"),
+    "bill_year": _FactMapping(("bill-lifecycle",), "literal", "agents:legislativeYear"),
+    "bill_status": _FactMapping(("bill-lifecycle",), "label", "eli-dl:process_status"),
+    "bill_sponsor": _FactMapping(("bill-sponsor-reference",), "resource"),
+    "member_office_holding": _FactMapping(("conditionally-resolved-office-holdings",), "resource"),
+    "debate_identity": _FactMapping(("debate-record-identity",), "resource"),
+    "debate_date": _FactMapping(("debate-record-identity",), "literal", "agents:debateDate"),
 }
 
 _LABEL_FACT_TYPES = {
@@ -108,6 +130,7 @@ _LABEL_FACT_TYPES = {
     "parliamentary_collection_label": "ParliamentaryMemberCollection",
     "constituency_panel_label": "DailConstituency",  # SeanadPanel is also supported below.
     "committee_label": "Committee",
+    "bill_title": "Bill",
 }
 
 _FILTERS: dict[str, _FilterMapping] = {
@@ -117,6 +140,10 @@ _FILTERS: dict[str, _FilterMapping] = {
     ),
     "parliamentary_collection": _FilterMapping("member_collection_membership", "entity"),
     "committee_code": _FilterMapping("committee_code", "string", "members:committeeCode"),
+    "bill_year": _FilterMapping("bill_year", "number", "agents:legislativeYear"),
+    "bill_status": _FilterMapping("bill_status", "controlled_resource", "eli-dl:process_status"),
+    "office": _FilterMapping("member_office_holding", "office", "members:heldOffice"),
+    "debate_chamber": _FilterMapping("debate_identity", "chamber"),
 }
 
 _TERM_MEMBERSHIP_TYPES = {
@@ -173,6 +200,7 @@ class _GraphFragment:
     family_id: str
     graph_term: str
     triples: set[tuple[str, str, str]] = field(default_factory=set)
+    optional_triples: set[tuple[str, str, str]] = field(default_factory=set)
 
 
 class _Compiler:
@@ -279,10 +307,28 @@ class _Compiler:
                 self._validate_property(mapping.predicate)
             if filter_["operator"] != "exists" and mapping.value_kind == "entity":
                 entity_id = filter_["value"]["entity"]
+                self._validate_entity_type(self.entities[entity_id]["type"])
+                _iri_n3(self.entities[entity_id]["iri"])
+            if (filter_["operator"] != "exists"
+                    and mapping.value_kind == "controlled_resource"
+                    and filter_["value"] not in _BILL_STATUS_VALUES):
+                raise _UnsupportedGeneration(
+                    "Bill status filter value is outside the controlled vocabulary.",
+                    "invalid_filter_value",
+                )
+            if filter_["operator"] != "exists" and mapping.value_kind == "office":
+                entity_id = filter_["value"]["entity"]
+                if self.entities[entity_id]["type"] != "NamedOffice":
+                    raise _UnsupportedGeneration(
+                        "Office filter value must resolve to one reviewed NamedOffice.",
+                        "invalid_filter_value",
+                    )
                 _iri_n3(self.entities[entity_id]["iri"])
         for constraint in self.plan["temporalConstraints"]:
             requirement = self.requirements[constraint["target"]]
             fact = requirement["fact"]
+            if constraint["kind"] == "on" and fact in {"member_office_holding", "debate_date"}:
+                continue
             if constraint["kind"] != "during" or fact not in _TERM_SCOPED_FACTS:
                 raise _UnsupportedGeneration(
                     f"Temporal kind {constraint['kind']!r} is not mapped to a reviewed "
@@ -315,13 +361,19 @@ class _Compiler:
             if filter_["operator"] == "exists":
                 continue
             mapping = _FILTERS[filter_["field"]]
-            if mapping.value_kind == "string" and not isinstance(filter_["value"], str):
+            if mapping.value_kind in {"string", "controlled_resource", "chamber"} and not isinstance(filter_["value"], str):
                 raise _UnsupportedGeneration("String filter value has an incompatible type.", "invalid_filter_value")
             if mapping.value_kind == "number" and (
                 isinstance(filter_["value"], bool)
                 or not isinstance(filter_["value"], (int, float))
             ):
                 raise _UnsupportedGeneration("Numeric filter value has an incompatible type.", "invalid_filter_value")
+            if (mapping.value_kind == "chamber"
+                    and filter_["value"] not in _DEBATE_CHAMBER_VALUES):
+                raise _UnsupportedGeneration(
+                    "Debate chamber filter value is outside the supported graph routes.",
+                    "invalid_filter_value",
+                )
         self._validate_answer_shape()
 
     def _validate_pattern(self, pattern_id: str) -> None:
@@ -391,8 +443,10 @@ class _Compiler:
         graph = family["graph"]
         if graph["kind"] == "fixed":
             return _iri_n3(graph["iri"])
-        if graph["kind"] == "resource-pattern" and family_id == "member-records" and anchor_var:
-            return self._member_graph_var(anchor_var)
+        if graph["kind"] == "resource-pattern" and anchor_var:
+            if family_id == "member-records":
+                return self._member_graph_var(anchor_var)
+            return f"?graph_{family_id.replace('-', '_')}_{anchor_var[1:]}"
         raise _UnsupportedGeneration(
             f"Graph family {family_id!r} cannot be rendered as an explicit local graph pattern.",
             "unsupported_graph_family",
@@ -450,17 +504,55 @@ class _Compiler:
         if pattern_id:
             self._trace(requirement_id, contract_ref=f"emittedRdfPatterns:{pattern_id}")
 
+    def _add_optional_triple(self, requirement_id: str, family_id: str,
+                             anchor_var: str | None, subject: str,
+                             predicate: str, object_: str,
+                             *, pattern_id: str | None = None) -> None:
+        self._validate_property(predicate)
+        if pattern_id is not None:
+            self._validate_pattern(pattern_id)
+            if _PATTERNS[pattern_id]["graphFamily"] != family_id:
+                raise _UnsupportedGeneration(
+                    f"Pattern {pattern_id!r} does not belong to graph family {family_id!r}.",
+                    "query_schema_mapping_mismatch",
+                )
+        graph_term = self._graph_term(family_id, anchor_var=anchor_var)
+        fragment = self.fragments.setdefault(
+            (family_id, graph_term), _GraphFragment(family_id, graph_term),
+        )
+        fragment.optional_triples.add((subject, predicate, object_))
+        prefix = predicate.split(":", 1)[0]
+        if prefix in _NAMESPACES:
+            self.used_prefixes.add(prefix)
+        object_prefix = object_.partition(":")[0]
+        if object_prefix in _NAMESPACES:
+            self.used_prefixes.add(object_prefix)
+        self._trace(
+            requirement_id, pattern_id=pattern_id, family_id=family_id,
+            property_qname=predicate,
+        )
+        self._trace(requirement_id, contract_ref=f"queryableProperties:{predicate}")
+        if pattern_id:
+            self._trace(requirement_id, contract_ref=f"emittedRdfPatterns:{pattern_id}")
+
     def _add_contract_type(self, requirement_id: str, entity_type: str, value_var: str,
                            *, anchor_var: str | None = None) -> None:
         mapping = _ENTITY_TYPES[entity_type]
         contract_ref = f"queryableClasses:{mapping.rdf_type}"
+        if _GRAPH_FAMILIES[mapping.graph_family]["graph"]["kind"] == "resource-pattern" and anchor_var is None:
+            anchor_var = value_var
         self._add_triple(
             requirement_id, mapping.graph_family,
-            value_var if mapping.graph_family == "member-records" else anchor_var,
+            anchor_var,
             value_var, "rdf:type", mapping.rdf_type,
             pattern_id=mapping.pattern_id,
             contract_ref=contract_ref,
         )
+        if entity_type == "Bill":
+            self._add_triple(
+                requirement_id, "bill-records", anchor_var, value_var,
+                "eli:type_document", "agents:Bill", pattern_id="bill-lifecycle",
+            )
 
     def _add_pattern(self, requirement_id: str, pattern_id: str, family_id: str,
                      anchor_var: str | None,
@@ -482,7 +574,13 @@ class _Compiler:
                                   participant: dict[str, Any]) -> None:
         entity_type = self._participant_type(participant)
         value_var = self._participant_var(participant)
-        anchor = value_var if entity_type == "Member" else None
+        mapping = _ENTITY_TYPES.get(entity_type)
+        anchor = (
+            value_var
+            if mapping is not None
+            and _GRAPH_FAMILIES[mapping.graph_family]["graph"]["kind"] == "resource-pattern"
+            else None
+        )
         self._add_contract_type(requirement_id, entity_type, value_var, anchor_var=anchor)
 
     def _add_member_type(self, requirement_id: str, member_var: str) -> None:
@@ -626,12 +724,87 @@ class _Compiler:
             )
             self._add_type_for_participant(requirement_id, requirement["object"])
             values["value"] = committee
-        elif fact in _LABEL_FACT_TYPES or fact == "committee_code" or fact == "parliamentary_term_number":
+        elif fact == "bill_sponsor":
+            member = values["object"]
+            process = f"?billProcess{index}"
+            participation = f"?sponsorParticipation{index}"
+            self._add_pattern(
+                requirement_id, "bill-sponsor-reference", "bill-records", subject,
+                ((process, "rdf:type", "eli-dl:LegislativeProcess"),
+                 (process, "eli-dl:had_participation", participation),
+                 (participation, "rdf:type", "eli-dl:Participation"),
+                 (participation, "eli-dl:had_participant_person", member)),
+            )
+            self._add_type_for_participant(requirement_id, requirement["object"])
+            values["value"] = member
+        elif fact == "bill_status":
+            status_var = f"?billStatus{index}"
+            value_var = f"?value{index}"
+            process = f"?billProcess{index}"
+            allowed = _FILTER_FIELDS["bill_status"]["allowedValues"]
+            if any("resource" not in item for item in allowed):
+                raise _UnsupportedGeneration(
+                    "Bill status labels require reviewed local vocabulary resource IRIs.",
+                    "query_schema_mapping_mismatch",
+                )
+            rows = " ".join(
+                f"({_iri_n3(item['resource'])} {_literal_n3(item['label'])})"
+                for item in allowed
+            )
+            self.values_clauses.append(f"VALUES ({status_var} {value_var}) {{ {rows} }}")
+            self._add_pattern(
+                requirement_id, "bill-lifecycle", "bill-records", subject,
+                ((process, "rdf:type", "eli-dl:LegislativeProcess"),
+                 (process, "eli-dl:process_status", status_var)),
+            )
+            values["value"] = value_var
+            values["status"] = status_var
+        elif fact == "member_office_holding":
+            holding = f"?officeHolding{index}"
+            office = f"?heldOffice{index}"
+            date_range = f"?officeDateRange{index}"
+            start = f"?officeStart{index}"
+            self._add_pattern(
+                requirement_id, "conditionally-resolved-office-holdings", "member-records", subject,
+                ((subject, "members:hasOfficeHolding", holding),
+                 (holding, "rdf:type", "members:OfficeHolding"),
+                 (holding, "members:heldOffice", office),
+                 (holding, "members:hasMembershipDateRange", date_range),
+                 (date_range, "rdf:type", "members:DateRange"),
+                 (date_range, "members:StartDate", start)),
+            )
+            values["value"] = holding
+            values["office"] = office
+            values["start"] = start
+            values["end"] = f"?officeEnd{index}"
+            values["date_range"] = date_range
+        elif fact == "debate_identity":
+            graph = self._graph_term("debates", anchor_var=subject)
+            self._add_pattern(
+                requirement_id, "debate-record-identity", "debates", subject,
+                ((subject, "rdf:type", "agents:DebateRecord"),),
+            )
+            values["value"] = subject
+            values["graph"] = graph
+        elif fact == "debate_date":
+            graph = self._graph_term("debates", anchor_var=subject)
+            self._add_pattern(
+                requirement_id, "debate-record-identity", "debates", subject,
+                ((subject, "rdf:type", "agents:DebateRecord"),
+                 (subject, "agents:debateDate", value_var)),
+            )
+            values["value"] = value_var
+            values["graph"] = graph
+        elif (fact in _LABEL_FACT_TYPES or fact in {
+                "committee_code", "parliamentary_term_number", "bill_year",
+            }):
             entity_type = self._participant_type(requirement["subject"])
             if fact == "parliamentary_term_number":
                 predicate = "agents:termNo"
             elif fact == "committee_code":
                 predicate = "members:committeeCode"
+            elif fact == "bill_year":
+                predicate = "agents:legislativeYear"
             else:
                 if fact == "parliamentary_term_label" and entity_type not in {"DailTerm", "SeanadTerm"}:
                     raise _UnsupportedGeneration("Term-label mapping requires a DailTerm or SeanadTerm subject.")
@@ -669,13 +842,18 @@ class _Compiler:
                         contract_ref=f"labelsByEntityType:{entity_type}.languages",
                     )
             self._add_contract_type(requirement_id, entity_type, subject,
-                                    anchor_var=subject if entity_type == "Member" else None)
+                                    anchor_var=(
+                                        subject
+                                        if _GRAPH_FAMILIES[_ENTITY_TYPES[entity_type].graph_family]["graph"]["kind"] == "resource-pattern"
+                                        else None
+                                    ))
             value = value_var
             pattern_ids = _FACTS[fact].pattern_ids
             pattern_id = pattern_ids[0] if pattern_ids else None
             family = _ENTITY_TYPES[entity_type].graph_family
             self._add_triple(
-                requirement_id, family, subject if family == "member-records" else None,
+                requirement_id, family,
+                subject if _GRAPH_FAMILIES[family]["graph"]["kind"] == "resource-pattern" else None,
                 subject, predicate, value,
                 pattern_id=pattern_id,
                 contract_ref=f"queryableProperties:{predicate}",
@@ -693,19 +871,53 @@ class _Compiler:
     def _apply_temporal_constraints(self) -> None:
         constraints = sorted(
             self.plan["temporalConstraints"],
-            key=lambda item: (item["target"], item["kind"], repr(item.get("period"))),
+            key=lambda item: (item["target"], item["kind"], repr(item)),
         )
         for constraint in constraints:
             requirement_id = constraint["target"]
             requirement = self.requirements[requirement_id]
             fact = requirement["fact"]
-            period_entity_id = constraint["period"]["entity"]
-            period_entity = self.entities[period_entity_id]
-            period_var = self._entity_var(period_entity_id)
             self._trace(
                 requirement_id,
                 contract_ref="planSemantics:temporalScoping",
             )
+            if constraint["kind"] == "on":
+                date_value = constraint["date"] + "T00:00:00"
+                date_literal = Literal(date_value, datatype=XSD.dateTime).n3()
+                if fact == "debate_date":
+                    value_var = self._value_vars[requirement_id]["value"]
+                    self.filter_expressions.append(f"FILTER({value_var} = {date_literal})")
+                    patterns = ["debate-record-identity"]
+                elif fact == "member_office_holding":
+                    values = self._value_vars[requirement_id]
+                    member_var = self._participant_var(requirement["subject"])
+                    self._add_optional_triple(
+                        requirement_id, "member-records", member_var,
+                        values["date_range"], "members:EndDate", values["end"],
+                        pattern_id="conditionally-resolved-office-holdings",
+                    )
+                    self.filter_expressions.append(f"FILTER({values['start']} <= {date_literal})")
+                    self.filter_expressions.append(
+                        f"FILTER(!BOUND({values['end']}) || {values['end']} >= {date_literal})"
+                    )
+                    patterns = ["conditionally-resolved-office-holdings"]
+                else:
+                    raise _UnsupportedGeneration(
+                        f"Temporal kind 'on' is not mapped for fact {fact!r}.",
+                        "unsupported_temporal_translation",
+                    )
+                self.temporal_trace.append({
+                    "requirement": requirement_id,
+                    "fact": fact,
+                    "kind": "on",
+                    "date": constraint["date"],
+                    "patterns": patterns,
+                })
+                continue
+
+            period_entity_id = constraint["period"]["entity"]
+            period_entity = self.entities[period_entity_id]
+            period_var = self._entity_var(period_entity_id)
             if fact == "member_house_term_membership":
                 object_var = self._value_vars[requirement_id]["object"]
                 if object_var != period_var:
@@ -746,20 +958,43 @@ class _Compiler:
             requirement_id = filter_["requirement"]
             field_id = filter_["field"]
             mapping = _FILTERS[field_id]
-            value_var = self._value_vars[requirement_id][
-                "object" if mapping.value_kind == "entity" else "value"
-            ]
+            if mapping.value_kind == "entity":
+                value_var = self._value_vars[requirement_id]["object"]
+            elif mapping.value_kind == "office":
+                value_var = self._value_vars[requirement_id]["office"]
+            elif mapping.value_kind == "controlled_resource":
+                value_var = self._value_vars[requirement_id]["status"]
+            elif mapping.value_kind == "chamber":
+                value_var = self._value_vars[requirement_id]["graph"]
+            else:
+                value_var = self._value_vars[requirement_id]["value"]
             operator = filter_["operator"]
             if operator != "exists":
                 if mapping.value_kind == "string":
                     serialized = _literal_n3(filter_["value"])
                 elif mapping.value_kind == "number":
                     serialized = _literal_n3(filter_["value"])
+                elif mapping.value_kind == "controlled_resource":
+                    serialized = _iri_n3(_BILL_STATUS_VALUES[filter_["value"]]["resource"])
+                elif mapping.value_kind == "office":
+                    serialized = self._entity_var(filter_["value"]["entity"])
+                elif mapping.value_kind == "chamber":
+                    route = _DEBATE_CHAMBER_VALUES[filter_["value"]]["route"]
+                    route_pattern = (
+                        "^https://data\\.oireachtas\\.ie/graph/debate/"
+                        + route
+                        + r"/[0-9]{4}-[0-9]{2}-[0-9]{2}/debate$"
+                    )
+                    self.filter_expressions.append(
+                        f"FILTER(REGEX(STR({value_var}), {_literal_n3(route_pattern)}))"
+                    )
+                    serialized = None
                 else:
                     serialized = self._entity_var(filter_["value"]["entity"])
-                self.filter_expressions.append(
-                    f"FILTER({value_var} {operator_syntax[operator]} {serialized})"
-                )
+                if serialized is not None:
+                    self.filter_expressions.append(
+                        f"FILTER({value_var} {operator_syntax[operator]} {serialized})"
+                    )
             self.filter_trace.append({
                 "requirement": requirement_id,
                 "field": field_id,
@@ -767,6 +1002,9 @@ class _Compiler:
                 "operator": operator,
                 "value_variable": value_var,
                 "predicate": mapping.predicate,
+                "value": (
+                    filter_["value"] if isinstance(filter_.get("value"), (str, int, float)) else None
+                ),
             })
             self._trace(
                 requirement_id,
@@ -871,13 +1109,39 @@ class _Compiler:
                 f"    {subject} {predicate} {object_} ."
                 for subject, predicate, object_ in sorted(fragment.triples)
             )
-            blocks.append(f"GRAPH {fragment.graph_term} {{\n{triples}\n  }}")
+            optional = "\n".join(
+                "    OPTIONAL {\n"
+                f"      {subject} {predicate} {object_} .\n"
+                "    }"
+                for subject, predicate, object_ in sorted(fragment.optional_triples)
+            )
+            graph_lines = [triples]
+            if optional:
+                graph_lines.append(optional)
+            blocks.append(
+                f"GRAPH {fragment.graph_term} {{\n"
+                + "\n".join(line for line in graph_lines if line)
+                + "\n  }"
+            )
             if fragment.family_id == "member-records":
                 graph_prefix = _literal_n3(_LOCAL_MEMBER_GRAPH_PREFIX)
                 excluded = _literal_n3(_MEMBER_EXTERNAL_GRAPH_SUFFIX)
                 self.filter_expressions.append(
                     f"FILTER(STRSTARTS(STR({fragment.graph_term}), {graph_prefix}) "
                     f"&& !CONTAINS(STR({fragment.graph_term}), {excluded}))"
+                )
+            elif fragment.family_id == "bill-records":
+                graph_pattern = r"^https://data\.oireachtas\.ie/graph/bill/[^/]+/[^/]+$"
+                self.filter_expressions.append(
+                    f"FILTER(REGEX(STR({fragment.graph_term}), {_literal_n3(graph_pattern)}))"
+                )
+            elif fragment.family_id == "debates":
+                graph_pattern = (
+                    r"^https://data\.oireachtas\.ie/graph/debate/"
+                    r"[^/]+/[0-9]{4}-[0-9]{2}-[0-9]{2}/debate$"
+                )
+                self.filter_expressions.append(
+                    f"FILTER(REGEX(STR({fragment.graph_term}), {_literal_n3(graph_pattern)}))"
                 )
         return blocks
 
@@ -1115,9 +1379,17 @@ def build_label_lookup_query(
         raise ValueError(f"Label predicate {predicate!r} is not queryable and allowlisted.")
     subject = "?resource"
     graph = _GRAPH_FAMILIES[mapping.graph_family]["graph"]
+    qnames = [predicate]
     if graph["kind"] == "fixed":
         graph_term = _iri_n3(graph["iri"])
-        graph_pattern = f"GRAPH {graph_term} {{ {subject} {predicate} ?label . }}"
+        if entity_type == "NamedOffice":
+            qnames.append("members:NamedOffice")
+            graph_pattern = (
+                f"GRAPH {graph_term} {{ {subject} a members:NamedOffice ; "
+                f"{predicate} ?label . }}"
+            )
+        else:
+            graph_pattern = f"GRAPH {graph_term} {{ {subject} {predicate} ?label . }}"
         graph_filter = ""
     elif mapping.graph_family == "member-records":
         graph_term = "?labelGraph"
@@ -1128,9 +1400,26 @@ def build_label_lookup_query(
             f"FILTER(STRSTARTS(STR({graph_term}), {prefix_literal}) "
             f"&& !CONTAINS(STR({graph_term}), {suffix_literal}))"
         )
+    elif mapping.graph_family == "bill-records":
+        graph_term = "?labelGraph"
+        if "eli:type_document" not in _QUERYABLE_PROPERTIES:
+            raise ValueError("Bill type-document predicate is not queryable.")
+        qnames.extend(("eli:type_document", "agents:Bill"))
+        graph_pattern = (
+            f"GRAPH {graph_term} {{ {subject} {predicate} ?label ; "
+            "eli:type_document agents:Bill . }"
+        )
+        graph_filter = (
+            f"FILTER(REGEX(STR({graph_term}), "
+            + _literal_n3(r"^https://data\.oireachtas\.ie/graph/bill/[^/]+/[^/]+$")
+            + "))"
+        )
     else:
         raise ValueError(f"Graph family {mapping.graph_family!r} has no supported label scope.")
-    query_prefix = f"PREFIX {prefix}: <{_NAMESPACES[prefix]}>"
+    query_prefix = "\n".join(
+        f"PREFIX {name}: <{_NAMESPACES[name]}>"
+        for name in sorted({item.split(":", 1)[0] for item in qnames})
+    )
     filters = []
     language = label.get("language")
     languages = label.get("languages")

@@ -55,7 +55,10 @@
         "ParliamentaryMemberCollection",
         "DailConstituency",
         "SeanadPanel",
-        "Committee"
+        "Committee",
+        "Bill",
+        "NamedOffice",
+        "DebateRecord"
       ]
     },
     "factId": {
@@ -75,7 +78,14 @@
         "parliamentary_collection_label",
         "constituency_panel_label",
         "committee_label",
-        "committee_code"
+        "committee_code",
+        "bill_title",
+        "bill_year",
+        "bill_status",
+        "bill_sponsor",
+        "member_office_holding",
+        "debate_identity",
+        "debate_date"
       ]
     },
     "filterFieldId": {
@@ -84,7 +94,11 @@
         "member_name",
         "parliamentary_term_number",
         "parliamentary_collection",
-        "committee_code"
+        "committee_code",
+        "bill_year",
+        "bill_status",
+        "office",
+        "debate_chamber"
       ]
     },
     "filterOperator": {
@@ -207,7 +221,15 @@
         {"$ref": "#/$defs/collectionExistsFilter"},
         {"$ref": "#/$defs/collectionValueFilter"},
         {"$ref": "#/$defs/committeeCodeExistsFilter"},
-        {"$ref": "#/$defs/committeeCodeValueFilter"}
+        {"$ref": "#/$defs/committeeCodeValueFilter"},
+        {"$ref": "#/$defs/billYearExistsFilter"},
+        {"$ref": "#/$defs/billYearValueFilter"},
+        {"$ref": "#/$defs/billStatusExistsFilter"},
+        {"$ref": "#/$defs/billStatusValueFilter"},
+        {"$ref": "#/$defs/officeExistsFilter"},
+        {"$ref": "#/$defs/officeValueFilter"},
+        {"$ref": "#/$defs/debateChamberExistsFilter"},
+        {"$ref": "#/$defs/debateChamberValueFilter"}
       ]
     },
     "memberNameExistsFilter": {
@@ -288,6 +310,86 @@
         "field": {"type": "string", "const": "committee_code"},
         "operator": {"type": "string", "enum": ["equals", "not_equals"]},
         "value": {"type": "string"}
+      }
+    },
+    "billYearExistsFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "bill_year"},
+        "operator": {"type": "string", "const": "exists"},
+        "value": {"type": "null"}
+      }
+    },
+    "billYearValueFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "bill_year"},
+        "operator": {"type": "string", "enum": ["equals", "not_equals", "greater_than", "greater_than_or_equal", "less_than", "less_than_or_equal"]},
+        "value": {"type": "number"}
+      }
+    },
+    "billStatusExistsFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "bill_status"},
+        "operator": {"type": "string", "const": "exists"},
+        "value": {"type": "null"}
+      }
+    },
+    "billStatusValueFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "bill_status"},
+        "operator": {"type": "string", "enum": ["equals", "not_equals"]},
+        "value": {"type": "string", "enum": ["awaiting-signature", "current", "defeated", "declared-repugnant-to-constitution", "draft-heads-of-bill", "enacted", "lapsed", "rejected-at-referendum", "withdrawn"]}
+      }
+    },
+    "officeExistsFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "office"},
+        "operator": {"type": "string", "const": "exists"},
+        "value": {"type": "null"}
+      }
+    },
+    "officeValueFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "office"},
+        "operator": {"type": "string", "const": "equals"},
+        "value": {"$ref": "#/$defs/filterEntityReference"}
+      }
+    },
+    "debateChamberExistsFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "debate_chamber"},
+        "operator": {"type": "string", "const": "exists"},
+        "value": {"type": "null"}
+      }
+    },
+    "debateChamberValueFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "debate_chamber"},
+        "operator": {"type": "string", "const": "equals"},
+        "value": {"type": "string", "enum": ["dail", "seanad"]}
       }
     },
     "temporalPeriod": {

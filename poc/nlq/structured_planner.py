@@ -138,7 +138,15 @@ def build_planner_instructions(contract: dict[str, Any] | None = None) -> str:
     filters = "\n".join(
         f"- {field['id']}: {field['description']} "
         f"(facts {', '.join(field['facts'])}; {field['valueKind']}; "
-        f"operators {', '.join(field['operators'])})"
+        f"operators {', '.join(field['operators'])}"
+        + (
+            "; allowed values " + ", ".join(
+                f"{item['id']} ({item['label']})"
+                for item in field.get("allowedValues", [])
+            )
+            if field.get("allowedValues") else ""
+        )
+        + ")"
         for field in vocabulary["filterFields"]
     )
     answer_shapes = "\n".join(

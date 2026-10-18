@@ -357,7 +357,7 @@ Question in browser / benchmark runner
 ```
 
 The repository-owned machine-readable query contract is
-`poc/specs/query-schema-contract.json` (contract version `1.0.0`, schema
+`poc/specs/query-schema-contract.json` (contract version `2.0.0`, schema
 version `1`). Its JSON Schema is `poc/specs/query-schema-contract.schema.json`.
 The contract defines the queryable class/property scope, named-graph families
 and owners, emitted RDF patterns, entity-specific label predicates,
@@ -367,7 +367,7 @@ assumptions, known unavailable patterns, and the local safety policy.
 ### Structured query-plan contract (Phase 2A)
 
 The semantic plan contract is `poc/specs/query-plan-contract.json` (contract
-version `1.0.0`, schema version `1`). Its manifest schema is
+version `1.1.0`, schema version `1`). Its manifest schema is
 `poc/specs/query-plan-contract.schema.json`; the plan-instance schema is
 `poc/specs/query-plan.schema.json`. Seven representative plans are under
 `poc/specs/query-plan-examples/`. Plans include intent, local Oireachtas source,
@@ -389,24 +389,26 @@ contract.
 
 The manifest's `semanticVocabulary` is the source of truth for the currently
 supported entity types, semantic fact IDs, and filter-field IDs. The fact IDs
-cover the Phase 1 queryable House, Member, parliamentary-term, collection,
-constituency/panel, and Committee patterns recorded by the query/schema
-contract; their manifest descriptions are for people, while the IDs drive
-consumer dispatch. Fact IDs and filter fields are controlled values, not
-natural-language descriptions or RDF/SPARQL names. Filter fields also declare
-their applicable facts, value kind, and supported operators; for example,
-`parliamentary_collection` is valid for `member_collection_membership`, not for
-an unrelated fact. Unknown facts and fields are rejected. The plan-schema enum
-and field-specific rules mirror the manifest vocabulary, with exact parity
-checked by the focused contract tests.
+cover the queryable House, Member, parliamentary-term, collection,
+constituency/panel, Committee, Bill, accepted Member OfficeHolding, and selected
+Debate patterns recorded by the query/schema contract; their manifest
+descriptions are for people, while the IDs drive consumer dispatch. Fact IDs
+and filter fields are controlled values, not natural-language descriptions or
+RDF/SPARQL names. Filter fields also declare their applicable facts, value kind,
+and supported operators; for example, `parliamentary_collection` is valid for
+`member_collection_membership`, not for an unrelated fact. Unknown facts and
+fields are rejected. The plan-schema enum and field-specific rules mirror the
+manifest vocabulary, with exact parity checked by the focused contract tests.
 
 Entity types remain a controlled set: the validator accepts only the types in
 the current manifest and the plan schema. Adding a **reviewed, supported** entity
 type is an additive compatible extension within contract major version `1`,
 provided existing meanings and validation behavior are unchanged. The manifest,
 schema enum, and focused vocabulary-parity test must be updated together;
-consumers that do not yet support an added type reject it. No Bill, office, or
-Debate entity types or facts are introduced by the current contract.
+consumers that do not yet support an added type reject it. The current extension
+adds Bill and NamedOffice resolution from reviewed local labels, plus DebateRecord
+as a type-only result role. DebateRecord has no entity-label resolver because the
+accepted Debate slice has no reviewed local label mapping.
 
 Requirements, filters, and temporal constraints are conjunctive. Repeated
 references to one entity ID denote that same entity; repeated type-only
@@ -497,11 +499,14 @@ contract-owned graph families and allowlisted predicates; unsupported facts,
 entity bindings, temporal translations, answer shapes and aggregations fail
 closed. The supported `during` translation is restricted to a referenced
 Dáil/Seanad term for reviewed Member membership, collection-membership and
-representation paths. Date windows, `current`/`on` temporal meanings,
-HouseTerm-owned temporal references and Committee-membership temporal joins are
-not inferred. Generated entity answers remain resource IRIs; a separate
-contract-grounded label lookup is used only by the evaluator when comparing
-resource results against existing label-valued benchmark invariants.
+representation paths. The additive Phase 2 expansion also supports `on` for
+accepted Member-owned OfficeHolding ranges (inclusive start/end containment; a
+missing end is open) and exact DebateRecord source dates normalized to midnight
+without a timezone. Other date windows, `before`/`after`, `current`, HouseTerm-
+owned temporal references and Committee-membership temporal joins are not
+inferred. Generated entity answers remain resource IRIs; separate
+contract-grounded label lookups are used only by the evaluator when comparing
+resource results against label-valued expectations.
 
 The evaluation path is `poc.nlq.plan_benchmark.run_plan_cases`; it keeps
 planner, validation, binding, generation, safety, Fuseki execution and result
@@ -531,6 +536,27 @@ The generator/evaluator are not connected to the browser pipeline. This
 completes the Phase 2C local compilation/evaluation tranche, not the Phase 2
 exit gate: visible plan integration and a separate realistic-question benchmark
 remain future work.
+
+### Controlled capability expansion (Phase 2)
+
+The bounded expansion and its deferred boundaries are recorded in
+[`benchmarks/phase-2-controlled-capability-expansion.md`](benchmarks/phase-2-controlled-capability-expansion.md).
+It updates the query/schema contract to major version `2.0.0` because the prior
+Bill lifecycle pattern incorrectly attached `eli-dl:latest_activity` to the
+Bill rather than its process. Additive semantic-plan vocabulary support uses
+contract version `1.1.0`; plan-contract consumers still support major `1`.
+Eleven deterministic semantic-plan evaluation cases are pinned in
+`benchmarks/query-service-phase-2-v1.json`. Offline generation checks run with:
+
+```bash
+uv run --locked --extra test python -m pytest tests/test_nlq_plan_phase2_evaluation.py
+```
+
+The opt-in Fuseki acceptance runs those cases against the accepted
+non-authoritative development bootstrap. It requires the preserved raw captures
+and corresponding capture-index Core State database to be available locally;
+the bootstrap reads capture state and writes only to its disposable loopback
+Fuseki dataset.
 
 `poc.nlq.plan_contract` exposes `load_query_plan_contract`,
 `validate_query_plan`, and `load_query_plan`. Phase 2C calls this authoritative

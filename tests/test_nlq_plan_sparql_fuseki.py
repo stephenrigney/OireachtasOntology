@@ -50,7 +50,7 @@ def _entity(entity_id: str, entity_type: str, iri: str, label: str) -> dict:
 def _plan(*, entities=(), requirements=(), temporal=(), aggregation=None, answer):
     return validate_query_plan({
         "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
-        "schemaVersion": 1, "contractVersion": "1.0.1",
+        "schemaVersion": 1, "contractVersion": "1.1.0",
         "intent": "capture-backed deterministic generator acceptance",
         "source": "oireachtas",
         "entities": list(entities),
@@ -72,6 +72,13 @@ def _lexical_values(result) -> tuple[str, ...]:
             if isinstance(binding, dict) and isinstance(binding.get("value"), str)
         )
     return tuple(value for row in result.rows for value in row)
+
+
+def _result_row_count(result) -> int:
+    if result.raw_json:
+        payload = json.loads(result.raw_json)
+        return len(payload.get("results", {}).get("bindings", []))
+    return len(result.rows)
 
 
 def _bootstrap(instance: DisposableFuseki, baseline_path: Path) -> None:
@@ -111,7 +118,9 @@ def test_representative_validated_plans_execute_correctly_on_disposable_fuseki()
     with DisposableFuseki() as instance, tempfile.TemporaryDirectory(
         prefix="acceptance-", dir=scratch,
     ) as directory:
-        _bootstrap(instance, Path(directory) / "dataset-baseline.json")
+        baseline_path = Path(directory) / "dataset-baseline.json"
+        _bootstrap(instance, baseline_path)
+        baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
         client = FusekiQueryClient(
             instance.query_url, username="admin", password=instance.password,
         )
@@ -119,6 +128,30 @@ def test_representative_validated_plans_execute_correctly_on_disposable_fuseki()
             supported_predicates=supported_predicates(ROOT / "ontology"),
         )
         try:
+            phase2_artifact = json.loads(
+                (ROOT / "poc/nlq/benchmarks/query-service-phase-2-v1.json").read_text(encoding="utf-8")
+            )
+            assert baseline["dataset"]["id"] == phase2_artifact["dataset_evidence"]["dataset_id"]
+            phase2_results = {}
+            for case in phase2_artifact["cases"]:
+                plan = validate_query_plan(case["plan"])
+                generated = generator.generate(PlannerResult("validated_plan", plan=plan))
+                assert generated.generated, (case["id"], generated.as_dict())
+                actual = client.query(generated.sparql)
+                expected = case["expected_result"]
+                assert actual.kind == expected["kind"], case["id"]
+                if actual.kind == "ask":
+                    assert actual.boolean is expected["boolean"], case["id"]
+                else:
+                    lexical_values = _lexical_values(actual)
+                    row_count = _result_row_count(actual)
+                    assert row_count >= expected["min_rows"], case["id"]
+                    if "max_rows" in expected:
+                        assert row_count <= expected["max_rows"], case["id"]
+                    for value in expected["contains_values"]:
+                        assert value in lexical_values, (case["id"], lexical_values)
+                phase2_results[case["id"]] = actual
+
             plans = {
                 "member_full_name": _plan(
                     entities=[_entity("member", "Member", _AENGUS, "Aengus Ó Snodaigh")],
@@ -224,5 +257,6 @@ def test_representative_validated_plans_execute_correctly_on_disposable_fuseki()
             )
             labels = client.query(label_query)
             assert "Fianna Fáil" in _lexical_values(labels)
+            assert set(phase2_results) == {case["id"] for case in phase2_artifact["cases"]}
         finally:
             client.close()

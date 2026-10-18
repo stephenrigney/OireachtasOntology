@@ -77,7 +77,7 @@ def test_contract_manifest_plan_schema_and_all_examples_are_valid():
     contract = load_query_plan_contract()
     assert contract["contractId"] == CONTRACT_ID
     assert contract["schemaVersion"] == 1
-    assert contract["contractVersion"] == "1.0.1"
+    assert contract["contractVersion"] == "1.1.0"
     assert contract["contractSchema"] == "poc/specs/query-plan-contract.schema.json"
     assert contract["planSchema"] == "poc/specs/query-plan.schema.json"
     assert "conjunctively" in contract["planSemantics"]["conjunction"]
@@ -513,7 +513,8 @@ def test_every_supported_filter_field_validates_with_its_declared_fact_and_value
             "operator": "equals",
         }
         if filter_field["valueKind"] == "string":
-            filter_value["value"] = "sample"
+            allowed_values = filter_field.get("allowedValues", [])
+            filter_value["value"] = allowed_values[0]["id"] if allowed_values else "sample"
         elif filter_field["valueKind"] == "number":
             filter_value["value"] = 1
         else:
@@ -654,7 +655,8 @@ def test_current_supported_entity_types_validate_and_unknown_type_fails_closed()
     entity_types = load_query_plan_contract()["semanticVocabulary"]["entityTypes"]
     assert entity_types == [
         "Member", "House", "DailTerm", "SeanadTerm", "ParliamentaryMemberCollection",
-        "DailConstituency", "SeanadPanel", "Committee",
+        "DailConstituency", "SeanadPanel", "Committee", "Bill", "NamedOffice",
+        "DebateRecord",
     ]
     for entity_type in entity_types:
         plan = _mutated_plan(
@@ -673,7 +675,7 @@ def test_current_supported_entity_types_validate_and_unknown_type_fails_closed()
         validate_query_plan(plan)
         _assert_schema_valid(plan)
 
-    unknown = _mutated_plan(lambda value: value["entities"][0].update(type="Bill"))
+    unknown = _mutated_plan(lambda value: value["entities"][0].update(type="ParliamentaryGroup"))
     _assert_schema_invalid(unknown)
     with pytest.raises(QueryPlanContractError, match="unsupported value"):
         validate_query_plan(unknown)

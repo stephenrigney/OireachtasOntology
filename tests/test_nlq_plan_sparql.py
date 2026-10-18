@@ -42,7 +42,7 @@ def _plan(*, entities=None, requirements=None, filters=None, temporal=None,
     return validate_query_plan({
         "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
         "schemaVersion": 1,
-        "contractVersion": "1.0.1",
+        "contractVersion": "1.1.0",
         "intent": "deterministic compiler fixture",
         "source": "oireachtas",
         "entities": entities or [],

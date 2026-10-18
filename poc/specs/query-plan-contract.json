@@ -4,7 +4,7 @@
   "contractSchema": "poc/specs/query-plan-contract.schema.json",
   "planSchema": "poc/specs/query-plan.schema.json",
   "schemaVersion": 1,
-  "contractVersion": "1.0.1",
+  "contractVersion": "1.1.0",
   "description": "Versioned semantic contract for structured Oireachtas query plans. Plans describe the user's requested meaning, not executable SPARQL.",
   "compatibility": {
     "schemaVersion": "The consumer supports plan schema version 1 and rejects other schema versions.",
@@ -44,7 +44,7 @@
       {"kind": "grouped_result", "description": "Return grouped aggregation output."}
     ],
     "entityMentionMeaning": "Named entity mentions are type-and-label inputs to deterministic local entity resolution. Keep them as entity mentions; do not restate the same name as a name/label filter merely to identify that entity. A repeated name filter is appropriate only when the question independently asks for that semantic constraint.",
-    "temporalScoping": "When wording such as 'in the 34th Dáil' or 'during the 26th Seanad' (or equivalent term-scoped phrasing) scopes a time-dependent fact, attach the temporal constraint to the requirement expressing the fact being asked about; a separate Member-to-HouseTerm membership requirement does not scope another fact such as collection membership or representation. If member_house_term_membership itself answers the question by linking the Member to the referenced term entity, that link expresses the term and needs no redundant during constraint."
+    "temporalScoping": "When wording such as 'in the 34th Dáil' or 'during the 26th Seanad' (or equivalent term-scoped phrasing) scopes a time-dependent fact, attach the temporal constraint to the requirement expressing the fact being asked about; a separate Member-to-HouseTerm membership requirement does not scope another fact such as collection membership or representation. If member_house_term_membership itself answers the question by linking the Member to the referenced term entity, that link expresses the term and needs no redundant during constraint. For member_office_holding, an 'on' date uses inclusive DateRange containment (StartDate <= date and EndDate >= date); a missing EndDate is open-ended. For debate_date, 'on' means the exact source date normalized to xsd:dateTime at midnight without a timezone. These fact-specific meanings do not generalize date-window, current, or other temporal translations."
   },
   "semanticVocabulary": {
     "entityTypes": [
@@ -55,7 +55,10 @@
       "ParliamentaryMemberCollection",
       "DailConstituency",
       "SeanadPanel",
-      "Committee"
+      "Committee",
+      "Bill",
+      "NamedOffice",
+      "DebateRecord"
     ],
     "facts": [
       {
@@ -147,6 +150,48 @@
         "description": "The identifier code of a Committee.",
         "subjectTypes": ["Committee"],
         "objectTypes": []
+      },
+      {
+        "id": "bill_title",
+        "description": "A Bill's short title (English and/or Irish) as emitted with eli:title.",
+        "subjectTypes": ["Bill"],
+        "objectTypes": []
+      },
+      {
+        "id": "bill_year",
+        "description": "The legislative year explicitly recorded for a Bill.",
+        "subjectTypes": ["Bill"],
+        "objectTypes": []
+      },
+      {
+        "id": "bill_status",
+        "description": "The Bill process's explicitly recorded status, returned as the controlled English label in the Bill-status vocabulary.",
+        "subjectTypes": ["Bill"],
+        "objectTypes": []
+      },
+      {
+        "id": "bill_sponsor",
+        "description": "A Member explicitly referenced as a sponsor of a Bill.",
+        "subjectTypes": ["Bill"],
+        "objectTypes": ["Member"]
+      },
+      {
+        "id": "member_office_holding",
+        "description": "An accepted Member-owned OfficeHolding record; an optional office filter selects one registered NamedOffice.",
+        "subjectTypes": ["Member"],
+        "objectTypes": []
+      },
+      {
+        "id": "debate_identity",
+        "description": "A DebateRecord Work in the selected development evaluation slice.",
+        "subjectTypes": ["DebateRecord"],
+        "objectTypes": []
+      },
+      {
+        "id": "debate_date",
+        "description": "The authoritative source date recorded on a DebateRecord; date-only values are normalized to midnight without a timezone.",
+        "subjectTypes": ["DebateRecord"],
+        "objectTypes": []
       }
     ],
     "filterFields": [
@@ -178,6 +223,50 @@
         "facts": ["committee_code"],
         "valueKind": "string",
         "operators": ["equals", "not_equals", "exists"]
+      },
+      {
+        "id": "bill_year",
+        "description": "Filter by the explicit legislative year recorded on a Bill.",
+        "facts": ["bill_year"],
+        "valueKind": "number",
+        "operators": ["equals", "not_equals", "greater_than", "greater_than_or_equal", "less_than", "less_than_or_equal", "exists"]
+      },
+      {
+        "id": "bill_status",
+        "description": "Filter by one status in the controlled Bill process-status vocabulary; use its exact value ID.",
+        "facts": ["bill_status"],
+        "valueKind": "string",
+        "operators": ["equals", "not_equals", "exists"],
+        "allowedValues": [
+          {"id": "awaiting-signature", "label": "Passed, awaiting President's signature", "resource": "https://data.oireachtas.ie/ontology#AwaitingSignatureBill"},
+          {"id": "current", "label": "Current", "resource": "https://data.oireachtas.ie/ontology#CurrentBill"},
+          {"id": "defeated", "label": "Defeated", "resource": "https://data.oireachtas.ie/ontology#DefeatedBill"},
+          {"id": "declared-repugnant-to-constitution", "label": "Declared repugnant to the Constitution", "resource": "https://data.oireachtas.ie/ontology#DeclaredRepugnantToConstitutionBill"},
+          {"id": "draft-heads-of-bill", "label": "Heads drafted", "resource": "https://data.oireachtas.ie/ontology#DraftHeadsOfBill"},
+          {"id": "enacted", "label": "Enacted", "resource": "https://data.oireachtas.ie/ontology#EnactedBill"},
+          {"id": "lapsed", "label": "Lapsed", "resource": "https://data.oireachtas.ie/ontology#LapsedBill"},
+          {"id": "rejected-at-referendum", "label": "Rejected at referendum", "resource": "https://data.oireachtas.ie/ontology#RejectedAtReferendumBill"},
+          {"id": "withdrawn", "label": "Withdrawn", "resource": "https://data.oireachtas.ie/ontology#WithdrawnBill"}
+        ]
+      },
+      {
+        "id": "office",
+        "description": "Filter an accepted Member-owned OfficeHolding by one exact, reviewed NamedOffice identity.",
+        "facts": ["member_office_holding"],
+        "valueKind": "entity",
+        "entityTypes": ["NamedOffice"],
+        "operators": ["equals", "exists"]
+      },
+      {
+        "id": "debate_chamber",
+        "description": "Filter a DebateRecord by its canonical Debate graph route segment, not by an inferred House relation; only Dáil and Seanad routes are supported.",
+        "facts": ["debate_identity"],
+        "valueKind": "string",
+        "operators": ["equals", "exists"],
+        "allowedValues": [
+          {"id": "dail", "label": "Dáil", "route": "dail"},
+          {"id": "seanad", "label": "Seanad", "route": "seanad"}
+        ]
       }
     ]
   }

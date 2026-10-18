@@ -3,7 +3,7 @@
   "contractId": "https://data.oireachtas.ie/specs/query-schema-contract",
   "contractSchema": "poc/specs/query-schema-contract.schema.json",
   "schemaVersion": 1,
-  "contractVersion": "1.1.0",
+  "contractVersion": "2.0.0",
   "description": "Queryable, currently emitted Oireachtas RDF patterns and local NLQ execution boundary.",
   "namespaces": {
     "agents": "https://data.oireachtas.ie/ontology#",
@@ -39,9 +39,13 @@
     "members:CommitteeMembership",
     "members:Committee",
     "members:DateRange",
+    "members:OfficeHolding",
+    "members:NamedOffice",
+    "agents:DebateRecord",
     "eli-dl:DraftLegislationWork",
     "eli-dl:LegislativeProcess",
     "eli-dl:LegislativeActivity",
+    "eli-dl:Participation",
     "eli:LegalResource",
     "eli:LegalExpression",
     "eli:Work",
@@ -63,11 +67,15 @@
     "agents:memberCode",
     "agents:gender",
     "agents:dateOfDeath",
+    "agents:legislativeYear",
+    "agents:debateDate",
     "agents:hasImage",
     "members:hasMembersMembership",
     "members:inHouseTerm",
     "members:isOireachtasMembershipOf",
     "members:hasMembershipDateRange",
+    "members:hasOfficeHolding",
+    "members:heldOffice",
     "members:StartDate",
     "members:EndDate",
     "members:inOireachtasMembership",
@@ -89,6 +97,7 @@
     "dct:modified",
     "eli:title",
     "eli:title_alternative",
+    "eli:type_document",
     "eli:id_local",
     "eli:basis_for",
     "eli:date_document",
@@ -212,6 +221,8 @@
     "SeanadPanel": {"predicate": "skos:prefLabel", "language": "en"},
     "Committee": {"predicate": "skos:prefLabel", "languages": ["en", "ga"]},
     "DraftLegislationWork": {"predicate": "eli:title", "languages": ["en", "ga"], "note": "Alternative titles use eli:title_alternative."},
+    "Bill": {"predicate": "eli:title", "languages": ["en", "ga"], "note": "Semantic Bill entity type; the emitted resource is typed eli-dl:DraftLegislationWork and eli:type_document agents:Bill."},
+    "NamedOffice": {"predicate": "skos:prefLabel", "languages": ["en", "ga"], "note": "Reviewed local office registry labels; holding assertions remain conditional on accepted office resolution."},
     "BillLifecycleResource": {"predicate": "rdfs:label", "language": "none", "note": "Used for event, version, expression, and related-document resources; not the Bill's primary title."}
   },
   "emittedRdfPatterns": [
@@ -267,16 +278,28 @@
       "triples": [["?committee", "rdf:type", "members:Committee"], ["?committee", "members:committeeInHouseTerm", "?term"], ["?committee", "skos:prefLabel", "?englishOrIrishLabel"], ["?committee", "members:hasCommitteeDateRange", "?dateRange (optional)"], ["?dateRange", "members:StartDate", "?startDate"], ["?dateRange", "members:EndDate", "?endDate (optional)"]]
     },
     {
+      "id": "named-office-description",
+      "graphFamily": "offices",
+      "availability": "emitted",
+      "queryableInLocalNlq": true,
+      "triples": [["?office", "rdf:type", "members:NamedOffice"], ["?office", "skos:prefLabel", "?englishOrIrishLabel"]],
+      "note": "Reviewed NamedOffice descriptions are loaded into the non-authoritative development bootstrap's fixed office registry graph."
+    },
+    {
       "id": "bill-lifecycle",
       "graphFamily": "bill-records",
-      "availability": "optional-when-bill-data-loaded",
-      "triples": [["?bill", "rdf:type", "eli-dl:DraftLegislationWork"], ["?bill", "eli:title", "?englishOrIrishTitle"], ["?bill", "eli-dl:latest_activity", "?activity"], ["?activity", "eli-dl:forms_part_of", "?process"]]
+      "availability": "emitted",
+      "queryableInLocalNlq": true,
+      "triples": [["?bill", "rdf:type", "eli-dl:DraftLegislationWork"], ["?bill", "eli:type_document", "agents:Bill"], ["?bill", "agents:legislativeYear", "?year"], ["?bill", "eli:title", "?englishOrIrishTitle"], ["?process", "rdf:type", "eli-dl:LegislativeProcess"], ["?process", "eli-dl:process_status", "?status"], ["?process", "eli-dl:latest_activity", "?activity"], ["?activity", "eli-dl:forms_part_of", "?process"]],
+      "note": "Bill and process resources are co-owned in the same one-Bill named graph; the ETL emits no direct Bill-to-process RDF edge. This corrects the earlier contract summary: latest_activity is emitted from the process to the activity, not from the Bill. Bill graphs remain optional data."
     },
     {
       "id": "bill-sponsor-reference",
       "graphFamily": "bill-records",
-      "availability": "optional-when-bill-data-loaded",
-      "triples": [["?process", "eli-dl:had_participation", "?participation"], ["?participation", "eli-dl:had_participant_person", "?member"]]
+      "availability": "emitted",
+      "queryableInLocalNlq": true,
+      "triples": [["?process", "rdf:type", "eli-dl:LegislativeProcess"], ["?process", "eli-dl:had_participation", "?participation"], ["?participation", "rdf:type", "eli-dl:Participation"], ["?participation", "eli-dl:had_participant_person", "?member"]],
+      "note": "The process is associated with its Bill by co-ownership in the Bill's named graph. The participant person IRI joins to the corresponding Member-owned graph by exact RDF resource IRI."
     },
     {
       "id": "bill-document-work-links",
@@ -289,10 +312,18 @@
     {
       "id": "conditionally-resolved-office-holdings",
       "graphFamily": "member-records",
-      "availability": "conditional-on-current-accepted-office-resolution",
-      "queryableInLocalNlq": false,
-      "triples": [["?member", "members:hasMembersMembership", "?holding"], ["?holding", "rdf:type", "members:OfficeHolding"], ["?holding", "members:heldOffice", "?office"]],
-      "note": "The development bootstrap loads the reviewed office and administrative-unit registries. Only current accepted office resolutions supplied through the existing Member transformation may produce a holding; never infer one from a raw observation. This pattern remains outside the current local NLQ predicate allowlist."
+      "availability": "emitted",
+      "queryableInLocalNlq": true,
+      "triples": [["?member", "members:hasOfficeHolding", "?holding"], ["?holding", "rdf:type", "members:OfficeHolding"], ["?holding", "members:heldOffice", "?office"], ["?holding", "members:hasMembershipDateRange", "?dateRange"], ["?dateRange", "rdf:type", "members:DateRange"], ["?dateRange", "members:StartDate", "?startDate"], ["?dateRange", "members:EndDate", "?endDate (optional)" ]],
+      "note": "Only current accepted office resolutions supplied through the existing Member transformation may produce a holding; never infer one from a raw observation. The local bootstrap loads reviewed office descriptions, but an OfficeHolding can be queried from its Member-owned graph without asserting an executive role or Cabinet status."
+    },
+    {
+      "id": "debate-record-identity",
+      "graphFamily": "debates",
+      "availability": "emitted",
+      "queryableInLocalNlq": true,
+      "triples": [["?debate", "rdf:type", "agents:DebateRecord"], ["?debate", "agents:debateDate", "?date"]],
+      "note": "The development bootstrap contains exactly three pinned, non-authoritative Debate graphs and no transcript text. Debate Work identity carries a canonical chamber/body and date route in the Work IRI and named-graph IRI; no explicit chamber RDF predicate is emitted. Dáil/Seanad chamber filtering uses the reviewed graph-route segment, not an inferred House relation."
     },
     {
       "id": "reviewed-member-external-identities",
@@ -375,7 +406,7 @@
   },
   "unsupportedPatterns": [
     {"id": "generic-house-term-type", "status": "not-emitted", "detail": "HouseTerm records are asserted as agents:DailTerm or agents:SeanadTerm. No generic agents:HouseTerm type is emitted or inferred by this store."},
-    {"id": "debate-records", "status": "development-evaluation-slice-only-not-NLQ-grounded", "detail": "The local development bootstrap loads exactly three pinned DebateRecord graphs (one Dáil, one Seanad, one committee). They are non-authoritative, contain no transcript speech text, and do not add Debate classes or predicates to the current NLQ grounding contract. There is no authoritative Debates publication from this bootstrap."},
+    {"id": "debate-transcript-text", "status": "not-emitted", "detail": "The selected development Debate graphs contain no transcript speech text; transcript search is unsupported."},
     {"id": "parliamentary-group-records", "status": "ontology-only-not-currently-populated", "detail": "members:ParliamentaryGroup and related party/group concepts are not emitted as current queryable group instances; do not infer a group identity or relationship from party collection membership."},
     {"id": "act-descriptions", "status": "not-published", "detail": "Bill graphs may link to an Act via eli:basis_for; Act descriptions are owned by a later Acts ETL."},
     {"id": "bill-availability", "status": "optional-data", "detail": "Bill query patterns work only when Bill graphs have actually been loaded."},

@@ -28,7 +28,7 @@ def _name_plan():
     return {
         "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
         "schemaVersion": 1,
-        "contractVersion": "1.0.1",
+        "contractVersion": "1.1.0",
         "intent": "member full name",
         "source": "oireachtas",
         "entities": [_entity("member", "Member", MEMBER, "Timmy Dooley")],
@@ -46,7 +46,7 @@ def _term_plan():
     return {
         "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
         "schemaVersion": 1,
-        "contractVersion": "1.0.1",
+        "contractVersion": "1.1.0",
         "intent": "member term",
         "source": "oireachtas",
         "entities": [_entity("member", "Member", MEMBER, "Timmy Dooley")],
@@ -329,7 +329,7 @@ def test_explicit_planner_case_oracle_scores_the_generated_answer_shape():
 def test_expected_ambiguous_plan_is_scored_without_generation_or_execution():
     ambiguous_plan = {
         "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
-        "schemaVersion": 1, "contractVersion": "1.0.1", "intent": "ambiguous member",
+        "schemaVersion": 1, "contractVersion": "1.1.0", "intent": "ambiguous member",
         "source": "oireachtas",
         "entities": [{
             "id": "member", "type": "Member", "label": "Michael Collins",

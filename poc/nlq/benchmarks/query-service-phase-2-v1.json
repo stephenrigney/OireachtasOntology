@@ -1,0 +1,315 @@
+{
+  "schema_version": 1,
+  "benchmark_id": "oireachtas-query-service-phase-2-controlled-capability-expansion",
+  "benchmark_version": "1.0.0",
+  "dataset_evidence": {
+    "path": "poc/nlq/benchmarks/development-data-evidence.md",
+    "dataset_id": "sha256:9da63abc5878387f991e4d4717f35cca67606850db34be589e0a8fc0cc1504e2",
+    "status": "non-authoritative-development-bootstrap"
+  },
+  "constraints": [
+    "Plans are deterministic accepted semantic-plan fixtures; no planner model is invoked.",
+    "The one cross-family case is Bill sponsor to Member by the documented exact-IRI graph join.",
+    "Office filters bind only reviewed NamedOffice IRIs and query Member-owned accepted OfficeHolding records.",
+    "Debate cases are limited to the pinned development evaluation slice and do not assert corpus completeness."
+  ],
+  "cases": [
+    {
+      "id": "bill.short-title",
+      "question": "What is the title of the Artificial Intelligence Companion Services (Protection of Children) Bill 2026?",
+      "plan": {
+        "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+        "schemaVersion": 1,
+        "contractVersion": "1.1.0",
+        "intent": "Retrieve one resolved Bill's short title.",
+        "source": "oireachtas",
+        "entities": [
+          {"id": "bill", "type": "Bill", "label": "Artificial Intelligence Companion Services (Protection of Children) Bill 2026", "resolution": "resolved", "iri": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/93"}
+        ],
+        "requirements": [
+          {"id": "title", "fact": "bill_title", "subject": {"entity": "bill"}}
+        ],
+        "filters": [],
+        "temporalConstraints": [],
+        "aggregation": null,
+        "answerShape": {"kind": "fact", "target": "title"}
+      },
+      "expected_result": {"kind": "select", "contains_values": ["Artificial Intelligence Companion Services (Protection of Children) Bill 2026"], "min_rows": 1}
+    },
+    {
+      "id": "bill.legislative-year",
+      "question": "What legislative year is recorded for the Artificial Intelligence Companion Services Bill?",
+      "plan": {
+        "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+        "schemaVersion": 1,
+        "contractVersion": "1.1.0",
+        "intent": "Retrieve a Bill's explicit legislative year.",
+        "source": "oireachtas",
+        "entities": [
+          {"id": "bill", "type": "Bill", "label": "Artificial Intelligence Companion Services Bill", "resolution": "resolved", "iri": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/93"}
+        ],
+        "requirements": [
+          {"id": "year", "fact": "bill_year", "subject": {"entity": "bill"}}
+        ],
+        "filters": [
+          {"requirement": "year", "field": "bill_year", "operator": "equals", "value": 2026}
+        ],
+        "temporalConstraints": [],
+        "aggregation": null,
+        "answerShape": {"kind": "fact", "target": "year"}
+      },
+      "expected_result": {"kind": "select", "contains_values": ["2026"], "min_rows": 1}
+    },
+    {
+      "id": "bill.status-label",
+      "question": "Which controlled status label is recorded for the Artificial Intelligence Companion Services Bill?",
+      "plan": {
+        "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+        "schemaVersion": 1,
+        "contractVersion": "1.1.0",
+        "intent": "Retrieve a Bill process status through its reviewed controlled label.",
+        "source": "oireachtas",
+        "entities": [
+          {"id": "bill", "type": "Bill", "label": "Artificial Intelligence Companion Services Bill", "resolution": "resolved", "iri": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/93"}
+        ],
+        "requirements": [
+          {"id": "status", "fact": "bill_status", "subject": {"entity": "bill"}}
+        ],
+        "filters": [],
+        "temporalConstraints": [],
+        "aggregation": null,
+        "answerShape": {"kind": "fact", "target": "status"}
+      },
+      "expected_result": {"kind": "select", "contains_values": ["Current"], "min_rows": 1}
+    },
+    {
+      "id": "bill.status-current-filter",
+      "question": "Is the Artificial Intelligence Companion Services Bill recorded with the exact status Current?",
+      "plan": {
+        "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+        "schemaVersion": 1,
+        "contractVersion": "1.1.0",
+        "intent": "Test an explicit controlled Bill status value, not temporal currentness.",
+        "source": "oireachtas",
+        "entities": [
+          {"id": "bill", "type": "Bill", "label": "Artificial Intelligence Companion Services Bill", "resolution": "resolved", "iri": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/93"}
+        ],
+        "requirements": [
+          {"id": "status", "fact": "bill_status", "subject": {"entity": "bill"}}
+        ],
+        "filters": [
+          {"requirement": "status", "field": "bill_status", "operator": "equals", "value": "current"}
+        ],
+        "temporalConstraints": [],
+        "aggregation": null,
+        "answerShape": {"kind": "boolean"}
+      },
+      "expected_result": {"kind": "ask", "boolean": true}
+    },
+    {
+      "id": "bill.sponsor-member-join",
+      "question": "Which Member is recorded as a sponsor of the Artificial Intelligence Companion Services Bill?",
+      "plan": {
+        "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+        "schemaVersion": 1,
+        "contractVersion": "1.1.0",
+        "intent": "Return a Bill sponsor as the exact Member resource referenced by the Bill-owned graph.",
+        "source": "oireachtas",
+        "entities": [
+          {"id": "bill", "type": "Bill", "label": "Artificial Intelligence Companion Services Bill", "resolution": "resolved", "iri": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/93"}
+        ],
+        "requirements": [
+          {"id": "sponsor", "fact": "bill_sponsor", "subject": {"entity": "bill"}, "object": {"type": "Member"}}
+        ],
+        "filters": [],
+        "temporalConstraints": [],
+        "aggregation": null,
+        "answerShape": {"kind": "entities", "entityType": "Member"}
+      },
+      "expected_result": {"kind": "select", "contains_values": ["https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29"], "min_rows": 1}
+    },
+    {
+      "id": "officeholding.open-ended-taoiseach",
+      "question": "Did Micheál Martin hold the Taoiseach office on 30 September 2026?",
+      "plan": {
+        "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+        "schemaVersion": 1,
+        "contractVersion": "1.1.0",
+        "intent": "Check a reviewed Member-owned office holding on a date within an open-ended accepted range.",
+        "source": "oireachtas",
+        "entities": [
+          {"id": "member", "type": "Member", "label": "Micheál Martin", "resolution": "resolved", "iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Micheál-Martin.D.1989-06-29"},
+          {"id": "office", "type": "NamedOffice", "label": "Taoiseach", "resolution": "resolved", "iri": "https://data.oireachtas.ie/office/o-000001"}
+        ],
+        "requirements": [
+          {"id": "holding", "fact": "member_office_holding", "subject": {"entity": "member"}}
+        ],
+        "filters": [
+          {"requirement": "holding", "field": "office", "operator": "equals", "value": {"entity": "office"}}
+        ],
+        "temporalConstraints": [
+          {"target": "holding", "kind": "on", "date": "2026-09-30"}
+        ],
+        "aggregation": null,
+        "answerShape": {"kind": "boolean"}
+      },
+      "expected_result": {"kind": "ask", "boolean": true}
+    },
+    {
+      "id": "officeholding.closed-tenure-gap",
+      "question": "Did Micheál Martin hold the Taoiseach office on 1 May 2023?",
+      "plan": {
+        "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+        "schemaVersion": 1,
+        "contractVersion": "1.1.0",
+        "intent": "Check that a date outside the reviewed Taoiseach holding intervals does not match.",
+        "source": "oireachtas",
+        "entities": [
+          {"id": "member", "type": "Member", "label": "Micheál Martin", "resolution": "resolved", "iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Micheál-Martin.D.1989-06-29"},
+          {"id": "office", "type": "NamedOffice", "label": "Taoiseach", "resolution": "resolved", "iri": "https://data.oireachtas.ie/office/o-000001"}
+        ],
+        "requirements": [
+          {"id": "holding", "fact": "member_office_holding", "subject": {"entity": "member"}}
+        ],
+        "filters": [
+          {"requirement": "holding", "field": "office", "operator": "equals", "value": {"entity": "office"}}
+        ],
+        "temporalConstraints": [
+          {"target": "holding", "kind": "on", "date": "2023-05-01"}
+        ],
+        "aggregation": null,
+        "answerShape": {"kind": "boolean"}
+      },
+      "expected_result": {"kind": "ask", "boolean": false}
+    },
+    {
+      "id": "officeholding.finance-date-contained",
+      "question": "Did Paschal Donohoe hold the Minister for Finance office on 1 January 2021?",
+      "plan": {
+        "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+        "schemaVersion": 1,
+        "contractVersion": "1.1.0",
+        "intent": "Check an accepted dated OfficeHolding interval for a reviewed NamedOffice.",
+        "source": "oireachtas",
+        "entities": [
+          {"id": "member", "type": "Member", "label": "Paschal Donohoe", "resolution": "resolved", "iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23"},
+          {"id": "office", "type": "NamedOffice", "label": "Minister for Finance", "resolution": "resolved", "iri": "https://data.oireachtas.ie/office/o-000003"}
+        ],
+        "requirements": [
+          {"id": "holding", "fact": "member_office_holding", "subject": {"entity": "member"}}
+        ],
+        "filters": [
+          {"requirement": "holding", "field": "office", "operator": "equals", "value": {"entity": "office"}}
+        ],
+        "temporalConstraints": [
+          {"target": "holding", "kind": "on", "date": "2021-01-01"}
+        ],
+        "aggregation": null,
+        "answerShape": {"kind": "boolean"}
+      },
+      "expected_result": {"kind": "ask", "boolean": true}
+    },
+    {
+      "id": "officeholding.inclusive-end-date",
+      "question": "Did Paschal Donohoe hold the Minister for Finance office on 17 December 2022?",
+      "plan": {
+        "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+        "schemaVersion": 1,
+        "contractVersion": "1.1.0",
+        "intent": "Verify inclusive containment at an accepted OfficeHolding end date.",
+        "source": "oireachtas",
+        "entities": [
+          {"id": "member", "type": "Member", "label": "Paschal Donohoe", "resolution": "resolved", "iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23"},
+          {"id": "office", "type": "NamedOffice", "label": "Minister for Finance", "resolution": "resolved", "iri": "https://data.oireachtas.ie/office/o-000003"}
+        ],
+        "requirements": [
+          {"id": "holding", "fact": "member_office_holding", "subject": {"entity": "member"}}
+        ],
+        "filters": [
+          {"requirement": "holding", "field": "office", "operator": "equals", "value": {"entity": "office"}}
+        ],
+        "temporalConstraints": [
+          {"target": "holding", "kind": "on", "date": "2022-12-17"}
+        ],
+        "aggregation": null,
+        "answerShape": {"kind": "boolean"}
+      },
+      "expected_result": {"kind": "ask", "boolean": true}
+    },
+    {
+      "id": "debate.dail-date-identity",
+      "question": "What was the date of the Dáil debate record on 2 July 2015?",
+      "plan": {
+        "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+        "schemaVersion": 1,
+        "contractVersion": "1.1.0",
+        "intent": "Match the exact source date and canonical Dáil Debate graph route.",
+        "source": "oireachtas",
+        "entities": [],
+        "requirements": [
+          {"id": "identity", "fact": "debate_identity", "subject": {"type": "DebateRecord"}},
+          {"id": "date", "fact": "debate_date", "subject": {"type": "DebateRecord"}}
+        ],
+        "filters": [
+          {"requirement": "identity", "field": "debate_chamber", "operator": "equals", "value": "dail"}
+        ],
+        "temporalConstraints": [
+          {"target": "date", "kind": "on", "date": "2015-07-02"}
+        ],
+        "aggregation": null,
+        "answerShape": {"kind": "fact", "target": "date"}
+      },
+      "expected_result": {"kind": "select", "contains_values": ["2015-07-02T00:00:00"], "min_rows": 1}
+    },
+    {
+      "id": "debate.seanad-date-identity",
+      "question": "What was the date of the Seanad debate record on 2 July 2015?",
+      "plan": {
+        "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+        "schemaVersion": 1,
+        "contractVersion": "1.1.0",
+        "intent": "Match the exact source date and canonical Seanad Debate graph route.",
+        "source": "oireachtas",
+        "entities": [],
+        "requirements": [
+          {"id": "identity", "fact": "debate_identity", "subject": {"type": "DebateRecord"}},
+          {"id": "date", "fact": "debate_date", "subject": {"type": "DebateRecord"}}
+        ],
+        "filters": [
+          {"requirement": "identity", "field": "debate_chamber", "operator": "equals", "value": "seanad"}
+        ],
+        "temporalConstraints": [
+          {"target": "date", "kind": "on", "date": "2015-07-02"}
+        ],
+        "aggregation": null,
+        "answerShape": {"kind": "fact", "target": "date"}
+      },
+      "expected_result": {"kind": "select", "contains_values": ["2015-07-02T00:00:00"], "min_rows": 1}
+    },
+    {
+      "id": "debate.dail-wrong-date-empty",
+      "question": "Was there a Dáil debate record on 3 July 2015?",
+      "plan": {
+        "contractId": "https://data.oireachtas.ie/specs/query-plan-contract",
+        "schemaVersion": 1,
+        "contractVersion": "1.1.0",
+        "intent": "Fail to match the Dáil Debate route when its exact source date differs.",
+        "source": "oireachtas",
+        "entities": [],
+        "requirements": [
+          {"id": "identity", "fact": "debate_identity", "subject": {"type": "DebateRecord"}},
+          {"id": "date", "fact": "debate_date", "subject": {"type": "DebateRecord"}}
+        ],
+        "filters": [
+          {"requirement": "identity", "field": "debate_chamber", "operator": "equals", "value": "dail"}
+        ],
+        "temporalConstraints": [
+          {"target": "date", "kind": "on", "date": "2015-07-03"}
+        ],
+        "aggregation": null,
+        "answerShape": {"kind": "fact", "target": "date"}
+      },
+      "expected_result": {"kind": "select", "contains_values": [], "min_rows": 0, "max_rows": 0}
+    }
+  ]
+}

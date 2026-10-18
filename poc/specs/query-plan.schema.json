@@ -83,7 +83,10 @@
         "ParliamentaryMemberCollection",
         "DailConstituency",
         "SeanadPanel",
-        "Committee"
+        "Committee",
+        "Bill",
+        "NamedOffice",
+        "DebateRecord"
       ]
     },
     "factId": {
@@ -102,7 +105,14 @@
         "parliamentary_collection_label",
         "constituency_panel_label",
         "committee_label",
-        "committee_code"
+        "committee_code",
+        "bill_title",
+        "bill_year",
+        "bill_status",
+        "bill_sponsor",
+        "member_office_holding",
+        "debate_identity",
+        "debate_date"
       ]
     },
     "filterFieldId": {
@@ -110,7 +120,11 @@
         "member_name",
         "parliamentary_term_number",
         "parliamentary_collection",
-        "committee_code"
+        "committee_code",
+        "bill_year",
+        "bill_status",
+        "office",
+        "debate_chamber"
       ]
     },
     "localIri": {"type": "string", "pattern": "^https://data\\.oireachtas\\.ie/[^\\s?#]+$"},
@@ -287,6 +301,42 @@
             "properties": {
               "operator": {"enum": ["equals", "not_equals", "exists"]},
               "value": {"type": "string"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"field": {"const": "bill_year"}}, "required": ["field"]},
+          "then": {
+            "properties": {
+              "operator": {"enum": ["equals", "not_equals", "greater_than", "greater_than_or_equal", "less_than", "less_than_or_equal", "exists"]},
+              "value": {"type": "number"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"field": {"const": "bill_status"}}, "required": ["field"]},
+          "then": {
+            "properties": {
+              "operator": {"enum": ["equals", "not_equals", "exists"]},
+              "value": {"type": "string", "enum": ["awaiting-signature", "current", "defeated", "declared-repugnant-to-constitution", "draft-heads-of-bill", "enacted", "lapsed", "rejected-at-referendum", "withdrawn"]}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"field": {"const": "office"}}, "required": ["field"]},
+          "then": {
+            "properties": {
+              "operator": {"enum": ["equals", "exists"]},
+              "value": {"$ref": "#/$defs/filterEntityReference"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"field": {"const": "debate_chamber"}}, "required": ["field"]},
+          "then": {
+            "properties": {
+              "operator": {"enum": ["equals", "exists"]},
+              "value": {"type": "string", "enum": ["dail", "seanad"]}
             }
           }
         },

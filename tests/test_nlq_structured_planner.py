@@ -615,7 +615,7 @@ def test_model_supplied_iri_or_url_text_is_rejected_even_when_shape_schema_allow
     "mutate, phrase",
     [
         (lambda draft: draft["requirements"][0].update(fact="member_favourite_colour"), "unsupported"),
-        (lambda draft: draft["entities"][0].update(type="Bill"), "unsupported"),
+        (lambda draft: draft["entities"][0].update(type="ParliamentaryGroup"), "unsupported"),
         (lambda draft: draft["filters"].append({
             "requirement": "requested-fact", "field": "party_name", "operator": "equals",
             "value": "Fine Gael",
@@ -718,6 +718,8 @@ def test_resolver_reuses_nfc_casefold_matching_without_accent_folding_or_fuzzy_m
         ("DailConstituency", "members:DailConstituency", "https://data.oireachtas.ie/graph/constituencies"),
         ("SeanadPanel", "members:SeanadPanel", "https://data.oireachtas.ie/graph/constituencies"),
         ("Committee", "members:Committee", "https://data.oireachtas.ie/graph/committees"),
+        ("Bill", "eli-dl:DraftLegislationWork", "/graph/bill/"),
+        ("NamedOffice", "members:NamedOffice", "https://data.oireachtas.ie/graph/offices"),
     ],
 )
 def test_generalised_resolver_uses_supported_type_and_owner_graph(entity_type, class_name, graph):
@@ -730,11 +732,14 @@ def test_generalised_resolver_uses_supported_type_and_owner_graph(entity_type, c
     assert result.candidates == (type(result.candidates[0])(iri, "Sample Local Label"),)
     assert class_name in fuseki.queries[0]
     assert graph in fuseki.queries[0]
+    if entity_type == "Bill":
+        assert "eli:type_document agents:Bill" in fuseki.queries[0]
+        assert "FILTER(REGEX(STR(?entityGraph)" in fuseki.queries[0]
 
 
-def test_unimplemented_local_resolver_type_is_reported_explicitly():
+def test_debate_record_has_no_label_resolver_and_is_reported_explicitly():
     with pytest.raises(UnsupportedLocalEntityType, match="No deterministic local resolver"):
-        resolve_local_entity_label("Bill", "Finance Bill", LocalResolverFuseki())
+        resolve_local_entity_label("DebateRecord", "Dáil debate", LocalResolverFuseki())
 
 
 def test_local_resolver_deduplicates_same_iri_but_preserves_distinct_resources():
@@ -1475,6 +1480,12 @@ def test_deterministic_planner_benchmark_cases_are_scored_without_sparql_generat
     )
 
 
-def test_phase_1_benchmark_is_not_changed_by_planner_cases():
-    assert PLAN_CONTRACT["contractVersion"] == "1.0.1"
-    assert "Bill" not in PLAN_CONTRACT["semanticVocabulary"]["entityTypes"]
+def test_phase2_entity_types_extend_the_existing_semantic_vocabulary_additively():
+    assert PLAN_CONTRACT["contractVersion"] == "1.1.0"
+    assert PLAN_CONTRACT["semanticVocabulary"]["entityTypes"][:8] == [
+        "Member", "House", "DailTerm", "SeanadTerm", "ParliamentaryMemberCollection",
+        "DailConstituency", "SeanadPanel", "Committee",
+    ]
+    assert PLAN_CONTRACT["semanticVocabulary"]["entityTypes"][8:] == [
+        "Bill", "NamedOffice", "DebateRecord",
+    ]

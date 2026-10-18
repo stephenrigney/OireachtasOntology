@@ -50,7 +50,7 @@ def test_contract_artifact_loads_and_validates_its_versioned_shape():
         (ROOT / "poc/specs/query-schema-contract.schema.json").read_text(encoding="utf-8")
     )
 
-    assert contract["contractVersion"] == "1.1.0"
+    assert contract["contractVersion"] == "2.0.0"
     assert contract["schemaVersion"] == schema["properties"]["schemaVersion"]["const"] == 1
     assert contract["contractId"] == "https://data.oireachtas.ie/specs/query-schema-contract"
     assert contract["contractSchema"] == "poc/specs/query-schema-contract.schema.json"
@@ -63,7 +63,7 @@ def test_contract_artifact_loads_and_validates_its_versioned_shape():
 
 def test_contract_minor_additions_are_compatible_and_unknown_fields_are_ignored(tmp_path):
     def add_compatible_pattern(document):
-        document["contractVersion"] = "1.4.2"
+        document["contractVersion"] = "2.4.2"
         document["informationalExtension"] = {"owner": "consumer"}
         document["emittedRdfPatterns"].append({
             "id": "additional-compatible-member-pattern",
@@ -76,7 +76,7 @@ def test_contract_minor_additions_are_compatible_and_unknown_fields_are_ignored(
 
     contract = load_query_contract(path)
 
-    assert contract["contractVersion"] == "1.4.2"
+    assert contract["contractVersion"] == "2.4.2"
     assert "additional-compatible-member-pattern" in {
         pattern["id"] for pattern in contract["emittedRdfPatterns"]
     }
@@ -86,7 +86,7 @@ def test_contract_minor_additions_are_compatible_and_unknown_fields_are_ignored(
     "mutate, message",
     [
         (lambda document: document.update(schemaVersion=2), "Unsupported query contract schema version 2"),
-        (lambda document: document.update(contractVersion="2.0.0"), "Unsupported query contract major version 2"),
+        (lambda document: document.update(contractVersion="3.0.0"), "Unsupported query contract major version 3"),
         (lambda document: document["localSafety"].update(version="2.0.0"), "Unsupported local query safety major version 2"),
         (lambda document: document["emittedRdfPatterns"][0].update(graphFamily="unknown"), "unknown graph family"),
         (lambda document: document["namespaces"].pop("agents"), "unknown or invalid QName"),
@@ -129,9 +129,9 @@ def test_graph_family_ownership_patterns_and_cross_graph_joins_are_explicit():
     unsupported = {item["id"] for item in contract["unsupportedPatterns"]}
     assert "parliamentary-group-records" in unsupported
     assert "office-type-vocabulary" in unsupported
-    assert "development-evaluation-slice-only-not-NLQ-grounded" == (
+    assert "not-emitted" == (
         next(item["status"] for item in contract["unsupportedPatterns"]
-             if item["id"] == "debate-records"))
+             if item["id"] == "debate-transcript-text"))
 
 
 def test_supported_predicates_come_from_contract_policy_and_active_sources():
@@ -172,7 +172,7 @@ def test_grounding_is_generated_from_contract_scope_without_private_etl_imports(
 
     for term in ("agents:Member", "members:PartyMembership", "eli-dl:DraftLegislationWork"):
         assert term in context
-    assert "contract 1.1.0 (schema version 1)" in context
+    assert "contract 2.0.0 (schema version 1)" in context
     assert "https://data.oireachtas.ie/graph/committees" in context
     assert "same RDF resource IRI" in context
     assert "Reviewed Wikidata political-party item" in context
@@ -238,8 +238,22 @@ def test_emitted_but_unallowlisted_patterns_are_not_mislabeled_queryable():
 
     for pattern_id in (
         "house-term-temporal-reference", "bill-document-work-links",
-        "conditionally-resolved-office-holdings",
     ):
         assert patterns[pattern_id]["queryableInLocalNlq"] is False
+    assert patterns["conditionally-resolved-office-holdings"]["queryableInLocalNlq"] is True
+    assert patterns["debate-record-identity"]["queryableInLocalNlq"] is True
     for pattern_id in ("house-term-temporal-reference", "bill-document-work-links"):
         assert "not-queryable" in patterns[pattern_id]["availability"]
+
+
+def test_query_schema_v2_corrects_bill_process_ownership_and_exposes_only_reviewed_expansions():
+    contract = load_query_contract()
+    patterns = {pattern["id"]: pattern for pattern in contract["emittedRdfPatterns"]}
+    bill_triples = patterns["bill-lifecycle"]["triples"]
+
+    assert ["?process", "eli-dl:latest_activity", "?activity"] in bill_triples
+    assert ["?bill", "eli-dl:latest_activity", "?activity"] not in bill_triples
+    assert ["?bill", "eli:type_document", "agents:Bill"] in bill_triples
+    assert patterns["named-office-description"]["queryableInLocalNlq"] is True
+    assert patterns["conditionally-resolved-office-holdings"]["queryableInLocalNlq"] is True
+    assert patterns["debate-record-identity"]["queryableInLocalNlq"] is True

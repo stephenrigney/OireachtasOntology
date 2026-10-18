@@ -43,6 +43,8 @@ _ENTITY_CLASSES = {
     "DailConstituency": "members:DailConstituency",
     "SeanadPanel": "members:SeanadPanel",
     "Committee": "members:Committee",
+    "Bill": "eli-dl:DraftLegislationWork",
+    "NamedOffice": "members:NamedOffice",
 }
 _ENTITY_GRAPH_FAMILIES = {
     "Member": "member-records",
@@ -53,6 +55,8 @@ _ENTITY_GRAPH_FAMILIES = {
     "DailConstituency": "constituencies",
     "SeanadPanel": "constituencies",
     "Committee": "committees",
+    "Bill": "bill-records",
+    "NamedOffice": "offices",
 }
 _ENTITY_GRAPH_CONFIG = {
     family["id"]: family["graph"] for family in _CONTRACT["graphFamilies"]
@@ -202,11 +206,24 @@ def _entity_lookup_query(entity_type: str, label: str) -> str:
             f"No deterministic local resolver is available for entity type {entity_type!r}."
         )
     predicate = _entity_label_predicate(entity_type)
+    label_qname = _CONTRACT["labelsByEntityType"][entity_type]["predicate"]
+    qnames = [class_name, label_qname]
+    extra_patterns = ""
+    if entity_type == "Bill":
+        qnames.extend(("eli:type_document", "agents:Bill"))
+        extra_patterns = " ; eli:type_document agents:Bill"
     query_label = Literal(unicodedata.normalize("NFC", label)).n3()
     if graph_config.get("kind") == "resource-pattern" and entity_type == "Member":
         pattern = (
             f"GRAPH ?entityGraph {{ ?entity a {class_name} ; {predicate} ?label . }}\n"
             f'  FILTER(STRSTARTS(STR(?entityGraph), "{_MEMBER_GRAPH_PREFIX}"))'
+        )
+    elif graph_config.get("kind") == "resource-pattern" and entity_type == "Bill":
+        graph_pattern = r"^https://data\.oireachtas\.ie/graph/bill/[^/]+/[^/]+$"
+        pattern = (
+            f"GRAPH ?entityGraph {{ ?entity a {class_name} ; {predicate} ?label"
+            f"{extra_patterns} . }}\n"
+            f"  FILTER(REGEX(STR(?entityGraph), {Literal(graph_pattern).n3()}))"
         )
     elif graph_config.get("kind") == "fixed":
         graph_iri = graph_config.get("iri")
@@ -219,8 +236,11 @@ def _entity_lookup_query(entity_type: str, label: str) -> str:
         raise UnsupportedLocalEntityType(
             f"The local graph pattern for entity type {entity_type!r} is unsupported."
         )
-    return f'''PREFIX agents: <{_NAMESPACES["agents"]}>
-PREFIX members: <{_NAMESPACES["members"]}>
+    prefixes = "\n".join(
+        f"PREFIX {prefix}: <{_NAMESPACES[prefix]}>"
+        for prefix in sorted({qname.split(":", 1)[0] for qname in qnames})
+    )
+    return f'''{prefixes}
 SELECT DISTINCT ?entity ?label WHERE {{
   {pattern}
   FILTER(CONTAINS(LCASE(STR(?label)), LCASE(STR({query_label}))))

@@ -27,6 +27,8 @@ _SEMVER = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$")
 _IDENTIFIER = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
 _DATE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
 _LOCAL_IRI = re.compile(r"^https://data\.oireachtas\.ie/[^\s?#]+$")
+_LOCAL_VOCAB_TERM = re.compile(r"^https://data\.oireachtas\.ie/[^\s?#]+#[^\s?#]+$")
+_ROUTE_SEGMENT = re.compile(r"^[a-z0-9_-]+$")
 
 RESOLUTION_STATES = frozenset({"resolved", "ambiguous", "unresolved"})
 FILTER_OPERATORS = frozenset({
@@ -115,6 +117,24 @@ def _local_iri(value: Any, where: str) -> str:
         or any(character.isspace() for character in value)
     ):
         _error(f"Query plan {where} must be a local Oireachtas IRI under https://data.oireachtas.ie/.")
+    return value
+
+
+def _local_vocabulary_term(value: Any, where: str) -> str:
+    """Validate one local controlled-vocabulary individual IRI, including fragment."""
+    if not isinstance(value, str) or not _LOCAL_VOCAB_TERM.fullmatch(value):
+        _error(f"Query-plan contract {where} must be a local Oireachtas vocabulary-term IRI.")
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        _error(f"Query-plan contract {where} must be a local Oireachtas vocabulary-term IRI.")
+    if (
+        parsed.scheme != "https"
+        or parsed.netloc != "data.oireachtas.ie"
+        or parsed.query
+        or not parsed.fragment
+    ):
+        _error(f"Query-plan contract {where} must be a local Oireachtas vocabulary-term IRI.")
     return value
 
 
@@ -221,11 +241,49 @@ def _validate_semantic_vocabulary(raw_vocabulary: Any) -> dict[str, Any]:
             filter_entity_types = frozenset()
         if "exists" not in operators:
             _error(f"Query-plan contract {where}.operators must include 'exists'.")
+        allowed_values: list[dict[str, str]] = []
+        if "allowedValues" in field:
+            if value_kind != "string":
+                _error(f"Query-plan contract {where}.allowedValues is supported only for string-valued filters.")
+            seen_values: set[str] = set()
+            seen_resources: set[str] = set()
+            seen_routes: set[str] = set()
+            for value_index, raw_value in enumerate(_array(field["allowedValues"], f"{where}.allowedValues")):
+                value_where = f"{where}.allowedValues[{value_index}]"
+                controlled_value = _object(raw_value, value_where)
+                _required_fields(controlled_value, ("id", "label"), f"contract {value_where}")
+                unknown_value_fields = set(controlled_value) - {"id", "label", "resource", "route"}
+                if unknown_value_fields:
+                    _error(f"Query-plan contract {value_where} contains unsupported field(s): {', '.join(sorted(unknown_value_fields))}.")
+                value_id = _identifier(controlled_value["id"], f"contract {value_where}.id")
+                label = _nonempty_string(controlled_value["label"], f"contract {value_where}.label")
+                if value_id in seen_values:
+                    _error(f"Query-plan contract {where}.allowedValues contains duplicate id {value_id!r}.")
+                seen_values.add(value_id)
+                normalized_value = {"id": value_id, "label": label}
+                if "resource" in controlled_value:
+                    resource = _local_vocabulary_term(controlled_value["resource"], f"contract {value_where}.resource")
+                    if resource in seen_resources:
+                        _error(f"Query-plan contract {where}.allowedValues contains duplicate resource {resource!r}.")
+                    seen_resources.add(resource)
+                    normalized_value["resource"] = resource
+                if "route" in controlled_value:
+                    route = controlled_value["route"]
+                    if not isinstance(route, str) or not _ROUTE_SEGMENT.fullmatch(route):
+                        _error(f"Query-plan contract {value_where}.route must be a lower-case route segment.")
+                    if route in seen_routes:
+                        _error(f"Query-plan contract {where}.allowedValues contains duplicate route {route!r}.")
+                    seen_routes.add(route)
+                    normalized_value["route"] = route
+                allowed_values.append(normalized_value)
+            if not allowed_values:
+                _error(f"Query-plan contract {where}.allowedValues must not be empty.")
         filter_fields[field_id] = {
             **field,
             "facts": supported_facts,
             "operators": operators,
             "entityTypes": filter_entity_types,
+            "allowedValues": allowed_values,
         }
     if not filter_fields:
         _error("Query-plan contract semanticVocabulary.filterFields must contain at least one field.")
@@ -451,6 +509,12 @@ def _validate_filters(
         if filter_field["valueKind"] == "string":
             if not isinstance(filter_value, str):
                 _error(f"Query plan {where}.value must be a string for field {field_id!r}.")
+            allowed_values = filter_field["allowedValues"]
+            if allowed_values and filter_value not in {item["id"] for item in allowed_values}:
+                _error(
+                    f"Query plan {where}.value uses unsupported value {filter_value!r} "
+                    f"for field {field_id!r}."
+                )
         elif filter_field["valueKind"] == "number":
             if (
                 isinstance(filter_value, bool)
