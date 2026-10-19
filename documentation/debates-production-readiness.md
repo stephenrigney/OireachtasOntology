@@ -20,13 +20,16 @@ acceptance is not a verified backup of the intended production dataset. See
 [Phase 6 Tranche C](phase-6-tranche-c.md) and the
 [Debates execution plan](debates-production-execution-plan.md).
 
-**Latest D/E/F reassessment (2026-10-16):** Decision D remains blocked by a
-Committee 217 provenance gap; the approved Committee ID 115 exception remains
-settled. Decision E's private-beta target is not provisioned or launch-ready,
-and Decision F remains **NO-GO**. See the dated assessments and consolidated
-readiness summary below.
+**Latest D/E/F reassessment (2026-10-19):** Disposable Decision D staging
+publication and interrupted-publication recovery passed, including 2,488/2,488
+reference closure and 17 Committee 217 source pointers. The owner evidence pack
+is ready for human review; D is **staging-ready, not human-accepted**. Committee
+115 remains settled. Decision E's private-beta target is not provisioned or
+launch-ready, and Decision F remains **NO-GO**. No production operation is
+authorized by this report.
 
-**Decision D implementation follow-up (2026-10-18):** The lineage selector now
+**Decision D implementation follow-up (2026-10-18, superseded by the 2026-10-19
+staging evidence below):** The lineage selector now
 allows a resolved, canonical observation to contribute its exact raw-record
 pointer even when an optional semantic field has a malformed-field diagnostic.
 It continues to reject unresolved/conflicting identities and explicit
@@ -34,10 +37,11 @@ Committee-resolution exclusions. This corrects eligibility only; malformed
 values are not repaired or emitted. Focused reference/provenance tests pass.
 The complete authoritative candidate rebuild, verified 2,175/2,488 closure,
 Committee 217 exact-pointer validation, isolated publication/recovery rehearsal,
-owner fingerprint and current full-corpus unresolved-reference report have not
-yet been rerun after this correction. Therefore Decision D remains **blocked**
-pending that evidence and human owner acceptance; this implementation does not
-authorize publication.
+owner fingerprint and current full-corpus unresolved-reference report had not
+yet been rerun at the time of this note. The required disposable staging,
+recovery and snapshot checks were subsequently completed on 2026-10-19, as
+recorded below. Human owner acceptance remains outstanding; this implementation
+does not authorize production publication.
 
 ## Owner policy decision record — 2026-10-13
 
@@ -701,18 +705,118 @@ separately authorize the exact first five-Work production publication. Review of
 that result is required before a separate decision to progress to 10 Works, and
 again before 25 Works. Progression is never automatic.
 
-## Consolidated D/E/F readiness summary — 2026-10-16
+## Consolidated D/E/F readiness summary — 2026-10-19
 
 | Workstream | Completed evidence | Current status / blocker | Human approval still required |
 |---|---|---|---|
-| **D — authoritative owners** | Indexed complete capture provenance reproduced; candidate graph validation and 2,488/2,488 closure checks pass; approved Committee ID 115 outcome independently corroborated, with no contradiction. | **Blocked, not accepted.** Committee 217 has no exact source-lineage pointer under the current builder; no owner publication rehearsal, authoritative owner fingerprint or current full-corpus unresolved-reference report exists. | Provenance/authority disposition for Committee 217; then accept the exact owner capture set, candidate payloads/fingerprint, visible diagnostics/exclusions and unresolved-reference outcomes. Do not reopen ID 115. |
+| **D — authoritative owners** | In disposable Fuseki, all 1,928 preserved Member graphs were restored and exactly verified; candidate Committees/Parties/Constituencies graphs were published; reference closure is 2,488/2,488; Committee 217 has 17 exact source pointers; interrupted-publication recovery returned clean and passed remote closure. The publisher-compatible Debates-owner snapshot fingerprint is `af35838467ef99c5aa40856d3f8921542ccf88fe9ae898efc6626dbd9d137ca8`. | **Staging-ready; awaiting human owner acceptance.** Eighteen malformed optional date-range observations remain diagnosed and un-emitted, with no insufficient-evidence or unresolved-closable references. The fingerprint covers the Debates resolver's 1,928 Member graphs plus Houses/Committees, not the separate Parties/Constituencies owner graphs; their candidate hashes are recorded below. Snapshot inspection also reports legacy provenance gaps and a dirty catalog publication, so it is not evidence of a fully clean catalog or production state. | Review and accept the exact owner capture set, graph hashes, fingerprint scope, visible malformed diagnostics/exclusions and closure results. Keep Committee 115 settled. No production publication is authorized. |
 | **E — private-beta environment** | Phase 6 disposable restore/rebuild and implementation checks pass; production deployment wrapper tests pass (21); the private-beta plan and staged security gates are documented. | **Not ready for launch.** No provider/gateway/target runtime is selected or provisioned; beta access control, deployed security, actual capacity, off-host canonical backup and target-specific full recovery are unverified. The POC remains unauthenticated and must not be exposed. | Gate 1 design approvals before provisioning; Gate 2 deployed security/operations and independent review; explicit Gate 3 beta launch decision. Separately accept the secure ETL ingestion runtime and its coordinated recovery evidence. |
 | **F — controlled Debates ingestion** | Frozen manifest/hash and A/B/C positions retained; deterministic 5/10/25 batch boundaries rechecked; existing controlled-staging and recovery mechanisms are documented. | **NO-GO.** Direct D and ingestion-environment E prerequisites are unmet; no Debates has been ingested or published. | After D/E prerequisites, separate explicit go/no-go for the exact five-Work batch; review that result before separate approvals to progress to 10 and 25 Works. |
 
-**What can proceed now:** human provenance review of Committee 217, review of the
-Decision D evidence, private-beta Gate 1 design decisions, and non-publishing
-preflight/operational preparation. **What remains blocked:** acceptance or
-publication of the current owner candidate, private-beta exposure, and any
-production Debates ingestion. The next human decision is the authorized
-provenance disposition for Committee 217; it must preserve the settled ID 115
-resolution and cannot itself approve D, E, F or production publication.
+**What can proceed now:** human review of the Decision D owner evidence pack,
+private-beta Gate 1 design decisions, and non-publishing F preparation. **What
+remains blocked:** human acceptance of D, private-beta exposure, and any
+production Debates ingestion. D staging evidence does not itself approve owner
+acceptance, E deployment, F ingestion, or production publication.
+
+### D — disposable owner publication and recovery evidence (2026-10-19)
+
+The acceptance rehearsal used disposable Core State and loopback Fuseki only;
+no production endpoint or state was accessed. The prior Parties and
+Constituencies graph payloads were reconstructed from preserved authoritative
+captures only after their hashes matched the copied Core State's recorded
+published hashes and exact remote verification passed. Houses was similarly
+verified against its saved publisher payload. The current candidate publication
+then replaced Committees, Parties and Constituencies through the normal
+publication boundary. Final candidate graph evidence:
+
+| Graph | Triples | SHA-256 |
+|---|---:|---|
+| Houses (preserved publisher payload; unchanged) | 721 | `6e028f4f774437860b666a8a400b88b91cfedbe99ef59dd67583fddef9b71aaa` |
+| Committees | 2,810 | `9dfbf1ad877bab0ec6e308d1faafe925f38bca560b51c06a67d61da9cff1999f` |
+| Parties | 1,890 | `83a8e663cca1e0319ff858c3a639fa14d854900a2a478a2a92e44943dbbe62cd` |
+| Constituencies | 7,645 | `fd4374aa74fb523677b9d9e1ef260e8d0cceca175f2a2a86ccb47144ab94f29e` |
+
+All 1,928 stored Member graph payload hashes and deterministic graph IRIs were
+checked; the 1,928 graphs were restored and exactly verified remotely. The
+candidate census found 2,175 distinct identities across 17,557 observations
+(268 committees, 378 parties and 1,529 representation identities). Closure
+reported 2,488/2,488 references closed, with no insufficient-evidence or
+unresolved-closable entries and no Member owner-description leaks. Eighteen
+malformed optional committee date-range observations remain listed in the
+disposable diagnostic artifact; they were not repaired or emitted. Committee
+217 has 17 source pointers and no operational date range emitted. The accepted
+Committee 115 IRI has ID and code 115, Dáil term 33 and the recorded
+ShadowDepartmentPurpose; the prior ID 115 decision is unchanged.
+
+Interrupted publication was simulated after the dirty-state commit on an
+isolated copy of Core State. Recovery replayed Committees hash
+`9dfbf1ad877bab0ec6e308d1faafe925f38bca560b51c06a67d61da9cff1999f`, returned
+publication state to clean and passed remote closure verification.
+
+The read-only `debates_owner_snapshot.py` fingerprint
+`af35838467ef99c5aa40856d3f8921542ccf88fe9ae898efc6626dbd9d137ca8` covers
+the Debates resolver inventory (1,928 Member graphs, Houses and Committees; 1,930
+graphs total). By design, this resolver snapshot does **not** include Parties
+or Constituencies; their current candidate payload hashes are separately
+listed above. Therefore the fingerprint must not be described as a hash of all
+published owner graphs. The snapshot tool also reports historical pending
+provenance-incomplete records and a dirty provenance-catalog publication in
+this disposable copied state. Remote verification was exact for every graph in
+the resolver snapshot; the dirty catalog warning is disclosed and was not
+silently treated as clean owner evidence. Houses also reports
+`coverage_authoritative: false` in that copied Core State. These findings
+constrain what this staging rehearsal proves and require review before any
+production use.
+
+**D gate:** the technical staging/recovery acceptance is complete and ready
+for owner review, not human-approved. Human owners must accept the graph
+inventory and hashes, exact snapshot scope, Committee 217 lineage, malformed
+diagnostics, and closure outcome. Production readiness/publication remains a
+separate decision.
+
+## Independent Decision E/F progress — 2026-10-19
+
+### E — Gate 1 owner decisions and recommendations
+
+Decision E remains **not ready for launch**. These are recommendations for the
+accountable owners, not choices made by the ETL team:
+
+| Owner decision | Options and recommendation | Gate dependency |
+|---|---|---|
+| Pilot cohort, concurrency, duration, support and revocation owner | Prefer a small, individually invited, capped cohort with a fixed end date and named support/revocation owner. Set numbers only after capacity and cost estimates. | Sponsor must approve before provisioning. |
+| Provider, region, gateway and identity source | Compare a managed identity gateway with a portable operator-managed gateway; select no vendor absent owner review. Require individual identities, MFA where supported, private origins and tested revocation. | Sponsor/platform/identity owners must decide before provisioning. |
+| NLQ/ETL deployment boundary and snapshot handoff | At minimum keep administrative/publication paths separated with distinct identities; prefer a separately populated beta query snapshot if feasible, acknowledging it adds refresh/recovery work. Host-local `flock` is not distributed coordination. | Platform/operations owners must choose topology and approve a tested handoff if targets differ. |
+| Dataset authority, coverage and refresh | Prefer a frozen, hash-identified snapshot with explicit authority/completeness labels and reviewed refreshes; do not describe development/bootstrap data as authoritative. Final snapshot identity must await D owner acceptance. | Policy can be decided in Gate 1; dataset-specific evidence waits for D. |
+| Model provider, federation, privacy and logs | Keep federation disabled by default; enable a model endpoint only after data handling/retention, participant notice and provider terms are reviewed. Prefer minimal, short-retention logs and avoid question text unless approved. | Sponsor/privacy/application owners must decide; deployed controls wait for Gate 2. |
+| Budget, recovery, rollback and teardown | Set a hard spend ceiling/alerts, name the operator authorized to suspend access, define backup scope/retention and fix a teardown date. Provision a protected off-host recovery target before launch. | Sponsor/platform/operations owners must decide; target restore evidence waits for Gate 2. |
+
+No provider, gateway, cohort, model service, topology, budget or retention policy
+has been selected. D-independent Gate 2 preparation may proceed: threat model
+and control/test matrix, synthetic adversarial query cases, dependency/container/
+configuration/history scan procedure, account-bypass test plan, and beta
+runbooks. Real access, TLS, origin-bypass, revocation, capacity, spend, deployed
+image-scan and full recovery tests require owner-approved Gate 1 decisions and
+provisioned staging. Gate 3 approval remains separate.
+
+### F — independent frozen-manifest preflight
+
+Without performing Debates transformation or publication, the frozen inventory
+and every referenced source XML/metadata object were rechecked against the
+assessment raw root. The approved inventory SHA-256 remains
+`ae07dc7c293bcadef3d17fa52ea19e2b92db5368242a53aefd68ec8ca5f0c4d7`; all
+10,913 referenced XML objects and their metadata sidecars passed hash and
+integrity checks, covering 2,669,237,153 source bytes. Deterministic boundaries
+remain 2,183/1,092/437 batches at 5/10/25 Works, with maxima 12,496,743 /
+18,743,211 / 40,924,626 bytes respectively under the 64 MiB ceiling. The size
+checks are inventory/source calculations, not target production capacity tests.
+
+This closes a local frozen-manifest/source-evidence integrity check only. It
+does not establish that production's raw root has identical contents, resolve
+Debates references over the full corpus, accept production owners, prove target
+capacity/recovery, or authorize any publication. A Debates-wide reference
+assessment remains a later pre-ingestion readiness check; it is not required to
+finish this owner-data acceptance. Preserve A/B and provisional C. After D and
+the secure ingestion-environment/recovery gates, obtain a separate written
+go/no-go for the exact first five-Work publication, then review that result
+before separate approvals for 10 and 25 Works.
