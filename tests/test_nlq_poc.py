@@ -500,7 +500,7 @@ def test_browser_renders_result_and_exact_sparql(monkeypatch):
     async def post_question():
         transport = httpx.ASGITransport(app=app_module.create_app())
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            return await client.post("/ask", data={"question": "Who is the member?"})
+            return await client.post("/ask", data={"question": "Who is the member?", "mode": "phase1"})
 
     response = asyncio.run(post_question())
     assert response.status_code == 200
@@ -556,7 +556,7 @@ def test_browser_shows_fuseki_error_payload_in_debug_output(monkeypatch):
     async def post_question():
         transport = httpx.ASGITransport(app=app_module.create_app())
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            return await client.post("/ask", data={"question": "Who is the member?"})
+            return await client.post("/ask", data={"question": "Who is the member?", "mode": "phase1"})
 
     response = asyncio.run(post_question())
     assert response.status_code == 200
@@ -604,7 +604,7 @@ def test_browser_shows_llm_error_payload_when_translation_fails(monkeypatch):
     async def post_question():
         transport = httpx.ASGITransport(app=app_module.create_app())
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            return await client.post("/ask", data={"question": "Who is the member?"})
+            return await client.post("/ask", data={"question": "Who is the member?", "mode": "phase1"})
 
     response = asyncio.run(post_question())
     assert response.status_code == 200
@@ -650,7 +650,7 @@ def test_browser_opens_debugger_for_empty_select_results(monkeypatch):
     async def post_question():
         transport = httpx.ASGITransport(app=app_module.create_app())
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            return await client.post("/ask", data={"question": "Who is the named member?"})
+            return await client.post("/ask", data={"question": "Who is the named member?", "mode": "phase1"})
 
     response = asyncio.run(post_question())
     assert response.status_code == 200
@@ -692,7 +692,7 @@ def test_browser_identifies_safety_rejection_as_not_sent_to_fuseki(monkeypatch):
     async def post_question():
         transport = httpx.ASGITransport(app=app_module.create_app())
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            return await client.post("/ask", data={"question": "Who is the member?"})
+            return await client.post("/ask", data={"question": "Who is the member?", "mode": "phase1"})
 
     response = asyncio.run(post_question())
     assert response.status_code == 200

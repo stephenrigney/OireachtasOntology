@@ -62,6 +62,16 @@ from oireachtas_etl.cli import (  # noqa: E402
 from oireachtas_etl.loader import FusekiSparqlClient  # noqa: E402
 
 
+def _scratch_root() -> Path:
+    configured = os.getenv("OIR_NLQ_SCRATCH_DIR")
+    root = Path(configured).expanduser() if configured else ROOT / "var" / "nlq-scratch"
+    if not root.is_absolute():
+        root = ROOT / root
+    root = root.resolve()
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
 DEFAULT_REALISTIC_PLANNER_BENCHMARK = (
     ROOT / "poc/nlq/benchmarks/realistic-phase2-planner-v1.json"
 )
@@ -488,7 +498,7 @@ def _readback_graph_hashes(instance: DisposableFuseki, path: Path,
             Graph(store=sink).parse(source=str(path), format="nquads")
         # The syntax-checked readback has now been reduced to the canonical
         # external-sort stream; remove the redundant raw copy before sorting to
-        # keep the benchmark's disposable /tmp footprint bounded.
+        # keep the benchmark's disposable scratch footprint bounded.
         path.unlink()
         sort_process = subprocess.Popen(
             ["sort", "--buffer-size=128M", "--temporary-directory", str(path.parent),
@@ -827,8 +837,8 @@ def main(argv: list[str] | None = None) -> int:
 
     run_id = str(uuid.uuid4())
     result_path = args.results or ROOT / "var" / "nlq-plan-benchmark" / "runs" / f"{run_id}.json"
-    scratch_root = Path("/tmp/oireachtasontology/query-service-phase-2/nlq-plan-benchmark")
-    scratch_root.mkdir(parents=True, exist_ok=True)
+    scratch_root = _scratch_root()
+    os.environ["OIR_NLQ_SCRATCH_DIR"] = str(scratch_root)
 
     try:
         with tempfile.TemporaryDirectory(prefix="run-", dir=scratch_root) as work_dir:

@@ -6,6 +6,7 @@ from pathlib import Path
 from time import perf_counter
 from urllib.parse import urlsplit
 import hashlib
+import os
 from .api import ApiClient, HousesApiClient
 from .config import (ADMINISTRATIVE_UNITS_GRAPH, COMMITTEES_GRAPH,
                      CONSTITUENCIES_GRAPH, HOUSES_GRAPH,
@@ -3530,11 +3531,22 @@ class _DevelopmentCandidateNQuadsSpool:
         }
 
 
+def _nlq_scratch_root() -> Path:
+    """Return the configurable non-temporary area for large NLQ dev artifacts."""
+    configured = os.getenv("OIR_NLQ_SCRATCH_DIR")
+    root = (
+        Path(configured).expanduser()
+        if configured
+        else Path(__file__).resolve().parents[2] / "var" / "nlq-scratch"
+    )
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
 def _serialize_development_candidate_nquads(
         graph_payloads: list[tuple[str, Graph, str]]) -> tuple[str, dict]:
     """Small-fixture helper for deterministic, fully parsed N-Quads candidates."""
-    scratch_root = Path("/tmp/oireachtasontology/query-service-phase-2")
-    scratch_root.mkdir(parents=True, exist_ok=True)
+    scratch_root = _nlq_scratch_root()
     with tempfile.TemporaryDirectory(prefix="oir-nquads-test-", dir=scratch_root) as temporary:
         root = Path(temporary)
         spool = _DevelopmentCandidateNQuadsSpool(root / "graphs")
@@ -3920,8 +3932,7 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
                 "offline benchmark candidate generation must not receive Fuseki endpoints"
             )
         gsp_url = sparql_url = None
-        candidate_scratch_root = Path("/tmp/oireachtasontology/query-service-phase-2")
-        candidate_scratch_root.mkdir(parents=True, exist_ok=True)
+        candidate_scratch_root = _nlq_scratch_root()
         candidate_spool_directory = tempfile.TemporaryDirectory(
             prefix="oir-dev-benchmark-candidate-", dir=candidate_scratch_root,
         )
@@ -3989,7 +4000,8 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
     # run_debate_batch writes reference sidecars beside the raw object, so stage
     # exact verified bytes under a disposable directory rather than touching
     # the preserved source store.
-    with tempfile.TemporaryDirectory(prefix="oir-dev-bootstrap-debates-") as scratch:
+    with tempfile.TemporaryDirectory(
+            prefix="oir-dev-bootstrap-debates-", dir=_nlq_scratch_root()) as scratch:
         debate_outcomes, debate_evidence = _load_development_debates(
             raw_root, Path(scratch))
     phase_timings["Debate replay"] = perf_counter() - started

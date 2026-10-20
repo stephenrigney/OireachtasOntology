@@ -105,6 +105,8 @@ load_env_local() {
 }
 
 load_env_local "$ROOT/.env.local"
+: "${OIR_NLQ_SCRATCH_DIR:=$ROOT/var/nlq-scratch}"
+export OIR_NLQ_SCRATCH_DIR
 
 # --- Effective configuration: explicit env > .env.local > defaults ----------
 : "${NLQ_LLM_BASE_URL:=$DEFAULT_NLQ_LLM_BASE_URL}"

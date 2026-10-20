@@ -31,6 +31,16 @@ from poc.nlq.structured_planner import ResponsesPlanGenerator, StructuredPlanner
 from poc.nlq.vocabulary import supported_predicates  # noqa: E402
 
 
+def _scratch_root() -> Path:
+    configured = os.getenv("OIR_NLQ_SCRATCH_DIR")
+    root = Path(configured).expanduser() if configured else ROOT / "var" / "nlq-scratch"
+    if not root.is_absolute():
+        root = ROOT / root
+    root = root.resolve()
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
 DEFAULT_SOURCE_BENCHMARK = ROOT / "poc/nlq/benchmarks/benchmark-v3.json"
 
 
@@ -104,8 +114,8 @@ def main(argv: list[str] | None = None) -> int:
 
     run_id = str(uuid.uuid4())
     result_path = args.results or ROOT / "var" / "nlq-planner-benchmark" / "runs" / f"{run_id}.json"
-    scratch_root = Path("/tmp/opencode/oireachtasontology/nlq-planner-benchmark")
-    scratch_root.mkdir(parents=True, exist_ok=True)
+    scratch_root = _scratch_root()
+    os.environ["OIR_NLQ_SCRATCH_DIR"] = str(scratch_root)
 
     try:
         with DisposableFuseki(

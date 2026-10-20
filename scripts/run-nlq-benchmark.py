@@ -29,6 +29,16 @@ from poc.nlq.config import load_local_environment, resolved_llm_configuration  #
 from poc.nlq.fuseki import FusekiQueryClient  # noqa: E402
 
 
+def _scratch_root() -> Path:
+    configured = os.getenv("OIR_NLQ_SCRATCH_DIR")
+    root = Path(configured).expanduser() if configured else ROOT / "var" / "nlq-scratch"
+    if not root.is_absolute():
+        root = ROOT / root
+    root = root.resolve()
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
 def _args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tier", choices=("regression", "measured"), default="regression")
@@ -104,8 +114,8 @@ def main(argv: list[str] | None = None) -> int:
 
     run_id = str(uuid.uuid4())
     result_path = args.results or ROOT / "var" / "nlq-benchmark" / "runs" / f"{run_id}.json"
-    scratch_root = Path(tempfile.gettempdir()) / "oireachtasontology" / "nlq-benchmark-phase-0b"
-    scratch_root.mkdir(parents=True, exist_ok=True)
+    scratch_root = _scratch_root()
+    os.environ["OIR_NLQ_SCRATCH_DIR"] = str(scratch_root)
 
     try:
         with DisposableFuseki(

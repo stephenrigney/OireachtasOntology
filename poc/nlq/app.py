@@ -20,7 +20,10 @@ from .fuseki import (
 )
 from .llm import ResponsesTranslator
 from .pipeline import process_question
+from .plan_pipeline import process_planned_question
+from .plan_sparql import PlanSparqlGenerator
 from .results import QueryResult, format_debug_payload
+from .structured_planner import ResponsesPlanGenerator
 from .schema import build_schema_context
 from .vocabulary import supported_predicates
 
@@ -36,6 +39,9 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
     templates = Jinja2Templates(directory=str(TEMPLATES))
     schema_context = build_schema_context(repository_root / "ontology")
     predicate_vocabulary = supported_predicates(repository_root / "ontology")
+    phase2_sparql_generator = PlanSparqlGenerator(
+        supported_predicates=predicate_vocabulary,
+    )
 
     def check_fuseki_readiness() -> FusekiReadiness:
         client = None
@@ -71,7 +77,10 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                ambiguity=None,
                error: str | None = None, debug_output: str | None = None,
                debug_message: str | None = None, debug_source: str | None = None,
-               readiness: FusekiReadiness | None = None):
+               readiness: FusekiReadiness | None = None,
+               mode: str = "phase2", interaction_status: str | None = None,
+               plan_json: str | None = None, plan_heading: str | None = None,
+               entity_outcomes: tuple[dict, ...] = ()):
         if readiness is None:
             readiness = check_fuseki_readiness()
         return templates.TemplateResponse(request, "index.html", {
@@ -85,6 +94,11 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
             "debug_message": debug_message,
             "debug_source": debug_source,
             "readiness": readiness,
+            "mode": mode,
+            "interaction_status": interaction_status,
+            "plan_json": plan_json,
+            "plan_heading": plan_heading,
+            "entity_outcomes": entity_outcomes,
         })
 
     @app.get("/", response_class=HTMLResponse)
@@ -92,12 +106,170 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
         return render(request)
 
     @app.post("/ask", response_class=HTMLResponse)
-    def ask(request: Request, question: str = Form(...)):
+    def ask(request: Request, question: str = Form(...), mode: str = Form("phase2")):
         question = question.strip()
         if not question:
-            return render(request, question=question, error="Enter a question to continue.")
+            return render(request, question=question, mode=mode,
+                          error="Enter a question to continue.")
         if len(question) > 2000:
-            return render(request, question=question[:2000], error="Questions must be 2,000 characters or fewer.")
+            return render(request, question=question[:2000], mode=mode,
+                          error="Questions must be 2,000 characters or fewer.")
+        if mode not in {"phase1", "phase2"}:
+            return render(request, question=question, mode="phase2",
+                          error="Choose a supported development query path.")
+
+        if mode == "phase2":
+            phase2_fuseki = None
+            phase = "structured planner"
+
+            def remember_phase(current: str) -> None:
+                nonlocal phase
+                phase = current
+
+            def remember_phase2_fuseki():
+                nonlocal phase2_fuseki
+                phase2_fuseki = FusekiQueryClient(
+                    os.getenv(FUSEKI_QUERY_URL_ENV, DEFAULT_FUSEKI_QUERY_URL),
+                    username=os.getenv("OIR_FUSEKI_USER"),
+                    password=os.getenv("OIR_FUSEKI_PASSWORD"),
+                )
+                return phase2_fuseki
+
+            def make_planner_generator():
+                return ResponsesPlanGenerator(
+                    os.getenv("NLQ_LLM_API_KEY", ""),
+                    os.getenv("NLQ_LLM_BASE_URL", ""),
+                    os.getenv("NLQ_LLM_MODEL", ""),
+                )
+
+            try:
+                outcome = process_planned_question(
+                    question,
+                    planner_generator_factory=make_planner_generator,
+                    plan_sparql_generator=phase2_sparql_generator,
+                    fuseki_factory=remember_phase2_fuseki,
+                    supported_predicates=predicate_vocabulary,
+                    on_phase=remember_phase,
+                )
+                planner_result = outcome.planner_result
+                plan_for_display = (
+                    planner_result.plan or planner_result.draft_plan
+                    if planner_result is not None else None
+                )
+                interpretation = (
+                    plan_for_display.get("intent")
+                    if isinstance(plan_for_display, dict) else None
+                )
+                entity_outcomes = tuple(
+                    entity for entity in plan_for_display.get("entities", [])
+                    if entity.get("resolution") in {"ambiguous", "unresolved"}
+                ) if isinstance(plan_for_display, dict) else ()
+                plan_heading = (
+                    "Validated query plan" if planner_result and planner_result.plan
+                    else "Planner draft (not validated)"
+                ) if plan_for_display is not None else None
+                plan_json = (
+                    format_debug_payload(plan_for_display)
+                    if plan_for_display is not None else None
+                )
+                sparql = (
+                    outcome.generation.sparql
+                    if outcome.generation is not None and outcome.generation.generated
+                    else None
+                )
+                messages = {
+                    "unsupported_request": (
+                        "This question or semantic combination is not supported by the current "
+                        "Phase 2 query path. No answer query was run."
+                    ),
+                    "planner_failure": (
+                        "The structured planner could not produce a usable query plan. "
+                        "No answer query was run."
+                    ),
+                    "validation_failure": (
+                        "The query plan or generated SPARQL did not pass validation. "
+                        "No answer query was run."
+                    ),
+                    "execution_failure": (
+                        "The validated query could not be completed by Fuseki. "
+                        "Inspect the development details below."
+                    ),
+                }
+                if outcome.status == "ambiguous_entity":
+                    labels = ", ".join(
+                        f"{entity.get('type', 'entity')} “{entity.get('label', '')}”"
+                        for entity in entity_outcomes if entity.get("resolution") == "ambiguous"
+                    )
+                    message = (
+                        f"More than one local match exists for {labels}. Add distinguishing "
+                        "context; no record was selected and no answer query was run."
+                        if labels else
+                        "More than one local entity match remains. Add distinguishing context; "
+                        "no record was selected and no answer query was run."
+                    )
+                elif outcome.status == "unresolved_entity":
+                    labels = ", ".join(
+                        f"{entity.get('type', 'entity')} “{entity.get('label', '')}”"
+                        for entity in entity_outcomes if entity.get("resolution") == "unresolved"
+                    )
+                    message = (
+                        f"No exact local match was found for {labels}. Check the name or whether "
+                        "the relevant data is loaded. No answer query was run."
+                        if labels else
+                        "No exact local match was found for an entity in the question. "
+                        "No answer query was run."
+                    )
+                elif outcome.status == "success":
+                    result = outcome.result
+                    if result.kind == "select" and not result.rows:
+                        debug_message = (
+                            "Fuseki accepted the generated SELECT query but returned zero bindings. "
+                            "This is not a syntax error; inspect the query and response below."
+                        )
+                    elif result.kind == "ask" and result.boolean is False:
+                        debug_message = "Fuseki accepted the ASK query and returned false."
+                    else:
+                        debug_message = None
+                    return render(
+                        request, question=question, mode=mode,
+                        interpretation=interpretation, plan_json=plan_json,
+                        plan_heading=plan_heading, sparql=sparql, result=result,
+                        debug_output=outcome.debug_output,
+                        debug_message=debug_message, debug_source=outcome.debug_source,
+                        entity_outcomes=entity_outcomes,
+                    )
+                else:
+                    message = messages.get(
+                        outcome.status,
+                        "The structured query could not be completed. No answer query was run.",
+                    )
+
+                debug_message = (
+                    f"Phase 2 stopped during {outcome.debug_source or phase}. "
+                    "The diagnostic is available in the development details."
+                )
+                return render(
+                    request, question=question, mode=mode,
+                    interpretation=interpretation, plan_json=plan_json,
+                    plan_heading=plan_heading, sparql=sparql,
+                    error=message, interaction_status=outcome.status,
+                    debug_output=outcome.debug_output,
+                    debug_message=debug_message,
+                    debug_source=outcome.debug_source or "Structured query",
+                    entity_outcomes=entity_outcomes,
+                )
+            except Exception:
+                logger.exception("Unexpected failure in structured Phase 2 NLQ POC")
+                return render(
+                    request, question=question, mode=mode,
+                    error="An unexpected problem prevented the structured query from being processed.",
+                    interaction_status="planner_failure",
+                    debug_message=f"Unexpected failure during {phase}; see the server log for details.",
+                    debug_source="Structured query",
+                )
+            finally:
+                if phase2_fuseki is not None:
+                    phase2_fuseki.close()
 
         translation = None
         translator = fuseki = None
@@ -144,6 +316,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                 return render(
                     request,
                     question=question,
+                    mode=mode,
                     ambiguity=outcome.ambiguity,
                     debug_message=(
                         "Local Member-name ambiguity was detected before SPARQL generation. "
@@ -162,7 +335,8 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                 )
             elif result.kind == "ask" and result.boolean is False:
                 debug_message = "Fuseki accepted the ASK query and returned false; inspect its graph pattern below."
-            return render(request, question=question, interpretation=translation.interpretation,
+            return render(request, question=question, mode=mode,
+                          interpretation=translation.interpretation,
                           sparql=safe_sparql, result=result, debug_output=result.raw_json,
                           debug_message=debug_message, debug_source="Fuseki")
         except NLQError as error:
@@ -181,14 +355,14 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                 "Local Member resolution" if phase == "Member name resolution" else
                 "Fuseki"
             )
-            return render(request, question=question,
+            return render(request, question=question, mode=mode,
                           interpretation=translation.interpretation if translation else None,
                           sparql=translation.sparql if translation else None,
                           error=str(error), debug_output=error.debug_output,
                           debug_message=debug_message, debug_source=debug_source)
         except Exception:
             logger.exception("Unexpected failure in NLQ POC")
-            return render(request, question=question,
+            return render(request, question=question, mode=mode,
                           interpretation=translation.interpretation if translation else None,
                           sparql=translation.sparql if translation else None,
                           error="An unexpected error prevented the question from being processed.",

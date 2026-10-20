@@ -594,6 +594,14 @@ def test_benchmark_candidate_nquads_is_deterministic_and_inventoried():
     assert len([line for line in payload.splitlines() if line.strip()]) == 3
 
 
+def test_nlq_development_scratch_location_is_configurable(tmp_path, monkeypatch):
+    scratch = tmp_path / "query-service-scratch"
+    monkeypatch.setenv("OIR_NLQ_SCRATCH_DIR", str(scratch))
+
+    assert cli._nlq_scratch_root() == scratch
+    assert scratch.is_dir()
+
+
 def test_benchmark_candidate_nquads_rejects_blank_nodes():
     graph = Graph()
     graph.add((BNode("not-deterministic"), RDF.type, URIRef("urn:Member")))

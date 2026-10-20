@@ -512,10 +512,10 @@ implementation details. Source selection remains Phase 3 work.
 - [x] Validate model-produced plans before SPARQL generation.
 - [x] Split planner and SPARQL-generator responsibilities.
 - [x] Generate local SPARQL from the validated plan.
-- [ ] Show the plan alongside the interpretation and generated query.
+- [x] Show the plan alongside the interpretation and generated query.
 - [x] Compare planned generation against the Phase 1 direct-generation
       baseline.
-- [ ] Keep a simple fallback/debug path during migration if useful.
+- [x] Keep a simple Phase 1 comparison/debug path during migration.
 
 Phase 2A is complete as a contract-only tranche. The artifact and examples are
 under `poc/specs/query-plan-*`; `poc.nlq.plan_contract` loads and validates them.
@@ -708,6 +708,33 @@ criteria.
 The deterministic unsupported-request test injects a supported draft and checks
 only that the manual-review case remains unscored; it does not test whether a
 model recognizes unsupported wording.
+
+#### Minimal development UI integration
+
+The existing PoC `POST /ask` browser path now defaults to the structured Phase 2
+pipeline: question → structured planner → deterministic entity resolution and
+plan validation → deterministic, safety-validated SPARQL → Fuseki → result. The
+planner, resolver, validator, compiler, and Fuseki client are the existing Phase
+2 components; this integration does not broaden query capabilities. Phase 1
+direct NL→SPARQL remains selectable in the form as a comparison/debug path.
+
+Successful SELECT/ASK results use the existing result display. Expand **Validated
+query plan** and **Generated SPARQL** to inspect the accepted plan and exact
+query. Ambiguous identity is reported without choosing a candidate; unresolved
+identity is reported without an answer query; unsupported question/semantic
+combinations, planner/validation failures, and Fuseki execution failures have
+separate concise messages. The development debugger retains diagnostic details
+and endpoint payloads when available, rather than exposing internal exceptions
+as the primary message. Interactive clarification and retry are not implemented.
+
+The accepted realistic benchmark remains **32 passed, 2 failed, 3 not scored**;
+the Phase 1 comparison is **14/30** and deterministic regression is **10/10**.
+`aggregate.dail-term-count` and `debate.committee-sep24` remain deferred planner
+quality failures; the UI tranche did not change planner semantics or rerun the
+realistic benchmark. For development/benchmark workflows that create large
+scratch files, use the ignored repository `var/` area or the configured
+non-`/tmp` scratch location. This UI integration does not perform the final
+Phase 2 exit review.
 
 #### Realistic-question evaluation
 

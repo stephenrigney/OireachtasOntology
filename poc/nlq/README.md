@@ -1,8 +1,8 @@
 # Natural-language query POC
 
-This proof of concept lets you ask questions about the Oireachtas RDF dataset in plain English.
+This proof of concept lets you ask questions about the Oireachtas RDF dataset in plain English. Its normal development path is the structured Phase 2 flow: a Responses-compatible planner proposes a semantic plan, local code resolves exact entity labels and validates the plan, a deterministic compiler generates safety-validated SPARQL, and Fuseki executes it. The model does not generate executable SPARQL on this path.
 
-The application first checks exact local Member-name references against Member `foaf:name` labels in Fuseki. If multiple local Member records remain without distinguishing context, it returns a clarification outcome and does not send an answer query. Otherwise, it sends the question with schema context derived from the repository ontology to an OpenAI Responses-compatible LLM; the application validates the model's read-only SPARQL, runs it against Fuseki, and shows both the result and the generated SPARQL.
+The development form also retains the Phase 1 direct NL→SPARQL path as an optional comparison/debug mode. Phase 2 ambiguity, unresolved entities, unsupported requests, planner/validation failures, and Fuseki execution failures are reported as distinct, controlled outcomes; no failed or unresolved plan is executed.
 
 This is an experimental query interface. It is separate from the deterministic ETL pipeline and never writes to Fuseki.
 
@@ -62,12 +62,18 @@ Try questions such as:
 - Which parliamentary member collection did Micheál Martin belong to in the 33rd Dáil?
 - How many members were in each parliamentary member collection in the 33rd Dáil?
 
-The application shows:
+On success, the application shows the result. In the default Phase 2 path, expand **Validated query plan** and **Generated SPARQL** to inspect the interpretation and executable query. Phase 1 continues to show its direct-generated query using the existing display.
 
-- the model's interpretation of the question;
-- the exact SPARQL submitted to Fuseki;
-- the SELECT result table or ASK result;
-- debugging information when translation, validation, or Fuseki execution fails.
+The application also reports:
+
+- ambiguous local identity without selecting a candidate;
+- unresolved local identity without running an answer query;
+- unsupported question/semantic combinations without generating an answer query;
+- planner or validation failures separately from Fuseki execution failures.
+
+Detailed diagnostics and the raw endpoint payload, when available, are in the expandable query debugger. Internal exceptions are not used as the primary user-facing message.
+
+The accepted Phase 2 realistic benchmark is **32 passed, 2 failed, 3 not scored**; the Phase 1 comparison was **14/30**, and the deterministic regression was **10/10**. The remaining Phase 2 failures are `aggregate.dail-term-count` and `debate.committee-sep24`; they are documented planner-quality limitations and were not changed as part of the UI integration.
 
 ### Other launcher commands
 
@@ -90,6 +96,10 @@ or advance Core State coverage/publication or external-reconciliation state.
 Materially conflicted reference identities remain quarantined, and the bootstrap
 reports unresolved references and labels reference closure **NOT authoritative
 / not complete**. If the bootstrap fails, the POC is not started.
+
+Development bootstrap and query-benchmark scratch artifacts default to the
+ignored repository directory `var/nlq-scratch`. Set `OIR_NLQ_SCRATCH_DIR` to a
+different non-`/tmp` location when needed.
 
 The bootstrap prints a stable dataset identity. To save its full machine-readable
 baseline for later evaluation tooling, invoke the same development-only command

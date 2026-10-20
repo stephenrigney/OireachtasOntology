@@ -113,7 +113,11 @@ def _bootstrap(instance: DisposableFuseki, baseline_path: Path) -> None:
 
 
 def test_representative_validated_plans_execute_correctly_on_disposable_fuseki():
-    scratch = Path("/tmp/opencode/oireachtasontology/nlq-plan-fuseki")
+    scratch = Path(os.getenv(
+        "OIR_NLQ_SCRATCH_DIR", str(ROOT / "var" / "nlq-scratch"),
+    )).expanduser()
+    if not scratch.is_absolute():
+        scratch = ROOT / scratch
     scratch.mkdir(parents=True, exist_ok=True)
     with DisposableFuseki() as instance, tempfile.TemporaryDirectory(
         prefix="acceptance-", dir=scratch,
