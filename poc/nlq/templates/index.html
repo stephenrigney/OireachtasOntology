@@ -25,7 +25,8 @@
   </style>
 </head>
 <body>
-  <h1>Oireachtas natural-language query POC</h1>
+    <h1>Oireachtas natural-language query POC</h1>
+  <p><a href="/capabilities">Browse the query capability catalogue</a></p>
   {% if readiness %}
   <section class="readiness {{ readiness.state }}" aria-live="polite">
     <h2>Fuseki readiness <small>(read-only check)</small></h2>
@@ -113,6 +114,19 @@
     {% else %}
       <p>No matching rows.</p>
     {% endif %}
+  </section>
+  {% endif %}
+
+  {% if plan_explanation %}
+  <section class="debug-panel">
+    <h2>What the query plan means</h2>
+    <p>{% if plan_explanation.validated %}Validated semantic plan{% else %}Planner draft — not validated; do not treat relationships below as accepted{% endif %}</p>
+    {% if plan_explanation.entities %}<h3>Entities mentioned</h3><ul>{% for entity in plan_explanation.entities %}<li><strong>{{ entity.label }}</strong> ({{ entity.type }}): {{ entity.human_resolution }}{% if entity.resolution == 'resolved' and entity.iri %} — {{ entity.iri }}{% endif %}{% if entity.candidates %}; possible matches: {% for candidate in entity.candidates %}{{ candidate.label }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</li>{% endfor %}</ul>{% endif %}
+    <h3>Requested facts and relationships</h3><ul>{% for req in plan_explanation.requirements %}<li>{{ req.description }}{% if req.subject_label %} — about {{ req.subject_label }}{% endif %}{% if req.object_label %} → {{ req.object_label }}{% endif %}</li>{% endfor %}</ul>
+    {% if plan_explanation.filters %}<h3>Filters</h3><ul>{% for filter in plan_explanation.filters %}<li>{{ filter.description }} ({{ filter.operator }}{% if filter.value is defined %} {{ filter.value }}{% endif %})</li>{% endfor %}</ul>{% endif %}
+    {% if plan_explanation.temporal %}<h3>Time constraints</h3><ul>{% for item in plan_explanation.temporal %}<li>{{ item.kind }}{% if item.date is defined %} {{ item.date }}{% endif %}{% if item.period is defined %} {{ item.period }}{% endif %}{% if item.start is defined %} {{ item.start }} to {{ item.end }}{% endif %}</li>{% endfor %}</ul>{% endif %}
+    <h3>Answer requested</h3><p>{{ plan_explanation.answer_shape.kind }}{% if plan_explanation.answer_shape.entityType is defined %}: {{ plan_explanation.answer_shape.entityType }}{% endif %}{% if plan_explanation.aggregation %}; aggregation: {{ plan_explanation.aggregation.operation }}{% endif %}</p>
+    {% if plan_explanation.blocked_reason %}<p><strong>Why it did not run:</strong> {{ plan_explanation.blocked_reason }}</p>{% endif %}
   </section>
   {% endif %}
 

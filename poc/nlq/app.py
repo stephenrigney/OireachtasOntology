@@ -26,6 +26,7 @@ from .results import QueryResult, format_debug_payload
 from .structured_planner import ResponsesPlanGenerator
 from .schema import build_schema_context
 from .vocabulary import supported_predicates
+from .presentation import capability_catalogue, catalogue_metadata, explain_plan
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -80,7 +81,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                readiness: FusekiReadiness | None = None,
                mode: str = "phase2", interaction_status: str | None = None,
                plan_json: str | None = None, plan_heading: str | None = None,
-               entity_outcomes: tuple[dict, ...] = ()):
+               entity_outcomes: tuple[dict, ...] = (), plan_explanation=None):
         if readiness is None:
             readiness = check_fuseki_readiness()
         return templates.TemplateResponse(request, "index.html", {
@@ -99,11 +100,19 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
             "plan_json": plan_json,
             "plan_heading": plan_heading,
             "entity_outcomes": entity_outcomes,
+            "plan_explanation": plan_explanation,
         })
 
     @app.get("/", response_class=HTMLResponse)
     def index(request: Request):
         return render(request)
+
+    @app.get("/capabilities", response_class=HTMLResponse)
+    def capabilities(request: Request):
+        return templates.TemplateResponse(request, "capabilities.html", {
+            "request": request, "capabilities": capability_catalogue(),
+            **catalogue_metadata(),
+        })
 
     @app.post("/ask", response_class=HTMLResponse)
     def ask(request: Request, question: str = Form(...), mode: str = Form("phase2")):
@@ -172,6 +181,10 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     format_debug_payload(plan_for_display)
                     if plan_for_display is not None else None
                 )
+                plan_explanation = explain_plan(
+                    plan_for_display, validated=bool(planner_result and planner_result.plan),
+                    blocked_reason=(outcome.diagnostic if outcome.status != "success" else None),
+                ) if isinstance(plan_for_display, dict) else None
                 sparql = (
                     outcome.generation.sparql
                     if outcome.generation is not None and outcome.generation.generated
@@ -236,7 +249,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                         plan_heading=plan_heading, sparql=sparql, result=result,
                         debug_output=outcome.debug_output,
                         debug_message=debug_message, debug_source=outcome.debug_source,
-                        entity_outcomes=entity_outcomes,
+                        entity_outcomes=entity_outcomes, plan_explanation=plan_explanation,
                     )
                 else:
                     message = messages.get(
@@ -256,7 +269,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     debug_output=outcome.debug_output,
                     debug_message=debug_message,
                     debug_source=outcome.debug_source or "Structured query",
-                    entity_outcomes=entity_outcomes,
+                    entity_outcomes=entity_outcomes, plan_explanation=plan_explanation,
                 )
             except Exception:
                 logger.exception("Unexpected failure in structured Phase 2 NLQ POC")

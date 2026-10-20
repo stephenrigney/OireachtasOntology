@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Query capabilities</title>
+<style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:1rem/1.5 system-ui,sans-serif;color:#202124}article{border:1px solid #c8ccd0;padding:1rem;margin:1rem 0}small{color:#444}a{color:#0645ad}</style></head>
+<body><p><a href="/">← Back to ask a question</a></p><h1>What can this query service answer?</h1>
+<p>These capabilities describe the semantic questions the plan contract can express and whether the current deterministic compiler can run them. Entity resolution and loaded data can still prevent an individual question from running.</p>
+{% for item in capabilities %}<article><h2>{{ item.description }}</h2><p><strong>{{ item.status }}</strong></p><p>Applies to: {{ item.subjectTypes|join(', ') }}{% if item.objectTypes %}; related to {{ item.objectTypes|join(', ') }}{% endif %}</p>
+{% if item.filters %}<p>Filters: {% for filter in item.filters %}{{ filter.description }} ({{ filter.operators|join(', ') }}){% if not loop.last %}; {% endif %}{% endfor %}</p>{% endif %}
+<small>Contract capability: {{ item.id }}</small></article>{% endfor %}
+<h2>Temporal constraints</h2><p>{{ temporal_constraints|join(', ') }}. Supported meaning depends on the requested fact; for example, a Dáil/Seanad term can scope some membership questions. The contract has fact-specific restrictions.</p>
+<h2>Answer forms</h2>{% for shape in answer_shapes %}<p><strong>{{ shape.kind|replace('_',' ')|capitalize }}:</strong> {{ shape.description }}</p>{% endfor %}
+</body></html>

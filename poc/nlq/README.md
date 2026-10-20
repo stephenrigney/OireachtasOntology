@@ -2,6 +2,15 @@
 
 This proof of concept lets you ask questions about the Oireachtas RDF dataset in plain English. Its normal development path is the structured Phase 2 flow: a Responses-compatible planner proposes a semantic plan, local code resolves exact entity labels and validates the plan, a deterministic compiler generates safety-validated SPARQL, and Fuseki executes it. The model does not generate executable SPARQL on this path.
 
+The Stage 1 human-readable UI is available at `/` and its capability catalogue at
+`/capabilities`. The catalogue is generated from the query-plan contract and
+compiler mappings. It describes semantic expressibility and compiler coverage,
+not whether the required records are present in a particular Fuseki dataset.
+Temporal semantics remain fact-specific; the catalogue lists contract temporal
+forms but does not claim every form compiles for every fact. A planner draft may
+be shown for diagnosis but is explicitly marked unvalidated and is not an
+accepted relationship.
+
 The development form also retains the Phase 1 direct NL→SPARQL path as an optional comparison/debug mode. Phase 2 ambiguity, unresolved entities, unsupported requests, planner/validation failures, and Fuseki execution failures are reported as distinct, controlled outcomes; no failed or unresolved plan is executed.
 
 This is an experimental query interface. It is separate from the deterministic ETL pipeline and never writes to Fuseki.
