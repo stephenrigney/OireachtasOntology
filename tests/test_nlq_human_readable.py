@@ -52,3 +52,20 @@ def test_capability_page_renders_from_catalogue():
     assert "What can this query service answer?" in response.text
     assert "member_full_name" in response.text
     assert "Temporal constraints" in response.text
+
+
+def test_bertie_shared_constituency_plan_has_human_explanation_in_ui():
+    plan = {
+        "entities": [{"id": "bertie", "type": "Member", "label": "Bertie Ahern", "resolution": "resolved"}],
+        "requirements": [
+            {"id": "known", "fact": "member_constituency_representation", "subject": {"entity": "bertie"}, "object": {"type": "DailConstituency"}},
+            {"id": "other", "fact": "member_constituency_representation", "subject": {"type": "Member"}, "object": {"type": "DailConstituency"}},
+        ],
+        "filters": [{"requirement": "other", "field": "member_name", "operator": "not_equals", "value": "Bertie Ahern"}],
+        "temporalConstraints": [], "answerShape": {"kind": "entities", "entityType": "Member"}, "aggregation": None,
+    }
+    explanation = explain_plan(plan, validated=False, blocked_reason="filters[0].field 'member_name' is not supported for fact 'member_constituency_representation'.", outcome_status="validation_failure")
+    assert explanation["summary"] == "Find other Members who represented the same Dáil constituency as Bertie Ahern, excluding Bertie Ahern."
+    assert explanation["answer_text"] == "Return a list of Members."
+    assert explanation["failure"] == "The planner tried to exclude Bertie Ahern using a name condition that isn't supported for this type of query."
+    assert explanation["validated"] is False

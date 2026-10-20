@@ -184,6 +184,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                 plan_explanation = explain_plan(
                     plan_for_display, validated=bool(planner_result and planner_result.plan),
                     blocked_reason=(outcome.diagnostic if outcome.status != "success" else None),
+                    outcome_status=outcome.status,
                 ) if isinstance(plan_for_display, dict) else None
                 sparql = (
                     outcome.generation.sparql

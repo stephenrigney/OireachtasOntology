@@ -12,7 +12,7 @@
     pre { overflow-x: auto; padding: 1rem; background: #f2f4f7; border: 1px solid #d5d9df; white-space: pre-wrap; }
     .error { padding: .75rem; color: #8b1111; background: #fff0f0; border: 1px solid #e5bcbc; }
     .ambiguity { padding: .75rem; background: #fff8e6; border: 1px solid #d6b65d; }
-    .debug-panel { padding: .75rem; border: 1px solid #c8ccd0; background: #f8f9fa; }
+  .debug-panel { padding: .75rem; border: 1px solid #c8ccd0; background: #f8f9fa; }
     .readiness { padding: .75rem; border: 1px solid #c8ccd0; }
     .readiness.ready { background: #eff8ef; border-color: #83b883; }
     .readiness.partial { background: #fff8e6; border-color: #d6b65d; }
@@ -118,15 +118,20 @@
   {% endif %}
 
   {% if plan_explanation %}
-  <section class="debug-panel">
+  <section>
     <h2>What the query plan means</h2>
-    <p>{% if plan_explanation.validated %}Validated semantic plan{% else %}Planner draft — not validated; do not treat relationships below as accepted{% endif %}</p>
-    {% if plan_explanation.entities %}<h3>Entities mentioned</h3><ul>{% for entity in plan_explanation.entities %}<li><strong>{{ entity.label }}</strong> ({{ entity.type }}): {{ entity.human_resolution }}{% if entity.resolution == 'resolved' and entity.iri %} — {{ entity.iri }}{% endif %}{% if entity.candidates %}; possible matches: {% for candidate in entity.candidates %}{{ candidate.label }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</li>{% endfor %}</ul>{% endif %}
-    <h3>Requested facts and relationships</h3><ul>{% for req in plan_explanation.requirements %}<li>{{ req.description }}{% if req.subject_label %} — about {{ req.subject_label }}{% endif %}{% if req.object_label %} → {{ req.object_label }}{% endif %}</li>{% endfor %}</ul>
-    {% if plan_explanation.filters %}<h3>Filters</h3><ul>{% for filter in plan_explanation.filters %}<li>{{ filter.description }} ({{ filter.operator }}{% if filter.value is defined %} {{ filter.value }}{% endif %})</li>{% endfor %}</ul>{% endif %}
-    {% if plan_explanation.temporal %}<h3>Time constraints</h3><ul>{% for item in plan_explanation.temporal %}<li>{{ item.kind }}{% if item.date is defined %} {{ item.date }}{% endif %}{% if item.period is defined %} {{ item.period }}{% endif %}{% if item.start is defined %} {{ item.start }} to {{ item.end }}{% endif %}</li>{% endfor %}</ul>{% endif %}
-    <h3>Answer requested</h3><p>{{ plan_explanation.answer_shape.kind }}{% if plan_explanation.answer_shape.entityType is defined %}: {{ plan_explanation.answer_shape.entityType }}{% endif %}{% if plan_explanation.aggregation %}; aggregation: {{ plan_explanation.aggregation.operation }}{% endif %}</p>
-    {% if plan_explanation.blocked_reason %}<p><strong>Why it did not run:</strong> {{ plan_explanation.blocked_reason }}</p>{% endif %}
+    <p><strong>{{ plan_explanation.summary }}</strong></p>
+    <p>{% if plan_explanation.validated %}Validated plan{% else %}Draft plan — not validated; this is only the planner's proposal{% endif %}</p>
+    {% if plan_explanation.entities %}<h3>Who or what it concerns</h3><ul>{% for entity in plan_explanation.entities %}<li>{{ entity.label }}: {{ entity.human_resolution }}{% if entity.candidates %}; possible matches: {% for candidate in entity.candidates %}{{ candidate.label }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</li>{% endfor %}</ul>{% endif %}
+    {% if plan_explanation.requirements %}<h3>Relationships</h3><ul>{% for req in plan_explanation.requirements %}<li>{% if req.subject_label %}{{ req.subject_label }}{% else %}Members{% endif %} — {{ req.description|replace("A Member's ", "")|replace("A Member's", "") }}{% if req.object_label %} with {{ req.object_label }}{% endif %}</li>{% endfor %}</ul>{% endif %}
+    {% if plan_explanation.filters or plan_explanation.temporal %}<h3>Conditions</h3><ul>{% for filter in plan_explanation.filters %}<li>{{ filter.plain }}</li>{% endfor %}{% for item in plan_explanation.temporal %}<li>{% if item.kind == 'on' %}On {{ item.date }}{% elif item.kind == 'before' %}Before {{ item.date }}{% elif item.kind == 'after' %}After {{ item.date }}{% elif item.kind == 'during' %}During the referenced parliamentary period{% elif item.kind == 'current' %}Currently{% elif item.kind == 'interval' %}Between {{ item.start }} and {{ item.end }}{% endif %}</li>{% endfor %}</ul>{% endif %}
+    <h3>Expected answer</h3><p>{{ plan_explanation.answer_text }}</p>
+    {% if plan_explanation.failure %}<p><strong>Why it did not run:</strong> {{ plan_explanation.failure }}</p>{% elif plan_explanation.blocked_reason %}<p><strong>Why it did not run:</strong> {{ plan_explanation.blocked_reason }}</p>{% endif %}
+    <details><summary>Technical plan details</summary>
+      {% if plan_explanation.requirements %}<ul>{% for req in plan_explanation.requirements %}<li>{{ req.description }} — {{ req.subject_label }}{% if req.object_label %} → {{ req.object_label }}{% endif %}</li>{% endfor %}</ul>{% endif %}
+      {% if plan_explanation.filters %}<ul>{% for filter in plan_explanation.filters %}<li>{{ filter.description }} ({{ filter.operator }} {{ filter.value }})</li>{% endfor %}</ul>{% endif %}
+      {% if plan_explanation.blocked_reason %}<p>{{ plan_explanation.blocked_reason }}</p>{% endif %}
+    </details>
   </section>
   {% endif %}
 
