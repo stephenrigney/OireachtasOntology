@@ -82,9 +82,12 @@ Ontology validation passed: 2504 triples
 The 15 skipped tests include opt-in external-service/integration cases; the
 Phase 2C capture-backed Fuseki acceptance above was run separately and passed.
 
-## Remaining Phase 2 work
+## Phase 2 work remaining at the end of Phase 2C
 
-The generated path remains separate from `/ask`; visible plan integration and a
-realistic-question benchmark remain outstanding. This report does not claim the
-Phase 2 exit criteria have been met. The measured LLM failure above remains
-visible, and expected unavailable-source/manual-review cases remain unscored.
+At this report's point in the sequence, the generated path remained separate
+from `/ask`; visible plan integration and the realistic-question benchmark were
+still outstanding. This historical report did not claim the Phase 2 exit
+criteria had been met. The later UI integration and accepted realistic benchmark
+complete Phase 2; see
+[`realistic-phase2-report.md`](realistic-phase2-report.md) for the final
+benchmark and close-out record.

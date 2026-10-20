@@ -667,8 +667,10 @@ generation, SPARQL safety, Fuseki execution, and result scoring separately. It
 does not borrow coverage probes as answer oracles; the 33rd Dáil Boolean plan
 has an explicit ASK oracle in planner-benchmark version `0.2.2`. Phase 1 direct
 generation is compared only for cases whose question exactly matches the source
-benchmark oracle. The generator and evaluator remain outside the browser path.
-Phase 1 direct generation is unchanged and remains available during migration.
+benchmark oracle. At the Phase 2C evaluation stage, the generator and evaluator
+were outside the browser path. The later UI integration uses the compiler in the
+default structured path; the evaluator remains separate. Phase 1 direct
+generation remains available as a comparison/debug path.
 
 Measured run `1f789eda-8216-4d23-8e3f-daefac70b94c` used
 `oireachtas-semantic-planner@0.2.2` (artifact SHA-256
@@ -693,18 +695,20 @@ acceptance exercises representative Member, HouseTerm, collection,
 representation, Committee, Boolean, and count plans; see
 [`poc/nlq/benchmarks/phase-2c-report.md`](../nlq/benchmarks/phase-2c-report.md)
 for the run record and limitations. This completes the Phase 2C compiler and
-controlled-evaluation tranche, not the Phase 2 exit gate: visible plan
-integration and the realistic-question benchmark remain outstanding.
+controlled-evaluation tranche. At that point in the sequence, visible plan
+integration and the realistic-question benchmark were still outstanding; the
+subsequent UI integration and final acceptance are recorded below.
 
 Planner evaluation is a separate controlled path in
 `poc/nlq/planner_benchmark.py` using selected Phase 1 cases, semantic plan
 invariants, and the existing source-coverage checks. That Phase 2B path scores
-planning only. The separate Phase 2C path adds generation and execution without
-being wired into normal browser requests. Unsupported requests remain
-unscored/manual review because the Phase 2A contract has no explicit
-unsupported-question state. Phase 2C does not complete visible plan integration,
-the realistic-question benchmark, data-surface expansion or the Phase 2 exit
-criteria.
+planning only. At this point in the sequence, the separate Phase 2C path added
+generation and execution without being wired into normal browser requests.
+Unsupported requests remain unscored/manual review because the Phase 2A contract
+has no explicit unsupported-question state. Phase 2C did not complete visible
+plan integration, the realistic-question benchmark, data-surface expansion or
+the Phase 2 exit criteria; the later completion is recorded in the Phase 2
+status below.
 The deterministic unsupported-request test injects a supported draft and checks
 only that the manual-review case remains unscored; it does not test whether a
 model recognizes unsupported wording.
@@ -733,36 +737,73 @@ the Phase 1 comparison is **14/30** and deterministic regression is **10/10**.
 quality failures; the UI tranche did not change planner semantics or rerun the
 realistic benchmark. For development/benchmark workflows that create large
 scratch files, use the ignored repository `var/` area or the configured
-non-`/tmp` scratch location. This UI integration does not perform the final
-Phase 2 exit review.
+non-`/tmp` scratch location. This UI integration did not itself perform the
+final Phase 2 exit review; that close-out is recorded in the status section
+below.
 
 #### Realistic-question evaluation
 
-- [ ] Add a separate realistic-question benchmark after an initial planner path
+- [x] Add a separate realistic-question benchmark after an initial planner path
       exists and before the Phase 2 exit gate. Preserve the Phase 1 controlled
       benchmark as the capability and regression suite rather than replacing it.
-- [ ] Include user-like wording that does not mirror ontology terminology,
+- [x] Include user-like wording that does not mirror ontology terminology,
       including implicit or colloquial references, ambiguous phrasing,
       temporal language, plural/set-valued questions, multi-hop relationships,
       and questions combining multiple constraints.
-- [ ] Use the realistic benchmark to distinguish interpretation/planning
+- [x] Use the realistic benchmark to distinguish interpretation/planning
       failures from SPARQL-generation failures.
-- [ ] Compare the planned architecture with the Phase 1 direct-generation
+- [x] Compare the planned architecture with the Phase 1 direct-generation
       baseline on realistic questions as well as on the controlled benchmark.
-- [ ] Treat success on the controlled benchmark as necessary but insufficient
+- [x] Treat success on the controlled benchmark as necessary but insufficient
       evidence of good real-user query experience.
+
+The accepted final realistic benchmark and its case-level outcomes are recorded
+in [`poc/nlq/benchmarks/realistic-phase2-report.md`](../nlq/benchmarks/realistic-phase2-report.md).
 
 ### Exit criteria
 
-- Every supported query has a validated structured plan before execution.
-- SPARQL generation no longer has to infer the complete user intent directly
+- [x] Every supported query has a validated structured plan before execution.
+- [x] SPARQL generation no longer has to infer the complete user intent directly
   from prose.
-- The visible plan makes planning errors distinguishable from SPARQL errors.
-- Local controlled-benchmark quality is at least comparable with the Phase 1
+- [x] The visible plan makes planning errors distinguishable from SPARQL errors.
+- [x] Local controlled-benchmark quality is at least comparable with the Phase 1
   baseline.
-- A separate realistic-question benchmark exists and provides evidence that
+- [x] A separate realistic-question benchmark exists and provides evidence that
   the planner handles representative user-like questions; Phase 2 is not
   considered successful solely from the controlled capability benchmark.
+
+### Phase 2 status
+
+**Phase 2 is complete.** The accepted structured local-query path is:
+
+```text
+question → semantic planner → deterministic resolution → validated query plan
+         → deterministic SPARQL → local Fuseki → rendered result
+```
+
+The browser development `POST /ask` path defaults to this Phase 2 pipeline. The
+Phase 1 direct NL→SPARQL path remains available for comparison and debugging.
+Success, ambiguity, unresolved identity, unsupported requests,
+planner/validation failures, and execution failures are represented distinctly;
+failed or unresolved plans do not execute answer queries. The accepted plan and
+generated SPARQL are inspectable in the development UI. A live smoke test
+exercised real Fuseki with a fixed planner test double.
+
+The accepted final realistic benchmark scored **32 passed, 2 failed, 3 not
+scored**; the retained Phase 1 comparison scored **14/30**, and deterministic
+regression scored **10/10**. Phase 2 substantially outperformed the retained
+Phase 1 comparison. The two remaining scored failures are bounded planner
+defects, not evidence of architectural failure:
+`aggregate.dail-term-count` can produce an invalid count draft, and
+`debate.committee-sep24` selects a date fact instead of the expected
+DebateRecord answer. These are carried forward, not reopened in Phase 2.
+
+Other carried-forward limitations are that development Debate coverage is
+limited to the three pinned representative graphs; quarantined and unavailable
+source cases remain data-coverage limitations; planner/model variability
+remains; and the planner has no repair/retry loop. Broader source selection,
+federation, and external querying remain deferred. Details and benchmark
+provenance are in the final report linked above.
 
 ## 9. Phase 3 — Source selection and provenance
 
@@ -770,6 +811,16 @@ Phase 2 exit review.
 
 Make the planner capable of deciding where a requested fact should come from
 without yet executing arbitrary external federation.
+
+### Entry state and boundary
+
+Phase 3 begins from the accepted, complete Phase 2 state recorded above. Its
+existing scope remains source selection and provenance, starting with the
+dataset/capability catalogue and validation tasks below. Broader source
+selection/federation is now the next architectural area, rather than additional
+Phase 2 local-query work. This handoff does not enable external querying in
+Phase 3: controlled Wikidata application-layer federation remains Phase 4, and
+true SPARQL federation remains Phase 6.
 
 ### Dataset/capability catalogue
 
@@ -1002,14 +1053,15 @@ backlog rather than a fixed architectural sequence.
 
 ## 14. Recommended near-term sequence
 
-The advised implementation order from the current baseline is:
+The advised sequence from the earlier baseline, updated for the accepted Phase 2
+state, is:
 
 1. complete the separate historical reference-coverage tranche sufficiently
    for representative local NLQ evaluation;
 2. implement Phase 0 benchmark and query/schema contract;
 3. run Phase 1 local-quality work based on measured failures;
-4. implement Phase 2 structured query planning;
-5. implement Phase 3 source selection/provenance;
+4. use the complete Phase 2 structured-query state as the accepted baseline;
+5. proceed to Phase 3 source selection/provenance;
 6. implement Phase 4 controlled Wikidata application-layer federation;
 7. reassess the repository boundary and perform Phase 5 extraction when the
    contract is stable;

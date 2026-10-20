@@ -73,7 +73,32 @@ The application also reports:
 
 Detailed diagnostics and the raw endpoint payload, when available, are in the expandable query debugger. Internal exceptions are not used as the primary user-facing message.
 
-The accepted Phase 2 realistic benchmark is **32 passed, 2 failed, 3 not scored**; the Phase 1 comparison was **14/30**, and the deterministic regression was **10/10**. The remaining Phase 2 failures are `aggregate.dail-term-count` and `debate.committee-sep24`; they are documented planner-quality limitations and were not changed as part of the UI integration.
+Phase 2 is complete. The accepted structured local-query path is:
+
+```text
+question → semantic planner → deterministic resolution → validated query plan
+         → deterministic SPARQL → local Fuseki → rendered result
+```
+
+It is the default browser development path. The accepted realistic benchmark is
+**32 passed, 2 failed, 3 not scored**; the Phase 1 comparison was **14/30**, and
+deterministic regression was **10/10**. Phase 2 substantially outperformed the
+retained Phase 1 comparison. The remaining failures are bounded planner defects,
+not evidence of architectural failure: `aggregate.dail-term-count` can produce
+an invalid count draft, and `debate.committee-sep24` selects a date fact rather
+than the expected DebateRecord answer.
+
+The development UI distinguishes success, ambiguity, unresolved identity,
+unsupported requests, planner/validation failures, and execution failures.
+Failed or unresolved plans do not execute answer queries; the plan and generated
+SPARQL are inspectable. Phase 1 direct NL→SPARQL remains available for
+comparison/debugging. A live smoke test exercised real Fuseki with a fixed
+planner test double. Carried-forward limitations, not reopened in Phase 2, are:
+Debate coverage limited to the three pinned representative graphs;
+quarantined/unavailable source cases as data-coverage limitations; planner/model
+variability; no repair/retry loop; and broader source selection, federation,
+and external querying deferred. See the [final benchmark and close-out
+report](benchmarks/realistic-phase2-report.md).
 
 ### Other launcher commands
 
@@ -360,19 +385,17 @@ Do not use `docker compose down -v` as a refresh step: it deletes Fuseki's persi
 
 ```text
 Question in browser / benchmark runner
-  -> bounded local exact Member-label resolution
-       - explicit ambiguity outcome for unresolved duplicate labels
-       - local HouseTerm / constituency context for disambiguation
-  -> OpenAI Responses-compatible LLM (when resolution is unique or set-valued)
-       - query-contract-scoped schema context
-       - dataset graph conventions from the contract
-       - user question
-  -> structured { interpretation, sparql }
-  -> RDFLib SPARQL parsing and safety checks
-  -> configured Fuseki /query endpoint
+  -> Phase 2 semantic planner (default browser path)
+  -> deterministic local entity resolution
+  -> validated structured query plan
+  -> deterministic SPARQL generation and safety checks
+  -> configured local Fuseki /query endpoint
   -> SPARQL Results JSON
   -> result table / ASK answer in browser
 ```
+
+The Phase 1 direct NL→SPARQL path remains selectable in the development form for
+comparison/debugging.
 
 The repository-owned machine-readable query contract is
 `poc/specs/query-schema-contract.json` (contract version `2.0.0`, schema
@@ -490,12 +513,11 @@ authoritative Phase 2A validator before accepting it. Ambiguity returns
 Resolver/data unavailability, unsupported resolver types, draft failures and
 final-plan failures have separate result classes.
 
-This remains a separate callable/development-evaluation path. It is not wired
-to `/ask` and does not add a model request to normal browser queries. Phase 2C
-adds a deterministic compiler that accepts only a `validated_plan`
+The structured planner and deterministic compiler are now connected to the
+default `/ask` browser path. The compiler accepts only a `validated_plan`
 `PlannerResult`, revalidates the final plan, and either returns safety-validated
-local SPARQL with a mapping trace or a fail-closed outcome. It does not alter
-the Phase 1 browser/query path.
+local SPARQL with a mapping trace or a fail-closed outcome. The Phase 1
+direct-generation path remains an optional comparison/debug mode.
 
 Phase 2B planner-only evaluation uses selected Phase 1 controlled cases and
 semantic plan invariants from `poc/nlq/benchmarks/planner-benchmark-v1.json`. It
@@ -515,8 +537,9 @@ model output and do not require an LLM. Unsupported requests remain manual
 review because Phase 2A does not define an explicit unsupported-question plan
 state. The deterministic test for the unsupported manual-review case injects a
 supported draft and checks only the not-scored accounting path; it does not test
-whether a model recognizes unsupported wording. The separate realistic-question
-benchmark remains future work.
+whether a model recognizes unsupported wording. The final realistic-question
+benchmark was completed for the Phase 2 exit gate; the full result and close-out
+are recorded in [`benchmarks/realistic-phase2-report.md`](benchmarks/realistic-phase2-report.md).
 
 ### Deterministic plan generation (Phase 2C)
 
@@ -577,11 +600,10 @@ OIR_RUN_NLQ_PLAN_FUSEKI_TESTS=1 \
 uv run --locked --extra test --extra nlq pytest tests/test_nlq_plan_sparql_fuseki.py
 ```
 
-The generator/evaluator are not connected to the browser pipeline. The measured
-37-case realistic benchmark and its case differences are recorded in
+The compiler is used by the default browser pipeline; the benchmark evaluator
+remains separate. The final 37-case realistic benchmark, UI evidence, and
+Phase 2 close-out are recorded in
 [`benchmarks/realistic-phase2-report.md`](benchmarks/realistic-phase2-report.md).
-It does not establish UI readiness or complete the Phase 2 exit gate; visible
-plan integration remains future work and was not started here.
 
 ### Controlled capability expansion (Phase 2)
 
@@ -605,10 +627,10 @@ State capture-index snapshot is needed. The bootstrap writes only to its
 disposable loopback Fuseki dataset.
 
 `poc.nlq.plan_contract` exposes `load_query_plan_contract`,
-`validate_query_plan`, and `load_query_plan`. Phase 2C calls this authoritative
-validator before compilation; it is still not used by the browser or direct
-Phase 1 NL-to-SPARQL runtime. To test the contract artifacts, examples, and
-validator:
+`validate_query_plan`, and `load_query_plan`. The structured Phase 2 browser path
+calls this authoritative validator before compilation; the optional Phase 1
+direct NL-to-SPARQL path remains separate. To test the contract artifacts,
+examples, and validator:
 
 ```bash
 uv run --locked --extra test python -m pytest tests/test_nlq_query_plan.py
@@ -619,9 +641,10 @@ reviewed entity types, semantic facts, or filter fields when existing meanings
 and validation behavior are unchanged. A breaking change to an existing field's
 meaning, supported resolution states, or validation expectations requires a
 major bump. Consumers reject unsupported schema versions, contract majors, and
-semantic vocabulary values. The realistic-question benchmark remains deferred
-until after the initial planner path and before the Phase 2 exit gate; the
-controlled Phase 1 benchmark remains the capability/regression suite.
+semantic vocabulary values. The realistic-question benchmark has been completed
+and accepted as part of the Phase 2 exit gate; the controlled Phase 1 benchmark
+remains the capability/regression suite. Source selection and provenance are
+the Phase 3 handoff; broader federation and external querying remain deferred.
 
 At startup, RDFLib reads the repository's `ontology/*.owl.ttl` modules and the
 pinned ELI/ELI-DL vocabularies to add ontology descriptions, domains, ranges,

@@ -80,10 +80,11 @@ regression test were added. Intermediate measured run
 `f0d3d990-2ee2-4f72-9022-e77cc3930691` scored 27/37 before the final
 set-valued and unsupported-request fixes and is superseded by this run.
 
-**Readiness:** not ready for UI integration. The browser remains on the Phase 1
-path; the two measured planner failures remain, and no approved browser
-interaction contract exists for clarification, fail-closed, unresolved-entity,
-or plan-preview outcomes.
+**Readiness at benchmark-run time (before the subsequent UI integration):** not
+ready for UI integration. The browser remained on the Phase 1 path; the two
+measured planner failures remained, and no approved browser interaction contract
+existed for clarification, fail-closed, unresolved-entity, or plan-preview
+outcomes. The later UI integration and final Phase 2 status are recorded below.
 
 ### Final verification
 
@@ -240,9 +241,10 @@ The deterministic regression benchmark `oireachtas-local-nlq@0.3.0` passed
 10/10 cases. These outcomes are retained as measured; no benchmark oracle or
 acceptance criterion was changed to improve the score.
 
-### UI readiness
+### UI readiness at initial baseline-run time
 
-**Not ready for UI integration; no UI integration was started.** The browser
+**Not ready for UI integration at this initial baseline; no UI integration had
+been started.** The browser
 application still uses the Phase 1 `ResponsesTranslator` / `process_question`
 path. The Phase 2 structured planner and deterministic SPARQL generator are
 exercised by the benchmark path only. The observed semantic-plan and entity
@@ -259,3 +261,50 @@ readiness or Phase 2 completion claim.
   ontology validation passed for 2,577 triples.
 - `mise exec -- .venv/bin/python -m pytest tests` — 1,270 passed, 15 skipped.
 - Python compilation and `git diff --check` — passed.
+
+## Phase 2 close-out after UI integration
+
+Following the bounded planner fixes in commit `00c2d15` and the minimal UI
+integration in commit `f8768ab`, Phase 2 is complete. The accepted structured
+local-query path is:
+
+```text
+question → semantic planner → deterministic resolution → validated query plan
+         → deterministic SPARQL → local Fuseki → rendered result
+```
+
+`POST /ask` defaults to this Phase 2 path in the development browser. The Phase 1
+direct NL→SPARQL path remains available for comparison/debugging. The final
+realistic result above remains **32 passed, 2 failed, 3 not scored**; the retained
+Phase 1 comparison is **14/30**, and deterministic regression is **10/10**. Phase
+2 substantially outperformed the retained Phase 1 comparison. The two remaining
+scored failures are bounded planner defects, not evidence of architectural
+failure; the benchmark results and oracles were not reinterpreted for this
+close-out.
+
+The UI represents success, ambiguity, unresolved identity, unsupported requests,
+planner/validation failures, and execution failures distinctly. Failed or
+unresolved plans do not execute answer queries; accepted plans and generated
+SPARQL are inspectable in the development UI. A live smoke test exercised real
+Fuseki with a fixed planner test double.
+
+### Carried-forward Phase 2 limitations
+
+These limitations are recorded for the Phase 3 handoff and are not reopened in
+Phase 2:
+
+- `aggregate.dail-term-count`: the planner can emit an invalid count draft,
+  rejected by draft validation.
+- `debate.committee-sep24`: the planner selects a date fact rather than the
+  expected DebateRecord answer.
+- Development Debate coverage remains limited to the three pinned
+  representative graphs.
+- Quarantined and unavailable source cases remain data-coverage limitations,
+  separately classified from planner failures.
+- Planner/model variability remains; no repair/retry loop was added.
+- Broader source selection, federation, and external querying remain deferred.
+
+Phase 3 therefore begins from this accepted Phase 2 state. Its existing
+source-selection and provenance boundary is the next architectural area, rather
+than further Phase 2 local-query work; this close-out does not design or
+implement Phase 3.
