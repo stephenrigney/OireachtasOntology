@@ -12,7 +12,7 @@ from urllib.parse import urlsplit
 
 CONTRACT_PATH = Path(__file__).resolve().parents[1] / "specs" / "query-schema-contract.json"
 SUPPORTED_SCHEMA_VERSION = 1
-SUPPORTED_CONTRACT_MAJOR = 1
+SUPPORTED_CONTRACT_MAJOR = 2
 SUPPORTED_SAFETY_MAJOR = 1
 _SEMVER = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$")
 _JSON_SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
@@ -182,6 +182,9 @@ def _validate_document(document: Any) -> dict[str, Any]:
         _check_qname(label.get("predicate"), namespaces, f"labelsByEntityType.{entity_type}.predicate")
         language = label.get("language")
         languages = label.get("languages")
+        alias_predicate = label.get("aliasPredicate")
+        if alias_predicate is not None:
+            _check_qname(alias_predicate, namespaces, f"labelsByEntityType.{entity_type}.aliasPredicate")
         if (language is not None and not isinstance(language, str)
                 or languages is not None and (not isinstance(languages, list)
                                                or not all(isinstance(item, str) for item in languages))):

@@ -17,8 +17,11 @@ oir:ProcessShape a sh:NodeShape ; sh:targetClass dl:LegislativeProcess ;
 oir:ActivityShape a sh:NodeShape ; sh:targetClass dl:LegislativeActivity ;
   sh:property [ sh:path dl:forms_part_of ; sh:minCount 1 ; sh:maxCount 1 ; sh:class dl:LegislativeProcess ] .
 
+oir:ParticipationShape a sh:NodeShape ; sh:targetClass dl:Participation ;
+  sh:property [ sh:path oir:isPrimarySponsor ; sh:maxCount 1 ; sh:datatype xsd:boolean ] .
+
 oir:RelatedWorkShape a sh:NodeShape ; sh:targetClass eli:Work ;
-  sh:property [ sh:path eli:is_realized_by ; sh:minCount 1 ; sh:maxCount 1 ; sh:class eli:LegalExpression ] .
+  sh:property [ sh:path eli:is_realized_by ; sh:minCount 1 ; sh:class eli:LegalExpression ] .
 
 oir:StageShape a sh:NodeShape ; sh:targetClass oir:BillStage ;
    sh:property [ sh:path oir:progressStage ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:positiveInteger ] ;

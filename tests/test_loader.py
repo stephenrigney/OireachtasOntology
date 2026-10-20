@@ -17,3 +17,18 @@ def test_loader_uses_single_gsp_put_with_graph_parameter(monkeypatch):
     assert parse_qs(urlparse(request.full_url).query)["graph"] == ["https://data.oireachtas.ie/graph/houses"]
     assert request.get_header("Content-type") == "text/turtle"
     assert request.get_header("Authorization").startswith("Basic ")
+
+
+def test_loader_deletes_only_the_requested_graph_with_gsp_delete(monkeypatch):
+    seen = []
+
+    def fake_open(request, timeout):
+        seen.append((request, timeout))
+        return Response()
+
+    monkeypatch.setattr("oireachtas_etl.loader.urlopen", fake_open)
+    graph_iri = "https://data.oireachtas.ie/graph/bill/2025/60"
+    FusekiGraphStoreLoader("http://localhost:3030/ds/data").delete(graph_iri)
+    request, _ = seen[0]
+    assert request.get_method() == "DELETE"
+    assert parse_qs(urlparse(request.full_url).query)["graph"] == [graph_iri]

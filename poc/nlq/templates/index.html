@@ -41,10 +41,33 @@
   <form method="post" action="/ask">
     <label for="question"><strong>Ask a question about the loaded Oireachtas graph</strong></label>
     <textarea id="question" name="question" required maxlength="2000">{{ question }}</textarea>
+    <label for="mode"><strong>Development query path</strong></label>
+    <select id="mode" name="mode">
+      <option value="phase2" {% if mode == "phase2" %}selected{% endif %}>Phase 2 structured planner (default)</option>
+      <option value="phase1" {% if mode == "phase1" %}selected{% endif %}>Phase 1 direct NL→SPARQL (comparison)</option>
+    </select>
     <button type="submit">Ask</button>
   </form>
 
-  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  {% if error and interaction_status %}
+  <section class="{% if interaction_status in ['ambiguous_entity', 'unresolved_entity'] %}ambiguity{% else %}error{% endif %}" role="alert" aria-live="polite">
+    <h2>
+      {% if interaction_status == "ambiguous_entity" %}Ambiguous entity
+      {% elif interaction_status == "unresolved_entity" %}Entity not found
+      {% elif interaction_status == "unsupported_request" %}Unsupported question
+      {% elif interaction_status == "validation_failure" %}Query validation failed
+      {% elif interaction_status == "execution_failure" %}Query execution failed
+      {% else %}Planner could not complete{% endif %}
+    </h2>
+    <p>{{ error }}</p>
+    {% for entity in entity_outcomes %}
+      {% if entity.resolution == "ambiguous" and entity.candidates %}
+      <p>Possible local matches for <strong>{{ entity.type }} “{{ entity.label }}”</strong>:</p>
+      <ul>{% for candidate in entity.candidates %}<li>{{ candidate.label }}</li>{% endfor %}</ul>
+      {% endif %}
+    {% endfor %}
+  </section>
+  {% elif error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
 
   {% if ambiguity %}
   <section class="ambiguity" role="status" aria-live="polite">
@@ -94,10 +117,24 @@
   {% endif %}
 
   {% if sparql %}
+    {% if mode == "phase2" %}
+    <details>
+      <summary>Generated SPARQL</summary>
+      <pre><code>{{ sparql }}</code></pre>
+    </details>
+    {% else %}
   <section>
     <h2>Generated SPARQL</h2>
     <pre><code>{{ sparql }}</code></pre>
   </section>
+    {% endif %}
+  {% endif %}
+
+  {% if plan_json %}
+  <details>
+    <summary>{{ plan_heading or "Interpreted query plan" }}</summary>
+    <pre><code>{{ plan_json }}</code></pre>
+  </details>
   {% endif %}
 
   {% if debug_message or debug_output %}

@@ -38,6 +38,24 @@ class FusekiGraphStoreLoader:
         except HTTPError as error:
             raise RuntimeError(f"GSP replacement failed: HTTP {error.code}") from error
 
+    def delete(self, graph_iri: str) -> None:
+        """Delete one named graph through the Graph Store Protocol endpoint."""
+        separator = "&" if "?" in self.endpoint else "?"
+        url = self.endpoint + separator + urlencode({"graph": graph_iri})
+        headers = {}
+        if self.user is not None:
+            if self.password is None:
+                raise ValueError("Fuseki password is required when user is set")
+            token = base64.b64encode(f"{self.user}:{self.password}".encode()).decode()
+            headers["Authorization"] = "Basic " + token
+        request = Request(url, headers=headers, method="DELETE")
+        try:
+            with urlopen(request, timeout=self.timeout) as response:
+                if not 200 <= response.status < 300:
+                    raise RuntimeError(f"GSP graph deletion failed: HTTP {response.status}")
+        except HTTPError as error:
+            raise RuntimeError(f"GSP graph deletion failed: HTTP {error.code}") from error
+
 class FusekiSparqlClient:
     def __init__(
         self,

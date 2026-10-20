@@ -333,7 +333,9 @@ def test_browser_uses_shared_ambiguity_outcome_and_exposes_only_local_context(mo
     async def post_question():
         transport = httpx.ASGITransport(app=app_module.create_app())
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            return await client.post("/ask", data={"question": "Who is Michael Collins?"})
+            return await client.post("/ask", data={
+                "question": "Who is Michael Collins?", "mode": "phase1",
+            })
 
     response = asyncio.run(post_question())
     page = unescape(response.text)

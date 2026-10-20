@@ -1,8 +1,8 @@
 # Natural-language query POC
 
-This proof of concept lets you ask questions about the Oireachtas RDF dataset in plain English.
+This proof of concept lets you ask questions about the Oireachtas RDF dataset in plain English. Its normal development path is the structured Phase 2 flow: a Responses-compatible planner proposes a semantic plan, local code resolves exact entity labels and validates the plan, a deterministic compiler generates safety-validated SPARQL, and Fuseki executes it. The model does not generate executable SPARQL on this path.
 
-The application first checks exact local Member-name references against Member `foaf:name` labels in Fuseki. If multiple local Member records remain without distinguishing context, it returns a clarification outcome and does not send an answer query. Otherwise, it sends the question with schema context derived from the repository ontology to an OpenAI Responses-compatible LLM; the application validates the model's read-only SPARQL, runs it against Fuseki, and shows both the result and the generated SPARQL.
+The development form also retains the Phase 1 direct NL→SPARQL path as an optional comparison/debug mode. Phase 2 ambiguity, unresolved entities, unsupported requests, planner/validation failures, and Fuseki execution failures are reported as distinct, controlled outcomes; no failed or unresolved plan is executed.
 
 This is an experimental query interface. It is separate from the deterministic ETL pipeline and never writes to Fuseki.
 
@@ -64,12 +64,43 @@ Try questions such as:
 - Which parliamentary member collection did Micheál Martin belong to in the 33rd Dáil?
 - How many members were in each parliamentary member collection in the 33rd Dáil?
 
-The application shows:
+On success, the application shows the result. In the default Phase 2 path, expand **Validated query plan** and **Generated SPARQL** to inspect the interpretation and executable query. Phase 1 continues to show its direct-generated query using the existing display.
 
-- the model's interpretation of the question;
-- the exact SPARQL submitted to Fuseki;
-- the SELECT result table or ASK result;
-- debugging information when translation, validation, or Fuseki execution fails.
+The application also reports:
+
+- ambiguous local identity without selecting a candidate;
+- unresolved local identity without running an answer query;
+- unsupported question/semantic combinations without generating an answer query;
+- planner or validation failures separately from Fuseki execution failures.
+
+Detailed diagnostics and the raw endpoint payload, when available, are in the expandable query debugger. Internal exceptions are not used as the primary user-facing message.
+
+Phase 2 is complete. The accepted structured local-query path is:
+
+```text
+question → semantic planner → deterministic resolution → validated query plan
+         → deterministic SPARQL → local Fuseki → rendered result
+```
+
+It is the default browser development path. The accepted realistic benchmark is
+**32 passed, 2 failed, 3 not scored**; the Phase 1 comparison was **14/30**, and
+deterministic regression was **10/10**. Phase 2 substantially outperformed the
+retained Phase 1 comparison. The remaining failures are bounded planner defects,
+not evidence of architectural failure: `aggregate.dail-term-count` can produce
+an invalid count draft, and `debate.committee-sep24` selects a date fact rather
+than the expected DebateRecord answer.
+
+The development UI distinguishes success, ambiguity, unresolved identity,
+unsupported requests, planner/validation failures, and execution failures.
+Failed or unresolved plans do not execute answer queries; the plan and generated
+SPARQL are inspectable. Phase 1 direct NL→SPARQL remains available for
+comparison/debugging. A live smoke test exercised real Fuseki with a fixed
+planner test double. Carried-forward limitations, not reopened in Phase 2, are:
+Debate coverage limited to the three pinned representative graphs;
+quarantined/unavailable source cases as data-coverage limitations; planner/model
+variability; no repair/retry loop; and broader source selection, federation,
+and external querying deferred. See the [final benchmark and close-out
+report](benchmarks/realistic-phase2-report.md).
 
 ### Other launcher commands
 
@@ -79,26 +110,36 @@ scripts/dev-nlq.sh --no-reload   # start without the Uvicorn autoreload watcher
 ```
 
 Ordinary startup never loads source data. `--load-data` explicitly invokes
-`oir-etl dev bootstrap`, which reads the latest successful complete reference
-and Member API captures already preserved and indexed in Core State, and loads
-their validated non-authoritative development graphs into loopback Fuseki. Bill
-graphs are selected separately from read-only Core State resource records: only
-present, clean, contract-1 publications whose last observed source hash still
-matches the published source, with the expected graph IRI and an intact
-published RDF payload, are loaded. If no Bill records qualify, Bills are
-reported as an optional zero-graph family and do not block bootstrap.
-
-The bootstrap also validates and loads the reviewed Office and
-AdministrativeUnit registry graphs. Member office holdings and Cabinet
-episodes come only from exact-source-matching, clean contract-3 Member
-publications already validated by the authoritative Member ETL. Other Members
-use the normal transform without office resolutions, so raw or unresolved
-office observations are never promoted. The bootstrap does not fetch current
-API data, run reconciliation, call the authoritative publication path, or
+`oir-etl dev bootstrap` with the reviewed office-decision file, selecting Query
+Service Phase 2 evaluation mode and its committed development-data and Debate
+source selections. It verifies immutable raw-page evidence and office
+registry/review inputs, derives holdings only from current explicitly accepted
+office evidence, validates transformed RDF, checks the accepted graph/resource
+counts, and loads the non-authoritative evaluation graphs into loopback Fuseki.
+For the exact dataset ID already accepted for this benchmark, it reuses the
+recorded full Member/Bill RDF acceptance while rechecking source evidence,
+deterministic transforms, RDF syntax, output counts, and Fuseki's per-graph
+counts. A different input identity takes the full per-resource validation path.
+It does not fetch current API data, run the authoritative publication path, or
 advance Core State, office-occurrence, or external-reconciliation state.
-Materially conflicted reference identities remain quarantined, and the
-bootstrap reports unresolved references and labels reference closure **NOT
-authoritative / not complete**. If the bootstrap fails, the POC is not started.
+Materially conflicted reference identities remain quarantined, and reference
+closure is reported **NOT authoritative / not complete**. If bootstrap fails,
+the POC is not started.
+
+The conservative publication-backed `oir-etl dev bootstrap` mode remains the
+default when neither `--review-file` nor benchmark-candidate output options are
+supplied. It reads complete API captures and current clean Member/Bill
+publications from Core State in read-only mode. Only exact-source-matching clean
+contract-3 Member publications contribute OfficeHolding/CabinetMembership
+output; other Members receive no office resolutions. Bill graphs are optional
+and loaded only from current clean contract-1 Core State publications with
+intact payloads. The NLQ launcher and Phase 2 benchmark runners pass
+`reconciliation/office-decisions.json` explicitly when they require the pinned
+Phase 2 evaluation dataset.
+
+Development bootstrap and query-benchmark scratch artifacts default to the
+ignored repository directory `var/nlq-scratch`. Set `OIR_NLQ_SCRATCH_DIR` to a
+different non-`/tmp` location when needed.
 
 The bootstrap prints a stable dataset identity. To save its full machine-readable
 baseline for later evaluation tooling, invoke the same development-only command
@@ -106,20 +147,22 @@ with an output path:
 
 ```bash
 uv run --locked oir-etl dev bootstrap \
+  --review-file reconciliation/office-decisions.json \
   --fuseki-gsp-url http://localhost:3030/houses/data \
   --fuseki-sparql-url http://localhost:3030/houses/query \
   --dataset-baseline-output /tmp/oireachtas-nlq-dataset-baseline.json
 ```
 
-The baseline records selected source capture run IDs, graph families and
-resource counts, qualifying Bill publication evidence (including a clear zero
-count when none qualify), configured office/unit registry digest, exact-current Member
-publication inventory, quarantined identities, unresolved references, and the
-non-authoritative closure status. Its identity includes those stable source
-and publication fingerprints, so reusing the same evidence produces the same
-identity.
-It describes graph payloads written by the bootstrap; it is not a live census
-of other or stale graphs already in a persistent Fuseki dataset.
+The schema-version-1 baseline records source capture run IDs, graph families and
+resource counts, quarantines, unresolved references, and source/publication
+evidence. In Phase 2 evaluation mode it additionally fingerprints raw-page
+hashes, office registry/review inputs and accepted holdings, and the pinned
+three-Debate evaluation slice. In publication-backed mode it records eligible
+Bill evidence and the exact-current Member publication inventory. Its stable
+identity is derived from the relevant preserved inputs. It describes only graph
+payloads written by the bootstrap, not a live census of unrelated or stale
+graphs in persistent Fuseki. The Debate slice is non-authoritative and does not
+imply complete Debate or cross-dataset owner-reference coverage.
 
 ## NLQ evaluation benchmark
 
@@ -147,10 +190,12 @@ translation is required:
 uv run --locked --extra nlq python scripts/run-nlq-benchmark.py --tier measured
 ```
 
-Both automation tiers require Docker and the preserved complete API captures
-and Core State index used by `oir-etl dev bootstrap`. Override their locations
-with `--raw-dir` / `--state-db` or the existing `OIR_RAW_DIR` /
-`OIR_ETL_STATE_DB` environment settings. The runner starts a new
+Both automation tiers require Docker, the preserved API captures, and the
+committed API/Debate selection manifests; no Core State capture-index snapshot
+is required. Override the raw-capture location with `--raw-dir` or
+`OIR_RAW_DIR`. The optional `--state-db` argument only supplies a path protected
+against baseline-output overwrite; it is not opened for capture selection.
+The runner starts a new
 `stain/jena-fuseki:5.1.0` container for each run, publishes a random port only
 on loopback, attaches no host or named data volume, bootstraps that instance
 from the preserved captures, and stops/removes it after evaluation. It never
@@ -161,8 +206,9 @@ poc/nlq/benchmarks/benchmark-v1.json` to reproduce the historical v0.2.0 or
 v0.1.0 case sets. Result JSON is written beneath the ignored
 `var/nlq-benchmark/runs/` directory by default.
 
-Every result embeds the exact Phase 0A dataset-baseline JSON and its stable
-`sha256:` dataset ID, plus the disposable container ID for that particular run.
+Every result embeds the exact schema-version-1 development dataset-baseline
+JSON and its stable `sha256:` dataset ID, plus the disposable container ID for
+that particular run.
 Measured results also record the resolved non-secret translator model, base
 endpoint, request timeout, output-token cap, and whether configurable
 model/endpoint values came from
@@ -357,27 +403,266 @@ Do not use `docker compose down -v` as a refresh step: it deletes Fuseki's persi
 
 ```text
 Question in browser / benchmark runner
-  -> bounded local exact Member-label resolution
-       - explicit ambiguity outcome for unresolved duplicate labels
-       - local HouseTerm / constituency context for disambiguation
-  -> OpenAI Responses-compatible LLM (when resolution is unique or set-valued)
-       - query-contract-scoped schema context
-       - dataset graph conventions from the contract
-       - user question
-  -> structured { interpretation, sparql }
-  -> RDFLib SPARQL parsing and safety checks
-  -> configured Fuseki /query endpoint
+  -> Phase 2 semantic planner (default browser path)
+  -> deterministic local entity resolution
+  -> validated structured query plan
+  -> deterministic SPARQL generation and safety checks
+  -> configured local Fuseki /query endpoint
   -> SPARQL Results JSON
   -> result table / ASK answer in browser
 ```
 
+The Phase 1 direct NL→SPARQL path remains selectable in the development form for
+comparison/debugging.
+
 The repository-owned machine-readable query contract is
-`poc/specs/query-schema-contract.json` (contract version `1.1.0`, schema
+`poc/specs/query-schema-contract.json` (contract version `2.0.0`, schema
 version `1`). Its JSON Schema is `poc/specs/query-schema-contract.schema.json`.
 The contract defines the queryable class/property scope, named-graph families
 and owners, emitted RDF patterns, entity-specific label predicates,
 cross-graph joins, optional reviewed external identity links, reasoning
 assumptions, known unavailable patterns, and the local safety policy.
+
+### Structured query-plan contract (Phase 2A)
+
+The semantic plan contract is `poc/specs/query-plan-contract.json` (contract
+version `1.2.0`, schema version `1`). Its manifest schema is
+`poc/specs/query-plan-contract.schema.json`; the plan-instance schema is
+`poc/specs/query-plan.schema.json`. Seven representative plans are under
+`poc/specs/query-plan-examples/`. Plans include intent, local Oireachtas source,
+referenced entities, requested facts/relations, semantic filters, temporal
+constraints, optional aggregation, and answer shape. They contain no SPARQL,
+named graph identifiers, or SPARQL variable names.
+
+Entity references retain their type and user label. `resolved` entities carry
+one local Oireachtas IRI; `ambiguous` entities carry multiple distinct local
+candidates and no selected IRI; `unresolved` entities carry neither an IRI nor
+candidates. A HouseTerm reference uses its concrete `DailTerm` or `SeanadTerm`
+type; the contract does not introduce a generic HouseTerm RDF type. Temporal
+constraints distinguish `on`, `before`, `after`, `during`, `interval`, and
+`current`. The initial aggregation operation is `count`, with
+explicit target and optional grouping; answer shapes include boolean, entity,
+entities, label, fact, list, count, and grouped result. Source scope is fixed to
+local Oireachtas data; source selection and federation are not part of this
+contract.
+
+The manifest's `semanticVocabulary` is the source of truth for the currently
+supported entity types, semantic fact IDs, and filter-field IDs. The fact IDs
+cover the queryable House, Member, parliamentary-term, collection,
+constituency/panel, Committee, Bill, accepted Member OfficeHolding, and selected
+Debate patterns recorded by the query/schema contract; their manifest
+descriptions are for people, while the IDs drive consumer dispatch. Fact IDs
+and filter fields are controlled values, not natural-language descriptions or
+RDF/SPARQL names. Filter fields also declare their applicable facts, value kind,
+and supported operators; for example, `parliamentary_collection` is valid for
+`member_collection_membership`, not for an unrelated fact. Unknown facts and
+fields are rejected. The plan-schema enum and field-specific rules mirror the
+manifest vocabulary, with exact parity checked by the focused contract tests.
+
+Entity types remain a controlled set: the validator accepts only the types in
+the current manifest and the plan schema. Adding a **reviewed, supported** entity
+type is an additive compatible extension within contract major version `1`,
+provided existing meanings and validation behavior are unchanged. The manifest,
+schema enum, and focused vocabulary-parity test must be updated together;
+consumers that do not yet support an added type reject it. The current extension
+adds Bill and NamedOffice resolution from reviewed local labels, plus DebateRecord
+as a type-only result role. Bill resolution permits only exact canonical-title
+equality after removing parenthetical qualifiers and a trailing legislative
+year. If a user-supplied Bill title includes a trailing year, a candidate must
+carry that same year; a candidate with a different or absent title year does not
+match. Without a supplied year, multiple resources with the same canonical title
+remain ambiguous.
+DebateRecord has no entity-label resolver because the accepted Debate slice has
+no reviewed local label mapping. Its optional `debate_body` filter is restricted
+to the one pinned Committee of Public Accounts route and does not enable general
+Debate or transcript search.
+
+Requirements, filters, and temporal constraints are conjunctive. Repeated
+references to one entity ID denote that same entity; repeated type-only
+participants of one type denote one result role (schema v1 does not express two
+independent unbound roles of the same type). Ambiguous or unresolved references
+are valid plan states, not executable identity bindings: a later consumer must
+clarify or resolve them and must not choose a candidate or drop a dependent
+constraint. Filter field IDs are controlled and fact-specific; values are
+typed by the selected field. Equality is exact, with no implied fuzzy or
+label-matching behavior; Bill-title canonicalization above is limited to named
+entity resolution. The validator checks that IRIs use the Oireachtas
+namespace but does not manufacture IRIs or independently check the resolver's
+entity-type/IRI assignment. Unknown compatible optional fields may be ignored
+and must not be treated as query, graph, variable, source, or endpoint
+instructions.
+
+### Structured planner path (Phase 2B)
+
+`poc/specs/query-plan-draft.schema.json` defines the strict model-output shape
+used by `poc.nlq.structured_planner.StructuredPlanner`. It contains the same
+controlled facts, filters, temporal constraints, aggregation and answer shapes
+as the Phase 2A contract, but its entities are only `{id, type, label}` user
+mentions. It has no final-plan metadata, source override, resolution state,
+candidate list or entity IRI. Required `null` slots are the strict Responses
+schema's encoding for omitted optional values; the planner removes only those
+documented nulls before semantic validation.
+
+The planner uses the configured Responses-compatible endpoint's strict
+`json_schema` output mode. Its prompt is built narrowly from the Phase 2A
+semantic vocabulary and type/fact/filter descriptions; it contains no RDF
+predicates, graph patterns or query-schema dump. Invalid JSON, invalid draft
+structure, unsupported vocabulary and inconsistent semantics fail visibly.
+There is one model request only: no automatic repair, regeneration or retry.
+
+After draft validation, deterministic local exact-label resolution reuses the
+Phase 1 NFC-normalised, case-insensitive, diacritic-preserving behavior. It
+supports the current controlled entity types and returns exactly one local IRI,
+distinct ambiguous candidates, or unresolved state. It does not fuzzy-match,
+merge same-name resources, manufacture identifiers or use external services.
+For duplicate Member labels, exact local HouseTerm/constituency context reuses
+Phase 1 narrowing: one contextual match resolves, multiple matches remain
+ambiguous, and no match preserves all original candidates. The planner also
+applies Phase 1's explicit set-valued Member-reference gate before accepting a
+final plan. If a plural request is drafted as a named Member
+entity, it returns `set_valued_member_identity` without selecting an IRI. For
+duplicate Member labels, application-generated `binding_evidence` records the
+initial candidates, matched local context labels, deterministic narrowing rule
+and decision, and the selected IRI only when exactly one candidate matches.
+This evidence is separate from the semantic plan.
+The planner inserts those results into a final plan and always calls the
+authoritative Phase 2A validator before accepting it. Ambiguity returns
+`clarification_required`; an absent local label returns `unresolved_entity`.
+Resolver/data unavailability, unsupported resolver types, draft failures and
+final-plan failures have separate result classes.
+
+The structured planner and deterministic compiler are now connected to the
+default `/ask` browser path. The compiler accepts only a `validated_plan`
+`PlannerResult`, revalidates the final plan, and either returns safety-validated
+local SPARQL with a mapping trace or a fail-closed outcome. The Phase 1
+direct-generation path remains an optional comparison/debug mode.
+
+Phase 2B planner-only evaluation uses selected Phase 1 controlled cases and
+semantic plan invariants from `poc/nlq/benchmarks/planner-benchmark-v1.json`. It
+checks source prerequisites with the existing Phase 1 coverage contract before
+scoring; an unavailable prerequisite is recorded separately as source-data
+coverage. This path scores planning only. Run a measured, capture-backed
+planner-only evaluation with:
+
+```bash
+uv run --locked --extra nlq python scripts/run-nlq-planner-benchmark.py
+```
+
+The runner uses disposable loopback Fuseki and records run/dataset identity and
+resolved non-secret model/endpoint configuration beneath the ignored
+`var/nlq-planner-benchmark/runs/` directory. Ordinary automated tests use fake
+model output and do not require an LLM. Unsupported requests remain manual
+review because Phase 2A does not define an explicit unsupported-question plan
+state. The deterministic test for the unsupported manual-review case injects a
+supported draft and checks only the not-scored accounting path; it does not test
+whether a model recognizes unsupported wording. The final realistic-question
+benchmark was completed for the Phase 2 exit gate; the full result and close-out
+are recorded in [`benchmarks/realistic-phase2-report.md`](benchmarks/realistic-phase2-report.md).
+
+### Deterministic plan generation (Phase 2C)
+
+`poc.nlq.plan_sparql.PlanSparqlGenerator` compiles only accepted, validated
+plans. Its explicit semantic-fact dispatch maps to emitted query-schema patterns,
+contract-owned graph families and allowlisted predicates; unsupported facts,
+entity bindings, temporal translations, answer shapes and aggregations fail
+closed. The supported `during` translation is restricted to a referenced
+Dáil/Seanad term for reviewed Member membership, collection-membership and
+representation paths. The additive Phase 2 expansion also supports `on` for
+accepted Member-owned OfficeHolding ranges (inclusive start/end containment; a
+missing end is open) and exact DebateRecord source dates normalized to midnight
+without a timezone. Other date windows, `before`/`after`, `current`, HouseTerm-
+owned temporal references and Committee-membership temporal joins are not
+inferred. Generated entity answers remain resource IRIs; separate
+contract-grounded label lookups are used only by the evaluator when comparing
+resource results against label-valued expectations.
+
+The evaluation path is `poc.nlq.plan_benchmark.run_plan_cases`; it keeps
+planner, validation, binding, generation, safety, Fuseki execution and result
+scoring outcomes separate. A result oracle must match the generated query form:
+the runner does not borrow a coverage probe as an answer oracle. The controlled
+Boolean plan has its own explicit ASK result oracle. Run measured planner →
+generator → Fuseki evaluation, optionally alongside the Phase 1 direct
+generation comparison, against a disposable capture-backed dataset with:
+
+```bash
+uv run --locked --extra nlq python scripts/run-nlq-plan-benchmark.py \
+  --raw-dir /path/to/preserved/complete-captures --compare-phase1
+```
+
+For the accepted 37-case realistic dataset, this runner makes two independent
+offline candidates from the pinned captures and runs the full per-resource
+Member/Bill RDF acceptance checks on each. Each complete candidate is emitted as
+deterministically ordered N-Quads and parsed before any data load. The runner
+then creates a fresh disposable Fuseki container bound only to loopback, verifies
+that its sole dataset has no named or default-graph data, and performs one
+dataset-level N-Quads POST. It checks the exact graph inventory and per-graph
+triple counts, accepted family/resource totals, representative typed resources,
+quarantined Bill-graph absence, and a full N-Quads readback against every
+candidate per-graph RDF 1.1 semantic hash (including simple/`xsd:string`
+equivalence). Both candidates must reproduce the accepted
+dataset identity, inventory and hashes before the benchmark runs on the second
+verified disposable dataset. Generated N-Quads and readback files are temporary.
+
+This is a benchmark-harness-only load path for fresh, empty disposable datasets.
+It does not change the normal `oir-etl dev bootstrap` whole-graph replacement
+path or the atomic whole-graph publication rule for authoritative ETL.
+
+The measured report and known limitation are recorded in
+[`benchmarks/phase-2c-report.md`](benchmarks/phase-2c-report.md). Ordinary
+compiler/evaluator tests use deterministic plans and a fake Fuseki client. The
+opt-in capture-backed Fuseki acceptance is:
+
+```bash
+OIR_NLQ_CAPTURE_RAW_DIR=/path/to/preserved/complete-captures \
+OIR_RUN_NLQ_PLAN_FUSEKI_TESTS=1 \
+uv run --locked --extra test --extra nlq pytest tests/test_nlq_plan_sparql_fuseki.py
+```
+
+The compiler is used by the default browser pipeline; the benchmark evaluator
+remains separate. The final 37-case realistic benchmark, UI evidence, and
+Phase 2 close-out are recorded in
+[`benchmarks/realistic-phase2-report.md`](benchmarks/realistic-phase2-report.md).
+
+### Controlled capability expansion (Phase 2)
+
+The bounded expansion and its deferred boundaries are recorded in
+[`benchmarks/phase-2-controlled-capability-expansion.md`](benchmarks/phase-2-controlled-capability-expansion.md).
+It updates the query/schema contract to major version `2.0.0` because the prior
+Bill lifecycle pattern incorrectly attached `eli-dl:latest_activity` to the
+Bill rather than its process. Additive semantic-plan vocabulary support uses
+contract version `1.2.0`; plan-contract consumers still support major `1`.
+Eleven deterministic semantic-plan evaluation cases are pinned in
+`benchmarks/query-service-phase-2-v1.json`. Offline generation checks run with:
+
+```bash
+uv run --locked --extra test python -m pytest tests/test_nlq_plan_phase2_evaluation.py
+```
+
+The opt-in Fuseki acceptance runs those cases against the accepted
+non-authoritative development bootstrap. It requires the preserved raw captures
+and committed API/Debate selection evidence to be available locally; no Core
+State capture-index snapshot is needed. The bootstrap writes only to its
+disposable loopback Fuseki dataset.
+
+`poc.nlq.plan_contract` exposes `load_query_plan_contract`,
+`validate_query_plan`, and `load_query_plan`. The structured Phase 2 browser path
+calls this authoritative validator before compilation; the optional Phase 1
+direct NL-to-SPARQL path remains separate. To test the contract artifacts,
+examples, and validator:
+
+```bash
+uv run --locked --extra test python -m pytest tests/test_nlq_query_plan.py
+```
+
+Contract major version `1` allows additive optional extensions and additive
+reviewed entity types, semantic facts, or filter fields when existing meanings
+and validation behavior are unchanged. A breaking change to an existing field's
+meaning, supported resolution states, or validation expectations requires a
+major bump. Consumers reject unsupported schema versions, contract majors, and
+semantic vocabulary values. The realistic-question benchmark has been completed
+and accepted as part of the Phase 2 exit gate; the controlled Phase 1 benchmark
+remains the capability/regression suite. Source selection and provenance are
+the Phase 3 handoff; broader federation and external querying remain deferred.
 
 At startup, RDFLib reads the repository's `ontology/*.owl.ttl` modules and the
 pinned ELI/ELI-DL vocabularies to add ontology descriptions, domains, ranges,
@@ -499,11 +784,10 @@ In particular:
 - historic facts can only be returned when the required source data has been loaded;
 - exact local Member-label ambiguity handling is bounded to the shared NLQ
   pipeline; it does not provide general fuzzy search or same-person merging;
-- a matching local HouseTerm or constituency/panel label can narrow duplicate
-  Member candidates enough to continue, but the selected Member IRI is not
-  mechanically bound into the later LLM-generated answer query. That query must
-  still apply the context correctly; inspect its generated SPARQL before relying
-  on a context-disambiguated answer;
+- the Phase 1 direct-generation path does not mechanically bind the local
+  Member IRI selected by contextual narrowing; that live path remains unchanged.
+  The separate Phase 2C path binds only the singular IRI in a validated plan and
+  rejects ambiguous, unresolved and set-valued Member identity outcomes;
 - there is no conversational follow-up state;
 - there is no authentication or production hardening;
 - the schema grounding is not a full reasoner or query planner.

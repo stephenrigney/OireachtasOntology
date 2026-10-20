@@ -1,9 +1,10 @@
-"""Bounded, local-only Member name resolution for the NLQ pipeline.
+"""Bounded, deterministic local entity resolution for the NLQ POC.
 
 This is deliberately not an identity-merging layer. It finds exact local
-``foaf:name`` labels mentioned by the user, groups the resulting RDF resources
-by their real local Member IRI, and asks for clarification when multiple
-records remain credible.
+labels mentioned by the user, retains the actual RDF resources, and reports
+ambiguity rather than selecting or merging distinct identities. The Phase 1
+Member-question gate remains unchanged; the typed single-label resolver is used
+by the independent structured-planner path.
 """
 
 from __future__ import annotations
@@ -32,6 +33,101 @@ _MEMBER_GRAPH_PREFIX = next(
     for family in _CONTRACT["graphFamilies"]
     if family["id"] == "member-records"
 )
+
+_ENTITY_CLASSES = {
+    "Member": "agents:Member",
+    "House": "agents:House",
+    "DailTerm": "agents:DailTerm",
+    "SeanadTerm": "agents:SeanadTerm",
+    "ParliamentaryMemberCollection": "members:ParliamentaryMemberCollection",
+    "DailConstituency": "members:DailConstituency",
+    "SeanadPanel": "members:SeanadPanel",
+    "Committee": "members:Committee",
+    "Bill": "eli-dl:DraftLegislationWork",
+    "NamedOffice": "members:NamedOffice",
+}
+_ENTITY_GRAPH_FAMILIES = {
+    "Member": "member-records",
+    "House": "houses",
+    "DailTerm": "houses",
+    "SeanadTerm": "houses",
+    "ParliamentaryMemberCollection": "parties",
+    "DailConstituency": "constituencies",
+    "SeanadPanel": "constituencies",
+    "Committee": "committees",
+    "Bill": "bill-records",
+    "NamedOffice": "offices",
+}
+_ENTITY_GRAPH_CONFIG = {
+    family["id"]: family["graph"] for family in _CONTRACT["graphFamilies"]
+}
+_LOCAL_IRI = re.compile(r"^https://data\.oireachtas\.ie/[^\s?#]+$")
+_REPRESENTATION_TERM_TYPES = {
+    "DailConstituency": "agents:DailTerm",
+    "SeanadPanel": "agents:SeanadTerm",
+}
+
+
+class UnsupportedLocalEntityType(ValueError):
+    """The controlled type has no deterministic local label lookup."""
+
+
+@dataclass(frozen=True)
+class LocalEntityCandidate:
+    """One distinct, locally returned resource and its actual label."""
+
+    iri: str
+    label: str
+
+
+@dataclass(frozen=True)
+class MemberContextCandidateEvidence:
+    """Question-matched local context labels for one initial Member candidate."""
+
+    iri: str
+    matched_labels: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class MemberContextResolutionEvidence:
+    """Deterministic evidence for narrowing an exact duplicate Member label."""
+
+    input_label: str
+    initial_candidates: tuple[LocalEntityCandidate, ...]
+    context_matches: tuple[MemberContextCandidateEvidence, ...]
+    decision: str
+    selected_iri: str | None = None
+
+    def as_dict(self, *, entity_id: str) -> dict:
+        evidence = {
+            "entityId": entity_id,
+            "entityType": "Member",
+            "inputLabel": self.input_label,
+            "initialCandidates": [
+                {"iri": candidate.iri, "label": candidate.label}
+                for candidate in self.initial_candidates
+            ],
+            "contextMatches": [
+                {"iri": match.iri, "matchedLabels": list(match.matched_labels)}
+                for match in self.context_matches
+            ],
+            "decision": self.decision,
+            "rule": "select_only_if_exact_context_matches_one_candidate",
+        }
+        if self.selected_iri is not None:
+            evidence["selectedIri"] = self.selected_iri
+        return evidence
+
+
+@dataclass(frozen=True)
+class LocalEntityResolution:
+    """Exact-label resolution without fuzzy matching or identity merging."""
+
+    state: str
+    candidates: tuple[LocalEntityCandidate, ...] = ()
+    contextual_evidence: MemberContextResolutionEvidence | None = None
+
+
 @dataclass(frozen=True)
 class MemberCandidate:
     """One actual local Member resource and its safely displayable context."""
@@ -85,6 +181,319 @@ def _normalise_text(value: str) -> str:
     return unicodedata.normalize("NFC", value).casefold()
 
 
+def _entity_label_predicate(entity_type: str) -> str:
+    labels = _CONTRACT.get("labelsByEntityType", {}).get(entity_type)
+    if not isinstance(labels, dict):
+        raise UnsupportedLocalEntityType(
+            f"No local label predicate is defined for entity type {entity_type!r}."
+        )
+    qualified = labels.get("predicate")
+    if not isinstance(qualified, str) or ":" not in qualified:
+        raise UnsupportedLocalEntityType(
+            f"No local label predicate is defined for entity type {entity_type!r}."
+        )
+    prefix, local_name = qualified.split(":", 1)
+    namespace = _NAMESPACES.get(prefix)
+    if not namespace or not local_name:
+        raise UnsupportedLocalEntityType(
+            f"The local label predicate for entity type {entity_type!r} is unsupported."
+        )
+    return f"<{namespace}{local_name}>"
+
+
+def _canonical_bill_title(value: str) -> str:
+    """Canonicalize only exact Bill title variants with qualifiers/year omitted."""
+    title = unicodedata.normalize("NFC", value)
+    previous = None
+    while previous != title:
+        previous = title
+        title = re.sub(r"\s*\([^()]*\)", " ", title)
+    title = re.sub(r"\s+(?:19|20)[0-9]{2}\s*$", "", title)
+    return " ".join(title.split()).casefold()
+
+
+def _trailing_bill_title_year(value: str) -> str | None:
+    """Return an explicitly supplied trailing legislative year, if present."""
+    match = re.search(r"\s+((?:19|20)[0-9]{2})\s*$", unicodedata.normalize("NFC", value))
+    return match.group(1) if match else None
+
+
+def _bill_title_lookup_hint(label: str) -> str:
+    """Return a conservative indexed-text prefilter for exact canonical titles."""
+    title = unicodedata.normalize("NFC", label)
+    title = re.sub(r"\s*\([^()]*\)", " ", title)
+    title = re.sub(r"\s+(?:19|20)[0-9]{2}\s*$", "", title)
+    # The official short title can put a parenthetical qualifier before “Bill”;
+    # use the distinctive stem to fetch candidates, then require canonical
+    # whole-title equality in Python before accepting any resource.
+    title = re.sub(r"\s+Bill\s*$", "", title, flags=re.IGNORECASE)
+    title = " ".join(title.split())
+    return title if len(title.split()) >= 2 else unicodedata.normalize("NFC", label)
+
+
+def _entity_lookup_query(entity_type: str, label: str) -> str:
+    """Build a bounded lookup only from the reviewed local type/label map."""
+    class_name = _ENTITY_CLASSES.get(entity_type)
+    graph_config = _ENTITY_GRAPH_CONFIG.get(_ENTITY_GRAPH_FAMILIES.get(entity_type, ""))
+    if class_name is None or not isinstance(graph_config, dict):
+        raise UnsupportedLocalEntityType(
+            f"No deterministic local resolver is available for entity type {entity_type!r}."
+        )
+    predicate = _entity_label_predicate(entity_type)
+    label_qname = _CONTRACT["labelsByEntityType"][entity_type]["predicate"]
+    qnames = [class_name, label_qname]
+    extra_patterns = ""
+    if entity_type == "Bill":
+        qnames.extend(("eli:type_document", "agents:Bill"))
+        extra_patterns = " ; eli:type_document agents:Bill"
+    lookup_label = (
+        _bill_title_lookup_hint(label) if entity_type == "Bill"
+        else unicodedata.normalize("NFC", label)
+    )
+    query_label = Literal(lookup_label).n3()
+    if graph_config.get("kind") == "resource-pattern" and entity_type == "Member":
+        pattern = (
+            f"GRAPH ?entityGraph {{ ?entity a {class_name} ; {predicate} ?label . }}\n"
+            f'  FILTER(STRSTARTS(STR(?entityGraph), "{_MEMBER_GRAPH_PREFIX}"))'
+        )
+    elif graph_config.get("kind") == "resource-pattern" and entity_type == "Bill":
+        graph_pattern = r"^https://data\.oireachtas\.ie/graph/bill/[^/]+/[^/]+$"
+        pattern = (
+            f"GRAPH ?entityGraph {{ ?entity a {class_name} ; {predicate} ?label"
+            f"{extra_patterns} . }}\n"
+            f"  FILTER(REGEX(STR(?entityGraph), {Literal(graph_pattern).n3()}))"
+        )
+    elif graph_config.get("kind") == "fixed":
+        graph_iri = graph_config.get("iri")
+        if not isinstance(graph_iri, str):
+            raise UnsupportedLocalEntityType(
+                f"No fixed local graph is defined for entity type {entity_type!r}."
+            )
+        pattern = f"GRAPH <{graph_iri}> {{ ?entity a {class_name} ; {predicate} ?label . }}"
+    else:
+        raise UnsupportedLocalEntityType(
+            f"The local graph pattern for entity type {entity_type!r} is unsupported."
+        )
+    prefixes = "\n".join(
+        f"PREFIX {prefix}: <{_NAMESPACES[prefix]}>"
+        for prefix in sorted({qname.split(":", 1)[0] for qname in qnames})
+    )
+    return f'''{prefixes}
+SELECT DISTINCT ?entity ?label WHERE {{
+  {pattern}
+  FILTER(CONTAINS(LCASE(STR(?label)), LCASE(STR({query_label}))))
+}}
+LIMIT 100'''
+
+
+def _representation_term_context_query(
+    entity_type: str,
+    candidates: tuple[LocalEntityCandidate, ...],
+) -> str:
+    """Read the source-owned HouseTerm links for repeated representation labels."""
+    term_type = _REPRESENTATION_TERM_TYPES[entity_type]
+    resources = " ".join(URIRef(candidate.iri).n3() for candidate in candidates)
+    graph = _FIXED_GRAPHS["constituencies"]
+    houses_graph = _FIXED_GRAPHS["houses"]
+    return f'''PREFIX agents: <{_NAMESPACES["agents"]}>
+PREFIX members: <{_NAMESPACES["members"]}>
+PREFIX skos: <{_NAMESPACES["skos"]}>
+SELECT DISTINCT ?entity ?contextLabel WHERE {{
+  VALUES ?entity {{ {resources} }}
+  GRAPH <{graph}> {{ ?entity members:constituencyInHouseTerm ?term . }}
+  GRAPH <{houses_graph}> {{
+    ?term a {term_type} ; skos:prefLabel ?contextLabel .
+  }}
+}}
+LIMIT 100'''
+
+
+def _narrow_representation_candidates_by_term(
+    entity_type: str,
+    candidates: tuple[LocalEntityCandidate, ...],
+    question: str,
+    fuseki,
+    *,
+    supported_predicates,
+) -> tuple[LocalEntityCandidate, ...]:
+    query = _checked_local_query(
+        _representation_term_context_query(entity_type, candidates),
+        supported_predicates=supported_predicates,
+    )
+    result = fuseki.query(query)
+    if result.kind != "select" or not {"entity", "contextLabel"} <= set(result.columns):
+        raise NLQError("Fuseki returned an unexpected response to representation context lookup.")
+    if len(result.rows) >= 100:
+        raise NLQError(
+            f"Local {entity_type} term-context lookup reached its 100-row safety cap; "
+            "no entity was selected."
+        )
+    labels_by_iri: dict[str, set[str]] = {}
+    for row in result.rows:
+        iri = _binding_value(row, result.columns, "entity")
+        raw_label = _binding_value(row, result.columns, "contextLabel")
+        if iri and raw_label:
+            labels_by_iri.setdefault(iri, set()).add(_context_label(raw_label))
+    matched_iris = {
+        candidate.iri
+        for candidate in candidates
+        if _non_overlapping_context_matches(
+            question, labels_by_iri.get(candidate.iri, set()),
+        )
+    }
+    # Context is a safe narrowing clue only when it identifies at least one
+    # candidate. No match preserves the original duplicate-label ambiguity.
+    if not matched_iris:
+        return candidates
+    return tuple(candidate for candidate in candidates if candidate.iri in matched_iris)
+
+
+def resolve_local_entity_label(
+    entity_type: str,
+    label: str,
+    fuseki,
+    *,
+    supported_predicates=None,
+    question_context: str | None = None,
+) -> LocalEntityResolution:
+    """Resolve one exact user label to zero, one, or many distinct local IRIs.
+
+    The Fuseki query is a bounded, type-scoped substring prefilter; acceptance
+    uses the Phase 1 NFC/casefold exact-label rule in Python. Thus the prefilter
+    cannot turn a partial, fuzzy, or accent-folded match into a resolution.
+    """
+    if entity_type not in _ENTITY_CLASSES:
+        raise UnsupportedLocalEntityType(
+            f"No deterministic local resolver is available for entity type {entity_type!r}."
+        )
+    query = _checked_local_query(
+        _entity_lookup_query(entity_type, label),
+        supported_predicates=supported_predicates,
+    )
+    result = fuseki.query(query)
+    if result.kind != "select" or not {"entity", "label"} <= set(result.columns):
+        raise NLQError("Fuseki returned an unexpected response to local entity resolution.")
+    if len(result.rows) >= 100:
+        raise NLQError(
+            f"Local {entity_type} label resolution reached its 100-row safety cap; "
+            "no entity was selected."
+        )
+
+    exact_by_iri: dict[str, set[str]] = {}
+    for row in result.rows:
+        iri = _binding_value(row, result.columns, "entity")
+        raw_label = _binding_value(row, result.columns, "label")
+        if not iri or not raw_label:
+            continue
+        actual_label = _context_label(raw_label)
+        if entity_type == "Bill":
+            requested_year = _trailing_bill_title_year(label)
+            labels_match = (
+                _canonical_bill_title(actual_label) == _canonical_bill_title(label)
+                and (
+                    requested_year is None
+                    or _trailing_bill_title_year(actual_label) == requested_year
+                )
+            )
+        else:
+            labels_match = _normalise_text(actual_label) == _normalise_text(label)
+        if not labels_match:
+            continue
+        try:
+            parsed = urlsplit(iri)
+        except ValueError:
+            continue
+        if (
+            not _LOCAL_IRI.fullmatch(iri)
+            or parsed.scheme != "https"
+            or parsed.netloc != "data.oireachtas.ie"
+            or parsed.query
+            or parsed.fragment
+        ):
+            continue
+        exact_by_iri.setdefault(iri, set()).add(actual_label)
+
+    candidates = tuple(sorted(
+        (
+            LocalEntityCandidate(
+                iri=iri,
+                # A resource can carry duplicate language/case variants of a
+                # label; preserve one deterministic actual literal per IRI.
+                label=sorted(labels, key=lambda value: (value.casefold(), value))[0],
+            )
+            for iri, labels in exact_by_iri.items()
+        ),
+        key=lambda candidate: (_normalise_text(candidate.label), candidate.iri),
+    ))
+    if (
+        entity_type in _REPRESENTATION_TERM_TYPES
+        and question_context
+        and len(candidates) > 1
+    ):
+        candidates = _narrow_representation_candidates_by_term(
+            entity_type, candidates, question_context, fuseki,
+            supported_predicates=supported_predicates,
+        )
+    contextual_evidence = None
+    if entity_type == "Member" and question_context and len(candidates) > 1:
+        # An explicit set of same-name Member identities cannot be converted
+        # into a singular binding by otherwise matching local context.
+        if is_set_valued_member_reference(question_context, label):
+            return LocalEntityResolution("ambiguous", candidates)
+
+        # Preserve Phase 1's deterministic HouseTerm/constituency contextual
+        # narrowing before reporting duplicate Member labels to the planner.
+        enriched = tuple(
+            _load_context(
+                MemberCandidate(candidate.iri, candidate.label), fuseki,
+                supported_predicates=supported_predicates,
+            )
+            for candidate in candidates
+        )
+        matches_by_iri = {
+            candidate.member_iri: _non_overlapping_context_matches(
+                question_context, set(candidate.house_terms) | set(candidate.representations),
+            )
+            for candidate in enriched
+        }
+        contextual = tuple(
+            LocalEntityCandidate(candidate.member_iri, candidate.name)
+            for candidate in enriched
+            if matches_by_iri[candidate.member_iri]
+        )
+        if len(contextual) == 1:
+            decision = "resolved_by_unique_context_match"
+            selected_iri = contextual[0].iri
+        elif len(contextual) > 1:
+            decision = "ambiguous_multiple_context_matches"
+            selected_iri = None
+        else:
+            decision = "ambiguous_no_context_match"
+            selected_iri = None
+        contextual_evidence = MemberContextResolutionEvidence(
+            input_label=label,
+            initial_candidates=candidates,
+            context_matches=tuple(
+                MemberContextCandidateEvidence(
+                    iri=candidate.member_iri,
+                    matched_labels=tuple(sorted(
+                        matches_by_iri[candidate.member_iri],
+                        key=lambda value: (_normalise_text(value), value),
+                    )),
+                )
+                for candidate in enriched
+            ),
+            decision=decision,
+            selected_iri=selected_iri,
+        )
+        if len(contextual) == 1:
+            candidates = contextual
+        elif len(contextual) > 1:
+            candidates = contextual
+    state = "unresolved" if not candidates else "resolved" if len(candidates) == 1 else "ambiguous"
+    return LocalEntityResolution(state, candidates, contextual_evidence)
+
+
 def _label_position(question: str, label: str) -> int | None:
     """Return the start of a whole-label mention, not a fuzzy/token match."""
     text = _normalise_text(question)
@@ -96,7 +505,7 @@ def _label_position(question: str, label: str) -> int | None:
     return match.start() if match else None
 
 
-def _set_valued_member_reference(question: str, label: str) -> bool:
+def is_set_valued_member_reference(question: str, label: str) -> bool:
     """Recognise explicit requests for a set of Member records.
 
     Listing a person's terms or memberships is not enough to make the person
@@ -332,7 +741,7 @@ def resolve_member_ambiguity(
     )
     for mention in mentions:
         candidates = mention["candidates"]
-        if len(candidates) < 2 or _set_valued_member_reference(question, mention["label"]):
+        if len(candidates) < 2 or is_set_valued_member_reference(question, mention["label"]):
             continue
 
         enriched = tuple(

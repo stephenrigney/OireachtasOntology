@@ -39,9 +39,9 @@
 
 | Property | Domain | Range | Notes |
 |---|---|---|---|
-| `eli-dl:process_type` | `eli-dl:LegislativeProcess` | `eli-dl:ProcessType` | Bill type: `:PublicBill` or `:PrivateBill`; replaces former `oir:hasBillType` |
+| `eli-dl:process_type` | `eli-dl:LegislativeProcess` | `eli-dl:ProcessType` | Bill type: peer individuals `:PublicBill`, `:PrivateBill`, or `:HybridBill`; replaces former `oir:hasBillType` |
 | `eli-dl:process_number` | `eli-dl:LegislativeProcess` | `xsd:string` | Bill number within the legislative year |
-| `eli-dl:process_status` | `eli-dl:LegislativeProcess` | `skos:Concept` | Current bill status (see [Concept Schemes](Concept-Schemes)) |
+| `eli-dl:process_status` | `eli-dl:LegislativeProcess` | `skos:Concept` | Bill status is sourced from controlled `bill.statusURI`; `published` aliases `:CurrentBill`, while `rejected-at-referendum` maps to `:RejectedAtReferendumBill`. `stageOutcome` is preserved source evidence only. |
 | `eli-dl:latest_activity` | `eli-dl:LegislativeProcess` | `eli-dl:LegislativeActivity` | Most recent bill stage/event; replaces former `oir:mostRecentStage` |
 | `eli-dl:was_submitted_by` | `eli-dl:LegislativeProcess` | `foaf:Agent` | Bill source: `agents:GovernmentBillSource`, `agents:PrivateMember` or `agents:PrivateSponsor`; the Government source is a controlled concept, not the constitutional Government institution |
 | `:originHouse` | `eli-dl:DraftLegislationWork` | `agents:House` | House of introduction (Dáil or Seanad) |
@@ -53,7 +53,7 @@
 | Property | Domain | Range | Notes |
 |---|---|---|---|
 | `events:inHouse` | `oir:BillEvent` | `agents:House` | The House/committee in which a bill event occurs; renamed from former `oir:inChamber` |
-| `oir:progressStage` | `eli-dl:LegislativeActivity` | `xsd:positiveInteger` | Cross-house sequential order (1 = First Stage Dáil … 10 = Enacted) |
+| `oir:progressStage` | `eli-dl:LegislativeActivity` | `xsd:positiveInteger` | Source-supplied cross-house order of stage occurrences; stage identity is determined by `stageURI`, not this ordering value |
 | `oir:stageNo` | `eli-dl:AmendmentToDraftLegislationWork` | `xsd:positiveInteger` | Stage within a single house at which an amendment list was tabled |
 | `:commenced` | `oir:BillEvent` | `xsd:dateTime` | Date on which the event commenced |
 | `:ended` | `oir:BillEvent` | `xsd:dateTime` | Date on which the event concluded |
@@ -63,10 +63,23 @@
 | Property | Domain | Range | Notes |
 |---|---|---|---|
 | `eli-dl:had_participation` | `eli-dl:LegislativeActivity` | `eli-dl:Participation` | Speaker / mover / rapporteur participation; `eli-dl:participation_role` on the participation node carries `members:MoverRole` or `members:RapporteurRole` |
-| `:isPrimarySponsor` | `eli-dl:Participation` | `xsd:boolean` | `true` for the primary bill sponsor; false/absent for secondary sponsors |
+| `:isPrimarySponsor` | `eli-dl:Participation` | `xsd:boolean` | Optional, zero-or-one Boolean. Null source means unknown: omit the property without dropping the Participation. |
 | `oir:amends` | `eli:AmendmentToLegislationWork` | `eli:LegalExpression` | The version (expression) of the Bill which an amendment modifies (aligns with `eli:changes`) |
 | `oir:amended_by` | `eli:LegalExpression` | `eli:AmendmentToLegislationWork` | The version created on foot of an amendment (aligns with `eli:changed_by`) |
-| `:hasAmendmentListType` | `oir:AmendmentList` | `skos:Concept` | Type of amendment list: `:NumberedAmendmentList` or `:UnnumberedAmendmentList` |
+| `:hasAmendmentListType` | `eli-dl:AmendmentToDraftLegislationWork` | `skos:Concept` | Type of amendment list: `:NumberedAmendmentList`, `:UnnumberedAmendmentList`, or `:CreamList` |
+
+Related-document source URIs identify Bill-owned Work/grouping resources. Each
+Work has a controlled type, and Expressions are derived from source URI, type,
+language, date, and display label. Rendition-aware Format identities include
+the owning Expression, media type, and canonical rendition URI.
+
+The API supplies no amendment-list identity URI. A list Work, its Expression,
+and tabling activity use a deterministic key derived from stage, stage number,
+date, chamber, amendment type, and the ordered signature of its non-null PDF/
+XML rendition URIs. Renditions distinguish otherwise-colliding source records;
+they are not treated as the Work. `showAs` and source-array position are not
+identity inputs. Exact duplicate mapped records collapse, while conflicting
+mapped content for one complete identity fails closed.
 
 ### Eliminated properties
 

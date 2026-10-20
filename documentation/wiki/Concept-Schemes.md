@@ -21,8 +21,10 @@
 |                                         |
 | **oir:BillStatus**                        |
 | oir:CurrentBill                             |
+| oir:RejectedAtReferendumBill |
 | oir:LapsedBill                             |
 | oir:DefeatedBill                           |
+| oir:DeclaredRepugnantToConstitutionBill |
 | oir:WithdrawnBill                           |
 | oir:InvalidBill              |
 | oir:SubjectToReferendumBill               |

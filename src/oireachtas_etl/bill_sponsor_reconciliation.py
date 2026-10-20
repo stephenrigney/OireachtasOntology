@@ -15,8 +15,10 @@ import sqlite3
 from urllib.parse import unquote, urlsplit
 import uuid
 
+from rdflib import URIRef
+
 from .office_observations import normalize_label
-from .transforms.bills import bill_graph_iri
+from .transforms.bills import _derived, bill_graph_iri
 from .transforms.common import date_literal, datetime_literal
 from .transforms.offices import office_iri
 from .validation.offices import validate_registry_source
@@ -116,8 +118,7 @@ def _participation_iri(bill_iri: str, sponsor: dict) -> str:
         "role": role.get("uri") or role.get("showAs"),
         "primary": sponsor["isPrimary"],
     }
-    digest = json_hash(identity)
-    return f"{bill_iri}#process#sponsor-{digest}"
+    return str(_derived(URIRef(f"{bill_iri}#process"), "sponsor", identity))
 
 
 def extract_bill_sponsor_observations(wrapper: dict) -> list[dict]:

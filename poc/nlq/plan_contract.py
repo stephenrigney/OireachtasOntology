@@ -1,0 +1,740 @@
+"""Dependency-light loader and validator for semantic query plans.
+
+This module validates the Phase 2A contract only. It is deliberately not wired
+into the live NLQ pipeline and has no LLM, RDF, or Fuseki dependency.
+"""
+
+from __future__ import annotations
+
+import json
+import math
+import re
+from datetime import date
+from functools import lru_cache
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlsplit
+
+
+CONTRACT_PATH = Path(__file__).resolve().parents[1] / "specs" / "query-plan-contract.json"
+SUPPORTED_SCHEMA_VERSION = 1
+SUPPORTED_CONTRACT_MAJOR = 1
+CONTRACT_ID = "https://data.oireachtas.ie/specs/query-plan-contract"
+CONTRACT_SCHEMA_PATH = "poc/specs/query-plan-contract.schema.json"
+PLAN_SCHEMA_PATH = "poc/specs/query-plan.schema.json"
+_JSON_SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
+_SEMVER = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$")
+_IDENTIFIER = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
+_DATE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
+_LOCAL_IRI = re.compile(r"^https://data\.oireachtas\.ie/[^\s?#]+$")
+_LOCAL_VOCAB_TERM = re.compile(r"^https://data\.oireachtas\.ie/[^\s?#]+#[^\s?#]+$")
+_ROUTE_SEGMENT = re.compile(r"^[a-z0-9_-]+$")
+
+RESOLUTION_STATES = frozenset({"resolved", "ambiguous", "unresolved"})
+FILTER_OPERATORS = frozenset({
+    "equals", "not_equals", "greater_than", "greater_than_or_equal",
+    "less_than", "less_than_or_equal", "exists",
+})
+TEMPORAL_KINDS = frozenset({"on", "before", "after", "during", "interval", "current"})
+AGGREGATION_OPERATIONS = frozenset({"count"})
+ANSWER_SHAPES = frozenset({
+    "boolean", "entity", "entities", "label", "fact", "list", "count", "grouped_result",
+})
+_TERM_TYPES = frozenset({"DailTerm", "SeanadTerm"})
+_RESERVED_IMPLEMENTATION_FIELDS = frozenset({
+    "sparql", "query", "queryText", "queryFragment", "graph", "graphs", "graphIri",
+    "graphIris", "namedGraph", "namedGraphs", "graphPattern", "triplePatterns",
+    "variable", "variables", "variableName", "prefix", "prefixes", "endpoint",
+    "endpoints", "dataset", "datasetId", "sourceSelection", "sources", "orderBy",
+    "limit", "offset", "select", "ask", "where",
+})
+_RESOLUTION_SELECTION_FIELDS = frozenset({
+    "selected", "selectedIri", "resolvedIri", "resolvedEntityIri", "selectedCandidate", "chosenCandidate",
+})
+
+
+class QueryPlanContractError(ValueError):
+    """A plan is malformed, internally inconsistent, or not supported."""
+
+
+def _error(message: str) -> None:
+    raise QueryPlanContractError(message)
+
+
+def _semver(value: Any, where: str) -> tuple[int, int, int]:
+    if not isinstance(value, str) or not (match := _SEMVER.fullmatch(value)):
+        _error(f"Query-plan {where} must be a semantic version (major.minor.patch).")
+    return tuple(int(component) for component in match.groups())
+
+
+def _check_supported_versions(document: dict[str, Any], where: str) -> None:
+    schema_version = document.get("schemaVersion")
+    if type(schema_version) is not int or schema_version != SUPPORTED_SCHEMA_VERSION:
+        _error(
+            f"Unsupported {where} schema version {schema_version!r}; "
+            f"this consumer supports schema version {SUPPORTED_SCHEMA_VERSION}."
+        )
+    contract_major, _, _ = _semver(document.get("contractVersion"), "contractVersion")
+    if contract_major != SUPPORTED_CONTRACT_MAJOR:
+        _error(
+            f"Unsupported {where} contract major version {contract_major}; "
+            f"this consumer supports major version {SUPPORTED_CONTRACT_MAJOR}."
+        )
+
+
+def _nonempty_string(value: Any, where: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        _error(f"Query plan {where} must be a non-empty string.")
+    return value
+
+
+def _enum(value: Any, supported: frozenset[str], where: str) -> str:
+    if not isinstance(value, str) or value not in supported:
+        _error(f"Query plan {where} uses unsupported value {value!r}.")
+    return value
+
+
+def _identifier(value: Any, where: str) -> str:
+    if not isinstance(value, str) or not _IDENTIFIER.fullmatch(value):
+        _error(f"Query plan {where} must be a semantic identifier (letters, digits, '_' or '-').")
+    return value
+
+
+def _local_iri(value: Any, where: str) -> str:
+    if not isinstance(value, str) or not _LOCAL_IRI.fullmatch(value):
+        _error(f"Query plan {where} must be a local Oireachtas IRI.")
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        _error(f"Query plan {where} must be a local Oireachtas IRI.")
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname != "data.oireachtas.ie"
+        or parsed.netloc != "data.oireachtas.ie"
+        or not parsed.path.startswith("/")
+        or parsed.query
+        or parsed.fragment
+        or any(character.isspace() for character in value)
+    ):
+        _error(f"Query plan {where} must be a local Oireachtas IRI under https://data.oireachtas.ie/.")
+    return value
+
+
+def _local_vocabulary_term(value: Any, where: str) -> str:
+    """Validate one local controlled-vocabulary individual IRI, including fragment."""
+    if not isinstance(value, str) or not _LOCAL_VOCAB_TERM.fullmatch(value):
+        _error(f"Query-plan contract {where} must be a local Oireachtas vocabulary-term IRI.")
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        _error(f"Query-plan contract {where} must be a local Oireachtas vocabulary-term IRI.")
+    if (
+        parsed.scheme != "https"
+        or parsed.netloc != "data.oireachtas.ie"
+        or parsed.query
+        or not parsed.fragment
+    ):
+        _error(f"Query-plan contract {where} must be a local Oireachtas vocabulary-term IRI.")
+    return value
+
+
+def _date_value(value: Any, where: str) -> date:
+    if not isinstance(value, str) or not _DATE.fullmatch(value):
+        _error(f"Query plan {where} must be an ISO calendar date (YYYY-MM-DD).")
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        _error(f"Query plan {where} must be a valid ISO calendar date (YYYY-MM-DD).")
+
+
+def _object(value: Any, where: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        _error(f"Query plan {where} must be an object.")
+    return value
+
+
+def _array(value: Any, where: str) -> list[Any]:
+    if not isinstance(value, list):
+        _error(f"Query plan {where} must be an array.")
+    return value
+
+
+def _required_fields(value: dict[str, Any], fields: tuple[str, ...], where: str) -> None:
+    missing = [field for field in fields if field not in value]
+    if missing:
+        _error(f"Query plan {where} is missing required fields: {', '.join(missing)}.")
+
+
+def _reject_reserved_fields(value: dict[str, Any], where: str) -> None:
+    present = sorted(_RESERVED_IMPLEMENTATION_FIELDS.intersection(value))
+    if present:
+        _error(f"Query plan {where} contains implementation-specific field(s): {', '.join(present)}.")
+
+
+def _contract_identifier_set(value: Any, where: str, *, allow_empty: bool = False) -> frozenset[str]:
+    values = _array(value, where)
+    if not allow_empty and not values:
+        _error(f"Query-plan contract {where} must contain at least one identifier.")
+    identifiers: set[str] = set()
+    for index, item in enumerate(values):
+        identifier = _identifier(item, f"contract {where}[{index}]")
+        if identifier in identifiers:
+            _error(f"Query-plan contract {where} contains duplicate identifier {identifier!r}.")
+        identifiers.add(identifier)
+    return frozenset(identifiers)
+
+
+def _validate_semantic_vocabulary(raw_vocabulary: Any) -> dict[str, Any]:
+    vocabulary = _object(raw_vocabulary, "contract semanticVocabulary")
+    entity_types = _contract_identifier_set(
+        vocabulary.get("entityTypes"), "semanticVocabulary.entityTypes",
+    )
+
+    facts: dict[str, dict[str, Any]] = {}
+    for index, raw_fact in enumerate(_array(vocabulary.get("facts"), "semanticVocabulary.facts")):
+        where = f"semanticVocabulary.facts[{index}]"
+        fact = _object(raw_fact, f"contract {where}")
+        _required_fields(fact, ("id", "description", "subjectTypes", "objectTypes"), f"contract {where}")
+        fact_id = _identifier(fact["id"], f"contract {where}.id")
+        if fact_id in facts:
+            _error(f"Query-plan contract semanticVocabulary.facts contains duplicate id {fact_id!r}.")
+        _nonempty_string(fact["description"], f"contract {where}.description")
+        subject_types = _contract_identifier_set(fact["subjectTypes"], f"{where}.subjectTypes")
+        object_types = _contract_identifier_set(
+            fact["objectTypes"], f"{where}.objectTypes", allow_empty=True,
+        )
+        unknown_types = (subject_types | object_types) - entity_types
+        if unknown_types:
+            _error(f"Query-plan contract {where} refers to unsupported entity type(s): {', '.join(sorted(unknown_types))}.")
+        facts[fact_id] = {**fact, "subjectTypes": subject_types, "objectTypes": object_types}
+    if not facts:
+        _error("Query-plan contract semanticVocabulary.facts must contain at least one fact.")
+
+    filter_fields: dict[str, dict[str, Any]] = {}
+    for index, raw_field in enumerate(_array(vocabulary.get("filterFields"), "semanticVocabulary.filterFields")):
+        where = f"semanticVocabulary.filterFields[{index}]"
+        field = _object(raw_field, f"contract {where}")
+        _required_fields(field, ("id", "description", "facts", "valueKind", "operators"), f"contract {where}")
+        field_id = _identifier(field["id"], f"contract {where}.id")
+        if field_id in filter_fields:
+            _error(f"Query-plan contract semanticVocabulary.filterFields contains duplicate id {field_id!r}.")
+        _nonempty_string(field["description"], f"contract {where}.description")
+        supported_facts = _contract_identifier_set(field["facts"], f"{where}.facts")
+        unknown_facts = supported_facts - facts.keys()
+        if unknown_facts:
+            _error(f"Query-plan contract {where} refers to unsupported fact(s): {', '.join(sorted(unknown_facts))}.")
+        value_kind = _enum(field["valueKind"], frozenset({"string", "number", "entity"}), f"contract {where}.valueKind")
+        operators = _contract_identifier_set(field["operators"], f"{where}.operators")
+        unknown_operators = operators - FILTER_OPERATORS
+        if unknown_operators:
+            _error(f"Query-plan contract {where} refers to unsupported operator(s): {', '.join(sorted(unknown_operators))}.")
+        if value_kind == "entity":
+            if "entityTypes" not in field:
+                _error(f"Query-plan contract {where}.entityTypes is required for entity-valued filters.")
+            filter_entity_types = _contract_identifier_set(field["entityTypes"], f"{where}.entityTypes")
+            unknown_types = filter_entity_types - entity_types
+            if unknown_types:
+                _error(f"Query-plan contract {where} refers to unsupported entity type(s): {', '.join(sorted(unknown_types))}.")
+        else:
+            if "entityTypes" in field:
+                _error(f"Query-plan contract {where}.entityTypes is only supported for entity-valued filters.")
+            filter_entity_types = frozenset()
+        if "exists" not in operators:
+            _error(f"Query-plan contract {where}.operators must include 'exists'.")
+        allowed_values: list[dict[str, str]] = []
+        if "allowedValues" in field:
+            if value_kind != "string":
+                _error(f"Query-plan contract {where}.allowedValues is supported only for string-valued filters.")
+            seen_values: set[str] = set()
+            seen_resources: set[str] = set()
+            seen_routes: set[str] = set()
+            for value_index, raw_value in enumerate(_array(field["allowedValues"], f"{where}.allowedValues")):
+                value_where = f"{where}.allowedValues[{value_index}]"
+                controlled_value = _object(raw_value, value_where)
+                _required_fields(controlled_value, ("id", "label"), f"contract {value_where}")
+                unknown_value_fields = set(controlled_value) - {"id", "label", "resource", "route"}
+                if unknown_value_fields:
+                    _error(f"Query-plan contract {value_where} contains unsupported field(s): {', '.join(sorted(unknown_value_fields))}.")
+                value_id = _identifier(controlled_value["id"], f"contract {value_where}.id")
+                label = _nonempty_string(controlled_value["label"], f"contract {value_where}.label")
+                if value_id in seen_values:
+                    _error(f"Query-plan contract {where}.allowedValues contains duplicate id {value_id!r}.")
+                seen_values.add(value_id)
+                normalized_value = {"id": value_id, "label": label}
+                if "resource" in controlled_value:
+                    resource = _local_vocabulary_term(controlled_value["resource"], f"contract {value_where}.resource")
+                    if resource in seen_resources:
+                        _error(f"Query-plan contract {where}.allowedValues contains duplicate resource {resource!r}.")
+                    seen_resources.add(resource)
+                    normalized_value["resource"] = resource
+                if "route" in controlled_value:
+                    route = controlled_value["route"]
+                    if not isinstance(route, str) or not _ROUTE_SEGMENT.fullmatch(route):
+                        _error(f"Query-plan contract {value_where}.route must be a lower-case route segment.")
+                    if route in seen_routes:
+                        _error(f"Query-plan contract {where}.allowedValues contains duplicate route {route!r}.")
+                    seen_routes.add(route)
+                    normalized_value["route"] = route
+                allowed_values.append(normalized_value)
+            if not allowed_values:
+                _error(f"Query-plan contract {where}.allowedValues must not be empty.")
+        filter_fields[field_id] = {
+            **field,
+            "facts": supported_facts,
+            "operators": operators,
+            "entityTypes": filter_entity_types,
+            "allowedValues": allowed_values,
+        }
+    if not filter_fields:
+        _error("Query-plan contract semanticVocabulary.filterFields must contain at least one field.")
+
+    return {"entityTypes": entity_types, "facts": facts, "filterFields": filter_fields}
+
+
+def _validate_contract_manifest(document: Any) -> dict[str, Any]:
+    manifest = _object(document, "contract root")
+    if manifest.get("$schema") != _JSON_SCHEMA_DIALECT:
+        _error(f"Query-plan contract $schema must be {_JSON_SCHEMA_DIALECT!r}.")
+    _check_supported_versions(manifest, "query-plan contract")
+    if manifest.get("contractId") != CONTRACT_ID:
+        _error(f"Query-plan contract contractId must be {CONTRACT_ID!r}.")
+    if manifest.get("contractSchema") != CONTRACT_SCHEMA_PATH:
+        _error(f"Query-plan contract contractSchema must be {CONTRACT_SCHEMA_PATH!r}.")
+    if manifest.get("planSchema") != PLAN_SCHEMA_PATH:
+        _error(f"Query-plan contract planSchema must be {PLAN_SCHEMA_PATH!r}.")
+    _nonempty_string(manifest.get("description"), "contract description")
+
+    compatibility = _object(manifest.get("compatibility"), "contract compatibility")
+    for field in ("schemaVersion", "compatibleChanges", "breakingChanges", "consumerSupport"):
+        _nonempty_string(compatibility.get(field), f"contract compatibility.{field}")
+
+    scope = _object(manifest.get("scope"), "contract scope")
+    if scope.get("source") != "oireachtas" or scope.get("localOnly") is not True:
+        _error("Query-plan contract scope must require local Oireachtas data.")
+    if scope.get("sourceSelection") is not False or scope.get("federation") is not False:
+        _error("Query-plan contract must not enable source selection or federation.")
+    _nonempty_string(scope.get("purpose"), "contract scope.purpose")
+    excluded = _array(scope.get("notIncluded"), "contract scope.notIncluded")
+    if not excluded or any(not isinstance(item, str) or not item.strip() for item in excluded):
+        _error("Query-plan contract scope.notIncluded must contain non-empty strings.")
+    semantics = _object(manifest.get("planSemantics"), "contract planSemantics")
+    for field in (
+        "conjunction", "participantIdentity", "resolutionReadiness", "filterMeaning",
+        "unknownExtensions", "iriValidation",
+    ):
+        _nonempty_string(semantics.get(field), f"contract planSemantics.{field}")
+    if "answerShapes" in semantics:
+        answer_shapes = _array(semantics["answerShapes"], "contract planSemantics.answerShapes")
+        described_shapes: set[str] = set()
+        for index, raw_shape in enumerate(answer_shapes):
+            where = f"planSemantics.answerShapes[{index}]"
+            shape = _object(raw_shape, f"contract {where}")
+            _required_fields(shape, ("kind", "description"), f"contract {where}")
+            kind = _enum(shape["kind"], ANSWER_SHAPES, f"contract {where}.kind")
+            if kind in described_shapes:
+                _error(f"Query-plan contract {where}.kind duplicates answer shape {kind!r}.")
+            described_shapes.add(kind)
+            _nonempty_string(shape["description"], f"contract {where}.description")
+        if described_shapes != ANSWER_SHAPES:
+            missing = sorted(ANSWER_SHAPES - described_shapes)
+            _error(
+                "Query-plan contract planSemantics.answerShapes must describe every supported "
+                f"answer shape; missing: {', '.join(missing)}."
+            )
+    for field in ("entityMentionMeaning", "temporalScoping"):
+        if field in semantics:
+            _nonempty_string(semantics[field], f"contract planSemantics.{field}")
+    _validate_semantic_vocabulary(manifest.get("semanticVocabulary"))
+    return manifest
+
+
+@lru_cache(maxsize=8)
+def _load_contract_cached(path: str) -> dict[str, Any]:
+    contract_path = Path(path)
+    try:
+        document = json.loads(contract_path.read_text(encoding="utf-8"))
+    except OSError as error:
+        raise QueryPlanContractError(f"Could not read the query-plan contract at {contract_path}.") from error
+    except json.JSONDecodeError as error:
+        raise QueryPlanContractError(
+            f"The query-plan contract at {contract_path} is not valid JSON: {error.msg}."
+        ) from error
+    return _validate_contract_manifest(document)
+
+
+def load_query_plan_contract(path: str | Path | None = None) -> dict[str, Any]:
+    """Load the versioned contract manifest and reject unsupported versions."""
+    contract_path = Path(path) if path is not None else CONTRACT_PATH
+    return _load_contract_cached(str(contract_path.resolve()))
+
+
+def _participant_type(
+    participant: Any,
+    entities: dict[str, dict[str, Any]],
+    where: str,
+    entity_types: frozenset[str],
+) -> str:
+    participant = _object(participant, where)
+    _reject_reserved_fields(participant, where)
+    has_entity = "entity" in participant
+    has_type = "type" in participant
+    if has_entity == has_type:
+        _error(f"Query plan {where} must identify exactly one entity or entity type.")
+    if has_entity:
+        entity_id = _identifier(participant["entity"], f"{where}.entity")
+        if entity_id not in entities:
+            _error(f"Query plan {where} refers to unknown entity {entity_id!r}.")
+        return entities[entity_id]["type"]
+    return _enum(participant["type"], entity_types, f"{where}.type")
+
+
+def _validate_entities(raw_entities: Any, entity_types: frozenset[str]) -> dict[str, dict[str, Any]]:
+    values = _array(raw_entities, "entities")
+    entities: dict[str, dict[str, Any]] = {}
+    for index, raw_entity in enumerate(values):
+        where = f"entities[{index}]"
+        entity = _object(raw_entity, where)
+        _reject_reserved_fields(entity, where)
+        selected_fields = sorted(_RESOLUTION_SELECTION_FIELDS.intersection(entity))
+        if selected_fields:
+            _error(
+                f"Query plan {where} must not use alternate entity-selection field(s): "
+                f"{', '.join(selected_fields)}."
+            )
+        _required_fields(entity, ("id", "type", "label", "resolution"), where)
+        entity_id = _identifier(entity["id"], f"{where}.id")
+        if entity_id in entities:
+            _error(f"Query plan entities contains duplicate id {entity_id!r}.")
+        _enum(entity["type"], entity_types, f"{where}.type")
+        _nonempty_string(entity["label"], f"{where}.label")
+        resolution = _enum(entity["resolution"], RESOLUTION_STATES, f"{where}.resolution")
+
+        if resolution == "resolved":
+            if "candidates" in entity:
+                _error(f"Resolved query-plan entity {entity_id!r} must not contain candidates.")
+            _local_iri(entity.get("iri"), f"{where}.iri")
+        elif resolution == "ambiguous":
+            if "iri" in entity:
+                _error(f"Ambiguous query-plan entity {entity_id!r} must not select a resolved IRI.")
+            candidates = _array(entity.get("candidates"), f"{where}.candidates")
+            if len(candidates) < 2:
+                _error(f"Ambiguous query-plan entity {entity_id!r} requires at least two candidates.")
+            candidate_iris: set[str] = set()
+            for candidate_index, raw_candidate in enumerate(candidates):
+                candidate_where = f"{where}.candidates[{candidate_index}]"
+                candidate = _object(raw_candidate, candidate_where)
+                _reject_reserved_fields(candidate, candidate_where)
+                _required_fields(candidate, ("iri", "label"), candidate_where)
+                iri = _local_iri(candidate["iri"], f"{candidate_where}.iri")
+                _nonempty_string(candidate["label"], f"{candidate_where}.label")
+                if iri in candidate_iris:
+                    _error(f"Ambiguous query-plan entity {entity_id!r} contains duplicate candidate IRI {iri!r}.")
+                candidate_iris.add(iri)
+        else:
+            if "iri" in entity or "candidates" in entity:
+                _error(f"Unresolved query-plan entity {entity_id!r} must not contain an IRI or candidates.")
+        entities[entity_id] = entity
+    return entities
+
+
+def _validate_requirements(
+    raw_requirements: Any,
+    entities: dict[str, dict[str, Any]],
+    vocabulary: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    values = _array(raw_requirements, "requirements")
+    if not values:
+        _error("Query plan requirements must contain at least one requested fact or relation.")
+    requirements: dict[str, dict[str, Any]] = {}
+    for index, raw_requirement in enumerate(values):
+        where = f"requirements[{index}]"
+        requirement = _object(raw_requirement, where)
+        _reject_reserved_fields(requirement, where)
+        if "source" in requirement:
+            _error(f"Query plan {where}.source is unsupported; source scope is local Oireachtas data only.")
+        _required_fields(requirement, ("id", "fact", "subject"), where)
+        requirement_id = _identifier(requirement["id"], f"{where}.id")
+        if requirement_id in requirements:
+            _error(f"Query plan requirements contains duplicate id {requirement_id!r}.")
+        fact_id = _enum(requirement["fact"], frozenset(vocabulary["facts"]), f"{where}.fact")
+        fact = vocabulary["facts"][fact_id]
+        subject_type = _participant_type(
+            requirement["subject"], entities, f"{where}.subject", vocabulary["entityTypes"],
+        )
+        if subject_type not in fact["subjectTypes"]:
+            _error(f"Query plan {where}.fact {fact_id!r} does not support subject type {subject_type!r}.")
+        if fact["objectTypes"]:
+            if "object" not in requirement:
+                _error(f"Query plan {where}.fact {fact_id!r} requires an object participant.")
+            object_type = _participant_type(
+                requirement["object"], entities, f"{where}.object", vocabulary["entityTypes"],
+            )
+            if object_type not in fact["objectTypes"]:
+                _error(f"Query plan {where}.fact {fact_id!r} does not support object type {object_type!r}.")
+        elif "object" in requirement:
+            _error(f"Query plan {where}.fact {fact_id!r} does not support an object participant.")
+        requirements[requirement_id] = requirement
+    return requirements
+
+
+def _validate_filters(
+    raw_filters: Any,
+    requirements: dict[str, dict[str, Any]],
+    entities: dict[str, dict[str, Any]],
+    vocabulary: dict[str, Any],
+) -> None:
+    for index, raw_filter in enumerate(_array(raw_filters, "filters")):
+        where = f"filters[{index}]"
+        value = _object(raw_filter, where)
+        _reject_reserved_fields(value, where)
+        _required_fields(value, ("requirement", "field", "operator"), where)
+        requirement_id = _identifier(value["requirement"], f"{where}.requirement")
+        if requirement_id not in requirements:
+            _error(f"Query plan {where} refers to unknown requirement {requirement_id!r}.")
+        field_id = _enum(value["field"], frozenset(vocabulary["filterFields"]), f"{where}.field")
+        filter_field = vocabulary["filterFields"][field_id]
+        fact_id = requirements[requirement_id]["fact"]
+        if fact_id not in filter_field["facts"]:
+            _error(f"Query plan {where}.field {field_id!r} is not supported for fact {fact_id!r}.")
+        operator = _enum(value["operator"], FILTER_OPERATORS, f"{where}.operator")
+        if operator not in filter_field["operators"]:
+            _error(f"Query plan {where}.operator {operator!r} is not supported for field {field_id!r}.")
+        if operator == "exists":
+            if "value" in value:
+                _error(f"Query plan {where} must not provide a value for the exists operator.")
+            continue
+        if "value" not in value:
+            _error(f"Query plan {where}.value is required for operator {operator!r}.")
+        filter_value = value["value"]
+        if filter_field["valueKind"] == "string":
+            if not isinstance(filter_value, str):
+                _error(f"Query plan {where}.value must be a string for field {field_id!r}.")
+            allowed_values = filter_field["allowedValues"]
+            if allowed_values and filter_value not in {item["id"] for item in allowed_values}:
+                _error(
+                    f"Query plan {where}.value uses unsupported value {filter_value!r} "
+                    f"for field {field_id!r}."
+                )
+        elif filter_field["valueKind"] == "number":
+            if (
+                isinstance(filter_value, bool)
+                or not isinstance(filter_value, (int, float))
+                or (isinstance(filter_value, float) and not math.isfinite(filter_value))
+            ):
+                _error(f"Query plan {where}.value must be a finite number for field {field_id!r}.")
+        else:
+            if not isinstance(filter_value, dict):
+                _error(f"Query plan {where}.value must be an entity reference for field {field_id!r}.")
+            _reject_reserved_fields(filter_value, f"{where}.value")
+            _required_fields(filter_value, ("entity",), f"{where}.value")
+            if "type" in filter_value:
+                _error(f"Query plan {where}.value must not mix entity and entity-type references.")
+            entity_id = _identifier(filter_value["entity"], f"{where}.value.entity")
+            if entity_id not in entities:
+                _error(f"Query plan {where}.value refers to unknown entity {entity_id!r}.")
+            entity_type = entities[entity_id]["type"]
+            if entity_type not in filter_field["entityTypes"]:
+                _error(f"Query plan {where}.value entity type {entity_type!r} is not supported for field {field_id!r}.")
+
+
+def _validate_temporal_constraints(
+    raw_constraints: Any,
+    requirements: dict[str, dict[str, Any]],
+    entities: dict[str, dict[str, Any]],
+) -> None:
+    for index, raw_constraint in enumerate(_array(raw_constraints, "temporalConstraints")):
+        where = f"temporalConstraints[{index}]"
+        constraint = _object(raw_constraint, where)
+        _reject_reserved_fields(constraint, where)
+        _required_fields(constraint, ("target", "kind"), where)
+        target = _identifier(constraint["target"], f"{where}.target")
+        if target not in requirements:
+            _error(f"Query plan {where} refers to unknown requirement {target!r}.")
+        kind = _enum(constraint["kind"], TEMPORAL_KINDS, f"{where}.kind")
+
+        date_fields = {"date", "period", "start", "end"}
+        present = date_fields.intersection(constraint)
+        if kind in {"on", "before", "after"}:
+            if "date" not in constraint or present != {"date"}:
+                _error(f"Query plan {where} kind {kind!r} requires only a date value.")
+            _date_value(constraint["date"], f"{where}.date")
+        elif kind == "during":
+            if "period" not in constraint or present != {"period"}:
+                _error(f"Query plan {where} kind 'during' requires only a period.")
+            period = _object(constraint["period"], f"{where}.period")
+            _reject_reserved_fields(period, f"{where}.period")
+            if "entity" in period:
+                if "start" in period or "end" in period:
+                    _error(f"Query plan {where}.period must contain either a term entity or a date window.")
+                entity_id = _identifier(period["entity"], f"{where}.period.entity")
+                if entity_id not in entities:
+                    _error(f"Query plan {where}.period refers to unknown entity {entity_id!r}.")
+                if entities[entity_id]["type"] not in _TERM_TYPES:
+                    _error(f"Query plan {where}.period entity must be a DailTerm or SeanadTerm.")
+            else:
+                _required_fields(period, ("start", "end"), f"{where}.period")
+                start = _date_value(period["start"], f"{where}.period.start")
+                end = _date_value(period["end"], f"{where}.period.end")
+                if start > end:
+                    _error(f"Query plan {where}.period.start must be on or before period.end.")
+        elif kind == "interval":
+            if present != {"start", "end"}:
+                _error(f"Query plan {where} kind 'interval' requires start and end dates only.")
+            start = _date_value(constraint["start"], f"{where}.start")
+            end = _date_value(constraint["end"], f"{where}.end")
+            if start > end:
+                _error(f"Query plan {where}.start must be on or before end.")
+        elif present:
+            _error(f"Query plan {where} kind 'current' must not contain date or period values.")
+
+
+def _aggregation_reference_type(
+    raw_reference: Any,
+    where: str,
+    requirements: dict[str, dict[str, Any]],
+    entities: dict[str, dict[str, Any]],
+    vocabulary: dict[str, Any],
+) -> str:
+    reference = _object(raw_reference, where)
+    _reject_reserved_fields(reference, where)
+    _required_fields(reference, ("requirement", "participant"), where)
+    requirement_id = _identifier(reference["requirement"], f"{where}.requirement")
+    if requirement_id not in requirements:
+        _error(f"Query plan {where} refers to unknown requirement {requirement_id!r}.")
+    position = _enum(reference["participant"], frozenset({"subject", "object"}), f"{where}.participant")
+    requirement = requirements[requirement_id]
+    if position not in requirement:
+        _error(f"Query plan {where} refers to a missing {position} participant.")
+    return _participant_type(
+        requirement[position], entities, f"{where}.{position}", vocabulary["entityTypes"],
+    )
+
+
+def _validate_aggregation(
+    raw_aggregation: Any,
+    requirements: dict[str, dict[str, Any]],
+    entities: dict[str, dict[str, Any]],
+    vocabulary: dict[str, Any],
+) -> dict[str, Any] | None:
+    if raw_aggregation is None:
+        return None
+    aggregation = _object(raw_aggregation, "aggregation")
+    _reject_reserved_fields(aggregation, "aggregation")
+    _required_fields(aggregation, ("operation", "target", "groupBy"), "aggregation")
+    _enum(aggregation["operation"], AGGREGATION_OPERATIONS, "aggregation.operation")
+    _aggregation_reference_type(
+        aggregation["target"], "aggregation.target", requirements, entities, vocabulary,
+    )
+    group_by = _array(aggregation["groupBy"], "aggregation.groupBy")
+    normalized: set[tuple[str, str]] = set()
+    for index, raw_reference in enumerate(group_by):
+        where = f"aggregation.groupBy[{index}]"
+        _aggregation_reference_type(raw_reference, where, requirements, entities, vocabulary)
+        reference = _object(raw_reference, where)
+        key = (reference["requirement"], reference["participant"])
+        if key in normalized:
+            _error(f"Query plan aggregation.groupBy contains duplicate reference {key!r}.")
+        normalized.add(key)
+    return aggregation
+
+
+def _validate_answer_shape(
+    raw_shape: Any,
+    aggregation: dict[str, Any] | None,
+    requirements: dict[str, dict[str, Any]],
+    entities: dict[str, dict[str, Any]],
+    vocabulary: dict[str, Any],
+) -> None:
+    shape = _object(raw_shape, "answerShape")
+    _reject_reserved_fields(shape, "answerShape")
+    _required_fields(shape, ("kind",), "answerShape")
+    kind = _enum(shape["kind"], ANSWER_SHAPES, "answerShape.kind")
+
+    if kind == "boolean":
+        if "target" in shape or "entityType" in shape:
+            _error("Boolean query-plan answerShape must not specify target or entityType.")
+    elif kind in {"entity", "entities"}:
+        if "entityType" not in shape or "target" in shape:
+            _error(f"Query plan answerShape kind {kind!r} requires entityType and no target.")
+        entity_type = _enum(shape["entityType"], vocabulary["entityTypes"], "answerShape.entityType")
+        participant_types = {
+            _participant_type(
+                requirement[position], entities, f"requirements.{requirement_id}.{position}",
+                vocabulary["entityTypes"],
+            )
+            for requirement_id, requirement in requirements.items()
+            for position in ("subject", "object")
+            if position in requirement
+        }
+        if entity_type not in participant_types:
+            _error(f"Query plan answerShape entityType {entity_type!r} is not requested by any requirement.")
+    elif kind in {"label", "fact", "list"}:
+        if "target" not in shape or "entityType" in shape:
+            _error(f"Query plan answerShape kind {kind!r} requires a requirement target and no entityType.")
+        target = _identifier(shape["target"], "answerShape.target")
+        if target not in requirements:
+            _error(f"Query plan answerShape refers to unknown requirement {target!r}.")
+    else:
+        if shape.get("target") != "aggregation" or "entityType" in shape:
+            _error(f"Query plan answerShape kind {kind!r} requires target 'aggregation'.")
+        if aggregation is None:
+            _error(f"Query plan answerShape kind {kind!r} requires an aggregation.")
+        if kind == "count" and aggregation["groupBy"]:
+            _error("Count answer shape requires an aggregation without groupBy fields.")
+        if kind == "grouped_result" and not aggregation["groupBy"]:
+            _error("Grouped-result answer shape requires at least one groupBy field.")
+
+    if aggregation is not None and kind not in {"count", "grouped_result"}:
+        _error("Query plan aggregation is only compatible with count or grouped_result answer shapes.")
+
+
+def validate_query_plan(document: Any, *, contract: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Validate a semantic query plan and return it unchanged.
+
+    Unknown optional fields are ignored for compatible major-version
+    extensions, but unsupported semantic states and known SPARQL/graph/source
+    implementation fields fail closed.
+    """
+    loaded_contract = contract if contract is not None else load_query_plan_contract()
+    active_contract = _validate_contract_manifest(loaded_contract)
+    plan = _object(document, "root")
+    _reject_reserved_fields(plan, "root")
+    if plan.get("contractId") != active_contract.get("contractId"):
+        _error(f"Query plan contractId must be {active_contract.get('contractId')!r}.")
+    _check_supported_versions(plan, "query plan")
+    _required_fields(
+        plan,
+        (
+            "contractId", "schemaVersion", "contractVersion", "intent", "source", "entities",
+            "requirements", "filters", "temporalConstraints", "aggregation", "answerShape",
+        ),
+        "root",
+    )
+    if plan["source"] != "oireachtas":
+        _error("Query plan source must be 'oireachtas'; only local Oireachtas data is supported.")
+    _nonempty_string(plan["intent"], "intent")
+
+    vocabulary = _validate_semantic_vocabulary(active_contract["semanticVocabulary"])
+    entities = _validate_entities(plan["entities"], vocabulary["entityTypes"])
+    requirements = _validate_requirements(plan["requirements"], entities, vocabulary)
+    _validate_filters(plan["filters"], requirements, entities, vocabulary)
+    _validate_temporal_constraints(plan["temporalConstraints"], requirements, entities)
+    aggregation = _validate_aggregation(plan["aggregation"], requirements, entities, vocabulary)
+    _validate_answer_shape(plan["answerShape"], aggregation, requirements, entities, vocabulary)
+    return plan
+
+
+def load_query_plan(
+    path: str | Path,
+    *,
+    contract_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Load and validate one versioned query-plan JSON document."""
+    plan_path = Path(path)
+    try:
+        document = json.loads(plan_path.read_text(encoding="utf-8"))
+    except OSError as error:
+        raise QueryPlanContractError(f"Could not read the query plan at {plan_path}.") from error
+    except json.JSONDecodeError as error:
+        raise QueryPlanContractError(f"The query plan at {plan_path} is not valid JSON: {error.msg}.") from error
+    return validate_query_plan(document, contract=load_query_plan_contract(contract_path))

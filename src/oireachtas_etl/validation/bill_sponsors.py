@@ -39,7 +39,7 @@ def _participation_for_source(bill_iri: str, sponsor: dict) -> str:
         "primary": sponsor.get("isPrimary"),
     }
     digest = hashlib.sha256(_canonical(identity)).hexdigest()
-    return f"{bill_iri}#process#sponsor-{digest}"
+    return f"{bill_iri}#process%23sponsor-{digest}"
 
 
 def _active_on_source_date(holding: dict, event_date: str) -> bool:

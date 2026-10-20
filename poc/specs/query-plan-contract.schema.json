@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://data.oireachtas.ie/specs/query-plan-contract.schema.json",
+  "title": "Oireachtas Query-Plan Contract Manifest",
+  "description": "Structural schema for the repository-owned query-plan contract manifest. Query-plan instances are validated by query-plan.schema.json and the deterministic runtime validator.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "contractId",
+    "contractSchema",
+    "planSchema",
+    "schemaVersion",
+    "contractVersion",
+    "description",
+    "compatibility",
+    "scope",
+    "planSemantics",
+    "semanticVocabulary"
+  ],
+  "properties": {
+    "$schema": {"const": "https://json-schema.org/draft/2020-12/schema"},
+    "contractId": {"const": "https://data.oireachtas.ie/specs/query-plan-contract"},
+    "contractSchema": {"const": "poc/specs/query-plan-contract.schema.json"},
+    "planSchema": {"const": "poc/specs/query-plan.schema.json"},
+    "schemaVersion": {"const": 1},
+    "contractVersion": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"},
+    "description": {"type": "string", "minLength": 1},
+    "compatibility": {
+      "type": "object",
+      "required": ["schemaVersion", "compatibleChanges", "breakingChanges", "consumerSupport"],
+      "properties": {
+        "schemaVersion": {"type": "string", "minLength": 1},
+        "compatibleChanges": {"type": "string", "minLength": 1},
+        "breakingChanges": {"type": "string", "minLength": 1},
+        "consumerSupport": {"type": "string", "minLength": 1}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "required": ["source", "localOnly", "sourceSelection", "federation", "purpose", "notIncluded"],
+      "properties": {
+        "source": {"const": "oireachtas"},
+        "localOnly": {"const": true},
+        "sourceSelection": {"const": false},
+        "federation": {"const": false},
+        "purpose": {"type": "string", "minLength": 1},
+        "notIncluded": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "planSemantics": {
+      "type": "object",
+      "required": ["conjunction", "participantIdentity", "resolutionReadiness", "filterMeaning", "unknownExtensions", "iriValidation"],
+      "properties": {
+        "conjunction": {"type": "string", "minLength": 1},
+        "participantIdentity": {"type": "string", "minLength": 1},
+        "resolutionReadiness": {"type": "string", "minLength": 1},
+        "filterMeaning": {"type": "string", "minLength": 1},
+        "unknownExtensions": {"type": "string", "minLength": 1},
+        "iriValidation": {"type": "string", "minLength": 1},
+        "answerShapes": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "required": ["kind", "description"],
+            "properties": {
+              "kind": {"enum": ["boolean", "entity", "entities", "label", "fact", "list", "count", "grouped_result"]},
+              "description": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "entityMentionMeaning": {"type": "string", "minLength": 1},
+        "temporalScoping": {"type": "string", "minLength": 1}
+      }
+    },
+    "semanticVocabulary": {
+      "type": "object",
+      "required": ["entityTypes", "facts", "filterFields"],
+      "properties": {
+        "entityTypes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"}
+        },
+        "facts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "description", "subjectTypes", "objectTypes"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
+              "description": {"type": "string", "minLength": 1},
+              "subjectTypes": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"}
+              },
+              "objectTypes": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"}
+              }
+            }
+          }
+        },
+        "filterFields": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "description", "facts", "valueKind", "operators"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
+              "description": {"type": "string", "minLength": 1},
+              "facts": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"}
+              },
+              "valueKind": {"enum": ["string", "number", "entity"]},
+              "allowedValues": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["id", "label"],
+                  "properties": {
+                    "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
+                    "label": {"type": "string", "minLength": 1},
+                    "resource": {
+                      "type": "string",
+                      "format": "uri",
+                      "pattern": "^https://data\\.oireachtas\\.ie/[^\\s?#]+#[^\\s?#]+$"
+                    },
+                    "route": {"type": "string", "pattern": "^[a-z0-9_-]+$"}
+                  }
+                }
+              },
+              "entityTypes": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"}
+              },
+              "operators": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {"enum": ["equals", "not_equals", "greater_than", "greater_than_or_equal", "less_than", "less_than_or_equal", "exists"]}
+              }
+            },
+            "allOf": [
+              {
+                "if": {"properties": {"valueKind": {"const": "entity"}}, "required": ["valueKind"]},
+                "then": {"required": ["entityTypes"]},
+                "else": {"not": {"required": ["entityTypes"]}}
+              },
+              {
+                "if": {"required": ["allowedValues"]},
+                "then": {"properties": {"valueKind": {"const": "string"}}}
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

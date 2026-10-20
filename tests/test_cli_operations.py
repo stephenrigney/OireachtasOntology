@@ -259,7 +259,19 @@ def test_manual_retry_is_automatically_replayed_and_fixtures_do_not_advance_auth
     original = json.loads((ROOT / "data/api_examples/bill.json").read_text())
     good, invalid = json.loads(json.dumps(original["results"][0])), json.loads(
         json.dumps(original["results"][0]))
-    invalid["bill"]["uri"] = "https://data.oireachtas.ie/ie/oireachtas/bill/2026/998"
+    original_bill_uri = invalid["bill"]["uri"]
+    replacement_bill_uri = "https://data.oireachtas.ie/ie/oireachtas/bill/2026/998"
+
+    def replace_bill_identity(value):
+        if isinstance(value, dict):
+            return {key: replace_bill_identity(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [replace_bill_identity(item) for item in value]
+        if isinstance(value, str):
+            return value.replace(original_bill_uri, replacement_bill_uri)
+        return value
+
+    invalid = replace_bill_identity(invalid)
     invalid["bill"]["billYear"] = "2026"
     invalid["bill"]["billNo"] = "998"
     invalid["bill"]["lastUpdated"] = 42

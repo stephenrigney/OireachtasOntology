@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RECORD = json.loads((ROOT / "data/api_examples/bill.json").read_text())["results"][0]
 BILL = RECORD["bill"]["uri"]
 LOCAL = bill_sponsor_graph_iri(RECORD["bill"])
-PART = URIRef(BILL + "#process#sponsor-old")
+PART = URIRef(BILL + "#process%23sponsor-old")
 OFFICE = URIRef("https://data.oireachtas.ie/office/o-000003")
 
 
@@ -67,7 +67,7 @@ def test_dirty_replay_and_complete_local_graph_replacement(tmp_path):
         assert publication.replay_missing(set(), loader, client) == [BILL]
         assert publication.row(BILL)["state"] == "clean"
         assert not publication.publish(BILL, LOCAL, graph(), "evidence-1", loader, client)
-        changed = graph(URIRef(BILL + "#process#sponsor-new"))
+        changed = graph(URIRef(BILL + "#process%23sponsor-new"))
         assert publication.publish(BILL, LOCAL, changed, "evidence-2", loader, client)
         assert set(loader.graphs[LOCAL]) == set(changed)
         assert not list(loader.graphs[LOCAL].triples((PART, None, None)))

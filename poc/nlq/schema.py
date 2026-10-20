@@ -271,8 +271,8 @@ def build_schema_context(ontology_dir: str | Path) -> str:
         type_: sorted(
             {term for term in graph.subjects(RDF.type, type_)
              if term in (queryable_class_uris if type_ == OWL.Class else queryable_property_uris)
-             if local(term) and not any(str(value).lower() == "true"
-                                        for value in graph.objects(term, OWL.deprecated))},
+             if not any(str(value).lower() == "true"
+                        for value in graph.objects(term, OWL.deprecated))},
             key=str,
         )
         for type_ in SCHEMA_TYPE_URIS

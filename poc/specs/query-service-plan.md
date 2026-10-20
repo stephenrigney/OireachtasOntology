@@ -119,22 +119,28 @@ service can consume.
 ### 3.3 Local PoC reference-data bootstrap contract
 
 `scripts/dev-nlq.sh --load-data` invokes the explicitly named
-`oir-etl dev bootstrap` command. This is a development-environment mechanism
-for a disposable, loopback Fuseki dataset, not partial production publication.
-It reads preserved successful complete API captures, validates and loads
-Houses/HouseTerms, Member graphs and valid Party, Independent collection,
-constituency/panel and Committee owner descriptions, and validates and loads
-the reviewed NamedOffice and AdministrativeUnit registries. Bill graphs come
-only from read-only Core State resource rows that are present, clean, still
-match their last-observed source hash, use the supported Bill contract, are on
-their expected graph IRI, and contain an intact published RDF payload; zero
-eligible Bills is valid and optional. A Member's
-OfficeHolding and CabinetMembership data is reused only from an exact-source-
-matching, clean contract-3 Member publication. Members without such a
-publication use the normal transform without office resolutions, so raw or
-unresolved observations are never promoted. The command does not fetch source
-data, reconcile offices, or write Core State, office-occurrence, or
-external-reconciliation state.
+`oir-etl dev bootstrap` command with the reviewed office-decision file. That
+selects the Query Service Phase 2 evaluation mode for a disposable, loopback
+Fuseki dataset, not partial production publication. It verifies the committed
+successful-complete API capture and Debate selections against immutable raw
+evidence; validates and loads Houses/HouseTerms, Member graphs, valid Party,
+Independent collection, constituency/panel and Committee descriptions, and
+the reviewed NamedOffice and AdministrativeUnit registries; transforms
+eligible Bills through the existing Bill validation path; and replays the
+fixed representative Debate slice. OfficeHolding records derive only from
+current accepted review evidence. The mode does not fetch source data or open
+or advance Core State, office-occurrence, or external-reconciliation state.
+
+Direct `oir-etl dev bootstrap` calls without `--review-file` or benchmark
+candidate outputs retain the publication-backed bootstrap. That mode reads
+complete API captures and current clean Member/Bill publications from Core
+State in read-only mode: Bill graphs must match their last-observed source
+hashes and contain intact supported-contract payloads; OfficeHolding and
+CabinetMembership data is reused only from exact-source-matching clean
+contract-3 Member publications. Other Members receive no office resolutions.
+Both modes are development-only, preserve the local reference quarantine,
+report unresolved references, and label reference closure **NOT authoritative /
+not complete**. Neither invokes the authoritative publication path.
 
 The local path reuses the source census and owner transformations, but
 materially conflicted identities are quarantined: no observation is selected,
@@ -515,47 +521,315 @@ Separate question interpretation from executable SPARQL generation.
 
 ### Initial plan shape
 
-The first plan representation should remain deliberately small. For example:
-
-```json
-{
-  "intent": "find_member_birthplace",
-  "entities": [
-    {"type": "Member", "label": "Micheal Martin"}
-  ],
-  "requirements": [
-    {"fact": "member identity", "source": "oireachtas"},
-    {"fact": "place of birth", "source": "external"}
-  ],
-  "filters": [],
-  "answer_shape": ["member", "place"]
-}
-```
-
-The exact schema is an implementation decision for this phase, but it should
-capture semantics rather than SPARQL syntax.
+The initial semantic contract is defined by
+[`poc/specs/query-plan-contract.json`](query-plan-contract.json), with its
+manifest schema, plan-instance schema, runtime validator, and representative
+plans. It is local Oireachtas-only and deliberately contains no SPARQL or graph
+implementation details. Source selection remains Phase 3 work.
 
 ### Backlog
 
-- [ ] Define the versioned query-plan schema.
-- [ ] Represent entities, requested relations/facts, filters, temporal
-      constraints, aggregation and answer shape.
-- [ ] Represent unresolved/ambiguous interpretation explicitly.
-- [ ] Validate model-produced plans before SPARQL generation.
-- [ ] Split planner and SPARQL-generator responsibilities.
-- [ ] Generate local SPARQL from the validated plan.
-- [ ] Show the plan alongside the interpretation and generated query.
-- [ ] Compare planned generation against the Phase 1 direct-generation
+- [x] Define the versioned query-plan contract and plan JSON Schema.
+- [x] Represent entities, requested relations/facts, filters, temporal
+      constraints, aggregation, answer shape, and local Oireachtas source scope.
+- [x] Represent resolved, ambiguous, and unresolved entity state explicitly.
+- [x] Add deterministic contract/plan loading and validation, examples, and
+      focused tests.
+- [x] Validate model-produced plans before SPARQL generation.
+- [x] Split planner and SPARQL-generator responsibilities.
+- [x] Generate local SPARQL from the validated plan.
+- [x] Show the plan alongside the interpretation and generated query.
+- [x] Compare planned generation against the Phase 1 direct-generation
       baseline.
-- [ ] Keep a simple fallback/debug path during migration if useful.
+- [x] Keep a simple Phase 1 comparison/debug path during migration.
+
+Phase 2A is complete as a contract-only tranche. The artifact and examples are
+under `poc/specs/query-plan-*`; `poc.nlq.plan_contract` loads and validates them.
+No plan production or validation is connected to the live NLQ path, and no
+SPARQL generation is implemented. Facts and filter fields use controlled,
+fact-specific semantic identifiers defined by the contract manifest and
+mirrored by the plan schema; unknown identifiers fail validation. The current
+entity-type vocabulary remains controlled by the artifact. Adding a reviewed
+supported entity type is an additive contract-major-1 extension when existing
+meanings and validation behavior are unchanged. This does not predeclare Bill,
+office, or Debate semantics; their data-surface evaluation remains future work.
+
+Phase 2B is complete as the first separate model-produced planning path. The
+draft JSON Schema at `poc/specs/query-plan-draft.schema.json` constrains the model
+to semantic facts, filters, temporal meaning, aggregation, answer shape and
+`{id, type, label}` entity mentions, with no model-supplied entity IRIs. The
+Responses-compatible planner uses strict JSON Schema output and performs one
+model call without automatic repair/retry. Deterministic local exact-label
+resolution reuses the Phase 1 Unicode/case-insensitive behavior, preserves
+distinct same-name resources, and produces resolved, ambiguous or unresolved
+entities. A converted final plan is accepted only after Phase 2A validation.
+For duplicate Member labels, exact local HouseTerm/constituency context also
+reuses Phase 1 narrowing: one contextual match resolves, multiple matches remain
+ambiguous, and no match preserves the original ambiguous candidate set. The
+pre-2C Member-binding safety tranche reuses Phase 1's explicit set-valued
+Member-reference detector and returns a non-accepted
+`set_valued_member_identity` result when a named Member is requested as a set;
+the schema-v1 semantic plan remains unchanged and no singular IRI is selected.
+Ordinary singular duplicate-name resolution remains deterministic and exact.
+The planner result now carries application-layer `binding_evidence` for
+context-checked duplicates, including the initial candidates, each candidate's
+matched local context labels, the rule and decision, and a selected IRI only
+when exactly one candidate matched. This evidence is generated locally, not by
+the model, and is not part of the semantic plan. The live Phase 1 query path
+remains unchanged.
+
+The Phase 2B corrective tranche aligned the strict draft schema and local
+normalizer on participant XOR, kind-specific answer fields, filter values,
+temporal variants, and aggregation structure. The Responses endpoint accepted
+the corrected schema. It rejects a top-level `anyOf`, so cross-field
+aggregation/answer consistency remains fail-closed in the deterministic local
+validator; no semantic values are inferred or repaired. Measured run
+`d4c0f433-eebd-42bf-ba2d-f5534c21b38b` used
+`oireachtas-semantic-planner@0.1.0`, dataset
+`sha256:1d849ec68168b6c456a38756ea812a23a218644204eb44d9bc55ddb3992b814d`,
+model `gpt-6-luna` (repository dotenv), and the default
+`https://opencode.ai/inference/openai/v1` endpoint (45-second timeout and
+2,000-token output limit, both defaults): 3 passed, 6 failed, and 2 not scored.
+Failures were 5 `semantic_plan_mismatch`, 1
+`invalid_draft_semantics`, and 1 `source_data_coverage`; no model-output
+structural failures remained. The run provides usable planner evidence, while
+the remaining semantic failures are retained as planner-quality work rather
+than changing benchmark expectations.
+
+The Phase 2B semantic-quality tranche adds reviewed answer-shape descriptions,
+entity-mention/filter guidance, and term-scoping guidance to query-plan contract
+version `1.0.1`. `build_planner_instructions` renders this guidance from the
+contract, while Phase 2A validation and deterministic entity resolution remain
+unchanged. The planner is grounded to distinguish entity resources from their
+display labels and from fact values, to scope a time-dependent fact itself to a
+named term, and not to repeat a resolved entity mention as a name filter.
+
+The planner benchmark is now `oireachtas-semantic-planner@0.2.0`. Its Aengus / 33rd
+Dáil membership case requires the `member_house_term_membership` fact to link
+Aengus Ó Snodaigh directly to the referenced Dáil entity; it no longer requires
+a separate `during` constraint on that same fact. This is a contract-based
+expectation correction: the HouseTerm object already expresses the membership
+period, so the extra temporal constraint was redundant, not a requirement
+removed to accommodate a model result. This does not generalize to other
+time-dependent facts; collection membership and representation remain
+explicitly scoped to their requested term. The benchmark artifact SHA-256 is
+`e6091586b98047b940373bf10e898e913c663080711c94af8f3dd0dca841b9ad`.
+
+The measured rerun `bd580949-fc87-40c8-aa37-2fe38278f2ad` used
+`oireachtas-semantic-planner@0.2.0`, the benchmark artifact above, dataset
+`sha256:1d849ec68168b6c456a38756ea812a23a218644204eb44d9bc55ddb3992b814d`,
+model `gpt-6-luna` (repository dotenv), and the default
+`https://opencode.ai/inference/openai/v1` endpoint (45-second timeout and
+2,000-token output limit): 7 passed, 2 failed, and 2 not scored. No structural
+output failures remained. The Aengus full-name and term cases, collection and
+representation answer shapes, Committee code, aggregate, and duplicate-Michael
+ambiguity case passed. The two scored failures were
+`plan.collection.timmy-dail-34` and
+`plan.representation.timmy-seanad-26-panel`: both plans correctly selected the
+requested fact, answer shape, and term-scoped temporal constraint, but omitted
+the separately benchmark-required `member_house_term_membership` requirement.
+This is a repeated requirement-omission class, not an answer-shape or temporal
+scoping failure. Determining whether those extra membership requirements are
+semantically mandatory or over-constrained requires review; no further
+benchmark expectation had been changed at that point. The unavailable-Bill case
+remained expected source-coverage-not-scored, and the unsupported-question case
+remained manual-review-not-scored. This `0.2.0` result is an interim run and was
+followed by the semantic review and corrections below.
+
+Semantic review approved that a HouseTerm used only as the temporal scope of
+another requested fact does not automatically require a separate
+`member_house_term_membership` requirement. That fact remains required when
+service in the term is itself asked about or independently needed to express
+the question. Accordingly, planner benchmark `0.2.1` removes that redundant
+requirement from the collection-membership and Seanad-representation cases,
+while retaining each requested fact, its `during` constraint on the requested
+fact, and its entity answer shape. Direct questions about whether a Member
+served in a term continue to require `member_house_term_membership`, as in the
+Aengus / 33rd Dáil case. These are semantic benchmark corrections, not
+score-driven changes; no other temporal expectation is removed. Version `0.2.1`
+has SHA-256
+`140a6055a83a710f85188985c41ec81d53c160217eb3390dc463aafd1b9c0c85`.
+
+Measured acceptance rerun `7e90554a-e527-4f7d-88b9-78021c30f24e` used
+`oireachtas-semantic-planner@0.2.1`, dataset
+`sha256:1d849ec68168b6c456a38756ea812a23a218644204eb44d9bc55ddb3992b814d`,
+model `gpt-6-luna` (repository dotenv), and the default
+`https://opencode.ai/inference/openai/v1` endpoint (45-second timeout and
+2,000-token output limit): 9 passed, 0 failed, and 2 not scored. All scored
+cases passed, including collection membership, Seanad representation, direct
+Member-term membership, and duplicate-Michael ambiguity; there were no
+structural-output failures. The two not-scored cases remain the expected
+unsupported-question manual review and unavailable-Bill source-coverage case.
+This accepts the Phase 2B semantic-quality tranche against the controlled
+benchmark. The pre-2C Member-binding safety tranche documented above closes the
+known set-valued binding and contextual-evidence gaps. Phase 2C plan-to-SPARQL
+generation is implemented in a separate deterministic compiler; the Phase 1
+runtime remains untouched.
+
+### Phase 2C — deterministic local SPARQL generation
+
+Phase 2C adds `poc.nlq.plan_sparql.PlanSparqlGenerator`, a separate deterministic
+compiler that accepts only a `PlannerResult` with `validated_plan` status,
+revalidates it, and either returns safety-validated local SELECT/ASK SPARQL with
+a mapping trace or a structured fail-closed outcome. The compiler has explicit
+fact, entity-type, graph-family and filter dispatch grounded in the current
+query-schema contract and active predicate allowlist. It preserves named-graph
+ownership, binds resolved local entity IRIs only, and does not change ontology,
+mapping, graph, or IRI semantics. Ambiguous, unresolved, set-valued, unsupported,
+or incompatible plans do not produce executable SPARQL.
+
+Reviewed `during` translations use a referenced Dáil/Seanad term on Member
+parliamentary membership, collection membership, or representation. The
+membership term type is kept consistent with the referenced HouseTerm type.
+Date-window, `current`/`on`, HouseTerm-owned temporal-reference, and
+Committee-membership temporal translations remain unsupported; the compiler
+does not infer `dct:temporal` or unreviewed cross-fact joins. Resource answer
+shapes return IRIs without presentation-label joins. A separate contract-based
+label lookup is used only by the evaluator to compare resource answers with
+existing label-valued benchmark invariants.
+
+`poc.nlq.plan_benchmark` evaluates planner, final validation, entity binding,
+generation, SPARQL safety, Fuseki execution, and result scoring separately. It
+does not borrow coverage probes as answer oracles; the 33rd Dáil Boolean plan
+has an explicit ASK oracle in planner-benchmark version `0.2.2`. Phase 1 direct
+generation is compared only for cases whose question exactly matches the source
+benchmark oracle. At the Phase 2C evaluation stage, the generator and evaluator
+were outside the browser path. The later UI integration uses the compiler in the
+default structured path; the evaluator remains separate. Phase 1 direct
+generation remains available as a comparison/debug path.
+
+Measured run `1f789eda-8216-4d23-8e3f-daefac70b94c` used
+`oireachtas-semantic-planner@0.2.2` (artifact SHA-256
+`5417f1d5db2d21ad2f1b12a3394cbe36236e0a527f382bc9de3f419d23d01276`), source
+benchmark `0.3.0`, dataset
+`sha256:1d849ec68168b6c456a38756ea812a23a218644204eb44d9bc55ddb3992b814d`,
+`gpt-6-luna` (repository dotenv), and the default Responses-compatible endpoint
+`https://opencode.ai/inference/openai/v1` (45-second timeout; 2,000-token
+output limit). The 11 planner cases resulted in 8 passed, 1 failed, and 2 not
+scored. Six cases reached generated-query execution and result scoring; all six
+matched their result oracle. One planner case failed before generation because
+the model returned answer shape `entity` where the benchmark requires
+`entities` for the Seanad-panel question. This remains a planner semantic
+mismatch; the compiler and benchmark expectation were not broadened to hide it.
+The unsupported-question manual-review and unavailable-Bill source-coverage
+cases remain not scored.
+
+The same run's Phase 1 direct-generation comparison passed all 7 comparable
+cases. The Boolean planner case has an intentional question override and is not
+included in the Phase 1 comparison. The opt-in capture-backed Phase 0A Fuseki
+acceptance exercises representative Member, HouseTerm, collection,
+representation, Committee, Boolean, and count plans; see
+[`poc/nlq/benchmarks/phase-2c-report.md`](../nlq/benchmarks/phase-2c-report.md)
+for the run record and limitations. This completes the Phase 2C compiler and
+controlled-evaluation tranche. At that point in the sequence, visible plan
+integration and the realistic-question benchmark were still outstanding; the
+subsequent UI integration and final acceptance are recorded below.
+
+Planner evaluation is a separate controlled path in
+`poc/nlq/planner_benchmark.py` using selected Phase 1 cases, semantic plan
+invariants, and the existing source-coverage checks. That Phase 2B path scores
+planning only. At this point in the sequence, the separate Phase 2C path added
+generation and execution without being wired into normal browser requests.
+Unsupported requests remain unscored/manual review because the Phase 2A contract
+has no explicit unsupported-question state. Phase 2C did not complete visible
+plan integration, the realistic-question benchmark, data-surface expansion or
+the Phase 2 exit criteria; the later completion is recorded in the Phase 2
+status below.
+The deterministic unsupported-request test injects a supported draft and checks
+only that the manual-review case remains unscored; it does not test whether a
+model recognizes unsupported wording.
+
+#### Minimal development UI integration
+
+The existing PoC `POST /ask` browser path now defaults to the structured Phase 2
+pipeline: question → structured planner → deterministic entity resolution and
+plan validation → deterministic, safety-validated SPARQL → Fuseki → result. The
+planner, resolver, validator, compiler, and Fuseki client are the existing Phase
+2 components; this integration does not broaden query capabilities. Phase 1
+direct NL→SPARQL remains selectable in the form as a comparison/debug path.
+
+Successful SELECT/ASK results use the existing result display. Expand **Validated
+query plan** and **Generated SPARQL** to inspect the accepted plan and exact
+query. Ambiguous identity is reported without choosing a candidate; unresolved
+identity is reported without an answer query; unsupported question/semantic
+combinations, planner/validation failures, and Fuseki execution failures have
+separate concise messages. The development debugger retains diagnostic details
+and endpoint payloads when available, rather than exposing internal exceptions
+as the primary message. Interactive clarification and retry are not implemented.
+
+The accepted realistic benchmark remains **32 passed, 2 failed, 3 not scored**;
+the Phase 1 comparison is **14/30** and deterministic regression is **10/10**.
+`aggregate.dail-term-count` and `debate.committee-sep24` remain deferred planner
+quality failures; the UI tranche did not change planner semantics or rerun the
+realistic benchmark. For development/benchmark workflows that create large
+scratch files, use the ignored repository `var/` area or the configured
+non-`/tmp` scratch location. This UI integration did not itself perform the
+final Phase 2 exit review; that close-out is recorded in the status section
+below.
+
+#### Realistic-question evaluation
+
+- [x] Add a separate realistic-question benchmark after an initial planner path
+      exists and before the Phase 2 exit gate. Preserve the Phase 1 controlled
+      benchmark as the capability and regression suite rather than replacing it.
+- [x] Include user-like wording that does not mirror ontology terminology,
+      including implicit or colloquial references, ambiguous phrasing,
+      temporal language, plural/set-valued questions, multi-hop relationships,
+      and questions combining multiple constraints.
+- [x] Use the realistic benchmark to distinguish interpretation/planning
+      failures from SPARQL-generation failures.
+- [x] Compare the planned architecture with the Phase 1 direct-generation
+      baseline on realistic questions as well as on the controlled benchmark.
+- [x] Treat success on the controlled benchmark as necessary but insufficient
+      evidence of good real-user query experience.
+
+The accepted final realistic benchmark and its case-level outcomes are recorded
+in [`poc/nlq/benchmarks/realistic-phase2-report.md`](../nlq/benchmarks/realistic-phase2-report.md).
 
 ### Exit criteria
 
-- Every supported query has a validated structured plan before execution.
-- SPARQL generation no longer has to infer the complete user intent directly
+- [x] Every supported query has a validated structured plan before execution.
+- [x] SPARQL generation no longer has to infer the complete user intent directly
   from prose.
-- The visible plan makes planning errors distinguishable from SPARQL errors.
-- Local benchmark quality is at least comparable with the Phase 1 baseline.
+- [x] The visible plan makes planning errors distinguishable from SPARQL errors.
+- [x] Local controlled-benchmark quality is at least comparable with the Phase 1
+  baseline.
+- [x] A separate realistic-question benchmark exists and provides evidence that
+  the planner handles representative user-like questions; Phase 2 is not
+  considered successful solely from the controlled capability benchmark.
+
+### Phase 2 status
+
+**Phase 2 is complete.** The accepted structured local-query path is:
+
+```text
+question → semantic planner → deterministic resolution → validated query plan
+         → deterministic SPARQL → local Fuseki → rendered result
+```
+
+The browser development `POST /ask` path defaults to this Phase 2 pipeline. The
+Phase 1 direct NL→SPARQL path remains available for comparison and debugging.
+Success, ambiguity, unresolved identity, unsupported requests,
+planner/validation failures, and execution failures are represented distinctly;
+failed or unresolved plans do not execute answer queries. The accepted plan and
+generated SPARQL are inspectable in the development UI. A live smoke test
+exercised real Fuseki with a fixed planner test double.
+
+The accepted final realistic benchmark scored **32 passed, 2 failed, 3 not
+scored**; the retained Phase 1 comparison scored **14/30**, and deterministic
+regression scored **10/10**. Phase 2 substantially outperformed the retained
+Phase 1 comparison. The two remaining scored failures are bounded planner
+defects, not evidence of architectural failure:
+`aggregate.dail-term-count` can produce an invalid count draft, and
+`debate.committee-sep24` selects a date fact instead of the expected
+DebateRecord answer. These are carried forward, not reopened in Phase 2.
+
+Other carried-forward limitations are that development Debate coverage is
+limited to the three pinned representative graphs; quarantined and unavailable
+source cases remain data-coverage limitations; planner/model variability
+remains; and the planner has no repair/retry loop. Broader source selection,
+federation, and external querying remain deferred. Details and benchmark
+provenance are in the final report linked above.
 
 ## 9. Phase 3 — Source selection and provenance
 
@@ -563,6 +837,16 @@ capture semantics rather than SPARQL syntax.
 
 Make the planner capable of deciding where a requested fact should come from
 without yet executing arbitrary external federation.
+
+### Entry state and boundary
+
+Phase 3 begins from the accepted, complete Phase 2 state recorded above. Its
+existing scope remains source selection and provenance, starting with the
+dataset/capability catalogue and validation tasks below. Broader source
+selection/federation is now the next architectural area, rather than additional
+Phase 2 local-query work. This handoff does not enable external querying in
+Phase 3: controlled Wikidata application-layer federation remains Phase 4, and
+true SPARQL federation remains Phase 6.
 
 ### Dataset/capability catalogue
 
@@ -795,14 +1079,15 @@ backlog rather than a fixed architectural sequence.
 
 ## 14. Recommended near-term sequence
 
-The advised implementation order from the current baseline is:
+The advised sequence from the earlier baseline, updated for the accepted Phase 2
+state, is:
 
 1. complete the separate historical reference-coverage tranche sufficiently
    for representative local NLQ evaluation;
 2. implement Phase 0 benchmark and query/schema contract;
 3. run Phase 1 local-quality work based on measured failures;
-4. implement Phase 2 structured query planning;
-5. implement Phase 3 source selection/provenance;
+4. use the complete Phase 2 structured-query state as the accepted baseline;
+5. proceed to Phase 3 source selection/provenance;
 6. implement Phase 4 controlled Wikidata application-layer federation;
 7. reassess the repository boundary and perform Phase 5 extraction when the
    contract is stable;

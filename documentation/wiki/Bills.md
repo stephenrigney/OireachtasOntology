@@ -42,13 +42,25 @@ The following table provides example uses of the pattern:
 
 ### Bills as journal events
 
-In addition to their existence as documents, Bills are subjects of procedural events recorded in the Order Paper and Official Report. In the ontology each such event is an instance of `oir:BillEvent` (subclass of `eli-dl:LegislativeActivity`). The sequence of events constitutes an `eli-dl:LegislativeProcess` for the bill, typed via `eli-dl:process_type` as either `:PublicBill` or `:PrivateBill`.
+In addition to their existence as documents, Bills are subjects of procedural events recorded in the Order Paper and Official Report. In the ontology each such event is an instance of `oir:BillEvent` (subclass of `eli-dl:LegislativeActivity`). The sequence of events constitutes an `eli-dl:LegislativeProcess` for the bill, typed via `eli-dl:process_type` as `:PublicBill`, `:PrivateBill`, or `:HybridBill`.
 
 Key ELI-DL properties on `eli-dl:LegislativeProcess`:
-- `eli-dl:process_type` — bill type (`:PublicBill` / `:PrivateBill`)
+- `eli-dl:process_type` — Bill process type (`:PublicBill` / `:PrivateBill` / `:HybridBill`)
 - `eli-dl:was_submitted_by` — bill source (`agents:GovernmentBillSource`, `agents:PrivateMember`, `agents:PrivateSponsor`); GovernmentBillSource is a controlled source concept
 - `eli-dl:latest_activity` — most recent stage
 - `eli-dl:parliamentary_term` — the Dáil or Seanad term
+
+For the API Bills mapping, `bill.statusURI` supplies the controlled process
+status; `bill.stages[].event.stageOutcome` is retained as source evidence only
+and does not set process status or assert a `BillEventOutcome`. The `published`
+status alias maps to `:CurrentBill`, and referendum rejection maps to the
+distinct `:RejectedAtReferendumBill`.
+
+API lifecycle-event `event.uri` values are source occurrence keys, not
+necessarily the emitted activity IRIs. Concrete event identities are derived
+from the source key, controlled event type, normalized dates, and chamber.
+Related-document source URIs group Bill-owned Works; their Expressions and
+rendition-aware Formats have separate deterministic identities.
 
 ### Bill event URIs
 
@@ -93,4 +105,3 @@ The following table lists bill events along with example IRIs (full IRI base: `h
 | Bill amendment | `ie/oireachtas/bill/2015/44/dail/3/amd_1` |
 | Bill recommendation (Seanad) | `ie/oireachtas/bill/2015/44/seanad/3/rec_1` |
 | Bill amendment to amendment | `ie/oireachtas/bill/2015/44/dail/3/amd_1_1` |
-

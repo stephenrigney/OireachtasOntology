@@ -105,7 +105,7 @@ time:ProperInterval rdf:type owl:Class ;
 
                rdfs:range xsd:positiveInteger ;
 
-               rdfs:comment "An integer giving the canonical sequential order of a Bill stage across both houses (1 = First Stage Dáil … 10 = Enacted). Used to order stages irrespective of house."@en ;
+                rdfs:comment "A source-supplied integer giving the sequential order of a Bill stage across both houses. It orders stage occurrences irrespective of house and does not identify the controlled stage; that identity is determined by the source stage definition URI."@en ;
 
                skos:prefLabel "Progress stage"@en .
 
@@ -357,7 +357,23 @@ time:ProperInterval rdf:type owl:Class ;
 
             skos:inScheme :BillEventTable ;
 
-            skos:topConceptOf :BillEventTable .
+             skos:topConceptOf :BillEventTable .
+
+
+###  https://data.oireachtas.ie/ontology#CreamListStage
+
+:CreamListStage rdf:type eli-dl:ProcessStage ,
+                         eli-dl:ActivityType ,
+                         skos:Concept ,
+                         owl:NamedIndividual ;
+
+                 skos:prefLabel "Cream List stage"@en ;
+
+                 rdfs:comment "The Bill process stage identified by the source bill-stage/6 definition; distinct from :CreamList, which is an amendment-list type."@en ;
+
+                 skos:inScheme :BillEventTable ;
+
+                 skos:topConceptOf :BillEventTable .
 
 
 ###  https://data.oireachtas.ie/ontology#AllStages
@@ -425,6 +441,78 @@ time:ProperInterval rdf:type owl:Class ;
                     skos:topConceptOf :BillEventTable ;
 
                     skos:inScheme :BillEventTable .
+
+
+###  https://data.oireachtas.ie/ontology#BillDefeatedEvent
+
+:BillDefeatedEvent rdf:type eli-dl:ActivityType , skos:Concept ,
+                             owl:NamedIndividual ;
+
+                   skos:prefLabel "Bill defeated"@en ;
+
+                   rdfs:comment "Activity type for a Bill-defeat event occurrence; distinct from :DefeatedBill, which is a Bill process status."@en ;
+
+                   skos:topConceptOf :BillEventTable ;
+
+                   skos:inScheme :BillEventTable .
+
+
+###  https://data.oireachtas.ie/ontology#BillLapsedEvent
+
+:BillLapsedEvent rdf:type eli-dl:ActivityType , skos:Concept ,
+                          owl:NamedIndividual ;
+
+                 skos:prefLabel "Bill lapsed"@en ;
+
+                 rdfs:comment "Activity type for a Bill-lapsing event occurrence; distinct from :LapsedBill, which is a Bill process status."@en ;
+
+                 skos:topConceptOf :BillEventTable ;
+
+                 skos:inScheme :BillEventTable .
+
+
+###  https://data.oireachtas.ie/ontology#BillWithdrawnEvent
+
+:BillWithdrawnEvent rdf:type eli-dl:ActivityType , skos:Concept ,
+                             owl:NamedIndividual ;
+
+                    skos:prefLabel "Bill withdrawn"@en ;
+
+                    rdfs:comment "Activity type for a Bill-withdrawal event occurrence; distinct from :Withdrawn, which is a Bill event outcome, and :WithdrawnBill, which is a Bill process status."@en ;
+
+                    skos:topConceptOf :BillEventTable ;
+
+                    skos:inScheme :BillEventTable .
+
+
+###  https://data.oireachtas.ie/ontology#Referendum
+
+:Referendum rdf:type eli-dl:ProcessStage , eli-dl:ActivityType , skos:Concept ,
+                     owl:NamedIndividual ;
+
+              skos:prefLabel "Referendum"@en ;
+
+              rdfs:comment "Controlled process stage and activity type for a Bill referendum stage or lifecycle event; one individual represents both uses and is distinct from Bill process statuses concerning a referendum."@en ;
+
+             skos:topConceptOf :BillEventTable ;
+
+             skos:inScheme :BillEventTable .
+
+
+###  https://data.oireachtas.ie/ontology#ReferralToSupremeCourtArt26
+
+:ReferralToSupremeCourtArt26 rdf:type eli-dl:ProcessStage ,
+                                      eli-dl:ActivityType ,
+                                      skos:Concept ,
+                                      owl:NamedIndividual ;
+
+                              skos:prefLabel "Referral to Supreme Court under Article 26 of the Constitution"@en ;
+
+                              rdfs:comment "The constitutional procedure under Article 26 by which the President refers a Bill to the Supreme Court; used as the controlled stage and activity type for the referral."@en ;
+
+                              skos:topConceptOf :BillEventTable ;
+
+                             skos:inScheme :BillEventTable .
 
 
 ###  https://data.oireachtas.ie/ontology#DailAmdSeanad

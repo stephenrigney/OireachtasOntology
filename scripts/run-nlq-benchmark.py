@@ -16,6 +16,7 @@ import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+DEFAULT_OFFICE_REVIEW_FILE = ROOT / "reconciliation/office-decisions.json"
 
 from poc.nlq.benchmark import (  # noqa: E402
     DEFAULT_BENCHMARK_PATH,
@@ -29,13 +30,30 @@ from poc.nlq.config import load_local_environment, resolved_llm_configuration  #
 from poc.nlq.fuseki import FusekiQueryClient  # noqa: E402
 
 
+def _scratch_root() -> Path:
+    configured = os.getenv("OIR_NLQ_SCRATCH_DIR")
+    root = Path(configured).expanduser() if configured else ROOT / "var" / "nlq-scratch"
+    if not root.is_absolute():
+        root = ROOT / root
+    root = root.resolve()
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
 def _args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tier", choices=("regression", "measured"), default="regression")
     parser.add_argument("--benchmark", type=Path, default=DEFAULT_BENCHMARK_PATH)
     parser.add_argument("--results", type=Path)
     parser.add_argument("--raw-dir", type=Path)
-    parser.add_argument("--state-db", type=Path)
+    parser.add_argument(
+        "--review-file", type=Path, default=DEFAULT_OFFICE_REVIEW_FILE,
+        help="reviewed office decisions selecting the Phase 2 evaluation bootstrap",
+    )
+    parser.add_argument(
+        "--state-db", type=Path,
+        help="optional path protected from baseline-output overwrite; not read for capture selection",
+    )
     parser.add_argument("--docker", default="docker")
     parser.add_argument("--fuseki-image", default="stain/jena-fuseki:5.1.0")
     parser.add_argument("--uv", default="uv")
@@ -59,6 +77,8 @@ def _run_bootstrap(args, instance: DisposableFuseki, baseline_path: Path) -> dic
     if args.state_db:
         command.extend(["--state-db", str(args.state_db.expanduser().resolve())])
     command.extend([
+        "--review-file", str(getattr(args, "review_file", DEFAULT_OFFICE_REVIEW_FILE)
+                              .expanduser().resolve()),
         "--fuseki-gsp-url", instance.gsp_url,
         "--fuseki-sparql-url", instance.query_url,
         "--dataset-baseline-output", str(baseline_path),
@@ -101,8 +121,8 @@ def main(argv: list[str] | None = None) -> int:
 
     run_id = str(uuid.uuid4())
     result_path = args.results or ROOT / "var" / "nlq-benchmark" / "runs" / f"{run_id}.json"
-    scratch_root = Path(tempfile.gettempdir()) / "oireachtasontology" / "nlq-benchmark-phase-0b"
-    scratch_root.mkdir(parents=True, exist_ok=True)
+    scratch_root = _scratch_root()
+    os.environ["OIR_NLQ_SCRATCH_DIR"] = str(scratch_root)
 
     try:
         with DisposableFuseki(

@@ -105,6 +105,8 @@ load_env_local() {
 }
 
 load_env_local "$ROOT/.env.local"
+: "${OIR_NLQ_SCRATCH_DIR:=$ROOT/var/nlq-scratch}"
+export OIR_NLQ_SCRATCH_DIR
 
 # --- Effective configuration: explicit env > .env.local > defaults ----------
 : "${NLQ_LLM_BASE_URL:=$DEFAULT_NLQ_LLM_BASE_URL}"
@@ -121,9 +123,10 @@ load_env_local "$ROOT/.env.local"
 # Fuseki volume keeps working; otherwise the documented local default applies.
 : "${FUSEKI_ADMIN_PASSWORD:=${OIR_FUSEKI_PASSWORD:-$DEFAULT_FUSEKI_ADMIN_PASSWORD}}"
 : "${OIR_FUSEKI_PASSWORD:=$FUSEKI_ADMIN_PASSWORD}"
+: "${OIR_NLQ_OFFICE_REVIEW_FILE:=$ROOT/reconciliation/office-decisions.json}"
 
 export NLQ_LLM_BASE_URL NLQ_LLM_MODEL NLQ_FUSEKI_QUERY_URL
-export OIR_FUSEKI_GSP_URL OIR_FUSEKI_SPARQL_URL OIR_FUSEKI_USER OIR_FUSEKI_PASSWORD FUSEKI_ADMIN_PASSWORD
+export OIR_FUSEKI_GSP_URL OIR_FUSEKI_SPARQL_URL OIR_FUSEKI_USER OIR_FUSEKI_PASSWORD FUSEKI_ADMIN_PASSWORD OIR_NLQ_OFFICE_REVIEW_FILE
 
 # --- Required configuration -------------------------------------------------
 if [[ -z "${NLQ_LLM_API_KEY:-}" ]]; then
@@ -224,6 +227,7 @@ ensure_fuseki_admin_password
 if [[ "$LOAD_DATA" -eq 1 ]]; then
   echo "Bootstrapping non-authoritative local PoC data from preserved API captures..."
   if ! "$UV" run --locked oir-etl dev bootstrap \
+    --review-file "$OIR_NLQ_OFFICE_REVIEW_FILE" \
     --fuseki-gsp-url "$OIR_FUSEKI_GSP_URL" \
     --fuseki-sparql-url "$OIR_FUSEKI_SPARQL_URL"; then
     echo "ERROR: local development data bootstrap failed; the POC was not started." >&2

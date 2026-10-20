@@ -4,11 +4,21 @@
   "title": "Oireachtas NLQ semantic benchmark v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "benchmark_id", "benchmark_version", "cases"],
+    "required": ["schema_version", "benchmark_id", "benchmark_version", "cases"],
   "properties": {
     "schema_version": {"const": 1},
     "benchmark_id": {"type": "string", "minLength": 1},
     "benchmark_version": {"type": "string", "minLength": 1},
+    "dataset_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "dataset_id", "status"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "dataset_id": {"type": "string", "pattern": "^sha256:"},
+        "status": {"type": "string", "minLength": 1}
+      }
+    },
     "cases": {
       "type": "array",
       "minItems": 30,
@@ -18,7 +28,7 @@
   },
   "$defs": {
     "family": {
-      "enum": ["houses", "parties", "constituencies", "committees", "members", "bills", "debates"]
+      "enum": ["houses", "parties", "constituencies", "committees", "members", "member-records", "bills", "bill-records", "debates", "offices", "administrative-units"]
     },
     "failureClass": {
       "enum": [
@@ -78,7 +88,8 @@
           "enum": [
             "simple_lookup", "house_term_membership", "parliamentary_collections",
             "constituencies_panels", "committees", "dates_temporal",
-            "counts_aggregates", "joins", "ambiguous_names", "unsupported_requests"
+            "counts_aggregates", "joins", "ambiguous_names", "unsupported_requests",
+            "bills", "offices", "debates"
           ]
         },
         "tiers": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["regression", "measured"]}},
@@ -120,6 +131,11 @@
                   "type": "object", "additionalProperties": false,
                   "required": ["kind", "graph_family"],
                   "properties": {"kind": {"const": "missing_graph_family"}, "graph_family": {"$ref": "#/$defs/family"}}
+                },
+                {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["kind", "iri"],
+                  "properties": {"kind": {"const": "resource_not_in_development_slice"}, "iri": {"type": "string", "format": "uri"}}
                 }
               ]
             }

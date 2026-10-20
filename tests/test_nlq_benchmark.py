@@ -4,6 +4,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+from collections import Counter
 from pathlib import Path
 import subprocess
 
@@ -21,11 +22,13 @@ from poc.nlq.benchmark import (
     score_semantic_result,
     summarize_results,
 )
+from poc.nlq import benchmark as benchmark_module
 from poc.nlq import benchmark_isolation
 from poc.nlq.config import resolved_llm_configuration
 from poc.nlq.llm import Translation
 from poc.nlq import pipeline as pipeline_module
 from poc.nlq.pipeline import process_question
+from poc.nlq.planner_benchmark import load_planner_benchmark
 from poc.nlq.results import QueryResult, parse_results
 
 
@@ -33,6 +36,8 @@ ROOT = Path(__file__).resolve().parents[1]
 BENCHMARK_PATH = ROOT / "poc/nlq/benchmarks/benchmark-v3.json"
 PREVIOUS_BENCHMARK_PATH = ROOT / "poc/nlq/benchmarks/benchmark-v2.json"
 HISTORICAL_BENCHMARK_PATH = ROOT / "poc/nlq/benchmarks/benchmark-v1.json"
+REALISTIC_PHASE2_PATH = ROOT / "poc/nlq/benchmarks/realistic-phase2-v1.json"
+REALISTIC_PHASE2_PLANNER_PATH = ROOT / "poc/nlq/benchmarks/realistic-phase2-planner-v1.json"
 
 
 def test_measured_translator_configuration_records_resolved_values_and_provenance(tmp_path):
@@ -331,6 +336,35 @@ def test_benchmark_versions_validate_against_the_published_json_schema():
         validator.validate(json.loads(path.read_text(encoding="utf-8")))
 
 
+def test_realistic_phase2_artifacts_are_paired_schema_valid_and_cover_required_outcomes():
+    source = load_benchmark(REALISTIC_PHASE2_PATH)
+    planner = load_planner_benchmark(REALISTIC_PHASE2_PLANNER_PATH)
+    schema = json.loads((ROOT / "poc/specs/nlq-benchmark.schema.json").read_text())
+    Draft202012Validator(schema).validate(source)
+
+    source_ids = {case["id"] for case in source["cases"]}
+    planner_source_ids = {case["source_case_id"] for case in planner["cases"]}
+    assert len(source["cases"]) == len(planner["cases"]) == 37
+    assert source_ids == planner_source_ids
+    assert source["dataset_evidence"]["dataset_id"] == (
+        "sha256:9da63abc5878387f991e4d4717f35cca67606850db34be589e0a8fc0cc1504e2"
+    )
+    assert Counter(case["support_expectation"] for case in source["cases"]) == {
+        "supported": 28, "ambiguous": 2, "unavailable": 3, "unsupported": 4,
+    }
+    assert Counter(case["expectation"] for case in planner["cases"]) == {
+        "validated_plan": 28, "source_data_coverage": 3,
+        "clarification_required": 1, "set_valued_member_identity": 1,
+        "unresolved_entity": 1, "fail_closed": 3,
+    }
+    assert {
+        case["category"] for case in source["cases"]
+    } >= {"bills", "offices", "debates", "unsupported_requests", "ambiguous_names"}
+    assert all(case.get("expected_failure_classes") for case in planner["cases"]
+               if case["expectation"] == "fail_closed")
+    assert any(case.get("required_filters") for case in planner["cases"])
+
+
 def test_v03_support_expectations_match_contract_scope_and_dataset_evidence():
     benchmark = load_benchmark(BENCHMARK_PATH)
     contract = json.loads((ROOT / "poc/specs/query-schema-contract.json").read_text())
@@ -534,6 +568,78 @@ def test_absent_phase_0a_graph_family_is_classified_as_source_coverage():
     assert assessment.state == "unavailable"
     assert assessment.failed_prerequisite == "source_data_coverage"
     assert "bills" in assessment.reason
+
+
+def test_expanded_development_baseline_counts_and_coverage_preserve_new_families():
+    baseline = {
+        "schema_version": 1,
+        "dataset": {"id": "sha256:" + "b" * 64},
+        "graph_families_loaded": [
+            {"name": "bill-records", "graph_count": 6},
+            {"name": "offices", "graph_count": 1},
+            {"name": "debates", "graph_count": 3},
+            {"name": "administrative-units", "graph_count": 1},
+        ],
+        "rdf_resource_counts": {"bills": 5, "debates": 3},
+        "office_registry_evidence": {
+            "office_count": 3, "administrative_unit_count": 1,
+        },
+        "bill_source_quarantines": [{
+            "bill_uri": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/48",
+        }],
+        "unresolved_references": [{
+            "canonical_iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/unknown",
+        }],
+        "debate_selection": {"sources": [{
+            "work_iri": "https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/debate",
+        }]},
+    }
+    assert benchmark_module._baseline_family_counts(baseline) == {
+        "houses": 0, "parties": 0, "constituencies": 0, "committees": 0,
+        "members": 0, "member-records": 0, "bills": 5, "bill-records": 5,
+        "debates": 3, "offices": 3, "administrative-units": 1,
+    }
+
+    def case(family, *, unavailable_if=None, resource=None):
+        return {
+            "support_expectation": "supported",
+            "dataset_prerequisites": {
+                "required_graph_families": [family],
+                "required_resources": ([resource] if resource else []),
+                "coverage_probes": [],
+                "unavailable_if": unavailable_if,
+            },
+        }
+
+    for family in ("bill-records", "bills", "offices", "debates", "administrative-units"):
+        assert assess_dataset_prerequisites(
+            case(family), baseline, fuseki=_FakeFuseki(), supported_predicates=frozenset(),
+        ).state == "available"
+
+    bill = "https://data.oireachtas.ie/ie/oireachtas/bill/2024/48"
+    quarantined = case(
+        "bill-records", unavailable_if={"kind": "quarantined_resource", "iri": bill},
+        resource={"iri": bill, "graph_family": "bill-records"},
+    )
+    assessment = assess_dataset_prerequisites(
+        quarantined, baseline, fuseki=_FakeFuseki(), supported_predicates=frozenset(),
+    )
+    assert assessment.state == "unavailable"
+    assert "quarantined or unresolved" in assessment.reason
+
+    selected_debate = "https://data.oireachtas.ie/akn/ie/debateRecord/dail/2015-07-02/debate"
+    selected = case(
+        "debates", unavailable_if={"kind": "resource_not_in_development_slice", "iri": selected_debate},
+    )
+    assert assess_dataset_prerequisites(
+        selected, baseline, fuseki=_FakeFuseki(), supported_predicates=frozenset(),
+    ).state == "available"
+    selected["dataset_prerequisites"]["unavailable_if"]["iri"] = (
+        "https://data.oireachtas.ie/akn/ie/debateRecord/dail/2026-09-24/debate"
+    )
+    assert assess_dataset_prerequisites(
+        selected, baseline, fuseki=_FakeFuseki(), supported_predicates=frozenset(),
+    ).state == "unavailable"
 
 
 def test_deterministic_regression_runs_shared_pipeline_without_an_llm():
@@ -816,6 +922,8 @@ def test_runner_bootstraps_disposable_endpoint_and_reads_phase_0a_baseline(
     assert "bootstrap" in seen["command"]
     assert "--raw-dir" in seen["command"]
     assert "--state-db" in seen["command"]
+    assert "--review-file" in seen["command"]
+    assert str(ROOT / "reconciliation/office-decisions.json") in seen["command"]
     assert "--dataset-baseline-output" in seen["command"]
     assert "http://127.0.0.1:45678/houses/data" in seen["command"]
     assert "http://127.0.0.1:45678/houses/query" in seen["command"]
