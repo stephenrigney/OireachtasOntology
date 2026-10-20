@@ -17,7 +17,7 @@ from .plan_sparql import (
     PlanSparqlGenerator,
     build_label_lookup_query,
 )
-from .planner_benchmark import _semantic_mismatches
+from .planner_benchmark import _normalise_label, _semantic_mismatches
 from .results import QueryResult
 
 

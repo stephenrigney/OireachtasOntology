@@ -98,7 +98,8 @@
         "bill_year",
         "bill_status",
         "office",
-        "debate_chamber"
+        "debate_chamber",
+        "debate_body"
       ]
     },
     "filterOperator": {
@@ -229,7 +230,9 @@
         {"$ref": "#/$defs/officeExistsFilter"},
         {"$ref": "#/$defs/officeValueFilter"},
         {"$ref": "#/$defs/debateChamberExistsFilter"},
-        {"$ref": "#/$defs/debateChamberValueFilter"}
+        {"$ref": "#/$defs/debateChamberValueFilter"},
+        {"$ref": "#/$defs/debateBodyExistsFilter"},
+        {"$ref": "#/$defs/debateBodyValueFilter"}
       ]
     },
     "memberNameExistsFilter": {
@@ -390,6 +393,26 @@
         "field": {"type": "string", "const": "debate_chamber"},
         "operator": {"type": "string", "const": "equals"},
         "value": {"type": "string", "enum": ["dail", "seanad"]}
+      }
+    },
+    "debateBodyExistsFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "debate_body"},
+        "operator": {"type": "string", "const": "exists"},
+        "value": {"type": "null"}
+      }
+    },
+    "debateBodyValueFilter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement", "field", "operator", "value"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/identifier"},
+        "field": {"type": "string", "const": "debate_body"},
+        "operator": {"type": "string", "const": "equals"},
+        "value": {"type": "string", "enum": ["committee-of-public-accounts"]}
       }
     },
     "temporalPeriod": {

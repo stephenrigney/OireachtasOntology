@@ -311,6 +311,108 @@ def test_committee_code_uses_committee_owned_code_and_description_graph():
     )
 
 
+def test_bill_year_and_status_list_has_title_relation_and_controlled_filters():
+    plan = _plan(
+        requirements=[
+            {"id": "title", "fact": "bill_title", "subject": {"type": "Bill"}},
+            {"id": "year", "fact": "bill_year", "subject": {"type": "Bill"}},
+            {"id": "status", "fact": "bill_status", "subject": {"type": "Bill"}},
+        ],
+        filters=[
+            {"requirement": "year", "field": "bill_year", "operator": "equals", "value": 2026},
+            {"requirement": "status", "field": "bill_status", "operator": "equals", "value": "current"},
+        ],
+        answer={"kind": "entities", "entityType": "Bill"},
+    )
+
+    result = _generate(plan)
+
+    assert result.generated
+    assert result.semantic_answer_shape == {"kind": "entities", "entityType": "Bill"}
+    assert "eli:title" in result.sparql
+    assert "agents:legislativeYear" in result.sparql
+    assert "eli-dl:process_status" in result.sparql
+    assert "agents:Bill" in result.sparql
+    assert 'FILTER(?value2 = "2026"^^<http://www.w3.org/2001/XMLSchema#integer>)' in result.sparql
+    assert "FILTER(?billStatus0 = <https://data.oireachtas.ie/ontology#CurrentBill>)" in result.sparql
+
+
+def test_named_bill_sponsor_is_bill_to_member_relation_and_returns_member_role():
+    bill_iri = "https://data.oireachtas.ie/ie/oireachtas/bill/2026/93"
+    member_iri = "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29"
+    plan = _plan(
+        entities=[
+            _entity("bill", "Bill", bill_iri, "Artificial Intelligence Companion Services Bill"),
+        ],
+        requirements=[{
+            "id": "sponsor", "fact": "bill_sponsor",
+            "subject": {"entity": "bill"}, "object": {"type": "Member"},
+        }],
+        answer={"kind": "entities", "entityType": "Member"},
+    )
+
+    result = _generate(plan)
+
+    assert result.generated
+    assert "eli-dl:had_participation" in result.sparql
+    assert "eli-dl:had_participant_person" in result.sparql
+    assert f"VALUES ?entity0 {{ <{bill_iri}> }}" in result.sparql
+    assert result.semantic_answer_shape == {"kind": "entities", "entityType": "Member"}
+    assert member_iri not in result.sparql  # the answer Member is a type-only role
+
+
+def test_office_holder_on_date_compiles_inclusive_officeholding_range():
+    office_iri = "https://data.oireachtas.ie/office/o-000003"
+    plan = _plan(
+        entities=[_entity("office", "NamedOffice", office_iri, "Minister for Finance")],
+        requirements=[{
+            "id": "holding", "fact": "member_office_holding",
+            "subject": {"type": "Member"},
+        }],
+        filters=[{
+            "requirement": "holding", "field": "office", "operator": "equals",
+            "value": {"entity": "office"},
+        }],
+        temporal=[{"target": "holding", "kind": "on", "date": "2021-07-01"}],
+        answer={"kind": "entities", "entityType": "Member"},
+    )
+
+    result = _generate(plan)
+
+    assert result.generated
+    assert "members:hasOfficeHolding" in result.sparql
+    assert "members:heldOffice" in result.sparql
+    date_time = '"2021-07-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'
+    assert f"FILTER(?officeStart0 <= {date_time})" in result.sparql
+    assert f"!BOUND(?officeEnd0) || ?officeEnd0 >= {date_time}" in result.sparql
+    assert result.semantic_answer_shape == {"kind": "entities", "entityType": "Member"}
+
+
+def test_committee_debate_body_and_exact_date_compile_without_a_named_debate_entity():
+    plan = _plan(
+        requirements=[
+            {"id": "identity", "fact": "debate_identity", "subject": {"type": "DebateRecord"}},
+            {"id": "date", "fact": "debate_date", "subject": {"type": "DebateRecord"}},
+        ],
+        filters=[{
+            "requirement": "identity", "field": "debate_body", "operator": "equals",
+            "value": "committee-of-public-accounts",
+        }],
+        temporal=[{"target": "date", "kind": "on", "date": "2026-09-24"}],
+        answer={"kind": "entities", "entityType": "DebateRecord"},
+    )
+
+    result = _generate(plan)
+
+    assert result.generated
+    assert "agents:DebateRecord" in result.sparql
+    assert "agents:debateDate" in result.sparql
+    assert "committee_of_public_accounts" in result.sparql
+    assert "2026-09-24T00:00:00" in result.sparql
+    assert "FILTER(REGEX(STR(?graph_debates_role0)" in result.sparql
+    assert result.semantic_answer_shape == {"kind": "entities", "entityType": "DebateRecord"}
+
+
 def test_boolean_member_term_query_is_ask_and_safety_validated():
     result = _generate(_boolean_member_term_plan())
 

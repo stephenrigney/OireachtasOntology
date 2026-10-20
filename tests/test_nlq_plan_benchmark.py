@@ -569,6 +569,33 @@ def test_expected_fail_closed_planner_rejection_requires_listed_failure_class():
     assert unexpected["passed"] is False
 
 
+def test_set_valued_member_benchmark_accepts_matching_draft_mention_without_resolution():
+    planner_case = {
+        "id": "plan.set-valued-member", "source_case_id": "source.name",
+        "expectation": "set_valued_member_identity",
+        "required_entities": [{"type": "Member", "label": "Michael Collins", "resolution": "set-valued"}],
+    }
+    planner_benchmark, source_benchmark = _benchmark(case=planner_case)
+    result = PlannerResult(
+        "set_valued_member_identity",
+        draft_plan={"entities": [{"type": "Member", "label": "Michael Collins"}]},
+        failure_stage="entity_resolution",
+        failure_class="set_valued_member_identity",
+    )
+    fuseki = _QueryFuseki([])
+
+    outcome, = run_plan_cases(
+        planner_benchmark, source_benchmark, _baseline(),
+        fuseki=fuseki, supported_predicates=PREDICATES,
+        planner_factory=lambda _case, _fuseki: _FixedPlanner(result),
+    )
+
+    assert outcome["evaluation"] == "passed"
+    assert outcome["observed_outcome"] == "expected_set_valued_identity_rejection"
+    assert outcome["stage_status"]["entity_binding"] == "blocked_expected"
+    assert fuseki.queries == []
+
+
 def test_executable_plan_for_fail_closed_case_is_a_failure_before_generation():
     planner_case = {
         "id": "plan.unsupported", "source_case_id": "source.name",

@@ -124,7 +124,8 @@
         "bill_year",
         "bill_status",
         "office",
-        "debate_chamber"
+        "debate_chamber",
+        "debate_body"
       ]
     },
     "localIri": {"type": "string", "pattern": "^https://data\\.oireachtas\\.ie/[^\\s?#]+$"},
@@ -337,6 +338,15 @@
             "properties": {
               "operator": {"enum": ["equals", "exists"]},
               "value": {"type": "string", "enum": ["dail", "seanad"]}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"field": {"const": "debate_body"}}, "required": ["field"]},
+          "then": {
+            "properties": {
+              "operator": {"enum": ["equals", "exists"]},
+              "value": {"type": "string", "enum": ["committee-of-public-accounts"]}
             }
           }
         },

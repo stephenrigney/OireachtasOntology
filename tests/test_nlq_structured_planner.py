@@ -82,9 +82,11 @@ class LocalResolverFuseki:
         rows: tuple[tuple[str, str], ...] = (),
         *,
         contexts: dict[str, tuple[tuple[str, str], ...]] | None = None,
+        representation_contexts: dict[str, tuple[str, ...]] | None = None,
     ):
         self.rows = rows
         self.contexts = contexts or {}
+        self.representation_contexts = representation_contexts or {}
         self.queries: list[str] = []
         self.fail = False
 
@@ -97,6 +99,16 @@ class LocalResolverFuseki:
             return QueryResult(
                 kind="select", columns=("contextType", "contextLabel"),
                 rows=self.contexts.get(iri, ()),
+            )
+        if "constituencyInHouseTerm" in sparql:
+            rows = tuple(
+                (iri, label)
+                for iri, labels in self.representation_contexts.items()
+                if f"<{iri}>" in sparql
+                for label in labels
+            )
+            return QueryResult(
+                kind="select", columns=("entity", "contextLabel"), rows=rows,
             )
         assert "SELECT DISTINCT ?entity ?label" in sparql
         return QueryResult(
@@ -737,6 +749,121 @@ def test_generalised_resolver_uses_supported_type_and_owner_graph(entity_type, c
         assert "FILTER(REGEX(STR(?entityGraph)" in fuseki.queries[0]
 
 
+def test_bill_resolver_matches_only_canonical_title_with_qualifier_and_year_omitted():
+    bill_iri = "https://data.oireachtas.ie/ie/oireachtas/bill/2026/93"
+    full_title = "Artificial Intelligence Companion Services (Protection of Children) Bill 2026"
+    fuseki = LocalResolverFuseki(((bill_iri, full_title + "@en"),))
+
+    result = resolve_local_entity_label(
+        "Bill", "Artificial Intelligence Companion Services Bill", fuseki,
+    )
+
+    assert result.state == "resolved"
+    assert result.candidates == (type(result.candidates[0])(bill_iri, full_title),)
+    assert 'CONTAINS(LCASE(STR(?label)), LCASE(STR("Artificial Intelligence Companion Services")))' in fuseki.queries[0]
+    assert "eli:type_document agents:Bill" in fuseki.queries[0]
+
+
+def test_bill_canonical_title_resolution_preserves_ambiguity_across_resources():
+    first = "https://data.oireachtas.ie/ie/oireachtas/bill/2026/93"
+    second = "https://data.oireachtas.ie/ie/oireachtas/bill/2027/93"
+    result = resolve_local_entity_label(
+        "Bill", "Artificial Intelligence Companion Services Bill",
+        LocalResolverFuseki((
+            (first, "Artificial Intelligence Companion Services (Protection of Children) Bill 2026"),
+            (second, "Artificial Intelligence Companion Services (Protection of Children) Bill 2027"),
+        )),
+    )
+
+    assert result.state == "ambiguous"
+    assert {candidate.iri for candidate in result.candidates} == {first, second}
+
+
+@pytest.mark.parametrize(
+    ("requested_title", "candidate_title", "expected_state"),
+    [
+        (
+            "Artificial Intelligence Companion Services Bill 2025",
+            "Artificial Intelligence Companion Services (Protection of Children) Bill 2026",
+            "unresolved",
+        ),
+        (
+            "Artificial Intelligence Companion Services Bill 2026",
+            "Artificial Intelligence Companion Services (Protection of Children) Bill 2026",
+            "resolved",
+        ),
+        (
+            "Artificial Intelligence Companion Services Bill 2026",
+            "Artificial Intelligence Companion Services (Protection of Children) Bill",
+            "unresolved",
+        ),
+    ],
+)
+def test_explicit_bill_title_year_constrains_candidate_resolution(
+    requested_title, candidate_title, expected_state,
+):
+    bill_iri = "https://data.oireachtas.ie/ie/oireachtas/bill/2026/93"
+    result = resolve_local_entity_label(
+        "Bill", requested_title,
+        LocalResolverFuseki(((bill_iri, candidate_title + "@en"),)),
+    )
+
+    assert result.state == expected_state
+    if expected_state == "resolved":
+        assert result.candidates[0].iri == bill_iri
+    else:
+        assert result.candidates == ()
+
+
+def test_explicit_bill_year_selects_matching_resource_but_yearless_title_stays_ambiguous():
+    first = "https://data.oireachtas.ie/ie/oireachtas/bill/2025/93"
+    second = "https://data.oireachtas.ie/ie/oireachtas/bill/2026/93"
+    rows = (
+        (first, "Artificial Intelligence Companion Services (Protection of Children) Bill 2025"),
+        (second, "Artificial Intelligence Companion Services (Protection of Children) Bill 2026"),
+    )
+
+    explicit = resolve_local_entity_label(
+        "Bill", "Artificial Intelligence Companion Services Bill 2025",
+        LocalResolverFuseki(rows),
+    )
+    yearless = resolve_local_entity_label(
+        "Bill", "Artificial Intelligence Companion Services Bill",
+        LocalResolverFuseki(rows),
+    )
+
+    assert explicit.state == "resolved"
+    assert explicit.candidates[0].iri == first
+    assert yearless.state == "ambiguous"
+    assert {candidate.iri for candidate in yearless.candidates} == {first, second}
+
+
+def test_duplicate_constituency_label_is_narrowed_only_by_exact_house_term_context():
+    first = "https://data.oireachtas.ie/ie/oireachtas/house/dail/32/constituency/Dublin-South-Central"
+    second = "https://data.oireachtas.ie/ie/oireachtas/house/dail/33/constituency/Dublin-South-Central"
+    rows = ((first, "Dublin South-Central@en"), (second, "Dublin South-Central@en"))
+    fuseki = LocalResolverFuseki(
+        rows,
+        representation_contexts={first: ("32nd Dáil",), second: ("33rd Dáil",)},
+    )
+
+    narrowed = resolve_local_entity_label(
+        "DailConstituency", "Dublin South-Central", fuseki,
+        question_context="Who represented Dublin South-Central in the 33rd Dáil?",
+    )
+    unmatched = resolve_local_entity_label(
+        "DailConstituency", "Dublin South-Central",
+        LocalResolverFuseki(rows),
+    )
+
+    assert narrowed.state == "resolved"
+    assert narrowed.candidates == (type(narrowed.candidates[0])(second, "Dublin South-Central"),)
+    assert "members:constituencyInHouseTerm" in fuseki.queries[1]
+    assert "https://data.oireachtas.ie/graph/houses" in fuseki.queries[1]
+    assert unmatched.state == "ambiguous"
+    assert {candidate.iri for candidate in unmatched.candidates} == {first, second}
+
+
 def test_debate_record_has_no_label_resolver_and_is_reported_explicitly():
     with pytest.raises(UnsupportedLocalEntityType, match="No deterministic local resolver"):
         resolve_local_entity_label("DebateRecord", "Dáil debate", LocalResolverFuseki())
@@ -1033,6 +1160,302 @@ def test_set_valued_named_member_request_is_non_executable(question, answer_kind
     ]
     assert "no singular local Member IRI was selected" in result.diagnostic
     assert result.as_dict()["binding_evidence"] == []
+    assert fuseki.queries == []
+
+
+def test_set_valued_name_filter_is_preserved_as_a_member_mention_before_resolution():
+    question = "Which Members named Michael Collins served in the Dáil?"
+    draft = _output_draft(question=question)
+    draft["entities"] = []
+    draft["requirements"] = [{
+        "id": "dail_service", "fact": "member_house_term_membership",
+        "subject": {"entity": None, "type": "Member"},
+        "object": {"entity": None, "type": "DailTerm"},
+    }]
+    draft["filters"] = [{
+        "requirement": "dail_service", "field": "member_name",
+        "operator": "equals", "value": "Michael Collins",
+    }]
+    draft["answerShape"] = {
+        "kind": "entities", "target": None, "entityType": "Member",
+    }
+    fuseki = LocalResolverFuseki()
+    planner, _ = _planner(draft, fuseki)
+
+    result = planner.plan(question)
+
+    assert result.status == "set_valued_member_identity"
+    assert result.draft_plan["entities"] == [{
+        "id": "set_valued_member", "type": "Member", "label": "Michael Collins",
+    }]
+    assert result.draft_plan["requirements"][0]["subject"] == {
+        "entity": "set_valued_member",
+    }
+    assert result.draft_plan["filters"][0]["value"] == "Michael Collins"
+    assert fuseki.queries == []
+
+
+def test_answer_requirement_ids_are_stable_for_simple_member_name_retrieval():
+    aengus = "https://data.oireachtas.ie/ie/oireachtas/member/id/Aengus-Ó-Snodaigh.D.2002-06-06"
+    draft = _output_draft(
+        question="Find Aengus Ó Snodaigh's full name for me.",
+        label="Aengus Ó Snodaigh",
+    )
+    draft["requirements"][0]["id"] = "full_name"
+    draft["answerShape"]["target"] = "full_name"
+    planner, _ = _planner(
+        draft, LocalResolverFuseki(((aengus, "Aengus Ó Snodaigh"),)),
+    )
+
+    result = planner.plan("Find Aengus Ó Snodaigh's full name for me.")
+
+    assert result.status == "validated_plan"
+    assert result.plan["answerShape"] == {"kind": "fact", "target": "name"}
+    assert result.plan["requirements"][0]["id"] == "name"
+
+
+def test_member_start_date_for_a_named_house_term_uses_term_object_without_redundant_temporal_scope():
+    member_iri = "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12"
+    term_iri = "https://data.oireachtas.ie/ie/oireachtas/house/seanad/26"
+    question = "When did Timmy Dooley join the 26th Seanad?"
+    draft = {
+        "draftSchemaVersion": 1,
+        "intent": "Return the recorded start date of the named Member's term membership.",
+        "entities": [
+            {"id": "member", "type": "Member", "label": "Timmy Dooley"},
+            {"id": "term", "type": "SeanadTerm", "label": "26th Seanad"},
+        ],
+        "requirements": [{
+            "id": "membership_start", "fact": "member_parliamentary_membership_start_date",
+            "subject": {"entity": "member", "type": None},
+            "object": {"entity": "term", "type": None},
+        }],
+        "filters": [], "temporalConstraints": [], "aggregation": None,
+        "answerShape": {
+            "kind": "fact", "target": "membership_start", "entityType": None,
+        },
+    }
+
+    class TypedLookupFuseki:
+        def __init__(self):
+            self.queries = []
+
+        def query(self, sparql):
+            self.queries.append(sparql)
+            if 'STR("Timmy Dooley")' in sparql:
+                return QueryResult(
+                    kind="select", columns=("entity", "label"),
+                    rows=((member_iri, "Timmy Dooley"),),
+                )
+            if 'STR("26th Seanad")' in sparql:
+                return QueryResult(
+                    kind="select", columns=("entity", "label"),
+                    rows=((term_iri, "26th Seanad@en"),),
+                )
+            raise AssertionError(f"unexpected resolver query: {sparql}")
+
+    fuseki = TypedLookupFuseki()
+    planner, _ = _planner(draft, fuseki)
+
+    result = planner.plan(question)
+
+    assert result.status == "validated_plan"
+    assert result.plan["requirements"][0] == {
+        "id": "start", "fact": "member_parliamentary_membership_start_date",
+        "subject": {"entity": "member"}, "object": {"entity": "term"},
+    }
+    assert result.plan["answerShape"] == {"kind": "fact", "target": "start"}
+    assert result.plan["temporalConstraints"] == []
+    assert {item["iri"] for item in result.plan["entities"]} == {member_iri, term_iri}
+
+
+def test_named_bill_sponsor_plan_resolves_canonical_title_without_a_debate_or_member_iri():
+    bill_iri = "https://data.oireachtas.ie/ie/oireachtas/bill/2026/93"
+    full_title = "Artificial Intelligence Companion Services (Protection of Children) Bill 2026"
+    question = "Who is listed as the sponsor of the Artificial Intelligence Companion Services Bill?"
+    draft = _output_draft(
+        question=question, entity_type="Bill",
+        label="Artificial Intelligence Companion Services Bill", fact="bill_sponsor",
+    )
+    draft["requirements"][0]["object"] = {"entity": None, "type": "Member"}
+    draft["answerShape"] = {
+        "kind": "entities", "target": None, "entityType": "Member",
+    }
+    planner, _ = _planner(
+        draft, LocalResolverFuseki(((bill_iri, full_title),)),
+    )
+
+    result = planner.plan(question)
+
+    assert result.status == "validated_plan"
+    assert result.plan["entities"][0]["iri"] == bill_iri
+    assert result.plan["requirements"][0]["fact"] == "bill_sponsor"
+    assert result.plan["requirements"][0]["object"] == {"type": "Member"}
+    assert result.plan["answerShape"] == {"kind": "entities", "entityType": "Member"}
+
+
+def test_committee_of_public_accounts_debate_uses_body_date_and_no_entity_lookup():
+    question = "What date is recorded for the Committee of Public Accounts debate on 24 September 2026?"
+    draft = {
+        "draftSchemaVersion": 1,
+        "intent": "Return the pinned Committee debate record for its exact date.",
+        "entities": [],
+        "requirements": [
+            {
+                "id": "debate_identity", "fact": "debate_identity",
+                "subject": {"entity": None, "type": "DebateRecord"}, "object": None,
+            },
+            {
+                "id": "debate_date", "fact": "debate_date",
+                "subject": {"entity": None, "type": "DebateRecord"}, "object": None,
+            },
+        ],
+        "filters": [{
+            "requirement": "debate_identity", "field": "debate_body",
+            "operator": "equals", "value": "committee-of-public-accounts",
+        }],
+        "temporalConstraints": [{
+            "target": "debate_date", "kind": "on", "date": "2026-09-24",
+            "period": None, "start": None, "end": None,
+        }],
+        "aggregation": None,
+        "answerShape": {
+            "kind": "entities", "target": None, "entityType": "DebateRecord",
+        },
+    }
+    fuseki = LocalResolverFuseki()
+    planner, _ = _planner(draft, fuseki)
+
+    result = planner.plan(question)
+
+    assert result.status == "validated_plan"
+    assert result.plan["entities"] == []
+    assert result.plan["filters"][0]["field"] == "debate_body"
+    assert result.plan["temporalConstraints"][0]["date"] == "2026-09-24"
+    assert result.plan["answerShape"] == {
+        "kind": "entities", "entityType": "DebateRecord",
+    }
+    assert fuseki.queries == []
+
+
+def test_planner_instructions_cover_existing_phase2_failure_classes():
+    instructions = build_planner_instructions()
+
+    assert "party affiliation or collection membership is `member_collection_membership`" in instructions
+    assert "do not add a separate `during` constraint to this date fact" in instructions
+    assert "answer `entities` of type Member" in instructions
+    assert "Bill -> Member" in instructions
+    assert "an exact registered-office filter" in instructions
+    assert "do not add DebateRecord entity mentions" in instructions
+    assert "Do not replace it only with a `member_name` filter" in instructions
+    assert "`member_full_name` -> `name`" in instructions
+    assert "do not substitute a nearby supported fact" in instructions
+    assert "the local planner rejects an intent" in instructions
+
+
+@pytest.mark.parametrize(
+    ("question", "draft"),
+    [
+        (
+            "What is the full name of Timmy Dooley?",
+            {
+                **_output_draft(),
+                "intent": "No supported query can answer the requested question.",
+            },
+        ),
+        (
+            "Which Members voted for the Artificial Intelligence Companion Services Bill?",
+            {
+                **_output_draft(
+                    question=(
+                        "Which Members voted for the Artificial Intelligence Companion Services Bill?"
+                    ),
+                    entity_type="Bill",
+                    label="Artificial Intelligence Companion Services Bill",
+                    fact="bill_title",
+                ),
+                "intent": (
+                    "Identify Members who voted for the Bill. Member voting records "
+                    "are not represented by the available semantic facts."
+                ),
+                "requirements": [{
+                    "id": "identity", "fact": "member_identity",
+                    "subject": {"entity": None, "type": "Member"}, "object": None,
+                }],
+                "answerShape": {
+                    "kind": "entities", "target": None, "entityType": "Member",
+                },
+            },
+        ),
+        (
+            "What did speakers say in the Dáil debate on 2 July 2015?",
+            {
+                "draftSchemaVersion": 1,
+                "intent": (
+                    "The requested target—what speakers said in a Dáil debate—is transcript "
+                    "speech content, which is not represented by the available semantic facts. "
+                    "Do not substitute a debate lookup or date fact."
+                ),
+                "entities": [],
+                "requirements": [{
+                    "id": "identity", "fact": "debate_identity",
+                    "subject": {"entity": None, "type": "DebateRecord"}, "object": None,
+                }],
+                "filters": [{
+                    "requirement": "identity", "field": "debate_chamber",
+                    "operator": "equals", "value": "dail",
+                }],
+                "temporalConstraints": [{
+                    "target": "identity", "kind": "on", "date": "2015-07-02",
+                    "period": None, "start": None, "end": None,
+                }],
+                "aggregation": None,
+                "answerShape": {
+                    "kind": "entities", "target": None, "entityType": "DebateRecord",
+                },
+            },
+        ),
+    ],
+)
+def test_planner_rejects_drafts_whose_intent_admits_requested_information_is_unsupported(
+    question, draft,
+):
+    fuseki = LocalResolverFuseki()
+    planner, _ = _planner(draft, fuseki)
+
+    result = planner.plan(question)
+
+    assert result.status == "invalid_draft_semantics"
+    assert result.failure_class == "invalid_draft_semantics"
+    assert "not represented by the available semantic facts" in result.diagnostic
+    assert fuseki.queries == []
+
+
+def test_set_valued_member_mention_short_circuits_an_invalid_name_filter_attachment():
+    question = "Which Members named Michael Collins served in the Dáil?"
+    draft = _output_draft(
+        question=question, label="Michael Collins", fact="member_identity",
+    )
+    draft["intent"] = "Find all Members named Michael Collins who served in a Dáil term."
+    draft["requirements"] = [{
+        "id": "dail_service", "fact": "member_house_term_membership",
+        "subject": {"entity": None, "type": "Member"},
+        "object": {"entity": None, "type": "DailTerm"},
+    }]
+    draft["filters"] = [{
+        "requirement": "dail_service", "field": "member_name",
+        "operator": "equals", "value": "Michael Collins",
+    }]
+    draft["answerShape"] = {
+        "kind": "entities", "target": None, "entityType": "Member",
+    }
+    fuseki = LocalResolverFuseki()
+    planner, _ = _planner(draft, fuseki)
+
+    result = planner.plan(question)
+
+    assert result.status == "set_valued_member_identity"
+    assert result.draft_plan["entities"][0]["label"] == "Michael Collins"
     assert fuseki.queries == []
 
 
@@ -1481,7 +1904,7 @@ def test_deterministic_planner_benchmark_cases_are_scored_without_sparql_generat
 
 
 def test_phase2_entity_types_extend_the_existing_semantic_vocabulary_additively():
-    assert PLAN_CONTRACT["contractVersion"] == "1.1.0"
+    assert PLAN_CONTRACT["contractVersion"] == "1.2.0"
     assert PLAN_CONTRACT["semanticVocabulary"]["entityTypes"][:8] == [
         "Member", "House", "DailTerm", "SeanadTerm", "ParliamentaryMemberCollection",
         "DailConstituency", "SeanadPanel", "Committee",

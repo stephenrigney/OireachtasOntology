@@ -8,6 +8,7 @@ Phase 1 browser pipeline.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import re
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -37,6 +38,9 @@ _BILL_STATUS_VALUES = {
 }
 _DEBATE_CHAMBER_VALUES = {
     item["id"]: item for item in _FILTER_FIELDS["debate_chamber"].get("allowedValues", [])
+}
+_DEBATE_BODY_VALUES = {
+    item["id"]: item for item in _FILTER_FIELDS["debate_body"].get("allowedValues", [])
 }
 _GRAPH_FAMILIES = {
     family["id"]: family for family in _QUERY_SCHEMA["graphFamilies"]
@@ -144,6 +148,7 @@ _FILTERS: dict[str, _FilterMapping] = {
     "bill_status": _FilterMapping("bill_status", "controlled_resource", "eli-dl:process_status"),
     "office": _FilterMapping("member_office_holding", "office", "members:heldOffice"),
     "debate_chamber": _FilterMapping("debate_identity", "chamber"),
+    "debate_body": _FilterMapping("debate_identity", "body"),
 }
 
 _TERM_MEMBERSHIP_TYPES = {
@@ -316,6 +321,13 @@ class _Compiler:
                     "Bill status filter value is outside the controlled vocabulary.",
                     "invalid_filter_value",
                 )
+            if (filter_["operator"] != "exists"
+                    and mapping.value_kind == "body"
+                    and filter_["value"] not in _DEBATE_BODY_VALUES):
+                raise _UnsupportedGeneration(
+                    "Debate body filter value is outside the pinned development routes.",
+                    "invalid_filter_value",
+                )
             if filter_["operator"] != "exists" and mapping.value_kind == "office":
                 entity_id = filter_["value"]["entity"]
                 if self.entities[entity_id]["type"] != "NamedOffice":
@@ -361,7 +373,7 @@ class _Compiler:
             if filter_["operator"] == "exists":
                 continue
             mapping = _FILTERS[filter_["field"]]
-            if mapping.value_kind in {"string", "controlled_resource", "chamber"} and not isinstance(filter_["value"], str):
+            if mapping.value_kind in {"string", "controlled_resource", "chamber", "body"} and not isinstance(filter_["value"], str):
                 raise _UnsupportedGeneration("String filter value has an incompatible type.", "invalid_filter_value")
             if mapping.value_kind == "number" and (
                 isinstance(filter_["value"], bool)
@@ -372,6 +384,12 @@ class _Compiler:
                     and filter_["value"] not in _DEBATE_CHAMBER_VALUES):
                 raise _UnsupportedGeneration(
                     "Debate chamber filter value is outside the supported graph routes.",
+                    "invalid_filter_value",
+                )
+            if (mapping.value_kind == "body"
+                    and filter_["value"] not in _DEBATE_BODY_VALUES):
+                raise _UnsupportedGeneration(
+                    "Debate body filter value is outside the pinned development routes.",
                     "invalid_filter_value",
                 )
         self._validate_answer_shape()
@@ -964,7 +982,7 @@ class _Compiler:
                 value_var = self._value_vars[requirement_id]["office"]
             elif mapping.value_kind == "controlled_resource":
                 value_var = self._value_vars[requirement_id]["status"]
-            elif mapping.value_kind == "chamber":
+            elif mapping.value_kind in {"chamber", "body"}:
                 value_var = self._value_vars[requirement_id]["graph"]
             else:
                 value_var = self._value_vars[requirement_id]["value"]
@@ -978,11 +996,16 @@ class _Compiler:
                     serialized = _iri_n3(_BILL_STATUS_VALUES[filter_["value"]]["resource"])
                 elif mapping.value_kind == "office":
                     serialized = self._entity_var(filter_["value"]["entity"])
-                elif mapping.value_kind == "chamber":
-                    route = _DEBATE_CHAMBER_VALUES[filter_["value"]]["route"]
+                elif mapping.value_kind in {"chamber", "body"}:
+                    values = (
+                        _DEBATE_CHAMBER_VALUES
+                        if mapping.value_kind == "chamber"
+                        else _DEBATE_BODY_VALUES
+                    )
+                    route = values[filter_["value"]]["route"]
                     route_pattern = (
                         "^https://data\\.oireachtas\\.ie/graph/debate/"
-                        + route
+                        + re.escape(route)
                         + r"/[0-9]{4}-[0-9]{2}-[0-9]{2}/debate$"
                     )
                     self.filter_expressions.append(

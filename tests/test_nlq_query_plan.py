@@ -77,7 +77,7 @@ def test_contract_manifest_plan_schema_and_all_examples_are_valid():
     contract = load_query_plan_contract()
     assert contract["contractId"] == CONTRACT_ID
     assert contract["schemaVersion"] == 1
-    assert contract["contractVersion"] == "1.1.0"
+    assert contract["contractVersion"] == "1.2.0"
     assert contract["contractSchema"] == "poc/specs/query-plan-contract.schema.json"
     assert contract["planSchema"] == "poc/specs/query-plan.schema.json"
     assert "conjunctively" in contract["planSemantics"]["conjunction"]
@@ -97,7 +97,17 @@ def test_contract_manifest_plan_schema_and_all_examples_are_valid():
     assert "label or name property" in answer_shape_guidance["label"]
     assert "entity resolution" in contract["planSemantics"]["entityMentionMeaning"]
     assert "time-dependent fact" in contract["planSemantics"]["temporalScoping"]
+    assert "parenthetical title qualifiers" in contract["planSemantics"]["entityMentionMeaning"]
+    assert "same trailing year" in contract["planSemantics"]["entityMentionMeaning"]
     vocabulary = contract["semanticVocabulary"]
+    debate_body = next(
+        field for field in vocabulary["filterFields"] if field["id"] == "debate_body"
+    )
+    assert debate_body["allowedValues"] == [{
+        "id": "committee-of-public-accounts",
+        "label": "Committee of Public Accounts",
+        "route": "committee_of_public_accounts",
+    }]
     assert set(vocabulary["entityTypes"]) == set(plan_schema["$defs"]["entityType"]["enum"])
     assert {fact["id"] for fact in vocabulary["facts"]} == set(plan_schema["$defs"]["factId"]["enum"])
     assert {field["id"] for field in vocabulary["filterFields"]} == set(plan_schema["$defs"]["filterFieldId"]["enum"])

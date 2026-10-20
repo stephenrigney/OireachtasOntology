@@ -375,7 +375,7 @@ assumptions, known unavailable patterns, and the local safety policy.
 ### Structured query-plan contract (Phase 2A)
 
 The semantic plan contract is `poc/specs/query-plan-contract.json` (contract
-version `1.1.0`, schema version `1`). Its manifest schema is
+version `1.2.0`, schema version `1`). Its manifest schema is
 `poc/specs/query-plan-contract.schema.json`; the plan-instance schema is
 `poc/specs/query-plan.schema.json`. Seven representative plans are under
 `poc/specs/query-plan-examples/`. Plans include intent, local Oireachtas source,
@@ -415,8 +415,16 @@ provided existing meanings and validation behavior are unchanged. The manifest,
 schema enum, and focused vocabulary-parity test must be updated together;
 consumers that do not yet support an added type reject it. The current extension
 adds Bill and NamedOffice resolution from reviewed local labels, plus DebateRecord
-as a type-only result role. DebateRecord has no entity-label resolver because the
-accepted Debate slice has no reviewed local label mapping.
+as a type-only result role. Bill resolution permits only exact canonical-title
+equality after removing parenthetical qualifiers and a trailing legislative
+year. If a user-supplied Bill title includes a trailing year, a candidate must
+carry that same year; a candidate with a different or absent title year does not
+match. Without a supplied year, multiple resources with the same canonical title
+remain ambiguous.
+DebateRecord has no entity-label resolver because the accepted Debate slice has
+no reviewed local label mapping. Its optional `debate_body` filter is restricted
+to the one pinned Committee of Public Accounts route and does not enable general
+Debate or transcript search.
 
 Requirements, filters, and temporal constraints are conjunctive. Repeated
 references to one entity ID denote that same entity; repeated type-only
@@ -426,7 +434,8 @@ are valid plan states, not executable identity bindings: a later consumer must
 clarify or resolve them and must not choose a candidate or drop a dependent
 constraint. Filter field IDs are controlled and fact-specific; values are
 typed by the selected field. Equality is exact, with no implied fuzzy or
-label-matching behavior. The validator checks that IRIs use the Oireachtas
+label-matching behavior; Bill-title canonicalization above is limited to named
+entity resolution. The validator checks that IRIs use the Oireachtas
 namespace but does not manufacture IRIs or independently check the resolver's
 entity-type/IRI assignment. Unknown compatible optional fields may be ignored
 and must not be treated as query, graph, variable, source, or endpoint
@@ -571,7 +580,7 @@ The bounded expansion and its deferred boundaries are recorded in
 It updates the query/schema contract to major version `2.0.0` because the prior
 Bill lifecycle pattern incorrectly attached `eli-dl:latest_activity` to the
 Bill rather than its process. Additive semantic-plan vocabulary support uses
-contract version `1.1.0`; plan-contract consumers still support major `1`.
+contract version `1.2.0`; plan-contract consumers still support major `1`.
 Eleven deterministic semantic-plan evaluation cases are pinned in
 `benchmarks/query-service-phase-2-v1.json`. Offline generation checks run with:
 

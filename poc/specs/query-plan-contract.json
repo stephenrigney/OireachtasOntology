@@ -4,7 +4,7 @@
   "contractSchema": "poc/specs/query-plan-contract.schema.json",
   "planSchema": "poc/specs/query-plan.schema.json",
   "schemaVersion": 1,
-  "contractVersion": "1.1.0",
+  "contractVersion": "1.2.0",
   "description": "Versioned semantic contract for structured Oireachtas query plans. Plans describe the user's requested meaning, not executable SPARQL.",
   "compatibility": {
     "schemaVersion": "The consumer supports plan schema version 1 and rejects other schema versions.",
@@ -43,7 +43,7 @@
       {"kind": "count", "description": "Return an aggregation count."},
       {"kind": "grouped_result", "description": "Return grouped aggregation output."}
     ],
-    "entityMentionMeaning": "Named entity mentions are type-and-label inputs to deterministic local entity resolution. Keep them as entity mentions; do not restate the same name as a name/label filter merely to identify that entity. A repeated name filter is appropriate only when the question independently asks for that semantic constraint.",
+    "entityMentionMeaning": "Named entity mentions are type-and-label inputs to deterministic local entity resolution. Keep them as entity mentions; do not restate the same name as a name/label filter merely to identify that entity. A repeated name filter is appropriate only when the question independently asks for that semantic constraint. For Bill mentions only, local title resolution also accepts exact equality after removing parenthetical title qualifiers and a trailing legislative year. If the user-supplied Bill title has an explicit trailing year, a candidate must have the same trailing year; a candidate with a different or absent title year does not match. When no year is supplied, multiple Bill resources sharing the canonical title remain ambiguous.",
     "temporalScoping": "When wording such as 'in the 34th Dáil' or 'during the 26th Seanad' (or equivalent term-scoped phrasing) scopes a time-dependent fact, attach the temporal constraint to the requirement expressing the fact being asked about; a separate Member-to-HouseTerm membership requirement does not scope another fact such as collection membership or representation. If member_house_term_membership itself answers the question by linking the Member to the referenced term entity, that link expresses the term and needs no redundant during constraint. For member_office_holding, an 'on' date uses inclusive DateRange containment (StartDate <= date and EndDate >= date); a missing EndDate is open-ended. For debate_date, 'on' means the exact source date normalized to xsd:dateTime at midnight without a timezone. These fact-specific meanings do not generalize date-window, current, or other temporal translations."
   },
   "semanticVocabulary": {
@@ -266,6 +266,16 @@
         "allowedValues": [
           {"id": "dail", "label": "Dáil", "route": "dail"},
           {"id": "seanad", "label": "Seanad", "route": "seanad"}
+        ]
+      },
+      {
+        "id": "debate_body",
+        "description": "Filter a DebateRecord by the canonical body route of the one pinned Committee debate graph; this does not enable general Debate or transcript search.",
+        "facts": ["debate_identity"],
+        "valueKind": "string",
+        "operators": ["equals", "exists"],
+        "allowedValues": [
+          {"id": "committee-of-public-accounts", "label": "Committee of Public Accounts", "route": "committee_of_public_accounts"}
         ]
       }
     ]

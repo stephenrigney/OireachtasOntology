@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import math
 import re
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -43,6 +44,29 @@ Use only the supplied entity types, fact identifiers, filter identifiers/operato
 Use temporal constraints only for temporal meaning actually expressed by the question. A `during` period is either a referenced DailTerm/SeanadTerm entity or a start/end date window. Date values use ISO YYYY-MM-DD. Aggregation currently supports only `count`; its target and optional groupBy refer to participants in requirements. Do not infer local data facts or entity identity from the question.
 
 Return only the JSON object required by the strict response schema. Every optional field in that response shape is present as null when not applicable; nulls mean omission, not a semantic value."""
+
+PLANNER_PHASE2_GUIDANCE = """Existing supported Phase 2 patterns:
+- A Member's party affiliation or collection membership is `member_collection_membership`, with a ParliamentaryMemberCollection object. When a Dáil/Seanad term scopes that membership, attach `during` to this requirement. Do not describe this supported collection relation as unsupported party affiliation.
+- A Member's constituency/panel representation is `member_constituency_representation`; a term scopes that representation with `during` on the representation requirement. For “who represented [constituency] in [term]”, use a type-only Member subject, the named constituency object, and answer `entities` of type Member.
+- A Member start-date question for a named term uses `member_parliamentary_membership_start_date`, the named term as its object, and a `fact` answer. The requested value is the recorded membership start date; the object already identifies the term, so do not add a separate `during` constraint to this date fact.
+- Short committee codes use `committee_code` and a `fact` answer. Bill title/status facts are `bill_title`/`bill_status`; for a named Bill status or sponsor question, resolve the Bill mention and use the corresponding fact/relation. For a Bill list, request `bill_title` as well as any year/status facts, using type-only Bill subjects and separate supported filters; do not invent lifecycle facts. A Bill sponsor question is directed Bill -> Member, while “which Bills did [Member] sponsor” is Bill -> named Member.
+- Questions asking who held a named office on a date use `member_office_holding`, a type-only Member subject, an exact registered-office filter, an `on` date constraint on that requirement, and an `entities` Member answer.
+- A Debate is not a named entity that can be resolved from a human-readable debate title. Use a type-only DebateRecord participant, the supported exact `debate_date`, and an explicit Dáil/Seanad `debate_chamber` filter or an exact controlled `debate_body` value when supplied. Supported Debate lookup answers return DebateRecord entities; do not turn a date/chamber lookup into a Boolean, and do not add DebateRecord entity mentions.
+- A question asking for the set of Members sharing a supplied name must retain that exact name as a typed Member entity mention so the local set-valued identity safety check can reject singular binding. Do not replace it only with a `member_name` filter or pick one same-name Member.
+
+For `fact`, `list`, or `label` answers, `answerShape.target` must refer to the requirement that supplies the value. Use these stable requirement IDs for these value facts: `member_full_name` -> `name`; `member_parliamentary_membership_start_date` -> `start`; `member_parliamentary_membership_end_date` -> `end`; `committee_code` -> `code`; `bill_title` -> `title`; `bill_status` -> `status`. These IDs are references, not semantic facts."""
+
+PLANNER_UNSUPPORTED_REQUEST_GUIDANCE = """If the question requests information or a relationship absent from the controlled semantic facts, do not substitute a nearby supported fact (for example, sponsorship for voting, or Debate identity/date for transcript speech). If the requested target is unsupported, state that clearly in `intent`; the local planner rejects an intent that explicitly says the requested target is not represented by the available semantic facts instead of executing the rest of that draft."""
+
+
+_CANONICAL_ANSWER_REQUIREMENT_IDS = {
+    "member_full_name": "name",
+    "member_parliamentary_membership_start_date": "start",
+    "member_parliamentary_membership_end_date": "end",
+    "committee_code": "code",
+    "bill_title": "title",
+    "bill_status": "status",
+}
 
 
 class PlannerModelError(RuntimeError):
@@ -165,6 +189,8 @@ def build_planner_instructions(contract: dict[str, Any] | None = None) -> str:
         + "\n\nControlled filter fields:\n" + filters
         + "\n\nTemporal kinds: on, before, after, during, interval, current."
         + "\nAggregation operation: count."
+        + "\n\n" + PLANNER_PHASE2_GUIDANCE
+        + "\n\n" + PLANNER_UNSUPPORTED_REQUEST_GUIDANCE
         + ("\n\nAnswer shape meanings:\n" + answer_shapes if answer_shapes else "")
         + ("\n\n" + "\n".join(guidance) if guidance else "")
     )
@@ -550,6 +576,110 @@ def _drop_null_fields(value: dict[str, Any]) -> dict[str, Any]:
     return {key: child for key, child in value.items() if child is not None}
 
 
+def _preserve_set_valued_member_mention(draft: dict[str, Any], question: str) -> None:
+    """Reify a model-produced Member-name filter as a mention for set safety.
+
+    Some drafts express “which Members named X” as a name filter plus a
+    type-only Member role. When X is an exact user mention and the question is
+    set-valued, retain that name as an entity mention so the existing
+    non-executable set-valued identity outcome runs before local resolution.
+    """
+    mentions = [
+        item for item in draft["entities"]
+        if item["type"] == "Member"
+    ]
+    for filter_ in draft["filters"]:
+        label = filter_.get("value")
+        if (
+            filter_.get("field") != "member_name"
+            or not isinstance(label, str)
+            or _label_position(question, label) is None
+            or not is_set_valued_member_reference(question, label)
+        ):
+            continue
+        if any(
+            unicodedata.normalize("NFC", mention["label"]).casefold()
+            == unicodedata.normalize("NFC", label).casefold()
+            for mention in mentions
+        ):
+            continue
+        requirement_id = filter_.get("requirement")
+        requirement_ids = {item["id"] for item in draft["requirements"]}
+        if requirement_id not in requirement_ids:
+            continue
+        entity_id = "set_valued_member"
+        suffix = 2
+        used_ids = {item["id"] for item in draft["entities"]}
+        while entity_id in used_ids:
+            entity_id = f"set_valued_member_{suffix}"
+            suffix += 1
+        draft["entities"].append({"id": entity_id, "type": "Member", "label": label})
+        # Type-only participants of a type share one semantic role in schema
+        # v1. Replace that role consistently; no IRI is chosen or queried.
+        for requirement in draft["requirements"]:
+            for position in ("subject", "object"):
+                participant = requirement.get(position)
+                if participant == {"type": "Member"}:
+                    requirement[position] = {"entity": entity_id}
+        return
+
+
+def _canonicalise_answer_requirement_id(draft: dict[str, Any]) -> None:
+    """Give supported scalar answer requirements stable opaque reference IDs."""
+    answer = draft["answerShape"]
+    if answer.get("kind") not in {"fact", "list", "label"}:
+        return
+    old_id = answer.get("target")
+    requirement = next(
+        (item for item in draft["requirements"] if item["id"] == old_id), None,
+    )
+    if requirement is None:
+        return
+    canonical_id = _CANONICAL_ANSWER_REQUIREMENT_IDS.get(requirement["fact"])
+    if canonical_id is None or canonical_id == old_id:
+        return
+    if any(
+        item is not requirement and item["id"] == canonical_id
+        for item in draft["requirements"]
+    ):
+        return
+
+    requirement["id"] = canonical_id
+    for filter_ in draft["filters"]:
+        if filter_.get("requirement") == old_id:
+            filter_["requirement"] = canonical_id
+    for constraint in draft["temporalConstraints"]:
+        if constraint.get("target") == old_id:
+            constraint["target"] = canonical_id
+    aggregation = draft.get("aggregation")
+    if aggregation is not None:
+        references = [aggregation["target"], *aggregation["groupBy"]]
+        for reference in references:
+            if reference.get("requirement") == old_id:
+                reference["requirement"] = canonical_id
+    answer["target"] = canonical_id
+
+
+_UNSUPPORTED_INTENT_CLAIM_PATTERNS = (
+    re.compile(
+        r"\bnot\s+(?:represented|supported)\s+by\s+the\s+"
+        r"(?:available|supplied)\s+semantic\s+(?:facts|vocabulary)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(r"\bno\s+supported\s+query\s+can\s+(?:answer|represent)\b", re.IGNORECASE),
+)
+
+
+def _reject_self_declared_unsupported_intent(draft: dict[str, Any]) -> None:
+    """Do not execute a draft whose interpretation admits its target is unsupported."""
+    intent = draft["intent"]
+    if any(pattern.search(intent) for pattern in _UNSUPPORTED_INTENT_CLAIM_PATTERNS):
+        raise DraftSemanticError(
+            "draft intent states that the requested information is not represented "
+            "by the available semantic facts"
+        )
+
+
 def normalise_draft_output(draft: Any) -> dict[str, Any]:
     """Convert strict JSON's required null slots to the canonical draft shape."""
     _reject_model_ir_is(draft)
@@ -727,6 +857,9 @@ class StructuredPlanner:
 
         try:
             draft = normalise_draft_output(parsed)
+            _preserve_set_valued_member_mention(draft, question)
+            _canonicalise_answer_requirement_id(draft)
+            _reject_self_declared_unsupported_intent(draft)
             for index, entity in enumerate(draft["entities"]):
                 if _label_position(question, entity["label"]) is None:
                     raise DraftSemanticError(
@@ -743,22 +876,6 @@ class StructuredPlanner:
                 "invalid_draft_semantics", failure_stage="draft_validation",
                 failure_class="invalid_draft_semantics", diagnostic=str(error),
                 debug_output=format_debug_text(output),
-            )
-
-        provisional = _provisional_plan(draft, self.contract)
-        try:
-            validate_query_plan(provisional, contract=self.contract)
-        except QueryPlanContractError as error:
-            if _unsupported_contract_vocabulary(error):
-                return PlannerResult(
-                    "unsupported_vocabulary", draft_plan=draft,
-                    failure_stage="draft_validation", failure_class="unsupported_vocabulary",
-                    diagnostic=str(error), debug_output=format_debug_text(output),
-                )
-            return PlannerResult(
-                "invalid_draft_semantics", draft_plan=draft,
-                failure_stage="draft_validation", failure_class="invalid_draft_semantics",
-                diagnostic=str(error), debug_output=format_debug_text(output),
             )
 
         set_valued_members = [
@@ -778,6 +895,22 @@ class StructuredPlanner:
                     f"for named Member reference(s) {labels}; no singular local Member "
                     "IRI was selected."
                 ),
+            )
+
+        provisional = _provisional_plan(draft, self.contract)
+        try:
+            validate_query_plan(provisional, contract=self.contract)
+        except QueryPlanContractError as error:
+            if _unsupported_contract_vocabulary(error):
+                return PlannerResult(
+                    "unsupported_vocabulary", draft_plan=draft,
+                    failure_stage="draft_validation", failure_class="unsupported_vocabulary",
+                    diagnostic=str(error), debug_output=format_debug_text(output),
+                )
+            return PlannerResult(
+                "invalid_draft_semantics", draft_plan=draft,
+                failure_stage="draft_validation", failure_class="invalid_draft_semantics",
+                diagnostic=str(error), debug_output=format_debug_text(output),
             )
 
         resolved_entities = []
