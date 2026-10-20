@@ -831,6 +831,30 @@ remains; and the planner has no repair/retry loop. Broader source selection,
 federation, and external querying remain deferred. Details and benchmark
 provenance are in the final report linked above.
 
+### Delivery constraints carried forward from Phase 2
+
+Phase 2 showed that the structured-query architecture could be delivered reliably
+once work stayed focused on measured failures; most delay came from adjacent
+data/bootstrap and integration work rather than the planner/compiler design
+itself. For Phases 3 and 4:
+
+- define the phase exit criterion before implementation and stop when it is met;
+- keep each phase to a thin vertical slice: Phase 3 proves source selection and
+  provenance without external execution; Phase 4 begins with one controlled
+  mixed-source path;
+- treat data-quality, ETL and infrastructure work as separate prerequisites
+  unless they genuinely block the slice;
+- reuse accepted datasets and evidence for development and benchmarks instead of
+  replaying production-grade acceptance;
+- let agents resolve mechanical implementation problems without new human gates
+  unless semantics, authority, safety or irreversible choices are involved;
+- keep branches and worktrees short-lived and integrate bounded tranches
+  regularly;
+- put each usable slice into the existing UI early, and use benchmark or user
+  evidence to decide what to generalise next; and
+- carry bounded residual limitations forward rather than delaying phase exit for
+  perfection.
+
 ## 9. Phase 3 — Source selection and provenance
 
 ### Outcome

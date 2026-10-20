@@ -304,6 +304,20 @@ Phase 2:
 - Planner/model variability remains; no repair/retry loop was added.
 - Broader source selection, federation, and external querying remain deferred.
 
+### Delivery retrospective
+
+Phase 2 took longer than the core structured-query change warranted. The
+principal delay came from adjacent work needed to make evaluation reproducible:
+Bills/data-surface corrections, bootstrap and capture-state recovery, benchmark
+setup, and later branch integration. The planner → resolver → compiler
+architecture itself did not require repeated redesign. The delivery lesson for
+later phases is to isolate adjacent prerequisites unless they genuinely block
+the phase, reuse accepted evidence cheaply, keep implementation branches
+short-lived, put a thin usable slice in the UI earlier, and fix measured failure
+classes rather than broadening scope. Once predefined exit criteria are met,
+bounded residual limitations should be carried forward rather than holding the
+phase open.
+
 Phase 3 therefore begins from this accepted Phase 2 state. Its existing
 source-selection and provenance boundary is the next architectural area, rather
 than further Phase 2 local-query work; this close-out does not design or
