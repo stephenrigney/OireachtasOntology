@@ -20,6 +20,11 @@ The Houses of the Oireachtas ontology attempts to describe the business processe
 
 The ontology is being developed using the [web ontology language (OWL)](http://www.w3.org/TR/owl-features/) and reuses other ontology schema wherever possible. The Oireachtas ontology extensively reuses the [European Legislative Identifier (ELI)](http://publications.europa.eu/mdr/eli/documentation/) ontology and its draft-legislation extension [ELI-DL](http://data.europa.eu/eli/eli-draft-legislation-ontology), as well as the [Akoma Ntoso](http://www.akomantoso.org/) schema, all of which were designed for legislation and the legislative process.
 
+For a practical explanation of the implemented classes, identity and temporal
+relationships, start with the [Ontology Guide](documentation/ontology-guide.md).
+Learn direct graph queries in the [SPARQL Query Cookbook](documentation/sparql-cookbook.md)
+and connect to local Fuseki using the [Direct Graph Exploration Guide](documentation/direct-graph-exploration.md).
+
 It is envisaged that the ontology will ultimately describe the following datasets from the Houses of the Oireachtas:
 - Bills and other legislation, including motions and amendments
 - Sub-units of the Houses of the Oireachtas, such as the Dáil, the Seanad and committees
