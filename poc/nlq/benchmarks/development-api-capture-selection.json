@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "status": "accepted-complete-api-captures",
+  "purpose": "Pin the successful complete API captures used by the non-authoritative Query Service development bootstrap without requiring a Core State snapshot.",
+  "constraints": [
+    "This selection records existing capture evidence; it is not an authoritative source inventory, production-ingestion instruction, or permission to acquire data.",
+    "Every selected raw page must retain its pinned run ID, official endpoint, successful response status, pagination parameters, and SHA-256 body digest.",
+    "The bootstrap independently validates complete pagination, advertised record counts, source-record identity, and the committed page-hash manifest before transformation."
+  ],
+  "captures": [
+    {
+      "endpoint": "houses",
+      "run_id": "896630a4-9389-4a8f-bf58-65c16a05425c",
+      "source_url": "https://api.oireachtas.ie/v1/houses",
+      "record_count": 68,
+      "page_limit": 100,
+      "page_hash_manifest_sha256": "2972b874f4bad95ba2fe57a45ab03259e8aa65c89e4028a76a77810d48b59a0b"
+    },
+    {
+      "endpoint": "parties",
+      "run_id": "91255248-e348-4d60-a8d6-73a26df49f8b",
+      "source_url": "https://api.oireachtas.ie/v1/parties",
+      "record_count": 11,
+      "page_limit": 100,
+      "page_hash_manifest_sha256": "da3c75a14d45989bbe630a760e5915f2bef0c2b59427ff349673a981d74e418b"
+    },
+    {
+      "endpoint": "constituencies",
+      "run_id": "e6a472b1-b6e0-4e02-8304-9e6cfa73c44d",
+      "source_url": "https://api.oireachtas.ie/v1/constituencies",
+      "record_count": 8,
+      "page_limit": 100,
+      "page_hash_manifest_sha256": "1ceff7d3b4d65f0e4974e99d6f05f5f191f01f177885962450247394f4ee9aa7"
+    },
+    {
+      "endpoint": "members",
+      "run_id": "d2c089d0-5203-40f1-97b8-ae0d8285e74d",
+      "source_url": "https://api.oireachtas.ie/v1/members",
+      "record_count": 1928,
+      "page_limit": 100,
+      "page_hash_manifest_sha256": "cdd441759d0eeb3e838c1db59fe233bf239fd21c2aaddab8eb717eb2a2067f73"
+    },
+    {
+      "endpoint": "legislation",
+      "run_id": "7bab00fc-4637-463e-a42e-fdb7ce626439",
+      "source_url": "https://api.oireachtas.ie/v1/legislation",
+      "record_count": 6048,
+      "page_limit": 100,
+      "page_hash_manifest_sha256": "8ee2f268e7bb1e29cba424813c18ffb0d6cf70449f9c8a5666e02fdec33cba6e"
+    }
+  ]
+}

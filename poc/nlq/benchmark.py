@@ -20,7 +20,8 @@ DEFAULT_BENCHMARK_PATH = (
     Path(__file__).resolve().parent / "benchmarks" / "benchmark-v3.json"
 )
 GRAPH_FAMILIES = {
-    "houses", "parties", "constituencies", "committees", "members", "bills", "debates",
+    "houses", "parties", "constituencies", "committees", "members", "bills",
+    "member-records", "bill-records", "debates", "offices", "administrative-units",
 }
 CATEGORIES = {
     "simple_lookup",
@@ -33,6 +34,9 @@ CATEGORIES = {
     "joins",
     "ambiguous_names",
     "unsupported_requests",
+    "bills",
+    "offices",
+    "debates",
 }
 SUPPORT_EXPECTATIONS = {"supported", "ambiguous", "unsupported", "unavailable"}
 FAILURE_CLASSES = {
@@ -210,6 +214,11 @@ def _validate_case(case: Any, index: int) -> None:
             _require(set(unavailable_if) == {"kind", "iri"}
                      and isinstance(unavailable_if["iri"], str),
                      f"{where}.unavailable_if quarantined_resource is invalid")
+        elif unavailable_if.get("kind") == "resource_not_in_development_slice":
+            _require(set(unavailable_if) == {"kind", "iri"}
+                     and isinstance(unavailable_if["iri"], str)
+                     and unavailable_if["iri"].startswith("https://"),
+                     f"{where}.unavailable_if resource_not_in_development_slice is invalid")
         elif unavailable_if.get("kind") == "missing_graph_family":
             _require(set(unavailable_if) == {"kind", "graph_family"}
                      and unavailable_if["graph_family"] in GRAPH_FAMILIES,
@@ -243,7 +252,9 @@ def load_benchmark(path: str | Path = DEFAULT_BENCHMARK_PATH) -> dict:
     except (OSError, json.JSONDecodeError) as error:
         raise BenchmarkFormatError(f"could not read benchmark JSON: {error}") from error
     _require(isinstance(document, dict), "benchmark document must be an object")
-    _require(set(document) == {"schema_version", "benchmark_id", "benchmark_version", "cases"},
+    required_root = {"schema_version", "benchmark_id", "benchmark_version", "cases"}
+    _require(required_root <= set(document)
+             and not (set(document) - (required_root | {"dataset_evidence"})),
              "benchmark document has missing or unknown top-level fields")
     _require(document["schema_version"] == BENCHMARK_SCHEMA_VERSION,
              f"unsupported benchmark schema_version {document['schema_version']!r}")
@@ -251,6 +262,15 @@ def load_benchmark(path: str | Path = DEFAULT_BENCHMARK_PATH) -> dict:
              "benchmark_id must be a non-empty string")
     _require(isinstance(document["benchmark_version"], str) and document["benchmark_version"],
              "benchmark_version must be a non-empty string")
+    if "dataset_evidence" in document:
+        evidence = document["dataset_evidence"]
+        _require(isinstance(evidence, dict)
+                 and set(evidence) == {"path", "dataset_id", "status"}
+                 and isinstance(evidence["path"], str) and evidence["path"]
+                 and isinstance(evidence["dataset_id"], str)
+                 and evidence["dataset_id"].startswith("sha256:")
+                 and isinstance(evidence["status"], str) and evidence["status"],
+                 "dataset_evidence must identify a schema-version-1 dataset")
     _require(isinstance(document["cases"], list) and document["cases"],
              "benchmark cases must be a non-empty list")
     _require(30 <= len(document["cases"]) <= 50,
@@ -331,26 +351,71 @@ def score_semantic_result(expected: dict, actual: QueryResult) -> SemanticScore:
 
 
 def _baseline_family_counts(baseline: dict) -> dict[str, int]:
-    counts = baseline.get("rdf_resource_counts", {})
+    resource_counts = baseline.get("rdf_resource_counts", {})
+    if not isinstance(resource_counts, dict):
+        resource_counts = {}
+    office_evidence = baseline.get("office_registry_evidence", {})
+    if not isinstance(office_evidence, dict):
+        office_evidence = {}
+
+    loaded: dict[str, int] = {}
+    for family in baseline.get("graph_families_loaded", []):
+        if not isinstance(family, dict) or not isinstance(family.get("name"), str):
+            continue
+        graph_count = family.get("graph_count", 0)
+        if type(graph_count) is int and graph_count > 0:
+            loaded[family["name"]] = graph_count
+
+    def count(
+        resource_key: str,
+        family_names: tuple[str, ...],
+        *,
+        evidence_key: str | None = None,
+    ) -> int:
+        value = resource_counts.get(resource_key)
+        if type(value) is int:
+            return value
+        if evidence_key is not None:
+            value = office_evidence.get(evidence_key)
+            if type(value) is int:
+                return value
+        return max((loaded.get(name, 0) for name in family_names), default=0)
+
+    bills = count("bills", ("bill-records", "bills"))
     return {
-        "houses": int(counts.get("house_terms", 0)),
-        "parties": int(counts.get("party_owner_identities", 0)),
-        "constituencies": int(counts.get("constituency_panel_owner_identities", 0)),
-        "committees": int(counts.get("committee_owner_identities", 0)),
-        "members": int(counts.get("members", 0)),
-        # Phase 0A's development bootstrap deliberately does not load Bills.
-        "bills": 0,
-        # Debates are likewise outside the Phase 0A NLQ bootstrap dataset.
-        "debates": 0,
+        "houses": count("house_terms", ("houses",)),
+        "parties": count("party_owner_identities", ("parties",)),
+        "constituencies": count(
+            "constituency_panel_owner_identities", ("constituencies",),
+        ),
+        "committees": count("committee_owner_identities", ("committees",)),
+        "members": count("members", ("members", "member-records")),
+        "member-records": count("members", ("members", "member-records")),
+        # `bills` remains a compatibility spelling used by earlier benchmark
+        # cases; the development baseline calls this family `bill-records`.
+        "bills": bills,
+        "bill-records": bills,
+        "debates": count("debates", ("debates",)),
+        "offices": count("offices", ("offices",), evidence_key="office_count"),
+        "administrative-units": count(
+            "administrative_units", ("administrative-units",),
+            evidence_key="administrative_unit_count",
+        ),
     }
 
 
 def _baseline_quarantined_iris(baseline: dict) -> set[str]:
-    return {
+    conflicted = {
         item.get("canonical_iri")
         for item in baseline.get("quarantined_conflicted_identities", [])
         if isinstance(item, dict) and isinstance(item.get("canonical_iri"), str)
     }
+    bill_quarantines = {
+        item.get("bill_uri")
+        for item in baseline.get("bill_source_quarantines", [])
+        if isinstance(item, dict) and isinstance(item.get("bill_uri"), str)
+    }
+    return conflicted | bill_quarantines
 
 
 def _baseline_unresolved_iris(baseline: dict) -> set[str]:
@@ -369,7 +434,17 @@ def _unavailable_condition(case: dict, baseline: dict) -> tuple[bool, str | None
     if kind == "missing_graph_family":
         family = condition["graph_family"]
         unavailable = _baseline_family_counts(baseline).get(family, 0) == 0
-        return unavailable, f"required graph family '{family}' is absent from the Phase 0A dataset baseline"
+        return unavailable, f"required graph family '{family}' is absent from the development dataset baseline"
+    if kind == "resource_not_in_development_slice":
+        iri = condition["iri"]
+        selection = baseline.get("debate_selection", {})
+        sources = selection.get("sources", []) if isinstance(selection, dict) else []
+        selected_iris = {
+            item.get("work_iri") for item in sources
+            if isinstance(item, dict) and isinstance(item.get("work_iri"), str)
+        }
+        unavailable = iri not in selected_iris
+        return unavailable, f"resource is not present in the pinned development-data slice: {iri}"
     iri = condition["iri"]
     unavailable = iri in (_baseline_quarantined_iris(baseline) | _baseline_unresolved_iris(baseline))
     return unavailable, f"required resource is quarantined or unresolved: {iri}"
@@ -382,7 +457,7 @@ def assess_dataset_prerequisites(
     fuseki,
     supported_predicates,
 ) -> CoverageAssessment:
-    """Use Phase 0A baseline metadata and curated probes before NLQ scoring."""
+    """Use development-baseline metadata and curated probes before NLQ scoring."""
     condition_met, condition_reason = _unavailable_condition(case, baseline)
     if condition_met:
         return CoverageAssessment("unavailable", condition_reason, "source_data_coverage")
@@ -399,6 +474,14 @@ def assess_dataset_prerequisites(
         item.get("name") for item in baseline.get("graph_families_loaded", [])
         if isinstance(item, dict)
     }
+    if "bill-records" in loaded_families:
+        loaded_families.add("bills")
+    if "bills" in loaded_families:
+        loaded_families.add("bill-records")
+    if "members" in loaded_families:
+        loaded_families.add("member-records")
+    if "member-records" in loaded_families:
+        loaded_families.add("members")
     for family in case["dataset_prerequisites"]["required_graph_families"]:
         if family not in loaded_families or family_counts.get(family, 0) == 0:
             return CoverageAssessment(
@@ -496,7 +579,7 @@ def run_cases(
     dataset = dataset_baseline.get("dataset")
     if (dataset_baseline.get("schema_version") != 1 or not isinstance(dataset, dict)
             or not isinstance(dataset.get("id"), str) or not dataset["id"].startswith("sha256:")):
-        raise ValueError("benchmark requires a valid Phase 0A dataset baseline JSON")
+        raise ValueError("benchmark requires a valid schema-version-1 development baseline JSON")
 
     from .schema import build_schema_context
     from .vocabulary import supported_predicates as load_supported_predicates
@@ -725,10 +808,10 @@ def run_cases(
 
 
 def dataset_association(baseline: dict, isolation: dict) -> dict:
-    """Preserve both Phase 0A capture identity and this disposable instance."""
+    """Preserve the development dataset identity and this disposable instance."""
     dataset = baseline.get("dataset")
     if baseline.get("schema_version") != 1 or not isinstance(dataset, dict):
-        raise ValueError("benchmark requires a valid Phase 0A dataset baseline JSON")
+        raise ValueError("benchmark requires a valid schema-version-1 development baseline JSON")
     return {
         "dataset_id": dataset.get("id"),
         "dataset_baseline_schema_version": baseline["schema_version"],

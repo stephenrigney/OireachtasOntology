@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 from pathlib import Path
 
-from poc.nlq.plan_benchmark import run_phase1_comparison, run_plan_cases, summarize_plan_results
+from poc.nlq.plan_benchmark import (
+    run_phase1_comparison,
+    run_plan_cases,
+    summarize_plan_results,
+)
+from poc.nlq.planner_benchmark import _semantic_mismatches
 from poc.nlq.results import QueryResult
 from poc.nlq.structured_planner import PlannerResult
 from poc.nlq.vocabulary import supported_predicates
@@ -15,6 +21,27 @@ ROOT = Path(__file__).resolve().parents[1]
 PREDICATES = supported_predicates(ROOT / "ontology")
 MEMBER = "https://data.oireachtas.ie/ie/oireachtas/member/id/Timmy-Dooley.S.2002-09-12"
 TERM = "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+
+
+def test_realistic_runner_defaults_to_the_pinned_37_case_pair():
+    spec = importlib.util.spec_from_file_location(
+        "run_nlq_plan_benchmark", ROOT / "scripts/run-nlq-plan-benchmark.py",
+    )
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+    args = runner._args([])
+    source = runner.load_benchmark(args.source_benchmark)
+    planner = runner.load_planner_benchmark(args.benchmark)
+
+    assert args.source_benchmark.name == "realistic-phase2-v1.json"
+    assert args.benchmark.name == "realistic-phase2-planner-v1.json"
+    assert source["dataset_evidence"]["dataset_id"] == (
+        "sha256:9da63abc5878387f991e4d4717f35cca67606850db34be589e0a8fc0cc1504e2"
+    )
+    assert len(source["cases"]) == len(planner["cases"]) == 37
+    assert set(runner.EXPECTED_RDF_RESOURCE_COUNTS) <= set(
+        runner.RESOURCE_COUNT_QUERIES
+    )
 
 
 def _entity(entity_id, entity_type, iri, label):
@@ -467,6 +494,128 @@ def test_missing_result_label_is_source_coverage_not_a_generator_failure():
     assert result["evaluation"] == "not_scored"
     assert result["failure_stage"] == "source_data_coverage"
     assert result["failure_class"] == "source_data_coverage"
+
+
+def test_required_filter_semantics_check_value_and_requirement_fact():
+    plan = _name_plan()
+    plan["filters"] = [{
+        "requirement": "name", "field": "bill_year", "operator": "equals", "value": 2024,
+    }]
+    expectation = {
+        "required_filters": [{
+            "field": "bill_year", "operator": "equals", "value": 2024,
+            "requirement_fact": "member_full_name",
+        }],
+    }
+
+    assert _semantic_mismatches(plan, expectation) == []
+
+    plan["filters"][0]["value"] = 2025
+    assert _semantic_mismatches(plan, expectation) == [
+        "missing filter bill_year equals 2024",
+    ]
+
+
+def test_on_temporal_constraint_mismatch_reports_date_without_a_period_entity():
+    plan = _name_plan()
+    plan["temporalConstraints"] = [{
+        "target": "name", "kind": "on", "date": "2024-01-01",
+    }]
+    expectation = {
+        "required_temporal_constraints": [{
+            "kind": "on", "target_fact": "member_full_name", "date": "2025-01-01",
+        }],
+    }
+
+    assert _semantic_mismatches(plan, expectation) == [
+        "missing on temporal constraint on member_full_name for 2025-01-01",
+    ]
+
+
+def test_expected_fail_closed_planner_rejection_requires_listed_failure_class():
+    planner_case = {
+        "id": "plan.unsupported", "source_case_id": "source.name",
+        "expectation": "fail_closed",
+        "expected_failure_classes": ["unsupported_vocabulary"],
+    }
+    planner_benchmark, source_benchmark = _benchmark(case=planner_case)
+    result = PlannerResult(
+        "unsupported_vocabulary", failure_stage="draft_validation",
+        failure_class="unsupported_vocabulary", diagnostic="The requested relation is unsupported.",
+    )
+
+    outcome, = run_plan_cases(
+        planner_benchmark, source_benchmark, _baseline(),
+        fuseki=_QueryFuseki([]), supported_predicates=PREDICATES,
+        planner_factory=lambda _case, _fuseki: _FixedPlanner(result),
+    )
+
+    assert outcome["evaluation"] == "passed"
+    assert outcome["observed_outcome"] == "expected_fail_closed"
+    assert outcome["expected_outcome_evidence"]["failure_class"] == "unsupported_vocabulary"
+    assert outcome["stage_status"]["plan_validation"] == "blocked_expected"
+    assert outcome["final_pass"] is True
+    assert outcome["failure_classification"] is None
+    assert summarize_plan_results([outcome])["expected_fail_closed"] == 1
+
+    planner_case["expected_failure_classes"] = ["invalid_draft_semantics"]
+    unexpected, = run_plan_cases(
+        planner_benchmark, source_benchmark, _baseline(),
+        fuseki=_QueryFuseki([]), supported_predicates=PREDICATES,
+        planner_factory=lambda _case, _fuseki: _FixedPlanner(result),
+    )
+    assert unexpected["evaluation"] == "failed"
+    assert unexpected["failure_class"] == "unsupported_vocabulary"
+    assert unexpected["passed"] is False
+
+
+def test_executable_plan_for_fail_closed_case_is_a_failure_before_generation():
+    planner_case = {
+        "id": "plan.unsupported", "source_case_id": "source.name",
+        "expectation": "fail_closed",
+        "expected_failure_classes": ["unsupported_vocabulary", "invalid_draft_semantics"],
+    }
+    planner_benchmark, source_benchmark = _benchmark(case=planner_case)
+    outcome, = run_plan_cases(
+        planner_benchmark, source_benchmark, _baseline(),
+        fuseki=_QueryFuseki([]), supported_predicates=PREDICATES,
+        planner_factory=lambda _case, _fuseki: _FixedPlanner(
+            PlannerResult("validated_plan", plan=_name_plan()),
+        ),
+    )
+
+    assert outcome["evaluation"] == "failed"
+    assert outcome["observed_outcome"] == "unsupported_request_accepted_as_executable_plan"
+    assert outcome["failure_class"] == "question_interpretation"
+    assert outcome["generation_result"] is None
+    assert outcome["stage_status"]["generation"] == "not_run"
+    assert outcome["final_pass"] is False
+
+
+def test_expected_unsupported_temporal_translation_is_scored_as_fail_closed():
+    from poc.nlq.plan_contract import validate_query_plan
+
+    planner_case = {
+        "id": "plan.unsupported-temporal", "source_case_id": "source.name",
+        "expectation": "fail_closed",
+        "expected_failure_classes": ["unsupported_temporal_translation"],
+    }
+    planner_benchmark, source_benchmark = _benchmark(case=planner_case)
+    plan = _name_plan()
+    plan["temporalConstraints"] = [{"target": "name", "kind": "current"}]
+    result = PlannerResult("validated_plan", plan=validate_query_plan(plan))
+
+    outcome, = run_plan_cases(
+        planner_benchmark, source_benchmark, _baseline(),
+        fuseki=_QueryFuseki([]), supported_predicates=PREDICATES,
+        planner_factory=lambda _case, _fuseki: _FixedPlanner(result),
+    )
+
+    assert outcome["evaluation"] == "passed"
+    assert outcome["observed_outcome"] == "expected_fail_closed"
+    assert outcome["generation_result"]["failure_class"] == "unsupported_temporal_translation"
+    assert outcome["stage_status"]["generation"] == "blocked_expected"
+    assert outcome["stage_status"]["execution"] == "not_run"
 
 
 def test_phase1_comparison_uses_only_same_question_oracles(monkeypatch):

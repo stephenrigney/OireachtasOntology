@@ -35,7 +35,10 @@ def _args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--benchmark", type=Path, default=DEFAULT_BENCHMARK_PATH)
     parser.add_argument("--results", type=Path)
     parser.add_argument("--raw-dir", type=Path)
-    parser.add_argument("--state-db", type=Path)
+    parser.add_argument(
+        "--state-db", type=Path,
+        help="optional path protected from baseline-output overwrite; not read for capture selection",
+    )
     parser.add_argument("--docker", default="docker")
     parser.add_argument("--fuseki-image", default="stain/jena-fuseki:5.1.0")
     parser.add_argument("--uv", default="uv")

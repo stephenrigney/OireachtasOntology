@@ -263,3 +263,148 @@ def load_latest_development_capture(raw_root: Path, state_db: Path,
         raise ValueError(f"cannot read existing Core State capture index: {error}") from error
     finally:
         connection.close()
+
+
+def load_pinned_development_capture(raw_root: Path, selection: dict
+                                    ) -> tuple[list[dict], dict]:
+    """Load one committed development capture pin without consulting Core State.
+
+    The selection pin records the complete successful run already accepted for
+    non-authoritative development use. Raw-page hashes, pagination, advertised
+    totals, endpoint identity, and record identity are still checked locally;
+    this path cannot mark or publish a Core State run.
+    """
+    required = {
+        "endpoint", "run_id", "source_url", "record_count", "page_limit",
+        "page_hash_manifest_sha256",
+    }
+    if not isinstance(selection, dict) or set(selection) != required:
+        raise ValueError("pinned development API capture has missing or unknown fields")
+    endpoint = selection["endpoint"]
+    if not isinstance(endpoint, str) or endpoint not in COUNT_FIELDS:
+        raise ValueError(f"unsupported pinned development API endpoint: {endpoint!r}")
+    run_id = selection["run_id"]
+    if (not isinstance(run_id, str)
+            or re.fullmatch(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", run_id)
+            is None):
+        raise ValueError("pinned development API run_id must be a lowercase UUID")
+    expected_url = f"https://api.oireachtas.ie/v1/{endpoint}"
+    if selection["source_url"] != expected_url:
+        raise ValueError(
+            f"pinned {endpoint} capture must use the accepted official endpoint {expected_url}"
+        )
+    advertised_count = selection["record_count"]
+    page_limit = selection["page_limit"]
+    if type(advertised_count) is not int or advertised_count < 0:
+        raise ValueError("pinned development API record_count must be a non-negative integer")
+    if type(page_limit) is not int or page_limit < 1:
+        raise ValueError("pinned development API page_limit must be a positive integer")
+    expected_page_manifest = selection["page_hash_manifest_sha256"]
+    if (not isinstance(expected_page_manifest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", expected_page_manifest) is None):
+        raise ValueError("pinned development API page-hash manifest digest is invalid")
+
+    matches = sorted(Path(raw_root).expanduser().glob(
+        f"{endpoint}/*/run-{run_id}"))
+    if len(matches) != 1:
+        raise ValueError(
+            f"expected exactly one preserved {endpoint} capture for pinned run "
+            f"{run_id}; found {len(matches)}"
+        )
+    directory = matches[0]
+    records, actual_count = load_complete_capture(directory, endpoint)
+    if actual_count != advertised_count:
+        raise ValueError(
+            f"pinned {endpoint} capture contains {actual_count} records, "
+            f"not its accepted {advertised_count}"
+        )
+
+    raw_pages = sorted(
+        path for path in directory.glob("skip-*.json")
+        if not path.name.endswith(".meta.json")
+    )
+    metadata_pages = sorted(directory.glob("skip-*.meta.json"))
+    expected_metadata = {
+        path.with_name(path.name.removesuffix(".json") + ".meta.json")
+        for path in raw_pages
+    }
+    if set(metadata_pages) != expected_metadata:
+        raise ValueError(f"pinned {endpoint} capture has missing or orphan page metadata")
+
+    page_hashes = []
+    for meta_path in metadata_pages:
+        raw_path = meta_path.with_name(meta_path.name.removesuffix(".meta.json") + ".json")
+        try:
+            metadata = json.loads(meta_path.read_text(encoding="utf-8"))
+            body = raw_path.read_bytes()
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            raise ValueError(f"invalid pinned {endpoint} raw page {raw_path}: {error}") from error
+        if not isinstance(metadata, dict):
+            raise ValueError(f"pinned {endpoint} raw page metadata must be an object: {meta_path}")
+        params = metadata.get("params")
+        if (metadata.get("run_id") != run_id or metadata.get("status") != 200
+                or metadata.get("endpoint") != expected_url
+                or not isinstance(params, dict)
+                or type(params.get("skip")) is not int
+                or type(params.get("limit")) is not int
+                or params["limit"] != page_limit
+                or metadata.get("sha256") != hashlib.sha256(body).hexdigest()):
+            raise ValueError(f"pinned {endpoint} raw page metadata differs from its accepted evidence: {raw_path}")
+        page_hashes.append({"skip": params["skip"], "sha256": metadata["sha256"]})
+
+    page_manifest = hashlib.sha256(json.dumps(
+        page_hashes, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")).hexdigest()
+    if page_manifest != expected_page_manifest:
+        raise ValueError(f"pinned {endpoint} raw page hashes differ from the committed selection")
+
+    return records, {
+        "run_id": run_id,
+        "advertised_count": actual_count,
+        "capture_directory": str(directory),
+        "parameters": {
+            "source": "api", "api_url": expected_url, "limit": page_limit,
+        },
+        "page_hashes": page_hashes,
+    }
+
+
+def load_pinned_development_captures(
+        raw_root: Path, selection_path: Path) -> dict[str, tuple[list[dict], dict]]:
+    """Load every API capture selected by the committed development evidence."""
+    try:
+        document = json.loads(Path(selection_path).read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"could not read pinned development API capture selection: {error}") from error
+    if (not isinstance(document, dict)
+            or set(document) != {"schema_version", "status", "purpose", "constraints", "captures"}
+            or type(document.get("schema_version")) is not int
+            or document["schema_version"] != 1
+            or document.get("status") != "accepted-complete-api-captures"
+            or not isinstance(document.get("purpose"), str)
+            or not document["purpose"].strip()
+            or not isinstance(document.get("constraints"), list)
+            or not document["constraints"]
+            or any(not isinstance(item, str) or not item.strip()
+                   for item in document["constraints"])):
+        raise ValueError("pinned development API capture selection has an unsupported shape")
+    selected = document["captures"]
+    if not isinstance(selected, list):
+        raise ValueError("pinned development API captures must be an array")
+    if len(selected) != len(COUNT_FIELDS) or any(
+            not isinstance(item, dict) for item in selected):
+        raise ValueError(
+            "pinned development API capture selection must contain each supported endpoint once"
+        )
+    endpoints = [item.get("endpoint") for item in selected]
+    if any(not isinstance(endpoint, str) for endpoint in endpoints) or \
+            set(endpoints) != set(COUNT_FIELDS):
+        raise ValueError(
+            "pinned development API capture selection must contain each supported endpoint once"
+        )
+    if len(endpoints) != len(set(endpoints)):
+        raise ValueError("pinned development API capture endpoints must be unique")
+    return {
+        item["endpoint"]: load_pinned_development_capture(raw_root, item)
+        for item in selected
+    }

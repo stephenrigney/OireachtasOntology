@@ -9,7 +9,9 @@ import pytest
 from oireachtas_etl.raw_captures import (load_complete_capture,
                                          load_latest_complete_capture,
                                          load_authoritative_capture,
-                                         load_latest_development_capture)
+                                         load_latest_development_capture,
+                                         load_pinned_development_capture,
+                                         load_pinned_development_captures)
 from oireachtas_etl.state import CoreStateStore
 
 
@@ -206,6 +208,82 @@ def test_development_selector_loads_successful_complete_legislation_read_only(
         "skip": 0, "sha256": page_meta["sha256"],
     }]
     assert before == after
+
+
+def test_pinned_development_capture_uses_page_evidence_without_a_state_database(tmp_path):
+    raw_root = tmp_path / "raw"
+    directory = raw_root / "parties" / "2026-10-12" / f"run-{RUN}"
+    directory.mkdir(parents=True)
+    record = {"party": {"uri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/35/P1"}}
+    _page(directory, skip=0, limit=2, records=[record], total=1)
+    metadata = json.loads((directory / "skip-000000.meta.json").read_text())
+    selected = {
+        "endpoint": "parties",
+        "run_id": RUN,
+        "source_url": "https://api.oireachtas.ie/v1/parties",
+        "record_count": 1,
+        "page_limit": 2,
+        "page_hash_manifest_sha256": hashlib.sha256(json.dumps(
+            [{"skip": 0, "sha256": metadata["sha256"]}],
+            ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+        ).encode("utf-8")).hexdigest(),
+    }
+
+    loaded, evidence = load_pinned_development_capture(raw_root, selected)
+
+    assert loaded == [record]
+    assert evidence["run_id"] == RUN
+    assert evidence["advertised_count"] == 1
+    assert evidence["parameters"] == {
+        "source": "api", "api_url": "https://api.oireachtas.ie/v1/parties", "limit": 2,
+    }
+    selected["page_hash_manifest_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="differ from the committed selection"):
+        load_pinned_development_capture(raw_root, selected)
+
+
+def test_committed_development_api_selection_pins_the_accepted_bills_run():
+    path = ROOT / "poc/nlq/benchmarks/development-api-capture-selection.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    assert document["schema_version"] == 1
+    assert document["status"] == "accepted-complete-api-captures"
+    selected = {item["endpoint"]: item for item in document["captures"]}
+    assert set(selected) == {"houses", "parties", "constituencies", "members", "legislation"}
+    assert {endpoint: (item["run_id"], item["record_count"])
+            for endpoint, item in selected.items()} == {
+        "houses": ("896630a4-9389-4a8f-bf58-65c16a05425c", 68),
+        "parties": ("91255248-e348-4d60-a8d6-73a26df49f8b", 11),
+        "constituencies": ("e6a472b1-b6e0-4e02-8304-9e6cfa73c44d", 8),
+        "members": ("d2c089d0-5203-40f1-97b8-ae0d8285e74d", 1928),
+        "legislation": ("7bab00fc-4637-463e-a42e-fdb7ce626439", 6048),
+    }
+    assert all(len(item["page_hash_manifest_sha256"]) == 64 for item in selected.values())
+
+
+def test_development_selection_loader_rejects_missing_endpoint_pins(tmp_path):
+    selection = tmp_path / "selection.json"
+    selection.write_text(json.dumps({
+        "schema_version": 1,
+        "status": "accepted-complete-api-captures",
+        "purpose": "test",
+        "constraints": ["test"],
+        "captures": [],
+    }), encoding="utf-8")
+    with pytest.raises(ValueError, match="each supported endpoint once"):
+        load_pinned_development_captures(tmp_path / "raw", selection)
+
+
+def test_development_selection_loader_rejects_boolean_schema_version(tmp_path):
+    selection = tmp_path / "selection.json"
+    selection.write_text(json.dumps({
+        "schema_version": True,
+        "status": "accepted-complete-api-captures",
+        "purpose": "test",
+        "constraints": ["test"],
+        "captures": [],
+    }), encoding="utf-8")
+    with pytest.raises(ValueError, match="unsupported shape"):
+        load_pinned_development_captures(tmp_path / "raw", selection)
 
 
 def test_failed_complete_legislation_run_is_not_selectable(tmp_path):

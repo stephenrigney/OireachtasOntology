@@ -46,7 +46,8 @@ def load_planner_benchmark(path: str | Path = DEFAULT_PLANNER_BENCHMARK_PATH) ->
     seen: set[str] = set()
     supported_expectations = {
         "validated_plan", "clarification_required", "unresolved_entity",
-        "manual_review", "source_data_coverage",
+        "set_valued_member_identity", "fail_closed", "manual_review",
+        "source_data_coverage",
     }
     for index, case in enumerate(cases):
         where = f"cases[{index}]"
@@ -54,8 +55,10 @@ def load_planner_benchmark(path: str | Path = DEFAULT_PLANNER_BENCHMARK_PATH) ->
             raise PlannerBenchmarkError(f"{where} must be an object")
         allowed = {
             "id", "source_case_id", "question", "expectation", "required_entities",
-            "required_requirements", "required_temporal_constraints", "aggregation",
+            "required_requirements", "required_temporal_constraints", "required_filters",
+            "aggregation",
             "answer_shape", "not_scored_reason", "expected_result",
+            "expected_failure_classes",
         }
         if not {"id", "source_case_id", "expectation"} <= set(case) or set(case) - allowed:
             raise PlannerBenchmarkError(f"{where} has missing or unknown fields")
@@ -73,6 +76,17 @@ def load_planner_benchmark(path: str | Path = DEFAULT_PLANNER_BENCHMARK_PATH) ->
             isinstance(case.get("not_scored_reason"), str) and case["not_scored_reason"].strip()
         ):
             raise PlannerBenchmarkError(f"{where} manual_review needs a not_scored_reason")
+        if "expected_failure_classes" in case and (
+            not isinstance(case["expected_failure_classes"], list)
+            or not case["expected_failure_classes"]
+            or any(value not in {
+                "invalid_draft_semantics", "unsupported_vocabulary",
+                "unsupported_temporal_translation",
+            } for value in case["expected_failure_classes"])
+        ):
+            raise PlannerBenchmarkError(f"{where}.expected_failure_classes is invalid")
+        if case["expectation"] == "fail_closed" and not case.get("expected_failure_classes"):
+            raise PlannerBenchmarkError(f"{where} fail_closed needs expected_failure_classes")
         if "expected_result" in case:
             expected_result = case["expected_result"]
             if not isinstance(expected_result, dict) or expected_result.get("kind") not in {"ask", "select"}:
@@ -81,7 +95,10 @@ def load_planner_benchmark(path: str | Path = DEFAULT_PLANNER_BENCHMARK_PATH) ->
                 raise PlannerBenchmarkError(f"{where}.expected_result ASK oracle needs a boolean")
             if expected_result["kind"] == "select" and not isinstance(expected_result.get("invariants"), dict):
                 raise PlannerBenchmarkError(f"{where}.expected_result SELECT oracle needs invariants")
-        for field in ("required_entities", "required_requirements", "required_temporal_constraints"):
+        for field in (
+            "required_entities", "required_requirements",
+            "required_temporal_constraints", "required_filters",
+        ):
             if field in case and not isinstance(case[field], list):
                 raise PlannerBenchmarkError(f"{where}.{field} must be an array")
     return document
@@ -178,23 +195,60 @@ def _semantic_mismatches(plan: dict[str, Any], case: dict[str, Any]) -> list[str
         matched = False
         for constraint in plan["temporalConstraints"]:
             target = requirements_by_id.get(constraint["target"])
-            period = constraint.get("period", {})
-            period_entity = plan_entities.get(period.get("entity"))
-            if (
-                constraint["kind"] == expected["kind"]
-                and target is not None
-                and target["fact"] == expected["target_fact"]
-                and period_entity is not None
-                and period_entity["type"] == expected["period_entity_type"]
-                and _normalise_label(period_entity["label"])
-                == _normalise_label(expected["period_entity_label"])
-            ):
-                matched = True
+            if target is None or target["fact"] != expected["target_fact"]:
+                continue
+            if constraint["kind"] != expected["kind"]:
+                continue
+            if expected["kind"] == "on":
+                matched = constraint.get("date") == expected["date"]
+            else:
+                period = constraint.get("period", {})
+                period_entity = plan_entities.get(period.get("entity"))
+                matched = (
+                    period_entity is not None
+                    and period_entity["type"] == expected["period_entity_type"]
+                    and _normalise_label(period_entity["label"])
+                    == _normalise_label(expected["period_entity_label"])
+                )
+            if matched:
                 break
         if not matched:
+            temporal_scope = (
+                expected.get("date") if expected["kind"] == "on"
+                else expected.get("period_entity_label")
+            )
             mismatches.append(
                 f"missing {expected['kind']} temporal constraint on {expected['target_fact']} "
-                f"for {expected['period_entity_label']}"
+                f"for {temporal_scope}"
+            )
+
+    for expected in case.get("required_filters", []):
+        matched = False
+        for filter_ in plan["filters"]:
+            requirement = requirements_by_id.get(filter_["requirement"])
+            if (
+                filter_["field"] != expected["field"]
+                or filter_["operator"] != expected["operator"]
+                or requirement is None
+                or ("requirement_fact" in expected
+                    and requirement["fact"] != expected["requirement_fact"])
+            ):
+                continue
+            if "value" in expected and filter_.get("value") != expected["value"]:
+                continue
+            if "entity_label" in expected:
+                entity_id = filter_.get("value", {}).get("entity")
+                entity = plan_entities.get(entity_id)
+                if entity is None or _normalise_label(entity["label"]) != _normalise_label(
+                    expected["entity_label"]
+                ):
+                    continue
+            matched = True
+            break
+        if not matched:
+            mismatches.append(
+                f"missing filter {expected['field']} {expected['operator']} "
+                f"{expected.get('value', expected.get('entity_label'))!r}"
             )
 
     expected_aggregation = case.get("aggregation")

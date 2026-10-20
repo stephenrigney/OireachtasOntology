@@ -1,12 +1,15 @@
-# Query Service development-data evidence (updated 2026-10-18)
+# Query Service development-data evidence (updated 2026-10-19)
 
 ## Outcome and boundary
 
 This note records the accepted, non-authoritative Query Service development
-data surface. The bootstrap reads preserved complete API captures and the
-reviewed office inputs, and replays exactly the three Debate sources pinned in
-[`development-source-selection.json`](development-source-selection.json). It
-does not acquire source data, alter Bills publication contract v1, or claim
+data surface. The bootstrap selects preserved complete API captures from
+[`development-api-capture-selection.json`](development-api-capture-selection.json),
+reads the reviewed office inputs, and replays exactly the three Debate sources
+pinned in [`development-source-selection.json`](development-source-selection.json).
+The machine-readable API pins remove the dependency on a surviving Core State
+capture-index snapshot. The bootstrap does not acquire source data, alter Bills
+publication contract v1, or claim
 production/authoritative coverage. Raw XML and API pages remain outside Git in
 the immutable local raw store.
 
@@ -39,6 +42,57 @@ registry and review inputs were SHA-256
 `00f9cc73f8e82fe2560e931b9ac07a605ad27e0f41186017f828db9b381f1d5a` and
 `99a2e9f6bc987a53d149e2035c77f31589d553dfb141e4fb43fb8ff56f200ea1`,
 respectively.
+
+The committed API selection pins each accepted run ID, official endpoint,
+advertised source count, page limit, and a SHA-256 digest over the ordered
+`{skip, sha256}` page-hash list. Bootstrap independently verifies raw-page
+status, run ID, URL, pagination, body digests, and source-record counts before
+use. These pins preserve the accepted complete-capture selection; they do not
+promote the development data to authoritative status or write Core State.
+
+### Repeated-bootstrap validation boundary (2026-10-19)
+
+For the exact accepted dataset identity above, the bootstrap reuses the full
+per-resource Member/Bill RDF acceptance already recorded by the 2026-10-18
+development runs and the Bills publication acceptance below. It still verifies
+every raw page and accepted run pin, runs Member/Bill source checks and
+deterministic transforms, replays the pinned Debate slice, parses every emitted
+N-Triples payload locally, and checks the accepted graph-family, resource,
+quarantine, and unresolved-reference counts before publication. After whole-graph
+PUTs it verifies each remote graph against its serialized RDF payload and checks
+Fuseki's per-graph triple counts and inventory. No generated RDF is cached.
+
+This shortcut is identity-gated: a different dataset ID retains the full
+per-resource `validate_member` and `validate_bill` checks. The authoritative ETL
+publication paths are unchanged, and the full validators remain exercised by
+the ETL test/acceptance suites. The shortcut is only for repeated setup of this
+exact local benchmark dataset; it is not a relaxation of source, mapping, RDF,
+or production publication acceptance. Offline benchmark-candidate generation
+does not use this shortcut and runs the full per-resource validators.
+
+### Realistic-query benchmark bulk-load exception (2026-10-19)
+
+The realistic-query benchmark runner has an explicitly approved, benchmark-only
+dataset-level load path. It first performs the pinned-source checks, deterministic
+transforms, full per-resource Member/Bill RDF acceptance, accepted-identity/output
+checks, deterministic N-Quads serialization, and a full local N-Quads parse. Only
+then does it create a new `stain/jena-fuseki:5.1.0` disposable instance bound to
+loopback, verify that its sole dataset is empty, and POST the complete N-Quads
+dataset once. After loading,
+the runner compares the exact remote graph inventory and per-graph triple counts
+to candidate evidence, verifies family/resource totals and representative RDF
+resources, checks all four quarantined Bill graphs are absent, and reads the
+dataset back once to compare every graph's canonical RDF 1.1 semantic hash,
+including plain/explicit `xsd:string` equivalence.
+The accepted previous live graph-inventory hash is also reproduced by adding the
+three known unrelated sentinel graph IRIs to the candidate-owned graph set.
+
+This exception is confined to the realistic benchmark harness and new empty
+disposable datasets. Candidate/readback RDF lives only under a temporary
+directory. It does not change the normal bootstrap's whole-graph GSP PUT path,
+graph identities/ownership, or the atomic whole-graph rule for authoritative
+publication. Dataset identity remains derived solely from accepted source and
+review evidence, independently of the load transport.
 
 ### Loaded graphs and resources
 

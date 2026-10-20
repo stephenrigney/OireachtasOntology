@@ -77,9 +77,14 @@ scripts/dev-nlq.sh --no-reload   # start without the Uvicorn autoreload watcher
 ```
 
 Ordinary startup never loads source data. `--load-data` explicitly invokes
-`oir-etl dev bootstrap`, which reads the latest successful complete API captures
-already preserved and indexed in Core State, validates them, and loads the
-non-authoritative local-development graphs into loopback Fuseki. It does not
+`oir-etl dev bootstrap`, which reads the successful complete API captures pinned
+in `benchmarks/development-api-capture-selection.json`, verifies their immutable
+raw-page evidence, and loads the non-authoritative local-development graphs into
+loopback Fuseki. For the exact dataset ID already accepted for this benchmark,
+the bootstrap reuses prior full Member/Bill RDF acceptance while rerunning source
+checks and deterministic transforms, parsing emitted N-Triples, and checking
+accepted graph/resource counts and Fuseki's per-graph counts. A different input
+identity takes the full per-resource validation path. It does not
 fetch current API data, run the authoritative `oir-etl run` publication path,
 or advance Core State coverage/publication or external-reconciliation state.
 Materially conflicted reference identities remain quarantined, and the bootstrap
@@ -132,10 +137,12 @@ translation is required:
 uv run --locked --extra nlq python scripts/run-nlq-benchmark.py --tier measured
 ```
 
-Both automation tiers require Docker and the preserved complete API captures
-and Core State index used by `oir-etl dev bootstrap`. Override their locations
-with `--raw-dir` / `--state-db` or the existing `OIR_RAW_DIR` /
-`OIR_ETL_STATE_DB` environment settings. The runner starts a new
+Both automation tiers require Docker, the preserved API captures, and the
+committed API/Debate selection manifests; no Core State capture-index snapshot
+is required. Override the raw-capture location with `--raw-dir` or
+`OIR_RAW_DIR`. The optional `--state-db` argument only supplies a path protected
+against baseline-output overwrite; it is not opened for capture selection.
+The runner starts a new
 `stain/jena-fuseki:5.1.0` container for each run, publishes a random port only
 on loopback, attaches no host or named data volume, bootstraps that instance
 from the preserved captures, and stops/removes it after evaluation. It never
@@ -146,8 +153,9 @@ poc/nlq/benchmarks/benchmark-v1.json` to reproduce the historical v0.2.0 or
 v0.1.0 case sets. Result JSON is written beneath the ignored
 `var/nlq-benchmark/runs/` directory by default.
 
-Every result embeds the exact Phase 0A dataset-baseline JSON and its stable
-`sha256:` dataset ID, plus the disposable container ID for that particular run.
+Every result embeds the exact schema-version-1 development dataset-baseline
+JSON and its stable `sha256:` dataset ID, plus the disposable container ID for
+that particular run.
 Measured results also record the resolved non-secret translator model, base
 endpoint, request timeout, output-token cap, and whether configurable
 model/endpoint values came from
@@ -521,6 +529,24 @@ uv run --locked --extra nlq python scripts/run-nlq-plan-benchmark.py \
   --raw-dir /path/to/preserved/complete-captures --compare-phase1
 ```
 
+For the accepted 37-case realistic dataset, this runner makes two independent
+offline candidates from the pinned captures and runs the full per-resource
+Member/Bill RDF acceptance checks on each. Each complete candidate is emitted as
+deterministically ordered N-Quads and parsed before any data load. The runner
+then creates a fresh disposable Fuseki container bound only to loopback, verifies
+that its sole dataset has no named or default-graph data, and performs one
+dataset-level N-Quads POST. It checks the exact graph inventory and per-graph
+triple counts, accepted family/resource totals, representative typed resources,
+quarantined Bill-graph absence, and a full N-Quads readback against every
+candidate per-graph RDF 1.1 semantic hash (including simple/`xsd:string`
+equivalence). Both candidates must reproduce the accepted
+dataset identity, inventory and hashes before the benchmark runs on the second
+verified disposable dataset. Generated N-Quads and readback files are temporary.
+
+This is a benchmark-harness-only load path for fresh, empty disposable datasets.
+It does not change the normal `oir-etl dev bootstrap` whole-graph replacement
+path or the atomic whole-graph publication rule for authoritative ETL.
+
 The measured report and known limitation are recorded in
 [`benchmarks/phase-2c-report.md`](benchmarks/phase-2c-report.md). Ordinary
 compiler/evaluator tests use deterministic plans and a fake Fuseki client. The
@@ -532,10 +558,11 @@ OIR_RUN_NLQ_PLAN_FUSEKI_TESTS=1 \
 uv run --locked --extra test --extra nlq pytest tests/test_nlq_plan_sparql_fuseki.py
 ```
 
-The generator/evaluator are not connected to the browser pipeline. This
-completes the Phase 2C local compilation/evaluation tranche, not the Phase 2
-exit gate: visible plan integration and a separate realistic-question benchmark
-remain future work.
+The generator/evaluator are not connected to the browser pipeline. The measured
+37-case realistic benchmark and its case differences are recorded in
+[`benchmarks/realistic-phase2-report.md`](benchmarks/realistic-phase2-report.md).
+It does not establish UI readiness or complete the Phase 2 exit gate; visible
+plan integration remains future work and was not started here.
 
 ### Controlled capability expansion (Phase 2)
 
@@ -554,9 +581,9 @@ uv run --locked --extra test python -m pytest tests/test_nlq_plan_phase2_evaluat
 
 The opt-in Fuseki acceptance runs those cases against the accepted
 non-authoritative development bootstrap. It requires the preserved raw captures
-and corresponding capture-index Core State database to be available locally;
-the bootstrap reads capture state and writes only to its disposable loopback
-Fuseki dataset.
+and committed API/Debate selection evidence to be available locally; no Core
+State capture-index snapshot is needed. The bootstrap writes only to its
+disposable loopback Fuseki dataset.
 
 `poc.nlq.plan_contract` exposes `load_query_plan_contract`,
 `validate_query_plan`, and `load_query_plan`. Phase 2C calls this authoritative

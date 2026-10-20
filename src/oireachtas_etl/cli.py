@@ -1,7 +1,9 @@
 from __future__ import annotations
 import argparse, json, re, sys, tempfile, uuid
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from time import perf_counter
 from urllib.parse import urlsplit
 import hashlib
 from .api import ApiClient, HousesApiClient
@@ -19,7 +21,7 @@ from .raw import persist_raw
 from .debates_raw import (DebateRawSource, fetch_main_xml, load_main_xml,
                           persist_main_xml)
 from .debates_pipeline import run_debate_batch
-from .serialization import nquads, ntriples, turtle
+from .serialization import nquads, ntriples, rdf11_ntriples_sha256, turtle
 from .transforms.houses import transform_houses_with_report
 from .transforms.parties import transform_parties
 from .transforms.constituencies import transform_constituencies
@@ -38,7 +40,8 @@ from .transforms.bills import bill_graph_iri, source_hash as bill_source_hash, t
 from .validation.bills import (known_bill_source_quarantines,
                                validate_bill_source)
 from .state import CoreStateStore, expected_graph_iri, state_lock
-from rdflib import Graph, URIRef
+from rdflib import BNode, Graph, URIRef
+from rdflib.store import Store
 from rdflib.namespace import RDF
 from .transforms.common import ELIDL, OIR
 from .reconciliation import (DbpediaClient, ReconciliationStore, WikidataClient,
@@ -71,7 +74,7 @@ from .reference_closure import (candidate_member_dataset,
 from .reference_publication import (build_development_reference_candidates,
                                     build_reference_candidates)
 from .raw_captures import (load_latest_complete_capture,
-                           load_latest_development_capture)
+                           load_pinned_development_captures)
 
 
 MEMBER_MAPPING_VERSION = "member_mapping.csv@reference-coverage-2026"
@@ -3140,8 +3143,36 @@ DEVELOPMENT_DEBATE_SELECTION = (
     Path(__file__).resolve().parents[2]
     / "poc/nlq/benchmarks/development-source-selection.json"
 )
-
-
+DEVELOPMENT_API_CAPTURE_SELECTION = (
+    Path(__file__).resolve().parents[2]
+    / "poc/nlq/benchmarks/development-api-capture-selection.json"
+)
+DEVELOPMENT_ACCEPTED_DATASET_ID = (
+    "sha256:9da63abc5878387f991e4d4717f35cca67606850db34be589e0a8fc0cc1504e2"
+)
+DEVELOPMENT_ACCEPTED_GRAPH_COUNTS = {
+    "houses": (1, 721),
+    "parties": (1, 1890),
+    "constituencies": (1, 7645),
+    "committees": (1, 2799),
+    "administrative-units": (1, 2),
+    "offices": (1, 13),
+    "members": (1928, 179720),
+    "bill-records": (6044, 917294),
+    "debates": (3, 9383),
+}
+DEVELOPMENT_ACCEPTED_RESOURCE_COUNTS = {
+    "houses_terms": 65,
+    "parties": 378,
+    "constituencies": 1529,
+    "committees": 267,
+    "members": 1928,
+    "offices": 3,
+    "administrative_units": 1,
+    "office_holdings": 22,
+    "bills": 6044,
+    "debates": 3,
+}
 def _development_member_office_inputs(
         members: list[dict], member_capture: dict, raw_root: Path,
         registry: dict, decisions: dict, review_hash: str,
@@ -3326,32 +3357,233 @@ def _development_graph_family(graph_iri: str) -> str | None:
     return None
 
 
-def _development_named_graphs(client: FusekiSparqlClient) -> set[str]:
+def _development_graph_triple_counts(client: FusekiSparqlClient) -> dict[str, int]:
+    """Read a compact graph inventory instead of returning every RDF triple."""
     rows = client.query(
-        "SELECT DISTINCT ?graph WHERE { GRAPH ?graph { ?subject ?predicate ?object } }"
+        "SELECT ?graph (COUNT(*) AS ?tripleCount) "
+        "WHERE { GRAPH ?graph { ?subject ?predicate ?object } } GROUP BY ?graph"
     )
-    graphs = set()
+    counts = {}
     for row in rows:
-        value = row.get("graph", {}).get("value") if isinstance(row, dict) else None
-        if not isinstance(value, str):
+        graph = row.get("graph", {}).get("value") if isinstance(row, dict) else None
+        raw_count = (row.get("tripleCount", {}).get("value")
+                     if isinstance(row, dict) else None)
+        if not isinstance(graph, str) or graph in counts:
             raise ValueError("Fuseki named-graph inventory returned a non-IRI graph")
-        graphs.add(value)
-    return graphs
+        try:
+            count = int(raw_count)
+        except (TypeError, ValueError) as error:
+            raise ValueError("Fuseki named-graph inventory returned an invalid triple count") from error
+        if count < 1:
+            raise ValueError("Fuseki named-graph inventory returned an empty graph")
+        counts[graph] = count
+    return counts
+
+
+class _NQuadsCountingStore(Store):
+    """RDFLib parser sink that validates quads without retaining the dataset."""
+
+    context_aware = True
+    graph_aware = True
+    formula_aware = False
+
+    def __init__(self):
+        super().__init__()
+        self.graph_counts: Counter[str] = Counter()
+        self.default_graph_count = 0
+
+    def add(self, triple, context, quoted=False):
+        subject, predicate, obj = triple
+        graph = context.identifier
+        if any(isinstance(term, BNode) for term in (subject, predicate, obj, graph)):
+            raise ValueError("benchmark candidate contains a blank node")
+        if graph == URIRef("urn:x-rdflib:default"):
+            self.default_graph_count += 1
+            return
+        if not isinstance(graph, URIRef):
+            raise ValueError("benchmark candidate contains a non-IRI graph")
+        self.graph_counts[str(graph)] += 1
+
+    def triples(self, triple_pattern, context=None):
+        return iter(())
+
+    def __len__(self, context=None):
+        return sum(self.graph_counts.values()) + self.default_graph_count
+
+    def remove_graph(self, graph):
+        # N-QuadsParser removes its unused initial default-graph placeholder.
+        return None
+
+
+class _GraphTripleCount:
+    """Lightweight accepted-candidate graph count for baseline aggregation."""
+
+    def __init__(self, triple_count: int):
+        self.triple_count = triple_count
+
+    def __len__(self) -> int:
+        return self.triple_count
+
+
+class _DevelopmentCandidateNQuadsSpool:
+    """Disk-backed deterministic candidate serializer for benchmark setup only."""
+
+    def __init__(self, directory: Path):
+        self.directory = directory
+        self.directory.mkdir(parents=True, exist_ok=True)
+        self.entries: dict[str, dict] = {}
+
+    def add(self, graph_iri: str, graph: Graph, family: str) -> int:
+        if graph_iri in self.entries:
+            raise ValueError(f"benchmark candidate contains duplicate graph IRI: {graph_iri}")
+        if any(isinstance(term, BNode) for triple in graph for term in triple):
+            raise ValueError(f"benchmark candidate graph contains a blank node: {graph_iri}")
+
+        serialized = nquads(graph, graph_iri).encode("utf-8")
+        graph_path = self.directory / (hashlib.sha256(graph_iri.encode()).hexdigest() + ".nq")
+        graph_path.write_bytes(serialized)
+        type_triples = sorted(
+            graph.triples((None, RDF.type, None)),
+            key=lambda triple: tuple(term.n3() for term in triple),
+        )
+        representative = None
+        if type_triples:
+            subject, predicate, obj = type_triples[0]
+            representative = {
+                "graph_iri": graph_iri,
+                "family": family,
+                "subject": subject.n3(),
+                "predicate": predicate.n3(),
+                "object": obj.n3(),
+            }
+        self.entries[graph_iri] = {
+            "graph_iri": graph_iri,
+            "family": family,
+            "triple_count": len(graph),
+            "rdf11_semantic_sha256": rdf11_ntriples_sha256(graph),
+            "representative": representative,
+            "spool_path": graph_path,
+        }
+        return len(graph)
+
+    def write(self, output_path: Path) -> dict:
+        if not self.entries:
+            raise ValueError("benchmark candidate cannot be an empty RDF dataset")
+        ordered_entries = [self.entries[graph] for graph in sorted(self.entries)]
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        candidate_digest = hashlib.sha256()
+        candidate_byte_count = 0
+        with output_path.open("wb") as output:
+            for entry in ordered_entries:
+                with entry["spool_path"].open("rb") as graph_file:
+                    while chunk := graph_file.read(1024 * 1024):
+                        output.write(chunk)
+                        candidate_digest.update(chunk)
+                        candidate_byte_count += len(chunk)
+
+        parsed = _NQuadsCountingStore()
+        try:
+            Graph(store=parsed).parse(source=str(output_path), format="nquads")
+        except Exception as error:
+            raise ValueError("complete benchmark candidate is not valid N-Quads") from error
+        expected_counts = {
+            entry["graph_iri"]: entry["triple_count"] for entry in ordered_entries
+        }
+        if parsed.default_graph_count or dict(parsed.graph_counts) != expected_counts:
+            raise ValueError(
+                "N-Quads syntax parse changed candidate graph inventory or triple counts"
+            )
+
+        inventory = [{key: entry[key] for key in (
+            "graph_iri", "family", "triple_count", "rdf11_semantic_sha256")}
+            for entry in ordered_entries]
+        first_by_family = {}
+        for entry in ordered_entries:
+            first_by_family.setdefault(entry["family"], entry)
+        representatives = []
+        for family, entry in sorted(first_by_family.items()):
+            representative = entry["representative"]
+            if representative is None:
+                raise ValueError(
+                    f"benchmark candidate has no representative rdf:type resource in {family}"
+                )
+            representatives.append(representative)
+
+        graph_inventory_sha256 = hashlib.sha256(
+            "\n".join(sorted(parsed.graph_counts)).encode("utf-8")
+        ).hexdigest()
+        inventory_json = json.dumps(
+            inventory, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+        ).encode("utf-8")
+        return {
+            "schema_version": 1,
+            "format": "application/n-quads",
+            "serialization": "sorted graph IRIs; sorted N-Quads lines per graph",
+            "candidate_sha256": candidate_digest.hexdigest(),
+            "candidate_byte_count": candidate_byte_count,
+            "graph_count": len(parsed.graph_counts),
+            "triple_count": sum(parsed.graph_counts.values()),
+            "graph_iri_inventory_sha256": graph_inventory_sha256,
+            "graph_content_inventory_sha256": hashlib.sha256(inventory_json).hexdigest(),
+            "graph_inventory": inventory,
+            "representative_resources": representatives,
+        }
+
+
+def _serialize_development_candidate_nquads(
+        graph_payloads: list[tuple[str, Graph, str]]) -> tuple[str, dict]:
+    """Small-fixture helper for deterministic, fully parsed N-Quads candidates."""
+    scratch_root = Path("/tmp/oireachtasontology/query-service-phase-2")
+    scratch_root.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="oir-nquads-test-", dir=scratch_root) as temporary:
+        root = Path(temporary)
+        spool = _DevelopmentCandidateNQuadsSpool(root / "graphs")
+        for graph_iri, graph, family in graph_payloads:
+            spool.add(graph_iri, graph, family)
+        output_path = root / "candidate.nq"
+        evidence = spool.write(output_path)
+        return output_path.read_text(encoding="utf-8"), evidence
 
 
 def _replace_development_graph_set(loader: FusekiGraphStoreLoader,
                                    client: FusekiSparqlClient,
-                                   graph_payloads: list[tuple[str, Graph, str]]) -> list[str]:
+                                   graph_payloads: list[tuple[str, Graph, str]],
+                                   phase_timings: dict[str, float] | None = None) -> list[str]:
     """Replace the bootstrap-owned graphs and remove only stale owned graphs."""
     desired = {graph_iri for graph_iri, _graph, _family in graph_payloads}
     if len(desired) != len(graph_payloads):
         raise ValueError("two development graph payloads have the same named-graph IRI")
+    expected_counts = {graph_iri: len(graph)
+                       for graph_iri, graph, _family in graph_payloads}
+    serialized_payloads: list[tuple[str, str]] = []
+    started = perf_counter()
     for graph_iri, graph, _family in graph_payloads:
         payload = ntriples(graph)
+        serialized_graph = Graph().parse(data=payload, format="nt")
+        if len(serialized_graph) != len(graph):
+            raise ValueError(
+                f"N-Triples serialization changed the triple count for {graph_iri}"
+            )
+        serialized_payloads.append((graph_iri, payload))
+    if phase_timings is not None:
+        phase_timings["graph serialization and syntax validation"] = (
+            perf_counter() - started)
+
+    started = perf_counter()
+    for index, (graph_iri, payload) in enumerate(serialized_payloads, start=1):
         loader.replace(graph_iri, payload, content_type="application/n-triples")
         verify_core_graph(client, graph_iri, payload)
+        if index % 500 == 0 or index == len(serialized_payloads):
+            print(
+                f"  timing progress graph publication {index}/"
+                f"{len(serialized_payloads)} graphs",
+                file=sys.stderr, flush=True,
+            )
+    if phase_timings is not None:
+        phase_timings["graph PUT publication and content verification"] = (
+            perf_counter() - started)
 
-    before_cleanup = _development_named_graphs(client)
+    before_cleanup = _development_graph_triple_counts(client)
     # Fixed graph families are always desired. Only the dynamic graph patterns
     # owned by this bootstrap are eligible for stale-graph deletion.
     stale = sorted(
@@ -3360,44 +3592,39 @@ def _replace_development_graph_set(loader: FusekiGraphStoreLoader,
         and graph not in desired
     )
     unrelated_before = {
-        graph for graph in before_cleanup
+        graph: count for graph, count in before_cleanup.items()
         if _development_graph_family(graph) is None
     }
     for graph in stale:
         loader.delete(graph)
 
-    after_cleanup = _development_named_graphs(client)
-    if set(stale) & after_cleanup:
+    after_cleanup = _development_graph_triple_counts(client)
+    if set(stale) & set(after_cleanup):
         raise ValueError("stale bootstrap-owned graphs remain after Fuseki cleanup")
-    owned_after = {graph for graph in after_cleanup
+    owned_after = {graph: count for graph, count in after_cleanup.items()
                    if _development_graph_family(graph) is not None}
-    if owned_after != desired:
+    if owned_after != expected_counts:
         raise ValueError("Fuseki bootstrap-owned graph set differs from validated payloads")
-    if not unrelated_before <= after_cleanup:
+    unrelated_after = {graph: count for graph, count in after_cleanup.items()
+                       if _development_graph_family(graph) is None}
+    if unrelated_after != unrelated_before:
         raise ValueError("development bootstrap changed an unrelated named graph")
+    if phase_timings is not None:
+        phase_timings["graph inventory verification and stale cleanup"] = (
+            perf_counter() - started)
     return stale
 
 
-def _development_dataset_baseline(
-        captures: dict, graph_families: dict[str, list[tuple[str, Graph]]],
-        counts: dict, development_status: dict, office_inputs: dict,
-        accepted_holding_evidence: list[dict], debate_evidence: dict,
-        bills: dict) -> dict:
-    """Describe all stable source/run/hash inputs and graphs in the dev dataset."""
-    source_captures = {}
+def _development_identity_evidence(
+        captures: dict, office_inputs: dict, accepted_holding_evidence: list[dict],
+        debate_evidence: dict) -> tuple[dict, str]:
+    """Build the stable identity material shared by fast-path selection/reporting."""
     identity_captures = {}
     for endpoint in sorted(captures):
         _records, capture = captures[endpoint]
         parameters = capture["parameters"]
         source_url = parameters["api_url"]
         pages = capture["page_hashes"]
-        source_captures[endpoint] = {
-            "run_id": capture["run_id"],
-            "source": parameters["source"],
-            "source_url": source_url,
-            "record_count": capture["advertised_count"],
-            "pages": pages,
-        }
         identity_captures[endpoint] = {
             "run_id": capture["run_id"],
             "source_url": source_url,
@@ -3418,6 +3645,88 @@ def _development_dataset_baseline(
             "selection_manifest_sha256"],
         "debate_sources": debate_evidence["sources"],
     }
+    return identity_material, holding_evidence_sha256
+
+
+def _development_dataset_id(captures: dict, office_inputs: dict,
+                            accepted_holding_evidence: list[dict],
+                            debate_evidence: dict) -> str:
+    identity_material, _holding_evidence_sha256 = _development_identity_evidence(
+        captures, office_inputs, accepted_holding_evidence, debate_evidence)
+    identity_json = json.dumps(
+        identity_material, ensure_ascii=False, sort_keys=True,
+        separators=(",", ":"),
+    )
+    return "sha256:" + hashlib.sha256(identity_json.encode("utf-8")).hexdigest()
+
+
+def _validate_development_accepted_output(
+        graph_families: dict[str, list[tuple[str, Graph]]], counts: dict,
+        development_status: dict, bills: dict) -> None:
+    """Check cheap aggregate invariants recorded for the accepted dev dataset."""
+    actual_graph_counts = {
+        name: (len(entries), sum(len(graph) for _iri, graph in entries))
+        for name, entries in graph_families.items()
+    }
+    if actual_graph_counts != DEVELOPMENT_ACCEPTED_GRAPH_COUNTS:
+        raise ValueError(
+            "accepted development graph family counts differ from their recorded evidence: "
+            f"{actual_graph_counts!r}"
+        )
+
+    actual_resource_counts = {
+        "houses_terms": counts["houses_terms"],
+        "parties": counts["parties"],
+        "constituencies": counts["constituencies"],
+        "committees": counts["committees"],
+        "members": counts["members"],
+        "offices": counts["offices"],
+        "administrative_units": counts["administrative_units"],
+        "office_holdings": counts["office_holdings"],
+        "bills": counts["bills"],
+        "debates": counts["debates"],
+    }
+    if actual_resource_counts != DEVELOPMENT_ACCEPTED_RESOURCE_COUNTS:
+        raise ValueError(
+            "accepted development resource counts differ from their recorded evidence: "
+            f"{actual_resource_counts!r}"
+        )
+    if (counts["office_review_decisions"]
+            != {"accepted": 3, "rejected": 0, "unresolved": 2}):
+        raise ValueError("accepted development office review counts changed")
+    quarantine_ids = {item["bill_identity"] for item in bills["quarantines"]}
+    if (quarantine_ids != {"1959/P3", "1965/P1", "1965/P3", "2024/48"}
+            or bills["quarantined_bills"] != 4
+            or bills["quarantine_diagnostic_paths"] != 28
+            or bills["unresolved_amendment_stage_references"] != 28):
+        raise ValueError("accepted development Bill quarantine evidence changed")
+    if (development_status["quarantined_conflict_count"] != 1
+            or development_status["unresolved_reference_count"] != 1):
+        raise ValueError("accepted development reference coverage counts changed")
+
+
+def _development_dataset_baseline(
+        captures: dict, graph_families: dict[str, list[tuple[str, Graph]]],
+        counts: dict, development_status: dict, office_inputs: dict,
+        accepted_holding_evidence: list[dict], debate_evidence: dict,
+        bills: dict) -> dict:
+    """Describe all stable source/run/hash inputs and graphs in the dev dataset."""
+    source_captures = {}
+    for endpoint in sorted(captures):
+        _records, capture = captures[endpoint]
+        parameters = capture["parameters"]
+        source_url = parameters["api_url"]
+        pages = capture["page_hashes"]
+        source_captures[endpoint] = {
+            "run_id": capture["run_id"],
+            "source": parameters["source"],
+            "source_url": source_url,
+            "record_count": capture["advertised_count"],
+            "pages": pages,
+        }
+
+    identity_material, holding_evidence_sha256 = _development_identity_evidence(
+        captures, office_inputs, accepted_holding_evidence, debate_evidence)
     identity_json = json.dumps(
         identity_material, ensure_ascii=False, sort_keys=True,
         separators=(",", ":"),
@@ -3503,7 +3812,9 @@ def _development_dataset_baseline(
         "unresolved_references": development_status["unresolved_references"],
         "reference_closure": development_status["reference_closure"],
         "scope_note": (
-            "Counts describe the validated graph payloads owned by this bootstrap. "
+            "Counts describe the graph payloads owned by this bootstrap; the accepted "
+            "pinned dataset is checked against recorded family/resource counts, while "
+            "other input identities retain per-resource Member/Bill validation. "
             "The dataset is development/evaluation data, not authoritative or a live "
             "census of unrelated graphs in a persistent Fuseki dataset."
         ),
@@ -3555,48 +3866,99 @@ def _require_loopback_fuseki_endpoint(label: str, endpoint: str | None) -> str:
 
 
 def _run_development_bootstrap(args: argparse.Namespace) -> int:
-    """Load preserved, validated sources into a loopback development dataset.
+    """Build a validated local dataset or an offline benchmark candidate.
 
-    Core State capture selection is read-only. Office acceptance is derived in
-    an in-memory occurrence ledger through the existing offline Member path;
-    pinned Debate XML is staged under a temporary directory for replay. This
-    command never publishes to Core State or external-reconciliation stores.
+    API capture selection is pinned by committed development evidence and is
+    checked against immutable raw pages without opening Core State. Office
+    acceptance is derived in an in-memory occurrence ledger through the
+    existing offline Member path; pinned Debate XML is staged under a temporary
+    directory for replay. This command never publishes to Core State or
+    external-reconciliation stores.
     """
+    bootstrap_started = perf_counter()
+    phase_timings: dict[str, float] = {}
     settings = Settings.from_environment()
     raw_root = Path(getattr(args, "raw_dir", None) or settings.raw_dir).expanduser()
     state_db = Path(getattr(args, "state_db", None)
                     or settings.core_state_db_file).expanduser()
+    candidate_output = getattr(args, "benchmark_candidate_nquads_output", None)
+    candidate_evidence_output = getattr(
+        args, "benchmark_candidate_evidence_output", None)
+    if bool(candidate_output) != bool(candidate_evidence_output):
+        raise ValueError(
+            "benchmark candidate N-Quads and evidence outputs must be supplied together"
+        )
     baseline_output_path = _development_baseline_output_path(
         getattr(args, "dataset_baseline_output", None),
         raw_root=raw_root,
         state_db=state_db,
         reconciliation_db=settings.reconciliation_state_db_file,
     )
-    gsp_url = _require_loopback_fuseki_endpoint(
-        "Graph Store Protocol", getattr(args, "fuseki_gsp_url", None)
-        or settings.fuseki_gsp_url)
-    sparql_url = _require_loopback_fuseki_endpoint(
-        "SPARQL", getattr(args, "fuseki_sparql_url", None)
-        or settings.fuseki_sparql_url)
+    candidate_output_path = _development_baseline_output_path(
+        candidate_output,
+        raw_root=raw_root,
+        state_db=state_db,
+        reconciliation_db=settings.reconciliation_state_db_file,
+    )
+    candidate_evidence_path = _development_baseline_output_path(
+        candidate_evidence_output,
+        raw_root=raw_root,
+        state_db=state_db,
+        reconciliation_db=settings.reconciliation_state_db_file,
+    )
+    if candidate_output_path is not None:
+        if len({path for path in (
+                candidate_output_path, candidate_evidence_path, baseline_output_path)
+                if path is not None}) != sum(
+                    path is not None for path in (
+                        candidate_output_path, candidate_evidence_path,
+                        baseline_output_path)):
+            raise ValueError("bootstrap baseline and benchmark candidate outputs must differ")
+        if (getattr(args, "fuseki_gsp_url", None)
+                or getattr(args, "fuseki_sparql_url", None)):
+            raise ValueError(
+                "offline benchmark candidate generation must not receive Fuseki endpoints"
+            )
+        gsp_url = sparql_url = None
+        candidate_scratch_root = Path("/tmp/oireachtasontology/query-service-phase-2")
+        candidate_scratch_root.mkdir(parents=True, exist_ok=True)
+        candidate_spool_directory = tempfile.TemporaryDirectory(
+            prefix="oir-dev-benchmark-candidate-", dir=candidate_scratch_root,
+        )
+        candidate_spool = _DevelopmentCandidateNQuadsSpool(
+            Path(candidate_spool_directory.name) / "graphs",
+        )
+    else:
+        candidate_spool_directory = None
+        candidate_spool = None
+        gsp_url = _require_loopback_fuseki_endpoint(
+            "Graph Store Protocol", getattr(args, "fuseki_gsp_url", None)
+            or settings.fuseki_gsp_url)
+        sparql_url = _require_loopback_fuseki_endpoint(
+            "SPARQL", getattr(args, "fuseki_sparql_url", None)
+            or settings.fuseki_sparql_url)
 
-    # Only successful complete API captures already registered in Core State
-    # are eligible input. The selector opens that database read-only; the
-    # development census below explicitly marks every source incomplete for
-    # authority/coverage purposes.
-    captures = {
-        endpoint: load_latest_development_capture(raw_root, state_db, endpoint)
-        for endpoint in (
-            "houses", "parties", "constituencies", "members", "legislation")
-    }
+    # The committed selection retains the exact successful-complete run IDs
+    # accepted for this non-authoritative slice. Raw bytes and page metadata
+    # are independently verified; no Core State snapshot is needed or opened.
+    started = perf_counter()
+    captures = load_pinned_development_captures(
+        raw_root, DEVELOPMENT_API_CAPTURE_SELECTION,
+    )
+    phase_timings["capture selection and integrity verification"] = perf_counter() - started
     houses, _houses_capture = captures["houses"]
     parties, _parties_capture = captures["parties"]
     constituencies, _constituencies_capture = captures["constituencies"]
     members, members_capture = captures["members"]
     bills, _bills_capture = captures["legislation"]
 
+    started = perf_counter()
     houses_graph, _house_exclusions = transform_houses_with_report(houses)
     validate_houses(houses, houses_graph)
 
+    phase_timings["Houses transformation and validation"] = perf_counter() - started
+
+    started = perf_counter()
     registry, decisions, review_hash, office_types = _member_office_policy(args)
     registry_path = Path(getattr(args, "registry_file", None)
                          or OFFICE_REGISTRY_FILE).expanduser()
@@ -3618,24 +3980,117 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
     office_resolutions, accepted_holding_evidence = _development_member_office_inputs(
         members, members_capture, raw_root, registry, decisions, review_hash,
         office_types)
+    phase_timings["office and holding preparation"] = perf_counter() - started
 
-    # Run the normal Member source and RDF contracts with only current accepted
-    # office resolutions. Unresolved observations remain report-only.
+    # Debate replay contributes to the dataset identity. The accepted fast path
+    # is available only when every source and side-input hash recreates the
+    # exact dataset that already passed complete Member/Bill validation.
+    started = perf_counter()
+    # run_debate_batch writes reference sidecars beside the raw object, so stage
+    # exact verified bytes under a disposable directory rather than touching
+    # the preserved source store.
+    with tempfile.TemporaryDirectory(prefix="oir-dev-bootstrap-debates-") as scratch:
+        debate_outcomes, debate_evidence = _load_development_debates(
+            raw_root, Path(scratch))
+    phase_timings["Debate replay"] = perf_counter() - started
+    accepted_identity = _development_dataset_id(
+        captures, office_inputs, accepted_holding_evidence, debate_evidence)
+    accepted_identity_matches = (
+        accepted_identity == DEVELOPMENT_ACCEPTED_DATASET_ID)
+    # Retain the local bootstrap's identity-gated repeat optimization, but do
+    # not carry that validation shortcut into benchmark candidate generation:
+    # each offline candidate must pass the full per-resource RDF validators.
+    reuse_accepted_record_validation = (
+        accepted_identity_matches and candidate_output_path is None)
+    if candidate_output_path is not None and not accepted_identity_matches:
+        raise ValueError(
+            "benchmark candidate generation requires the exact previously accepted dataset identity"
+        )
+    if reuse_accepted_record_validation:
+        print(
+            "  Reusing prior full Member/Bill acceptance for the exact pinned "
+            "development dataset; transforms, source checks, RDF syntax, and "
+            "accepted output counts are still checked.",
+            file=sys.stderr, flush=True,
+        )
+
+    # Source checks run on every bootstrap. Full per-resource RDF acceptance
+    # checks run for benchmark candidates and whenever the local repeat fast path
+    # is not applicable.
+    member_graphs_with_sources: list[tuple[dict, str, Graph, list[dict]]] = []
     member_graphs: list[tuple[str, Graph]] = []
     member_graph = Graph()
-    for wrapper in members:
+    member_candidate_serialization_seconds = 0.0
+    member_office_holding_count = 0
+    member_source_validation_seconds = 0.0
+    member_graph_validation_seconds = 0.0
+    member_transform_seconds = 0.0
+    for index, wrapper in enumerate(members, start=1):
         member_iri = str(wrapper["member"]["uri"])
         resolutions = office_resolutions.get(member_iri, [])
+        started = perf_counter()
         validate_member_source(
             wrapper, office_resolutions=resolutions, office_types=office_types)
+        member_source_validation_seconds += perf_counter() - started
+        started = perf_counter()
         graph, _diagnostics = transform_member_with_report(
             wrapper, office_resolutions=resolutions, office_types=office_types)
-        validate_member(wrapper, graph, office_resolutions=resolutions,
-                        office_types=office_types)
-        member_graph += graph
-        member_graphs.append((member_graph_iri(wrapper["member"]), graph))
+        graph_iri_value = member_graph_iri(wrapper["member"])
+        member_transform_seconds += perf_counter() - started
+        if candidate_spool is not None:
+            started = perf_counter()
+            validate_member(wrapper, graph, office_resolutions=resolutions,
+                            office_types=office_types)
+            member_graph_validation_seconds += perf_counter() - started
+            started = perf_counter()
+            candidate_spool.add(graph_iri_value, graph, "members")
+            member_candidate_serialization_seconds += perf_counter() - started
+            member_graphs.append((graph_iri_value, _GraphTripleCount(len(graph))))
+            member_office_holding_count += sum(
+                1 for _ in graph.subjects(RDF.type, MEMBERS.OfficeHolding))
+            member_graph += graph
+            if index % 250 == 0 or index == len(members):
+                print(
+                    f"  timing progress Member validation {index}/{len(members)}: "
+                    f"validation={member_graph_validation_seconds:.3f}s",
+                    file=sys.stderr, flush=True,
+                )
+        else:
+            member_graphs_with_sources.append(
+                (wrapper, graph_iri_value, graph, resolutions))
+        if index % 250 == 0 or index == len(members):
+            print(
+                f"  timing progress Members {index}/{len(members)}: "
+                f"transform={member_transform_seconds:.3f}s; "
+                f"source validation={member_source_validation_seconds:.3f}s",
+                file=sys.stderr, flush=True,
+            )
+    phase_timings["Member transformations"] = member_transform_seconds
+    phase_timings["Member source validation"] = member_source_validation_seconds
+    if candidate_spool is None:
+        for index, (wrapper, graph_iri_value, graph, resolutions) in enumerate(
+                member_graphs_with_sources, start=1):
+            if not reuse_accepted_record_validation:
+                started = perf_counter()
+                validate_member(wrapper, graph, office_resolutions=resolutions,
+                                office_types=office_types)
+                member_graph_validation_seconds += perf_counter() - started
+            member_graph += graph
+            member_graphs.append((graph_iri_value, graph))
+            if (not reuse_accepted_record_validation
+                    and (index % 250 == 0 or index == len(member_graphs_with_sources))):
+                print(
+                    f"  timing progress Member validation {index}/{len(members)}: "
+                    f"validation={member_graph_validation_seconds:.3f}s",
+                    file=sys.stderr, flush=True,
+                )
+    else:
+        phase_timings["Member candidate graph serialization"] = (
+            member_candidate_serialization_seconds)
+    phase_timings["Member RDF acceptance validation"] = member_graph_validation_seconds
     member_graphs.sort(key=lambda item: item[0])
 
+    started = perf_counter()
     census = build_reference_census(
         member_records=members,
         party_records=parties,
@@ -3647,10 +4102,19 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
     candidates = build_development_reference_candidates(
         census, member_graph=member_graph)
     development_status = candidates["development_status"]
+    if candidate_spool is not None:
+        del member_graph
+    phase_timings["reference census and graph transformation"] = perf_counter() - started
 
+    bill_graphs_with_sources: list[tuple[dict, list[dict], Graph, str]] = []
     bill_graphs: list[tuple[str, Graph]] = []
+    bill_candidate_serialization_seconds = 0.0
     bill_quarantines = []
     unresolved_amendment_stage_references = 0
+    bill_source_validation_seconds = 0.0
+    bill_graph_validation_seconds = 0.0
+    bill_transform_seconds = 0.0
+    eligible_bills = []
     for wrapper in bills:
         quarantines = known_bill_source_quarantines(wrapper)
         if quarantines:
@@ -3658,24 +4122,73 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
                 diagnostic["preservation_status"] = "no_bill_graph_constructed"
             bill_quarantines.extend(quarantines)
             continue
+        started = perf_counter()
         validate_bill_source(wrapper)
+        bill_source_validation_seconds += perf_counter() - started
+        eligible_bills.append(wrapper)
+
+    for index, wrapper in enumerate(eligible_bills, start=1):
+        started = perf_counter()
         graph, diagnostics = transform_bill_with_report(wrapper)
-        validate_bill(wrapper, graph)
-        unresolved_amendment_stage_references += sum(
-            item.get("category") == "unresolved_source_reference"
-            and item.get("path") == "bill.amendmentLists[].amendmentList.stage.uri"
-            for item in diagnostics
-        )
-        bill_graphs.append((bill_graph_iri(wrapper["bill"]), graph))
+        graph_iri_value = bill_graph_iri(wrapper["bill"])
+        bill_transform_seconds += perf_counter() - started
+        if candidate_spool is not None:
+            started = perf_counter()
+            validate_bill(wrapper, graph)
+            bill_graph_validation_seconds += perf_counter() - started
+            started = perf_counter()
+            candidate_spool.add(graph_iri_value, graph, "bill-records")
+            bill_candidate_serialization_seconds += perf_counter() - started
+            bill_graphs.append((graph_iri_value, _GraphTripleCount(len(graph))))
+            unresolved_amendment_stage_references += sum(
+                item.get("category") == "unresolved_source_reference"
+                and item.get("path") == "bill.amendmentLists[].amendmentList.stage.uri"
+                for item in diagnostics
+            )
+            if index % 500 == 0 or index == len(eligible_bills):
+                print(
+                    f"  timing progress Bill validation {index}/{len(eligible_bills)}: "
+                    f"validation={bill_graph_validation_seconds:.3f}s",
+                    file=sys.stderr, flush=True,
+                )
+        else:
+            bill_graphs_with_sources.append(
+                (wrapper, diagnostics, graph, graph_iri_value))
+        if index % 500 == 0 or index == len(eligible_bills):
+            print(
+                f"  timing progress Bills {index}/{len(eligible_bills)}: "
+                f"transform={bill_transform_seconds:.3f}s; "
+                f"source validation={bill_source_validation_seconds:.3f}s",
+                file=sys.stderr, flush=True,
+            )
+    phase_timings["Bill transformations"] = bill_transform_seconds
+    phase_timings["Bill source validation"] = bill_source_validation_seconds
+    if candidate_spool is None:
+        for index, (wrapper, diagnostics, graph, graph_iri_value) in enumerate(
+                bill_graphs_with_sources, start=1):
+            if not reuse_accepted_record_validation:
+                started = perf_counter()
+                validate_bill(wrapper, graph)
+                bill_graph_validation_seconds += perf_counter() - started
+            unresolved_amendment_stage_references += sum(
+                item.get("category") == "unresolved_source_reference"
+                and item.get("path") == "bill.amendmentLists[].amendmentList.stage.uri"
+                for item in diagnostics
+            )
+            bill_graphs.append((graph_iri_value, graph))
+            if (not reuse_accepted_record_validation
+                    and (index % 500 == 0 or index == len(bill_graphs_with_sources))):
+                print(
+                    f"  timing progress Bill validation {index}/{len(bill_graphs_with_sources)}: "
+                    f"validation={bill_graph_validation_seconds:.3f}s",
+                    file=sys.stderr, flush=True,
+                )
+    else:
+        phase_timings["Bill candidate graph serialization"] = (
+            bill_candidate_serialization_seconds)
+    phase_timings["Bill RDF acceptance validation"] = bill_graph_validation_seconds
     bill_graphs.sort(key=lambda item: item[0])
 
-    # The manifest and raw objects are strictly replay-only. run_debate_batch
-    # writes its immutable reference sidecars next to the raw source object, so
-    # stage exact verified bytes in a temporary directory rather than changing
-    # the preserved source store.
-    with tempfile.TemporaryDirectory(prefix="oir-dev-bootstrap-debates-") as scratch:
-        debate_outcomes, debate_evidence = _load_development_debates(
-            raw_root, Path(scratch))
     debate_graphs = sorted(
         ((item.graph_iri, item.graph) for item in debate_outcomes),
         key=lambda item: item[0],
@@ -3692,9 +4205,10 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
         "offices": len(registry["offices"]),
         "administrative_units": len(registry["administrative_units"]),
         "office_review_decisions": office_review_counts,
-        "office_holdings": sum(
-            sum(1 for _ in graph.subjects(RDF.type, MEMBERS.OfficeHolding))
-            for _graph_iri, graph in member_graphs),
+        "office_holdings": (
+            member_office_holding_count if candidate_spool is not None else sum(
+                sum(1 for _ in graph.subjects(RDF.type, MEMBERS.OfficeHolding))
+                for _graph_iri, graph in member_graphs)),
         "bills": len(bill_graphs),
         "debates": len(debate_graphs),
     }
@@ -3715,17 +4229,9 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
     graph_payloads = [
         (graph_iri, graph, name)
         for name, entries in graph_families.items()
+        if candidate_spool is None or name not in {"members", "bill-records"}
         for graph_iri, graph in entries
     ]
-
-    # All source and RDF validation finishes before the first local graph PUT.
-    client = FusekiSparqlClient(
-        sparql_url, user=settings.fuseki_user, password=settings.fuseki_password,
-        timeout=settings.timeout)
-    loader = FusekiGraphStoreLoader(
-        gsp_url, user=settings.fuseki_user, password=settings.fuseki_password,
-        timeout=settings.timeout)
-    stale_graphs = _replace_development_graph_set(loader, client, graph_payloads)
 
     bill_summary = {
         "quarantines": sorted(bill_quarantines, key=lambda item: (
@@ -3735,13 +4241,59 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
         "quarantine_diagnostic_paths": len(bill_quarantines),
         "unresolved_amendment_stage_references": unresolved_amendment_stage_references,
     }
+    started = perf_counter()
     baseline = _development_dataset_baseline(
         captures, graph_families, counts, development_status, office_inputs,
         accepted_holding_evidence, debate_evidence, bill_summary)
+    if accepted_identity_matches:
+        if baseline["dataset"]["id"] != DEVELOPMENT_ACCEPTED_DATASET_ID:
+            raise ValueError("accepted development dataset identity changed before publication")
+        _validate_development_accepted_output(
+            graph_families, counts, development_status, bill_summary)
+    phase_timings["accepted dataset identity and output-count checks"] = (
+        perf_counter() - started)
+
+    candidate_evidence = None
+    stale_graphs = []
+    if candidate_output_path is not None:
+        # This offline branch cannot publish to any Fuseki endpoint. The
+        # benchmark harness may load the complete, syntax-checked N-Quads only
+        # after creating and verifying a fresh disposable loopback dataset.
+        started = perf_counter()
+        for graph_iri, graph, family in graph_payloads:
+            candidate_spool.add(graph_iri, graph, family)
+        candidate_evidence = candidate_spool.write(candidate_output_path)
+        phase_timings["candidate N-Quads serialization and syntax validation"] = (
+            perf_counter() - started)
+        phase_timings["candidate Member/Bill graph spool serialization"] = (
+            member_candidate_serialization_seconds
+            + bill_candidate_serialization_seconds)
+        candidate_spool_directory.cleanup()
+        candidate_evidence_path.parent.mkdir(parents=True, exist_ok=True)
+        candidate_evidence_path.write_text(
+            json.dumps(candidate_evidence, ensure_ascii=False, sort_keys=True, indent=2)
+            + "\n",
+            encoding="utf-8",
+        )
+    else:
+        # Source checks, deterministic transforms, and accepted output-count
+        # checks finish before the first local graph PUT. Exact accepted
+        # Member/Bill RDF validation remains in authoritative ETL and the prior
+        # full acceptance.
+        client = FusekiSparqlClient(
+            sparql_url, user=settings.fuseki_user, password=settings.fuseki_password,
+            timeout=settings.timeout)
+        loader = FusekiGraphStoreLoader(
+            gsp_url, user=settings.fuseki_user, password=settings.fuseki_password,
+            timeout=settings.timeout)
+        stale_graphs = _replace_development_graph_set(
+            loader, client, graph_payloads, phase_timings)
+
+    started = perf_counter()
     print("Local development reference and evaluation bootstrap:")
     print(f"  Houses/HouseTerms: {len(houses)} source records; "
           f"{counts['houses_terms']} HouseTerms")
-    print(f"  Members: {counts['members']} validated Member graphs")
+    print(f"  Members: {counts['members']} deterministic Member graphs")
     print(f"  Parties: {counts['parties']} owner identities")
     print(f"  Constituencies/panels: {counts['constituencies']} owner identities")
     print(f"  Committees: {counts['committees']} owner identities")
@@ -3763,8 +4315,18 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
         print(f"    {reference['reference_kind']} {reference['canonical_iri']}: "
               f"{reference['reason']}")
     print(f"  Reference closure: {development_status['reference_closure']}")
-    print(f"  Stale bootstrap-owned graphs removed: {len(stale_graphs)}")
+    if candidate_output_path is not None:
+        print(f"  Benchmark candidate N-Quads: {candidate_output_path}")
+        print(f"  Candidate N-Quads SHA-256: {candidate_evidence['candidate_sha256']}")
+        print(f"  Candidate graph inventory SHA-256: "
+              f"{candidate_evidence['graph_iri_inventory_sha256']}")
+    else:
+        print(f"  Stale bootstrap-owned graphs removed: {len(stale_graphs)}")
     print(f"  Dataset identity: {baseline['dataset']['id']}")
+    if reuse_accepted_record_validation:
+        print("  Member/Bill per-resource RDF acceptance: reused for exact pinned dataset")
+    elif candidate_output_path is not None:
+        print("  Member/Bill per-resource RDF acceptance: validated for benchmark candidate")
     if baseline_output_path:
         baseline_output_path.parent.mkdir(parents=True, exist_ok=True)
         baseline_output_path.write_text(
@@ -3772,6 +4334,31 @@ def _run_development_bootstrap(args: argparse.Namespace) -> int:
             encoding="utf-8",
         )
         print(f"  Dataset baseline JSON: {baseline_output_path}")
+    phase_timings["reporting and baseline output"] = perf_counter() - started
+    phase_timings["total bootstrap"] = perf_counter() - bootstrap_started
+    print("  Bootstrap phase timings:", file=sys.stderr)
+    for name in (
+            "capture selection and integrity verification",
+            "Houses transformation and validation",
+            "office and holding preparation",
+            "Member transformations",
+            "Member source validation",
+            "Member RDF acceptance validation",
+            "reference census and graph transformation",
+            "Bill transformations",
+            "Bill source validation",
+            "Bill RDF acceptance validation",
+            "Debate replay",
+            "accepted dataset identity and output-count checks",
+            "candidate Member/Bill graph spool serialization",
+            "candidate N-Quads serialization and syntax validation",
+            "graph serialization and syntax validation",
+            "graph PUT publication",
+            "graph inventory verification and stale cleanup",
+            "reporting and baseline output",
+            "total bootstrap"):
+        if name in phase_timings:
+            print(f"    {name}: {phase_timings[name]:.3f}s", file=sys.stderr)
     return 0
 
 
@@ -3808,7 +4395,10 @@ def main(argv: list[str] | None = None) -> int:
     dev_bootstrap = dev_sub.add_parser(
         "bootstrap", help="load preserved API captures into loopback Fuseki for local PoC use")
     dev_bootstrap.add_argument("--raw-dir", help="preserved immutable API capture root")
-    dev_bootstrap.add_argument("--state-db", help="read-only Core State capture index")
+    dev_bootstrap.add_argument(
+        "--state-db",
+        help="Core State path protected against baseline-output overwrite; not read",
+    )
     dev_bootstrap.add_argument("--fuseki-gsp-url", help="loopback Fuseki Graph Store endpoint")
     dev_bootstrap.add_argument("--fuseki-sparql-url", help="loopback Fuseki SPARQL endpoint")
     dev_bootstrap.add_argument("--registry-file", help="reviewed local office/admin registry JSON")
@@ -3816,6 +4406,15 @@ def main(argv: list[str] | None = None) -> int:
     dev_bootstrap.add_argument(
         "--dataset-baseline-output",
         help="write deterministic JSON describing the capture-backed development dataset",
+    )
+    dev_bootstrap.add_argument(
+        "--benchmark-candidate-nquads-output",
+        help=("offline benchmark-only: serialize and syntax-parse the exact accepted "
+              "candidate dataset without connecting to Fuseki"),
+    )
+    dev_bootstrap.add_argument(
+        "--benchmark-candidate-evidence-output",
+        help="offline benchmark-only: write deterministic per-graph hash evidence",
     )
     reconcile = sub.add_parser("reconcile"); reconcile.add_argument("endpoint", choices=["members", "parties", "institutions", "offices", "office-external", "bills-local"])
     reconcile.add_argument("--fixture"); reconcile.add_argument("--responses-file"); reconcile.add_argument("--offline", action="store_true"); reconcile.add_argument("--all", action="store_true"); reconcile.add_argument("--publish", action="store_true"); reconcile.add_argument("--output-nq"); reconcile.add_argument("--fuseki-gsp-url"); reconcile.add_argument("--fuseki-sparql-url")

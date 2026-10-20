@@ -41,6 +41,31 @@ _STAGES = (
 )
 
 
+def _populate_case_outcomes(record: dict[str, Any]) -> None:
+    """Expose stable per-case stage fields as well as the detailed stage map."""
+    planner = record.get("planner_result") or {}
+    plan = planner.get("plan") if isinstance(planner, dict) else None
+    resolution_statuses = {
+        entity.get("resolution") for entity in (plan or {}).get("entities", [])
+        if isinstance(entity, dict)
+    }
+    record.update({
+        "planner_outcome": planner.get("status") or record.get("observed_outcome"),
+        "resolution_outcome": (
+            ",".join(sorted(resolution_statuses)) if resolution_statuses
+            else planner.get("status") if planner.get("failure_stage") == "entity_resolution"
+            else "not_applicable"
+        ),
+        "final_plan_validity": record.get("stage_status", {}).get("plan_validation", "not_run"),
+        "generator_outcome": (record.get("generation_result") or {}).get("status", "not_run"),
+        "sparql_validation": record.get("stage_status", {}).get("sparql_safety", "not_run"),
+        "execution_outcome": record.get("stage_status", {}).get("execution", "not_run"),
+        "result_correctness": record.get("stage_status", {}).get("result_scoring", "not_run"),
+        "final_pass": record.get("passed"),
+        "failure_classification": record.get("failure_class"),
+    })
+
+
 def _failure(record: dict[str, Any], *, stage: str, failure_class: str,
              reason: str, outcome: str) -> None:
     record["stage_status"][stage] = "failed"
@@ -180,7 +205,15 @@ def run_plan_cases(
         or not isinstance(dataset.get("id"), str)
         or not dataset["id"].startswith("sha256:")
     ):
-        raise PlanBenchmarkError("Phase 2C evaluation requires a valid Phase 0A dataset baseline")
+        raise PlanBenchmarkError(
+            "Phase 2 evaluation requires a valid schema-version-1 development baseline"
+        )
+    declared_dataset = source_benchmark.get("dataset_evidence", {}).get("dataset_id")
+    if declared_dataset is not None and declared_dataset != dataset["id"]:
+        raise PlanBenchmarkError(
+            "realistic benchmark dataset identity mismatch: expected "
+            f"{declared_dataset}, received {dataset['id']}"
+        )
 
     source_cases = {case["id"]: case for case in source_benchmark["cases"]}
     plan_generator = PlanSparqlGenerator(supported_predicates=supported_predicates)
@@ -197,6 +230,7 @@ def run_plan_cases(
             "source_case_id": case["source_case_id"],
             "question": case.get("question", source_case["question"]),
             "expectation": case["expectation"],
+            "expected_behavior": case["expectation"],
             "evaluation": "not_scored",
             "passed": None,
             "observed_outcome": "not_run",
@@ -279,6 +313,44 @@ def run_plan_cases(
 
         if planner_result.plan is None:
             stage, failure_class = _planner_failure_stage(planner_result)
+            expected_closed = (
+                case["expectation"] == "fail_closed"
+                and failure_class in case.get("expected_failure_classes", [])
+            )
+            expected_set_valued = (
+                case["expectation"] == "set_valued_member_identity"
+                and planner_result.status == "set_valued_member_identity"
+            )
+            if expected_set_valued:
+                draft_entities = (planner_result.draft_plan or {}).get("entities", [])
+                for expected_entity in case.get("required_entities", []):
+                    if not any(
+                        entity.get("type") == expected_entity["type"]
+                        and _normalise_label(entity.get("label", ""))
+                        == _normalise_label(expected_entity["label"])
+                        for entity in draft_entities if isinstance(entity, dict)
+                    ):
+                        expected_set_valued = False
+                        break
+            if expected_closed or expected_set_valued:
+                record["stage_status"][stage] = "blocked_expected"
+                record.update(
+                    evaluation="passed", passed=True,
+                    observed_outcome=("expected_fail_closed" if expected_closed
+                                      else "expected_set_valued_identity_rejection"),
+                    score_reason=(
+                        "unsupported semantics were rejected before plan execution"
+                        if expected_closed else
+                        "set-valued Member identity was rejected without choosing an IRI"
+                    ),
+                    expected_outcome_evidence={
+                        "planner_status": planner_result.status,
+                        "failure_class": failure_class,
+                        "diagnostic": planner_result.diagnostic,
+                    },
+                )
+                outcomes.append(record)
+                continue
             record["stage_status"][stage] = "failed"
             record.update(
                 evaluation="failed" if case["expectation"] not in {"manual_review", "source_data_coverage"}
@@ -334,6 +406,23 @@ def run_plan_cases(
             continue
 
         record["stage_status"]["entity_binding"] = "passed"
+        if (
+            case["expectation"] == "fail_closed"
+            and "unsupported_temporal_translation"
+            not in case.get("expected_failure_classes", [])
+        ):
+            record.update(
+                evaluation="failed", passed=False,
+                observed_outcome="unsupported_request_accepted_as_executable_plan",
+                failure_stage="planner_model",
+                failure_class="question_interpretation",
+                failure_reason=(
+                    "the planner accepted an executable plan for a benchmark request "
+                    "that is expected to fail closed"
+                ),
+            )
+            outcomes.append(record)
+            continue
         mismatches = _semantic_mismatches(planner_result.plan, case)
         if mismatches:
             record.update(
@@ -357,6 +446,24 @@ def run_plan_cases(
                 stage = "sparql_safety"
             else:
                 stage = "generation"
+            if (
+                case["expectation"] == "fail_closed"
+                and generation.failure_class in case.get("expected_failure_classes", [])
+            ):
+                record["stage_status"][stage] = "blocked_expected"
+                record.update(
+                    evaluation="passed", passed=True,
+                    observed_outcome="expected_fail_closed",
+                    score_reason="unsupported plan semantics were rejected by deterministic generation",
+                    expected_outcome_evidence={
+                        "planner_status": planner_result.status,
+                        "generation_status": generation.status,
+                        "failure_class": generation.failure_class,
+                        "failure_reason": generation.failure_reason,
+                    },
+                )
+                outcomes.append(record)
+                continue
             record["stage_status"][stage] = "failed"
             record.update(
                 evaluation="failed", passed=False,
@@ -370,6 +477,17 @@ def run_plan_cases(
         record["stage_status"]["generation"] = "passed"
         record["stage_status"]["sparql_safety"] = "passed"
         record["generated_sparql"] = generation.sparql
+        if case["expectation"] == "fail_closed":
+            _failure(
+                record, stage="planner_model", failure_class="question_interpretation",
+                reason=(
+                    "the request expected to fail closed produced an executable "
+                    "validated query plan"
+                ),
+                outcome="unsupported_request_generated_executable_query",
+            )
+            outcomes.append(record)
+            continue
         expected_result = case.get("expected_result")
         if expected_result is not None:
             if expected_result["kind"] != generation.query_form.lower():
@@ -417,13 +535,23 @@ def run_plan_cases(
             continue
         try:
             if generation.generation_trace.get("answer_value_kind") == "resource":
-                score, label_lookups = _score_resource_result(
-                    expected_result, query_result,
-                    entity_type=generation.semantic_answer_shape["entityType"],
-                    fuseki=fuseki,
-                    supported_predicates=supported_predicates,
-                )
-                record["label_scoring_lookups"] = list(label_lookups)
+                expected_values = expected_result.get("invariants", {}).get("contains_values", [])
+                if expected_values and all(
+                    value.startswith("https://data.oireachtas.ie/")
+                    for value in expected_values
+                ):
+                    # Some supported entity types (notably DebateRecord) have no
+                    # contract-grounded label mapping. Exact resource-IRI
+                    # oracles are already semantic answer invariants.
+                    score = score_semantic_result(expected_result, query_result)
+                else:
+                    score, label_lookups = _score_resource_result(
+                        expected_result, query_result,
+                        entity_type=generation.semantic_answer_shape["entityType"],
+                        fuseki=fuseki,
+                        supported_predicates=supported_predicates,
+                    )
+                    record["label_scoring_lookups"] = list(label_lookups)
             else:
                 score = score_semantic_result(expected_result, query_result)
         except _ResultDataCoverageError as error:
@@ -457,6 +585,8 @@ def run_plan_cases(
                 failure_reason=score.reason,
             )
         outcomes.append(record)
+    for record in outcomes:
+        _populate_case_outcomes(record)
     return outcomes
 
 
@@ -476,6 +606,17 @@ def summarize_plan_results(case_results: list[dict[str, Any]]) -> dict[str, Any]
         "passed": sum(result.get("passed") is True for result in case_results),
         "failed": sum(result.get("passed") is False for result in case_results),
         "not_scored": sum(result.get("passed") is None for result in case_results),
+        "expected_fail_closed": sum(
+            result.get("observed_outcome") == "expected_fail_closed"
+            for result in case_results
+        ),
+        "expected_non_executable": sum(
+            result.get("observed_outcome") in {
+                "expected_fail_closed", "expected_set_valued_identity_rejection",
+                "clarification_required", "unresolved_entity",
+            } and result.get("passed") is True
+            for result in case_results
+        ),
         "by_failure_class": dict(sorted(failures.items())),
         "stage_outcomes": stage_counts,
     }
@@ -501,7 +642,20 @@ def run_phase1_comparison(
     case_map: dict[str, str] = {}
     not_compared = []
     for planner_case in planner_benchmark["cases"]:
-        if planner_case["expectation"] not in {"validated_plan", "clarification_required"}:
+        if planner_case["expectation"] not in {
+            "validated_plan", "clarification_required", "set_valued_member_identity",
+        }:
+            source_case = source_cases[planner_case["source_case_id"]]
+            if source_case["support_expectation"] == "unavailable":
+                reason = "source-data coverage case is not an NLQ architecture comparison"
+            elif planner_case["expectation"] == "fail_closed":
+                reason = "Phase 1 has no equivalent explicit unsupported-request outcome contract"
+            else:
+                reason = "expected unresolved/manual-review outcome has no equivalent result oracle"
+            not_compared.append({
+                "case_id": planner_case["id"],
+                "reason": reason,
+            })
             continue
         source_case = source_cases[planner_case["source_case_id"]]
         question = planner_case.get("question", source_case["question"])
