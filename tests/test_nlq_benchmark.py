@@ -370,7 +370,7 @@ def test_v03_support_expectations_match_contract_scope_and_dataset_evidence():
     contract = json.loads((ROOT / "poc/specs/query-schema-contract.json").read_text())
     by_id = {case["id"]: case for case in benchmark["cases"]}
 
-    assert "dct:temporal" not in contract["queryableProperties"]
+    assert "dct:temporal" in contract["queryableProperties"]
     house_start = by_id["date.dail-34-start"]
     assert house_start["support_expectation"] == "unsupported"
     assert house_start["evaluation_mode"] == "manual_review"
