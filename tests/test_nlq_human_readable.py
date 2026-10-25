@@ -50,7 +50,9 @@ def test_capability_page_renders_from_catalogue():
     response = client.get("/capabilities")
     assert response.status_code == 200
     assert "What can this query service answer?" in response.text
-    assert "member_full_name" in response.text
+    assert "members:isRepresentativeFrom" in response.text
+    assert "Contract capability: membership_represents" in response.text
+    assert "member_full_name" not in response.text
     assert "Temporal constraints" in response.text
 
 

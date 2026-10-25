@@ -86,13 +86,14 @@ def _coherent_statement(plan: dict, entities: dict) -> str:
             sub1, sub2 = left.get("subject", {}), right.get("subject", {})
             if obj1 == obj2 and obj1.get("type") and "entity" in sub1 and "entity" not in sub2:
                 name = entities.get(sub1["entity"], {}).get("label", "the named Member")
-                target = _type_name(obj1["type"])
+                target = {"DailConstituency": "Dáil constituency"}.get(
+                    obj1["type"], _type_name(obj1["type"]).rstrip("s"))
                 if left["fact"] == "member_constituency_representation":
                     exclusions = [f.get("value") for f in plan.get("filters", [])
                                   if f.get("operator") == "not_equals"]
                     if name in exclusions:
-                        return f"Find other Members who represented the same {target.rstrip('s')} as {name}, excluding {name}."
-                    return f"Find other Members who represented the same {target.rstrip('s')} as {name}."
+                        return f"Find other Members who represented the same {target} as {name}, excluding {name}."
+                    return f"Find other Members who represented the same {target} as {name}."
     answer = plan.get("answerShape", {})
     target = _type_name(answer.get("entityType", "results"))
     if len(reqs) == 1 and reqs[0].get("fact") == "member_identity":
