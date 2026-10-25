@@ -105,15 +105,14 @@ not substitutes. Evidence dates remain episode-scoped, preserving breaks.
 
 ```yaml
 asOf: 2026-10-25  # frozen in acceptance fixture
-referents: {term: DailTerm, constituency: DailConstituencySeries,
-  occurrence: DailConstituency, member: Member, service: DailMembership}
-relations: [term --has_constituency_occurrence--> occurrence,
-  occurrence --member_of_series--> constituency,
+referents: {term: DailTerm, constituency: DailConstituency,
+  member: Member, service: DailMembership}
+relations: [constituency --constituency_in_term--> term,
   member --has_membership--> service,
   service --in_term--> term,
-  service --represents--> occurrence]
+  service --represents--> constituency]
 constraints: [term = previousTerm(Dail, asOf),
-  constituency = resolve("Dublin South-Central")]
+  constituency = resolve("Dublin South-Central", within: term)]
 answer: entities(member, distinctBy: identity, display: [name],
   optionalDetails: [party, service.start, service.end], order: [name])
 ```
@@ -129,14 +128,15 @@ referents: {member: Member(mention: "Malcolm Byrne"),
   participation: BillParticipation, bill: Bill}
 relations: [bill --has_sponsor_participation--> participation,
   participation --participant--> member]
-constraints: [participation.role in [primary_sponsor, supporting_sponsor]]
 answer: entities(bill, distinctBy: identity,
   display: [englishTitle, billNumber, year, officialLink],
   details: [participation.role, participation.primaryEvidence], order: [year, billNumber])
 ```
 
-Unknown primary status stays unknown; this plan does not infer primary from
-ordering or absence. Source-backed sponsorship joins are reusable for Q22.
+All recorded sponsorship participations are included regardless of primary
+status. Primary/supporting is optional projected evidence; unknown stays
+unknown, and status is not an inclusion filter. Source-backed sponsorship
+joins are reusable for Q22.
 
 ### Q35 — Finance Ministers overlapping a supplied interval
 
@@ -200,9 +200,10 @@ NL-to-SPARQL path is not the target execution path.
   association from term-scoped party collections to them. This is identity
   data/modeling, not a plan feature; never merge by label or rely on
   Wikidata.
-* Q09 needs a trustworthy cross-term constituency series-to-occurrence link
-  where the source uses term-scoped constituency resources, plus complete
-  member/representation records and date/order data for `previousTerm`.
+* Q09 uses an existing term-scoped constituency occurrence and its reviewed
+  `constituencyInHouseTerm` link. It needs complete Member/representation
+  records for the requested term and reviewed start/end dates for
+  `previousTerm`; no enduring constituency-series identity is required.
 * Q23 needs the Bill sponsorship participation mapping plus readable English
   title/number/link. Primary/supporting requires source evidence such as
   `isPrimarySponsor` to be exposed through a reviewed query mapping; null is

@@ -50,7 +50,7 @@ def test_contract_artifact_loads_and_validates_its_versioned_shape():
         (ROOT / "poc/specs/query-schema-contract.schema.json").read_text(encoding="utf-8")
     )
 
-    assert contract["contractVersion"] == "2.0.0"
+    assert contract["contractVersion"] == "2.1.0"
     assert contract["schemaVersion"] == schema["properties"]["schemaVersion"]["const"] == 1
     assert contract["contractId"] == "https://data.oireachtas.ie/specs/query-schema-contract"
     assert contract["contractSchema"] == "poc/specs/query-schema-contract.schema.json"
@@ -155,10 +155,12 @@ def test_supported_predicates_come_from_contract_policy_and_active_sources():
 
     # These are real emitted triples but are deliberately not in the current
     # executable grounding allowlist; the contract calls that out explicitly.
-    for excluded in ("dct:temporal", "eli:has_part", "eli:is_realized_by"):
+    for excluded in ("eli:has_part", "eli:is_realized_by"):
         prefix, local_name = excluded.split(":", 1)
         assert URIRef(namespaces[prefix] + local_name) not in predicates
         assert excluded not in contract["queryableProperties"]
+    assert URIRef(namespaces["dct"] + "temporal") in predicates
+    assert "dct:temporal" in contract["queryableProperties"]
 
 
 def test_grounding_is_generated_from_contract_scope_without_private_etl_imports(monkeypatch):
@@ -175,7 +177,7 @@ def test_grounding_is_generated_from_contract_scope_without_private_etl_imports(
 
     for term in ("agents:Member", "members:PartyMembership", "eli-dl:DraftLegislationWork"):
         assert term in context
-    assert "contract 2.0.0 (schema version 1)" in context
+    assert "contract 2.1.0 (schema version 1)" in context
     assert "https://data.oireachtas.ie/graph/committees" in context
     assert "same RDF resource IRI" in context
     assert "Reviewed Wikidata political-party item" in context
@@ -235,18 +237,16 @@ def test_safety_contract_values_match_validate_sparql_and_local_fuseki_boundary(
             validate_sparql(query)
 
 
-def test_emitted_but_unallowlisted_patterns_are_not_mislabeled_queryable():
+def test_house_term_dates_are_queryable_but_bill_document_links_remain_unallowlisted():
     contract = load_query_contract()
     patterns = {pattern["id"]: pattern for pattern in contract["emittedRdfPatterns"]}
 
-    for pattern_id in (
-        "house-term-temporal-reference", "bill-document-work-links",
-    ):
-        assert patterns[pattern_id]["queryableInLocalNlq"] is False
+    assert patterns["house-term-temporal-reference"]["queryableInLocalNlq"] is True
+    assert patterns["bill-document-work-links"]["queryableInLocalNlq"] is False
     assert patterns["conditionally-resolved-office-holdings"]["queryableInLocalNlq"] is True
     assert patterns["debate-record-identity"]["queryableInLocalNlq"] is True
-    for pattern_id in ("house-term-temporal-reference", "bill-document-work-links"):
-        assert "not-queryable" in patterns[pattern_id]["availability"]
+    assert patterns["house-term-temporal-reference"]["availability"] == "emitted"
+    assert "not-queryable" in patterns["bill-document-work-links"]["availability"]
 
 
 def test_query_schema_v2_corrects_bill_process_ownership_and_exposes_only_reviewed_expansions():

@@ -3,7 +3,7 @@
   "contractId": "https://data.oireachtas.ie/specs/query-schema-contract",
   "contractSchema": "poc/specs/query-schema-contract.schema.json",
   "schemaVersion": 1,
-  "contractVersion": "2.0.0",
+  "contractVersion": "2.1.0",
   "description": "Queryable, currently emitted Oireachtas RDF patterns and local NLQ execution boundary.",
   "namespaces": {
     "agents": "https://data.oireachtas.ie/ontology#",
@@ -67,6 +67,7 @@
     "agents:memberCode",
     "agents:gender",
     "agents:dateOfDeath",
+    "dct:temporal",
     "agents:legislativeYear",
     "agents:debateDate",
     "agents:hasImage",
@@ -243,10 +244,18 @@
     {
       "id": "house-term-temporal-reference",
       "graphFamily": "houses",
-      "availability": "emitted-but-not-queryable-by-current-predicate-allowlist",
-      "queryableInLocalNlq": false,
-      "triples": [["?term", "dct:temporal", "?period"], ["?period", "rdf:type", "dct:PeriodOfTime"], ["?period", "dcat:startDate", "?startDate"]],
-      "note": "This RDF is emitted, but dct:temporal is not in the current shared NLQ predicate allowlist. The local query service must not ground it as an executable predicate in this contract version."
+      "availability": "emitted",
+      "queryableInLocalNlq": true,
+      "triples": [["?term", "dct:temporal", "?period"], ["?period", "rdf:type", "dct:PeriodOfTime"], ["?period", "dcat:startDate", "?startDate"], ["?period", "dcat:endDate", "?endDate (optional)"]],
+      "note": "The Houses ETL emits the period link and start/end dates; these reviewed predicates are queryable for date-grounded HouseTerm resolution."
+    },
+    {
+      "id": "constituency-term-occurrence",
+      "graphFamily": "constituencies",
+      "availability": "emitted",
+      "queryableInLocalNlq": true,
+      "triples": [["?constituency", "rdf:type", "members:Constituencies and members:DailConstituency"], ["?constituency", "skos:prefLabel", "?englishLabel"], ["?constituency", "members:constituencyInHouseTerm", "?term"]],
+      "note": "Existing constituency individuals are term-scoped occurrences. Resolve their labels with the exact HouseTerm link; do not merge or infer an enduring series identity."
     },
     {
       "id": "member-house-membership",
@@ -349,6 +358,7 @@
   ],
   "crossGraphJoins": [
     {"fromGraphFamily": "member-records", "predicate": "members:inHouseTerm", "toGraphFamily": "houses", "joinKey": "same RDF resource IRI"},
+    {"fromGraphFamily": "constituencies", "predicate": "members:constituencyInHouseTerm", "toGraphFamily": "houses", "joinKey": "same RDF resource IRI"},
     {"fromGraphFamily": "member-records", "predicate": "members:isOireachtasMembershipOf", "toGraphFamily": "houses", "joinKey": "same RDF resource IRI"},
     {"fromGraphFamily": "member-records", "predicate": "members:memberOfCollection", "toGraphFamily": "parties", "joinKey": "same RDF resource IRI"},
     {"fromGraphFamily": "member-records", "predicate": "members:isPartyMembershipOf", "toGraphFamily": "parties", "joinKey": "same RDF resource IRI", "appliesTo": "PartyMembership only; not independent collection membership"},
@@ -412,7 +422,6 @@
     {"id": "parliamentary-group-records", "status": "ontology-only-not-currently-populated", "detail": "members:ParliamentaryGroup and related party/group concepts are not emitted as current queryable group instances; do not infer a group identity or relationship from party collection membership."},
     {"id": "act-descriptions", "status": "not-published", "detail": "Bill graphs may link to an Act via eli:basis_for; Act descriptions are owned by a later Acts ETL."},
     {"id": "bill-availability", "status": "optional-data", "detail": "Bill query patterns work only when Bill graphs have actually been loaded."},
-    {"id": "emitted-house-period-not-allowlisted", "status": "emitted-but-not-queryable", "detail": "The Houses ETL emits dct:temporal, but the current local NLQ predicate allowlist does not permit it."},
     {"id": "emitted-bill-document-links-not-allowlisted", "status": "emitted-but-not-queryable", "detail": "The Bills ETL emits eli:has_part and eli:is_realized_by, but they are not in the active property mappings or current local NLQ predicate allowlist."},
     {"id": "office-registry-data", "status": "not-queryable-in-contract-2.0", "detail": "The Phase 2 queryable model includes reviewed NamedOffice descriptions and accepted Member-owned OfficeHolding records, but does not ground AdministrativeUnit metadata or CabinetMembership patterns. The ETL may publish those records independently; development evaluation data remains non-authoritative."},
     {"id": "executive-role-instances", "status": "not-currently-populated", "detail": "Ontology-only executive roles and unpopulated office-role patterns do not establish executive tenure. Deprecated MinisterOfStateMembership may appear in legacy datasets but is not emitted by the current canonical Member transformation."},

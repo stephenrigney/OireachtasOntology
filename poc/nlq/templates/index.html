@@ -44,7 +44,7 @@
     <textarea id="question" name="question" required maxlength="2000">{{ question }}</textarea>
     <label for="mode"><strong>Development query path</strong></label>
     <select id="mode" name="mode">
-      <option value="phase2" {% if mode == "phase2" %}selected{% endif %}>Phase 2 structured planner (default)</option>
+       <option value="phase2" {% if mode == "phase2" %}selected{% endif %}>Composable semantic query plan (default)</option>
       <option value="phase1" {% if mode == "phase1" %}selected{% endif %}>Phase 1 direct NL→SPARQL (comparison)</option>
     </select>
     <button type="submit">Ask</button>

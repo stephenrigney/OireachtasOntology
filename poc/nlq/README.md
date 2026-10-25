@@ -411,21 +411,45 @@ Do not use `docker compose down -v` as a refresh step: it deletes Fuseki's persi
 ## How it works
 
 ```text
-Question in browser / benchmark runner
-  -> Phase 2 semantic planner (default browser path)
-  -> deterministic local entity resolution
-  -> validated structured query plan
-  -> deterministic SPARQL generation and safety checks
+Question in browser
+  -> composable semantic plan v2 (default browser path)
+  -> date-grounded term resolution and term-scoped entity resolution
+  -> typed relation validation
+  -> deterministic SPARQL compilation and safety checks
   -> configured local Fuseki /query endpoint
   -> SPARQL Results JSON
   -> result table / ASK answer in browser
 ```
 
-The Phase 1 direct NL→SPARQL path remains selectable in the development form for
-comparison/debugging.
+The old structured v1 plan pipeline is retired from the application and
+capabilities UI; it is not a parallel runtime. The Phase 1 direct NL→SPARQL
+comparison mode remains selectable for development only. The current v2
+composable contract is `poc/specs/composable-query-plan-contract.json`, with
+instance shape in `poc/specs/composable-query-plan.schema.json`. The initial
+running capability is the previous-Dáil constituency representation slice.
+The default `OIR_NLQ_AS_OF_DATE` is today; pin it (for example,
+`2026-10-25`) for reproducible evaluation. Previous-term selection uses
+asserted HouseTerm types and reviewed start/end dates reached through the
+HouseTerm's `dct:temporal` period link, never term labels or ordinal numbers.
+Constituency identity is resolved by its label together with
+`members:constituencyInHouseTerm` for that selected term. The Member query joins
+membership, term and representation records using reviewed mappings,
+deduplicates by Member resource identity, and renders names rather than IRIs.
+
+The only added House-term query grounding is the already-emitted and mapped
+`dct:temporal` relationship plus its existing `dcat:startDate`/`dcat:endDate`
+values; the query/schema contract is now `2.1.0`. The committed
+`tests/expected/constituencies.ttl` fixture contains Dublin Mid-West only in
+the 34th Dáil, so it is not a previous-Dáil acceptance fixture. Focused Q09
+tests use explicitly synthetic constituency/member records with source-backed
+term-date values to verify replacements and identity deduplication. This
+proves the planner/compiler/UI path, not the complete real-world answer for
+Dublin South-Central. That historical acceptance check still needs a
+reviewed, sufficiently complete fixture of 33rd-Dáil South-Central
+representation and replacement records.
 
 The repository-owned machine-readable query contract is
-`poc/specs/query-schema-contract.json` (contract version `2.0.0`, schema
+`poc/specs/query-schema-contract.json` (contract version `2.1.0`, schema
 version `1`). Its JSON Schema is `poc/specs/query-schema-contract.schema.json`.
 The contract defines the queryable class/property scope, named-graph families
 and owners, emitted RDF patterns, entity-specific label predicates,
@@ -433,6 +457,10 @@ cross-graph joins, optional reviewed external identity links, reasoning
 assumptions, known unavailable patterns, and the local safety policy.
 
 ### Structured query-plan contract (Phase 2A)
+
+The following Phase 2A/2B/2C sections are historical implementation context.
+Their version-1 plan format and browser runtime have been retired; the current
+application consumes the composable plan contract described above.
 
 The semantic plan contract is `poc/specs/query-plan-contract.json` (contract
 version `1.2.0`, schema version `1`). Its manifest schema is

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contractId": "https://data.oireachtas.ie/specs/composable-query-plan-contract",
+  "schemaVersion": 1,
+  "contractVersion": "2.0.0",
+  "planVersion": 2,
+  "scope": "Local Oireachtas query planning; plans contain semantic referents and reviewed relation IDs, never query syntax.",
+  "resolutionOutcomes": ["resolved", "ambiguous", "not_found", "source_data_unavailable", "unsupported_mapping"],
+  "entityTypes": ["Member", "DailMembership", "DailTerm", "DailConstituency"],
+  "relations": [
+    {"id": "constituency_in_term", "subjectType": "DailConstituency", "objectType": "DailTerm", "predicate": "members:constituencyInHouseTerm", "subjectGraph": "constituencies", "objectGraph": "houses"},
+    {"id": "member_has_membership", "subjectType": "Member", "objectType": "DailMembership", "predicate": "members:hasMembersMembership", "subjectGraph": "member-records", "objectGraph": "member-records"},
+    {"id": "membership_in_term", "subjectType": "DailMembership", "objectType": "DailTerm", "predicate": "members:inHouseTerm", "subjectGraph": "member-records", "objectGraph": "houses"},
+    {"id": "membership_represents", "subjectType": "DailMembership", "objectType": "DailConstituency", "predicate": "members:isRepresentativeFrom", "subjectGraph": "member-records", "objectGraph": "constituencies"}
+  ],
+  "answer": {"kinds": ["entities"], "identity": "RDF resource IRI", "displayAttributes": ["name"]},
+  "relativeTerm": {"operation": "previousTerm", "houseType": "DailTerm", "asOf": "required", "dateMapping": {"graphFamily": "houses", "periodLinkPredicate": "dct:temporal", "startPredicate": "dcat:startDate", "endPredicate": "dcat:endDate"}, "endAbsentMeans": "open-ended", "labelChronology": false}
+}
