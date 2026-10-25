@@ -138,6 +138,21 @@ def validate_plan(plan: Any) -> dict[str, Any]:
         subject_type, object_type = _Q09_FACTS[relation["fact"]]
         if (refs[relation["from"]]["type"], refs[relation["to"]]["type"]) != (subject_type, object_type):
             raise PlanError(f"Invalid referent types for relation {relation['fact']!r}.")
+    # This bounded compiler has exactly one faithful Q09 shape. Validate its
+    # complete relation set here so no accepted plan can lose edges when later
+    # compiled. In particular, indexing by fact must not collapse repeats.
+    expected_relations = {
+        "constituency_in_term": ("constituency", "term"),
+        "member_has_membership": ("member", "membership"),
+        "membership_in_term": ("membership", "term"),
+        "membership_represents": ("membership", "constituency"),
+    }
+    if len(plan["relations"]) != len(expected_relations):
+        raise PlanError("Q09 compiler cannot faithfully compile additional or repeated relationships.")
+    actual_relations = {relation["fact"]: (relation["from"], relation["to"])
+                        for relation in plan["relations"]}
+    if actual_relations != expected_relations:
+        raise PlanError("Q09 compiler cannot faithfully compile disconnected or non-Q09 relationships.")
     answer = plan["answer"]
     if (not isinstance(answer, dict) or answer.get("kind") != "entities"
             or answer.get("referent") not in refs or refs[answer["referent"]]["type"] != "Member"

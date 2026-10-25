@@ -96,10 +96,6 @@ def test_plan_keeps_independent_same_type_referents_and_joins_by_id():
     plan = plan_question("Who were the TDs for Dublin Mid-West in the last Dáil?", as_of=AS_OF)
     plan["referents"]["other_member"] = {"type": "Member"}
     plan["referents"]["other_membership"] = {"type": "DailMembership"}
-    plan["relations"].append({
-        "id": "other-member-membership", "fact": "member_has_membership",
-        "from": "other_member", "to": "other_membership",
-    })
     assert validate_plan(plan)["referents"]["other_member"] is not plan["referents"]["member"]
 
 
@@ -148,8 +144,54 @@ def test_compile_requires_all_reviewed_relation_edges_and_passes_safety():
     assert "members:isRepresentativeFrom" in generated
     assert "SERVICE" not in generated and "FROM NAMED" not in generated
     plan["relations"] = plan["relations"][:-1]
-    with pytest.raises(PlanError, match="disconnected"):
+    with pytest.raises(PlanError, match="additional or repeated"):
         compile_answer_query(plan, TERM_33, CONSTITUENCY_33, supported_predicates=supported)
+
+
+@pytest.mark.parametrize("case, message", [
+    ("additional", "additional or repeated"),
+    ("repeated", "additional or repeated"),
+    ("disconnected", "disconnected or non-Q09"),
+])
+def test_q09_rejects_every_relationship_it_cannot_compile(case, message):
+    plan = plan_question("Who represented Dublin Mid-West in the previous Dáil?", as_of=AS_OF)
+    if case == "additional":
+        plan["referents"]["other_member"] = {"type": "Member"}
+        plan["referents"]["other_membership"] = {"type": "DailMembership"}
+        plan["relations"].append({
+            "id": "other-member-membership", "fact": "member_has_membership",
+            "from": "other_member", "to": "other_membership",
+        })
+    elif case == "repeated":
+        repeated = dict(plan["relations"][1])
+        repeated["id"] = "member-membership-again"
+        plan["relations"].append(repeated)
+    else:
+        plan["referents"]["other_membership"] = {"type": "DailMembership"}
+        plan["relations"][2]["from"] = "other_membership"
+    with pytest.raises(PlanError, match=message):
+        validate_plan(plan)
+
+
+def test_empty_member_result_is_local_dataset_observation_without_completeness_claim(monkeypatch):
+    from poc.nlq import app as app_module
+
+    class EmptyAnswerFuseki(SyntheticFuseki):
+        def query(self, query):
+            if "members:isRepresentativeFrom" in query:
+                self.queries.append(query)
+                return QueryResult("select", ("member_member", "memberName"), ())
+            return super().query(query)
+
+    monkeypatch.setenv("OIR_NLQ_AS_OF_DATE", "2026-10-25")
+    monkeypatch.setattr(app_module, "FusekiQueryClient", lambda *args, **kwargs: EmptyAnswerFuseki())
+    response = TestClient(app_module.create_app(repository_root=ROOT)).post("/ask", data={
+        "question": "Who were the TDs for Dublin Mid-West in the last Dáil?",
+        "mode": "phase2",
+    })
+    assert response.status_code == 200
+    assert "No matching records were found in the local dataset." in response.text
+    assert "does not establish historical completeness" in response.text
 
 
 def test_end_to_end_synthetic_replacement_deduplication_and_readable_answer():
