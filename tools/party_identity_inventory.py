@@ -45,7 +45,13 @@ def records(root: Path):
                     if dates.get("start") and dates.get("end") and dates["end"] < dates["start"]:
                         entry["date_flags"].add("source affiliation end precedes its start")
                     if dates.get("end") and member_dates.get("start") and dates["end"] < member_dates["start"]:
-                        entry["date_flags"].add("some party dates end before associated parliamentary membership begins; verify historical source dates")
+                        entry["date_flags"].add("some party dates end before associated parliamentary membership begins, verify historical source dates")
+                    if dates.get("start") and member_dates.get("end") and dates["start"] > member_dates["end"]:
+                        entry["date_flags"].add("some party affiliations begin after associated parliamentary membership ends, verify historical source dates")
+                    if dates.get("start") and member_dates.get("start") and dates["start"] < member_dates["start"]:
+                        entry["date_flags"].add("some party affiliations begin before associated parliamentary membership starts")
+                    if dates.get("end") and member_dates.get("end") and dates["end"] > member_dates["end"]:
+                        entry["date_flags"].add("some party affiliations end after associated parliamentary membership ends")
                     if member_dates.get("start"):
                         entry["member_starts"].add(member_dates["start"])
                     if member_dates.get("end"):

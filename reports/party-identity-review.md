@@ -37,7 +37,7 @@ section for the decisions that matter most.
 | Farmers Party | 3rd–7th Dáils; 1922 and 1925 Seanads | Appears straightforward. |
 | Fianna Fáil | 4th–34th Dáils; 2nd–27th Seanads | Appears straightforward by name; some historical date entries need checking. |
 | Fine Gael | 4th–34th Dáils; 2nd–27th Seanads | Needs attention: possible historical relationship to Cumann na nGaedheal; some date entries need checking. |
-| Green Party | 26th–34th Dáils; 23rd–27th Seanads | Appears straightforward. |
+| Green Party | 26th–30th and 32nd–34th Dáils; 23rd, 25th–27th Seanads | Appears straightforward; no Green Party record was observed in the 31st Dáil or 24th Seanad. |
 | Historical Sinn Féin | 1st–6th Dáils | Kept separate from modern Sinn Féin; internal continuity is not assumed. |
 | Independent Ireland | 34th Dáil | Appears straightforward by name; only one observed period. |
 | Independents 4 Change | 32nd–33rd Dáils | Needs attention: confirm the intended party/alliance category. |
@@ -109,13 +109,13 @@ or an electoral grouping.
 
 ### Dates that need checking
 
-Member records include different dated party-affiliation intervals, so the
-earliest and latest dates in the inventory are summaries of those observations,
-not the life span of a party. Some source intervals end before the related
-member's recorded service in that House term, and some intervals have an end
-before their start. The CSV preserves the dates and flags these cases; nothing
-has been silently repaired. **Reviewer decision:** determine whether these are
-source-history errors or reflect a different meaning for the dates.
+Member records include dated party-affiliation intervals alongside each
+member's parliamentary service dates. The inventory compares those dates and
+flags affiliations that begin before or after, or end before or after, the
+associated service period. It also flags intervals whose end precedes their
+start. This includes records for Fianna Fáil and Fine Gael in the 4th Dáil,
+Fine Gael in the 8th Dáil, and the Progressive Democrats in the 18th Dáil.
+These source dates are preserved as recorded and have not been repaired.
 
 ## 4. Limitations
 
