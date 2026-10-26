@@ -4,8 +4,8 @@
   "source_inventory_sha256": "591a9ff0c83ec207e8368faa6c236612c949eb0add9edf58750a32923e8fa2cd",
   "source_record_count": 315,
   "counts": {
-    "accepted": 311,
-    "unresolved": 3,
+    "accepted": 314,
+    "unresolved": 0,
     "excluded": 1
   },
   "identity_namespace_proposal": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/",
@@ -50,6 +50,12 @@
       "id": "democratic-left",
       "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/democratic-left",
       "label": "Democratic Left",
+      "aliases": []
+    },
+    {
+      "id": "democratic-socialist-party",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/democratic-socialist-party",
+      "label": "Democratic Socialist Party",
       "aliases": []
     },
     {
@@ -1034,9 +1040,9 @@
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/23/Democratic_Socialist_Party",
       "source_label": "Democratic Socialist Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "The review flags only limited, separated observations and does not decide whether these records share one identity"
+      "outcome": "accepted",
+      "identity": "democratic-socialist-party",
+      "reason": "Explicit user approval: Democratic Socialist Party records share one identity"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/23/Fianna_Fáil",
@@ -1111,9 +1117,9 @@
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/25/Democratic_Socialist_Party",
       "source_label": "Democratic Socialist Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "The review flags only limited, separated observations and does not decide whether these records share one identity"
+      "outcome": "accepted",
+      "identity": "democratic-socialist-party",
+      "reason": "Explicit user approval: Democratic Socialist Party records share one identity"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/25/Fianna_Fáil",
@@ -1153,9 +1159,9 @@
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/26/Democratic_Socialist_Party",
       "source_label": "Democratic Socialist Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "The review flags only limited, separated observations and does not decide whether these records share one identity"
+      "outcome": "accepted",
+      "identity": "democratic-socialist-party",
+      "reason": "Explicit user approval: Democratic Socialist Party records share one identity"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/26/Fianna_Fáil",

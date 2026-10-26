@@ -26,6 +26,7 @@ IDENTITIES = {
     "clann-na-talmhan": {"label": "Clann na Talmhan", "aliases": []},
     "cumann-na-ngaedheal": {"label": "Cumann na nGaedheal", "aliases": []},
     "democratic-left": {"label": "Democratic Left", "aliases": []},
+    "democratic-socialist-party": {"label": "Democratic Socialist Party", "aliases": []},
     "farmers-party": {"label": "Farmers Party", "aliases": []},
     "fianna-fail": {"label": "Fianna Fáil", "aliases": []},
     "fine-gael": {"label": "Fine Gael", "aliases": []},
@@ -79,6 +80,7 @@ LABEL_IDENTITIES = {
     "Clann na Talmhan": "clann-na-talmhan",
     "Cumann na nGaedheal": "cumann-na-ngaedheal",
     "Democratic Left": "democratic-left",
+    "Democratic Socialist Party": "democratic-socialist-party",
     "Farmers Party": "farmers-party",
     "Fianna Fáil": "fianna-fail",
     "Fine Gael": "fine-gael",
@@ -120,8 +122,6 @@ def identity_for(row: dict[str, str]) -> str | None:
         return "workers-party"
     if name in ("Anti-Austerity Alliance - People Before Profit", "People Before Profit-Solidarity"):
         return "people-before-profit-solidarity"
-    if name == "Democratic Socialist Party":
-        return None
     return LABEL_IDENTITIES.get(name)
 
 
@@ -148,15 +148,13 @@ def build() -> dict:
                 reason = (
                     "Explicit user approval: 23rd–27th Seanad Sinn Féin records belong to modern Sinn Féin"
                     if name == "Sinn Féin" and row["house"] == "seanad"
+                    else "Explicit user approval: Democratic Socialist Party records share one identity"
+                    if name == "Democratic Socialist Party"
                     else "Approved by reports/party-identity-review.md §2 or §5"
                 )
             else:
                 outcome = "unresolved"
-                reason = (
-                    "The review flags only limited, separated observations and does not decide whether these records share one identity"
-                    if name == "Democratic Socialist Party"
-                    else "No reviewed identity association for this source record"
-                )
+                reason = "No reviewed identity association for this source record"
         records.append({
             "source_iri": source,
             "source_label": name,

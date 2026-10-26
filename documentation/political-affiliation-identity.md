@@ -80,7 +80,8 @@ Labour Party; National Centre Party; National Labour Party; National League
 Party; National Progressive Democrats; People Before Profit Alliance; the
 combined People Before Profit–Solidarity affiliation; Progressive Democrats;
 Renua; the four Sinn Féin identities above; Workers Party; Social Democrats;
-Socialist Labour Party; Socialist Party; and Workers and Unemployed Action.
+Socialist Labour Party; Socialist Party; Workers and Unemployed Action; and
+Democratic Socialist Party.
 The record-level associations for every identity are in the JSON register.
 For these reviewed records, the first-pass same-label groupings are approved;
 this is not permission to infer an association for a future or otherwise
@@ -98,18 +99,19 @@ National Progressive Democrats / Progressive Democrats, Democratic Left /
 Labour Party, and National Labour Party / Labour Party. No
 predecessor/successor relationships are inferred.
 
-## Accounting and unresolved identity work
+The 23rd, 25th and 26th Dáil records named Democratic Socialist Party are
+associated with one `democratic-socialist-party` identity by explicit user
+approval. This does not associate them with Democratic Left, Socialist Party,
+Socialist Labour Party or other similarly named identities.
+
+## Accounting and review boundary
 
 The current inventory has 315 distinct non-Independent term-scoped records.
-The generated register assigns 311 records to 32 local identities, excludes
-the one Ceann Comhairle office record, and leaves three Democratic Socialist
-Party records unresolved. Every source IRI is present exactly once. The three
-unresolved rows are the 23rd, 25th and 26th Dáil records named Democratic
-Socialist Party. The review calls their observations limited and separated and
-does not decide whether they share one identity or how they relate to similarly
-named groups. They remain affiliations under the user's default classification;
-they are not rejected as parties. No further unresolved identity cases are
-present in this reviewed snapshot.
+The generated register assigns 314 records to 33 local identities, excludes
+the one Ceann Comhairle office record, and has no unresolved associations.
+Every source IRI is present exactly once. The Democratic Socialist Party rows
+from the 23rd, 25th and 26th Dáils now share one identity by explicit user
+approval; the identity is not merged with similarly named parties.
 
 The generator pins the exact inventory byte digest and fails closed if the
 inventory changes. A future source record is not covered by these approvals:
