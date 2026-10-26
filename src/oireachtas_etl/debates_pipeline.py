@@ -6,7 +6,7 @@ import hashlib
 import json
 import xml.etree.ElementTree as ET
 
-from rdflib import Dataset, Graph, URIRef
+from rdflib import Graph, URIRef
 
 from .config import COMMITTEES_GRAPH, HOUSES_GRAPH
 from .debates_owners import build_debate_reference_resolver
@@ -24,7 +24,11 @@ from .transforms.debates import (
     inspect_debate_source_identity,
     transform_debate,
 )
-from .validation.debates_integration import validate_debates_integration
+from .validation.debates_integration import (
+    DebateIntegrationOwnerContext,
+    prepare_debate_integration_owners,
+    validate_debates_integration,
+)
 
 
 DEBATES_PUBLICATION_CONTRACT = 1
@@ -112,18 +116,6 @@ def load_debate_owner_snapshot(store: CoreStateStore) -> DebateOwnerSnapshot:
     return DebateOwnerSnapshot(resolver, graphs, owner_snapshot_hash)
 
 
-def _integration_dataset(result, owner_graphs: dict[str, Graph]) -> Dataset:
-    dataset = Dataset()
-    for graph_iri, source in sorted(owner_graphs.items()):
-        target = dataset.graph(URIRef(graph_iri))
-        for triple in source:
-            target.add(triple)
-    debate = dataset.graph(URIRef(result.graph_iri))
-    for triple in result.graph:
-        debate.add(triple)
-    return dataset
-
-
 def _checked_inputs(sources: list[DebateRawSource]) -> list[dict]:
     if not sources:
         raise DebateSourceError("supply at least one explicit AKN main.xml URL or preserved SHA-256 replay key")
@@ -152,7 +144,8 @@ def _checked_inputs(sources: list[DebateRawSource]) -> list[dict]:
 
 
 def _plan_records(sources: list[DebateRawSource], resolver, *,
-                  owner_graphs: dict[str, Graph], store: CoreStateStore | None,
+                  owner_context: DebateIntegrationOwnerContext,
+                  store: CoreStateStore | None,
                   run_id: str | None, client, publish: bool,
                   owner_snapshot_hash: str) -> tuple[list[dict], list[DebateBatchOutcome]]:
     planned: list[dict] = []
@@ -338,8 +331,7 @@ def _plan_records(sources: list[DebateRawSource], resolver, *,
             raise CoreStateError("Debates transformer result differs from source identity preflight")
         try:
             validate_debates_integration(
-                result, _integration_dataset(result, owner_graphs),
-                source_xml=item["body"],
+                result, source_xml=item["body"], owner_context=owner_context,
             )
         except ValueError as error:
             quarantine(item, work_iri=item["work_iri"], stage="integration_validation",
@@ -390,9 +382,13 @@ def run_debate_batch(sources: list[DebateRawSource], *,
             build_debate_reference_resolver(), {},
             hashlib.sha256(b"[]").hexdigest(),
         )
+    # Index the one verified owner snapshot once for all Works in this batch.
+    # The integration validator receives this context directly; no per-Work
+    # Dataset copy or full owner-graph scan is needed.
+    owner_context = prepare_debate_integration_owners(owner_snapshot.graphs)
     if sources:
         work_items, outcomes = _plan_records(
-            sources, owner_snapshot.resolver, owner_graphs=owner_snapshot.graphs,
+            sources, owner_snapshot.resolver, owner_context=owner_context,
             store=store, run_id=run_id,
             client=client, publish=publish,
             owner_snapshot_hash=owner_snapshot.snapshot_hash,

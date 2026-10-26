@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 import warnings
 from xml.sax.saxutils import quoteattr
 
 import pytest
-from rdflib import Dataset, Literal, URIRef
+from rdflib import Dataset, Graph, Literal, URIRef
 from rdflib.namespace import RDF, RDFS
 
 from oireachtas_etl.config import COMMITTEES_GRAPH, HOUSES_GRAPH
@@ -20,6 +21,7 @@ from oireachtas_etl.validation.committees import validate_committees
 from oireachtas_etl.validation.debates_integration import (
     RDF_ONLY_LIMITATIONS,
     SOURCE_AWARE_LIMITATIONS,
+    prepare_debate_integration_owners,
     validate_debates_integration,
 )
 from oireachtas_etl.validation.houses import validate_houses
@@ -102,10 +104,16 @@ def _debate(filename, *, resolver=None):
 
 
 def test_valid_result_joins_member_house_and_term_to_named_owner_graphs(validated_owner_graphs):
-    result = _debate("dail_2026-02-26.akn.xml",
+    source_xml = (DEBATE_DIR / "dail_2026-02-26.akn.xml").read_bytes()
+    result = transform_debate(source_xml,
                      resolver=_dail_resolver(validated_owner_graphs))
 
-    validate_debates_integration(result, _dataset(result, validated_owner_graphs))
+    validate_debates_integration(result, _dataset(result, validated_owner_graphs),
+                                 source_xml=source_xml)
+    validate_debates_integration(
+        result, source_xml=source_xml,
+        owner_context=prepare_debate_integration_owners(validated_owner_graphs),
+    )
 
     work = URIRef(result.work_iri)
     assert (work, OIR.recordOfHouseTerm, DAIL_34_TERM) in result.graph
@@ -117,7 +125,7 @@ def test_valid_result_joins_member_house_and_term_to_named_owner_graphs(validate
 
 
 def test_exact_committee_reference_joins_real_committee_and_house_term_owners(
-    validated_owner_graphs,
+        validated_owner_graphs,
 ):
     work_path = "/akn/ie/debateRecord/dail/2026-01-01/debate"
     source = (
@@ -140,16 +148,20 @@ def test_exact_committee_reference_joins_real_committee_and_house_term_owners(
     )
 
     validate_debates_integration(result, _dataset(result, validated_owner_graphs))
+    validate_debates_integration(
+        result, owner_context=prepare_debate_integration_owners(validated_owner_graphs),
+    )
 
     assert (URIRef(result.work_iri), OIR.recordOfBody, COMMITTEE) in result.graph
     assert not list(result.graph.objects(URIRef(result.work_iri), OIR.recordOfHouseTerm))
 
 
 def test_representative_reports_cover_four_statuses_without_placeholder_rdf(
-    validated_owner_graphs,
+        validated_owner_graphs,
 ):
     statuses = set()
     observed_slots = set()
+    owner_context = prepare_debate_integration_owners(validated_owner_graphs)
     for filename in (
         "dail_2015-07-02.akn.xml",
         "dail_2026-02-26.akn.xml",
@@ -164,6 +176,9 @@ def test_representative_reports_cover_four_statuses_without_placeholder_rdf(
         observed_slots.update(row["slot"] for row in reference_rows)
         validate_debates_integration(
             result, _dataset(result, validated_owner_graphs), source_xml=source_xml,
+        )
+        validate_debates_integration(
+            result, source_xml=source_xml, owner_context=owner_context,
         )
         assert not any(
             isinstance(value, URIRef) and str(value) in {"#", "", "#?"}
@@ -284,6 +299,99 @@ def test_missing_member_type_in_named_owner_graph_fails_shacl(validated_owner_gr
 
     with pytest.raises(ValueError, match="SHACL validation failed"):
         validate_debates_integration(result, dataset)
+    with pytest.raises(ValueError, match="SHACL validation failed"):
+        validate_debates_integration(
+            result, owner_context=prepare_debate_integration_owners({
+                graph_iri: dataset.graph(graph_iri)
+                for graph_iri in validated_owner_graphs
+            }),
+        )
+
+
+def test_prepared_owner_index_preserves_ambiguous_member_failure(validated_owner_graphs):
+    result = _debate("dail_2026-02-26.akn.xml",
+                     resolver=_dail_resolver(validated_owner_graphs))
+    owners = {iri: graph for iri, graph in validated_owner_graphs.items()}
+    member_graph_iri = next(iri for iri in owners
+                            if str(iri).startswith("https://data.oireachtas.ie/graph/member/"))
+    member_graph = owners[member_graph_iri]
+    member = next(result.graph.objects(None, OIR.speaker), None)
+    if member is None:
+        member = next(result.graph.objects(None, OIR.votedFor))
+    duplicate_iri = URIRef("https://data.oireachtas.ie/graph/member/duplicate-fixture")
+    duplicate = Graph(identifier=duplicate_iri)
+    for triple in member_graph:
+        duplicate.add(triple)
+    owners[duplicate_iri] = duplicate
+    dataset = _dataset(result, owners)
+
+    with pytest.raises(ValueError, match="exactly one typed Member"):
+        validate_debates_integration(result, dataset)
+    with pytest.raises(ValueError, match="exactly one typed Member"):
+        validate_debates_integration(
+            result, owner_context=prepare_debate_integration_owners(owners),
+        )
+
+
+def test_prepared_owner_context_preserves_missing_member_owner_failure(
+        validated_owner_graphs):
+    result = _debate("dail_2026-02-26.akn.xml",
+                     resolver=_dail_resolver(validated_owner_graphs))
+    owners = {iri: graph for iri, graph in validated_owner_graphs.items()
+              if not str(iri).startswith("https://data.oireachtas.ie/graph/member/")}
+    dataset = _dataset(result, owners)
+
+    with pytest.raises(ValueError, match="SHACL validation failed"):
+        validate_debates_integration(result, dataset)
+    with pytest.raises(ValueError, match="SHACL validation failed"):
+        validate_debates_integration(
+            result, owner_context=prepare_debate_integration_owners(owners),
+        )
+
+
+def test_prepared_owner_context_preserves_member_named_graph_ownership(
+        validated_owner_graphs):
+    result = _debate("dail_2026-02-26.akn.xml",
+                     resolver=_dail_resolver(validated_owner_graphs))
+    member_graph_iri = next(iri for iri in validated_owner_graphs
+                            if str(iri).startswith("https://data.oireachtas.ie/graph/member/"))
+    wrong_graph_iri = URIRef("https://data.oireachtas.ie/graph/member/wrong-fixture")
+    owners = {iri: graph for iri, graph in validated_owner_graphs.items()
+              if iri != member_graph_iri}
+    owners[wrong_graph_iri] = validated_owner_graphs[member_graph_iri]
+    dataset = _dataset(result, owners)
+
+    with pytest.raises(ValueError, match="named graph selected by its memberCode"):
+        validate_debates_integration(result, dataset)
+    with pytest.raises(ValueError, match="named graph selected by its memberCode"):
+        validate_debates_integration(
+            result, owner_context=prepare_debate_integration_owners(owners),
+        )
+
+
+def test_prepared_owner_index_preserves_incorrect_member_type_failure(
+        validated_owner_graphs):
+    result = _debate("dail_2026-02-26.akn.xml",
+                     resolver=_dail_resolver(validated_owner_graphs))
+    owners = {iri: Graph(identifier=iri) for iri in validated_owner_graphs}
+    for iri, graph in validated_owner_graphs.items():
+        for triple in graph:
+            owners[iri].add(triple)
+    member = next(result.graph.objects(None, OIR.speaker), None)
+    if member is None:
+        member = next(result.graph.objects(None, OIR.votedFor))
+    member_graph = next(graph for iri, graph in owners.items()
+                        if str(iri).startswith("https://data.oireachtas.ie/graph/member/"))
+    member_graph.remove((member, RDF.type, OIR.Member))
+    member_graph.add((member, RDF.type, OIR.House))
+    dataset = _dataset(result, owners)
+
+    with pytest.raises(ValueError, match="SHACL validation failed"):
+        validate_debates_integration(result, dataset)
+    with pytest.raises(ValueError, match="SHACL validation failed"):
+        validate_debates_integration(
+            result, owner_context=prepare_debate_integration_owners(owners),
+        )
 
 
 def test_wrong_house_term_owner_relationship_fails_semantic_quality(validated_owner_graphs):
@@ -297,6 +405,13 @@ def test_wrong_house_term_owner_relationship_fails_semantic_quality(validated_ow
 
     with pytest.raises(ValueError, match="termOf must resolve to the matching enduring House"):
         validate_debates_integration(result, dataset)
+    with pytest.raises(ValueError, match="termOf must resolve to the matching enduring House"):
+        validate_debates_integration(
+            result, owner_context=prepare_debate_integration_owners({
+                graph_iri: dataset.graph(graph_iri)
+                for graph_iri in validated_owner_graphs
+            }),
+        )
 
 
 def test_missing_committee_type_in_named_owner_graph_fails_shacl(validated_owner_graphs):
@@ -324,6 +439,13 @@ def test_missing_committee_type_in_named_owner_graph_fails_shacl(validated_owner
 
     with pytest.raises(ValueError, match="SHACL validation failed"):
         validate_debates_integration(result, dataset)
+    with pytest.raises(ValueError, match="SHACL validation failed"):
+        validate_debates_integration(
+            result, owner_context=prepare_debate_integration_owners({
+                graph_iri: dataset.graph(graph_iri)
+                for graph_iri in validated_owner_graphs
+            }),
+        )
 
 
 def test_named_debate_graph_must_match_result_graph(validated_owner_graphs):
@@ -334,6 +456,15 @@ def test_named_debate_graph_must_match_result_graph(validated_owner_graphs):
 
     with pytest.raises(ValueError, match="must exactly equal the actual transform result"):
         validate_debates_integration(result, dataset)
+    wrongly_named_graph = Graph(identifier=URIRef(result.graph_iri + "/wrong"))
+    for triple in result.graph:
+        wrongly_named_graph.add(triple)
+    wrong_graph_result = replace(result, graph=wrongly_named_graph)
+    with pytest.raises(ValueError, match="graph identifier must match graph_iri"):
+        validate_debates_integration(
+            wrong_graph_result,
+            owner_context=prepare_debate_integration_owners(validated_owner_graphs),
+        )
 
 
 def test_nonconsecutive_source_ordinal_fails_the_integration_gate(validated_owner_graphs):

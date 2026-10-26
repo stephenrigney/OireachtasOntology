@@ -22,7 +22,9 @@ import warnings
 import xml.etree.ElementTree as ET
 from collections import Counter
 from collections.abc import Mapping
+from dataclasses import dataclass
 from importlib.resources import files
+from types import MappingProxyType
 from urllib.parse import quote, urlsplit
 
 from pyshacl import validate
@@ -206,18 +208,84 @@ def _house_term(term: URIRef, houses: Graph, *, label: str) -> URIRef:
     return house
 
 
-def _member_owner(target: URIRef, member_graphs: Mapping[URIRef, Graph],
+@dataclass(frozen=True)
+class DebateIntegrationOwnerContext:
+    """Indexed, already validated owner RDF reused across Debate Works."""
+
+    graphs: Mapping[URIRef, Graph]
+    member_graphs: Mapping[URIRef, Graph]
+    member_graphs_by_iri: Mapping[URIRef, tuple[URIRef, ...]]
+    triples_by_subject: Mapping[URIRef, tuple[tuple[URIRef, tuple], ...]]
+
+    def referenced_triples(self, debate: Graph) -> tuple[tuple, ...]:
+        """Return only owner facts whose subjects are referenced by this Work."""
+        targets: set[URIRef] = set()
+        for predicate in (*MEMBER_REFERENCE_PREDICATES,
+                          OIR.recordOfBody, OIR.recordOfHouseTerm):
+            targets.update(value for value in debate.objects(None, predicate)
+                           if isinstance(value, URIRef))
+        return tuple(
+            triple
+            for target in targets
+            for _, triple in self.triples_by_subject.get(target, ())
+        )
+
+
+def prepare_debate_integration_owners(
+        owner_graphs: Mapping[str | URIRef, Graph]) -> DebateIntegrationOwnerContext:
+    """Index the verified owner snapshot once, retaining named-graph ownership.
+
+    Owner source-to-RDF validation and resolver identity checks are performed
+    before this function by the owner pipeline. The returned context references
+    those exact immutable-for-the-run graphs; it does not copy their triples.
+    """
+    graphs: dict[URIRef, Graph] = {}
+    for graph_iri, graph in owner_graphs.items():
+        iri = URIRef(str(graph_iri))
+        if not isinstance(graph, Graph):
+            raise ValueError("Debates owner context values must be RDFLib Graphs")
+        _absolute_iri(str(iri), "owner graph name")
+        if iri in graphs:
+            raise ValueError(f"duplicate Debate owner graph name: {iri}")
+        graphs[iri] = graph
+
+    member_graphs = {iri: graph for iri, graph in graphs.items()
+                     if _member_graph(iri)}
+    member_graphs_by_iri: dict[URIRef, list[URIRef]] = {}
+    triples_by_subject: dict[URIRef, list[tuple[URIRef, tuple]]] = {}
+    for graph_iri, graph in graphs.items():
+        for triple in graph:
+            subject = triple[0]
+            if isinstance(subject, URIRef):
+                triples_by_subject.setdefault(subject, []).append((graph_iri, triple))
+                if (graph_iri in member_graphs
+                        and triple[1] == RDF.type and triple[2] == OIR.Member):
+                    member_graphs_by_iri.setdefault(subject, []).append(graph_iri)
+
+    return DebateIntegrationOwnerContext(
+        MappingProxyType(graphs),
+        MappingProxyType(member_graphs),
+        MappingProxyType({iri: tuple(locations)
+                          for iri, locations in member_graphs_by_iri.items()}),
+        MappingProxyType({subject: tuple(rows)
+                          for subject, rows in triples_by_subject.items()}),
+    )
+
+
+def _member_owner(target: URIRef,
+                  member_graphs: Mapping[URIRef, Graph],
+                  member_graphs_by_iri: Mapping[URIRef, tuple[URIRef, ...]],
                   *, label: str) -> Graph:
-    locations = [graph for graph in member_graphs.values()
-                 if _type_is(graph, target, OIR.Member)]
+    locations = list(member_graphs_by_iri.get(target, ()))
     if len(locations) != 1:
         _fail(f"{label} must resolve to exactly one typed Member in a named Member owner graph")
-    graph = locations[0]
+    graph_iri = locations[0]
+    graph = member_graphs[graph_iri]
     code = _single_object(graph, target, OIR.memberCode, f"{label} Member memberCode")
     if not isinstance(code, Literal) or not str(code):
         _fail(f"{label} Member owner must contain a non-empty memberCode")
     expected_graph = URIRef(MEMBER_GRAPH_PREFIX + quote(str(code), safe=""))
-    if graph.identifier != expected_graph:
+    if graph_iri != expected_graph:
         _fail(f"{label} Member must be in the named graph selected by its memberCode")
     return graph
 
@@ -714,13 +782,25 @@ def _validate_source_inventory(result: object, source_xml: bytes,
                   f"with its source slot; expected one of {sorted(allowed)}")
 
 
-def _check_member_links(graph: Graph, member_graphs: Mapping[URIRef, Graph]) -> None:
+def _check_member_links(
+        graph: Graph, member_graphs: Mapping[URIRef, Graph],
+        member_graphs_by_iri: Mapping[URIRef, tuple[URIRef, ...]] | None = None) -> None:
+    if member_graphs_by_iri is None:
+        # Compatibility path for a one-off Dataset validation.
+        index: dict[URIRef, list[URIRef]] = {}
+        for graph_iri, owner in member_graphs.items():
+            for target in owner.subjects(RDF.type, OIR.Member):
+                if isinstance(target, URIRef):
+                    index.setdefault(target, []).append(graph_iri)
+        member_graphs_by_iri = {iri: tuple(locations)
+                                for iri, locations in index.items()}
     for predicate in MEMBER_REFERENCE_PREDICATES:
         for subject, target in graph.subject_objects(predicate):
             if not isinstance(target, URIRef):
                 _fail(f"Member reference {predicate} must target an IRI")
             _absolute_iri(str(target), f"Member reference {predicate} target")
-            _member_owner(target, member_graphs, label=str(predicate))
+            _member_owner(target, member_graphs, member_graphs_by_iri,
+                          label=str(predicate))
 
 
 def _check_institutional_links(graph: Graph, houses: Graph, committees: Graph) -> None:
@@ -785,11 +865,20 @@ def _validate_named_graph_ownership(result: object, dataset: Dataset,
 
 
 def _validate_shacl(debate: Graph, owner_graphs: tuple[Graph, Graph,
-                                                       Mapping[URIRef, Graph]]) -> None:
+                                                       Mapping[URIRef, Graph]], *,
+                    scoped_owner_triples: tuple[tuple, ...] | None = None) -> None:
     houses, committees, member_graphs = owner_graphs
     joined = Graph()
-    for source in (debate, houses, committees, *member_graphs.values()):
-        for triple in source:
+    if scoped_owner_triples is None:
+        # Preserve the established public Dataset contract: a caller supplying
+        # an arbitrary Dataset still gets the original complete-graph SHACL pass.
+        for source in (debate, houses, committees, *member_graphs.values()):
+            for triple in source:
+                joined.add(triple)
+    else:
+        for triple in debate:
+            joined.add(triple)
+        for triple in scoped_owner_triples:
             joined.add(triple)
     # pySHACL 0.30 currently walks a Dataset through RDFLib's deprecated
     # ``default_context`` compatibility property for each SHACL lookup.  Keep
@@ -820,17 +909,23 @@ def _validate_vote_quality(graph: Graph) -> None:
             _fail(f"a Member cannot have conflicting individual vote outcomes in one Division: {division}")
 
 
-def validate_debates_integration(result: object, validated_dataset: Dataset, *,
-                                 source_xml: bytes | None = None) -> None:
-    """Validate one actual Debate graph against joined, validated owner graphs.
+def validate_debates_integration(
+        result: object, validated_dataset: Dataset | None = None, *,
+        source_xml: bytes | None = None,
+        owner_context: DebateIntegrationOwnerContext | None = None) -> None:
+    """Validate one actual Debate graph against independently validated owners.
 
-    ``validated_dataset`` must contain the exact result graph under
-    ``result.graph_iri``, the Houses graph under the settled Houses graph IRI,
-    the shared Committees graph under its settled IRI, and zero or more named
-    Member graphs using their established ``/graph/member/{memberCode}``
-    identities. A missing owner type fails closed for every RDF reference that
-    needs that owner. The owner graphs are expected to have passed their
-    respective source-to-RDF, datatype, SHACL, and quality validators already.
+    The backwards-compatible ``validated_dataset`` route requires the exact
+    result graph under ``result.graph_iri``, the Houses graph under the settled
+    Houses graph IRI, the shared Committees graph under its settled IRI, and
+    named Member graphs using ``/graph/member/{memberCode}`` identities. It
+    retains full-graph SHACL validation. Alternatively, ``owner_context`` is a
+    once-prepared index over the exact owner snapshot; its graphs must already
+    have passed their owning source-to-RDF, datatype, SHACL, and quality
+    validators. That route validates SHACL over the Debate plus owner facts
+    whose subjects are referenced by it, while semantic checks resolve against
+    the indexed original owner graphs. Missing, ambiguous, or incorrectly
+    typed referenced owners still fail closed.
 
     When supplied, ``source_xml`` must be the exact immutable AKN byte string
     transformed into ``result``. The source-aware pass recomputes its SHA-256,
@@ -850,9 +945,28 @@ def validate_debates_integration(result: object, validated_dataset: Dataset, *,
 
     # Keep Tranche 2's independent graph-structure boundary as the first gate.
     validate_debates(result)
-    owners = _validate_named_graph_ownership(result, validated_dataset, debate)
-    _validate_shacl(debate, owners)
-    _check_member_links(debate, owners[2])
+    if (validated_dataset is None) == (owner_context is None):
+        _fail("supply exactly one of validated_dataset or prepared owner_context")
+    member_index = None
+    scoped_owner_triples = None
+    if validated_dataset is not None:
+        owners = _validate_named_graph_ownership(result, validated_dataset, debate)
+    else:
+        debate_iri = URIRef(str(result.graph_iri))
+        if getattr(debate, "identifier", None) != debate_iri:
+            _fail("Debates transform result graph identifier must match graph_iri")
+        assert owner_context is not None
+        owners = (
+            owner_context.graphs.get(URIRef(HOUSES_GRAPH),
+                                     Graph(identifier=URIRef(HOUSES_GRAPH))),
+            owner_context.graphs.get(URIRef(COMMITTEES_GRAPH),
+                                     Graph(identifier=URIRef(COMMITTEES_GRAPH))),
+            owner_context.member_graphs,
+        )
+        member_index = owner_context.member_graphs_by_iri
+        scoped_owner_triples = owner_context.referenced_triples(debate)
+    _validate_shacl(debate, owners, scoped_owner_triples=scoped_owner_triples)
+    _check_member_links(debate, owners[2], member_index)
     _check_institutional_links(debate, owners[0], owners[1])
     rows = _validate_report(result, debate)
     _validate_report_edges(rows, debate)
