@@ -24,45 +24,48 @@ continuity. “Needs attention” points to a possible category question, an
 apparent name transition, limited evidence, or a date concern. See the next
 section for the decisions that matter most.
 
-| Proposed grouping | Parliamentary periods observed | Initial review |
-|---|---|---|
-| 100% RDR | 34th Dáil | Needs attention: confirm this is a political party rather than another electoral grouping. |
-| Aontú | 33rd–34th Dáils; 27th Seanad | Appears straightforward. |
-| Anti-Austerity Alliance – People Before Profit | 31st–32nd Dáils | Needs attention: possible alliance or predecessor relationship with later People Before Profit names. |
-| Clann na Poblachta | 12th–18th Dáils; 6th–7th Seanads | Appears straightforward. |
-| Clann na Talmhan | 11th–17th Dáils; 3rd–9th Seanads | Appears straightforward. |
-| Cumann na nGaedheal | 4th–8th Dáils; 1922–1931 Seanads | Needs attention: possible relationship to Fine Gael. |
-| Democratic Left | 27th–28th Dáils; 20th Seanad | Needs attention: possible relationship to Labour Party. |
-| Democratic Socialist Party | 23rd and 25th–26th Dáils | Needs attention: limited, separated observations; relationship to similarly named groups is not established. |
-| Farmers Party | 3rd–7th Dáils; 1922 and 1925 Seanads | Appears straightforward. |
-| Fianna Fáil | 4th–34th Dáils; 2nd–27th Seanads | Appears straightforward by name; some historical date entries need checking. |
-| Fine Gael | 4th–34th Dáils; 2nd–27th Seanads | Needs attention: possible historical relationship to Cumann na nGaedheal; some date entries need checking. |
-| Green Party | 26th–30th and 32nd–34th Dáils; 23rd, 25th–27th Seanads | Appears straightforward; no Green Party record was observed in the 31st Dáil or 24th Seanad. |
-| Historical Sinn Féin | 1st–6th Dáils | Kept separate from modern Sinn Féin; internal continuity is not assumed. |
-| Independent Ireland | 34th Dáil | Appears straightforward by name; only one observed period. |
-| Independents 4 Change | 32nd–33rd Dáils | Needs attention: confirm the intended party/alliance category. |
-| Irish Worker League | 6th Dáil | Needs attention: only one observed record. |
-| Labour Party | 3rd–34th Dáils; 2nd–27th Seanads | Appears straightforward by name; review any possible relationship to Democratic Left. |
-| National Centre Party | 8th Dáil | Needs attention: only one observed record. |
-| National Labour Party | 12th–13th Dáils | Needs attention: limited observations; do not merge based on the shared word “Labour”. |
-| National League Party | 4th–6th Dáils | Needs attention: only a few observed records. |
-| National Progressive Democrats | 16th–17th Dáils; 11th Seanad | Needs attention: possible relationship to Progressive Democrats. |
-| People Before Profit Alliance | 31st Dáil | Needs attention: possible relationship to the Anti-Austerity Alliance and later People Before Profit names. |
-| People Before Profit–Solidarity | 32nd–34th Dáils | Needs attention: possible alliance or name relationship to earlier People Before Profit records. |
-| Progressive Democrats | 18th and 24th–30th Dáils; 19th–23rd Seanads | Needs attention: possible relationship to National Progressive Democrats; gap in observed Dáil terms. |
-| Republican | 4th Dáil | Needs attention: generic name and one observed record. |
-| Renua | 31st Dáil | Needs attention: one observed term only. |
-| Sinn Féin (modern, proposed) | 28th–34th Dáils; 23rd–27th Seanads | Proposed separately from historical Sinn Féin; Senate records are included as the same candidate party, not proved by name alone. |
-| Sinn Féin the Workers Party | 22nd–23rd Dáils | Needs attention: do not automatically merge with either Workers Party or modern Sinn Féin. |
-| Social Democrats | 31st–34th Dáils; 27th Seanad | Appears straightforward. |
-| Socialist Labour Party | 22nd Dáil; 13th Seanad | Needs attention: few observations; do not infer a relationship to Labour Party from the name. |
-| Socialist Party | 28th–29th and 31st Dáils | Needs attention: gap in observed terms and possible relationship to other socialist groupings. |
-| Workers and Unemployed Action | 31st Dáil | Needs attention: one observed term; confirm party versus electoral grouping. |
-| Workers Party | 24th–27th Dáils | Needs attention: possible relationship to Sinn Féin the Workers Party, but no automatic merger is proposed. |
+| Proposed grouping | Parliamentary periods observed | Initial review | Reviewer Notes |
+|---|---|---|---|
+| 100% RDR | 34th Dáil | Needs attention: confirm this is a political party rather than another electoral grouping. | Political party |
+| Aontú | 33rd–34th Dáils; 27th Seanad | Appears straightforward. | Political Party |
+| Anti-Austerity Alliance – People Before Profit | 31st–32nd Dáils | Needs attention: possible alliance or predecessor relationship with later People Before Profit names. | See section 5 |
+| Clann na Poblachta | 12th–18th Dáils; 6th–7th Seanads | Appears straightforward. | Political party |
+| Clann na Talmhan | 11th–17th Dáils; 3rd–9th Seanads | Appears straightforward. | Political party |
+| Cumann na nGaedheal | 4th–8th Dáils; 1922–1931 Seanads | Needs attention: possible relationship to Fine Gael. | Separate political party to Fine Gael |
+| Democratic Left | 27th–28th Dáils; 20th Seanad | Needs attention: possible relationship to Labour Party. | Separate political party to Labour |
+| Democratic Socialist Party | 23rd and 25th–26th Dáils | Needs attention: limited, separated observations; relationship to similarly named groups is not established. | See section 5 |
+| Farmers Party | 3rd–7th Dáils; 1922 and 1925 Seanads | Appears straightforward. | Political party |
+| Fianna Fáil | 4th–34th Dáils; 2nd–27th Seanads | Appears straightforward by name; some historical date entries need checking. | See section 5 |
+| Fine Gael | 4th–34th Dáils; 2nd–27th Seanads | Needs attention: possible historical relationship to Cumann na nGaedheal; some date entries need checking. | Separate party to C na nG |
+| Green Party | 26th–30th and 32nd–34th Dáils; 23rd, 25th–27th Seanads | Appears straightforward; no Green Party record was observed in the 31st Dáil or 24th Seanad. | Political party - treat as continuous |
+| Historical Sinn Féin | 1st–6th Dáils | Kept separate from modern Sinn Féin; internal continuity is not assumed. | See section 5 |
+| Independent Ireland | 34th Dáil | Appears straightforward by name; only one observed period. | Political party |
+| Independents 4 Change | 32nd–33rd Dáils | Needs attention: confirm the intended party/alliance category. | Political party |
+| Irish Worker League | 6th Dáil | Needs attention: only one observed record. | Political party |
+| Labour Party | 3rd–34th Dáils; 2nd–27th Seanads | Appears straightforward by name; review any possible relationship to Democratic Left. | Separate to Democratic left |
+| National Centre Party | 8th Dáil | Needs attention: only one observed record. | Political party |
+| National Labour Party | 12th–13th Dáils | Needs attention: limited observations; do not merge based on the shared word “Labour”. | Separate party to Labour |
+| National League Party | 4th–6th Dáils | Needs attention: only a few observed records. | Political party |
+| National Progressive Democrats | 16th–17th Dáils; 11th Seanad | Needs attention: possible relationship to Progressive Democrats. | Separate party to Progressive Democrats |
+| People Before Profit Alliance | 31st Dáil | Needs attention: possible relationship to the Anti-Austerity Alliance and later People Before Profit names. | Political Party |
+| People Before Profit–Solidarity | 32nd–34th Dáils | Needs attention: possible alliance or name relationship to earlier People Before Profit records. | See section 5 |
+| Progressive Democrats | 18th and 24th–30th Dáils; 19th–23rd Seanads | Needs attention: possible relationship to National Progressive Democrats; gap in observed Dáil terms. | Separate to National Progressive Democrats, continuous party |
+| Republican | 4th Dáil | Needs attention: generic name and one observed record. | See section 5 |
+| Renua | 31st Dáil | Needs attention: one observed term only. | Political party |
+| Sinn Féin (modern, proposed) | 28th–34th Dáils; 23rd–27th Seanads | Proposed separately from historical Sinn Féin; Senate records are included as the same candidate party, not proved by name alone. | See section 5 |
+| Sinn Féin the Workers Party | 22nd–23rd Dáils | Needs attention: do not automatically merge with either Workers Party or modern Sinn Féin. | See section 5 |
+| Social Democrats | 31st–34th Dáils; 27th Seanad | Appears straightforward. | Political party |
+| Socialist Labour Party | 22nd Dáil; 13th Seanad | Needs attention: few observations; do not infer a relationship to Labour Party from the name. | Separate party to Labour |
+| Socialist Party | 28th–29th and 31st Dáils | Needs attention: gap in observed terms and possible relationship to other socialist groupings. | Political Party |
+| Workers and Unemployed Action | 31st Dáil | Needs attention: one observed term; confirm party versus electoral grouping. | Political party |
+| Workers Party | 24th–27th Dáils | Needs attention: possible relationship to Sinn Féin the Workers Party, but no automatic merger is proposed. | See section 5 |
+| Business and Professional Group | Confirm terms | - | Political Party |
 
 ## 3. Cases requiring review
 
 ### Sinn Féin: three separate treatments
+
+See section 5.
 
 The records use the name Sinn Féin in the 1st–6th Dáils, again in the 16th
 Dáil, and in much later Dáil and Seanad periods. This review keeps the 1st–6th
@@ -97,9 +100,8 @@ record a relationship without claiming they are the same party.
 ### Records that may not describe political parties
 
 Most entries are named like parties, but a party list may also contain a
-parliamentary office, a group of representatives, or an electoral alliance.
-The records include **Ceann Comhairle** (the Dáil Speaker's office) and
-**Business and Professional Group**. These have not been counted among the 33
+parliamentary office, a group of representatives, or an electoral alliance. 
+The records include **Ceann Comhairle** (the Dáil Speaker's office). These have not been counted among the 33
 proposed political parties. **Reviewer decision:** confirm they should remain
 outside the party identities. The names **100% RDR**, **Republican**,
 **Independents 4 Change**, **Workers and Unemployed Action**, and the combined
@@ -140,3 +142,51 @@ For the complete record-by-record evidence, source identifiers, all observed
 dates, flags and reproducible generation command, see
 [`party-identity-inventory.csv`](party-identity-inventory.csv) and
 [`tools/party_identity_inventory.py`](../tools/party_identity_inventory.py).
+
+## 5. User Review
+
+Other than Ceann Comhairle/Cathaoirleach, default is that every entity recorded with affiliation is a Party. 
+
+This party model is user oriented rather than strictly correct according to Electoral Commission records. For example, PBP-AAA and PBP-Solidarity are registered officially as separate parties but they are popularly regarded (and by the politicians involved) as the same entity. In fact, the members of Sol-PBP would call themselves an alliance and not a party. 
+
+For this reason, alternative names are worth considering instead of Political Party. 
+
+Aliases used below where common assumption is that a party is the same entity or where there is ambiguity about distinctiveness of a party. 
+
+For discussion - whether to time bind aliases or simply use the term bound party name for time changes.
+
+### Sinn Féin and Republicans
+
+Divide into these periods (Seanad terms should ):
+
+| Period | Label | Alias(es) |
+|---|---|---|
+| 1st-3rd Dáil | Sinn Féin (Pre-Independence) | Sinn Féin |
+| 4th-6th Dáil | Sinn Féin (Anti-Treaty) | Sinn Féin |
+| 16th Dáil | Sinn Féin (1957) | Sinn Féin |
+| 28th Dáil onwards | Sinn Féin | - |
+
+I propose assigning TDs with Republican grouping in the 4th Dáil to Sinn Féin (Anti-Treaty) with the following aliases: Republican, Sinn Féin. Evaluate what this means for the understandability of the term bounded records (if anything). Also evaluate effort vs value of assigning aliases to term bounded records.
+
+### Sinn Féin the Workers Party and the Workers Party
+
+These are the same party, which changed name in 1982 from Sinn Féin the Workers Party to the Workers Party. Can labels/Aliases be time bound?
+
+### Anti-Austerity Alliance/Solidarity and People Before Profit
+
+The various combinations of Anti-Austerity Aliance (AAA), Solidarity and People Before Profit (PBP) are one party, with aliases:
+
+1. People Before Profit – Solidarity
+2. Solidarity – People Before Profit
+3. Solidarity – PBP
+4. PBP – Solidarity
+4. AAA – PBP
+5.  Anti-Austerity Alliance – People Before Profit
+
+
+People Before Profit (PBP) Alliance is to be treated as a separate Party. The Socialist Party is to be treated as a separate Party. However, AAA/Solidarity-PBP is an alliance of PBP and Socialist Party but can be treated separately.
+
+
+
+
+
