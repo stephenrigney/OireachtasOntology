@@ -1,0 +1,13 @@
+PREFIX members: <https://data.oireachtas.ie/ontology/members#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+SELECT ?termParty ?identity ?preferredLabel WHERE {
+  ?termParty a members:ParliamentaryParty ;
+      members:hasPoliticalAffiliationIdentity ?identity .
+  ?identity skos:prefLabel ?preferredLabel .
+  FILTER (?identity IN (
+    <https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein-pre-independence>,
+    <https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein-anti-treaty>,
+    <https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein-1957>,
+    <https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein>
+  ))
+}

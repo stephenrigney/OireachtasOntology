@@ -503,6 +503,10 @@ org:Membership rdfs:subClassOf [ a owl:Restriction ;
     skos:prefLabel "Parliamentary party"@en ;
     rdfs:comment "A parliamentary collection of Members represented as belonging to the same registered political party for parliamentary purposes. It is distinct from the enduring political-party organisation and is not by itself evidence of ParliamentaryGroup recognition."@en .
 
+:PoliticalAffiliationIdentity a owl:Class ;
+    skos:prefLabel "Political affiliation identity"@en ;
+    rdfs:comment "A locally curated enduring identity for a recognised political affiliation represented in Oireachtas member records. It may denote a party, alliance, combined affiliation or other recognised affiliation; it does not assert legal registration, succession, or identity with any term-scoped collection."@en .
+
 :IndependentMemberCollection a owl:Class ;
     rdfs:subClassOf :ParliamentaryMemberCollection ;
     skos:prefLabel "Independent member collection"@en ;
@@ -521,6 +525,11 @@ org:Membership rdfs:subClassOf [ a owl:Restriction ;
 :recognisedAsParty a owl:ObjectProperty ;
     rdfs:domain :ParliamentaryParty ;
     rdfs:comment "Links a term-scoped ParliamentaryParty to the externally identified enduring registered political-party identity on which that collection is based. This does not identify the two resources or assert ParliamentaryGroup recognition. External target facts are not imported into the authoritative Oireachtas ontology graph."@en .
+
+:hasPoliticalAffiliationIdentity a owl:ObjectProperty ;
+    rdfs:domain :ParliamentaryParty ;
+    rdfs:range :PoliticalAffiliationIdentity ;
+    rdfs:comment "Links a term-scoped ParliamentaryParty to a reviewed local political-affiliation identity for user-oriented grouping. This curated assertion is distinct from recognisedAsParty, which links to an externally identified registered political party. It does not imply identity, legal registration, succession, or constituent membership and is never inferred from labels."@en .
 
 :Dail a owl:Class ;
     rdfs:subClassOf :House ;

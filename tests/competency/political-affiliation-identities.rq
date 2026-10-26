@@ -1,0 +1,8 @@
+PREFIX members: <https://data.oireachtas.ie/ontology/members#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+SELECT ?termParty ?identity ?label WHERE {
+  ?termParty a members:ParliamentaryParty ;
+      members:activeDuringTerm ?term ;
+      members:hasPoliticalAffiliationIdentity ?identity .
+  ?identity skos:prefLabel ?label .
+}
