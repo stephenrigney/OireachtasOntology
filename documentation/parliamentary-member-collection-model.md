@@ -5,6 +5,10 @@
 This note records the Phase 4.5 Tranche 2 semantic contract agreed before implementation.
 It supersedes the earlier Tranche 2 assumption that an Oireachtas term-scoped party
 resource is a temporal specialization of an enduring political-party organisation.
+The subsequent reviewed local `PoliticalAffiliationIdentity` design is recorded in
+[`political-affiliation-identity.md`](political-affiliation-identity.md); it adds a
+curated local identity link without changing this note's term-scoped collection model
+or the external `recognisedAsParty` contract.
 
 The design deliberately separates:
 

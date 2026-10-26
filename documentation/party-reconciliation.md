@@ -6,6 +6,11 @@ transform and never writes the authoritative Parties graph. API records with
 `partyCode == "Independent"` are `members:IndependentMemberCollection` records
 and are excluded.
 
+The separate proposed local affiliation identity design and source-IRI-keyed
+review decisions are documented in
+[`political-affiliation-identity.md`](political-affiliation-identity.md). They
+do not change this external `members:recognisedAsParty` reconciliation policy.
+
 ## Identity, review and graph ownership
 
 The complete, validated Oireachtas source Party IRI is the SQLite local identity
