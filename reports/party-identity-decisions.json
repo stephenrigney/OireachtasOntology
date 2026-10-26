@@ -1,18 +1,127 @@
 {
   "version": 1,
   "source_inventory": "party-identity-inventory.csv",
+  "source_inventory_sha256": "591a9ff0c83ec207e8368faa6c236612c949eb0add9edf58750a32923e8fa2cd",
   "source_record_count": 315,
   "counts": {
-    "accepted": 29,
-    "unresolved": 285,
+    "accepted": 311,
+    "unresolved": 3,
     "excluded": 1
   },
   "identity_namespace_proposal": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/",
   "identities": [
     {
+      "id": "100-rdr",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/100-rdr",
+      "label": "100% RDR",
+      "aliases": []
+    },
+    {
+      "id": "aontu",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/aontu",
+      "label": "Aontú",
+      "aliases": []
+    },
+    {
       "id": "business-and-professional-group",
       "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/business-and-professional-group",
       "label": "Business and Professional Group",
+      "aliases": []
+    },
+    {
+      "id": "clann-na-poblachta",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/clann-na-poblachta",
+      "label": "Clann na Poblachta",
+      "aliases": []
+    },
+    {
+      "id": "clann-na-talmhan",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/clann-na-talmhan",
+      "label": "Clann na Talmhan",
+      "aliases": []
+    },
+    {
+      "id": "cumann-na-ngaedheal",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/cumann-na-ngaedheal",
+      "label": "Cumann na nGaedheal",
+      "aliases": []
+    },
+    {
+      "id": "democratic-left",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/democratic-left",
+      "label": "Democratic Left",
+      "aliases": []
+    },
+    {
+      "id": "farmers-party",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/farmers-party",
+      "label": "Farmers Party",
+      "aliases": []
+    },
+    {
+      "id": "fianna-fail",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail",
+      "label": "Fianna Fáil",
+      "aliases": []
+    },
+    {
+      "id": "fine-gael",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fine-gael",
+      "label": "Fine Gael",
+      "aliases": []
+    },
+    {
+      "id": "green-party",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/green-party",
+      "label": "Green Party",
+      "aliases": []
+    },
+    {
+      "id": "independent-ireland",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/independent-ireland",
+      "label": "Independent Ireland",
+      "aliases": []
+    },
+    {
+      "id": "independents-4-change",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/independents-4-change",
+      "label": "Independents 4 Change",
+      "aliases": []
+    },
+    {
+      "id": "irish-worker-league",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/irish-worker-league",
+      "label": "Irish Worker League",
+      "aliases": []
+    },
+    {
+      "id": "labour-party",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/labour-party",
+      "label": "Labour Party",
+      "aliases": []
+    },
+    {
+      "id": "national-centre-party",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/national-centre-party",
+      "label": "National Centre Party",
+      "aliases": []
+    },
+    {
+      "id": "national-labour-party",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/national-labour-party",
+      "label": "National Labour Party",
+      "aliases": []
+    },
+    {
+      "id": "national-league-party",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/national-league-party",
+      "label": "National League Party",
+      "aliases": []
+    },
+    {
+      "id": "national-progressive-democrats",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/national-progressive-democrats",
+      "label": "National Progressive Democrats",
       "aliases": []
     },
     {
@@ -35,6 +144,18 @@
         "Anti-Austerity Alliance - People Before Profit",
         "People Before Profit-Solidarity"
       ]
+    },
+    {
+      "id": "progressive-democrats",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/progressive-democrats",
+      "label": "Progressive Democrats",
+      "aliases": []
+    },
+    {
+      "id": "renua",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/renua",
+      "label": "Renua",
+      "aliases": []
     },
     {
       "id": "sinn-fein",
@@ -68,12 +189,86 @@
       ]
     },
     {
+      "id": "social-democrats",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/social-democrats",
+      "label": "Social Democrats",
+      "aliases": []
+    },
+    {
+      "id": "socialist-labour-party",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/socialist-labour-party",
+      "label": "Socialist Labour Party",
+      "aliases": []
+    },
+    {
+      "id": "socialist-party",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/socialist-party",
+      "label": "Socialist Party",
+      "aliases": []
+    },
+    {
+      "id": "workers-and-unemployed-action",
+      "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/workers-and-unemployed-action",
+      "label": "Workers and Unemployed Action",
+      "aliases": []
+    },
+    {
       "id": "workers-party",
       "iri": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/workers-party",
       "label": "Workers Party",
       "aliases": [
         "Sinn Féin the Workers Party"
       ]
+    }
+  ],
+  "identity_separation_constraints": [
+    {
+      "left_identity": "sinn-fein-pre-independence",
+      "right_identity": "sinn-fein-anti-treaty"
+    },
+    {
+      "left_identity": "sinn-fein-pre-independence",
+      "right_identity": "sinn-fein-1957"
+    },
+    {
+      "left_identity": "sinn-fein-pre-independence",
+      "right_identity": "sinn-fein"
+    },
+    {
+      "left_identity": "sinn-fein-anti-treaty",
+      "right_identity": "sinn-fein-1957"
+    },
+    {
+      "left_identity": "sinn-fein-anti-treaty",
+      "right_identity": "sinn-fein"
+    },
+    {
+      "left_identity": "sinn-fein-1957",
+      "right_identity": "sinn-fein"
+    },
+    {
+      "left_identity": "workers-party",
+      "right_identity": "sinn-fein-pre-independence"
+    },
+    {
+      "left_identity": "workers-party",
+      "right_identity": "sinn-fein-anti-treaty"
+    },
+    {
+      "left_identity": "workers-party",
+      "right_identity": "sinn-fein-1957"
+    },
+    {
+      "left_identity": "workers-party",
+      "right_identity": "sinn-fein"
+    },
+    {
+      "left_identity": "people-before-profit-alliance",
+      "right_identity": "people-before-profit-solidarity"
+    },
+    {
+      "left_identity": "socialist-party",
+      "right_identity": "people-before-profit-solidarity"
     }
   ],
   "separation_constraints": [
@@ -400,511 +595,511 @@
       "source_label": "Sinn Féin",
       "outcome": "accepted",
       "identity": "sinn-fein-pre-independence",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/10/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/10/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/10/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/11/Clann_na_Talmhan",
       "source_label": "Clann na Talmhan",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-talmhan",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/11/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/11/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/11/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/12/Clann_na_Poblachta",
       "source_label": "Clann na Poblachta",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-poblachta",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/12/Clann_na_Talmhan",
       "source_label": "Clann na Talmhan",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-talmhan",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/12/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/12/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/12/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/12/National_Labour_Party",
       "source_label": "National Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "national-labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/13/Clann_na_Poblachta",
       "source_label": "Clann na Poblachta",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-poblachta",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/13/Clann_na_Talmhan",
       "source_label": "Clann na Talmhan",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-talmhan",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/13/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/13/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/13/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/13/National_Labour_Party",
       "source_label": "National Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "national-labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/14/Clann_na_Poblachta",
       "source_label": "Clann na Poblachta",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-poblachta",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/14/Clann_na_Talmhan",
       "source_label": "Clann na Talmhan",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-talmhan",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/14/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/14/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/14/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/15/Clann_na_Poblachta",
       "source_label": "Clann na Poblachta",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-poblachta",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/15/Clann_na_Talmhan",
       "source_label": "Clann na Talmhan",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-talmhan",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/15/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/15/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/15/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/16/Clann_na_Poblachta",
       "source_label": "Clann na Poblachta",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-poblachta",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/16/Clann_na_Talmhan",
       "source_label": "Clann na Talmhan",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-talmhan",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/16/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/16/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/16/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/16/National_Progressive_Democrats",
       "source_label": "National Progressive Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "national-progressive-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/16/Sinn_Féin",
       "source_label": "Sinn Féin",
       "outcome": "accepted",
       "identity": "sinn-fein-1957",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/17/Clann_na_Poblachta",
       "source_label": "Clann na Poblachta",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-poblachta",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/17/Clann_na_Talmhan",
       "source_label": "Clann na Talmhan",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-talmhan",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/17/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/17/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/17/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/17/National_Progressive_Democrats",
       "source_label": "National Progressive Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "national-progressive-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/18/Clann_na_Poblachta",
       "source_label": "Clann na Poblachta",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-poblachta",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/18/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/18/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/18/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/18/Progressive_Democrats",
       "source_label": "Progressive Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "progressive-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/19/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/19/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/19/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/2/Sinn_Féin",
       "source_label": "Sinn Féin",
       "outcome": "accepted",
       "identity": "sinn-fein-pre-independence",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/20/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/20/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/20/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/21/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/21/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/21/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/22/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/22/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/22/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/22/Sinn_Féin_the_Workers_Party",
       "source_label": "Sinn Féin the Workers Party",
       "outcome": "accepted",
       "identity": "workers-party",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/22/Socialist_Labour_Party",
       "source_label": "Socialist Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "socialist-labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/23/Democratic_Socialist_Party",
       "source_label": "Democratic Socialist Party",
       "outcome": "unresolved",
       "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "reason": "The review flags only limited, separated observations and does not decide whether these records share one identity"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/23/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/23/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/23/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/23/Sinn_Féin_the_Workers_Party",
       "source_label": "Sinn Féin the Workers Party",
       "outcome": "accepted",
       "identity": "workers-party",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/24/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/24/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/24/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/24/Progressive_Democrats",
       "source_label": "Progressive Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "progressive-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/24/Workers_Party",
       "source_label": "Workers Party",
       "outcome": "accepted",
       "identity": "workers-party",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/25/Ceann_Comhairle",
@@ -918,1687 +1113,1687 @@
       "source_label": "Democratic Socialist Party",
       "outcome": "unresolved",
       "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "reason": "The review flags only limited, separated observations and does not decide whether these records share one identity"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/25/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/25/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/25/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/25/Progressive_Democrats",
       "source_label": "Progressive Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "progressive-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/25/Workers_Party",
       "source_label": "Workers Party",
       "outcome": "accepted",
       "identity": "workers-party",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/26/Democratic_Socialist_Party",
       "source_label": "Democratic Socialist Party",
       "outcome": "unresolved",
       "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "reason": "The review flags only limited, separated observations and does not decide whether these records share one identity"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/26/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/26/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/26/Green_Party",
       "source_label": "Green Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "green-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/26/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/26/Progressive_Democrats",
       "source_label": "Progressive Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "progressive-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/26/Workers_Party",
       "source_label": "Workers Party",
       "outcome": "accepted",
       "identity": "workers-party",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/27/Democratic_Left",
       "source_label": "Democratic Left",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "democratic-left",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/27/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/27/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/27/Green_Party",
       "source_label": "Green Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "green-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/27/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/27/Progressive_Democrats",
       "source_label": "Progressive Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "progressive-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/27/Workers_Party",
       "source_label": "Workers Party",
       "outcome": "accepted",
       "identity": "workers-party",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/28/Democratic_Left",
       "source_label": "Democratic Left",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "democratic-left",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/28/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/28/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/28/Green_Party",
       "source_label": "Green Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "green-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/28/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/28/Progressive_Democrats",
       "source_label": "Progressive Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "progressive-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/28/Sinn_Féin",
       "source_label": "Sinn Féin",
       "outcome": "accepted",
       "identity": "sinn-fein",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/28/Socialist_Party",
       "source_label": "Socialist Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "socialist-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Green_Party",
       "source_label": "Green Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "green-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Progressive_Democrats",
       "source_label": "Progressive Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "progressive-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Sinn_Féin",
       "source_label": "Sinn Féin",
       "outcome": "accepted",
       "identity": "sinn-fein",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Socialist_Party",
       "source_label": "Socialist Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "socialist-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/3/Business_and_Professional_Group",
       "source_label": "Business and Professional Group",
       "outcome": "accepted",
       "identity": "business-and-professional-group",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/3/Farmers_Party",
       "source_label": "Farmers Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "farmers-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/3/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/3/Sinn_Féin",
       "source_label": "Sinn Féin",
       "outcome": "accepted",
       "identity": "sinn-fein-pre-independence",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/30/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/30/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/30/Green_Party",
       "source_label": "Green Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "green-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/30/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/30/Progressive_Democrats",
       "source_label": "Progressive Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "progressive-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/30/Sinn_Féin",
       "source_label": "Sinn Féin",
       "outcome": "accepted",
       "identity": "sinn-fein",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Anti-Austerity_Alliance_People_Before_Profit",
       "source_label": "Anti-Austerity Alliance - People Before Profit",
       "outcome": "accepted",
       "identity": "people-before-profit-solidarity",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/31/People_Before_Profit_Alliance",
       "source_label": "People Before Profit Alliance",
       "outcome": "accepted",
       "identity": "people-before-profit-alliance",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Renua",
       "source_label": "Renua",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "renua",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Sinn_Féin",
       "source_label": "Sinn Féin",
       "outcome": "accepted",
       "identity": "sinn-fein",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Social_Democrats",
       "source_label": "Social Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "social-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Socialist_Party",
       "source_label": "Socialist Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "socialist-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Workers_and_Unemployed_Action",
       "source_label": "Workers and Unemployed Action",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "workers-and-unemployed-action",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/32/Anti-Austerity_Alliance_People_Before_Profit",
       "source_label": "Anti-Austerity Alliance - People Before Profit",
       "outcome": "accepted",
       "identity": "people-before-profit-solidarity",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/32/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/32/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/32/Green_Party",
       "source_label": "Green Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "green-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/32/Independents_4_Change",
       "source_label": "Independents 4 Change",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "independents-4-change",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/32/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/32/People_Before_Profit_Solidarity",
       "source_label": "People Before Profit-Solidarity",
       "outcome": "accepted",
       "identity": "people-before-profit-solidarity",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/32/Sinn_Féin",
       "source_label": "Sinn Féin",
       "outcome": "accepted",
       "identity": "sinn-fein",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/32/Social_Democrats",
       "source_label": "Social Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "social-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Aontú",
       "source_label": "Aontú",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "aontu",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Green_Party",
       "source_label": "Green Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "green-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Independents_4_Change",
       "source_label": "Independents 4 Change",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "independents-4-change",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/People_Before_Profit_Solidarity",
       "source_label": "People Before Profit-Solidarity",
       "outcome": "accepted",
       "identity": "people-before-profit-solidarity",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Sinn_Féin",
       "source_label": "Sinn Féin",
       "outcome": "accepted",
       "identity": "sinn-fein",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Social_Democrats",
       "source_label": "Social Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "social-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/100%_RDR",
       "source_label": "100% RDR",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "100-rdr",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Aontú",
       "source_label": "Aontú",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "aontu",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Green_Party",
       "source_label": "Green Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "green-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Independent_Ireland",
       "source_label": "Independent Ireland",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "independent-ireland",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/People_Before_Profit_Solidarity",
       "source_label": "People Before Profit-Solidarity",
       "outcome": "accepted",
       "identity": "people-before-profit-solidarity",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin",
       "source_label": "Sinn Féin",
       "outcome": "accepted",
       "identity": "sinn-fein",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Social_Democrats",
       "source_label": "Social Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "social-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/4/Business_and_Professional_Group",
       "source_label": "Business and Professional Group",
       "outcome": "accepted",
       "identity": "business-and-professional-group",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/4/Cumann_na_nGaedheal",
       "source_label": "Cumann na nGaedheal",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "cumann-na-ngaedheal",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/4/Farmers_Party",
       "source_label": "Farmers Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "farmers-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/4/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/4/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/4/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/4/National_League_Party",
       "source_label": "National League Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "national-league-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/4/Republican",
       "source_label": "Republican",
       "outcome": "accepted",
       "identity": "sinn-fein-anti-treaty",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/4/Sinn_Féin",
       "source_label": "Sinn Féin",
       "outcome": "accepted",
       "identity": "sinn-fein-anti-treaty",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/5/Cumann_na_nGaedheal",
       "source_label": "Cumann na nGaedheal",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "cumann-na-ngaedheal",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/5/Farmers_Party",
       "source_label": "Farmers Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "farmers-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/5/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/5/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/5/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/5/National_League_Party",
       "source_label": "National League Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "national-league-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/5/Sinn_Féin",
       "source_label": "Sinn Féin",
       "outcome": "accepted",
       "identity": "sinn-fein-anti-treaty",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/6/Cumann_na_nGaedheal",
       "source_label": "Cumann na nGaedheal",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "cumann-na-ngaedheal",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/6/Farmers_Party",
       "source_label": "Farmers Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "farmers-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/6/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/6/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/6/Irish_Worker_League",
       "source_label": "Irish Worker League",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "irish-worker-league",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/6/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/6/National_League_Party",
       "source_label": "National League Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "national-league-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/6/Sinn_Féin",
       "source_label": "Sinn Féin",
       "outcome": "accepted",
       "identity": "sinn-fein-anti-treaty",
-      "reason": "Explicitly settled by reports/party-identity-review.md §5"
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/7/Cumann_na_nGaedheal",
       "source_label": "Cumann na nGaedheal",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "cumann-na-ngaedheal",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/7/Farmers_Party",
       "source_label": "Farmers Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "farmers-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/7/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/7/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/7/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/8/Cumann_na_nGaedheal",
       "source_label": "Cumann na nGaedheal",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "cumann-na-ngaedheal",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/8/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/8/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/8/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/8/National_Centre_Party",
       "source_label": "National Centre Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "national-centre-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/9/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/9/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/dail/9/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/10/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/10/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/10/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/11/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/11/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/11/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/11/National_Progressive_Democrats",
       "source_label": "National Progressive Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "national-progressive-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/12/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/12/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/12/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/13/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/13/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/13/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/13/Socialist_Labour_Party",
       "source_label": "Socialist Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "socialist-labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/14/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/14/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/14/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/15/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/15/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/15/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/16/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/16/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/16/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/17/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/17/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/17/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/18/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/18/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/18/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/19/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/19/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/19/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/19/Progressive_Democrats",
       "source_label": "Progressive Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "progressive-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/1922/Cumann_na_nGaedheal",
       "source_label": "Cumann na nGaedheal",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "cumann-na-ngaedheal",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/1922/Farmers_Party",
       "source_label": "Farmers Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "farmers-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/1922/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/1925/Cumann_na_nGaedheal",
       "source_label": "Cumann na nGaedheal",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "cumann-na-ngaedheal",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/1925/Farmers_Party",
       "source_label": "Farmers Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "farmers-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/1925/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/1928/Cumann_na_nGaedheal",
       "source_label": "Cumann na nGaedheal",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "cumann-na-ngaedheal",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/1928/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/1928/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/1931/Cumann_na_nGaedheal",
       "source_label": "Cumann na nGaedheal",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "cumann-na-ngaedheal",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/1931/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/1931/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/1934/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/1934/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/1934/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/2/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/2/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/2/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/20/Democratic_Left",
       "source_label": "Democratic Left",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "democratic-left",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/20/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/20/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/20/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/20/Progressive_Democrats",
       "source_label": "Progressive Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "progressive-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/21/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/21/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/21/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/21/Progressive_Democrats",
       "source_label": "Progressive Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "progressive-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/22/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/22/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/22/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/22/Progressive_Democrats",
       "source_label": "Progressive Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "progressive-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Green_Party",
       "source_label": "Green Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "green-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Progressive_Democrats",
       "source_label": "Progressive Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "progressive-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Sinn_Féin",
       "source_label": "Sinn Féin",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Review §5 leaves Seanad term assignment blank; do not infer from the Dáil-period decision"
+      "outcome": "accepted",
+      "identity": "sinn-fein",
+      "reason": "Explicit user approval: 23rd–27th Seanad Sinn Féin records belong to modern Sinn Féin"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/24/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/24/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/24/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/24/Sinn_Féin",
       "source_label": "Sinn Féin",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Review §5 leaves Seanad term assignment blank; do not infer from the Dáil-period decision"
+      "outcome": "accepted",
+      "identity": "sinn-fein",
+      "reason": "Explicit user approval: 23rd–27th Seanad Sinn Féin records belong to modern Sinn Féin"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/25/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/25/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/25/Green_Party",
       "source_label": "Green Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "green-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/25/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/25/Sinn_Féin",
       "source_label": "Sinn Féin",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Review §5 leaves Seanad term assignment blank; do not infer from the Dáil-period decision"
+      "outcome": "accepted",
+      "identity": "sinn-fein",
+      "reason": "Explicit user approval: 23rd–27th Seanad Sinn Féin records belong to modern Sinn Féin"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Green_Party",
       "source_label": "Green Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "green-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Sinn_Féin",
       "source_label": "Sinn Féin",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Review §5 leaves Seanad term assignment blank; do not infer from the Dáil-period decision"
+      "outcome": "accepted",
+      "identity": "sinn-fein",
+      "reason": "Explicit user approval: 23rd–27th Seanad Sinn Féin records belong to modern Sinn Féin"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Aontú",
       "source_label": "Aontú",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "aontu",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Green_Party",
       "source_label": "Green Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "green-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Sinn_Féin",
       "source_label": "Sinn Féin",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Review §5 leaves Seanad term assignment blank; do not infer from the Dáil-period decision"
+      "outcome": "accepted",
+      "identity": "sinn-fein",
+      "reason": "Explicit user approval: 23rd–27th Seanad Sinn Féin records belong to modern Sinn Féin"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Social_Democrats",
       "source_label": "Social Democrats",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "social-democrats",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/3/Clann_na_Talmhan",
       "source_label": "Clann na Talmhan",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-talmhan",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/3/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/3/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/3/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/4/Clann_na_Talmhan",
       "source_label": "Clann na Talmhan",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-talmhan",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/4/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/4/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/4/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/5/Clann_na_Talmhan",
       "source_label": "Clann na Talmhan",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-talmhan",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/5/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/5/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/5/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/6/Clann_na_Poblachta",
       "source_label": "Clann na Poblachta",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-poblachta",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/6/Clann_na_Talmhan",
       "source_label": "Clann na Talmhan",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-talmhan",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/6/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/6/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/6/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/7/Clann_na_Poblachta",
       "source_label": "Clann na Poblachta",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-poblachta",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/7/Clann_na_Talmhan",
       "source_label": "Clann na Talmhan",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-talmhan",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/7/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/7/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/7/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/8/Clann_na_Talmhan",
       "source_label": "Clann na Talmhan",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-talmhan",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/8/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/8/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/8/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/9/Clann_na_Talmhan",
       "source_label": "Clann na Talmhan",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "clann-na-talmhan",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/9/Fianna_Fáil",
       "source_label": "Fianna Fáil",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fianna-fail",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/9/Fine_Gael",
       "source_label": "Fine Gael",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "fine-gael",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     },
     {
       "source_iri": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/9/Labour_Party",
       "source_label": "Labour Party",
-      "outcome": "unresolved",
-      "identity": null,
-      "reason": "Identity association not settled; do not infer from a matching name"
+      "outcome": "accepted",
+      "identity": "labour-party",
+      "reason": "Approved by reports/party-identity-review.md §2 or §5"
     }
   ]
 }

@@ -55,8 +55,9 @@ and has exactly one outcome: accepted association, unresolved association, or
 exclusion. The generator is `tools/party_identity_decisions.py`; run
 `python tools/party_identity_decisions.py` from any directory in the checkout.
 It reads the preserved review inventory, sorts records by full source IRI,
-checks the expected 315 unique rows and writes stable JSON. No source record is
-changed.
+checks its reviewed SHA-256 and 315 unique rows, and writes stable JSON. The
+digest guard means a new/edited source row fails closed until reviewed. No
+source record is changed.
 
 Accepted identity definitions (aliases are not time-scoped):
 
@@ -65,49 +66,63 @@ Accepted identity definitions (aliases are not time-scoped):
 | `sinn-fein-pre-independence` | Sinn Féin (Pre-Independence) | Sinn Féin; 1st–3rd Dáil records |
 | `sinn-fein-anti-treaty` | Sinn Féin (Anti-Treaty) | Republican; Sinn Féin; 4th–6th Dáil Sinn Féin records and 4th Dáil Republican records |
 | `sinn-fein-1957` | Sinn Féin (1957) | Sinn Féin; 16th Dáil record |
-| `sinn-fein` | Sinn Féin | 28th Dáil onward records; Seanad assignment is unresolved |
+| `sinn-fein` | Sinn Féin | 28th Dáil onward and 23rd–27th Seanad records |
 | `workers-party` | Workers Party | Sinn Féin the Workers Party and Workers Party records; one identity per the reviewed 1982 name change |
 | `people-before-profit-solidarity` | People Before Profit–Solidarity affiliation | All six reviewer-provided variants, plus source spellings; Anti-Austerity Alliance–People Before Profit and People Before Profit-Solidarity records |
 | `people-before-profit-alliance` | People Before Profit Alliance | Kept distinct from the combined AAA/Solidarity–PBP affiliation |
 | `business-and-professional-group` | Business and Professional Group | Both term-scoped records; included by reviewer decision |
 
+The first-pass approved identity labels are: 100% RDR; Aontú; Business and
+Professional Group; Clann na Poblachta; Clann na Talmhan; Cumann na
+nGaedheal; Democratic Left; Farmers Party; Fianna Fáil; Fine Gael; Green
+Party; Independent Ireland; Independents 4 Change; Irish Worker League;
+Labour Party; National Centre Party; National Labour Party; National League
+Party; National Progressive Democrats; People Before Profit Alliance; the
+combined People Before Profit–Solidarity affiliation; Progressive Democrats;
+Renua; the four Sinn Féin identities above; Workers Party; Social Democrats;
+Socialist Labour Party; Socialist Party; and Workers and Unemployed Action.
+The record-level associations for every identity are in the JSON register.
+For these reviewed records, the first-pass same-label groupings are approved;
+this is not permission to infer an association for a future or otherwise
+unreviewed source record.
+
 The source record named `Republican` in the 4th Dáil is associated with
 `sinn-fein-anti-treaty`; its own ParliamentaryParty identity and label remain
-`Republican`. The combined AAA/Solidarity–PBP identity is distinct from both
-People Before Profit Alliance and Socialist Party. Socialist Party records
-remain unresolved as to their own cross-term identity, but must not be
-associated with the combined affiliation. Ceann Comhairle and Cathaoirleach
-records are excluded as parliamentary offices, not political affiliations.
-
-The review's parenthetical “Seanad terms should:” has no answer. Therefore no
-Seanad Sinn Féin source records are assigned to one of the four identities by
-this register; the five Seanad 23rd–27th term records remain unresolved. The
-initial inventory proposal is not used to fill that gap.
-
-The reviewed separation decisions are retained: Historical/pre-Independence,
-Anti-Treaty, 1957 and modern Sinn Féin are four identities; Sinn Féin the
-Workers Party is not Sinn Féin; Cumann na nGaedheal is not Fine Gael; National
-Progressive Democrats is not Progressive Democrats; Democratic Left is not
-Labour Party; National Labour Party is not Labour Party. The register does not
-create successor/predecessor links.
+`Republican`. The five Sinn Féin records in the 23rd–27th Seanads are now
+explicitly approved for modern Sinn Féin. The combined AAA/Solidarity–PBP
+identity is distinct from both People Before Profit Alliance and Socialist
+Party. The Sinn Féin the Workers Party / Workers Party records share one
+identity; this identity remains distinct from all four Sinn Féin identities.
+Other reviewed separations remain explicit: Cumann na nGaedheal / Fine Gael,
+National Progressive Democrats / Progressive Democrats, Democratic Left /
+Labour Party, and National Labour Party / Labour Party. No
+predecessor/successor relationships are inferred.
 
 ## Accounting and unresolved identity work
 
 The current inventory has 315 distinct non-Independent term-scoped records.
-The generated register assigns 29 records to eight local identities, excludes
-the one Ceann Comhairle office record, and leaves 285 affiliations unresolved
-for identity association. Every source IRI is present once. The unresolved
-records are still affiliations (the user's default classification); they are
-not rejected as parties and must not be assigned by same-name matching. In
-particular, the initial review's proposed groupings do not by themselves
-settle continuity for the other recurring names. Their cross-term associations
-remain explicit future review, not hidden assumptions in this register.
+The generated register assigns 311 records to 32 local identities, excludes
+the one Ceann Comhairle office record, and leaves three Democratic Socialist
+Party records unresolved. Every source IRI is present exactly once. The three
+unresolved rows are the 23rd, 25th and 26th Dáil records named Democratic
+Socialist Party. The review calls their observations limited and separated and
+does not decide whether they share one identity or how they relate to similarly
+named groups. They remain affiliations under the user's default classification;
+they are not rejected as parties. No further unresolved identity cases are
+present in this reviewed snapshot.
+
+The generator pins the exact inventory byte digest and fails closed if the
+inventory changes. A future source record is not covered by these approvals:
+it requires an explicit decision keyed by its complete source IRI, even when
+its label matches an existing identity.
 
 Explicit separations above are constraints on later decisions, not claims that
 the associated organizations are related. Business and Professional Group is
-included as directed. Date discrepancies and invalid/out-of-term affiliation
-intervals remain source-data limitations; they neither split nor merge
-identities.
+included as directed. Ceann Comhairle and Cathaoirleach are excluded as
+parliamentary offices (the current inventory contains one Ceann Comhairle
+record and no Cathaoirleach record). Date discrepancies and invalid/out-of-term
+affiliation intervals remain source-data limitations; they neither split nor
+merge identities.
 
 ## Minimum implementation tranche after this decision
 
