@@ -35,6 +35,28 @@ def test_bad_decision_register_fails_closed(tmp_path, change):
         build_graph(path)
 
 
+def test_same_counts_with_wrong_accepted_identity_fails_closed(tmp_path):
+    from oireachtas_etl.political_affiliations import DECISIONS
+    data = json.loads(DECISIONS.read_text(encoding="utf-8"))
+    accepted = [row for row in data["records"] if row["outcome"] == "accepted"]
+    accepted[0]["identity"], accepted[1]["identity"] = accepted[1]["identity"], accepted[0]["identity"]
+    path = tmp_path / "decisions.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(PoliticalAffiliationError, match="approved reviewed register"):
+        build_graph(path)
+
+
+def test_wrong_office_exclusion_fails_closed(tmp_path):
+    from oireachtas_etl.political_affiliations import DECISIONS
+    data = json.loads(DECISIONS.read_text(encoding="utf-8"))
+    excluded = next(row for row in data["records"] if row["outcome"] == "excluded")
+    excluded["source_label"] = "Independent"
+    path = tmp_path / "decisions.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(PoliticalAffiliationError):
+        build_graph(path)
+
+
 def test_publication_replaces_and_verifies_only_the_owned_graph(monkeypatch):
     from oireachtas_etl import loader, political_affiliations
     calls = []
@@ -46,6 +68,8 @@ def test_publication_replaces_and_verifies_only_the_owned_graph(monkeypatch):
 
         def replace(self, graph, payload, **kwargs):
             calls.append((graph, payload))
+            assert kwargs["content_type"] == "application/n-triples"
+            assert payload.splitlines()[0].count("<") >= 2
 
     class Query:
         def __init__(self, endpoint, **kwargs):
