@@ -110,12 +110,12 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
         capabilities = [{
             "id": fact["id"], "description": fact["predicate"],
             "subjectTypes": [fact["subjectType"]], "objectTypes": [fact["objectType"]],
-            "filters": [], "status": "Executable for the previous-Dáil representation slice",
+            "filters": [], "status": "Executable for the bounded Q06/Q09 composable slices",
         } for fact in facts.values()]
         return templates.TemplateResponse(request, "capabilities.html", {
             "request": request, "capabilities": capabilities,
-            "temporal_constraints": ["previousTerm(Dail, asOf) using date evidence"],
-            "answer_shapes": [{"kind": "entities", "description": "Distinct Member identities with readable names."}],
+            "temporal_constraints": ["previousTerm(Dail, asOf) using date evidence", "Separate dated party-membership evidence episodes"],
+            "answer_shapes": [{"kind": "entities", "description": "Distinct Member or reviewed enduring affiliation identities with readable labels and supporting evidence."}],
         })
 
     @app.post("/ask", response_class=HTMLResponse)
@@ -149,13 +149,17 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     supported_predicates=predicate_vocabulary,
                 )
                 plan_json = format_debug_payload(outcome.plan) if outcome.plan else None
-                summary = "Find distinct Members who represented this constituency in the previous Dáil."
+                is_q06 = bool(outcome.plan and outcome.plan.get("answer", {}).get("referent") == "affiliation")
+                member_mention = outcome.plan.get("referents", {}).get("member", {}).get("mention", "the named Member") if is_q06 else None
+                summary = (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
+                           if is_q06 else "Find distinct Members who represented this constituency in the previous Dáil.")
                 if outcome.status == "success":
                     return render(request, question=question, mode=mode,
                                   interpretation=summary, plan_json=plan_json,
                                   plan_heading="Validated composable query plan",
-                                  plan_explanation={"summary": summary, "validated": True,
-                                                    "answer_text": "Distinct Members, displayed by name."},
+                                   plan_explanation={"summary": summary, "validated": True,
+                                                     "answer_text": ("Distinct political-affiliation identities with separate supporting membership episodes."
+                                                                     if is_q06 else "Distinct Members, displayed by name.")},
                                   sparql=outcome.sparql, result=outcome.result,
                                   debug_output=outcome.result.raw_json if outcome.result else None,
                                   debug_source="Fuseki")
@@ -165,13 +169,30 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     "not_found": "No constituency with that name was found in the previous Dáil.",
                     "ambiguous": "More than one constituency matches in the previous Dáil; no identity was selected.",
                     "unsupported_mapping": "A required relation or query mapping is unsupported; no answer was returned.",
+                    "missing_identity_link": "Parliamentary party-membership evidence exists, but the reviewed local enduring-identity link is missing.",
                 }
+                if outcome.status == "source_data_unavailable" and is_q06:
+                    message = "The local dataset has no usable dated party-membership evidence for this Member."
+                elif outcome.status == "not_found" and is_q06:
+                    message = "No matching local Member record was found."
+                elif outcome.status == "ambiguous" and is_q06:
+                    message = "More than one local Member record matches; no Member was selected."
+                else:
+                    message = messages.get(outcome.status, outcome.diagnostic)
+                member_ref = outcome.plan.get("referents", {}).get("member", {}) if is_q06 and outcome.plan else {}
+                member_outcomes = ()
+                if member_ref.get("resolution") == "ambiguous":
+                    member_outcomes = ({
+                        "type": "Member", "label": member_ref.get("mention", "the named Member"),
+                        "resolution": "ambiguous", "candidates": member_ref.get("candidates", []),
+                    },)
                 return render(
                     request, question=question, mode=mode,
                     interpretation=summary if outcome.plan else None, plan_json=plan_json,
                     plan_heading="Proposed composable query plan" if outcome.plan else None,
-                    error=messages.get(outcome.status, outcome.diagnostic),
+                    error=message,
                     interaction_status=outcome.status,
+                    entity_outcomes=member_outcomes,
                     debug_output=format_debug_payload({"diagnostic": outcome.diagnostic,
                                                        "candidates": outcome.candidates}),
                     debug_message="No answer query was executed after this resolution failure.",

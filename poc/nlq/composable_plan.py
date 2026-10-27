@@ -1,4 +1,4 @@
-"""Small typed graph plans and deterministic Q09 compilation.
+"""Small typed graph plans and deterministic Q06/Q09 compilation.
 
 The browser uses this replacement plan path.  Plans contain semantic relation
 IDs only; every query below is compiled from this module's reviewed mapping
@@ -15,6 +15,8 @@ import unicodedata
 from pathlib import Path
 from typing import Any
 
+from rdflib import URIRef
+
 from .contract import load_query_contract
 from .errors import NLQError
 from .results import QueryResult
@@ -24,11 +26,11 @@ from .safety import validate_sparql
 PLAN_VERSION = 2
 _PLAN_CONTRACT_PATH = Path(__file__).resolve().parents[1] / "specs" / "composable-query-plan-contract.json"
 _PLAN_CONTRACT = json.loads(_PLAN_CONTRACT_PATH.read_text(encoding="utf-8"))
-_Q09_FACTS = {
+_RELATION_TYPES = {
     relation["id"]: (relation["subjectType"], relation["objectType"])
     for relation in _PLAN_CONTRACT["relations"]
 }
-_Q09_RELATION_MAPPINGS = {relation["id"]: relation for relation in _PLAN_CONTRACT["relations"]}
+_RELATION_MAPPINGS = {relation["id"]: relation for relation in _PLAN_CONTRACT["relations"]}
 _PREFIXES = """PREFIX agents: <https://data.oireachtas.ie/ontology#>
 PREFIX dcat: <http://www.w3.org/ns/dcat#>
 PREFIX dct: <http://purl.org/dc/terms/>
@@ -67,7 +69,32 @@ def _normalise_label(value: str) -> str:
 
 
 def plan_question(question: str, *, as_of: date) -> dict[str, Any]:
-    """Interpret the bounded previous-Dáil representation question family."""
+    """Interpret the bounded Q06 affiliation and Q09 representation families."""
+    affiliation = re.search(
+        r"\bwhat\s+parties\s+was\s+(.+?)\s+a\s+member\s+of\s*[?.!]*$",
+        question.strip(), re.IGNORECASE,
+    )
+    if affiliation:
+        member_name = re.sub(r"[?.!]+$", "", affiliation.group(1)).strip()
+        if not member_name:
+            raise PlanError("A Member name is required for the party-membership question.")
+        return validate_plan({
+            "version": PLAN_VERSION,
+            "asOf": as_of.isoformat(),
+            "referents": {
+                "member": {"type": "Member", "mention": member_name, "resolution": "unresolved"},
+                "episode": {"type": "PartyMembershipEpisode"},
+                "party": {"type": "ParliamentaryParty"},
+                "affiliation": {"type": "PoliticalAffiliationIdentity", "answer": True},
+            },
+            "relations": [
+                {"id": "member-party-episode", "fact": "member_party_membership", "from": "member", "to": "episode"},
+                {"id": "episode-party", "fact": "episode_in_parliamentary_party", "from": "episode", "to": "party"},
+                {"id": "party-affiliation", "fact": "parliamentary_party_has_affiliation_identity", "from": "party", "to": "affiliation"},
+            ],
+            "answer": {"kind": "entities", "referent": "affiliation", "distinctBy": "identity", "display": ["label"],
+                       "details": [{"referent": "episode", "display": ["start", "end"]}], "preserveGaps": True},
+        })
     match = re.search(
         r"\b(?:tds?\s+for|represented)\s+(.+?)\s+in\s+the\s+"
         r"(?:last|previous)\s+dáil\b",
@@ -116,12 +143,21 @@ def validate_plan(plan: Any) -> dict[str, Any]:
             raise PlanError(f"Unsupported referent type {ref['type']!r}.")
     term = refs.get("term", {})
     constituency = refs.get("constituency", {})
-    if (term.get("type") != "DailTerm"
+    is_q09 = "term" in refs or "constituency" in refs
+    if is_q09 and (term.get("type") != "DailTerm"
             or term.get("selector") != {"kind": "previousTerm", "house": "Dail"}
             or constituency.get("type") != "DailConstituency"
             or not isinstance(constituency.get("mention"), str)
             or not constituency["mention"].strip()):
         raise PlanError("Q09 requires a previous-Dáil selector and a named term-scoped constituency.")
+    if not is_q09 and (
+        refs.get("member", {}).get("type") != "Member"
+        or not refs.get("member", {}).get("mention")
+        or refs.get("episode", {}).get("type") != "PartyMembershipEpisode"
+        or refs.get("party", {}).get("type") != "ParliamentaryParty"
+        or refs.get("affiliation", {}).get("type") != "PoliticalAffiliationIdentity"
+    ):
+        raise PlanError("Q06 requires a named Member, dated membership episode, parliamentary party and enduring affiliation identity.")
     if not isinstance(plan["relations"], list) or not plan["relations"]:
         raise PlanError("relations must be a non-empty list.")
     seen = set()
@@ -131,33 +167,55 @@ def validate_plan(plan: Any) -> dict[str, Any]:
         if relation["id"] in seen:
             raise PlanError("Relation IDs must be unique.")
         seen.add(relation["id"])
-        if relation["fact"] not in _Q09_FACTS:
+        if relation["fact"] not in _RELATION_TYPES:
             raise PlanError(f"Unsupported semantic mapping: {relation['fact']!r}.")
         if relation["from"] not in refs or relation["to"] not in refs:
             raise PlanError("Relation refers to an unknown referent.")
-        subject_type, object_type = _Q09_FACTS[relation["fact"]]
+        subject_type, object_type = _RELATION_TYPES[relation["fact"]]
         if (refs[relation["from"]]["type"], refs[relation["to"]]["type"]) != (subject_type, object_type):
             raise PlanError(f"Invalid referent types for relation {relation['fact']!r}.")
-    # This bounded compiler has exactly one faithful Q09 shape. Validate its
-    # complete relation set here so no accepted plan can lose edges when later
-    # compiled. In particular, indexing by fact must not collapse repeats.
-    expected_relations = {
+    q09_relations = {
         "constituency_in_term": ("constituency", "term"),
         "member_has_membership": ("member", "membership"),
         "membership_in_term": ("membership", "term"),
         "membership_represents": ("membership", "constituency"),
     }
-    if len(plan["relations"]) != len(expected_relations):
-        raise PlanError("Q09 compiler cannot faithfully compile additional or repeated relationships.")
+    q06_relations = {
+        "member_party_membership": ("member", "episode"),
+        "episode_in_parliamentary_party": ("episode", "party"),
+        "parliamentary_party_has_affiliation_identity": ("party", "affiliation"),
+    }
     actual_relations = {relation["fact"]: (relation["from"], relation["to"])
                         for relation in plan["relations"]}
-    if actual_relations != expected_relations:
-        raise PlanError("Q09 compiler cannot faithfully compile disconnected or non-Q09 relationships.")
     answer = plan["answer"]
-    if (not isinstance(answer, dict) or answer.get("kind") != "entities"
-            or answer.get("referent") not in refs or refs[answer["referent"]]["type"] != "Member"
-            or answer.get("distinctBy") != "identity" or answer.get("display") != ["name"]):
-        raise PlanError("Q09 answer must return distinct Member identities with readable names.")
+    if actual_relations == q09_relations:
+        if len(plan["relations"]) != len(q09_relations):
+            raise PlanError("Q09 compiler cannot faithfully compile additional or repeated relationships.")
+        if (not isinstance(answer, dict) or answer.get("kind") != "entities"
+                or answer.get("referent") not in refs or refs[answer["referent"]]["type"] != "Member"
+                or answer.get("distinctBy") != "identity" or answer.get("display") != ["name"]):
+            raise PlanError("Q09 answer must return distinct Member identities with readable names.")
+    elif actual_relations == q06_relations:
+        if len(plan["relations"]) != len(q06_relations):
+            raise PlanError("Q06 compiler cannot faithfully compile additional or repeated relationships.")
+        if set(refs) != {"member", "episode", "party", "affiliation"}:
+            raise PlanError("Q06 compiler cannot faithfully compile unconnected or additional referents.")
+        if (not isinstance(answer, dict) or answer.get("kind") != "entities"
+                or answer.get("referent") != "affiliation" or refs["affiliation"]["type"] != "PoliticalAffiliationIdentity"
+                or answer.get("distinctBy") != "identity" or answer.get("display") != ["label"]
+                or answer.get("preserveGaps") is not True
+                or set(answer) != {"kind", "referent", "distinctBy", "display", "details", "preserveGaps"}
+                or answer.get("details") != [{"referent": "episode", "display": ["start", "end"]}]):
+            raise PlanError("Q06 answer must return distinct reviewed affiliation identities and preserve episode gaps.")
+    elif is_q09:
+        expected = q09_relations
+        if len(plan["relations"]) != len(expected):
+            raise PlanError("Q09 compiler cannot faithfully compile additional or repeated relationships.")
+        raise PlanError("Q09 compiler cannot faithfully compile disconnected or non-Q09 relationships.")
+    else:
+        if len(plan["relations"]) != len(q06_relations):
+            raise PlanError("Q06 compiler cannot faithfully compile additional or repeated relationships.")
+        raise PlanError("Accepted plan relations do not match a complete supported Q06 or Q09 path.")
     return plan
 
 
@@ -166,7 +224,7 @@ def _query(text: str, supported_predicates) -> str:
 
 
 def _reviewed_predicate(fact: str) -> str:
-    mapping = _Q09_RELATION_MAPPINGS.get(fact)
+    mapping = _RELATION_MAPPINGS.get(fact)
     if mapping is None:
         raise PlanError(f"No reviewed relation mapping exists for {fact!r}.")
     contract = load_query_contract()
@@ -189,6 +247,33 @@ def _reviewed_predicate_for_qname(predicate: str) -> str:
     if predicate not in load_query_contract()["queryableProperties"]:
         raise PlanError(f"Reviewed predicate {predicate!r} is not queryable in the contract.")
     return predicate
+
+
+def _reviewed_pattern(pattern_id: str, family_id: str) -> dict[str, Any]:
+    contract = load_query_contract()
+    pattern = next((item for item in contract["emittedRdfPatterns"] if item["id"] == pattern_id), None)
+    if (pattern is None or pattern.get("graphFamily") != family_id
+            or pattern.get("availability") != "emitted"
+            or pattern.get("queryableInLocalNlq") is not True):
+        raise PlanError(f"Reviewed queryable RDF pattern {pattern_id!r} is absent or unavailable.")
+    return pattern
+
+
+def _pattern_predicate(pattern: dict[str, Any], subject: str, object_: str) -> str:
+    predicate = next((triple[1] for triple in pattern.get("triples", [])
+                      if triple[0] == subject and triple[2] == object_), None)
+    if not isinstance(predicate, str):
+        raise PlanError(f"Reviewed pattern {pattern.get('id')!r} has no requested relationship.")
+    if predicate != "rdf:type":
+        _reviewed_predicate_for_qname(predicate)
+    return predicate
+
+
+def _reviewed_cross_graph_join(from_family: str, predicate: str, to_family: str) -> None:
+    contract = load_query_contract()
+    if not any(item["fromGraphFamily"] == from_family and item["predicate"] == predicate
+               and item["toGraphFamily"] == to_family for item in contract["crossGraphJoins"]):
+        raise PlanError(f"No reviewed {from_family} to {to_family} cross-graph join exists for {predicate!r}.")
 
 
 def previous_dail_term_query(as_of: date, *, supported_predicates) -> str:
@@ -285,11 +370,14 @@ class AmbiguousConstituency(NLQError):
         self.candidates = candidates
 
 
-def compile_answer_query(plan: dict[str, Any], term_iri: str, constituency_iri: str, *, supported_predicates) -> str:
+def compile_answer_query(plan: dict[str, Any], term_iri: str | None = None,
+                         constituency_iri: str | None = None, *, supported_predicates) -> str:
     plan = validate_plan(plan)
+    refs = plan["referents"]
+    if refs[plan["answer"]["referent"]]["type"] == "PoliticalAffiliationIdentity":
+        return compile_affiliation_answer_query(plan, supported_predicates=supported_predicates)
     term_iri = _require_local_iri(term_iri, "HouseTerm")
     constituency_iri = _require_local_iri(constituency_iri, "constituency")
-    refs = plan["referents"]
     # The relation registry is intentionally the only source of predicates and
     # owner graphs. It composes all four Q09 joins and preserves referent IDs.
     relation_map = {item["fact"]: item for item in plan["relations"]}
@@ -349,12 +437,204 @@ def readable_member_result(result: QueryResult) -> QueryResult:
     return QueryResult(kind="select", columns=("Member",), rows=rows, raw_json=result.raw_json)
 
 
+class AmbiguousMember(NLQError):
+    """A Member name resolves to more than one local Member resource."""
+
+    def __init__(self, mention: str, candidates: tuple[dict[str, str], ...]):
+        super().__init__(f"Several local Member records match “{mention}”; none was selected.")
+        self.candidates = candidates
+
+
+def member_resolution_query(*, supported_predicates) -> str:
+    member_graph = next(item["graph"]["iriTemplate"].split("{", 1)[0]
+                        for item in load_query_contract()["graphFamilies"]
+                        if item["id"] == "member-records")
+    name = load_query_contract()["labelsByEntityType"]["Member"]["predicate"]
+    return _query(_PREFIXES + f'''SELECT DISTINCT ?member ?name WHERE {{
+  GRAPH ?memberGraph {{ ?member a agents:Member ; {name} ?name . }}
+  FILTER(STRSTARTS(STR(?memberGraph), "{member_graph}"))
+}}''', supported_predicates)
+
+
+def resolve_member(result: QueryResult, mention: str) -> tuple[str, str]:
+    wanted = _normalise_label(mention)
+    candidates: dict[str, str] = {}
+    for row in result.rows:
+        if len(row) < 2:
+            continue
+        iri, label = row[:2]
+        _require_local_iri(iri, "Member")
+        label = label.removesuffix("@en")
+        if _normalise_label(label) == wanted:
+            candidates[iri] = label
+    if not candidates:
+        raise NLQError(f"No local Member record was found for “{mention}”.")
+    if len(candidates) > 1:
+        raise AmbiguousMember(mention, tuple({"iri": iri, "label": candidates[iri]} for iri in sorted(candidates)))
+    iri = next(iter(candidates))
+    return iri, candidates[iri]
+
+
+def compile_affiliation_answer_query(plan: dict[str, Any], *, supported_predicates) -> str:
+    """Compile the reviewed Member → episode → term party → local identity path."""
+    plan = validate_plan(plan)
+    refs = plan["referents"]
+    member_iri = _require_local_iri(refs["member"].get("iri"), "Member")
+    relation_map = {item["fact"]: item for item in plan["relations"]}
+    expected = {
+        "member_party_membership": ("member", "episode"),
+        "episode_in_parliamentary_party": ("episode", "party"),
+        "parliamentary_party_has_affiliation_identity": ("party", "affiliation"),
+    }
+    if len(relation_map) != len(expected) or any(
+        (relation_map.get(fact, {}).get("from"), relation_map.get(fact, {}).get("to")) != edge
+        for fact, edge in expected.items()
+    ):
+        raise PlanError("Q06 compiler requires every reviewed Member/episode/party/identity edge.")
+    for fact in expected:
+        _reviewed_predicate(fact)
+    contract = load_query_contract()
+    family_graphs = {family["id"]: family["graph"] for family in contract["graphFamilies"]}
+    identity_graph = family_graphs.get("political-affiliations", {}).get("iri")
+    party_graph = family_graphs.get("parties", {}).get("iri")
+    houses_graph = family_graphs.get("houses", {}).get("iri")
+    if not identity_graph or not party_graph or not houses_graph:
+        raise PlanError("Reviewed Parties, Houses or political-affiliation graph ownership is absent from the query contract.")
+    supported = set(supported_predicates)
+    identity_qname = _reviewed_predicate("parliamentary_party_has_affiliation_identity")
+    identity_prefix, identity_local = identity_qname.split(":", 1)
+    identity_uri = URIRef(contract["namespaces"][identity_prefix] + identity_local)
+    if identity_uri not in supported:
+        raise PlanError("The reviewed political-affiliation identity predicate is not allowlisted.")
+    party_membership = _reviewed_predicate("episode_in_parliamentary_party")
+    member_membership = _reviewed_predicate("member_party_membership")
+    episode_pattern = _reviewed_pattern("party-membership-episode", "member-records")
+    membership_pattern = _reviewed_pattern("member-house-membership", "member-records")
+    identity_pattern = _reviewed_pattern("reviewed-political-affiliation-identities", "political-affiliations")
+    party_term_pattern = _reviewed_pattern("party-term-occurrence", "parties")
+    rdf_types = _PLAN_CONTRACT["entityTypeRdfTypes"]
+    for semantic_type in ("Member", "PartyMembershipEpisode", "ParliamentaryParty", "PoliticalAffiliationIdentity"):
+        if rdf_types[semantic_type] not in contract["queryableClasses"]:
+            raise PlanError(f"Reviewed RDF type for {semantic_type!r} is absent from the query contract.")
+    episode_type = rdf_types["PartyMembershipEpisode"]
+    party_type = rdf_types["ParliamentaryParty"]
+    identity_type = rdf_types["PoliticalAffiliationIdentity"]
+    member_type = rdf_types["Member"]
+    term_types = (rdf_types["DailTerm"], rdf_types["SeanadTerm"])
+    if any(term_type not in contract["queryableClasses"] for term_type in term_types):
+        raise PlanError("Reviewed HouseTerm RDF types are absent from the query contract.")
+    date_range = _pattern_predicate(membership_pattern, "?membership", "?dateRange")
+    membership_term = _pattern_predicate(membership_pattern, "?membership", "?term")
+    start = _pattern_predicate(membership_pattern, "?dateRange", "?startDate")
+    end = _pattern_predicate(membership_pattern, "?dateRange", "?endDate (optional)")
+    linked_membership = _pattern_predicate(episode_pattern, "?partyEpisode", "?oireachtasMembership")
+    party_term = _pattern_predicate(party_term_pattern, "?party", "?term")
+    _reviewed_cross_graph_join("parties", party_term, "houses")
+    label_entry = contract["labelsByEntityType"].get("PoliticalAffiliationIdentity", {})
+    label = label_entry.get("predicate")
+    label_language = label_entry.get("language")
+    if not label or label not in contract["queryableProperties"]:
+        raise PlanError("No reviewed preferred-label mapping exists for political-affiliation identities.")
+    if label_language != "en":
+        raise PlanError("Political-affiliation answers require the reviewed English preferred label.")
+    identity_link = _pattern_predicate(identity_pattern, "?party", "?identity")
+    preferred_label = _pattern_predicate(identity_pattern, "?identity", "?englishPreferredLabel")
+    if preferred_label != label:
+        raise PlanError("Political-affiliation preferred-label mappings disagree across reviewed contracts.")
+    return _query(_PREFIXES + f'''SELECT DISTINCT ?member ?episode ?identity ?affiliationLabel ?start ?end WHERE {{
+  GRAPH ?memberGraph {{
+    <{member_iri}> a {member_type} ; {member_membership} ?episode .
+    ?episode a {episode_type} ; {linked_membership} ?membership ; {party_membership} ?party .
+    ?membership {membership_term} ?term .
+    ?membership {date_range} ?dateRange .
+    OPTIONAL {{ ?dateRange {start} ?start . }}
+    OPTIONAL {{ ?dateRange {end} ?end . }}
+  }}
+  GRAPH <{party_graph}> {{ ?party a {party_type} ; {party_term} ?term . }}
+  GRAPH <{houses_graph}> {{ ?term a ?termType . }}
+  VALUES ?termType {{ {term_types[0]} {term_types[1]} }}
+  OPTIONAL {{ GRAPH <{identity_graph}> {{
+    ?party {identity_link} ?identity .
+    ?identity a {identity_type} .
+    OPTIONAL {{ ?identity {preferred_label} ?affiliationLabel . FILTER(LANG(?affiliationLabel) = "{label_language}") }}
+  }} }}
+}} ORDER BY ?affiliationLabel ?start ?end''', supported_predicates)
+
+
+def readable_affiliation_result(result: QueryResult) -> QueryResult:
+    """Group episode rows by reviewed identity; retain each dated episode separately."""
+    if result.kind != "select":
+        raise NLQError("Political-affiliation answer query returned an unexpected result kind.")
+    indexes = {name: result.columns.index(name) for name in ("episode", "identity", "affiliationLabel", "start", "end")
+               if name in result.columns}
+    if not {"episode", "identity", "affiliationLabel", "start", "end"}.issubset(indexes):
+        raise NLQError("Political-affiliation answer query omitted identity or episode evidence.")
+    grouped: dict[str, tuple[str, dict[str, tuple[str, str]]]] = {}
+    for row in result.rows:
+        if len(row) <= max(indexes.values()):
+            continue
+        identity = row[indexes["identity"]]
+        episode_iri = row[indexes["episode"]]
+        label = row[indexes["affiliationLabel"]].removesuffix("@en")
+        if identity in {"—", ""} or not label:
+            continue
+        _require_local_iri(identity, "PoliticalAffiliationIdentity")
+        _require_local_iri(episode_iri, "PartyMembershipEpisode")
+        starts = row[indexes["start"]]
+        ends = row[indexes["end"]]
+        episode = (starts.removesuffix("^^http://www.w3.org/2001/XMLSchema#date"),
+                   ends.removesuffix("^^http://www.w3.org/2001/XMLSchema#date"))
+        grouped.setdefault(identity, (label, {}))[1][episode_iri] = episode
+    rows = []
+    for identity, (label, episodes) in sorted(grouped.items(), key=lambda item: (item[1][0].casefold(), item[0])):
+        dated = []
+        for start, end in sorted(episodes.values()):
+            if start in {"—", ""} and end in {"—", ""}:
+                dated.append("membership episode (dates not recorded)")
+            else:
+                dated.append(f"{start or 'start date not recorded'} – {end or 'end date not recorded'}")
+        rows.append((label, "; ".join(dated)))
+    return QueryResult("select", ("Political affiliation", "Supporting membership episodes"), tuple(rows), result.raw_json)
+
+
 def execute_question(question: str, *, as_of: date, fuseki, supported_predicates) -> PlanOutcome:
-    """Plan, resolve, validate, compile and execute the bounded Q09 capability."""
+    """Plan, resolve, validate, compile and execute the bounded Q06/Q09 capabilities."""
     try:
         plan = plan_question(question, as_of=as_of)
     except PlanError as error:
         return PlanOutcome("unsupported_capability", diagnostic=str(error))
+    if plan["answer"]["referent"] == "affiliation":
+        mention = plan["referents"]["member"]["mention"]
+        try:
+            resolution = fuseki.query(member_resolution_query(supported_predicates=supported_predicates))
+            member_iri, member_label = resolve_member(resolution, mention)
+        except AmbiguousMember as error:
+            plan["referents"]["member"].update({"resolution": "ambiguous", "candidates": list(error.candidates)})
+            return PlanOutcome("ambiguous", plan=plan, diagnostic=str(error), candidates=error.candidates)
+        except NLQError as error:
+            state = "not_found" if "No local Member" in str(error) else "source_data_unavailable"
+            plan["referents"]["member"]["resolution"] = state
+            return PlanOutcome(state, plan=plan, diagnostic=str(error))
+        plan["referents"]["member"].update({"resolution": "resolved", "iri": member_iri, "label": member_label})
+        try:
+            query = compile_answer_query(plan, supported_predicates=supported_predicates)
+            raw_result = fuseki.query(query)
+            if not raw_result.rows:
+                return PlanOutcome("source_data_unavailable", plan=plan,
+                                   diagnostic="No dated parliamentary party-membership evidence was found for this Member in the local dataset.")
+            identity_index = raw_result.columns.index("identity")
+            label_index = raw_result.columns.index("affiliationLabel")
+            if any(len(row) <= identity_index or row[identity_index] in {"—", ""} for row in raw_result.rows):
+                return PlanOutcome("missing_identity_link", plan=plan,
+                                   diagnostic="Party-membership evidence exists, but no reviewed local affiliation-identity link is present.")
+            if any(len(row) <= label_index or row[label_index] in {"—", ""} for row in raw_result.rows):
+                return PlanOutcome("source_data_unavailable", plan=plan,
+                                   diagnostic="A reviewed affiliation identity is present, but its preferred label is missing.")
+            result = readable_affiliation_result(raw_result)
+        except (PlanError, NLQError) as error:
+            return PlanOutcome("unsupported_mapping", plan=plan, diagnostic=str(error))
+        return PlanOutcome("success", plan=plan, sparql=query, result=result,
+                           diagnostic="Affiliations are grouped by reviewed local identity; dated source episodes remain separate.")
     try:
         term_result = fuseki.query(previous_dail_term_query(as_of, supported_predicates=supported_predicates))
         previous_term, current_term = resolve_previous_dail(term_result, as_of)

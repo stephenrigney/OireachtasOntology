@@ -3,7 +3,7 @@
   "contractId": "https://data.oireachtas.ie/specs/query-schema-contract",
   "contractSchema": "poc/specs/query-schema-contract.schema.json",
   "schemaVersion": 1,
-  "contractVersion": "2.1.0",
+  "contractVersion": "2.2.0",
   "description": "Queryable, currently emitted Oireachtas RDF patterns and local NLQ execution boundary.",
   "namespaces": {
     "agents": "https://data.oireachtas.ie/ontology#",
@@ -32,6 +32,7 @@
     "members:PartyMembership",
     "members:ParliamentaryMemberCollection",
     "members:ParliamentaryParty",
+    "members:PoliticalAffiliationIdentity",
     "members:IndependentMemberCollection",
     "members:Constituencies",
     "members:DailConstituency",
@@ -81,6 +82,7 @@
     "members:EndDate",
     "members:inOireachtasMembership",
     "members:memberOfCollection",
+    "members:hasPoliticalAffiliationIdentity",
     "members:isPartyMembershipOf",
     "members:partyCode",
     "members:activeDuringTerm",
@@ -129,6 +131,13 @@
       "owner": "Parties ETL",
       "availability": "published-when-loaded",
       "owns": "Term-scoped ParliamentaryMemberCollection descriptions, labels, party codes, and active-term links."
+    },
+    {
+      "id": "political-affiliations",
+      "graph": {"kind": "fixed", "iri": "https://data.oireachtas.ie/graph/political-affiliations/identities"},
+      "owner": "Reviewed political-affiliation identity enrichment publication",
+      "availability": "optional-reviewed-enrichment",
+      "owns": "Reviewed enduring PoliticalAffiliationIdentity descriptions and links from term-scoped ParliamentaryParty resources."
     },
     {
       "id": "constituencies",
@@ -220,6 +229,7 @@
     "DailTerm": {"predicate": "skos:prefLabel", "language": "en"},
     "SeanadTerm": {"predicate": "skos:prefLabel", "language": "en"},
     "ParliamentaryMemberCollection": {"predicate": "skos:prefLabel", "language": "en"},
+    "PoliticalAffiliationIdentity": {"predicate": "skos:prefLabel", "language": "en"},
     "DailConstituency": {"predicate": "skos:prefLabel", "language": "en"},
     "SeanadPanel": {"predicate": "skos:prefLabel", "language": "en"},
     "Committee": {"predicate": "skos:prefLabel", "languages": ["en", "ga"]},
@@ -261,6 +271,7 @@
       "id": "member-house-membership",
       "graphFamily": "member-records",
       "availability": "emitted",
+      "queryableInLocalNlq": true,
       "triples": [["?member", "members:hasMembersMembership", "?membership"], ["?membership", "rdf:type", "members:OireachtasMembership"], ["?membership", "rdf:type", "members:DailMembership or members:SeanadMembership"], ["?membership", "members:inHouseTerm", "?term"], ["?membership", "members:hasMembershipDateRange", "?dateRange"], ["?dateRange", "rdf:type", "members:DateRange"], ["?dateRange", "members:StartDate", "?startDate"], ["?dateRange", "members:EndDate", "?endDate (optional)"]]
     },
     {
@@ -269,6 +280,30 @@
       "availability": "emitted",
       "triples": [["?member", "members:hasMembersMembership", "?collectionMembership"], ["?collectionMembership", "members:inOireachtasMembership", "?membership"], ["?collectionMembership", "members:memberOfCollection", "?collection"]],
       "note": "Party records may additionally be typed members:PartyMembership and use members:isPartyMembershipOf. Independent records must use members:memberOfCollection; they are not members:PartyMembership."
+    },
+    {
+      "id": "party-membership-episode",
+      "graphFamily": "member-records",
+      "availability": "emitted",
+      "queryableInLocalNlq": true,
+      "triples": [["?member", "members:hasMembersMembership", "?partyEpisode"], ["?partyEpisode", "rdf:type", "members:PartyMembership"], ["?partyEpisode", "members:inOireachtasMembership", "?oireachtasMembership"], ["?partyEpisode", "members:isPartyMembershipOf", "?parliamentaryParty"]],
+      "note": "Party-membership episodes are distinct from Independent collection memberships and link to the dated Oireachtas membership and term-scoped party."
+    },
+    {
+      "id": "party-term-occurrence",
+      "graphFamily": "parties",
+      "availability": "emitted",
+      "queryableInLocalNlq": true,
+      "triples": [["?party", "rdf:type", "members:ParliamentaryParty"], ["?party", "members:activeDuringTerm", "?term"]],
+      "note": "A party's active HouseTerm is the explicit term-scoped collection context; party membership evidence joins through the same OireachtasMembership term."
+    },
+    {
+      "id": "reviewed-political-affiliation-identities",
+      "graphFamily": "political-affiliations",
+      "availability": "emitted",
+      "queryableInLocalNlq": true,
+      "triples": [["?party", "members:hasPoliticalAffiliationIdentity", "?identity"], ["?identity", "rdf:type", "members:PoliticalAffiliationIdentity"], ["?identity", "skos:prefLabel", "?englishPreferredLabel"]],
+      "note": "Only the reviewed local link establishes enduring identity; label equality and members:recognisedAsParty are not substitutes."
     },
     {
       "id": "representation-reference",
@@ -358,9 +393,11 @@
   ],
   "crossGraphJoins": [
     {"fromGraphFamily": "member-records", "predicate": "members:inHouseTerm", "toGraphFamily": "houses", "joinKey": "same RDF resource IRI"},
+    {"fromGraphFamily": "parties", "predicate": "members:activeDuringTerm", "toGraphFamily": "houses", "joinKey": "same RDF resource IRI"},
     {"fromGraphFamily": "constituencies", "predicate": "members:constituencyInHouseTerm", "toGraphFamily": "houses", "joinKey": "same RDF resource IRI"},
     {"fromGraphFamily": "member-records", "predicate": "members:isOireachtasMembershipOf", "toGraphFamily": "houses", "joinKey": "same RDF resource IRI"},
     {"fromGraphFamily": "member-records", "predicate": "members:memberOfCollection", "toGraphFamily": "parties", "joinKey": "same RDF resource IRI"},
+    {"fromGraphFamily": "parties", "predicate": "members:hasPoliticalAffiliationIdentity", "toGraphFamily": "political-affiliations", "joinKey": "same RDF resource IRI", "appliesTo": "Reviewed local identity link only"},
     {"fromGraphFamily": "member-records", "predicate": "members:isPartyMembershipOf", "toGraphFamily": "parties", "joinKey": "same RDF resource IRI", "appliesTo": "PartyMembership only; not independent collection membership"},
     {"fromGraphFamily": "member-records", "predicate": "members:isRepresentativeFrom", "toGraphFamily": "constituencies", "joinKey": "same RDF resource IRI"},
     {"fromGraphFamily": "member-records", "predicate": "members:isCommitteeMembershipOf", "toGraphFamily": "committees", "joinKey": "same RDF resource IRI"},

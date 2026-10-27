@@ -53,8 +53,10 @@
   {% if error and interaction_status %}
   <section class="{% if interaction_status in ['ambiguous_entity', 'unresolved_entity'] %}ambiguity{% else %}error{% endif %}" role="alert" aria-live="polite">
     <h2>
-      {% if interaction_status == "ambiguous_entity" %}Ambiguous entity
-      {% elif interaction_status == "unresolved_entity" %}Entity not found
+       {% if interaction_status == "ambiguous_entity" or interaction_status == "ambiguous" %}Ambiguous entity
+       {% elif interaction_status == "unresolved_entity" or interaction_status == "not_found" %}Entity not found
+       {% elif interaction_status == "missing_identity_link" %}Reviewed identity link missing
+       {% elif interaction_status == "source_data_unavailable" %}Source evidence unavailable
       {% elif interaction_status == "unsupported_request" %}Unsupported question
       {% elif interaction_status == "validation_failure" %}Query validation failed
       {% elif interaction_status == "execution_failure" %}Query execution failed
