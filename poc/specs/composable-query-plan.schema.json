@@ -11,18 +11,18 @@
     "referents": {
       "type": "object", "minProperties": 1,
       "additionalProperties": {
-        "type": "object", "required": ["type"],
+        "type": "object", "additionalProperties": false, "required": ["type"],
         "properties": {
-          "type": {"enum": ["Member", "DailMembership", "DailTerm", "DailConstituency"]},
+          "type": {"enum": ["Member", "DailMembership", "DailTerm", "SeanadTerm", "DailConstituency", "PartyMembershipEpisode", "ParliamentaryParty", "PoliticalAffiliationIdentity", "OfficeHolding", "NamedOffice", "DebateRecord", "DebateSitting"]},
           "selector": {"type": "object", "additionalProperties": false,
             "required": ["kind", "house"], "properties": {"kind": {"const": "previousTerm"}, "house": {"const": "Dail"}}},
           "mention": {"type": "string", "minLength": 1},
           "answer": {"type": "boolean"},
-          "resolution": {"enum": ["resolved", "ambiguous", "not_found"]},
+          "resolution": {"enum": ["unresolved", "resolved", "ambiguous", "not_found", "source_data_unavailable", "unsupported_mapping"]},
           "iri": {"type": "string", "format": "uri"},
           "label": {"type": "string"},
           "asOfEvidence": {"type": "string", "format": "date"},
-          "candidates": {"type": "array", "items": {"type": "object", "required": ["iri", "label"], "properties": {"iri": {"type": "string", "format": "uri"}, "label": {"type": "string"}}}}
+          "candidates": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["iri", "label"], "properties": {"iri": {"type": "string", "format": "uri"}, "label": {"type": "string"}}}}
         }
       }
     },
@@ -31,9 +31,64 @@
       "required": ["id", "fact", "from", "to"],
       "properties": {"id": {"type": "string", "minLength": 1}, "fact": {"type": "string", "minLength": 1}, "from": {"type": "string", "minLength": 1}, "to": {"type": "string", "minLength": 1}}
     }},
-    "answer": {"type": "object", "additionalProperties": false,
+    "constraints": {"type": "array", "items": {"$ref": "#/$defs/constraint"}},
+    "answer": {"oneOf": [
+      {"$ref": "#/$defs/entityAnswer"},
+      {"$ref": "#/$defs/booleanAnswer"}
+    ]}
+  },
+  "$defs": {
+    "inclusiveCalendarInterval": {
+      "type": "object", "additionalProperties": false,
+      "required": ["start", "end", "inclusive"],
+      "properties": {
+        "start": {"type": "string", "format": "date"},
+        "end": {"type": "string", "format": "date"},
+        "inclusive": {"const": true}
+      }
+    },
+    "constraint": {
+      "type": "object", "additionalProperties": false,
+      "required": ["referent", "field", "operator", "value"],
+      "properties": {
+        "referent": {"type": "string", "minLength": 1},
+        "field": {"enum": ["interval", "date", "chamber"]},
+        "operator": {"enum": ["overlaps", "on", "equals"]},
+        "value": {
+          "oneOf": [
+            {"$ref": "#/$defs/inclusiveCalendarInterval"},
+            {"type": "string", "minLength": 1}
+          ]
+        }
+      }
+    },
+    "episodeDetail": {
+      "type": "object", "additionalProperties": false,
+      "required": ["referent", "display"],
+      "properties": {
+        "referent": {"type": "string", "minLength": 1},
+        "display": {"type": "array", "minItems": 1, "uniqueItems": true,
+          "items": {"enum": ["start", "end"]}}
+      }
+    },
+    "entityAnswer": {
+      "type": "object", "additionalProperties": false,
       "required": ["kind", "referent", "distinctBy", "display"],
-      "properties": {"kind": {"const": "entities"}, "referent": {"type": "string", "minLength": 1}, "distinctBy": {"const": "identity"}, "display": {"const": ["name"]}}
+      "properties": {
+        "kind": {"const": "entities"},
+        "referent": {"type": "string", "minLength": 1},
+        "distinctBy": {"const": "identity"},
+        "display": {"type": "array", "minItems": 1, "uniqueItems": true,
+          "items": {"enum": ["name", "label", "date", "officialLink"]}},
+        "details": {"type": "array", "items": {"$ref": "#/$defs/episodeDetail"}},
+        "preserveGaps": {"type": "boolean"},
+        "preserveEpisodes": {"type": "boolean"}
+      }
+    },
+    "booleanAnswer": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "referent"],
+      "properties": {"kind": {"const": "boolean"}, "referent": {"type": "string", "minLength": 1}}
     }
   }
 }

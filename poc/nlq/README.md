@@ -425,8 +425,9 @@ The old structured v1 plan pipeline is retired from the application and
 capabilities UI; it is not a parallel runtime. The Phase 1 direct NL→SPARQL
 comparison mode remains selectable for development only. The current v2
 composable contract is `poc/specs/composable-query-plan-contract.json`, with
-instance shape in `poc/specs/composable-query-plan.schema.json`. The initial
-running capability is the previous-Dáil constituency representation slice.
+instance shape in `poc/specs/composable-query-plan.schema.json`. The bounded
+running slices include previous-Dáil constituency representation and the Q35
+Minister-for-Finance office-holding interval.
 The default `OIR_NLQ_AS_OF_DATE` is today; pin it (for example,
 `2026-10-25`) for reproducible evaluation. Previous-term selection uses
 asserted HouseTerm types and reviewed start/end dates reached through the
@@ -448,8 +449,17 @@ Dublin South-Central. That historical acceptance check still needs a
 reviewed, sufficiently complete fixture of 33rd-Dáil South-Central
 representation and replacement records.
 
+Q35 resolves the office mention through exact labels on reviewed local
+`NamedOffice` resources, then follows only accepted Member-owned
+`OfficeHolding` records and their `members:heldOffice` references. Its
+inclusive calendar-date overlap is compiled against the mapped `xsd:dateTime`
+`StartDate`/`EndDate` range; a missing mapped end is open-ended, while a missing
+or invalid start cannot establish tenure. Every matching holding remains a
+separate result row, including repeated episodes for one Member. The local
+development capture is partial and does not establish historical completeness.
+
 The repository-owned machine-readable query contract is
-`poc/specs/query-schema-contract.json` (contract version `2.3.0`, schema
+`poc/specs/query-schema-contract.json` (contract version `2.4.0`, schema
 version `1`). Its JSON Schema is `poc/specs/query-schema-contract.schema.json`.
 The contract defines the queryable class/property scope, named-graph families
 and owners, emitted RDF patterns, entity-specific label predicates,

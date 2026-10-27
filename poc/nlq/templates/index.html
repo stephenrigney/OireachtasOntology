@@ -57,7 +57,9 @@
        {% elif interaction_status == "unresolved_entity" or interaction_status == "not_found" %}Entity not found
        {% elif interaction_status == "missing_identity_link" %}Reviewed identity link missing
        {% elif interaction_status == "source_data_unavailable" %}Source evidence unavailable
-      {% elif interaction_status == "unsupported_request" %}Unsupported question
+       {% elif interaction_status == "insufficient_holding_evidence" %}Office-holding dates incomplete
+       {% elif interaction_status == "unsupported_mapping" %}Unsupported query mapping
+       {% elif interaction_status == "unsupported_request" %}Unsupported question
       {% elif interaction_status == "validation_failure" %}Query validation failed
       {% elif interaction_status == "execution_failure" %}Query execution failed
       {% else %}Planner could not complete{% endif %}

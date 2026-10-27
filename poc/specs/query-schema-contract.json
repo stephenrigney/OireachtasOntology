@@ -3,7 +3,7 @@
   "contractId": "https://data.oireachtas.ie/specs/query-schema-contract",
   "contractSchema": "poc/specs/query-schema-contract.schema.json",
   "schemaVersion": 1,
-  "contractVersion": "2.3.0",
+  "contractVersion": "2.4.0",
   "description": "Queryable, currently emitted Oireachtas RDF patterns and local NLQ execution boundary.",
   "namespaces": {
     "agents": "https://data.oireachtas.ie/ontology#",
@@ -245,6 +245,7 @@
       "id": "member-description",
       "graphFamily": "member-records",
       "availability": "emitted",
+      "queryableInLocalNlq": true,
       "triples": [["?member", "rdf:type", "agents:Member"], ["?member", "foaf:name", "?plainLiteralName"]]
     },
     {
@@ -411,7 +412,8 @@
     {"fromGraphFamily": "member-records", "predicate": "members:isPartyMembershipOf", "toGraphFamily": "parties", "joinKey": "same RDF resource IRI", "appliesTo": "PartyMembership only; not independent collection membership"},
     {"fromGraphFamily": "member-records", "predicate": "members:isRepresentativeFrom", "toGraphFamily": "constituencies", "joinKey": "same RDF resource IRI"},
     {"fromGraphFamily": "member-records", "predicate": "members:isCommitteeMembershipOf", "toGraphFamily": "committees", "joinKey": "same RDF resource IRI"},
-    {"fromGraphFamily": "bill-records", "predicate": "eli-dl:had_participant_person", "toGraphFamily": "member-records", "joinKey": "same RDF resource IRI"}
+    {"fromGraphFamily": "bill-records", "predicate": "eli-dl:had_participant_person", "toGraphFamily": "member-records", "joinKey": "same RDF resource IRI"},
+    {"fromGraphFamily": "member-records", "predicate": "members:heldOffice", "toGraphFamily": "offices", "joinKey": "same RDF resource IRI", "appliesTo": "Accepted OfficeHolding references only; the target is a reviewed local NamedOffice identity, not a source label or observation."}
   ],
   "externalIdentityPredicates": [
     {
@@ -470,7 +472,7 @@
     {"id": "act-descriptions", "status": "not-published", "detail": "Bill graphs may link to an Act via eli:basis_for; Act descriptions are owned by a later Acts ETL."},
     {"id": "bill-availability", "status": "optional-data", "detail": "Bill query patterns work only when Bill graphs have actually been loaded."},
     {"id": "emitted-bill-document-links-not-allowlisted", "status": "emitted-but-not-queryable", "detail": "The Bills ETL emits eli:has_part and eli:is_realized_by, but they are not in the active property mappings or current local NLQ predicate allowlist."},
-    {"id": "office-registry-data", "status": "not-queryable-in-contract-2.0", "detail": "The Phase 2 queryable model includes reviewed NamedOffice descriptions and accepted Member-owned OfficeHolding records, but does not ground AdministrativeUnit metadata or CabinetMembership patterns. The ETL may publish those records independently; development evaluation data remains non-authoritative."},
+    {"id": "office-registry-data", "status": "partially-queryable", "detail": "Reviewed NamedOffice descriptions and accepted Member-owned OfficeHolding records are queryable. AdministrativeUnit metadata and CabinetMembership patterns are not grounded here; development evaluation data remains non-authoritative."},
     {"id": "executive-role-instances", "status": "not-currently-populated", "detail": "Ontology-only executive roles and unpopulated office-role patterns do not establish executive tenure. Deprecated MinisterOfStateMembership may appear in legacy datasets but is not emitted by the current canonical Member transformation."},
     {"id": "office-type-vocabulary", "status": "ontology-only-not-queryable", "detail": "members:OfficeType, members:hasRoleType, and TaoiseachRole/MinisterRole ontology concepts are outside the populated queryable model; registered NamedOffice descriptions and accepted OfficeHolding records are separate conditional patterns."},
     {"id": "collection-superclass-inference", "status": "not-inferred", "detail": "Do not rely on superclass type inference for ParliamentaryCollectionMembership; older published Member graphs may omit that explicit type. Prefer membership relationship predicates and specific PartyMembership type where applicable."}

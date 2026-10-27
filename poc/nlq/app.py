@@ -110,12 +110,12 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
         capabilities = [{
             "id": fact["id"], "description": fact["predicate"],
             "subjectTypes": [fact["subjectType"]], "objectTypes": [fact["objectType"]],
-            "filters": [], "status": "Executable for the bounded Q06/Q09 composable slices",
+            "filters": [], "status": "Executable for the bounded composable query slices",
         } for fact in facts.values()]
         return templates.TemplateResponse(request, "capabilities.html", {
             "request": request, "capabilities": capabilities,
-            "temporal_constraints": ["previousTerm(Dail, asOf) using date evidence", "Separate dated party-membership evidence episodes"],
-            "answer_shapes": [{"kind": "entities", "description": "Distinct Member or reviewed enduring affiliation identities with readable labels and supporting evidence."}],
+            "temporal_constraints": ["previousTerm(Dail, asOf) using date evidence", "Separate dated party-membership evidence episodes", "Inclusive calendar-day overlap for accepted Member office holdings"],
+            "answer_shapes": [{"kind": "entities", "description": "Distinct Member or reviewed enduring affiliation identities with readable labels and separate supporting episodes."}],
         })
 
     @app.post("/ask", response_class=HTMLResponse)
@@ -151,26 +151,39 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                 plan_json = format_debug_payload(outcome.plan) if outcome.plan else None
                 is_q06 = bool(outcome.plan and outcome.plan.get("answer", {}).get("referent") == "affiliation")
                 is_debate = bool(outcome.plan and outcome.plan.get("referents", {}).get("sitting", {}).get("type") == "DebateSitting")
+                is_q35 = bool(outcome.plan and outcome.plan.get("referents", {}).get("holding", {}).get("type") == "OfficeHolding")
                 member_mention = outcome.plan.get("referents", {}).get("member", {}).get("mention", "the named Member") if is_q06 else None
+                q35_office = outcome.plan.get("referents", {}).get("office", {}) if is_q35 else {}
+                q35_interval = outcome.plan.get("constraints", [{}])[0].get("value", {}) if is_q35 else {}
+                q35_summary = (
+                    f"Find each locally evidenced accepted {q35_office.get('label', q35_office.get('mention', 'office'))} "
+                    f"holding overlapping {q35_interval.get('start', 'the requested start')} through "
+                    f"{q35_interval.get('end', 'the requested end')}, preserving separate holding episodes. "
+                    "The development dataset does not establish complete historical coverage."
+                ) if is_q35 else None
                 summary = (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
                            if is_q06 else ("Find the requested actual DebateSitting and its official record link."
-                                           if is_debate else "Find distinct Members who represented this constituency in the previous Dáil."))
+                                            if is_debate else
+                                            (q35_summary if is_q35 else "Find distinct Members who represented this constituency in the previous Dáil.")))
                 if outcome.status == "success":
                     return render(request, question=question, mode=mode,
                                   interpretation=summary, plan_json=plan_json,
                                   plan_heading="Validated composable query plan",
                                    plan_explanation={"summary": summary, "validated": True,
-                                                      "answer_text": ("Distinct political-affiliation identities with separate supporting membership episodes."
-                                                                      if is_q06 else ("Yes/no based on an actual DebateSitting, not a dated written-answer record."
-                                                                                      if is_debate and outcome.result.kind == "ask" else
-                                                                                      "Readable sitting date and official debate record link."
-                                                                                      if is_debate else "Distinct Members, displayed by name."))},
+                                                        "answer_text": ("Distinct political-affiliation identities with separate supporting membership episodes."
+                                                                        if is_q06 else ("Yes/no based on an actual DebateSitting, not a dated written-answer record."
+                                                                                        if is_debate and outcome.result.kind == "ask" else
+                                                                                        "Readable sitting date and official debate record link."
+                                                                                        if is_debate else
+                                                                                        "Member names with exact start/end dates for every separate accepted holding; open ends are identified explicitly."
+                                                                                        if is_q35 else "Distinct Members, displayed by name."))},
                                   sparql=outcome.sparql, result=outcome.result,
                                   debug_output=outcome.result.raw_json if outcome.result else None,
                                   debug_source="Fuseki")
                 messages = {
                     "unsupported_capability": "This query form is not supported; no answer query was run.",
                     "source_data_unavailable": "The local source data does not contain enough House-term evidence to resolve the previous Dáil.",
+                    "insufficient_holding_evidence": "Some accepted local office holdings lack valid start/end date evidence. Any rows below show only holdings whose dates can be verified.",
                     "not_found": "No constituency with that name was found in the previous Dáil.",
                     "ambiguous": "More than one constituency matches in the previous Dáil; no identity was selected.",
                     "unsupported_mapping": "A required relation or query mapping is unsupported; no answer was returned.",
@@ -180,18 +193,40 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     message = "The local dataset has no usable dated party-membership evidence for this Member."
                 elif outcome.status == "source_data_unavailable" and is_debate:
                     message = "No matching actual sitting was found. The local dataset does not certify complete coverage for this date, so absence cannot be reported as a confirmed No."
+                elif outcome.status == "source_data_unavailable" and is_q35:
+                    if (outcome.sparql and outcome.diagnostic
+                            and "No accepted local holding is recorded overlapping" in outcome.diagnostic):
+                        message = ("No accepted dated holding in the local dataset overlaps the requested interval. "
+                                   "This development capture is incomplete, so absence is not a confirmed historical negative.")
+                    elif outcome.sparql:
+                        message = "The local holding query and its typed date evidence could not be reconciled; no historical answer was returned."
+                    elif outcome.diagnostic and "No accepted Member-owned OfficeHolding" in outcome.diagnostic:
+                        message = "No accepted local office-holding records are available for this office in the dataset."
+                    else:
+                        message = "The local office registry or accepted holding evidence could not be read well enough to answer."
+                elif outcome.status == "insufficient_holding_evidence" and is_q35:
+                    message = messages["insufficient_holding_evidence"]
+                elif outcome.status == "not_found" and is_q35:
+                    message = "The office name could not be matched to a reviewed local NamedOffice identity."
+                elif outcome.status == "ambiguous" and is_q35:
+                    message = "More than one reviewed local office identity matches; no office was selected."
                 elif outcome.status == "not_found" and is_q06:
                     message = "No matching local Member record was found."
                 elif outcome.status == "ambiguous" and is_q06:
                     message = "More than one local Member record matches; no Member was selected."
                 else:
                     message = messages.get(outcome.status, outcome.diagnostic)
-                member_ref = outcome.plan.get("referents", {}).get("member", {}) if is_q06 and outcome.plan else {}
-                member_outcomes = ()
-                if member_ref.get("resolution") == "ambiguous":
-                    member_outcomes = ({
-                        "type": "Member", "label": member_ref.get("mention", "the named Member"),
-                        "resolution": "ambiguous", "candidates": member_ref.get("candidates", []),
+                resolution_ref = (
+                    outcome.plan.get("referents", {}).get("office", {}) if is_q35 and outcome.plan else
+                    outcome.plan.get("referents", {}).get("member", {}) if is_q06 and outcome.plan else {}
+                )
+                entity_outcomes = ()
+                if resolution_ref.get("resolution") == "ambiguous":
+                    entity_type = "NamedOffice" if is_q35 else "Member"
+                    entity_outcomes = ({
+                        "type": entity_type,
+                        "label": resolution_ref.get("mention", "the requested entity"),
+                        "resolution": "ambiguous", "candidates": resolution_ref.get("candidates", []),
                     },)
                 return render(
                     request, question=question, mode=mode,
@@ -199,7 +234,8 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     plan_heading="Proposed composable query plan" if outcome.plan else None,
                     error=message,
                     interaction_status=outcome.status,
-                    entity_outcomes=member_outcomes,
+                    entity_outcomes=entity_outcomes,
+                    result=outcome.result,
                     debug_output=format_debug_payload({"diagnostic": outcome.diagnostic,
                                                        "candidates": outcome.candidates}),
                     debug_message=("The read-only answer query ran, but returned no matching result."

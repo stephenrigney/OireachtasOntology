@@ -50,7 +50,7 @@ def test_contract_artifact_loads_and_validates_its_versioned_shape():
         (ROOT / "poc/specs/query-schema-contract.schema.json").read_text(encoding="utf-8")
     )
 
-    assert contract["contractVersion"] == "2.3.0"
+    assert contract["contractVersion"] == "2.4.0"
     assert contract["schemaVersion"] == schema["properties"]["schemaVersion"]["const"] == 1
     assert contract["contractId"] == "https://data.oireachtas.ie/specs/query-schema-contract"
     assert contract["contractSchema"] == "poc/specs/query-schema-contract.schema.json"
@@ -122,6 +122,13 @@ def test_graph_family_ownership_patterns_and_cross_graph_joins_are_explicit():
         and join["toGraphFamily"] == "committees"
         for join in contract["crossGraphJoins"]
     )
+    assert any(
+        join["fromGraphFamily"] == "member-records"
+        and join["predicate"] == "members:heldOffice"
+        and join["toGraphFamily"] == "offices"
+        and join["joinKey"] == "same RDF resource IRI"
+        for join in contract["crossGraphJoins"]
+    )
     assert contract["reasoning"]["owlEntailment"] == "none"
     assert "members:ParliamentaryGroup" not in contract["queryableClasses"]
     assert "members:OfficeType" not in contract["queryableClasses"]
@@ -131,7 +138,7 @@ def test_graph_family_ownership_patterns_and_cross_graph_joins_are_explicit():
     office_registry = next(
         item for item in contract["unsupportedPatterns"]
         if item["id"] == "office-registry-data")
-    assert office_registry["status"] == "not-queryable-in-contract-2.0"
+    assert office_registry["status"] == "partially-queryable"
     assert "not-emitted" == (
         next(item["status"] for item in contract["unsupportedPatterns"]
              if item["id"] == "debate-transcript-text"))
@@ -177,7 +184,7 @@ def test_grounding_is_generated_from_contract_scope_without_private_etl_imports(
 
     for term in ("agents:Member", "members:PartyMembership", "eli-dl:DraftLegislationWork"):
         assert term in context
-    assert "contract 2.3.0 (schema version 1)" in context
+    assert "contract 2.4.0 (schema version 1)" in context
     assert "https://data.oireachtas.ie/graph/committees" in context
     assert "same RDF resource IRI" in context
     assert "Reviewed Wikidata political-party item" in context
@@ -259,4 +266,5 @@ def test_query_schema_v2_corrects_bill_process_ownership_and_exposes_only_review
     assert ["?bill", "eli:type_document", "agents:Bill"] in bill_triples
     assert patterns["named-office-description"]["queryableInLocalNlq"] is True
     assert patterns["conditionally-resolved-office-holdings"]["queryableInLocalNlq"] is True
+    assert patterns["member-description"]["queryableInLocalNlq"] is True
     assert patterns["debate-record-identity"]["queryableInLocalNlq"] is True

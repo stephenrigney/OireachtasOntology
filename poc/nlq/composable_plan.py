@@ -7,8 +7,9 @@ table, never from question text.
 
 from __future__ import annotations
 
+import calendar
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 import json
 import re
 import unicodedata
@@ -19,6 +20,7 @@ from rdflib import URIRef
 
 from .contract import load_query_contract
 from .errors import NLQError
+from .member_resolution import UnsupportedLocalEntityType, resolve_local_entity_label
 from .results import QueryResult
 from .safety import validate_sparql
 
@@ -112,6 +114,104 @@ def _validate_debate_plan(plan: dict[str, Any]) -> dict[str, Any]:
     return plan
 
 
+def _validate_office_plan(plan: dict[str, Any]) -> dict[str, Any]:
+    refs = plan["referents"]
+    if set(refs) != {"member", "holding", "office"}:
+        raise PlanError("Q35 requires exactly Member, OfficeHolding, and NamedOffice referents.")
+    if refs["member"] != {"type": "Member", "answer": True}:
+        raise PlanError("Q35 must return Member identities as its answer referent.")
+    if refs["holding"] != {"type": "OfficeHolding"}:
+        raise PlanError("Q35 requires a plain OfficeHolding evidence referent.")
+    office = refs["office"]
+    if not isinstance(office, dict) or office.get("type") != "NamedOffice":
+        raise PlanError("Q35 office referent must be a resolved NamedOffice.")
+    allowed_office_fields = {
+        "unresolved": {"type", "mention", "resolution"},
+        "resolved": {"type", "mention", "resolution", "iri", "label"},
+        "ambiguous": {"type", "mention", "resolution", "candidates"},
+        "not_found": {"type", "mention", "resolution"},
+        "source_data_unavailable": {"type", "mention", "resolution"},
+        "unsupported_mapping": {"type", "mention", "resolution"},
+    }
+    resolution = office.get("resolution")
+    if (not isinstance(resolution, str) or resolution not in allowed_office_fields
+            or set(office) != allowed_office_fields[resolution]):
+        raise PlanError("Q35 office referent contains unsupported or missing resolution attributes.")
+    if not isinstance(office.get("mention"), str) or not office["mention"].strip():
+        raise PlanError("Q35 requires a named office mention.")
+    if resolution == "resolved":
+        _require_local_iri(office["iri"], "NamedOffice")
+        if not isinstance(office["label"], str) or not office["label"].strip():
+            raise PlanError("A resolved Q35 office requires its reviewed local label.")
+    if resolution == "ambiguous":
+        candidates = office["candidates"]
+        if not isinstance(candidates, list) or len(candidates) < 2:
+            raise PlanError("An ambiguous Q35 office requires at least two local candidates.")
+        for candidate in candidates:
+            if (not isinstance(candidate, dict) or set(candidate) != {"iri", "label"}
+                    or not isinstance(candidate["label"], str) or not candidate["label"].strip()):
+                raise PlanError("Q35 office candidates must contain only a local IRI and readable label.")
+            _require_local_iri(candidate["iri"], "NamedOffice candidate")
+
+    expected_relations = {
+        "member_has_office_holding": ("member", "holding"),
+        "office_holding_of_office": ("holding", "office"),
+    }
+    if not isinstance(plan["relations"], list) or len(plan["relations"]) != len(expected_relations):
+        raise PlanError("Q35 requires exactly the reviewed Member → OfficeHolding → NamedOffice path.")
+    relation_ids = set()
+    for relation in plan["relations"]:
+        if (not isinstance(relation, dict)
+                or set(relation) != {"id", "fact", "from", "to"}
+                or any(not isinstance(relation[field], str) or not relation[field]
+                       for field in ("id", "fact", "from", "to"))):
+            raise PlanError("Q35 relations require non-empty IDs, reviewed facts, and referent IDs only.")
+        if relation["id"] in relation_ids:
+            raise PlanError("Q35 relation IDs must be unique.")
+        relation_ids.add(relation["id"])
+    actual_relations = {
+        item["fact"]: (item["from"], item["to"])
+        for item in plan["relations"]
+    }
+    if actual_relations != expected_relations:
+        raise PlanError("Q35 relations must follow the reviewed Member → OfficeHolding → NamedOffice path.")
+
+    constraints = plan["constraints"]
+    if not isinstance(constraints, list) or len(constraints) != 1:
+        raise PlanError("Q35 requires exactly one inclusive office-holding overlap constraint.")
+    constraint = constraints[0]
+    if (not isinstance(constraint, dict)
+            or set(constraint) != {"referent", "field", "operator", "value"}
+            or constraint.get("referent") != "holding"
+            or constraint.get("field") != "interval"
+            or constraint.get("operator") != "overlaps"):
+        raise PlanError("Q35 constraint must apply inclusive overlap to the OfficeHolding interval.")
+    interval = constraint.get("value")
+    if (not isinstance(interval, dict) or set(interval) != {"start", "end", "inclusive"}
+            or interval.get("inclusive") is not True):
+        raise PlanError("Q35 requires an explicitly inclusive calendar-date interval.")
+    try:
+        if (not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", interval["start"])
+                or not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", interval["end"])):
+            raise ValueError("not a YYYY-MM-DD calendar date")
+        start = date.fromisoformat(interval["start"])
+        end = date.fromisoformat(interval["end"])
+    except (TypeError, ValueError) as error:
+        raise PlanError("Q35 interval boundaries must be valid ISO calendar dates.") from error
+    if start > end:
+        raise PlanError("Q35 interval start must be on or before its end.")
+
+    expected_answer = {
+        "kind": "entities", "referent": "member", "distinctBy": "identity",
+        "display": ["name"],
+        "details": [{"referent": "holding", "display": ["start", "end"]}],
+        "preserveEpisodes": True,
+    }
+    if plan["answer"] != expected_answer:
+        raise PlanError("Q35 answer must return distinct Members with each separate holding's start and end dates.")
+    return plan
+
+
 def _require_local_iri(value: str, what: str) -> str:
     if (not isinstance(value, str) or not value.startswith("https://data.oireachtas.ie/")
             or any(character.isspace() for character in value) or any(mark in value for mark in "<>\"{}|\\^`")):
@@ -125,7 +225,52 @@ def _normalise_label(value: str) -> str:
 
 
 def plan_question(question: str, *, as_of: date) -> dict[str, Any]:
-    """Interpret the bounded Q06, Q09 and Debates question families."""
+    """Interpret the bounded Q06/Q09/Q35 and Debates question families."""
+    office_window = re.search(
+        r"\bwho\s+was\s+(?P<office>.+?)\s+from\s+"
+        r"(?P<start_month>[a-z]+)\s+(?P<start_year>[0-9]{4})\s+to\s+"
+        r"(?P<end_month>[a-z]+)\s+(?P<end_year>[0-9]{4})\s*[?.!]*$",
+        question.strip(), re.IGNORECASE,
+    )
+    if office_window:
+        office = office_window.group("office").strip()
+        try:
+            start_month = datetime.strptime(office_window.group("start_month"), "%B").month
+            end_month = datetime.strptime(office_window.group("end_month"), "%B").month
+            start = date(int(office_window.group("start_year")), start_month, 1)
+            end = date(
+                int(office_window.group("end_year")), end_month,
+                calendar.monthrange(int(office_window.group("end_year")), end_month)[1],
+            )
+        except (ValueError, OverflowError) as error:
+            raise PlanError("The requested office interval must use valid English month and year values.") from error
+        if not office:
+            raise PlanError("A reviewed office name is required.")
+        if start > end:
+            raise PlanError("The requested office interval must start on or before it ends.")
+        return validate_plan({
+            "version": PLAN_VERSION,
+            "asOf": as_of.isoformat(),
+            "referents": {
+                "member": {"type": "Member", "answer": True},
+                "holding": {"type": "OfficeHolding"},
+                "office": {"type": "NamedOffice", "mention": office, "resolution": "unresolved"},
+            },
+            "relations": [
+                {"id": "member-holding", "fact": "member_has_office_holding", "from": "member", "to": "holding"},
+                {"id": "holding-office", "fact": "office_holding_of_office", "from": "holding", "to": "office"},
+            ],
+            "constraints": [{
+                "referent": "holding", "field": "interval", "operator": "overlaps",
+                "value": {"start": start.isoformat(), "end": end.isoformat(), "inclusive": True},
+            }],
+            "answer": {
+                "kind": "entities", "referent": "member", "distinctBy": "identity",
+                "display": ["name"],
+                "details": [{"referent": "holding", "display": ["start", "end"]}],
+                "preserveEpisodes": True,
+            },
+        })
     debate = re.search(
         r"\b(?P<boolean>was\s+there\s+a\s+)?(?P<chamber>dáil|dail|seanad)\s+debate\s+(?:on|from)\s+(?P<date>[0-9]{1,2}\s+[a-z]+\s+[0-9]{4})\s*[?.!]*$",
         question.strip(), re.IGNORECASE,
@@ -223,8 +368,10 @@ def validate_plan(plan: Any) -> dict[str, Any]:
             raise PlanError("Every referent requires an ID and controlled type.")
         if ref["type"] not in _PLAN_CONTRACT["entityTypes"]:
             raise PlanError(f"Unsupported referent type {ref['type']!r}.")
-    if "constraints" in plan or any(ref.get("type") in {"DebateRecord", "DebateSitting"} for ref in refs.values()):
+    if any(ref.get("type") in {"DebateRecord", "DebateSitting"} for ref in refs.values()):
         return _validate_debate_plan(plan)
+    if "constraints" in plan:
+        return _validate_office_plan(plan)
     term = refs.get("term", {})
     constituency = refs.get("constituency", {})
     is_q09 = "term" in refs or "constituency" in refs
@@ -248,6 +395,9 @@ def validate_plan(plan: Any) -> dict[str, Any]:
     for relation in plan["relations"]:
         if not isinstance(relation, dict) or set(relation) != {"id", "fact", "from", "to"}:
             raise PlanError("Relations require exactly id, fact, from, and to.")
+        if any(not isinstance(relation[field], str) or not relation[field]
+               for field in ("id", "fact", "from", "to")):
+            raise PlanError("Relation IDs, facts, and referent IDs must be non-empty strings.")
         if relation["id"] in seen:
             raise PlanError("Relation IDs must be unique.")
         seen.add(relation["id"])
@@ -472,6 +622,8 @@ def compile_answer_query(plan: dict[str, Any], term_iri: str | None = None,
         return compile_debate_answer_query(plan, supported_predicates=supported_predicates)
     if refs[plan["answer"]["referent"]]["type"] == "PoliticalAffiliationIdentity":
         return compile_affiliation_answer_query(plan, supported_predicates=supported_predicates)
+    if refs.get("holding", {}).get("type") == "OfficeHolding":
+        return compile_office_answer_query(plan, supported_predicates=supported_predicates)
     term_iri = _require_local_iri(term_iri, "HouseTerm")
     constituency_iri = _require_local_iri(constituency_iri, "constituency")
     # The relation registry is intentionally the only source of predicates and
@@ -562,6 +714,260 @@ def compile_debate_answer_query(plan: dict[str, Any], *, supported_predicates) -
     else:
         query = _PREFIXES + f"SELECT DISTINCT ?sitting ?date ?record WHERE {{\n  {where}\n}} ORDER BY ?date ?record"
     return _query(query, supported_predicates)
+
+
+def _office_query_mapping(plan: dict[str, Any]) -> dict[str, str]:
+    """Read and cross-check the reviewed Member → holding → office mapping."""
+    plan = _validate_office_plan(plan)
+    if plan["referents"]["office"]["resolution"] != "resolved":
+        raise PlanError("Q35 compilation requires one resolved local NamedOffice identity.")
+    relation_facts = {item["fact"]: item for item in plan["relations"]}
+    expected = {
+        "member_has_office_holding": ("member", "holding"),
+        "office_holding_of_office": ("holding", "office"),
+    }
+    if len(relation_facts) != len(expected) or any(
+        (relation_facts.get(fact, {}).get("from"), relation_facts.get(fact, {}).get("to")) != edge
+        for fact, edge in expected.items()
+    ):
+        raise PlanError("Q35 compilation requires the complete reviewed holding path.")
+
+    member_pattern = _reviewed_pattern("member-description", "member-records")
+    holding_pattern = _reviewed_pattern("conditionally-resolved-office-holdings", "member-records")
+    office_pattern = _reviewed_pattern("named-office-description", "offices")
+    member_type = _pattern_rdf_type(member_pattern, "?member")
+    holding_type = _pattern_rdf_type(holding_pattern, "?holding")
+    office_type = _pattern_rdf_type(office_pattern, "?office")
+    member_name = _pattern_predicate(member_pattern, "?member", "?plainLiteralName")
+    member_holding = _pattern_predicate(holding_pattern, "?member", "?holding")
+    holding_office = _pattern_predicate(holding_pattern, "?holding", "?office")
+    holding_range = _pattern_predicate(holding_pattern, "?holding", "?dateRange")
+    range_type = _pattern_rdf_type(holding_pattern, "?dateRange")
+    range_start = _pattern_predicate(holding_pattern, "?dateRange", "?startDate")
+    range_end = _pattern_predicate(holding_pattern, "?dateRange", "?endDate (optional)")
+    office_label = _pattern_predicate(office_pattern, "?office", "?englishOrIrishLabel")
+
+    for fact, predicate in (
+        ("member_has_office_holding", member_holding),
+        ("office_holding_of_office", holding_office),
+    ):
+        if _reviewed_predicate(fact) != predicate:
+            raise PlanError(f"Q35 relation {fact!r} disagrees with the accepted Member RDF mapping.")
+    contract = load_query_contract()
+    member_family = next((item for item in contract["graphFamilies"] if item["id"] == "member-records"), None)
+    office_family = next((item for item in contract["graphFamilies"] if item["id"] == "offices"), None)
+    if (not member_family or member_family["graph"].get("kind") != "resource-pattern"
+            or not office_family or office_family["graph"].get("kind") != "fixed"):
+        raise PlanError("Q35 requires the reviewed Member-owned and fixed office graph owners.")
+    member_graph_prefix = member_family["graph"].get("iriTemplate", "").split("{", 1)[0]
+    office_graph = office_family["graph"].get("iri")
+    if (not member_graph_prefix.startswith("https://data.oireachtas.ie/graph/member/")
+            or not isinstance(office_graph, str)):
+        raise PlanError("Q35 graph ownership does not match the reviewed Member/offices contract.")
+    return {
+        "member_type": member_type,
+        "holding_type": holding_type,
+        "office_type": office_type,
+        "member_name": member_name,
+        "member_holding": member_holding,
+        "holding_office": holding_office,
+        "holding_range": holding_range,
+        "range_type": range_type,
+        "range_start": range_start,
+        "range_end": range_end,
+        "office_label": office_label,
+        "member_graph_prefix": member_graph_prefix,
+        "office_graph": office_graph,
+        "office_iri": _require_local_iri(plan["referents"]["office"]["iri"], "NamedOffice"),
+    }
+
+
+def _office_interval_bounds(plan: dict[str, Any]) -> tuple[date, date, date]:
+    value = plan["constraints"][0]["value"]
+    start = date.fromisoformat(value["start"])
+    end = date.fromisoformat(value["end"])
+    try:
+        end_exclusive = end + timedelta(days=1)
+    except OverflowError as error:
+        raise PlanError("Q35 interval end must leave room for the next calendar-day boundary.") from error
+    return start, end, end_exclusive
+
+
+def compile_office_answer_query(plan: dict[str, Any], *, supported_predicates) -> str:
+    """Compile inclusive calendar-day overlap over accepted Member holdings."""
+    plan = validate_plan(plan)
+    mapping = _office_query_mapping(plan)
+    start, _end, end_exclusive = _office_interval_bounds(plan)
+    start_boundary = f'"{start.isoformat()}T00:00:00"^^xsd:dateTime'
+    end_boundary_exclusive = f'"{end_exclusive.isoformat()}T00:00:00"^^xsd:dateTime'
+    member_prefix = json.dumps(mapping["member_graph_prefix"])
+    office_iri = f'<{mapping["office_iri"]}>'
+    query = _PREFIXES + f'''SELECT DISTINCT ?member_member ?memberName ?holding_holding ?holdingStart ?holdingEnd WHERE {{
+  GRAPH ?memberGraph {{
+    ?member_member a {mapping["member_type"]} ; {mapping["member_name"]} ?memberName ;
+      {mapping["member_holding"]} ?holding_holding .
+    ?holding_holding a {mapping["holding_type"]} ;
+      {mapping["holding_office"]} {office_iri} ;
+      {mapping["holding_range"]} ?holdingDateRange .
+    ?holdingDateRange a {mapping["range_type"]} ; {mapping["range_start"]} ?holdingStart .
+    OPTIONAL {{ ?holdingDateRange {mapping["range_end"]} ?holdingEnd . }}
+  }}
+  FILTER(STRSTARTS(STR(?memberGraph), {member_prefix}))
+  GRAPH <{mapping["office_graph"]}> {{ {office_iri} a {mapping["office_type"]} ; {mapping["office_label"]} ?officeLabel . }}
+  FILTER(DATATYPE(?holdingStart) = xsd:dateTime)
+  FILTER(?holdingStart < {end_boundary_exclusive})
+  FILTER(!BOUND(?holdingEnd) || (DATATYPE(?holdingEnd) = xsd:dateTime && ?holdingEnd >= {start_boundary}))
+}} ORDER BY ?holdingStart ?memberName ?holding_holding'''
+    return _query(query, supported_predicates)
+
+
+def compile_office_evidence_query(plan: dict[str, Any], *, supported_predicates) -> str:
+    """Inspect all accepted local holding records, including incomplete dates."""
+    plan = validate_plan(plan)
+    mapping = _office_query_mapping(plan)
+    member_prefix = json.dumps(mapping["member_graph_prefix"])
+    office_iri = f'<{mapping["office_iri"]}>'
+    query = _PREFIXES + f'''SELECT DISTINCT ?member_member ?memberName ?holding_holding ?holdingDateRange ?holdingStart ?holdingEnd WHERE {{
+  GRAPH ?memberGraph {{
+    ?member_member a {mapping["member_type"]} ; {mapping["member_name"]} ?memberName ;
+      {mapping["member_holding"]} ?holding_holding .
+    ?holding_holding a {mapping["holding_type"]} ; {mapping["holding_office"]} {office_iri} .
+    OPTIONAL {{
+      ?holding_holding {mapping["holding_range"]} ?holdingDateRange .
+      ?holdingDateRange a {mapping["range_type"]} .
+      OPTIONAL {{ ?holdingDateRange {mapping["range_start"]} ?holdingStart . }}
+      OPTIONAL {{ ?holdingDateRange {mapping["range_end"]} ?holdingEnd . }}
+    }}
+  }}
+  FILTER(STRSTARTS(STR(?memberGraph), {member_prefix}))
+  GRAPH <{mapping["office_graph"]}> {{ {office_iri} a {mapping["office_type"]} ; {mapping["office_label"]} ?officeLabel . }}
+}} ORDER BY ?memberName ?holding_holding ?holdingStart ?holdingEnd'''
+    return _query(query, supported_predicates)
+
+
+_XSD_DATETIME_IRI = "http://www.w3.org/2001/XMLSchema#dateTime"
+
+
+def _office_datetime_binding(value: str) -> tuple[datetime | None, str | None]:
+    if value in {"—", ""}:
+        return None, None
+    lexical, separator, datatype = value.rpartition("^^")
+    if not separator:
+        return None, "the RDF datatype was not returned"
+    if datatype.strip("<>") != _XSD_DATETIME_IRI:
+        return None, "the RDF datatype is not xsd:dateTime"
+    if "T" not in lexical:
+        return None, "the xsd:dateTime lexical value is malformed"
+    try:
+        parsed = datetime.fromisoformat(lexical.replace("Z", "+00:00"))
+    except ValueError:
+        return None, "the xsd:dateTime lexical value is malformed"
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+    return parsed, None
+
+
+def _display_office_datetime(value: datetime) -> str:
+    if value.time().isoformat() == "00:00:00":
+        return value.date().isoformat()
+    return value.isoformat(sep=" ")
+
+
+def readable_office_holding_result(result: QueryResult, plan: dict[str, Any]) -> QueryResult:
+    """Keep one readable row per accepted holding, even for repeated Members."""
+    if result.kind != "select":
+        raise NLQError("Office-holding answer query returned an unexpected result kind.")
+    expected_columns = ("member_member", "memberName", "holding_holding", "holdingStart", "holdingEnd")
+    if not set(expected_columns).issubset(result.columns):
+        raise NLQError("Office-holding answer query omitted Member or dated holding evidence.")
+    indexes = {name: result.columns.index(name) for name in expected_columns}
+    interval_start, _interval_end, interval_end_exclusive = _office_interval_bounds(plan)
+    lower = datetime.combine(interval_start, datetime.min.time())
+    upper = datetime.combine(interval_end_exclusive, datetime.min.time())
+    by_holding: dict[str, tuple[str, str, datetime, datetime | None]] = {}
+    for row in result.rows:
+        if len(row) <= max(indexes.values()):
+            raise NLQError("Office-holding answer query returned a truncated evidence row.")
+        member_iri = _require_local_iri(row[indexes["member_member"]], "Member")
+        holding_iri = _require_local_iri(row[indexes["holding_holding"]], "OfficeHolding")
+        name = row[indexes["memberName"]].removesuffix("@en")
+        start, start_error = _office_datetime_binding(row[indexes["holdingStart"]])
+        end, end_error = _office_datetime_binding(row[indexes["holdingEnd"]])
+        if start_error or start is None:
+            raise NLQError(f"Office-holding result has insufficient start-date evidence: {start_error or 'missing start date'}.")
+        if end_error:
+            raise NLQError(f"Office-holding result has an unsupported end-date value: {end_error}.")
+        if end is not None and end < start:
+            raise NLQError("Office-holding result has an end date before its start date.")
+        if not (start < upper and (end is None or end >= lower)):
+            raise NLQError("The compiled office-overlap query returned a holding outside the requested interval.")
+        evidence = (member_iri, name, start, end)
+        previous = by_holding.get(holding_iri)
+        if previous is not None and previous != evidence:
+            raise NLQError("One OfficeHolding has conflicting Member or date evidence in the local dataset.")
+        by_holding[holding_iri] = evidence
+    rows = [
+        (name, _display_office_datetime(start),
+         _display_office_datetime(end) if end is not None else "Open-ended (no end date recorded)")
+        for _member_iri, name, start, end in by_holding.values()
+    ]
+    rows.sort(key=lambda row: (row[1], row[0].casefold(), row[0]))
+    return QueryResult(
+        "select", ("Member", "Holding start", "Holding end"), tuple(rows), result.raw_json,
+    )
+
+
+def inspect_office_holding_evidence(
+    result: QueryResult, plan: dict[str, Any],
+) -> tuple[bool, frozenset[str], tuple[str, ...]]:
+    """Check accepted holding evidence and identify date gaps without inference."""
+    if result.kind != "select":
+        raise NLQError("Office-holding evidence query returned an unexpected result kind.")
+    required = {"member_member", "memberName", "holding_holding", "holdingDateRange", "holdingStart", "holdingEnd"}
+    if not required.issubset(result.columns):
+        raise NLQError("Office-holding evidence query omitted required identity or date bindings.")
+    indexes = {name: result.columns.index(name) for name in required}
+    interval_start, _interval_end, interval_end_exclusive = _office_interval_bounds(plan)
+    lower = datetime.combine(interval_start, datetime.min.time())
+    upper = datetime.combine(interval_end_exclusive, datetime.min.time())
+    seen_holding_evidence: dict[str, tuple[str, str, str, str, str]] = {}
+    overlapping: set[str] = set()
+    issues: set[str] = set()
+    for row in result.rows:
+        if len(row) <= max(indexes.values()):
+            raise NLQError("Office-holding evidence query returned a truncated row.")
+        member_iri = _require_local_iri(row[indexes["member_member"]], "Member")
+        holding_iri = _require_local_iri(row[indexes["holding_holding"]], "OfficeHolding")
+        name = row[indexes["memberName"]].removesuffix("@en")
+        range_iri = row[indexes["holdingDateRange"]]
+        start_text = row[indexes["holdingStart"]]
+        end_text = row[indexes["holdingEnd"]]
+        evidence_key = (member_iri, name, range_iri, start_text, end_text)
+        previous = seen_holding_evidence.get(holding_iri)
+        if previous is not None and previous != evidence_key:
+            issues.add("one accepted holding has conflicting Member or date evidence")
+        seen_holding_evidence[holding_iri] = evidence_key
+        if range_iri in {"—", ""}:
+            issues.add("a holding has no typed date range")
+            continue
+        start, start_error = _office_datetime_binding(start_text)
+        if start_error or start is None:
+            issues.add("a holding has no valid xsd:dateTime start evidence")
+            continue
+        # A valid start after the requested period proves non-overlap regardless
+        # of an absent or malformed end date.
+        if start >= upper:
+            continue
+        end, end_error = _office_datetime_binding(end_text)
+        if end_error:
+            issues.add("a potentially overlapping holding has invalid end-date evidence")
+            continue
+        if end is not None and end < start:
+            issues.add("a holding has an end date before its start date")
+            continue
+        if end is None or end >= lower:
+            overlapping.add(holding_iri)
+    return bool(result.rows), frozenset(overlapping), tuple(sorted(issues))
 
 
 def readable_member_result(result: QueryResult) -> QueryResult:
@@ -772,12 +1178,122 @@ def readable_affiliation_result(result: QueryResult) -> QueryResult:
     return QueryResult("select", ("Political affiliation", "Supporting membership episodes"), tuple(rows), result.raw_json)
 
 
+def _execute_office_question(plan: dict[str, Any], *, fuseki, supported_predicates) -> PlanOutcome:
+    office_ref = plan["referents"]["office"]
+    mention = office_ref["mention"]
+    try:
+        resolution = resolve_local_entity_label(
+            "NamedOffice", mention, fuseki, supported_predicates=supported_predicates,
+        )
+    except UnsupportedLocalEntityType as error:
+        office_ref["resolution"] = "unsupported_mapping"
+        return PlanOutcome("unsupported_mapping", plan=plan, diagnostic=str(error))
+    except NLQError as error:
+        office_ref["resolution"] = "source_data_unavailable"
+        return PlanOutcome(
+            "source_data_unavailable", plan=plan,
+            diagnostic=f"The reviewed local office registry could not be read: {error}",
+        )
+    if resolution.state == "unresolved":
+        office_ref["resolution"] = "not_found"
+        return PlanOutcome(
+            "not_found", plan=plan,
+            diagnostic=f'No reviewed local NamedOffice exactly matches “{mention}”.',
+        )
+    if resolution.state == "ambiguous":
+        candidates = tuple({"iri": item.iri, "label": item.label} for item in resolution.candidates)
+        office_ref.update({"resolution": "ambiguous", "candidates": list(candidates)})
+        return PlanOutcome(
+            "ambiguous", plan=plan,
+            diagnostic=f'Several reviewed local NamedOffice records match “{mention}”; none was selected.',
+            candidates=candidates,
+        )
+    if resolution.state != "resolved" or len(resolution.candidates) != 1:
+        office_ref["resolution"] = "source_data_unavailable"
+        return PlanOutcome(
+            "source_data_unavailable", plan=plan,
+            diagnostic="The local office resolver did not return one usable reviewed identity.",
+        )
+    candidate = resolution.candidates[0]
+    office_ref.update({"resolution": "resolved", "iri": candidate.iri, "label": candidate.label})
+    try:
+        plan = validate_plan(plan)
+        evidence_query = compile_office_evidence_query(plan, supported_predicates=supported_predicates)
+    except (PlanError, NLQError) as error:
+        return PlanOutcome("unsupported_mapping", plan=plan, diagnostic=str(error))
+    try:
+        evidence_result = fuseki.query(evidence_query)
+        has_evidence, overlapping_holdings, evidence_issues = inspect_office_holding_evidence(
+            evidence_result, plan,
+        )
+    except NLQError as error:
+        return PlanOutcome(
+            "source_data_unavailable", plan=plan,
+            diagnostic=f"Accepted local holding evidence could not be checked: {error}",
+        )
+    if not has_evidence:
+        return PlanOutcome(
+            "source_data_unavailable", plan=plan,
+            diagnostic=("No accepted Member-owned OfficeHolding record for this reviewed office "
+                        "is present in the local dataset; historical tenure cannot be determined."),
+        )
+
+    try:
+        answer_query = compile_office_answer_query(plan, supported_predicates=supported_predicates)
+    except (PlanError, NLQError) as error:
+        return PlanOutcome("unsupported_mapping", plan=plan, diagnostic=str(error))
+    try:
+        raw_result = fuseki.query(answer_query)
+        if raw_result.kind != "select":
+            raise NLQError("Office-holding answer query returned an unexpected result kind.")
+        if not {"member_member", "holding_holding"}.issubset(raw_result.columns):
+            raise NLQError("Office-holding answer query omitted Member/holding identity evidence.")
+        holding_index = raw_result.columns.index("holding_holding")
+        answer_holding_ids = {
+            _require_local_iri(row[holding_index], "OfficeHolding")
+            for row in raw_result.rows
+        }
+        if answer_holding_ids != set(overlapping_holdings):
+            return PlanOutcome(
+                "source_data_unavailable", plan=plan, sparql=answer_query,
+                diagnostic=("The local typed holding-date evidence and generated overlap query disagree; "
+                            "no historical answer was returned."),
+            )
+        result = readable_office_holding_result(raw_result, plan) if raw_result.rows else None
+    except NLQError as error:
+        return PlanOutcome("source_data_unavailable", plan=plan, sparql=answer_query, diagnostic=str(error))
+
+    start = plan["constraints"][0]["value"]["start"]
+    end = plan["constraints"][0]["value"]["end"]
+    if evidence_issues:
+        return PlanOutcome(
+            "insufficient_holding_evidence", plan=plan, sparql=answer_query, result=result,
+            diagnostic=(f"Some accepted local holdings have insufficient or conflicting date evidence "
+                        f"({'; '.join(evidence_issues)}). Any displayed rows are only the holdings whose "
+                        "dates can be verified; the local dataset is not historically complete."),
+        )
+    if result is None:
+        return PlanOutcome(
+            "source_data_unavailable", plan=plan, sparql=answer_query,
+            diagnostic=(f"No accepted local holding is recorded overlapping {start} through {end}. "
+                        "The dataset does not certify complete historical office coverage, so this is not "
+                        "a confirmed historical negative."),
+        )
+    return PlanOutcome(
+        "success", plan=plan, sparql=answer_query, result=result,
+        diagnostic=(f"Displayed every locally evidenced accepted holding overlapping {start} through {end}; "
+                    "historical completeness is not certified."),
+    )
+
+
 def execute_question(question: str, *, as_of: date, fuseki, supported_predicates) -> PlanOutcome:
-    """Plan, resolve, validate, compile and execute the bounded Q06/Q09/Q28/Q29 capabilities."""
+    """Plan, resolve, validate, compile and execute bounded composable slices."""
     try:
         plan = plan_question(question, as_of=as_of)
     except PlanError as error:
         return PlanOutcome("unsupported_capability", diagnostic=str(error))
+    if plan["referents"].get("holding", {}).get("type") == "OfficeHolding":
+        return _execute_office_question(plan, fuseki=fuseki, supported_predicates=supported_predicates)
     if plan["referents"].get("sitting", {}).get("type") == "DebateSitting":
         try:
             query = compile_debate_answer_query(plan, supported_predicates=supported_predicates)

@@ -2,12 +2,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "contractId": "https://data.oireachtas.ie/specs/composable-query-plan-contract",
   "schemaVersion": 1,
-  "contractVersion": "2.2.0",
+  "contractVersion": "2.3.0",
   "planVersion": 2,
   "scope": "Local Oireachtas query planning; plans contain semantic referents and reviewed relation IDs, never query syntax.",
-  "resolutionOutcomes": ["resolved", "ambiguous", "not_found", "source_data_unavailable", "unsupported_mapping"],
-  "entityTypes": ["Member", "DailMembership", "DailTerm", "DailConstituency", "PartyMembershipEpisode", "ParliamentaryParty", "PoliticalAffiliationIdentity", "DebateRecord", "DebateSitting"],
-  "entityTypeRdfTypes": {"Member": "agents:Member", "DailMembership": "members:DailMembership", "DailTerm": "agents:DailTerm", "SeanadTerm": "agents:SeanadTerm", "PartyMembershipEpisode": "members:PartyMembership", "ParliamentaryParty": "members:ParliamentaryParty", "PoliticalAffiliationIdentity": "members:PoliticalAffiliationIdentity", "DebateRecord": "agents:DebateRecord", "DebateSitting": "agents:DebateSitting"},
+  "resolutionOutcomes": ["unresolved", "resolved", "ambiguous", "not_found", "source_data_unavailable", "unsupported_mapping"],
+  "entityTypes": ["Member", "DailMembership", "DailTerm", "DailConstituency", "PartyMembershipEpisode", "ParliamentaryParty", "PoliticalAffiliationIdentity", "OfficeHolding", "NamedOffice", "DebateRecord", "DebateSitting"],
+  "entityTypeRdfTypes": {"Member": "agents:Member", "DailMembership": "members:DailMembership", "DailTerm": "agents:DailTerm", "SeanadTerm": "agents:SeanadTerm", "PartyMembershipEpisode": "members:PartyMembership", "ParliamentaryParty": "members:ParliamentaryParty", "PoliticalAffiliationIdentity": "members:PoliticalAffiliationIdentity", "OfficeHolding": "members:OfficeHolding", "NamedOffice": "members:NamedOffice", "DebateRecord": "agents:DebateRecord", "DebateSitting": "agents:DebateSitting"},
   "relations": [
     {"id": "constituency_in_term", "subjectType": "DailConstituency", "objectType": "DailTerm", "predicate": "members:constituencyInHouseTerm", "subjectGraph": "constituencies", "objectGraph": "houses"},
     {"id": "member_has_membership", "subjectType": "Member", "objectType": "DailMembership", "predicate": "members:hasMembersMembership", "subjectGraph": "member-records", "objectGraph": "member-records"},
@@ -16,12 +16,15 @@
     {"id": "member_party_membership", "subjectType": "Member", "objectType": "PartyMembershipEpisode", "predicate": "members:hasMembersMembership", "subjectGraph": "member-records", "objectGraph": "member-records"},
     {"id": "episode_in_parliamentary_party", "subjectType": "PartyMembershipEpisode", "objectType": "ParliamentaryParty", "predicate": "members:isPartyMembershipOf", "subjectGraph": "member-records", "objectGraph": "parties"},
     {"id": "parliamentary_party_has_affiliation_identity", "subjectType": "ParliamentaryParty", "objectType": "PoliticalAffiliationIdentity", "predicate": "members:hasPoliticalAffiliationIdentity", "subjectGraph": "parties", "objectGraph": "political-affiliations"},
+    {"id": "member_has_office_holding", "subjectType": "Member", "objectType": "OfficeHolding", "predicate": "members:hasOfficeHolding", "subjectGraph": "member-records", "objectGraph": "member-records"},
+    {"id": "office_holding_of_office", "subjectType": "OfficeHolding", "objectType": "NamedOffice", "predicate": "members:heldOffice", "subjectGraph": "member-records", "objectGraph": "offices"},
     {"id": "sitting_produced_record", "subjectType": "DebateSitting", "objectType": "DebateRecord", "predicate": "agents:producedRecord", "subjectGraph": "debates", "objectGraph": "debates"}
   ],
   "constraints": [
     {"id": "debate_sitting_date", "referentType": "DebateSitting", "field": "date", "operator": "on", "valueKind": "date", "predicate": "eli-dl:activity_date", "graphFamily": "debates"},
-    {"id": "debate_record_chamber", "referentType": "DebateRecord", "field": "chamber", "operator": "equals", "valueKind": "controlled_route", "graphFamily": "debates", "allowedValues": [{"id": "dail", "route": "dail"}, {"id": "seanad", "route": "seanad"}]}
+    {"id": "debate_record_chamber", "referentType": "DebateRecord", "field": "chamber", "operator": "equals", "valueKind": "controlled_route", "graphFamily": "debates", "allowedValues": [{"id": "dail", "route": "dail"}, {"id": "seanad", "route": "seanad"}]},
+    {"id": "office_holding_interval", "referentType": "OfficeHolding", "field": "interval", "operator": "overlaps", "valueKind": "inclusive_calendar_date_interval", "graphFamily": "member-records", "dateRangePredicate": "members:hasMembershipDateRange", "startPredicate": "members:StartDate", "endPredicate": "members:EndDate", "dateDatatype": "xsd:dateTime", "endAbsentMeans": "open-ended", "boundary": "inclusive_calendar_day"}
   ],
-  "answer": {"kinds": ["entities", "boolean"], "identity": "RDF resource IRI", "displayAttributes": ["name", "label", "date", "officialLink"], "supportingEvidence": "distinct relationship episodes; preserve separate dated records"},
+  "answer": {"kinds": ["entities", "boolean"], "identity": "RDF resource IRI", "displayAttributes": ["name", "label", "date", "officialLink"], "supportingEvidence": "distinct relationship episodes; preserve separate dated records", "episodeProjection": {"referentType": "OfficeHolding", "fields": ["start", "end"], "preserveSeparateHoldings": true}},
   "relativeTerm": {"operation": "previousTerm", "houseType": "DailTerm", "asOf": "required", "dateMapping": {"graphFamily": "houses", "periodLinkPredicate": "dct:temporal", "startPredicate": "dcat:startDate", "endPredicate": "dcat:endDate"}, "endAbsentMeans": "open-ended", "labelChronology": false}
 }
