@@ -110,7 +110,7 @@
       <table>
         <thead><tr>{% for column in result.columns %}<th scope="col">{{ column }}</th>{% endfor %}</tr></thead>
         <tbody>
-        {% for row in result.rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}
+        {% for row in result.rows %}<tr>{% for cell in row %}<td>{% if result.columns[loop.index0] == "Official debate" and cell.startswith("https://data.oireachtas.ie/akn/ie/debateRecord/") %}<a href="{{ cell }}">Official debate record</a>{% else %}{{ cell }}{% endif %}</td>{% endfor %}</tr>{% endfor %}
         </tbody>
       </table>
     {% else %}

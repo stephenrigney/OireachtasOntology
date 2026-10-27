@@ -31,9 +31,11 @@ _RELATION_TYPES = {
     for relation in _PLAN_CONTRACT["relations"]
 }
 _RELATION_MAPPINGS = {relation["id"]: relation for relation in _PLAN_CONTRACT["relations"]}
+_CONSTRAINT_MAPPINGS = {constraint["field"]: constraint for constraint in _PLAN_CONTRACT.get("constraints", [])}
 _PREFIXES = """PREFIX agents: <https://data.oireachtas.ie/ontology#>
 PREFIX dcat: <http://www.w3.org/ns/dcat#>
 PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX eli-dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX members: <https://data.oireachtas.ie/ontology/members#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -56,6 +58,53 @@ class PlanOutcome:
     result: QueryResult | None = None
 
 
+def _validate_debate_plan(plan: dict[str, Any]) -> dict[str, Any]:
+    refs = plan["referents"]
+    if set(refs) != {"sitting", "record"} or refs["sitting"].get("type") != "DebateSitting" or refs["record"].get("type") != "DebateRecord":
+        raise PlanError("Debate plans require one DebateSitting and its DebateRecord referents.")
+    if plan["relations"] != [{"id": "sitting-record", "fact": "sitting_produced_record", "from": "sitting", "to": "record"}]:
+        raise PlanError("Debate plans require the reviewed sitting-to-produced-record relationship.")
+    if _RELATION_TYPES.get("sitting_produced_record") != (refs["sitting"]["type"], refs["record"]["type"]):
+        raise PlanError("Reviewed Debate relationship type signature does not match its referents.")
+    constraints = plan.get("constraints")
+    if not isinstance(constraints, list) or any(not isinstance(item, dict) for item in constraints):
+        raise PlanError("Debate constraints must be controlled constraint objects.")
+    if len(constraints) != 2:
+        raise PlanError("Debate plans require exactly one date and one chamber constraint.")
+    date_mapping = _CONSTRAINT_MAPPINGS.get("date", {})
+    chamber_mapping = _CONSTRAINT_MAPPINGS.get("chamber", {})
+    date_constraints = [item for item in constraints if set(item) == {"referent", "field", "operator", "value"}
+                        and item.get("referent") == "sitting" and item.get("field") == "date"
+                        and item.get("operator") == date_mapping.get("operator")]
+    chamber_constraints = [item for item in constraints if set(item) == {"referent", "field", "operator", "value"}
+                           and item.get("referent") == "record" and item.get("field") == "chamber"
+                           and item.get("operator") == chamber_mapping.get("operator")
+                           and item.get("value") in {value["id"] for value in chamber_mapping.get("allowedValues", [])}]
+    if (date_mapping.get("referentType") != refs["sitting"]["type"]
+            or chamber_mapping.get("referentType") != refs["record"]["type"]
+            or date_mapping.get("valueKind") != "date"
+            or chamber_mapping.get("valueKind") != "controlled_route"
+            or date_mapping.get("graphFamily") != "debates"
+            or chamber_mapping.get("graphFamily") != "debates"):
+        raise PlanError("Reviewed Debate constraint vocabulary is missing or inconsistent.")
+    if len(date_constraints) != 1 or len(chamber_constraints) != 1:
+        raise PlanError("Debate plan constraints must select an ISO date and a supported Dáil/Seanad route.")
+    try:
+        date.fromisoformat(date_constraints[0]["value"])
+    except (TypeError, ValueError) as error:
+        raise PlanError("Debate date constraint must be an ISO calendar date.") from error
+    answer = plan["answer"]
+    if answer == {"kind": "boolean", "referent": "sitting"}:
+        if refs["sitting"].get("answer") is not True:
+            raise PlanError("Boolean Debate answer must identify the DebateSitting referent as the answer.")
+    elif answer == {"kind": "entities", "referent": "sitting", "distinctBy": "identity", "display": ["date", "officialLink"]}:
+        if refs["sitting"].get("answer") is not True:
+            raise PlanError("Debate entity answer must identify the DebateSitting referent as the answer.")
+    else:
+        raise PlanError("Debate answer must be a boolean or a readable sitting/date/link entity result.")
+    return plan
+
+
 def _require_local_iri(value: str, what: str) -> str:
     if (not isinstance(value, str) or not value.startswith("https://data.oireachtas.ie/")
             or any(character.isspace() for character in value) or any(mark in value for mark in "<>\"{}|\\^`")):
@@ -69,7 +118,32 @@ def _normalise_label(value: str) -> str:
 
 
 def plan_question(question: str, *, as_of: date) -> dict[str, Any]:
-    """Interpret the bounded Q06 affiliation and Q09 representation families."""
+    """Interpret the bounded Q06, Q09 and Debates question families."""
+    debate = re.search(
+        r"\b(?P<boolean>was\s+there\s+a\s+)?(?P<chamber>dáil|dail|seanad)\s+debate\s+(?:on|from)\s+(?P<date>[0-9]{1,2}\s+[a-z]+\s+[0-9]{4})\s*[?.!]*$",
+        question.strip(), re.IGNORECASE,
+    )
+    if debate:
+        try:
+            debate_date = datetime.strptime(debate.group("date"), "%d %B %Y").date().isoformat()
+        except ValueError as error:
+            raise PlanError("The debate date must be a valid calendar date.") from error
+        chamber = "seanad" if debate.group("chamber").casefold() == "seanad" else "dail"
+        return validate_plan({
+            "version": PLAN_VERSION,
+            "asOf": as_of.isoformat(),
+            "referents": {
+                "sitting": {"type": "DebateSitting", "answer": True},
+                "record": {"type": "DebateRecord"},
+            },
+            "relations": [{"id": "sitting-record", "fact": "sitting_produced_record", "from": "sitting", "to": "record"}],
+            "constraints": [
+                {"referent": "sitting", "field": "date", "operator": "on", "value": debate_date},
+                {"referent": "record", "field": "chamber", "operator": "equals", "value": chamber},
+            ],
+            "answer": ({"kind": "boolean", "referent": "sitting"} if debate.group("boolean") else
+                       {"kind": "entities", "referent": "sitting", "distinctBy": "identity", "display": ["date", "officialLink"]}),
+        })
     affiliation = re.search(
         r"\bwhat\s+parties\s+was\s+(.+?)\s+a\s+member\s+of\s*[?.!]*$",
         question.strip(), re.IGNORECASE,
@@ -125,8 +199,9 @@ def plan_question(question: str, *, as_of: date) -> dict[str, Any]:
 
 
 def validate_plan(plan: Any) -> dict[str, Any]:
-    if not isinstance(plan, dict) or set(plan) != {"version", "asOf", "referents", "relations", "answer"}:
-        raise PlanError("Plan must have exactly version, asOf, referents, relations, and answer.")
+    if not isinstance(plan, dict) or set(plan) not in ({"version", "asOf", "referents", "relations", "answer"},
+                                                       {"version", "asOf", "referents", "relations", "constraints", "answer"}):
+        raise PlanError("Plan must have exactly version, asOf, referents, relations, optional constraints, and answer.")
     if plan["version"] != PLAN_VERSION:
         raise PlanError("Unsupported composable plan version.")
     try:
@@ -141,6 +216,8 @@ def validate_plan(plan: Any) -> dict[str, Any]:
             raise PlanError("Every referent requires an ID and controlled type.")
         if ref["type"] not in _PLAN_CONTRACT["entityTypes"]:
             raise PlanError(f"Unsupported referent type {ref['type']!r}.")
+    if "constraints" in plan or any(ref.get("type") in {"DebateRecord", "DebateSitting"} for ref in refs.values()):
+        return _validate_debate_plan(plan)
     term = refs.get("term", {})
     constituency = refs.get("constituency", {})
     is_q09 = "term" in refs or "constituency" in refs
@@ -384,6 +461,8 @@ def compile_answer_query(plan: dict[str, Any], term_iri: str | None = None,
                          constituency_iri: str | None = None, *, supported_predicates) -> str:
     plan = validate_plan(plan)
     refs = plan["referents"]
+    if refs.get("sitting", {}).get("type") == "DebateSitting":
+        return compile_debate_answer_query(plan, supported_predicates=supported_predicates)
     if refs[plan["answer"]["referent"]]["type"] == "PoliticalAffiliationIdentity":
         return compile_affiliation_answer_query(plan, supported_predicates=supported_predicates)
     term_iri = _require_local_iri(term_iri, "HouseTerm")
@@ -426,6 +505,58 @@ def compile_answer_query(plan: dict[str, Any], term_iri: str | None = None,
     return _query(query, supported_predicates)
 
 
+def compile_debate_answer_query(plan: dict[str, Any], *, supported_predicates) -> str:
+    """Compile the reviewed sitting→record path and constrained graph route."""
+    plan = _validate_debate_plan(plan)
+    contract = load_query_contract()
+    pattern = _reviewed_pattern("debate-sitting-record", "debates")
+    mapped_predicate = _reviewed_predicate("sitting_produced_record")
+    graph_family = next(item for item in contract["graphFamilies"] if item["id"] == "debates")
+    graph_prefix = graph_family["graph"].get("iriTemplate", "").split("{", 1)[0]
+    if not graph_prefix or not graph_prefix.startswith("https://data.oireachtas.ie/graph/debate/"):
+        raise PlanError("Reviewed Debate graph route mapping is absent.")
+    date_constraint = next(item for item in plan["constraints"] if item["field"] == "date")
+    chamber_constraint = next(item for item in plan["constraints"] if item["field"] == "chamber")
+    date_mapping = _CONSTRAINT_MAPPINGS["date"]
+    chamber_mapping = _CONSTRAINT_MAPPINGS["chamber"]
+    date_value = date_constraint["value"]
+    chamber = next(item["route"] for item in chamber_mapping["allowedValues"]
+                   if item["id"] == chamber_constraint["value"])
+    route_pattern = "^" + re.escape(graph_prefix + chamber + "/" + date_value + "/debate") + "$"
+    supported = set(supported_predicates)
+    predicates = (
+        _pattern_predicate(pattern, "?sitting", "?debate"),
+        _pattern_predicate(pattern, "?sitting", "?date"),
+    )
+    if predicates[1] != date_mapping.get("predicate"):
+        raise PlanError("Debate date constraint mapping disagrees with the emitted RDF pattern.")
+    if predicates[0] != mapped_predicate:
+        raise PlanError("Debate relation mapping disagrees with the reviewed emitted RDF pattern.")
+    for predicate in predicates:
+        qname = predicate.split(":", 1)[0]
+        if qname not in contract["namespaces"] or predicate not in contract["queryableProperties"]:
+            raise PlanError(f"Debate mapping predicate {predicate!r} is not queryable.")
+        uri = URIRef(contract["namespaces"][qname] + predicate.split(":", 1)[1])
+        if uri not in supported:
+            raise PlanError(f"Debate mapping predicate {predicate!r} is not allowlisted.")
+    for semantic_type in ("DebateSitting", "DebateRecord"):
+        rdf_type = _PLAN_CONTRACT["entityTypeRdfTypes"][semantic_type]
+        if rdf_type not in contract["queryableClasses"]:
+            raise PlanError(f"Debate entity type {semantic_type!r} is not queryable.")
+    types = {key: _PLAN_CONTRACT["entityTypeRdfTypes"][key] for key in ("DebateSitting", "DebateRecord")}
+    where = f'''GRAPH ?debateGraph {{
+    ?sitting a {types['DebateSitting']} ; {predicates[0]} ?record ; {predicates[1]} ?date .
+    ?record a {types['DebateRecord']} .
+  }}
+  FILTER(REGEX(STR(?debateGraph), {json.dumps(route_pattern)}))
+  FILTER(?date = "{date_value}"^^xsd:date)'''
+    if plan["answer"]["kind"] == "boolean":
+        query = _PREFIXES + f"ASK WHERE {{\n  {where}\n}}"
+    else:
+        query = _PREFIXES + f"SELECT DISTINCT ?sitting ?date ?record WHERE {{\n  {where}\n}} ORDER BY ?date ?record"
+    return _query(query, supported_predicates)
+
+
 def readable_member_result(result: QueryResult) -> QueryResult:
     """Deduplicate per RDF Member identity and hide internal identity bindings."""
     if result.kind != "select":
@@ -445,6 +576,30 @@ def readable_member_result(result: QueryResult) -> QueryResult:
         by_member.setdefault(row[member_index], row[name_index].removesuffix("@en"))
     rows = tuple((name,) for _, name in sorted(by_member.items(), key=lambda item: (item[1].casefold(), item[0])))
     return QueryResult(kind="select", columns=("Member",), rows=rows, raw_json=result.raw_json)
+
+
+def readable_debate_result(result: QueryResult) -> QueryResult:
+    if result.kind != "select":
+        raise NLQError("Debate answer query returned an unexpected result kind.")
+    try:
+        indexes = {name: result.columns.index(name) for name in ("date", "record")}
+    except ValueError as error:
+        raise NLQError("Debate answer query omitted its date or official record identifier.") from error
+    rows: dict[str, tuple[str, str]] = {}
+    for row in result.rows:
+        if len(row) <= max(indexes.values()):
+            continue
+        raw_date, record = row[indexes["date"]], row[indexes["record"]]
+        if not record.startswith("https://data.oireachtas.ie/akn/ie/debateRecord/"):
+            raise NLQError("Debate result did not contain a supported official Work identifier.")
+        try:
+            parsed = datetime.fromisoformat(raw_date.split("^^", 1)[0].removesuffix("Z"))
+            display_date = parsed.strftime("%A %-d %B %Y")
+        except ValueError as error:
+            raise NLQError("Debate result contains a malformed source date.") from error
+        rows[record] = (display_date, record)
+    display_rows = tuple(rows[key] for key in sorted(rows))
+    return QueryResult("select", ("Sitting date", "Official debate"), display_rows, result.raw_json)
 
 
 class AmbiguousMember(NLQError):
@@ -611,11 +766,31 @@ def readable_affiliation_result(result: QueryResult) -> QueryResult:
 
 
 def execute_question(question: str, *, as_of: date, fuseki, supported_predicates) -> PlanOutcome:
-    """Plan, resolve, validate, compile and execute the bounded Q06/Q09 capabilities."""
+    """Plan, resolve, validate, compile and execute the bounded Q06/Q09/Q28/Q29 capabilities."""
     try:
         plan = plan_question(question, as_of=as_of)
     except PlanError as error:
         return PlanOutcome("unsupported_capability", diagnostic=str(error))
+    if plan["referents"].get("sitting", {}).get("type") == "DebateSitting":
+        try:
+            query = compile_debate_answer_query(plan, supported_predicates=supported_predicates)
+            raw_result = fuseki.query(query)
+            if plan["answer"]["kind"] == "boolean":
+                if raw_result.kind != "ask":
+                    raise NLQError("Debate existence query returned an unexpected result kind.")
+                if not raw_result.boolean:
+                    return PlanOutcome("source_data_unavailable", plan=plan, sparql=query,
+                                       diagnostic="No Seanad sitting was found, but local Debate coverage is not certified complete; absence is not proof of a negative.")
+                result = raw_result
+            else:
+                result = readable_debate_result(raw_result)
+                if not result.rows:
+                    return PlanOutcome("source_data_unavailable", plan=plan, sparql=query,
+                                       diagnostic="No matching actual DebateSitting was found in the local dataset; written-answer records do not establish a sitting and coverage is not certified complete.")
+        except (PlanError, NLQError) as error:
+            return PlanOutcome("unsupported_mapping", plan=plan, diagnostic=str(error))
+        return PlanOutcome("success", plan=plan, sparql=query, result=result,
+                           diagnostic="Matched an actual DebateSitting through its produced DebateRecord and reviewed graph-route chamber identity.")
     if plan["answer"]["referent"] == "affiliation":
         mention = plan["referents"]["member"]["mention"]
         try:

@@ -6,8 +6,8 @@
   "planVersion": 2,
   "scope": "Local Oireachtas query planning; plans contain semantic referents and reviewed relation IDs, never query syntax.",
   "resolutionOutcomes": ["resolved", "ambiguous", "not_found", "source_data_unavailable", "unsupported_mapping"],
-  "entityTypes": ["Member", "DailMembership", "DailTerm", "DailConstituency", "PartyMembershipEpisode", "ParliamentaryParty", "PoliticalAffiliationIdentity"],
-  "entityTypeRdfTypes": {"Member": "agents:Member", "DailMembership": "members:DailMembership", "DailTerm": "agents:DailTerm", "SeanadTerm": "agents:SeanadTerm", "PartyMembershipEpisode": "members:PartyMembership", "ParliamentaryParty": "members:ParliamentaryParty", "PoliticalAffiliationIdentity": "members:PoliticalAffiliationIdentity"},
+  "entityTypes": ["Member", "DailMembership", "DailTerm", "DailConstituency", "PartyMembershipEpisode", "ParliamentaryParty", "PoliticalAffiliationIdentity", "DebateRecord", "DebateSitting"],
+  "entityTypeRdfTypes": {"Member": "agents:Member", "DailMembership": "members:DailMembership", "DailTerm": "agents:DailTerm", "SeanadTerm": "agents:SeanadTerm", "PartyMembershipEpisode": "members:PartyMembership", "ParliamentaryParty": "members:ParliamentaryParty", "PoliticalAffiliationIdentity": "members:PoliticalAffiliationIdentity", "DebateRecord": "agents:DebateRecord", "DebateSitting": "agents:DebateSitting"},
   "relations": [
     {"id": "constituency_in_term", "subjectType": "DailConstituency", "objectType": "DailTerm", "predicate": "members:constituencyInHouseTerm", "subjectGraph": "constituencies", "objectGraph": "houses"},
     {"id": "member_has_membership", "subjectType": "Member", "objectType": "DailMembership", "predicate": "members:hasMembersMembership", "subjectGraph": "member-records", "objectGraph": "member-records"},
@@ -15,8 +15,13 @@
     {"id": "membership_represents", "subjectType": "DailMembership", "objectType": "DailConstituency", "predicate": "members:isRepresentativeFrom", "subjectGraph": "member-records", "objectGraph": "constituencies"},
     {"id": "member_party_membership", "subjectType": "Member", "objectType": "PartyMembershipEpisode", "predicate": "members:hasMembersMembership", "subjectGraph": "member-records", "objectGraph": "member-records"},
     {"id": "episode_in_parliamentary_party", "subjectType": "PartyMembershipEpisode", "objectType": "ParliamentaryParty", "predicate": "members:isPartyMembershipOf", "subjectGraph": "member-records", "objectGraph": "parties"},
-    {"id": "parliamentary_party_has_affiliation_identity", "subjectType": "ParliamentaryParty", "objectType": "PoliticalAffiliationIdentity", "predicate": "members:hasPoliticalAffiliationIdentity", "subjectGraph": "parties", "objectGraph": "political-affiliations"}
+    {"id": "parliamentary_party_has_affiliation_identity", "subjectType": "ParliamentaryParty", "objectType": "PoliticalAffiliationIdentity", "predicate": "members:hasPoliticalAffiliationIdentity", "subjectGraph": "parties", "objectGraph": "political-affiliations"},
+    {"id": "sitting_produced_record", "subjectType": "DebateSitting", "objectType": "DebateRecord", "predicate": "agents:producedRecord", "subjectGraph": "debates", "objectGraph": "debates"}
   ],
-  "answer": {"kinds": ["entities"], "identity": "RDF resource IRI", "displayAttributes": ["name", "label", "start", "end"], "supportingEvidence": "distinct relationship episodes; preserve separate dated records"},
+  "constraints": [
+    {"id": "debate_sitting_date", "referentType": "DebateSitting", "field": "date", "operator": "on", "valueKind": "date", "predicate": "eli-dl:activity_date", "graphFamily": "debates"},
+    {"id": "debate_record_chamber", "referentType": "DebateRecord", "field": "chamber", "operator": "equals", "valueKind": "controlled_route", "graphFamily": "debates", "allowedValues": [{"id": "dail", "route": "dail"}, {"id": "seanad", "route": "seanad"}]}
+  ],
+  "answer": {"kinds": ["entities", "boolean"], "identity": "RDF resource IRI", "displayAttributes": ["name", "label", "date", "officialLink"], "supportingEvidence": "distinct relationship episodes; preserve separate dated records"},
   "relativeTerm": {"operation": "previousTerm", "houseType": "DailTerm", "asOf": "required", "dateMapping": {"graphFamily": "houses", "periodLinkPredicate": "dct:temporal", "startPredicate": "dcat:startDate", "endPredicate": "dcat:endDate"}, "endAbsentMeans": "open-ended", "labelChronology": false}
 }

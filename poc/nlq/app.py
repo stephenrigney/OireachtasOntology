@@ -150,16 +150,21 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                 )
                 plan_json = format_debug_payload(outcome.plan) if outcome.plan else None
                 is_q06 = bool(outcome.plan and outcome.plan.get("answer", {}).get("referent") == "affiliation")
+                is_debate = bool(outcome.plan and outcome.plan.get("referents", {}).get("sitting", {}).get("type") == "DebateSitting")
                 member_mention = outcome.plan.get("referents", {}).get("member", {}).get("mention", "the named Member") if is_q06 else None
                 summary = (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
-                           if is_q06 else "Find distinct Members who represented this constituency in the previous Dáil.")
+                           if is_q06 else ("Find the requested actual DebateSitting and its official record link."
+                                           if is_debate else "Find distinct Members who represented this constituency in the previous Dáil."))
                 if outcome.status == "success":
                     return render(request, question=question, mode=mode,
                                   interpretation=summary, plan_json=plan_json,
                                   plan_heading="Validated composable query plan",
                                    plan_explanation={"summary": summary, "validated": True,
-                                                     "answer_text": ("Distinct political-affiliation identities with separate supporting membership episodes."
-                                                                     if is_q06 else "Distinct Members, displayed by name.")},
+                                                      "answer_text": ("Distinct political-affiliation identities with separate supporting membership episodes."
+                                                                      if is_q06 else ("Yes/no based on an actual DebateSitting, not a dated written-answer record."
+                                                                                      if is_debate and outcome.result.kind == "ask" else
+                                                                                      "Readable sitting date and official debate record link."
+                                                                                      if is_debate else "Distinct Members, displayed by name."))},
                                   sparql=outcome.sparql, result=outcome.result,
                                   debug_output=outcome.result.raw_json if outcome.result else None,
                                   debug_source="Fuseki")
@@ -173,6 +178,8 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                 }
                 if outcome.status == "source_data_unavailable" and is_q06:
                     message = "The local dataset has no usable dated party-membership evidence for this Member."
+                elif outcome.status == "source_data_unavailable" and is_debate:
+                    message = "No matching actual sitting was found. The local dataset does not certify complete coverage for this date, so absence cannot be reported as a confirmed No."
                 elif outcome.status == "not_found" and is_q06:
                     message = "No matching local Member record was found."
                 elif outcome.status == "ambiguous" and is_q06:

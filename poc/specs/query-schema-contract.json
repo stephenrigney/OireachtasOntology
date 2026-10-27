@@ -43,6 +43,7 @@
     "members:OfficeHolding",
     "members:NamedOffice",
     "agents:DebateRecord",
+    "agents:DebateSitting",
     "eli-dl:DraftLegislationWork",
     "eli-dl:LegislativeProcess",
     "eli-dl:LegislativeActivity",
@@ -71,6 +72,7 @@
     "dct:temporal",
     "agents:legislativeYear",
     "agents:debateDate",
+    "agents:producedRecord",
     "agents:hasImage",
     "members:hasMembersMembership",
     "members:inHouseTerm",
@@ -370,6 +372,14 @@
       "queryableInLocalNlq": true,
       "triples": [["?debate", "rdf:type", "agents:DebateRecord"], ["?debate", "agents:debateDate", "?date"]],
       "note": "The development bootstrap contains exactly three pinned, non-authoritative Debate graphs and no transcript text. Debate Work identity carries a canonical chamber/body and date route in the Work IRI and named-graph IRI; no explicit chamber RDF predicate is emitted. Dáil/Seanad chamber filtering uses the reviewed graph-route segment, not an inferred House relation."
+    },
+    {
+      "id": "debate-sitting-record",
+      "graphFamily": "debates",
+      "availability": "emitted",
+      "queryableInLocalNlq": true,
+      "triples": [["?sitting", "rdf:type", "agents:DebateSitting"], ["?sitting", "agents:producedRecord", "?debate"], ["?sitting", "eli-dl:activity_date", "?date"]],
+      "note": "Only source-eligible actual sittings have this pattern. Written-answer DebateRecords retain debateDate but are not DebateSittings and have no producedRecord or activity_date. Chamber is selected by the reviewed canonical Debate graph route, not an inferred House link."
     },
     {
       "id": "reviewed-member-external-identities",
