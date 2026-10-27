@@ -23,6 +23,22 @@ class PoliticalAffiliationError(ValueError):
     pass
 
 
+def require_disposable_dataset(sparql_client, confirmation: str | None) -> None:
+    """Refuse the destructive integration test unless its dataset is confirmed empty."""
+    if confirmation != "I_CONFIRM_DISPOSABLE_FUSEKI":
+        raise RuntimeError("explicit disposable-dataset confirmation is required")
+    rows = sparql_client.query("SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o } }")
+    if rows:
+        existing = sorted(
+            row.get("g", {}).get("value", "<malformed graph binding>")
+            for row in rows
+        )
+        raise RuntimeError("disposable Fuseki dataset must be empty; existing named graphs: " + ", ".join(existing))
+    default_rows = sparql_client.query("SELECT ?s WHERE { ?s ?p ?o } LIMIT 1")
+    if default_rows:
+        raise RuntimeError("disposable Fuseki dataset must be empty; default graph contains triples")
+
+
 def build_graph(decisions_path: str | Path = DECISIONS) -> Dataset:
     """Validate the complete reviewed register and return its publication dataset."""
     try:
