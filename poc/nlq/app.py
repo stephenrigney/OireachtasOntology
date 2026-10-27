@@ -202,7 +202,9 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     entity_outcomes=member_outcomes,
                     debug_output=format_debug_payload({"diagnostic": outcome.diagnostic,
                                                        "candidates": outcome.candidates}),
-                    debug_message="No answer query was executed after this resolution failure.",
+                    debug_message=("The read-only answer query ran, but returned no matching result."
+                                   if outcome.sparql is not None else
+                                   "No answer query was executed after this resolution failure."),
                     debug_source="Query planning / entity resolution",
                 )
             except Exception:

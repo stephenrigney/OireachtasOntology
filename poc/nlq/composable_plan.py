@@ -62,6 +62,13 @@ def _validate_debate_plan(plan: dict[str, Any]) -> dict[str, Any]:
     refs = plan["referents"]
     if set(refs) != {"sitting", "record"} or refs["sitting"].get("type") != "DebateSitting" or refs["record"].get("type") != "DebateRecord":
         raise PlanError("Debate plans require one DebateSitting and its DebateRecord referents.")
+    supported_referent_fields = {"sitting": {"type", "answer"}, "record": {"type"}}
+    for referent_id, supported_fields in supported_referent_fields.items():
+        if set(refs[referent_id]) != supported_fields:
+            raise PlanError(
+                f"Debate referent {referent_id!r} contains unsupported or missing attributes; "
+                "only the reviewed type and sitting answer declaration are supported."
+            )
     if plan["relations"] != [{"id": "sitting-record", "fact": "sitting_produced_record", "from": "sitting", "to": "record"}]:
         raise PlanError("Debate plans require the reviewed sitting-to-produced-record relationship.")
     if _RELATION_TYPES.get("sitting_produced_record") != (refs["sitting"]["type"], refs["record"]["type"]):

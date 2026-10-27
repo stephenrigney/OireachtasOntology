@@ -153,6 +153,20 @@ def test_reusable_relationship_path_rejects_unused_or_unsupported_elements(mutat
         compile_answer_query(valid, supported_predicates=supported - {produced_record})
 
 
+@pytest.mark.parametrize(("referent", "attribute", "value"), [
+    ("sitting", "selector", {"kind": "invented"}),
+    ("sitting", "constraints", []),
+    ("record", "selector", {"kind": "invented"}),
+    ("record", "answer", True),
+    ("record", "mention", "Dáil"),
+])
+def test_debate_referents_reject_unsupported_attributes(referent, attribute, value):
+    plan = plan_question("Was there a Seanad debate on 2 July 2015?", as_of=DATE)
+    plan["referents"][referent][attribute] = value
+    with pytest.raises(PlanError, match="unsupported or missing attributes"):
+        validate_plan(plan)
+
+
 def test_q28_and_q29_share_the_same_validated_compiled_relationship_path():
     supported = supported_predicates(ROOT / "ontology")
     entity_plan = plan_question("Show me the Dáil debate from 2 July 2015.", as_of=DATE)
@@ -163,3 +177,18 @@ def test_q28_and_q29_share_the_same_validated_compiled_relationship_path():
     assert "FILTER(REGEX(STR(?debateGraph)" in entity_query
     assert entity_query.startswith("PREFIX") and "SELECT DISTINCT" in entity_query
     assert "ASK WHERE" in boolean_query
+
+
+def test_ask_no_match_diagnostic_says_query_ran(monkeypatch):
+    from poc.nlq import app as app_module
+
+    fixture = DebateFixture(dail=False, seanad=False)
+    monkeypatch.setenv("OIR_NLQ_AS_OF_DATE", "2026-10-25")
+    monkeypatch.setattr(app_module, "FusekiQueryClient", lambda *args, **kwargs: fixture)
+    response = TestClient(app_module.create_app(repository_root=ROOT)).post("/ask", data={
+        "question": "Was there a Seanad debate on 2 July 2015?", "mode": "phase2",
+    })
+    assert response.status_code == 200
+    assert "The read-only answer query ran, but returned no matching result." in response.text
+    assert "No answer query was executed after this resolution failure." not in response.text
+    assert fixture.queries and fixture.queries[-1].startswith("PREFIX")
