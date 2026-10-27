@@ -3,7 +3,7 @@
   "contractId": "https://data.oireachtas.ie/specs/query-schema-contract",
   "contractSchema": "poc/specs/query-schema-contract.schema.json",
   "schemaVersion": 1,
-  "contractVersion": "2.2.0",
+  "contractVersion": "2.3.0",
   "description": "Queryable, currently emitted Oireachtas RDF patterns and local NLQ execution boundary.",
   "namespaces": {
     "agents": "https://data.oireachtas.ie/ontology#",
@@ -286,8 +286,8 @@
       "graphFamily": "member-records",
       "availability": "emitted",
       "queryableInLocalNlq": true,
-      "triples": [["?member", "members:hasMembersMembership", "?partyEpisode"], ["?partyEpisode", "rdf:type", "members:PartyMembership"], ["?partyEpisode", "members:inOireachtasMembership", "?oireachtasMembership"], ["?partyEpisode", "members:isPartyMembershipOf", "?parliamentaryParty"]],
-      "note": "Party-membership episodes are distinct from Independent collection memberships and link to the dated Oireachtas membership and term-scoped party."
+      "triples": [["?member", "members:hasMembersMembership", "?partyEpisode"], ["?partyEpisode", "rdf:type", "members:PartyMembership"], ["?partyEpisode", "members:inOireachtasMembership", "?oireachtasMembership"], ["?partyEpisode", "members:isPartyMembershipOf", "?parliamentaryParty"], ["?partyEpisode", "members:hasMembershipDateRange", "?partyDateRange (optional for query projection)"], ["?partyDateRange", "rdf:type", "members:DateRange"], ["?partyDateRange", "members:StartDate", "?affiliationStart (optional)"], ["?partyDateRange", "members:EndDate", "?affiliationEnd (optional)"]],
+      "note": "Party-membership episodes are distinct from Independent collection memberships and link to the dated Oireachtas membership and term-scoped party. Affiliation start/end evidence belongs to the PartyMembership-owned DateRange, not the containing OireachtasMembership DateRange."
     },
     {
       "id": "party-term-occurrence",

@@ -449,7 +449,7 @@ reviewed, sufficiently complete fixture of 33rd-Dáil South-Central
 representation and replacement records.
 
 The repository-owned machine-readable query contract is
-`poc/specs/query-schema-contract.json` (contract version `2.2.0`, schema
+`poc/specs/query-schema-contract.json` (contract version `2.3.0`, schema
 version `1`). Its JSON Schema is `poc/specs/query-schema-contract.schema.json`.
 The contract defines the queryable class/property scope, named-graph families
 and owners, emitted RDF patterns, entity-specific label predicates,

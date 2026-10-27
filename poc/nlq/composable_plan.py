@@ -269,6 +269,16 @@ def _pattern_predicate(pattern: dict[str, Any], subject: str, object_: str) -> s
     return predicate
 
 
+def _pattern_rdf_type(pattern: dict[str, Any], subject: str) -> str:
+    rdf_type = next((triple[2] for triple in pattern.get("triples", [])
+                     if triple[0] == subject and triple[1] == "rdf:type"), None)
+    if not isinstance(rdf_type, str):
+        raise PlanError(f"Reviewed pattern {pattern.get('id')!r} has no asserted type for {subject!r}.")
+    if rdf_type not in load_query_contract()["queryableClasses"]:
+        raise PlanError(f"Reviewed RDF type {rdf_type!r} is not queryable.")
+    return rdf_type
+
+
 def _reviewed_cross_graph_join(from_family: str, predicate: str, to_family: str) -> None:
     contract = load_query_contract()
     if not any(item["fromGraphFamily"] == from_family and item["predicate"] == predicate
@@ -523,10 +533,11 @@ def compile_affiliation_answer_query(plan: dict[str, Any], *, supported_predicat
     term_types = (rdf_types["DailTerm"], rdf_types["SeanadTerm"])
     if any(term_type not in contract["queryableClasses"] for term_type in term_types):
         raise PlanError("Reviewed HouseTerm RDF types are absent from the query contract.")
-    date_range = _pattern_predicate(membership_pattern, "?membership", "?dateRange")
     membership_term = _pattern_predicate(membership_pattern, "?membership", "?term")
-    start = _pattern_predicate(membership_pattern, "?dateRange", "?startDate")
-    end = _pattern_predicate(membership_pattern, "?dateRange", "?endDate (optional)")
+    date_range = _pattern_predicate(episode_pattern, "?partyEpisode", "?partyDateRange (optional for query projection)")
+    date_range_type = _pattern_rdf_type(episode_pattern, "?partyDateRange")
+    start = _pattern_predicate(episode_pattern, "?partyDateRange", "?affiliationStart (optional)")
+    end = _pattern_predicate(episode_pattern, "?partyDateRange", "?affiliationEnd (optional)")
     linked_membership = _pattern_predicate(episode_pattern, "?partyEpisode", "?oireachtasMembership")
     party_term = _pattern_predicate(party_term_pattern, "?party", "?term")
     _reviewed_cross_graph_join("parties", party_term, "houses")
@@ -546,9 +557,11 @@ def compile_affiliation_answer_query(plan: dict[str, Any], *, supported_predicat
     <{member_iri}> a {member_type} ; {member_membership} ?episode .
     ?episode a {episode_type} ; {linked_membership} ?membership ; {party_membership} ?party .
     ?membership {membership_term} ?term .
-    ?membership {date_range} ?dateRange .
-    OPTIONAL {{ ?dateRange {start} ?start . }}
-    OPTIONAL {{ ?dateRange {end} ?end . }}
+    OPTIONAL {{ ?episode {date_range} ?dateRange .
+      ?dateRange a {date_range_type} .
+      OPTIONAL {{ ?dateRange {start} ?start . }}
+      OPTIONAL {{ ?dateRange {end} ?end . }}
+    }}
   }}
   GRAPH <{party_graph}> {{ ?party a {party_type} ; {party_term} ?term . }}
   GRAPH <{houses_graph}> {{ ?term a ?termType . }}

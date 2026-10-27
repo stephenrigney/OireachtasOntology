@@ -34,7 +34,8 @@ MEMBER = URIRef("https://data.oireachtas.ie/member/id/synthetic-stephen-donnelly
 class Q06Fixture:
     """Minimal synthetic evidence; identity associations and labels are reviewed data."""
 
-    def __init__(self, *, missing_memberships=False, missing_identity=False, ambiguous=False):
+    def __init__(self, *, missing_memberships=False, missing_identity=False,
+                 missing_affiliation_dates=False, ambiguous=False):
         self.dataset = Dataset()
         self.queries = []
         self.member_graph = self.dataset.graph(URIRef("https://data.oireachtas.ie/graph/member/synthetic-stephen-donnelly"))
@@ -67,7 +68,8 @@ class Q06Fixture:
                 term = URIRef(f"https://data.oireachtas.ie/ie/oireachtas/house/dail/{term_number}")
                 episode = URIRef(f"https://data.oireachtas.ie/membership/synthetic-party-episode-{index}")
                 parliamentary_membership = URIRef(f"https://data.oireachtas.ie/membership/synthetic-dail-episode-{index}")
-                date_range = URIRef(f"https://data.oireachtas.ie/membership/synthetic-date-range-{index}")
+                parliamentary_date_range = URIRef(f"https://data.oireachtas.ie/membership/synthetic-parliamentary-date-range-{index}")
+                party_date_range = URIRef(f"https://data.oireachtas.ie/membership/synthetic-party-date-range-{index}")
                 self.parties.add((party, RDF.type, URIRef(MEMBERS + "ParliamentaryParty")))
                 self.parties.add((party, SKOS.prefLabel, Literal("deliberately not the identity label", lang="en")))
                 self.parties.add((party, URIRef(MEMBERS + "activeDuringTerm"), term))
@@ -78,9 +80,15 @@ class Q06Fixture:
                 self.member_graph.add((episode, URIRef(MEMBERS + "isPartyMembershipOf"), party))
                 self.member_graph.add((parliamentary_membership, RDF.type, URIRef(MEMBERS + "DailMembership")))
                 self.member_graph.add((parliamentary_membership, URIRef(MEMBERS + "inHouseTerm"), term))
-                self.member_graph.add((parliamentary_membership, URIRef(MEMBERS + "hasMembershipDateRange"), date_range))
-                self.member_graph.add((date_range, URIRef(MEMBERS + "StartDate"), Literal(f"{2011 + index}-03-09", datatype=URIRef("http://www.w3.org/2001/XMLSchema#date"))))
-                self.member_graph.add((date_range, URIRef(MEMBERS + "EndDate"), Literal(f"{2016 + index}-02-03", datatype=URIRef("http://www.w3.org/2001/XMLSchema#date"))))
+                self.member_graph.add((parliamentary_membership, URIRef(MEMBERS + "hasMembershipDateRange"), parliamentary_date_range))
+                self.member_graph.add((parliamentary_date_range, RDF.type, URIRef(MEMBERS + "DateRange")))
+                self.member_graph.add((parliamentary_date_range, URIRef(MEMBERS + "StartDate"), Literal(f"{2011 + index}-03-09", datatype=URIRef("http://www.w3.org/2001/XMLSchema#date"))))
+                self.member_graph.add((parliamentary_date_range, URIRef(MEMBERS + "EndDate"), Literal(f"{2016 + index}-02-03", datatype=URIRef("http://www.w3.org/2001/XMLSchema#date"))))
+                if not missing_affiliation_dates:
+                    self.member_graph.add((episode, URIRef(MEMBERS + "hasMembershipDateRange"), party_date_range))
+                    self.member_graph.add((party_date_range, RDF.type, URIRef(MEMBERS + "DateRange")))
+                    self.member_graph.add((party_date_range, URIRef(MEMBERS + "StartDate"), Literal(f"{1998 + index}-04-01", datatype=URIRef("http://www.w3.org/2001/XMLSchema#date"))))
+                    self.member_graph.add((party_date_range, URIRef(MEMBERS + "EndDate"), Literal(f"{2001 + index}-09-30", datatype=URIRef("http://www.w3.org/2001/XMLSchema#date"))))
             # An Independent collection is not typed PartyMembership and is not
             # associated with an enduring identity.
             independent = URIRef("https://data.oireachtas.ie/membership/synthetic-independent")
@@ -130,14 +138,30 @@ def test_q06_end_to_end_deduplicates_by_reviewed_identity_and_preserves_episode_
     by_label = dict(outcome.result.rows)
     assert set(by_label) == {"Fianna Fáil", "Social Democrats"}
     assert ";" in by_label["Fianna Fáil"]
-    assert "2012-03-09" in by_label["Fianna Fáil"]
-    assert "2013-03-09" in by_label["Fianna Fáil"]
+    assert "1999-04-01" in by_label["Fianna Fáil"]
+    assert "2000-04-01" in by_label["Fianna Fáil"]
+    assert "2012-03-09" not in by_label["Fianna Fáil"]
+    assert "2013-03-09" not in by_label["Fianna Fáil"]
     assert "Independent" not in repr(outcome.result.rows)
     assert "hasPoliticalAffiliationIdentity" in outcome.sparql
     assert "activeDuringTerm" in outcome.sparql and "inHouseTerm" in outcome.sparql
     assert "GRAPH <https://data.oireachtas.ie/graph/houses>" in outcome.sparql
     assert "recognisedAsParty" not in outcome.sparql
     assert "deliberately not the identity label" not in repr(outcome.result.rows)
+
+
+def test_q06_missing_affiliation_dates_keep_identity_and_do_not_fall_back_to_term_dates():
+    outcome = execute_question(
+        "What parties was Stephen Donnelly a member of?", as_of=AS_OF,
+        fuseki=Q06Fixture(missing_affiliation_dates=True),
+        supported_predicates=supported_predicates(ROOT / "ontology"),
+    )
+    assert outcome.status == "success", outcome.diagnostic
+    by_label = dict(outcome.result.rows)
+    assert set(by_label) == {"Fianna Fáil", "Social Democrats"}
+    assert by_label["Fianna Fáil"].count("membership episode (dates not recorded)") == 2
+    assert by_label["Social Democrats"] == "membership episode (dates not recorded)"
+    assert "2011-03-09" not in repr(outcome.result.rows)
 
 
 @pytest.mark.parametrize(("fixture", "status"), [
