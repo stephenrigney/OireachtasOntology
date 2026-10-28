@@ -157,12 +157,39 @@ RDF and must not be presented as real-data current-office acceptance.
   does not promote reviewed ID-115 owner evidence to a current roster. Q26
   reports the incomplete 22-holding current-office coverage boundary.
 - Q18/Q19/Q20/Q21/Q22 have finite title/year plan families and read-only Bill
-  queries. Q19 only returns a dated Published `latest_activity` in the requested
-  calendar year; the current contract does not expose a complete lifecycle-event
-  inventory, so this is an explicitly qualified subset, never a legislativeYear
-  fallback. Q20 preserves missing/conflicting status diagnostics. Q22 preserves
+  queries. After B2 correction (`c4c1e08`), Q19 selects any mapped, typed Published
+  lifecycle event with an `xsd:date` in the requested calendar year, even when
+  the latest activity is another stage. The reviewed activity/process pattern
+  exposes existing `eli-dl:forms_part_of` evidence; legislativeYear is display
+  metadata, never the publication-year selector. Q20 preserves missing/conflicting status diagnostics. Q22 preserves
   primary-status unknowns and role-only Participation rows, with Member labels
   joined only on exact RDF identity.
+
+On B2 checkpoint `c4c1e08`, the orchestrator reran `tests/validate.py` and
+`python -m tools.validation` using `.venv/bin/python`: both passed (2,584
+ontology triples; active mapping integrity). Office exact-identity integration
+remains a separate B3 unit; office descriptions above are not B3 acceptance.
+
+Independent Bill review of `c4c1e08` found two acceptance blockers in Q21/Q22:
+required process/participation joins remove title-matching Bills with missing
+facts, causing misleading lookup failure and potentially hiding a second
+candidate. Title identity must be retained independently of fact availability.
+Executable asymmetric-candidate and single-missing-fact regressions are required
+before Stage B exit. Q18/Q19/Q20/Q24A had no P1 findings. These review findings
+supersede any earlier broad statement of B2 acceptance for Q21/Q22; corrections
+and exact tested checkpoint belong in the progress record.
+
+## Independent Stage A acceptance review
+
+Read-only independent review at `c4c1e08` confirmed all six earlier P1 findings
+were corrected and regression-pinned: historical open-end handling, distinct
+counts and cap discipline, reviewed owners/joins, owner-first current committee
+resolution, closed typed plans, and family diagnostics. No Stage A blockers
+remain. Q10 nomination data remains specifically unavailable, not inferred.
+The review's T01 debugger observation had already been corrected in `870aefc`;
+its remaining wording/defensive-edge observations are non-blocking. The
+orchestrator's 202-test Stage A and 231-test post-B2 runs remain the executable
+integration evidence; review itself did not run tests.
 
 ## Initial semantic verification
 
