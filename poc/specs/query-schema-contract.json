@@ -352,6 +352,7 @@
       "availability": "emitted",
       "queryableInLocalNlq": true,
       "triples": [["?bill", "rdf:type", "eli-dl:DraftLegislationWork"], ["?bill", "eli:type_document", "agents:Bill"], ["?bill", "agents:legislativeYear", "?year"], ["?bill", "eli:title", "?englishOrIrishTitle"], ["?process", "rdf:type", "eli-dl:LegislativeProcess"], ["?process", "eli-dl:process_number", "?processNumber"], ["?process", "eli-dl:process_status", "?status"], ["?process", "eli-dl:latest_activity", "?latestActivity (optional)"], ["?activity", "rdf:type", "eli-dl:LegislativeActivity"], ["?activity", "eli-dl:forms_part_of", "?process"], ["?activity", "eli-dl:activity_date", "?xsdDate eventDate"], ["?activity", "eli-dl:had_activity_type", "?eventType"]],
+      "controlledValues": ["agents:Bill", "agents:Published", "agents:AwaitingSignatureBill", "agents:CurrentBill", "agents:DefeatedBill", "agents:DeclaredRepugnantToConstitutionBill", "agents:DraftHeadsOfBill", "agents:EnactedBill", "agents:LapsedBill", "agents:WithdrawnBill", "agents:RejectedAtReferendumBill"],
       "note": "Bill and process resources are co-owned in the same one-Bill named graph; the ETL emits no direct Bill-to-process RDF edge. Process number is mapped on the LegislativeProcess. latest_activity is an optional process pointer, but every typed LegislativeActivity with forms_part_of the process is emitted; lifecycle selection can inspect any such event. Bill graphs remain optional data."
     },
     {
@@ -367,8 +368,9 @@
       "graphFamily": "bill-records",
       "availability": "emitted",
       "queryableInLocalNlq": true,
-      "triples": [["?bill", "eli:has_part", "?documentWork"], ["?documentWork", "eli:is_realized_by", "?documentExpression"], ["?documentExpression", "eli:is_embodied_by", "?format"], ["?format", "eli:uri_schema", "?rendition"]],
-      "note": "The reviewed Bill ETL document chain is queryable within the resolved Bill's own named graph. It does not imply document co-ownership or retrieval outside that graph."
+      "triples": [["?bill", "eli:has_part", "?documentWork"], ["?documentWork", "rdf:type", "eli:Work"], ["?documentWork", "eli:type_document", "?documentType"], ["?documentWork", "eli:is_realized_by", "?documentExpression"], ["?documentExpression", "rdf:type", "eli:LegalExpression"], ["?documentExpression", "eli:is_embodied_by", "?format"], ["?format", "rdf:type", "eli:Format"], ["?format", "eli:uri_schema", "?rendition"]],
+      "controlledValues": ["agents:ExplanatoryMemo"],
+      "note": "The reviewed Bill ETL document chain is queryable within the resolved Bill's own named graph. ExplanatoryMemo documents require the controlled document type plus typed Work, LegalExpression and Format resources; the chain does not imply document co-ownership or retrieval outside the Bill graph."
     },
     {
       "id": "conditionally-resolved-office-holdings",
