@@ -208,6 +208,9 @@ def _validate_office_plan(plan: dict[str, Any]) -> dict[str, Any]:
     identity_constraints = [item for item in constraints if isinstance(item, dict) and item.get("field") == "memberIdentity"]
     if len(interval_constraints) != 1 or len(identity_constraints) != (1 if member_bound else 0):
         raise PlanError("Q35 constraints must contain exactly the interval and reviewed Member-identity binding.")
+    if (constraints[0] is not interval_constraints[0]
+            or member_bound and constraints[1] is not identity_constraints[0]):
+        raise PlanError("Q35 constraints must be ordered as interval first, followed by exact Member identity when present.")
     constraint = interval_constraints[0]
     if (not isinstance(constraint, dict)
             or set(constraint) != {"referent", "field", "operator", "value"}
@@ -2027,10 +2030,16 @@ def _execute_office_question(plan: dict[str, Any], *, fuseki, supported_predicat
             diagnostic=f"Accepted local holding evidence could not be checked: {error}",
         )
     if not has_evidence:
+        member_bound = any(item.get("field") == "memberIdentity" for item in plan["constraints"])
+        if member_bound:
+            diagnostic = ("No accepted Member-owned OfficeHolding record for this reviewed office is present "
+                          "for the exact resolved Member in the local dataset; historical tenure cannot be determined.")
+        else:
+            diagnostic = ("No accepted Member-owned OfficeHolding record for this reviewed office "
+                          "is present in the local dataset; historical tenure cannot be determined.")
         return PlanOutcome(
             "source_data_unavailable", plan=plan,
-            diagnostic=("No accepted Member-owned OfficeHolding record for this reviewed office "
-                        "is present in the local dataset; historical tenure cannot be determined."),
+            diagnostic=diagnostic,
         )
 
     try:

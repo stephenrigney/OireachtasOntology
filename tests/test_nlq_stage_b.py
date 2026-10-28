@@ -365,6 +365,63 @@ def test_q25_authoritative_validator_rejects_mutated_member_iri_office_role_and_
             raise AssertionError(f"authoritative office validator accepted a mutated B3 plan: {mutated!r}")
 
 
+def test_office_point_is_restricted_to_finance_and_authoritative_validator_rejects_role_mutation(monkeypatch):
+    finance_question = "Who was Minister for Finance on 1 July 2021?"
+    finance = plan_stage_b(finance_question, as_of=AS_OF)
+    assert finance is not None and finance["family"] == "office_point"
+    assert validate_plan(finance) == finance
+    changed = __import__("copy").deepcopy(finance)
+    changed["referents"]["office"]["mention"] = "Taoiseach"
+    try:
+        validate_plan(changed)
+    except PlanError:
+        pass
+    else:
+        raise AssertionError("office-point validator accepted a mutated role")
+
+    for question in (
+        "Who was Taoiseach on 1 July 2021?",
+        "Who was Tánaiste on 1 July 2021?",
+        "Who was Minister for Health on 1 July 2021?",
+    ):
+        fixture = TinyDataset()
+        fixture.add_office_tenure("Paschal Donohoe", "Minister for Finance", "2020-06-27T00:00:00", "2022-12-17T00:00:00")
+        assert plan_stage_b(question, as_of=AS_OF) is None
+        assert _run(fixture, question) is None
+        response = _ask(monkeypatch, fixture, question)
+        assert response.status_code == 200
+        assert "Paschal Donohoe" not in response.text
+        assert not fixture.queries
+
+
+def test_bound_q35_validator_requires_canonical_constraint_order():
+    import copy
+    from poc.nlq.composable_plan import plan_question
+
+    plan = plan_question("Who was Taoiseach from September 2026 to September 2026?", as_of=AS_OF)
+    plan["referents"]["office"].update({
+        "resolution": "resolved", "iri": "https://data.oireachtas.ie/office/taoiseach", "label": "Taoiseach",
+    })
+    plan["referents"]["member"] = {
+        "type": "Member", "answer": True, "mention": "Micheál Martin", "resolution": "resolved",
+        "iri": "https://data.oireachtas.ie/ie/oireachtas/member/id/micheal-martin", "label": "Micheál Martin",
+    }
+    plan["constraints"].append({
+        "referent": "member", "field": "memberIdentity", "operator": "equals",
+        "value": plan["referents"]["member"]["iri"],
+    })
+    assert validate_plan(plan) == plan
+
+    reversed_constraints = copy.deepcopy(plan)
+    reversed_constraints["constraints"] = list(reversed(reversed_constraints["constraints"]))
+    try:
+        validate_plan(reversed_constraints)
+    except PlanError:
+        pass
+    else:
+        raise AssertionError("bound Q35 validator accepted identity-first constraint order")
+
+
 def test_legacy_sidecar_b_plan_is_not_a_valid_shared_envelope():
     sidecar = {"version": 2, "asOf": AS_OF.isoformat(), "family": "bill_lookup",
                "bill": {"year": 2025, "number": "23"},
@@ -1042,6 +1099,7 @@ def test_q25_identity_resolution_ambiguity_empty_graph_and_nonmatching_holder_ar
     outcome = _run(fixture, "Was Micheál Martin Taoiseach in September 2026?")
     assert outcome.status == "source_data_unavailable"
     assert "No accepted Member-owned OfficeHolding" in outcome.diagnostic
+    assert "for the exact resolved Member" in outcome.diagnostic
     assert not outcome.result
     response = _ask(monkeypatch, fixture, "Was Micheál Martin Taoiseach in September 2026?")
     assert "No accepted Member-owned OfficeHolding" in response.text

@@ -264,7 +264,7 @@ def plan_stage_b(question: str, *, as_of: date) -> dict[str, Any] | None:
             return None
         return _plan("office_overlap", as_of, mention=" ".join(match["member"].split()),
                      office="Taoiseach", interval=(start.isoformat(), end.isoformat()))
-    match = re.fullmatch(r"(?i)who was (?P<office>.+?) on (?P<day>\d{1,2}) (?P<month>[a-z]+) (?P<year>\d{4})[?.!]*", text)
+    match = re.fullmatch(r"(?i)who was (?P<office>minister for finance) on (?P<day>\d{1,2}) (?P<month>[a-z]+) (?P<year>\d{4})[?.!]*", text)
     if match:
         try:
             day = date.fromisoformat(f"{match['year']}-{__import__('datetime').datetime.strptime(match['month'], '%B').month:02d}-{int(match['day']):02d}")
@@ -398,6 +398,8 @@ def validate_stage_b_plan(plan: Any) -> dict[str, Any]:
         else:
             if not isinstance(refs["office"].get("mention"), str) or not refs["office"]["mention"].strip():
                 fail("Office point requires a grounded named-office role.")
+            if refs["office"]["mention"] != "Minister for Finance":
+                fail("The bounded office-point route is limited to the reviewed Minister for Finance office.")
             point = _constraint_value(plan, "interval")
             if not isinstance(point, dict) or set(point) != {"start", "end", "inclusive"} or point["inclusive"] is not True or point["start"] != point["end"]:
                 fail("Office point lookup requires one inclusive calendar date.")
