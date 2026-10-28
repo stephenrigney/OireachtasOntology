@@ -517,7 +517,7 @@ def test_schema_context_comes_from_real_member_and_agent_ontology():
     assert "older published Member graphs may omit that explicit type" in context
     assert "Only current accepted office resolutions supplied through the existing Member transformation" in context
     assert "never infer one from a raw observation" in context
-    assert "not executable through the current local NLQ predicate allowlist" in context
+    assert "eli:has_part" in context and "eli:is_embodied_by" in context
     assert "Reviewed Wikidata Q-item" in context
     assert "ns1:" not in context
     assert len(context) < 48_000

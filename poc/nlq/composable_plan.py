@@ -481,7 +481,8 @@ def plan_question(question: str, *, as_of: date) -> dict[str, Any]:
 def validate_plan(plan: Any) -> dict[str, Any]:
     if not isinstance(plan, dict) or set(plan) not in ({"version", "asOf", "referents", "relations", "answer"},
                                                        {"version", "asOf", "referents", "relations", "constraints", "answer"},
-                                                       {"version", "asOf", "family", "referents", "relations", "answer"}):
+                                                       {"version", "asOf", "family", "referents", "relations", "answer"},
+                                                       {"version", "asOf", "family", "referents", "relations", "constraints", "answer"}):
         raise PlanError("Plan must have exactly version, asOf, referents, relations, optional constraints, and answer.")
     if plan["version"] != PLAN_VERSION:
         raise PlanError("Unsupported composable plan version.")
@@ -498,6 +499,11 @@ def validate_plan(plan: Any) -> dict[str, Any]:
         if ref["type"] not in _PLAN_CONTRACT["entityTypes"]:
             raise PlanError(f"Unsupported referent type {ref['type']!r}.")
     if "family" in plan:
+        if not isinstance(plan["family"], str):
+            raise PlanError("Query family must be a controlled string identifier.")
+        from .stage_b import _B_FAMILIES, validate_stage_b_plan
+        if plan["family"] in _B_FAMILIES:
+            return validate_stage_b_plan(plan)
         return _validate_stage_a_plan(plan)
     if any(ref.get("type") in {"DebateRecord", "DebateSitting"} for ref in refs.values()):
         return _validate_debate_plan(plan)
@@ -2148,6 +2154,13 @@ def execute_question(question: str, *, as_of: date, fuseki, supported_predicates
             stage_a_request, as_of=as_of, fuseki=fuseki,
             supported_predicates=supported_predicates,
         )
+    from .stage_b import handle_stage_b
+    stage_b_outcome = handle_stage_b(
+        question, as_of=as_of, fuseki=fuseki,
+        supported_predicates=supported_predicates,
+    )
+    if stage_b_outcome is not None:
+        return stage_b_outcome
     try:
         plan = plan_question(question, as_of=as_of)
     except PlanError as error:

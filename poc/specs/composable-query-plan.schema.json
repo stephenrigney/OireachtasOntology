@@ -4,23 +4,27 @@
   "title": "Oireachtas Composable Query Plan",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "asOf", "referents", "relations", "answer"],
+  "required": ["version", "asOf"],
   "allOf": [
-    {"if": {"required": ["family"]}, "then": {"required": ["family"], "properties": {"family": {"enum": ["member_lookup", "previous_service", "dail_duration", "term_count", "seanad_entry", "seanad_representation", "current_collection", "committee_boolean", "committee_count", "house_terms", "dail_all"]}}}},
-    {"if": {"not": {"required": ["family"]}}, "then": {"properties": {"relations": {"minItems": 1}}}}
+    {"if": {"required": ["family"]}, "then": {"required": ["family"], "properties": {"family": {"enum": ["member_lookup", "previous_service", "dail_duration", "term_count", "seanad_entry", "seanad_representation", "current_collection", "committee_boolean", "committee_count", "house_terms", "dail_all", "bill_title_search", "bills_published", "non_enacted_bills", "bill_status_history", "bill_sponsors", "bill_lookup", "committee_chair", "committee_conflict", "office_overlap", "office_current_coverage", "office_point"]}}}},
+    {"if": {"required": ["family"]}, "then": {"required": ["referents", "relations", "answer"]}},
+    {"if": {"not": {"required": ["family"]}}, "then": {"required": ["referents", "relations", "answer"], "properties": {"relations": {"minItems": 1}}}},
+    {"if": {"required": ["family"], "properties": {"family": {"enum": ["bill_title_search", "bills_published", "non_enacted_bills", "bill_status_history", "bill_sponsors", "bill_lookup", "committee_chair", "committee_conflict", "office_overlap", "office_current_coverage", "office_point"]}}}, "then": {"properties": {"answer": {"required": ["projection"]}}}}
   ],
   "properties": {
     "version": {"const": 2},
     "asOf": {"type": "string", "format": "date"},
-    "family": {"enum": ["member_lookup", "previous_service", "dail_duration", "term_count", "seanad_entry", "seanad_representation", "current_collection", "committee_boolean", "committee_count", "house_terms", "dail_all"]},
+    "family": {"enum": ["member_lookup", "previous_service", "dail_duration", "term_count", "seanad_entry", "seanad_representation", "current_collection", "committee_boolean", "committee_count", "house_terms", "dail_all", "bill_title_search", "bills_published", "non_enacted_bills", "bill_status_history", "bill_sponsors", "bill_lookup", "committee_chair", "committee_conflict", "office_overlap", "office_current_coverage", "office_point"]},
     "referents": {
       "type": "object", "minProperties": 1,
       "additionalProperties": {
         "type": "object", "additionalProperties": false, "required": ["type"],
         "properties": {
-          "type": {"enum": ["Member", "DailMembership", "SeanadMembership", "CommitteeMembership", "DailTerm", "SeanadTerm", "DailConstituency", "SeanadPanel", "SeanadRepresentation", "Committee", "ParliamentaryCollectionMembership", "ParliamentaryMemberCollection", "IndependentMemberCollection", "PartyMembershipEpisode", "ParliamentaryParty", "PoliticalAffiliationIdentity", "OfficeHolding", "NamedOffice", "DebateRecord", "DebateSitting", "BillParticipation", "Bill"]},
-          "selector": {"type": "object", "additionalProperties": false,
-            "required": ["kind", "house"], "properties": {"kind": {"const": "previousTerm"}, "house": {"const": "Dail"}}},
+          "type": {"enum": ["Member", "DailMembership", "SeanadMembership", "CommitteeMembership", "DailTerm", "SeanadTerm", "DailConstituency", "SeanadPanel", "SeanadRepresentation", "Committee", "ParliamentaryCollectionMembership", "ParliamentaryMemberCollection", "IndependentMemberCollection", "PartyMembershipEpisode", "ParliamentaryParty", "PoliticalAffiliationIdentity", "OfficeHolding", "NamedOffice", "DebateRecord", "DebateSitting", "BillParticipation", "Bill", "BillProcess", "BillActivity", "ExplanatoryMemoWork"]},
+          "selector": {"oneOf": [
+            {"type": "object", "additionalProperties": false, "required": ["kind", "house"], "properties": {"kind": {"const": "previousTerm"}, "house": {"const": "Dail"}}},
+            {"type": "object", "additionalProperties": false, "required": ["kind", "year", "number"], "properties": {"kind": {"const": "numberYear"}, "year": {"type": "integer", "minimum": 1800, "maximum": 2200}, "number": {"type": "string", "pattern": "^[0-9]+$"}}}
+          ]},
           "mention": {"type": "string", "minLength": 1},
           "answer": {"type": "boolean"},
           "resolution": {"enum": ["unresolved", "resolved", "ambiguous", "not_found", "source_data_unavailable", "unsupported_mapping"]},
@@ -38,7 +42,7 @@
     }},
     "constraints": {"type": "array", "items": {"$ref": "#/$defs/constraint"}},
     "answer": {"oneOf": [
-      {"type": "object", "additionalProperties": false, "required": ["kind", "referent"], "properties": {"kind": {"const": "family_result"}, "referent": {"type": "string", "minLength": 1}}},
+      {"type": "object", "additionalProperties": false, "required": ["kind", "referent"], "properties": {"kind": {"const": "family_result"}, "referent": {"type": "string", "minLength": 1}, "projection": {"enum": ["bill_lookup", "bill_title_search", "bills_published", "non_enacted_bills", "bill_status_history", "bill_sponsors", "committee_chair", "committee_conflict", "office_overlap", "office_point", "office_current_coverage"]}}},
       {"type": "object", "additionalProperties": false, "required": ["kind", "referent", "distinctBy"], "properties": {"kind": {"const": "count"}, "referent": {"type": "string", "minLength": 1}, "distinctBy": {"const": "identity"}}},
       {"type": "object", "additionalProperties": false, "required": ["kind", "referent"], "properties": {"kind": {"const": "values"}, "referent": {"type": "string", "minLength": 1}}},
       {"$ref": "#/$defs/entityAnswer"},
@@ -60,12 +64,13 @@
       "required": ["referent", "field", "operator", "value"],
       "properties": {
         "referent": {"type": "string", "minLength": 1},
-        "field": {"enum": ["interval", "date", "chamber"]},
-        "operator": {"enum": ["overlaps", "on", "equals"]},
+        "field": {"enum": ["interval", "date", "chamber", "legislativeYear", "activityTypeAndDate", "processStatus", "temporalOwner", "coverage"]},
+        "operator": {"enum": ["overlaps", "on", "equals", "publishedInCalendarYear", "knownExcept", "currentAt", "knownConflict", "requires"]},
         "value": {
           "oneOf": [
             {"$ref": "#/$defs/inclusiveCalendarInterval"},
-            {"type": "string", "minLength": 1}
+          {"type": "string", "minLength": 1},
+          {"type": "integer", "minimum": 1800, "maximum": 2200}
           ]
         }
       }

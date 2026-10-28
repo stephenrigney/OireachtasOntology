@@ -129,6 +129,41 @@ Office identities are independently described in
 `registries/ministerial-office-registry.json`. Existing Q35 tests use synthetic
 RDF and must not be presented as real-data current-office acceptance.
 
+## Stage B implementation recovery
+
+- The accepted finite Bill document chain is now enabled as query contract
+  `2.7.0` and local-safety `1.1.0`; the composable plan contract is `2.6.0`.
+  Exactly `eli:has_part`, `eli:is_realized_by`, and `eli:is_embodied_by` were
+  added as unconditional safety predicates; all four chain predicates including
+  already-mapped `eli:uri_schema` are queryable, and `eli:Format` is the only
+  added queryable class. Limits, read-only operations, rejected features,
+  ownership, and graph identity are unchanged. Bill document retrieval is
+  bounded to the resolved Bill's own graph.
+- Q24A uses the exact captured `2025/23` title, status URI, official Bill IRI,
+  and Committee Stage date recorded above. Its empty `relatedDocs` means no
+  memorandum is recorded in this Bill graph, not that none exists elsewhere.
+  A synthetic in-memory Bill graph separately exercises a present memorandum
+  rendition through all four connectors. No corpus rebuild or protected source
+  fixture was used.
+- Q25 and Q27 reuse the accepted Q35 Member-owned OfficeHolding interval path.
+  Q25 is an inclusive September window and filters the exact Member; Q27 uses
+  the requested single calendar date. Their execution fixtures are synthetic;
+  the source-backed accepted holding citations remain the reviewed 2026-10-02
+  records cited above, not a current office census.
+- Q12 now runs the shared Committee-owner/date catalogue first and returns the
+  dated current Committee identity (or explicit ambiguity/date-coverage
+  diagnostic); the missing chair relationship remains a precise Query Service
+  capability gap. Q14 reports the development source conflict/quarantine and
+  does not promote reviewed ID-115 owner evidence to a current roster. Q26
+  reports the incomplete 22-holding current-office coverage boundary.
+- Q18/Q19/Q20/Q21/Q22 have finite title/year plan families and read-only Bill
+  queries. Q19 only returns a dated Published `latest_activity` in the requested
+  calendar year; the current contract does not expose a complete lifecycle-event
+  inventory, so this is an explicitly qualified subset, never a legislativeYear
+  fallback. Q20 preserves missing/conflicting status diagnostics. Q22 preserves
+  primary-status unknowns and role-only Participation rows, with Member labels
+  joined only on exact RDF identity.
+
 ## Initial semantic verification
 
 On baseline `844e51b`, `.venv/bin/python tests/validate.py` passed ontology

@@ -24,6 +24,7 @@ from .llm import ResponsesTranslator
 from .pipeline import process_question
 from .composable_plan import execute_question
 from .stage_a import parse_stage_a_question
+from .stage_b import plan_stage_b
 from .results import QueryResult, format_debug_payload
 from .schema import build_schema_context
 from .vocabulary import supported_predicates
@@ -151,7 +152,14 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     question, as_of=as_of, fuseki=fuseki,
                     supported_predicates=predicate_vocabulary,
                 )
-                plan_json = format_debug_payload(outcome.plan) if outcome.plan else None
+                plan_is_validated = False
+                if outcome.plan:
+                    try:
+                        from .composable_plan import validate_plan
+                        plan_is_validated = validate_plan(outcome.plan) == outcome.plan
+                    except (ValueError, TypeError, KeyError):
+                        plan_is_validated = False
+                plan_json = format_debug_payload(outcome.plan) if plan_is_validated else None
                 is_q06 = bool(outcome.plan and outcome.plan.get("answer", {}).get("referent") == "affiliation")
                 is_debate = bool(outcome.plan and outcome.plan.get("referents", {}).get("sitting", {}).get("type") == "DebateSitting")
                 is_q35 = bool(outcome.plan and outcome.plan.get("referents", {}).get("holding", {}).get("type") == "OfficeHolding")
@@ -160,6 +168,12 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                 stage_a_family = (outcome.plan.get("family") if outcome.plan else
                                   parsed_stage_a.family if parsed_stage_a else None)
                 is_stage_a = stage_a_family is not None
+                parsed_stage_b = plan_stage_b(question, as_of=as_of)
+                is_stage_b = parsed_stage_b is not None or bool(outcome.plan and outcome.plan.get("family") in {
+                    "bill_lookup", "bills_published", "non_enacted_bills", "bill_status_history", "bill_sponsors", "bill_title_search",
+                    "committee_chair", "committee_conflict", "office_current_coverage",
+                    "office_overlap", "office_point",
+                })
                 member_mention = outcome.plan.get("referents", {}).get("member", {}).get("mention", "the named Member") if is_q06 else None
                 q35_office = outcome.plan.get("referents", {}).get("office", {}) if is_q35 else {}
                 q35_interval = outcome.plan.get("constraints", [{}])[0].get("value", {}) if is_q35 else {}
@@ -188,27 +202,47 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     "house_terms": "List Dáil HouseTerm date evidence, distinguishing absent end dates from dated ends.",
                     "dail_all": "Return every distinct matching Member identity with Dáil membership evidence.",
                 }
-                summary = (stage_a_summaries.get(stage_a_family) if is_stage_a else None) or (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
+                stage_b_family = ((outcome.plan or parsed_stage_b or {}).get("family") if is_stage_b else None)
+                stage_b_bill_mention = ((outcome.plan or parsed_stage_b or {}).get("referents", {})
+                                        .get("bill", {}).get("mention")) if is_stage_b else None
+                stage_b_summaries = {
+                    "bill_lookup": "Look up the exact Bill number and year using its Bill-owned graph, including its recorded status, dated history, and any queryable memorandum rendition.",
+                    "bills_published": "Select Bills with a dated Published lifecycle event in the requested calendar year; legislative year alone is not publication evidence.",
+                    "non_enacted_bills": "List recorded Bills with a known process status other than Enacted, grouped by that controlled status; missing or conflicting status evidence is not treated as non-enacted.",
+                    "bill_status_history": f"Resolve the supplied Bill title mention ({stage_b_bill_mention or 'not specified'}) against recorded titles, then report source-backed status/history without predicting a next step.",
+                    "bill_sponsors": f"Resolve the supplied Bill title mention ({stage_b_bill_mention or 'not specified'}) and preserve each recorded sponsor Participation and its available evidence.",
+                    "committee_chair": "Resolve the current Committee on Transport at the supplied as-of date; no chair will be inferred from membership or role labels.",
+                    "committee_conflict": "The reviewed development Committee source is conflicted; its records cannot verify a current Good Friday Committee roster.",
+                    "office_current_coverage": "A current officeholder requires a sufficiently complete accepted office-holding roster; an office alias or incomplete historical capture cannot establish the holder.",
+                    "office_overlap": "Test whether the named Member's accepted OfficeHolding overlaps any part of the requested inclusive calendar month.",
+                    "office_point": "Resolve a Minister for Finance holding on the requested calendar date from accepted Member-owned interval evidence.",
+                }
+                summary = (stage_a_summaries.get(stage_a_family) if is_stage_a else None) or (stage_b_summaries.get(stage_b_family) if is_stage_b else None) or (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
                            if is_q06 else ("Find the requested actual DebateSitting and its official record link."
                                              if is_debate else
                                              (q35_summary if is_q35 else
                                               (q23_summary if is_q23 else "Find distinct Members who represented this constituency in the previous Dáil."))))
+                answer_text = ("Dated Bill/office evidence is shown with explicit local-coverage qualifications; unresolved or unknown facts remain explicit."
+                               if is_stage_b else
+                               "Distinct political-affiliation identities with separate supporting membership episodes."
+                               if is_q06 else
+                               "Yes/no based on an actual DebateSitting, not a dated written-answer record."
+                               if is_debate and outcome.result and outcome.result.kind == "ask" else
+                               "Readable sitting date and official debate record link."
+                               if is_debate else
+                               "Member names with exact start/end dates for every separate accepted holding; open ends are identified explicitly."
+                               if is_q35 else
+                               "One row per Bill identity with title and recorded sponsorship evidence."
+                               if is_q23 else
+                               "Stage A typed family result using reviewed RDF ownership, with identity and date qualifications preserved."
+                               if is_stage_a else "Distinct Members, displayed by name.")
                 if outcome.status == "success":
                     return render(request, question=question, mode=mode,
                                   interpretation=summary, plan_json=plan_json,
-                                    plan_heading="Validated composable query plan" if outcome.plan else None,
-                                    plan_explanation={"summary": summary, "validated": bool(outcome.plan),
-                                                         "answer_text": ("Distinct political-affiliation identities with separate supporting membership episodes."
-                                                                         if is_q06 else ("Yes/no based on an actual DebateSitting, not a dated written-answer record."
-                                                                                         if is_debate and outcome.result.kind == "ask" else
-                                                                                         "Readable sitting date and official debate record link."
-                                                                                         if is_debate else
-                                                                                         "Member names with exact start/end dates for every separate accepted holding; open ends are identified explicitly."
-                                                                                         if is_q35 else
-                                                                                         ("One row per Bill identity, with English short title, recorded sponsorship evidence, and source-backed number/year/link where available."
-                                                                                           if is_q23 else ("Stage A typed family result using reviewed RDF ownership, with identity and date qualifications preserved." if is_stage_a else "Distinct Members, displayed by name."))))},
+                                   plan_heading="Validated composable query plan" if plan_is_validated else None,
+                                   plan_explanation={"summary": summary, "validated": plan_is_validated, "answer_text": answer_text},
                                    sparql=outcome.sparql, result=outcome.result,
-                                    result_notice=(outcome.diagnostic if is_stage_a else
+                                    result_notice=(outcome.diagnostic if is_stage_a or is_stage_b else
                                                    "Bill graphs are optional. These rows show recorded local sponsorship evidence; the dataset does not certify complete historical coverage."
                                                    if is_q23 else None),
                                   debug_output=outcome.result.raw_json if outcome.result else None,
@@ -225,8 +259,8 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                                                 for _ in (0,))
                     return render(request, question=question, mode=mode, error=message,
                                   interaction_status=outcome.status, plan_json=plan_json,
-                                   plan_heading="Validated composable query plan" if outcome.plan else None,
-                                   plan_explanation=({"summary": summary, "validated": True} if outcome.plan else None),
+                                   plan_heading="Validated composable query plan" if plan_is_validated else None,
+                                   plan_explanation=({"summary": summary, "validated": plan_is_validated} if plan_is_validated else None),
                                   sparql=outcome.sparql, result=outcome.result,
                                   entity_outcomes=entity_outcomes,
                                   debug_output=getattr(outcome, "debug_output", None) or (outcome.result.raw_json if outcome.result else None),
@@ -240,6 +274,18 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     "unsupported_mapping": "A required relation or query mapping is unsupported; no answer was returned.",
                     "missing_identity_link": "Parliamentary party-membership evidence exists, but the reviewed local enduring-identity link is missing.",
                 }
+                if is_stage_b:
+                    message = outcome.diagnostic or "The local Bill/office/committee evidence is insufficient for this request."
+                    return render(request, question=question, mode=mode,
+                                  interpretation=summary, plan_json=plan_json,
+                                   plan_heading="Validated composable query plan" if plan_is_validated else None,
+                                   plan_explanation={"summary": summary, "validated": plan_is_validated},
+                                  error=message, interaction_status=outcome.status,
+                                  result=outcome.result, result_notice=outcome.diagnostic if outcome.result else None,
+                                  sparql=outcome.sparql,
+                                  debug_output=format_debug_payload({"diagnostic": outcome.diagnostic}),
+                                  debug_message="No answer query was executed." if outcome.sparql is None else "The read-only query executed.",
+                                  debug_source="Validated Stage B plan")
                 if is_q23:
                     if outcome.status == "missing_sponsorship_evidence":
                         message = "Bill sponsorship evidence is missing from the local dataset; this is not a confirmed negative answer."
@@ -309,8 +355,8 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     },)
                 return render(
                     request, question=question, mode=mode,
-                    interpretation=summary if outcome.plan else None, plan_json=plan_json,
-                    plan_heading=("Validated composable query plan" if outcome.sparql is not None else
+                    interpretation=summary if plan_is_validated else None, plan_json=plan_json,
+                    plan_heading=("Validated composable query plan" if plan_is_validated else
                                   "Proposed composable query plan") if outcome.plan else None,
                     error=message,
                     interaction_status=outcome.status,
