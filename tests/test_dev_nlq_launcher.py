@@ -44,16 +44,28 @@ esac
 
 DOCKER_STUB = """\
 #!/usr/bin/env bash
-printf 'DOCKER:%s\\n' "$*"
-printf 'DOCKER_ENV_FUSEKI_ADMIN_PASSWORD:%s\\n' "${FUSEKI_ADMIN_PASSWORD:-}"
 case "${1:-}" in
+  inspect)
+    printf 'DOCKER:%s\\n' "$*" >&2
+    printf '%s|%s|%s\\n' \\
+      "${STUB_FUSEKI_STATE:-running}" \\
+      "${STUB_FUSEKI_HEALTH:-none}" \\
+      "${STUB_FUSEKI_PORTS-0.0.0.0:3030 }" ;;
   compose)
     shift
     case "${1:-}" in
-      version) exit 0 ;;
-      up) exit 0 ;;
-      restart) exit 0 ;;
+      version) printf 'DOCKER:compose %s\\n' "$*"; exit 0 ;;
+      up)
+        printf 'DOCKER:compose %s\\n' "$*"
+        printf '%s\\n' "${STUB_DOCKER_UP_OUTPUT:-}"
+        exit "${STUB_DOCKER_UP_EXIT:-0}" ;;
+      ps)
+        printf 'DOCKER:compose %s\\n' "$*" >&2
+        printf '%s\\n' "${STUB_FUSEKI_CONTAINER_ID:-stub-fuseki-container}" ;;
+      restart) printf 'DOCKER:compose %s\\n' "$*"; exit 0 ;;
       exec)
+        printf 'DOCKER:compose %s\\n' "$*"
+        printf 'DOCKER_ENV_FUSEKI_ADMIN_PASSWORD:%s\\n' "${FUSEKI_ADMIN_PASSWORD:-}"
         payload="$(cat)"
         printf 'DOCKER_EXEC_PAYLOAD:%s\\n' "$payload"
         if [[ "$payload" == *"awk"* ]]; then
@@ -175,7 +187,7 @@ def test_launcher_defaults_and_starts_uvicorn_with_reload(tmp_path):
 
     assert result.returncode == 0, result.stderr
     assert "UV:sync --locked --extra nlq" in result.stdout
-    assert "DOCKER:compose up -d fuseki" in result.stdout
+    assert "DOCKER:compose up -d --no-recreate fuseki" in result.stdout
     assert "UVICORN:poc.nlq.app:app --reload --host 127.0.0.1 --port 8000" in result.stdout
     assert _uvicorn_env(result.stdout, "NLQ_LLM_BASE_URL") == DEFAULT_BASE_URL
     assert _uvicorn_env(result.stdout, "NLQ_LLM_MODEL") == DEFAULT_MODEL
@@ -190,6 +202,12 @@ def test_launcher_defaults_and_starts_uvicorn_with_reload(tmp_path):
     assert _uvicorn_env(result.stdout, "PYTHONPATH") == ""
     assert "down -v" not in result.stdout
     assert "down -v" not in result.stderr
+    # Compose starts or creates the service but does not replace an existing
+    # container, and the launcher leaves it running when the app exits.
+    calls = result.stdout + result.stderr
+    assert "DOCKER:compose up -d --no-recreate fuseki" in calls
+    assert "DOCKER:compose stop" not in calls
+    assert "DOCKER:compose down" not in calls
 
 
 def test_explicit_environment_overrides_env_local_and_defaults(tmp_path):
@@ -441,6 +459,91 @@ def test_readiness_timeout_aborts_before_starting_uvicorn(tmp_path):
 
     assert result.returncode != 0
     assert "did not become ready" in result.stderr
+    assert "UVICORN:" not in result.stdout
+    calls = result.stdout + result.stderr
+    assert "DOCKER:compose stop" not in calls
+    assert "DOCKER:compose down" not in calls
+    assert "DOCKER:compose restart fuseki" not in calls
+
+
+def test_compose_port_conflict_is_explained_without_container_cleanup(tmp_path):
+    launcher = _launcher_tree(tmp_path, "NLQ_LLM_API_KEY=file-key\n")
+
+    result = _run_launcher(
+        launcher,
+        extra_env={
+            "STUB_DOCKER_UP_EXIT": "1",
+            "STUB_DOCKER_UP_OUTPUT": (
+                "Error response from daemon: Bind for 0.0.0.0:3030 failed: "
+                "port is already allocated"
+            ),
+        },
+    )
+
+    assert result.returncode != 0
+    assert "host port 3030" in result.stderr
+    assert "another Compose project" in result.stderr
+    assert "docker ps --filter publish=3030" in result.stderr
+    assert "UVICORN:" not in result.stdout
+    calls = result.stdout + result.stderr
+    assert "DOCKER:compose up -d --no-recreate fuseki" in calls
+    assert "DOCKER:compose stop" not in calls
+    assert "DOCKER:compose down" not in calls
+    assert "--force-recreate" not in calls
+
+
+def test_missing_runtime_port_publishing_fails_with_preserving_recovery_guidance(tmp_path):
+    launcher = _launcher_tree(tmp_path, "NLQ_LLM_API_KEY=file-key\n")
+
+    result = _run_launcher(launcher, extra_env={"STUB_FUSEKI_PORTS": ""})
+
+    assert result.returncode != 0
+    assert "does not publish its 3030/tcp port" in result.stderr
+    assert "docker compose ps fuseki" in result.stderr
+    assert "docker compose up -d --force-recreate fuseki" in result.stderr
+    assert "never use 'down -v'" in result.stderr
+    assert "UVICORN:" not in result.stdout
+    calls = result.stdout + result.stderr
+    assert "DOCKER:compose stop" not in calls
+    assert "DOCKER:compose down" not in calls
+    assert "DOCKER:compose restart fuseki" not in calls
+
+
+def test_unhealthy_fuseki_fails_before_readiness_or_nlq_startup(tmp_path):
+    launcher = _launcher_tree(tmp_path, "NLQ_LLM_API_KEY=file-key\n")
+    count_file = tmp_path / "curl-count"
+
+    result = _run_launcher(
+        launcher,
+        extra_env={
+            "STUB_FUSEKI_HEALTH": "unhealthy",
+            "STUB_CURL_COUNT_FILE": str(count_file),
+        },
+    )
+
+    assert result.returncode != 0
+    assert "Docker reports that Fuseki container" in result.stderr
+    assert "unhealthy" in result.stderr
+    assert "docker compose logs --tail=100 fuseki" in result.stderr
+    assert not count_file.exists()
+    assert "UVICORN:" not in result.stdout
+    calls = result.stdout + result.stderr
+    assert "DOCKER:compose stop" not in calls
+    assert "DOCKER:compose down" not in calls
+    assert "DOCKER:compose restart fuseki" not in calls
+
+
+def test_wrong_runtime_host_port_is_reported_instead_of_using_another_service(tmp_path):
+    launcher = _launcher_tree(tmp_path, "NLQ_LLM_API_KEY=file-key\n")
+
+    result = _run_launcher(
+        launcher,
+        extra_env={"STUB_FUSEKI_PORTS": "0.0.0.0:3303 "},
+    )
+
+    assert result.returncode != 0
+    assert "not the expected host port 3030" in result.stderr
+    assert "0.0.0.0:3303" in result.stderr
     assert "UVICORN:" not in result.stdout
 
 

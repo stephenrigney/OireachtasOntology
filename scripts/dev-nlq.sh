@@ -183,8 +183,99 @@ wait_for_fuseki() {
     fi
     sleep "$FUSEKI_READY_INTERVAL"
   done
-  echo "ERROR: Fuseki did not become ready at '$ping_url' after $FUSEKI_READY_ATTEMPTS attempts." >&2
   return 1
+}
+
+report_fuseki_readiness_failure() {
+  local health="unknown"
+  if inspect_fuseki_container >/dev/null 2>&1; then
+    health="$FUSEKI_HEALTH"
+  fi
+  if [[ "$health" == "unhealthy" ]]; then
+    echo "ERROR: Docker reports that the Fuseki service is unhealthy." >&2
+  else
+    echo "ERROR: Fuseki did not become ready at '$(fuseki_origin "$NLQ_FUSEKI_QUERY_URL")/\$/ping' after $FUSEKI_READY_ATTEMPTS attempts (Docker health: $health)." >&2
+  fi
+  echo "Check 'docker compose ps fuseki' and 'docker compose logs --tail=100 fuseki'. The launcher did not stop or recreate the container." >&2
+  return 1
+}
+
+# Ask Compose for the service's current container, then inspect its actual
+# runtime state. In particular, the port check is against Docker's live port
+# bindings rather than the Compose file: an old container can be missing the
+# port publishing declared by the current configuration.
+inspect_fuseki_container() {
+  local container_id details
+  local format='{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}|{{range $binding := index .NetworkSettings.Ports "3030/tcp"}}{{$binding.HostIp}}:{{$binding.HostPort}} {{end}}'
+
+  if ! container_id="$(docker compose ps -q fuseki)"; then
+    echo "ERROR: Could not identify the Compose-managed Fuseki container. Check 'docker compose ps fuseki'." >&2
+    return 1
+  fi
+  if [[ -z "$container_id" ]]; then
+    echo "ERROR: Docker Compose started Fuseki but returned no container. Check 'docker compose ps fuseki'." >&2
+    return 1
+  fi
+  if ! details="$(docker inspect --format "$format" "$container_id")"; then
+    echo "ERROR: Could not inspect Fuseki container '$container_id'. Check Docker access and 'docker compose ps fuseki'." >&2
+    return 1
+  fi
+
+  IFS='|' read -r FUSEKI_STATE FUSEKI_HEALTH FUSEKI_HOST_PORTS <<< "$details"
+  FUSEKI_CONTAINER_ID="$container_id"
+}
+
+check_fuseki_container() {
+  if ! inspect_fuseki_container; then
+    return 1
+  fi
+  if [[ "$FUSEKI_STATE" != "running" ]]; then
+    echo "ERROR: Fuseki container '$FUSEKI_CONTAINER_ID' is in Docker state '$FUSEKI_STATE', not running." >&2
+    echo "Check 'docker compose ps fuseki' and 'docker compose logs --tail=100 fuseki'. The launcher did not stop or recreate the container." >&2
+    return 1
+  fi
+  if [[ "$FUSEKI_HEALTH" == "unhealthy" ]]; then
+    echo "ERROR: Docker reports that Fuseki container '$FUSEKI_CONTAINER_ID' is unhealthy." >&2
+    echo "Check 'docker compose ps fuseki' and 'docker compose logs --tail=100 fuseki'. The launcher did not stop or recreate the container." >&2
+    return 1
+  fi
+  if [[ -z "$FUSEKI_HOST_PORTS" ]]; then
+    echo "ERROR: Fuseki container '$FUSEKI_CONTAINER_ID' does not publish its 3030/tcp port to the host." >&2
+    echo "The Compose file declares 3030:3030, but this existing container has no live host-port binding. Check 'docker compose ps fuseki' and find any port owner with 'docker ps --filter publish=3030 --format \"table {{.ID}}\\t{{.Names}}\\t{{.Ports}}\"'." >&2
+    echo "The launcher will not stop or recreate it. If no other service owns port 3030 and the 'fuseki-data' volume is correctly attached, recreate it deliberately with 'docker compose up -d --force-recreate fuseki' (never use 'down -v')." >&2
+    return 1
+  fi
+  if [[ ! " $FUSEKI_HOST_PORTS " =~ :3030[[:space:]] ]]; then
+    echo "ERROR: Fuseki container '$FUSEKI_CONTAINER_ID' publishes 3030/tcp as '$FUSEKI_HOST_PORTS', not the expected host port 3030." >&2
+    echo "Check 'docker compose ps fuseki' and 'docker ps --format \"table {{.Names}}\\t{{.Ports}}\"'. The launcher will not stop or recreate the container." >&2
+    return 1
+  fi
+  return 0
+}
+
+start_fuseki() {
+  local output status lower_output
+  # Compose up starts a stopped service or creates a missing one. --no-recreate
+  # lets an existing container (and its named volume) be reused, while making
+  # configuration drift an explicit diagnostic instead of an automatic reset.
+  if output="$(docker compose up -d --no-recreate fuseki 2>&1)"; then
+    [[ -z "$output" ]] || printf '%s\n' "$output"
+    return 0
+  else
+    status=$?
+  fi
+
+  [[ -z "$output" ]] || printf '%s\n' "$output" >&2
+  lower_output="${output,,}"
+  if [[ "$lower_output" == *"port is already allocated"* || \
+        "$lower_output" == *"address already in use"* || \
+        "$lower_output" == *"failed to bind"* ]]; then
+    echo "ERROR: Docker could not publish Fuseki on host port 3030; that port is already in use, likely by another Compose project." >&2
+    echo "Find the owner with 'docker ps --filter publish=3030 --format \"table {{.ID}}\\t{{.Names}}\\t{{.Ports}}\"', then stop or reconfigure it yourself and rerun this launcher. No existing container was stopped or recreated." >&2
+  else
+    echo "ERROR: Docker Compose could not start Fuseki. Check 'docker compose ps fuseki' and 'docker compose logs --tail=100 fuseki'. No existing container was stopped or recreated." >&2
+  fi
+  return "$status"
 }
 
 # The image only applies ADMIN_PASSWORD to a fresh volume. Reuse of an existing
@@ -215,12 +306,20 @@ ensure_fuseki_admin_password() {
   echo "Applying the configured admin credential to the existing Fuseki volume..."
   set_fuseki_admin_password
   docker compose restart fuseki
-  wait_for_fuseki
+  if ! wait_for_fuseki; then
+    report_fuseki_readiness_failure
+    return 1
+  fi
+  check_fuseki_container
 }
 
-echo "Starting local Fuseki (docker compose up -d fuseki)..."
-docker compose up -d fuseki
-wait_for_fuseki
+echo "Starting or reusing local Fuseki (docker compose up -d --no-recreate fuseki)..."
+start_fuseki
+check_fuseki_container
+if ! wait_for_fuseki; then
+  report_fuseki_readiness_failure
+  exit 1
+fi
 ensure_fuseki_admin_password
 
 # --- Optional explicit local development bootstrap -------------------------
