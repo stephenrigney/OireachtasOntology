@@ -1,4 +1,4 @@
-"""Small typed graph plans and deterministic Q06/Q09 compilation.
+"""Small typed graph plans and deterministic bounded query compilation.
 
 The browser uses this replacement plan path.  Plans contain semantic relation
 IDs only; every query below is compiled from this module's reviewed mapping
@@ -15,6 +15,7 @@ import re
 import unicodedata
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote, unquote
 
 from rdflib import URIRef
 
@@ -37,10 +38,12 @@ _CONSTRAINT_MAPPINGS = {constraint["field"]: constraint for constraint in _PLAN_
 _PREFIXES = """PREFIX agents: <https://data.oireachtas.ie/ontology#>
 PREFIX dcat: <http://www.w3.org/ns/dcat#>
 PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX eli: <http://data.europa.eu/eli/ontology#>
 PREFIX eli-dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX members: <https://data.oireachtas.ie/ontology/members#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 """
@@ -58,6 +61,17 @@ class PlanOutcome:
     candidates: tuple[dict[str, str], ...] = ()
     sparql: str | None = None
     result: QueryResult | None = None
+
+
+@dataclass(frozen=True)
+class BillSponsorshipProjection:
+    """Readable one-row-per-Bill projection with participation evidence retained."""
+
+    result: QueryResult
+    missing_primary_status: bool = False
+    incomplete_display: bool = False
+    conflicting_evidence: bool = False
+    diagnostics: tuple[str, ...] = ()
 
 
 def _validate_debate_plan(plan: dict[str, Any]) -> dict[str, Any]:
@@ -212,6 +226,90 @@ def _validate_office_plan(plan: dict[str, Any]) -> dict[str, Any]:
     return plan
 
 
+def _validate_bill_sponsorship_plan(plan: dict[str, Any]) -> dict[str, Any]:
+    """Validate only the approved Member → BillParticipation → Bill path."""
+    refs = plan["referents"]
+    if set(refs) != {"member", "participation", "bill"}:
+        raise PlanError("Q23 requires exactly Member, BillParticipation, and Bill referents.")
+
+    member = refs["member"]
+    if not isinstance(member, dict) or member.get("type") != "Member":
+        raise PlanError("Q23 requires a named Member referent.")
+    allowed_member_fields = {
+        "unresolved": {"type", "mention", "resolution"},
+        "resolved": {"type", "mention", "resolution", "iri", "label"},
+        "ambiguous": {"type", "mention", "resolution", "candidates"},
+        "not_found": {"type", "mention", "resolution"},
+        "source_data_unavailable": {"type", "mention", "resolution"},
+        "unsupported_mapping": {"type", "mention", "resolution"},
+    }
+    resolution = member.get("resolution")
+    if (not isinstance(resolution, str) or resolution not in allowed_member_fields
+            or set(member) != allowed_member_fields[resolution]):
+        raise PlanError("Q23 Member referent contains unsupported or missing resolution attributes.")
+    if not isinstance(member.get("mention"), str) or not member["mention"].strip():
+        raise PlanError("Q23 requires a non-empty Member mention.")
+    if resolution == "resolved":
+        _require_local_iri(member["iri"], "Member")
+        if not isinstance(member["label"], str) or not member["label"].strip():
+            raise PlanError("A resolved Q23 Member requires its reviewed local label.")
+    elif resolution == "ambiguous":
+        candidates = member["candidates"]
+        if not isinstance(candidates, list) or len(candidates) < 2:
+            raise PlanError("An ambiguous Q23 Member requires at least two local candidates.")
+        for candidate in candidates:
+            if (not isinstance(candidate, dict) or set(candidate) != {"iri", "label"}
+                    or not isinstance(candidate["label"], str) or not candidate["label"].strip()):
+                raise PlanError("Q23 Member candidates must contain only a local IRI and readable label.")
+            _require_local_iri(candidate["iri"], "Member candidate")
+
+    if refs["participation"] != {"type": "BillParticipation"}:
+        raise PlanError("Q23 requires a plain BillParticipation evidence referent.")
+    if refs["bill"] != {"type": "Bill", "answer": True}:
+        raise PlanError("Q23 must return Bill identities as its answer referent.")
+
+    expected_relations = {
+        "bill_has_sponsor_participation": ("bill", "participation"),
+        "participation_has_participant": ("participation", "member"),
+    }
+    relations = plan["relations"]
+    if not isinstance(relations, list) or len(relations) != len(expected_relations):
+        raise PlanError("Q23 requires exactly the reviewed Bill sponsorship and participant relationships.")
+    relation_ids: set[str] = set()
+    actual_relations: dict[str, tuple[str, str]] = {}
+    for relation in relations:
+        if (not isinstance(relation, dict) or set(relation) != {"id", "fact", "from", "to"}
+                or any(not isinstance(relation[field], str) or not relation[field]
+                       for field in ("id", "fact", "from", "to"))):
+            raise PlanError("Q23 relations require non-empty IDs, reviewed facts, and referent IDs only.")
+        if relation["id"] in relation_ids or relation["fact"] in actual_relations:
+            raise PlanError("Q23 relationship IDs and reviewed facts must be unique.")
+        relation_ids.add(relation["id"])
+        if relation["fact"] not in _RELATION_TYPES:
+            raise PlanError(f"Unsupported semantic mapping: {relation['fact']!r}.")
+        if relation["from"] not in refs or relation["to"] not in refs:
+            raise PlanError("Q23 relationship refers to an unknown referent.")
+        subject_type, object_type = _RELATION_TYPES[relation["fact"]]
+        if (refs[relation["from"]]["type"], refs[relation["to"]]["type"]) != (subject_type, object_type):
+            raise PlanError(f"Invalid referent types for relationship {relation['fact']!r}.")
+        actual_relations[relation["fact"]] = (relation["from"], relation["to"])
+    if actual_relations != expected_relations:
+        raise PlanError("Q23 relations must follow Bill → sponsor participation → Member.")
+
+    expected_answer = {
+        "kind": "entities", "referent": "bill", "distinctBy": "identity",
+        "display": ["englishTitle", "billNumber", "year", "officialLink"],
+        "details": [{"referent": "participation", "display": ["role", "primaryEvidence"]}],
+        "order": ["year", "billNumber"], "preserveEvidence": True,
+    }
+    if plan["answer"] != expected_answer:
+        raise PlanError(
+            "Q23 must return distinct Bills with English title and optional metadata, "
+            "preserving each participation's role and primary-status evidence."
+        )
+    return plan
+
+
 def _require_local_iri(value: str, what: str) -> str:
     if (not isinstance(value, str) or not value.startswith("https://data.oireachtas.ie/")
             or any(character.isspace() for character in value) or any(mark in value for mark in "<>\"{}|\\^`")):
@@ -225,7 +323,37 @@ def _normalise_label(value: str) -> str:
 
 
 def plan_question(question: str, *, as_of: date) -> dict[str, Any]:
-    """Interpret the bounded Q06/Q09/Q35 and Debates question families."""
+    """Interpret the bounded composable query question families."""
+    bill_sponsorship = re.search(
+        r"\bwhich\s+bills?\s+did\s+(?P<member>.+?)\s+sponsor\s*[?.!]*$",
+        question.strip(), re.IGNORECASE,
+    )
+    if bill_sponsorship:
+        member_name = re.sub(r"[?.!]+$", "", bill_sponsorship.group("member")).strip()
+        if not member_name:
+            raise PlanError("A Member name is required for the Bill sponsorship question.")
+        return validate_plan({
+            "version": PLAN_VERSION,
+            "asOf": as_of.isoformat(),
+            "referents": {
+                "member": {"type": "Member", "mention": member_name, "resolution": "unresolved"},
+                "participation": {"type": "BillParticipation"},
+                "bill": {"type": "Bill", "answer": True},
+            },
+            "relations": [
+                {"id": "bill-sponsorship", "fact": "bill_has_sponsor_participation",
+                 "from": "bill", "to": "participation"},
+                {"id": "participation-member", "fact": "participation_has_participant",
+                 "from": "participation", "to": "member"},
+            ],
+            "answer": {
+                "kind": "entities", "referent": "bill", "distinctBy": "identity",
+                "display": ["englishTitle", "billNumber", "year", "officialLink"],
+                "details": [{"referent": "participation", "display": ["role", "primaryEvidence"]}],
+                "order": ["year", "billNumber"], "preserveEvidence": True,
+            },
+        })
+
     office_window = re.search(
         r"\bwho\s+was\s+(?P<office>.+?)\s+from\s+"
         r"(?P<start_month>[a-z]+)\s+(?P<start_year>[0-9]{4})\s+to\s+"
@@ -372,6 +500,8 @@ def validate_plan(plan: Any) -> dict[str, Any]:
         return _validate_debate_plan(plan)
     if "constraints" in plan:
         return _validate_office_plan(plan)
+    if any(ref.get("type") in {"Bill", "BillParticipation"} for ref in refs.values()):
+        return _validate_bill_sponsorship_plan(plan)
     term = refs.get("term", {})
     constituency = refs.get("constituency", {})
     is_q09 = "term" in refs or "constituency" in refs
@@ -518,6 +648,137 @@ def _reviewed_cross_graph_join(from_family: str, predicate: str, to_family: str)
     if not any(item["fromGraphFamily"] == from_family and item["predicate"] == predicate
                and item["toGraphFamily"] == to_family for item in contract["crossGraphJoins"]):
         raise PlanError(f"No reviewed {from_family} to {to_family} cross-graph join exists for {predicate!r}.")
+
+
+def _bill_sponsorship_query_mapping(plan: dict[str, Any]) -> dict[str, str]:
+    """Resolve Q23's two reviewed edges without inventing a Bill→process edge."""
+    plan = validate_plan(plan)
+    if not any(ref.get("type") == "BillParticipation" for ref in plan["referents"].values()):
+        raise PlanError("Bill sponsorship compilation requires a validated Q23 plan.")
+    member = plan["referents"]["member"]
+    if member.get("resolution") != "resolved":
+        raise PlanError("Bill sponsorship compilation requires one resolved local Member identity.")
+    member_iri = _require_local_iri(member.get("iri"), "Member")
+
+    relation_mappings = {item["id"]: item for item in _PLAN_CONTRACT["relations"]}
+    ownership = relation_mappings.get("bill_has_sponsor_participation", {})
+    participant_join = relation_mappings.get("participation_has_participant", {})
+    if (ownership.get("association") != "same_named_graph_co_ownership"
+            or ownership.get("viaType") != "eli-dl:LegislativeProcess"
+            or ownership.get("patternId") != "bill-sponsor-reference"
+            or ownership.get("subjectGraph") != "bill-records"
+            or ownership.get("objectGraph") != "bill-records"
+            or participant_join.get("patternId") != "bill-sponsor-reference"
+            or participant_join.get("predicate") != "eli-dl:had_participant_person"
+            or participant_join.get("subjectGraph") != "bill-records"
+            or participant_join.get("objectGraph") != "member-records"
+            or participant_join.get("joinKey") != "same RDF resource IRI"):
+        raise PlanError("Q23 sponsorship relations disagree with the reviewed graph-ownership mapping.")
+
+    contract = load_query_contract()
+    bill_family = next((item for item in contract["graphFamilies"] if item["id"] == "bill-records"), None)
+    if (not bill_family or bill_family["graph"].get("kind") != "resource-pattern"
+            or bill_family["graph"].get("iriTemplate") !=
+            "https://data.oireachtas.ie/graph/bill/{year}/{number}"):
+        raise PlanError("Q23 requires the reviewed one-Bill named-graph route.")
+    route_pattern = "^" + re.escape(bill_family["graph"]["iriTemplate"]) + "$"
+    route_pattern = route_pattern.replace(re.escape("{year}"), r"[0-9]{4}")
+    route_pattern = route_pattern.replace(re.escape("{number}"), r"[^/]+")
+
+    lifecycle = _reviewed_pattern("bill-lifecycle", "bill-records")
+    sponsor = _reviewed_pattern("bill-sponsor-reference", "bill-records")
+    member_pattern = _reviewed_pattern("member-description", "member-records")
+    rdf_types = _PLAN_CONTRACT["entityTypeRdfTypes"]
+    bill_type = _pattern_rdf_type(lifecycle, "?bill")
+    process_type = _pattern_rdf_type(sponsor, "?process")
+    participation_type = _pattern_rdf_type(sponsor, "?participation")
+    member_type = _pattern_rdf_type(member_pattern, "?member")
+    for semantic_type, actual in (
+        ("Bill", bill_type), ("BillParticipation", participation_type), ("Member", member_type),
+    ):
+        if rdf_types.get(semantic_type) != actual or actual not in contract["queryableClasses"]:
+            raise PlanError(f"Reviewed RDF type for {semantic_type!r} is absent or inconsistent.")
+    if process_type != "eli-dl:LegislativeProcess" or process_type not in contract["queryableClasses"]:
+        raise PlanError("The reviewed sponsorship process type is absent or inconsistent.")
+
+    bill_kind = _pattern_predicate(lifecycle, "?bill", "agents:Bill")
+    bill_year = _pattern_predicate(lifecycle, "?bill", "?year")
+    bill_title = _pattern_predicate(lifecycle, "?bill", "?englishOrIrishTitle")
+    process_number = _pattern_predicate(lifecycle, "?process", "?processNumber")
+    process_participation = _pattern_predicate(sponsor, "?process", "?participation")
+    participant = _pattern_predicate(sponsor, "?participation", "?member")
+    primary_status = _pattern_predicate(sponsor, "?participation", "?optionalBoolean")
+    participation_role = _pattern_predicate(sponsor, "?participation", "?optionalRoleLabel")
+    if bill_kind != "eli:type_document" or primary_status != "agents:isPrimarySponsor":
+        raise PlanError("Q23 Bill-kind or primary-sponsor mappings disagree with the emitted RDF contract.")
+    if _reviewed_predicate("participation_has_participant") != participant:
+        raise PlanError("The participant identity join disagrees with the emitted Bill sponsorship pattern.")
+    _reviewed_cross_graph_join("bill-records", participant, "member-records")
+
+    labels = contract["labelsByEntityType"].get("Bill", {})
+    if (labels.get("predicate") != bill_title or "en" not in labels.get("languages", [])
+            or bill_title != "eli:title"):
+        raise PlanError("Q23 requires the reviewed English Bill short-title mapping.")
+    for predicate in (bill_year, process_number, primary_status, participation_role):
+        _reviewed_predicate_for_qname(predicate)
+
+    query_relations = {item["fact"]: (item["from"], item["to"]) for item in plan["relations"]}
+    if query_relations != {
+        "bill_has_sponsor_participation": ("bill", "participation"),
+        "participation_has_participant": ("participation", "member"),
+    }:
+        raise PlanError("Q23 compilation requires the complete Bill sponsorship path.")
+    return {
+        "member_iri": member_iri,
+        "bill_type": bill_type,
+        "bill_kind": bill_kind,
+        "process_type": process_type,
+        "process_participation": process_participation,
+        "participation_type": participation_type,
+        "participant": participant,
+        "primary_status": primary_status,
+        "participation_role": participation_role,
+        "bill_title": bill_title,
+        "bill_number": process_number,
+        "bill_year": bill_year,
+        "bill_graph_route": route_pattern,
+    }
+
+
+def compile_bill_sponsorship_answer_query(plan: dict[str, Any], *, supported_predicates) -> str:
+    """Compile the reviewed Bill-graph sponsorship evidence for one Member IRI."""
+    mapping = _bill_sponsorship_query_mapping(plan)
+    member_iri = URIRef(mapping["member_iri"]).n3()
+    query = _PREFIXES + f'''SELECT DISTINCT ?billGraph ?bill ?participation ?primaryEvidence ?participationRole ?englishTitle ?billNumber ?billYear WHERE {{
+  GRAPH ?billGraph {{
+    ?bill a {mapping["bill_type"]} ; {mapping["bill_kind"]} agents:Bill .
+    ?process a {mapping["process_type"]} ; {mapping["process_participation"]} ?participation .
+    ?participation a {mapping["participation_type"]} ; {mapping["participant"]} {member_iri} .
+    OPTIONAL {{ ?participation {mapping["primary_status"]} ?primaryEvidence . }}
+    OPTIONAL {{ ?participation {mapping["participation_role"]} ?participationRole . }}
+    OPTIONAL {{ ?bill {mapping["bill_title"]} ?englishTitle . FILTER(LANG(?englishTitle) = "en") }}
+    OPTIONAL {{ ?process {mapping["bill_number"]} ?billNumber . }}
+    OPTIONAL {{ ?bill {mapping["bill_year"]} ?billYear . }}
+  }}
+  FILTER(REGEX(STR(?billGraph), {json.dumps(mapping["bill_graph_route"])}))
+}} ORDER BY ?billYear ?billNumber ?bill ?participation ?primaryEvidence ?participationRole ?englishTitle'''
+    return _query(query, supported_predicates)
+
+
+def compile_bill_sponsorship_coverage_query(plan: dict[str, Any], *, supported_predicates) -> str:
+    """Distinguish absent Bill sponsorship evidence from no match for this Member."""
+    mapping = _bill_sponsorship_query_mapping(plan)
+    query = _PREFIXES + f'''SELECT (COUNT(DISTINCT ?bill) AS ?billCount) (COUNT(DISTINCT ?participation) AS ?participationCount) WHERE {{
+  GRAPH ?billGraph {{
+    ?bill a {mapping["bill_type"]} ; {mapping["bill_kind"]} agents:Bill .
+    OPTIONAL {{
+      ?process a {mapping["process_type"]} ; {mapping["process_participation"]} ?participation .
+      ?participation a {mapping["participation_type"]} .
+    }}
+  }}
+  FILTER(REGEX(STR(?billGraph), {json.dumps(mapping["bill_graph_route"])}))
+}}'''
+    return _query(query, supported_predicates)
 
 
 def previous_dail_term_query(as_of: date, *, supported_predicates) -> str:
@@ -1015,6 +1276,292 @@ def readable_debate_result(result: QueryResult) -> QueryResult:
     return QueryResult("select", ("Sitting date", "Official debate"), display_rows, result.raw_json)
 
 
+_XSD_BOOLEAN_IRI = "http://www.w3.org/2001/XMLSchema#boolean"
+_XSD_INTEGER_IRI = "http://www.w3.org/2001/XMLSchema#integer"
+_XSD_STRING_IRI = "http://www.w3.org/2001/XMLSchema#string"
+_CANONICAL_BILL_IRI = re.compile(
+    r"^https://data\.oireachtas\.ie/ie/oireachtas/bill/(?P<year>[0-9]{4})/(?P<number>[^/?#]+)$"
+)
+
+
+def _rdf_literal_parts(value: str) -> tuple[str | None, str | None, str | None]:
+    """Split the compact binding representation while retaining RDF datatype/language."""
+    if value in {"—", ""}:
+        return None, None, None
+    lexical, marker, datatype = value.rpartition("^^<")
+    if marker and datatype.endswith(">"):
+        return lexical, None, datatype[:-1]
+    language_match = re.fullmatch(r"(.*)@([A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*)", value)
+    if language_match:
+        return language_match.group(1), language_match.group(2).lower(), None
+    return value, None, None
+
+
+def _primary_status_from_binding(value: str) -> tuple[str | None, str | None]:
+    lexical, _language, datatype = _rdf_literal_parts(value)
+    if lexical is None:
+        return None, None
+    if datatype != _XSD_BOOLEAN_IRI:
+        return None, value
+    normalized = lexical.strip().lower()
+    if normalized in {"true", "1"}:
+        return "Primary", None
+    if normalized in {"false", "0"}:
+        return "Supporting", None
+    return None, value
+
+
+def _bill_identity_route(bill_iri: str) -> tuple[str, str, str] | None:
+    match = _CANONICAL_BILL_IRI.fullmatch(bill_iri)
+    if not match:
+        return None
+    year, encoded_number = match.group("year"), match.group("number")
+    number = unquote(encoded_number)
+    if not number or any(character in number for character in "/?#"):
+        return None
+    graph_template = next(
+        item["graph"]["iriTemplate"] for item in load_query_contract()["graphFamilies"]
+        if item["id"] == "bill-records"
+    )
+    graph_iri = graph_template.replace("{year}", quote(year, safe="")).replace(
+        "{number}", quote(number, safe=""),
+    )
+    return year, number, graph_iri
+
+
+def _display_counts(counts: dict[str, int], *, total: int) -> str:
+    labels = []
+    for status in ("Primary", "Supporting", "Unknown"):
+        count = counts.get(status, 0)
+        if not count:
+            continue
+        if status == "Unknown":
+            labels.append(
+                "Unknown (primary-status flag absent)" if count == 1 else
+                f"Unknown (flag absent on {count} participations)"
+            )
+        elif total == 1:
+            labels.append(status)
+        else:
+            labels.append(f"{status} ({count} participation{'s' if count != 1 else ''})")
+    return "; ".join(labels)
+
+
+def readable_bill_sponsorship_result(result: QueryResult) -> BillSponsorshipProjection:
+    """Deduplicate by Bill IRI only after preserving all participation evidence."""
+    if result.kind != "select":
+        raise NLQError("Bill sponsorship answer query returned an unexpected result kind.")
+    expected_columns = (
+        "billGraph", "bill", "participation", "primaryEvidence", "participationRole",
+        "englishTitle", "billNumber", "billYear",
+    )
+    if not set(expected_columns).issubset(result.columns):
+        raise NLQError("Bill sponsorship answer query omitted Bill or participation evidence.")
+    indexes = {name: result.columns.index(name) for name in expected_columns}
+    bills: dict[str, dict[str, Any]] = {}
+    participation_owners: dict[str, str] = {}
+    diagnostics: set[str] = set()
+    missing_primary_status = False
+    incomplete_display = False
+    conflicting_evidence = False
+
+    for row in result.rows:
+        if len(row) <= max(indexes.values()):
+            raise NLQError("Bill sponsorship answer query returned a truncated evidence row.")
+        bill_iri = _require_local_iri(row[indexes["bill"]], "Bill")
+        bill_graph = _require_local_iri(row[indexes["billGraph"]], "Bill named graph")
+        participation_iri = _require_local_iri(row[indexes["participation"]], "BillParticipation")
+        identity_route = _bill_identity_route(bill_iri)
+        if identity_route is not None and bill_graph != identity_route[2]:
+            raise NLQError("Bill identity and named graph disagree with the reviewed ownership route.")
+        if participation_iri in participation_owners and participation_owners[participation_iri] != bill_iri:
+            raise NLQError("One BillParticipation is co-owned by conflicting Bill identities.")
+        participation_owners[participation_iri] = bill_iri
+        bill = bills.setdefault(bill_iri, {
+            "graph": bill_graph, "titles": set(), "numbers": set(), "years": set(), "participations": {},
+        })
+        if bill["graph"] != bill_graph:
+            raise NLQError("One Bill identity appears in multiple Bill-owned named graphs.")
+
+        title, language, _datatype = _rdf_literal_parts(row[indexes["englishTitle"]])
+        if title is not None:
+            if language != "en" or not title.strip():
+                diagnostics.add("An English short-title binding was not a non-empty @en literal.")
+                incomplete_display = True
+            else:
+                bill["titles"].add(title.strip())
+
+        raw_number = row[indexes["billNumber"]]
+        number, _language, number_datatype = _rdf_literal_parts(raw_number)
+        if number is not None:
+            if number_datatype not in {None, _XSD_STRING_IRI} or not number.strip():
+                diagnostics.add("A Bill process number had an unsupported RDF literal datatype or value.")
+                conflicting_evidence = True
+            else:
+                bill["numbers"].add(number.strip())
+
+        raw_year = row[indexes["billYear"]]
+        year, _language, year_datatype = _rdf_literal_parts(raw_year)
+        if year is not None:
+            if year_datatype != _XSD_INTEGER_IRI or not re.fullmatch(r"[0-9]{4}", year.strip()):
+                diagnostics.add("A Bill legislative year had an unsupported RDF literal datatype or value.")
+                conflicting_evidence = True
+            else:
+                bill["years"].add(year.strip())
+
+        participation = bill["participations"].setdefault(participation_iri, {
+            "statuses": set(), "unknown": False, "invalid_statuses": set(), "roles": set(),
+        })
+        status, invalid_status = _primary_status_from_binding(row[indexes["primaryEvidence"]])
+        if status is None and invalid_status is None:
+            participation["unknown"] = True
+            missing_primary_status = True
+        elif invalid_status is not None:
+            participation["invalid_statuses"].add(invalid_status)
+        else:
+            participation["statuses"].add(status)
+
+        role, _role_language, _role_datatype = _rdf_literal_parts(row[indexes["participationRole"]])
+        if role is not None and role.strip():
+            participation["roles"].add(role.strip())
+
+    rows: list[tuple[tuple[Any, ...], tuple[str, ...]]] = []
+    for bill_iri, bill in bills.items():
+        identity_route = _bill_identity_route(bill_iri)
+        path_year, path_number = identity_route[:2] if identity_route else (None, None)
+        titles = sorted(bill["titles"], key=lambda value: (value.casefold(), value))
+        if not titles:
+            title_display = "English short title not recorded"
+            diagnostics.add(f"Bill {bill_iri} has no mapped English short title.")
+            incomplete_display = True
+        elif len(titles) > 1:
+            title_display = "Conflicting English short-title evidence: " + " / ".join(titles)
+            diagnostics.add(f"Bill {bill_iri} has conflicting English short-title values.")
+            incomplete_display = True
+            conflicting_evidence = True
+        else:
+            title_display = titles[0]
+
+        source_numbers = sorted(bill["numbers"], key=lambda value: (value.casefold(), value))
+        if not source_numbers:
+            number_display = "Not recorded"
+        elif len(source_numbers) > 1:
+            number_display = "Conflicting Bill-number evidence: " + " / ".join(source_numbers)
+            diagnostics.add(f"Bill {bill_iri} has conflicting process-number values.")
+            conflicting_evidence = True
+        elif path_number is not None and source_numbers[0] != path_number:
+            number_display = f"Conflicting Bill number: source {source_numbers[0]}, identity {path_number}"
+            diagnostics.add(f"Bill {bill_iri} process number disagrees with its Bill identity.")
+            conflicting_evidence = True
+        else:
+            number_display = source_numbers[0]
+
+        source_years = sorted(bill["years"])
+        if not source_years:
+            year_display = "Not recorded"
+        elif len(source_years) > 1:
+            year_display = "Conflicting legislative-year evidence: " + " / ".join(source_years)
+            diagnostics.add(f"Bill {bill_iri} has conflicting legislative-year values.")
+            conflicting_evidence = True
+        elif path_year is not None and source_years[0] != path_year:
+            year_display = f"Conflicting Bill year: source {source_years[0]}, identity {path_year}"
+            diagnostics.add(f"Bill {bill_iri} legislative year disagrees with its Bill identity.")
+            conflicting_evidence = True
+        else:
+            year_display = source_years[0]
+
+        status_counts: dict[str, int] = {}
+        role_counts: dict[str, int] = {}
+        roles_missing = 0
+        status_conflicts: list[str] = []
+        invalid_status_participations = 0
+        for participation_iri, evidence in bill["participations"].items():
+            statuses = set(evidence["statuses"])
+            if evidence["unknown"]:
+                statuses.add("Unknown")
+            if len(statuses) > 1:
+                status_conflicts.append(" + ".join(sorted(statuses)))
+                conflicting_evidence = True
+            elif statuses:
+                only_status = next(iter(statuses))
+                status_counts[only_status] = status_counts.get(only_status, 0) + 1
+            if evidence["invalid_statuses"]:
+                invalid_status_participations += 1
+                conflicting_evidence = True
+            roles = sorted(evidence["roles"], key=lambda value: (value.casefold(), value))
+            if len(roles) > 1:
+                role_counts["Conflicting role labels: " + " / ".join(roles)] = role_counts.get(
+                    "Conflicting role labels: " + " / ".join(roles), 0,
+                ) + 1
+                diagnostics.add(f"BillParticipation {participation_iri} has conflicting role labels.")
+                conflicting_evidence = True
+            elif roles:
+                role_counts[roles[0]] = role_counts.get(roles[0], 0) + 1
+            else:
+                roles_missing += 1
+
+        participation_count = len(bill["participations"])
+        status_parts = []
+        status_summary = _display_counts(status_counts, total=participation_count)
+        if status_summary:
+            status_parts.append(status_summary)
+        if status_conflicts:
+            conflict_summary = sorted(set(status_conflicts), key=lambda value: (value.casefold(), value))
+            status_parts.append("Conflicting primary-status values on participation(s): " + "; ".join(conflict_summary))
+            diagnostics.add(f"Bill {bill_iri} has conflicting primary-status values on a single participation.")
+        if invalid_status_participations:
+            status_parts.append(
+                f"Uninterpretable primary-status evidence on {invalid_status_participations} participation"
+                f"{'s' if invalid_status_participations != 1 else ''}"
+            )
+            diagnostics.add(f"Bill {bill_iri} has invalid primary-status evidence.")
+        for evidence in bill["participations"].values():
+            for invalid in evidence["invalid_statuses"]:
+                status_parts.append(f"unrecognized value {invalid!r}")
+        status_display = "; ".join(status_parts) if status_parts else "Unknown (primary-status flag not recorded)"
+
+        role_parts = []
+        for role, count in sorted(role_counts.items(), key=lambda item: (item[0].casefold(), item[0])):
+            role_parts.append(role if participation_count == 1 else
+                              f"{role} ({count} participation{'s' if count != 1 else ''})")
+        if roles_missing:
+            role_parts.append(
+                "Role not recorded" if participation_count == 1 else
+                f"Role not recorded ({roles_missing} participation{'s' if roles_missing != 1 else ''})"
+            )
+        role_display = "; ".join(role_parts) if role_parts else "Not recorded"
+        official_link = bill_iri if identity_route is not None else "Official link unavailable"
+        if identity_route is None:
+            diagnostics.add(f"Bill {bill_iri} does not have a canonical official Bill IRI for linking.")
+
+        number_sort = (0, int(path_number)) if path_number and path_number.isdigit() else (1, (path_number or "").casefold())
+        sort_key = (
+            int(path_year) if path_year else 9999,
+            number_sort,
+            bill_iri,
+        )
+        rows.append((sort_key, (
+            title_display, status_display, number_display, year_display, role_display, official_link,
+        )))
+
+    rows.sort(key=lambda item: item[0])
+    readable = QueryResult(
+        "select",
+        ("English short title", "Sponsorship status", "Bill number", "Year", "Recorded sponsor roles", "Official Bill"),
+        tuple(row for _sort_key, row in rows),
+        result.raw_json,
+    )
+    if missing_primary_status:
+        diagnostics.add("At least one Participation lacks isPrimarySponsor; that evidence is shown as Unknown.")
+    return BillSponsorshipProjection(
+        readable,
+        missing_primary_status=missing_primary_status,
+        incomplete_display=incomplete_display,
+        conflicting_evidence=conflicting_evidence,
+        diagnostics=tuple(sorted(diagnostics, key=lambda value: (value.casefold(), value))),
+    )
+
+
 class AmbiguousMember(NLQError):
     """A Member name resolves to more than one local Member resource."""
 
@@ -1286,12 +1833,126 @@ def _execute_office_question(plan: dict[str, Any], *, fuseki, supported_predicat
     )
 
 
+def _bill_sponsorship_coverage_counts(result: QueryResult) -> tuple[int, int]:
+    if (result.kind != "select" or not {"billCount", "participationCount"}.issubset(result.columns)
+            or len(result.rows) != 1):
+        raise NLQError("Bill sponsorship coverage query returned an unexpected aggregate result.")
+    indexes = {name: result.columns.index(name) for name in ("billCount", "participationCount")}
+    counts = []
+    for name in ("billCount", "participationCount"):
+        raw = result.rows[0][indexes[name]]
+        lexical, _language, datatype = _rdf_literal_parts(raw)
+        if datatype != _XSD_INTEGER_IRI or lexical is None or not re.fullmatch(r"[0-9]+", lexical):
+            raise NLQError("Bill sponsorship coverage query returned a non-integer count.")
+        counts.append(int(lexical))
+    return counts[0], counts[1]
+
+
+def _execute_bill_sponsorship_question(
+    plan: dict[str, Any], *, fuseki, supported_predicates,
+) -> PlanOutcome:
+    member_ref = plan["referents"]["member"]
+    mention = member_ref["mention"]
+    try:
+        resolution_query = member_resolution_query(supported_predicates=supported_predicates)
+    except (PlanError, NLQError) as error:
+        member_ref["resolution"] = "unsupported_mapping"
+        return PlanOutcome("unsupported_mapping", plan=plan, diagnostic=str(error))
+    try:
+        resolution_result = fuseki.query(resolution_query)
+        if (resolution_result.kind != "select"
+                or not {"member", "name"}.issubset(resolution_result.columns)):
+            raise NLQError("Member resolution query returned an unexpected result shape.")
+        member_iri, member_label = resolve_member(resolution_result, mention)
+    except AmbiguousMember as error:
+        member_ref.update({"resolution": "ambiguous", "candidates": list(error.candidates)})
+        return PlanOutcome("ambiguous", plan=plan, diagnostic=str(error), candidates=error.candidates)
+    except NLQError as error:
+        state = "not_found" if "No local Member" in str(error) else "source_data_unavailable"
+        member_ref["resolution"] = state
+        return PlanOutcome(state, plan=plan, diagnostic=str(error))
+    member_ref.update({"resolution": "resolved", "iri": member_iri, "label": member_label})
+
+    try:
+        plan = validate_plan(plan)
+        answer_query = compile_bill_sponsorship_answer_query(
+            plan, supported_predicates=supported_predicates,
+        )
+    except (PlanError, NLQError) as error:
+        return PlanOutcome("unsupported_mapping", plan=plan, diagnostic=str(error))
+    try:
+        raw_result = fuseki.query(answer_query)
+        if raw_result.kind != "select":
+            raise NLQError("Bill sponsorship answer query returned an unexpected result kind.")
+    except NLQError as error:
+        return PlanOutcome("source_data_unavailable", plan=plan, sparql=answer_query, diagnostic=str(error))
+
+    if not raw_result.rows:
+        try:
+            coverage_query = compile_bill_sponsorship_coverage_query(
+                plan, supported_predicates=supported_predicates,
+            )
+            coverage_result = fuseki.query(coverage_query)
+            bill_count, participation_count = _bill_sponsorship_coverage_counts(coverage_result)
+        except (PlanError, NLQError) as error:
+            return PlanOutcome("unsupported_mapping", plan=plan, sparql=answer_query, diagnostic=str(error))
+        if bill_count == 0:
+            return PlanOutcome(
+                "missing_sponsorship_evidence", plan=plan, sparql=answer_query,
+                diagnostic=("No local Bill records are available to establish sponsorship evidence. "
+                            "This absence is not evidence that the Member sponsored no Bills."),
+            )
+        if participation_count == 0:
+            return PlanOutcome(
+                "missing_sponsorship_evidence", plan=plan, sparql=answer_query,
+                diagnostic=("Local Bill records exist, but no LegislativeProcess sponsorship Participation "
+                            "evidence is available. No negative sponsorship claim can be made."),
+            )
+        return PlanOutcome(
+            "source_data_unavailable", plan=plan, sparql=answer_query,
+            diagnostic=("No recorded Bill sponsorship Participation in the local dataset references this "
+                        "resolved Member IRI. The loaded Bill data does not certify complete historical coverage."),
+        )
+
+    try:
+        projection = readable_bill_sponsorship_result(raw_result)
+    except NLQError as error:
+        return PlanOutcome("source_data_unavailable", plan=plan, sparql=answer_query, diagnostic=str(error))
+    diagnostics = list(projection.diagnostics)
+    truncated = len(raw_result.rows) >= 100
+    if truncated:
+        diagnostics.append(
+            "The local query result reached the 100-row safety cap; additional participation evidence may be omitted."
+        )
+    if projection.conflicting_evidence:
+        status = "conflicting_sponsorship_evidence"
+    elif truncated:
+        status = "incomplete_sponsorship_evidence"
+    elif projection.incomplete_display:
+        status = "incomplete_display_evidence"
+    elif projection.missing_primary_status:
+        status = "incomplete_primary_status_evidence"
+    else:
+        status = "success"
+    diagnostics.append(
+        "Bill graphs are optional and the local dataset does not certify complete historical sponsorship coverage."
+    )
+    return PlanOutcome(
+        status, plan=plan, sparql=answer_query, result=projection.result,
+        diagnostic=" ".join(diagnostics),
+    )
+
+
 def execute_question(question: str, *, as_of: date, fuseki, supported_predicates) -> PlanOutcome:
     """Plan, resolve, validate, compile and execute bounded composable slices."""
     try:
         plan = plan_question(question, as_of=as_of)
     except PlanError as error:
         return PlanOutcome("unsupported_capability", diagnostic=str(error))
+    if plan["referents"].get("participation", {}).get("type") == "BillParticipation":
+        return _execute_bill_sponsorship_question(
+            plan, fuseki=fuseki, supported_predicates=supported_predicates,
+        )
     if plan["referents"].get("holding", {}).get("type") == "OfficeHolding":
         return _execute_office_question(plan, fuseki=fuseki, supported_predicates=supported_predicates)
     if plan["referents"].get("sitting", {}).get("type") == "DebateSitting":

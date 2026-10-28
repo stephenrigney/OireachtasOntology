@@ -13,7 +13,7 @@
       "additionalProperties": {
         "type": "object", "additionalProperties": false, "required": ["type"],
         "properties": {
-          "type": {"enum": ["Member", "DailMembership", "DailTerm", "SeanadTerm", "DailConstituency", "PartyMembershipEpisode", "ParliamentaryParty", "PoliticalAffiliationIdentity", "OfficeHolding", "NamedOffice", "DebateRecord", "DebateSitting"]},
+          "type": {"enum": ["Member", "DailMembership", "DailTerm", "SeanadTerm", "DailConstituency", "PartyMembershipEpisode", "ParliamentaryParty", "PoliticalAffiliationIdentity", "OfficeHolding", "NamedOffice", "DebateRecord", "DebateSitting", "BillParticipation", "Bill"]},
           "selector": {"type": "object", "additionalProperties": false,
             "required": ["kind", "house"], "properties": {"kind": {"const": "previousTerm"}, "house": {"const": "Dail"}}},
           "mention": {"type": "string", "minLength": 1},
@@ -62,13 +62,13 @@
         }
       }
     },
-    "episodeDetail": {
+    "answerDetail": {
       "type": "object", "additionalProperties": false,
       "required": ["referent", "display"],
       "properties": {
         "referent": {"type": "string", "minLength": 1},
         "display": {"type": "array", "minItems": 1, "uniqueItems": true,
-          "items": {"enum": ["start", "end"]}}
+          "items": {"enum": ["start", "end", "role", "primaryEvidence"]}}
       }
     },
     "entityAnswer": {
@@ -79,10 +79,12 @@
         "referent": {"type": "string", "minLength": 1},
         "distinctBy": {"const": "identity"},
         "display": {"type": "array", "minItems": 1, "uniqueItems": true,
-          "items": {"enum": ["name", "label", "date", "officialLink"]}},
-        "details": {"type": "array", "items": {"$ref": "#/$defs/episodeDetail"}},
+          "items": {"enum": ["name", "label", "date", "officialLink", "englishTitle", "billNumber", "year"]}},
+        "details": {"type": "array", "items": {"$ref": "#/$defs/answerDetail"}},
+        "order": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["year", "billNumber"]}},
         "preserveGaps": {"type": "boolean"},
-        "preserveEpisodes": {"type": "boolean"}
+        "preserveEpisodes": {"type": "boolean"},
+        "preserveEvidence": {"type": "boolean"}
       }
     },
     "booleanAnswer": {

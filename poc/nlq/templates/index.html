@@ -56,8 +56,13 @@
        {% if interaction_status == "ambiguous_entity" or interaction_status == "ambiguous" %}Ambiguous entity
        {% elif interaction_status == "unresolved_entity" or interaction_status == "not_found" %}Entity not found
        {% elif interaction_status == "missing_identity_link" %}Reviewed identity link missing
-       {% elif interaction_status == "source_data_unavailable" %}Source evidence unavailable
-       {% elif interaction_status == "insufficient_holding_evidence" %}Office-holding dates incomplete
+        {% elif interaction_status == "source_data_unavailable" %}Source evidence unavailable
+        {% elif interaction_status == "missing_sponsorship_evidence" %}Bill sponsorship evidence unavailable
+        {% elif interaction_status == "incomplete_primary_status_evidence" %}Primary-status evidence incomplete
+        {% elif interaction_status == "incomplete_display_evidence" %}Bill display evidence incomplete
+        {% elif interaction_status == "conflicting_sponsorship_evidence" %}Conflicting sponsorship evidence
+        {% elif interaction_status == "incomplete_sponsorship_evidence" %}Sponsorship result incomplete
+        {% elif interaction_status == "insufficient_holding_evidence" %}Office-holding dates incomplete
        {% elif interaction_status == "unsupported_mapping" %}Unsupported query mapping
        {% elif interaction_status == "unsupported_request" %}Unsupported question
       {% elif interaction_status == "validation_failure" %}Query validation failed
@@ -112,12 +117,13 @@
       <table>
         <thead><tr>{% for column in result.columns %}<th scope="col">{{ column }}</th>{% endfor %}</tr></thead>
         <tbody>
-        {% for row in result.rows %}<tr>{% for cell in row %}<td>{% if result.columns[loop.index0] == "Official debate" and cell.startswith("https://data.oireachtas.ie/akn/ie/debateRecord/") %}<a href="{{ cell }}">Official debate record</a>{% else %}{{ cell }}{% endif %}</td>{% endfor %}</tr>{% endfor %}
+        {% for row in result.rows %}<tr>{% for cell in row %}<td>{% if result.columns[loop.index0] == "Official debate" and cell.startswith("https://data.oireachtas.ie/akn/ie/debateRecord/") %}<a href="{{ cell }}">Official debate record</a>{% elif result.columns[loop.index0] == "Official Bill" and cell.startswith("https://data.oireachtas.ie/ie/oireachtas/bill/") %}<a href="{{ cell }}">Official Bill</a>{% else %}{{ cell }}{% endif %}</td>{% endfor %}</tr>{% endfor %}
         </tbody>
       </table>
     {% else %}
       <p>No matching records were found in the local dataset. This result does not establish historical completeness.</p>
     {% endif %}
+    {% if result_notice %}<p class="result-notice">{{ result_notice }}</p>{% endif %}
   </section>
   {% endif %}
 

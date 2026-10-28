@@ -71,6 +71,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
 
     def render(request: Request, *, question: str = "", interpretation: str | None = None,
                sparql: str | None = None, result: QueryResult | None = None,
+               result_notice: str | None = None,
                ambiguity=None,
                error: str | None = None, debug_output: str | None = None,
                debug_message: str | None = None, debug_source: str | None = None,
@@ -85,6 +86,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
             "interpretation": interpretation,
             "sparql": sparql,
             "result": result,
+            "result_notice": result_notice,
             "ambiguity": ambiguity,
             "error": error,
             "debug_output": debug_output,
@@ -152,32 +154,44 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                 is_q06 = bool(outcome.plan and outcome.plan.get("answer", {}).get("referent") == "affiliation")
                 is_debate = bool(outcome.plan and outcome.plan.get("referents", {}).get("sitting", {}).get("type") == "DebateSitting")
                 is_q35 = bool(outcome.plan and outcome.plan.get("referents", {}).get("holding", {}).get("type") == "OfficeHolding")
+                is_q23 = bool(outcome.plan and outcome.plan.get("referents", {}).get("participation", {}).get("type") == "BillParticipation")
                 member_mention = outcome.plan.get("referents", {}).get("member", {}).get("mention", "the named Member") if is_q06 else None
                 q35_office = outcome.plan.get("referents", {}).get("office", {}) if is_q35 else {}
                 q35_interval = outcome.plan.get("constraints", [{}])[0].get("value", {}) if is_q35 else {}
+                q23_member = outcome.plan.get("referents", {}).get("member", {}).get("mention", "the named Member") if is_q23 else None
                 q35_summary = (
                     f"Find each locally evidenced accepted {q35_office.get('label', q35_office.get('mention', 'office'))} "
                     f"holding overlapping {q35_interval.get('start', 'the requested start')} through "
                     f"{q35_interval.get('end', 'the requested end')}, preserving separate holding episodes. "
                     "The development dataset does not establish complete historical coverage."
                 ) if is_q35 else None
+                q23_summary = (
+                    f"Find distinct Bills with a recorded sponsor Participation whose participant-person IRI "
+                    f"exactly matches the resolved local Member identity for {q23_member}. Include every "
+                    "recorded participation regardless of primary status and preserve its source evidence."
+                ) if is_q23 else None
                 summary = (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
                            if is_q06 else ("Find the requested actual DebateSitting and its official record link."
-                                            if is_debate else
-                                            (q35_summary if is_q35 else "Find distinct Members who represented this constituency in the previous Dáil.")))
+                                             if is_debate else
+                                             (q35_summary if is_q35 else
+                                              (q23_summary if is_q23 else "Find distinct Members who represented this constituency in the previous Dáil."))))
                 if outcome.status == "success":
                     return render(request, question=question, mode=mode,
                                   interpretation=summary, plan_json=plan_json,
                                   plan_heading="Validated composable query plan",
                                    plan_explanation={"summary": summary, "validated": True,
                                                         "answer_text": ("Distinct political-affiliation identities with separate supporting membership episodes."
-                                                                        if is_q06 else ("Yes/no based on an actual DebateSitting, not a dated written-answer record."
-                                                                                        if is_debate and outcome.result.kind == "ask" else
-                                                                                        "Readable sitting date and official debate record link."
-                                                                                        if is_debate else
-                                                                                        "Member names with exact start/end dates for every separate accepted holding; open ends are identified explicitly."
-                                                                                        if is_q35 else "Distinct Members, displayed by name."))},
-                                  sparql=outcome.sparql, result=outcome.result,
+                                                                         if is_q06 else ("Yes/no based on an actual DebateSitting, not a dated written-answer record."
+                                                                                         if is_debate and outcome.result.kind == "ask" else
+                                                                                         "Readable sitting date and official debate record link."
+                                                                                         if is_debate else
+                                                                                         "Member names with exact start/end dates for every separate accepted holding; open ends are identified explicitly."
+                                                                                         if is_q35 else
+                                                                                         ("One row per Bill identity, with English short title, recorded sponsorship evidence, and source-backed number/year/link where available."
+                                                                                          if is_q23 else "Distinct Members, displayed by name.")))},
+                                   sparql=outcome.sparql, result=outcome.result,
+                                   result_notice=("Bill graphs are optional. These rows show recorded local sponsorship evidence; the dataset does not certify complete historical coverage."
+                                                  if is_q23 else None),
                                   debug_output=outcome.result.raw_json if outcome.result else None,
                                   debug_source="Fuseki")
                 messages = {
@@ -189,7 +203,30 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     "unsupported_mapping": "A required relation or query mapping is unsupported; no answer was returned.",
                     "missing_identity_link": "Parliamentary party-membership evidence exists, but the reviewed local enduring-identity link is missing.",
                 }
-                if outcome.status == "source_data_unavailable" and is_q06:
+                if is_q23:
+                    if outcome.status == "missing_sponsorship_evidence":
+                        message = "Bill sponsorship evidence is missing from the local dataset; this is not a confirmed negative answer."
+                    elif outcome.status == "source_data_unavailable":
+                        message = (
+                            "Local Member identity evidence could not be read."
+                            if outcome.plan.get("referents", {}).get("member", {}).get("resolution") == "source_data_unavailable"
+                            else "The local dataset contains no matching sponsorship evidence for this Member, and its historical coverage is not certified complete."
+                        )
+                    elif outcome.status == "incomplete_primary_status_evidence":
+                        message = "Some Participation records do not contain isPrimarySponsor; those sponsorship statuses are shown as Unknown."
+                    elif outcome.status == "incomplete_display_evidence":
+                        message = "Some Bills lack the required English short-title evidence or have conflicting display metadata; affected rows are marked explicitly."
+                    elif outcome.status == "conflicting_sponsorship_evidence":
+                        message = "Conflicting sponsorship evidence was preserved and called out in the result; no conflicting value was selected silently."
+                    elif outcome.status == "incomplete_sponsorship_evidence":
+                        message = "The result reached the local safety cap; additional sponsorship evidence may be omitted."
+                    elif outcome.status == "not_found":
+                        message = "No matching local Member record was found."
+                    elif outcome.status == "ambiguous":
+                        message = "More than one local Member record matches; no Member was selected."
+                    else:
+                        message = messages.get(outcome.status, outcome.diagnostic)
+                elif outcome.status == "source_data_unavailable" and is_q06:
                     message = "The local dataset has no usable dated party-membership evidence for this Member."
                 elif outcome.status == "source_data_unavailable" and is_debate:
                     message = "No matching actual sitting was found. The local dataset does not certify complete coverage for this date, so absence cannot be reported as a confirmed No."
@@ -218,7 +255,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     message = messages.get(outcome.status, outcome.diagnostic)
                 resolution_ref = (
                     outcome.plan.get("referents", {}).get("office", {}) if is_q35 and outcome.plan else
-                    outcome.plan.get("referents", {}).get("member", {}) if is_q06 and outcome.plan else {}
+                    outcome.plan.get("referents", {}).get("member", {}) if (is_q06 or is_q23) and outcome.plan else {}
                 )
                 entity_outcomes = ()
                 if resolution_ref.get("resolution") == "ambiguous":
@@ -231,11 +268,14 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                 return render(
                     request, question=question, mode=mode,
                     interpretation=summary if outcome.plan else None, plan_json=plan_json,
-                    plan_heading="Proposed composable query plan" if outcome.plan else None,
+                    plan_heading=("Validated composable query plan" if outcome.sparql is not None else
+                                  "Proposed composable query plan") if outcome.plan else None,
                     error=message,
                     interaction_status=outcome.status,
                     entity_outcomes=entity_outcomes,
                     result=outcome.result,
+                    result_notice=("Bill graphs are optional. These rows show recorded local sponsorship evidence; the dataset does not certify complete historical coverage."
+                                   if is_q23 and outcome.result else None),
                     debug_output=format_debug_payload({"diagnostic": outcome.diagnostic,
                                                        "candidates": outcome.candidates}),
                     debug_message=("The read-only answer query ran, but returned no matching result."

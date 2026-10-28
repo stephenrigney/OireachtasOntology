@@ -3,7 +3,7 @@
   "contractId": "https://data.oireachtas.ie/specs/query-schema-contract",
   "contractSchema": "poc/specs/query-schema-contract.schema.json",
   "schemaVersion": 1,
-  "contractVersion": "2.4.0",
+  "contractVersion": "2.5.0",
   "description": "Queryable, currently emitted Oireachtas RDF patterns and local NLQ execution boundary.",
   "namespaces": {
     "agents": "https://data.oireachtas.ie/ontology#",
@@ -68,6 +68,7 @@
     "agents:seats",
     "agents:memberCode",
     "agents:gender",
+    "agents:isPrimarySponsor",
     "agents:dateOfDeath",
     "dct:temporal",
     "agents:legislativeYear",
@@ -339,16 +340,16 @@
       "graphFamily": "bill-records",
       "availability": "emitted",
       "queryableInLocalNlq": true,
-      "triples": [["?bill", "rdf:type", "eli-dl:DraftLegislationWork"], ["?bill", "eli:type_document", "agents:Bill"], ["?bill", "agents:legislativeYear", "?year"], ["?bill", "eli:title", "?englishOrIrishTitle"], ["?process", "rdf:type", "eli-dl:LegislativeProcess"], ["?process", "eli-dl:process_status", "?status"], ["?process", "eli-dl:latest_activity", "?activity"], ["?activity", "eli-dl:forms_part_of", "?process"]],
-      "note": "Bill and process resources are co-owned in the same one-Bill named graph; the ETL emits no direct Bill-to-process RDF edge. This corrects the earlier contract summary: latest_activity is emitted from the process to the activity, not from the Bill. Bill graphs remain optional data."
+      "triples": [["?bill", "rdf:type", "eli-dl:DraftLegislationWork"], ["?bill", "eli:type_document", "agents:Bill"], ["?bill", "agents:legislativeYear", "?year"], ["?bill", "eli:title", "?englishOrIrishTitle"], ["?process", "rdf:type", "eli-dl:LegislativeProcess"], ["?process", "eli-dl:process_number", "?processNumber"], ["?process", "eli-dl:process_status", "?status"], ["?process", "eli-dl:latest_activity", "?activity"], ["?activity", "eli-dl:forms_part_of", "?process"]],
+      "note": "Bill and process resources are co-owned in the same one-Bill named graph; the ETL emits no direct Bill-to-process RDF edge. Process number is mapped on the LegislativeProcess. This corrects the earlier contract summary: latest_activity is emitted from the process to the activity, not from the Bill. Bill graphs remain optional data."
     },
     {
       "id": "bill-sponsor-reference",
       "graphFamily": "bill-records",
       "availability": "emitted",
       "queryableInLocalNlq": true,
-      "triples": [["?process", "rdf:type", "eli-dl:LegislativeProcess"], ["?process", "eli-dl:had_participation", "?participation"], ["?participation", "rdf:type", "eli-dl:Participation"], ["?participation", "eli-dl:had_participant_person", "?member"]],
-      "note": "The process is associated with its Bill by co-ownership in the Bill's named graph. The participant person IRI joins to the corresponding Member-owned graph by exact RDF resource IRI."
+      "triples": [["?process", "rdf:type", "eli-dl:LegislativeProcess"], ["?process", "eli-dl:had_participation", "?participation"], ["?participation", "rdf:type", "eli-dl:Participation"], ["?participation", "eli-dl:had_participant_person", "?member"], ["?participation", "agents:isPrimarySponsor", "?optionalBoolean"], ["?participation", "rdfs:label", "?optionalRoleLabel"]],
+      "note": "The process is associated with its Bill by co-ownership in the Bill's named graph; no direct Bill-to-process predicate is emitted. The participant person IRI joins to the corresponding Member-owned graph by exact RDF resource IRI. Optional agents:isPrimarySponsor on Participation preserves true/false; absence means unknown and never removes the participation."
     },
     {
       "id": "bill-document-work-links",
