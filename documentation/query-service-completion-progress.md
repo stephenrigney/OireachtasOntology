@@ -3,8 +3,8 @@
 ## Campaign checkpoint
 
 - Branch: `query-service-completion`; baseline at campaign start: `844e51b6fc189a379003c71650e9254c71c67f88`.
-- Documentation-only campaign checkpoints: `8e08cc5`, `d7f26aa`, `24503e7`. Stage A code checkpoint: `870aefc7bfe3172b848b034393598645cd212c69` (pushed); no master merge.
-- Last tested campaign checkpoint: `870aefc7bfe3172b848b034393598645cd212c69`. Next slice: Stage B Bills, accepted office tenure and committee diagnostics. Independent Stage A review remains advisory and any concrete correction will be checkpointed separately.
+- Documentation-only campaign checkpoints: `8e08cc5`, `d7f26aa`, `24503e7`, `2ab5b02`. Stage A code checkpoint: `870aefc7bfe3172b848b034393598645cd212c69` (pushed); no master merge.
+- Current branch HEAD: `2ab5b02` (Stage A checkpoint documentation only); last accepted/tested code checkpoint remains `870aefc7bfe3172b848b034393598645cd212c69`. Stage B work is uncommitted and **not accepted**: initial focused tests did not cover semantic defects found by review. Next bounded unit is B1 shared typed-plan integration, followed by B2 Bill semantics/executable fixtures and B3 exact office identity binding; Stage C has not started.
 - Authority: campaign spec, approved question catalogue, composable query contracts, query schema/ownership contract, and source mappings. No ontology, ETL mapping, source fixture, production, ingestion or deployment changes.
 - Preserve Q06/Q09/Q23/Q28/Q29/Q35 and their regressions. Compiler remains read-only and safety validated.
 
@@ -29,7 +29,17 @@ Behaviour and evidence are independent; synthetic execution is not a claim of pr
 | A | Q33 | Implemented: return all exact-name Members with Dáil membership. | Synthetic distinct Member identities and service links. | Distinct IRIs retained, no identity merge. |
 | A | Q34 | Implemented: report grounded not-found result. | Synthetic Member catalogue. | Absence is local to queried graph, not proof of external nonexistence. |
 | A | T01 | Implemented: count distinct typed DáilTerm IRIs in Houses graph. | Synthetic typed House terms; labels/period metadata not required for count. | Exact local graph count only; no corpus-completeness claim. |
-| B | Q12,Q14,Q18,Q19,Q20,Q21,Q22,Q24A,Q25,Q26,Q27 | not implemented in campaign | not checked here | Inspect Bill, office and committee evidence; preserve unknown sponsor status and coverage boundaries. |
+| B | Q12 | Implemented diagnostic: resolve dated current Committee owner first, then report missing chair relationship. | Synthetic current-owner/date graph; no chair RDF asserted. | Exact current Committee ambiguity/date failures remain explicit; no chair inferred from Member membership. |
+| B | Q14 | Specific development source conflict/quarantine diagnostic. | Reviewed ID-115 decision and development limitation in etl-plan/evidence note. | Does not claim that authoritative review makes a current roster. |
+| B | Q18 | Title-token lookup for Artificial Intelligence/protection/children; returns all matching identities instead of guessing. | Synthetic query-plan/compiler route only; no real title-candidate result asserted. | No result means no locally recorded matching title, not nonexistence. |
+| B | Q19 | Dated Published event selection in calendar year; no legislativeYear fallback. | Contract-backed compiler route; no real Bill corpus execution. | Restricted to dated `latest_activity`; not a complete lifecycle-event inventory and is qualified as such. |
+| B | Q20 | Non-Enacted status query with local grouped counts; missing/conflicting status is explicit. | Synthetic query-plan/compiler route; no real year-2026 counts asserted. | Distinct Bill graph evidence; no complete source coverage claim. |
+| B | Q21 | Current mapped process status plus dated latest activity; no inferred next step. | Synthetic query-plan/compiler route; no live Fuseki coverage asserted. | Limited to the exposed latest activity. |
+| B | Q22 | Reverse sponsorship query retains all Participation rows, optional primary true/false/absent, role-only evidence, and exact Member-IRI display join. | Contract-checked route; no full local AI Companion Bill sponsor assertion. | Unknown primary status remains Unknown; member label absent does not erase role-only evidence. |
+| B | Q24A | Exact 2025/23 lookup, English title, mapped Current status, official IRI, dated latest activity and same-graph memo rendition. | Actual selected-source fields verified in preserved capture citation; tiny in-memory fixture tests no-memo and available memo paths. | Capture presence is not Fuseki loading or live-world currency; empty relatedDocs does not prove no memo elsewhere. |
+| B | Q25 | Reuses Q35 strict accepted OfficeHolding interval route for any September overlap and exact Member filter. | Synthetic holder/date execution; accepted source-backed review citation is 2026-10-02 capture cited in evidence note. | No current roster-completeness assertion. |
+| B | Q26 | Specific current-coverage diagnostic; no holder guessed from alias or stale observation. | Evidence review shows incomplete 22 accepted holdings and no accepted Simon Harris tenure. | Current Finance holder remains unavailable until complete suitable coverage is loaded. |
+| B | Q27 | Reuses Q35 inclusive interval evidence constrained to the requested point date. | Synthetic Paschal Donohoe interval execution; accepted source-backed review citation is 2026-10-02 capture cited in evidence note. | Does not use office alias start as establishment date. |
 | C | Q16,Q17,Q24,Q30,Q31,Q36,Q37 | not implemented in campaign | not checked here | Implement supported facts or precise coverage/capability diagnostics; never substitute seats/groups/votes/speech/latest with unrelated facts. |
 
 ## Stage A evidence boundaries
@@ -42,6 +52,13 @@ Behaviour and evidence are independent; synthetic execution is not a claim of pr
 
 ## Verification and remaining risks
 
+- **Stage B review correction:** the initial 349-pass result below is not Stage B acceptance. The flat sidecar plan bypassed the authoritative v2 validator; publication used only latest activity and the wrong date datatype; memo lookup did not distinguish memo Works from other documents; identity, sponsor evidence and distinct-counting paths require executable adversarial tests. Partial corrections have been made, but B1/B2/B3 must complete and be reviewed before checkpointing or advancing. The question rows below/above describing the first draft are provisional until corrected integration evidence is recorded.
+
+- Stage B focused and preserved Query Service regressions: `.venv/bin/python -m pytest -q tests/test_nlq_stage_b.py tests/test_nlq_composable_stage_a.py tests/test_nlq_composable_q06.py tests/test_nlq_composable_q09.py tests/test_nlq_composable_q23.py tests/test_nlq_composable_q35.py tests/test_nlq_composable_debates.py tests/test_nlq_contract.py tests/test_nlq_query_plan.py tests/test_nlq_plan_sparql.py tests/test_nlq_plan_sparql_fuseki.py tests/test_nlq_human_readable.py tests/test_nlq_poc.py` — **349 passed, 1 skipped**. This includes every Stage A family and all six established query slices.
+- `.venv/bin/python tests/validate.py` — **passed**, 2,584 ontology triples; `.venv/bin/python -m tools.validation` — **passed**, active mapping integrity; compileall and `git diff --check` passed.
+- Full test suite intentionally not run; campaign requires it at campaign end after Stage C.
+- Q24A exercises the preserved source-backed Bill fields in a tiny synthetic RDF graph and separately tests a synthetic memorandum rendition; no source fixture or operational corpus was rebuilt.
+
 - Auditor-correction focused regressions and preserved slices: `.venv/bin/python -m pytest tests/test_nlq_composable_stage_a.py tests/test_nlq_contract.py tests/test_nlq_query_plan.py tests/test_nlq_composable_q06.py tests/test_nlq_composable_q09.py tests/test_nlq_composable_q23.py tests/test_nlq_composable_q35.py tests/test_nlq_composable_debates.py tests/test_nlq_prefixes.py -q` — **271 passed**.
 - Final Stage A rerun after the no-plan UI adjustment: `.venv/bin/python -m pytest tests/test_nlq_composable_stage_a.py -q` — **71 passed**.
 - Query safety and presentation: `.venv/bin/python -m pytest tests/test_nlq_plan_sparql.py tests/test_nlq_plan_sparql_fuseki.py tests/test_nlq_human_readable.py -q` — **42 passed, 1 skipped**.
@@ -50,7 +67,7 @@ Behaviour and evidence are independent; synthetic execution is not a claim of pr
 - Ontology validation: `.venv/bin/python tests/validate.py` — **passed**, 2,584 ontology triples.
 - Ontology validation after the auditor corrections: `.venv/bin/python tests/validate.py` — **passed**, 2,584 ontology triples.
 - Earlier full suite before the auditor-correction edits: `.venv/bin/python -m pytest tests` — **1,617 passed, 25 skipped**. As requested, the full suite was not rerun during these corrections; the exact focused checks above cover Stage A, preserved composable slices, contract and query safety.
-- Returned for reviewer/orchestrator review. Q10 remains mapping-limited and does not infer nomination method. No commit/push/merge from this executor.
+- Stage B implementation is uncommitted on the shared branch; current HEAD remains the Stage A checkpoint `870aefc7bfe3172b848b034393598645cd212c69`. The Stage A Q10 mapping limitation remains unchanged. No commit/push/merge from this executor.
 
 ## Orchestrator Stage A integration
 
