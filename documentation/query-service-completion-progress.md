@@ -3,8 +3,8 @@
 ## Campaign checkpoint
 
 - Branch: `query-service-completion`; baseline at campaign start: `844e51b6fc189a379003c71650e9254c71c67f88`.
-- Documentation-only campaign checkpoints: `8e08cc5`, `d7f26aa`, `24503e7`. Stage A code checkpoint is being recorded after orchestrator integration verification; no master merge.
-- Last tested campaign checkpoint: Stage A working tree immediately following `24503e7`; exact code SHA recorded after commit. Next slice: Stage B Bills, accepted office tenure and committee diagnostics. Independent Stage A review remains advisory and any concrete correction will be checkpointed separately.
+- Documentation-only campaign checkpoints: `8e08cc5`, `d7f26aa`, `24503e7`. Stage A code checkpoint: `870aefc7bfe3172b848b034393598645cd212c69` (pushed); no master merge.
+- Last tested campaign checkpoint: `870aefc7bfe3172b848b034393598645cd212c69`. Next slice: Stage B Bills, accepted office tenure and committee diagnostics. Independent Stage A review remains advisory and any concrete correction will be checkpointed separately.
 - Authority: campaign spec, approved question catalogue, composable query contracts, query schema/ownership contract, and source mappings. No ontology, ETL mapping, source fixture, production, ingestion or deployment changes.
 - Preserve Q06/Q09/Q23/Q28/Q29/Q35 and their regressions. Compiler remains read-only and safety validated.
 
