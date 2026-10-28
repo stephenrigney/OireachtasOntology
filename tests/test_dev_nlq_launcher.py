@@ -8,6 +8,7 @@ the bounded Fuseki startup/reuse behaviour using stub ``uv``, ``docker`` and
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import stat
@@ -23,6 +24,36 @@ DEFAULT_QUERY_URL = "http://localhost:3030/houses/query"
 DEFAULT_GSP_URL = "http://localhost:3030/houses/data"
 DEFAULT_SPARQL_URL = "http://localhost:3030/houses/query"
 DEFAULT_FUSEKI_PASSWORD = "oireachtas-dev"
+
+# Representative `docker inspect` output for this Compose service. Docker omits
+# State.Health entirely when the container has no configured healthcheck.
+DOCKER_INSPECT_NO_HEALTH = '''\
+[
+  {
+    "Id": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "State": {
+      "Status": "running",
+      "Running": true,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 1234,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2026-10-28T12:00:00Z",
+      "FinishedAt": "0001-01-01T00:00:00Z"
+    },
+    "NetworkSettings": {
+      "Ports": {
+        "3030/tcp": [
+          {"HostIp": "0.0.0.0", "HostPort": "3030"}
+        ]
+      }
+    }
+  }
+]
+'''
 
 UV_STUB = """\
 #!/usr/bin/env bash
@@ -47,6 +78,19 @@ DOCKER_STUB = """\
 case "${1:-}" in
   inspect)
     printf 'DOCKER:%s\\n' "$*" >&2
+    format="${3:-}"
+    # Model Docker's missing-map-key failure for direct `.State.Health` access.
+    if [[ -n "${STUB_DOCKER_INSPECT_FILE:-}" ]]; then
+      inspect_json="$(cat "$STUB_DOCKER_INSPECT_FILE")"
+    elif [[ -n "${STUB_FUSEKI_HEALTH:-}" && "${STUB_FUSEKI_HEALTH}" != "none" ]]; then
+      inspect_json="[{\\"State\\":{\\"Status\\":\\"running\\",\\"Health\\":{\\"Status\\":\\"${STUB_FUSEKI_HEALTH}\\"}},\\"NetworkSettings\\":{\\"Ports\\":{\\"3030/tcp\\":[{\\"HostIp\\":\\"0.0.0.0\\",\\"HostPort\\":\\"3030\\"}]}}}]"
+    else
+      inspect_json='[{"State":{"Status":"running"},"NetworkSettings":{"Ports":{"3030/tcp":[{"HostIp":"0.0.0.0","HostPort":"3030"}]}}}]'
+    fi
+    if [[ "$format" == *".State.Health"* && "$inspect_json" != *'"Health"'* ]]; then
+      echo 'template parsing error: template: :1:29: executing "" at <.State.Health>: map has no entry for key "Health"' >&2
+      exit 1
+    fi
     printf '%s|%s|%s\\n' \\
       "${STUB_FUSEKI_STATE:-running}" \\
       "${STUB_FUSEKI_HEALTH:-none}" \\
@@ -208,6 +252,23 @@ def test_launcher_defaults_and_starts_uvicorn_with_reload(tmp_path):
     assert "DOCKER:compose up -d --no-recreate fuseki" in calls
     assert "DOCKER:compose stop" not in calls
     assert "DOCKER:compose down" not in calls
+
+
+def test_docker_inspection_without_state_health_is_supported(tmp_path):
+    launcher = _launcher_tree(tmp_path, "NLQ_LLM_API_KEY=file-key\n")
+    inspect_path = tmp_path / "docker-inspect.json"
+    inspect_path.write_text(DOCKER_INSPECT_NO_HEALTH, encoding="utf-8")
+    inspection = json.loads(DOCKER_INSPECT_NO_HEALTH)
+    assert "Health" not in inspection[0]["State"]
+
+    result = _run_launcher(
+        launcher,
+        extra_env={"STUB_DOCKER_INSPECT_FILE": str(inspect_path)},
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "UVICORN:poc.nlq.app:app" in result.stdout
+    assert "template parsing error" not in result.stderr
 
 
 def test_explicit_environment_overrides_env_local_and_defaults(tmp_path):

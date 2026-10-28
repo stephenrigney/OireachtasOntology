@@ -206,7 +206,7 @@ report_fuseki_readiness_failure() {
 # port publishing declared by the current configuration.
 inspect_fuseki_container() {
   local container_id details
-  local format='{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}|{{range $binding := index .NetworkSettings.Ports "3030/tcp"}}{{$binding.HostIp}}:{{$binding.HostPort}} {{end}}'
+  local format='{{.State.Status}}|{{with index .State "Health"}}{{.Status}}{{else}}none{{end}}|{{range $binding := index .NetworkSettings.Ports "3030/tcp"}}{{$binding.HostIp}}:{{$binding.HostPort}} {{end}}'
 
   if ! container_id="$(docker compose ps -q fuseki)"; then
     echo "ERROR: Could not identify the Compose-managed Fuseki container. Check 'docker compose ps fuseki'." >&2
