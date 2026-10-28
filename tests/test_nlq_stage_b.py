@@ -57,13 +57,13 @@ class TinyDataset:
     def close(self):
         pass
 
-    def add_office_tenure(self, name, label, start, end=None):
-        slug = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().lower().replace(" ", "-")
+    def add_office_tenure(self, name, label, start, end=None, *, code=None, holding_suffix=""):
+        slug = code or unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().lower().replace(" ", "-")
         member = URIRef("https://data.oireachtas.ie/ie/oireachtas/member/id/" + slug)
         graph = self.dataset.graph(URIRef("https://data.oireachtas.ie/graph/member/" + slug))
         office_graph = self.dataset.graph(URIRef("https://data.oireachtas.ie/graph/offices"))
         office = URIRef("https://data.oireachtas.ie/office/test-" + label.lower().replace(" ", "-"))
-        holding = URIRef(str(member) + "#holding")
+        holding = URIRef(str(member) + "#holding" + holding_suffix)
         date_range = URIRef(str(holding) + "#range")
         graph.add((member, RDF.type, URIRef(AGENTS + "Member")))
         graph.add((member, URIRef("http://xmlns.com/foaf/0.1/name"), Literal(name)))
@@ -337,6 +337,34 @@ def test_stage_b_authoritative_validator_rejects_mutated_roles_edges_constraints
     assert validate_plan(other_bill) == other_bill
 
 
+def test_q25_authoritative_validator_rejects_mutated_member_iri_office_role_and_interval():
+    import copy
+    fixture = TinyDataset()
+    fixture.add_office_tenure("Micheál Martin", "Taoiseach", "2025-01-23T00:00:00")
+    plan = _run(fixture, "Was Micheál Martin Taoiseach in September 2026?").plan
+    assert plan["referents"]["member"]["resolution"] == "resolved"
+    mutations = []
+    changed = copy.deepcopy(plan)
+    changed["referents"]["member"]["iri"] = "https://data.oireachtas.ie/ie/oireachtas/member/id/other"
+    mutations.append(changed)
+    changed = copy.deepcopy(plan)
+    changed["constraints"][1]["value"] = "https://data.oireachtas.ie/ie/oireachtas/member/id/other"
+    mutations.append(changed)
+    changed = copy.deepcopy(plan)
+    changed["referents"]["office"]["mention"] = "Minister for Finance"
+    mutations.append(changed)
+    changed = copy.deepcopy(plan)
+    changed["constraints"][0]["value"]["start"] = "2026-09-31"
+    mutations.append(changed)
+    for mutated in mutations:
+        try:
+            validate_plan(mutated)
+        except PlanError:
+            pass
+        else:
+            raise AssertionError(f"authoritative office validator accepted a mutated B3 plan: {mutated!r}")
+
+
 def test_legacy_sidecar_b_plan_is_not_a_valid_shared_envelope():
     sidecar = {"version": 2, "asOf": AS_OF.isoformat(), "family": "bill_lookup",
                "bill": {"year": 2025, "number": "23"},
@@ -493,6 +521,48 @@ def test_q22_readability_preserves_primary_false_null_and_role_only_participatio
     assert readable.rows[2][2] == "Minister for Finance"
 
 
+def test_q21_title_match_without_process_is_missing_process_not_missing_title(monkeypatch):
+    fixture = TinyDataset()
+    bill, graph = add_bill_record(fixture, year=2025, number="31", title="Artificial Intelligence Bill")
+    process = URIRef(bill + "#process")
+    graph.remove((process, RDF.type, URIRef(ELIDL + "LegislativeProcess")))
+    outcome = _run(fixture, "What is happening to Artificial Intelligence Bill?")
+    assert outcome.status == "incomplete_status_evidence"
+    assert "no typed LegislativeProcess" in outcome.diagnostic
+    assert "No locally recorded Bill title matches" not in outcome.diagnostic
+    assert "Artificial Intelligence Bill" in outcome.result.rows[0][0]
+    response = _ask(monkeypatch, fixture, "What is happening to Artificial Intelligence Bill?")
+    assert "The title-matched typed Bill has no typed LegislativeProcess" in response.text
+    assert "No locally recorded Bill title matches" not in response.text
+
+
+def test_q22_typed_bill_without_participation_is_reported_and_stays_ambiguous_with_other_bill(monkeypatch):
+    fixture = TinyDataset()
+    add_bill_record(fixture, year=2024, number="8",
+                    title="Artificial Intelligence Companion Services Bill",
+                    sponsors=[{"role": "Primary sponsor"}])
+    add_bill_record(fixture, year=2025, number="9",
+                    title="Artificial Intelligence Companion Services (Amendment) Bill")
+    outcome = _run(fixture, "Who is the sponsor of Artificial Intelligence Companion Services Bill?")
+    assert outcome.status == "ambiguous"
+    assert {row[0] for row in outcome.result.rows} == {
+        "Artificial Intelligence Companion Services Bill",
+        "Artificial Intelligence Companion Services (Amendment) Bill",
+    }
+    assert len(outcome.result.rows) == 2
+
+    fixture = TinyDataset()
+    add_bill_record(fixture, year=2025, number="10", title="Artificial Intelligence Companion Services Bill")
+    outcome = _run(fixture, "Who is the sponsor of Artificial Intelligence Companion Services Bill?")
+    assert outcome.status == "source_data_unavailable"
+    assert "no recorded sponsor Participation" in outcome.diagnostic
+    assert "No locally recorded Bill title matches" not in outcome.diagnostic
+    response = _ask(monkeypatch, fixture,
+                    "Who is the sponsor of Artificial Intelligence Companion Services Bill?")
+    assert "matching Bill has no recorded sponsor Participation" in response.text
+    assert "No locally recorded Bill title matches" not in response.text
+
+
 def test_stage_b_ask_content_is_specific_not_generic_unavailable(monkeypatch):
     fixture = TinyDataset()
     add_bill(fixture)
@@ -536,6 +606,102 @@ def test_q18_title_ambiguity_returns_separate_official_bill_candidates(monkeypat
     assert "https://data.oireachtas.ie/ie/oireachtas/bill/2024/8" in response.text
     assert "https://data.oireachtas.ie/ie/oireachtas/bill/2025/9" in response.text
     assert len(fixture.queries) == 1
+    assert "Stage A typed family result" not in response.text
+    assert "Several distinct Bill IRIs" in response.text
+    assert "Resolve the supplied Bill title mention" in response.text
+
+
+def test_q22_asymmetric_missing_participation_identity_remains_ambiguous_in_ask(monkeypatch):
+    fixture = TinyDataset()
+    add_bill_record(fixture, year=2024, number="8",
+                    title="Artificial Intelligence Companion Services Bill",
+                    sponsors=[{"role": "Primary sponsor"}])
+    add_bill_record(fixture, year=2025, number="9",
+                    title="Artificial Intelligence Companion Services (Amendment) Bill")
+    response = _ask(monkeypatch, fixture,
+                    "Who is the sponsor of Artificial Intelligence Companion Services Bill?")
+    assert response.status_code == 200
+    assert "Several distinct Bill IRIs" in response.text
+    assert "Artificial Intelligence Companion Services Bill" in response.text
+    assert "Artificial Intelligence Companion Services (Amendment) Bill" in response.text
+    assert "https://data.oireachtas.ie/ie/oireachtas/bill/2024/8" in response.text
+    assert "https://data.oireachtas.ie/ie/oireachtas/bill/2025/9" in response.text
+    assert "Stage A typed family result" not in response.text
+
+
+def test_q25_and_q27_adversarial_office_outcomes_are_visible_through_ask(monkeypatch):
+    partial = TinyDataset()
+    partial.add_office_tenure("Micheál Martin", "Taoiseach", "2026-09-20T00:00:00", "2026-10-01T00:00:00")
+    response = _ask(monkeypatch, partial, "Was Micheál Martin Taoiseach in September 2026?")
+    assert "Yes" in response.text and "2026-09-20" in response.text and "2026-10-01" in response.text
+
+    unknown = TinyDataset()
+    not_found = _ask(monkeypatch, unknown, "Was Micheál Martin Taoiseach in September 2026?")
+    assert "No exact local Member identity matches" in not_found.text
+    assert "Yes" not in not_found.text
+
+    ambiguous = TinyDataset()
+    ambiguous.add_office_tenure("Micheál Martin", "Taoiseach", "2025-01-23T00:00:00", code="micheal-martin-a")
+    ambiguous.add_office_tenure("Micheál Martin", "Taoiseach", "2025-01-23T00:00:00", code="micheal-martin-b")
+    response = _ask(monkeypatch, ambiguous, "Was Micheál Martin Taoiseach in September 2026?")
+    assert "Several distinct local Member IRIs" in response.text
+    assert "micheal-martin-a" in response.text and "micheal-martin-b" in response.text
+    assert "Yes" not in response.text
+
+    nonmatching = TinyDataset()
+    nonmatching.add_office_tenure("Micheál Martin", "Minister for Finance", "2025-01-23T00:00:00")
+    nonmatching.add_office_tenure("Other Person", "Taoiseach", "2025-01-23T00:00:00", code="other-person")
+    response = _ask(monkeypatch, nonmatching, "Was Micheál Martin Taoiseach in September 2026?")
+    assert "No accepted Member-owned OfficeHolding" in response.text
+    assert "Yes" not in response.text
+
+    point = TinyDataset()
+    point.add_office_tenure("Paschal Donohoe", "Minister for Finance", "2020-06-27T00:00:00", "2021-06-30T00:00:00")
+    response = _ask(monkeypatch, point, "Who was Minister for Finance on 1 July 2021?")
+    assert "No accepted local holding is recorded overlapping 2021-07-01 through 2021-07-01" in response.text
+    assert '"2021-07-01T00:00:00"' in point.queries[-1]
+    assert "2021-07-31" not in point.queries[-1]
+
+    point_inclusive = TinyDataset()
+    point_inclusive.add_office_tenure("Paschal Donohoe", "Minister for Finance", "2020-06-27T00:00:00", "2021-07-01T00:00:00")
+    response = _ask(monkeypatch, point_inclusive, "Who was Minister for Finance on 1 July 2021?")
+    assert "Paschal Donohoe" in response.text
+    assert "2020-06-27" in response.text and "2021-07-01" in response.text
+    response = _ask(monkeypatch, point_inclusive, "Who was Minister for Finance on 2 July 2021?")
+    assert "No accepted local holding is recorded overlapping 2021-07-02 through 2021-07-02" in response.text
+
+    q26 = TinyDataset()
+    q26.add_office_tenure("Finance Holder", "Minister for Finance", "2020-01-01T00:00:00")
+    response = _ask(monkeypatch, q26, "Who is Minister for Finance?")
+    assert "incomplete 22-holding sample" in response.text
+    assert "Finance Holder" not in response.text
+
+
+def test_q25_conflicting_holding_is_visible_as_unavailable_not_boolean(monkeypatch):
+    fixture = TinyDataset()
+    fixture.add_office_tenure("Micheál Martin", "Taoiseach", "2025-01-23T00:00:00")
+    graph = fixture.dataset.graph(URIRef("https://data.oireachtas.ie/graph/member/micheal-martin"))
+    range_iri = URIRef("https://data.oireachtas.ie/ie/oireachtas/member/id/micheal-martin#holding#range")
+    graph.add((range_iri, URIRef(MEMBERS + "StartDate"), Literal("2024-01-01T00:00:00", datatype=XSD.dateTime)))
+    response = _ask(monkeypatch, fixture, "Was Micheál Martin Taoiseach in September 2026?")
+    assert "conflicting Member or date evidence" in response.text
+    assert "<strong>Yes</strong>" not in response.text
+    assert "<strong>No</strong>" not in response.text
+
+
+def test_stage_b_missing_bill_keeps_b_summary_and_does_not_claim_validation(monkeypatch):
+    from poc.nlq import app as app_module
+    fixture = TinyDataset()
+    monkeypatch.setenv("OIR_NLQ_AS_OF_DATE", AS_OF.isoformat())
+    monkeypatch.setattr(app_module, "FusekiQueryClient", lambda *args, **kwargs: fixture)
+    response = TestClient(app_module.create_app(repository_root=ROOT)).post("/ask", data={
+        "question": "Tell me about Bill 23 from 2025", "mode": "phase2",
+    })
+    assert response.status_code == 200
+    assert "Look up the exact Bill number and year" in response.text
+    assert "exact typed Bill is absent" in response.text
+    assert "Stage A typed family result" not in response.text
+    assert "Validated composable query plan" in response.text
 
 
 def test_q19_published_query_uses_any_exact_typed_dated_event_and_owner_graph(monkeypatch):
@@ -795,7 +961,7 @@ def test_ask_does_not_present_an_invalid_stage_b_plan_as_validated(monkeypatch):
     assert "Invalid plan must not be represented as validated." in response.text
 
 
-def test_q25_does_not_report_yes_until_named_member_iri_is_bound(monkeypatch):
+def test_q25_executable_exact_member_overlap_and_visible_evidence(monkeypatch):
     from poc.nlq import app as app_module
 
     fixture = TinyDataset()
@@ -806,16 +972,21 @@ def test_q25_does_not_report_yes_until_named_member_iri_is_bound(monkeypatch):
         "question": "Was Micheál Martin Taoiseach in September 2026?", "mode": "phase2",
     })
     assert response.status_code == 200
-    assert "to an exact local Member IRI" in response.text
+    assert "Yes" in response.text
+    assert "Micheál Martin" in response.text
+    assert "2025-01-23" in response.text
+    assert "inclusive calendar window is 2026-09-01 through 2026-09-30" in response.text
     assert "Validated composable query plan" in response.text
+    assert any("VALUES ?member_member" in query for query in fixture.queries)
 
 
-def test_q25_deferred_identity_binding_and_q27_uses_accepted_dated_interval():
+def test_q25_overlap_is_inclusive_and_q27_uses_exact_point_day():
     fixture = TinyDataset()
-    fixture.add_office_tenure("Micheál Martin", "Taoiseach", "2025-01-23T00:00:00")
+    fixture.add_office_tenure("Micheál Martin", "Taoiseach", "2026-09-20T00:00:00", "2026-10-01T00:00:00")
     outcome = _run(fixture, "Was Micheál Martin Taoiseach in September 2026?")
-    assert outcome.status == "source_data_unavailable"
-    assert "exact local Member IRI" in outcome.diagnostic
+    assert outcome.status == "success"
+    assert outcome.result.rows[0][0] == "Yes"
+    assert outcome.result.rows[0][2:] == ("2026-09-20", "2026-10-01")
     assert outcome.plan["family"] == "office_overlap"
 
     fixture = TinyDataset()
@@ -824,3 +995,88 @@ def test_q25_deferred_identity_binding_and_q27_uses_accepted_dated_interval():
     assert outcome.status == "success"
     assert outcome.plan["family"] == "office_point"
     assert outcome.result.rows[0][0] == "Paschal Donohoe"
+
+    fixture = TinyDataset()
+    fixture.add_office_tenure("Paschal Donohoe", "Minister for Finance", "2020-06-27T00:00:00", "2021-07-01T00:00:00")
+    outcome = _run(fixture, "Who was Minister for Finance on 1 July 2021?")
+    assert outcome.status == "success"
+    assert outcome.result.rows[0][0] == "Paschal Donohoe"
+
+    fixture = TinyDataset()
+    fixture.add_office_tenure("Paschal Donohoe", "Minister for Finance", "2020-06-27T00:00:00", "2021-06-30T00:00:00")
+    outcome = _run(fixture, "Who was Minister for Finance on 1 July 2021?")
+    assert outcome.status == "source_data_unavailable"
+    assert "No accepted local holding is recorded overlapping 2021-07-01 through 2021-07-01" in outcome.diagnostic
+
+
+def test_q25_identity_resolution_ambiguity_empty_graph_and_nonmatching_holder_are_not_yes(monkeypatch):
+    fixture = TinyDataset()
+    fixture.add_office_tenure("Micheál Martin", "Taoiseach", "2025-01-23T00:00:00", code="micheal-martin-a")
+    fixture.add_office_tenure("Micheál Martin", "Taoiseach", "2025-01-23T00:00:00", code="micheal-martin-b")
+    outcome = _run(fixture, "Was Micheál Martin Taoiseach in September 2026?")
+    assert outcome.status == "ambiguous"
+    assert len(outcome.candidates) == 2
+    assert len(fixture.queries) == 1  # Exact name resolution only; no office identity was guessed.
+
+    fixture = TinyDataset()
+    fixture.add_office_tenure("Other Person", "Taoiseach", "2025-01-23T00:00:00")
+    outcome = _run(fixture, "Was Micheál Martin Taoiseach in September 2026?")
+    assert outcome.status == "not_found"
+
+    fixture = TinyDataset()
+    fixture.add_office_tenure("Micheál Martin", "Taoiseach", "2025-01-23T00:00:00", "2026-08-31T00:00:00")
+    outcome = _run(fixture, "Was Micheál Martin Taoiseach in September 2026?")
+    assert outcome.status == "success"
+    assert outcome.result.rows[0][0] == "No"
+    assert outcome.result.rows[0][2:] == ("2025-01-23", "2026-08-31")
+    assert "not proof of complete historical absence" in outcome.diagnostic
+    response = _ask(monkeypatch, fixture, "Was Micheál Martin Taoiseach in September 2026?")
+    assert "<td>No</td>" in response.text
+    assert "2025-01-23" in response.text and "2026-08-31" in response.text
+
+    fixture = TinyDataset()
+    fixture.add_office_tenure("Micheál Martin", "Taoiseach", "2025-01-23T00:00:00")
+    member_graph = fixture.dataset.graph(URIRef("https://data.oireachtas.ie/graph/member/micheal-martin"))
+    member_iri = URIRef("https://data.oireachtas.ie/ie/oireachtas/member/id/micheal-martin")
+    member_graph.remove((member_iri, URIRef(MEMBERS + "hasOfficeHolding"), None))
+    outcome = _run(fixture, "Was Micheál Martin Taoiseach in September 2026?")
+    assert outcome.status == "source_data_unavailable"
+    assert "No accepted Member-owned OfficeHolding" in outcome.diagnostic
+    assert not outcome.result
+    response = _ask(monkeypatch, fixture, "Was Micheál Martin Taoiseach in September 2026?")
+    assert "No accepted Member-owned OfficeHolding" in response.text
+    assert "<td>No</td>" not in response.text
+
+
+def test_q25_conflicting_holding_dates_and_row_cap_fail_without_yes_no(monkeypatch):
+    fixture = TinyDataset()
+    fixture.add_office_tenure("Micheál Martin", "Taoiseach", "2025-01-23T00:00:00")
+    graph = fixture.dataset.graph(URIRef("https://data.oireachtas.ie/graph/member/micheal-martin"))
+    range_iri = URIRef("https://data.oireachtas.ie/ie/oireachtas/member/id/micheal-martin#holding#range")
+    graph.add((range_iri, URIRef(MEMBERS + "StartDate"), Literal("2024-01-01T00:00:00", datatype=XSD.dateTime)))
+    outcome = _run(fixture, "Was Micheál Martin Taoiseach in September 2026?")
+    assert outcome.status == "source_data_unavailable"
+    assert "conflicting Member or date evidence" in outcome.diagnostic
+    assert not outcome.result or "Yes" not in str(outcome.result.rows)
+
+    fixture = TinyDataset()
+    for index in range(100):
+        fixture.add_office_tenure("Micheál Martin", "Taoiseach", "2025-01-23T00:00:00",
+                                  code="micheal-martin", holding_suffix=str(index))
+    outcome = _run(fixture, "Was Micheál Martin Taoiseach in September 2026?")
+    assert outcome.status == "insufficient_holding_evidence"
+    assert "100-row safety cap" in outcome.diagnostic
+    assert not outcome.result
+    response = _ask(monkeypatch, fixture, "Was Micheál Martin Taoiseach in September 2026?")
+    assert "100-row safety cap" in response.text
+    assert "<strong>Yes</strong>" not in response.text
+    assert "<strong>No</strong>" not in response.text
+
+
+def test_q26_remains_incomplete_current_coverage_and_never_guesses_holder():
+    fixture = TinyDataset()
+    fixture.add_office_tenure("Finance Holder", "Minister for Finance", "2020-01-01T00:00:00")
+    outcome = _run(fixture, "Who is Minister for Finance?")
+    assert outcome.status == "source_data_unavailable"
+    assert "incomplete 22-holding sample" in outcome.diagnostic
+    assert "Finance Holder" not in outcome.diagnostic

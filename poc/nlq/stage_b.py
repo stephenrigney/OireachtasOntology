@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import re
-from datetime import date
+import calendar
+from datetime import date, datetime
 from typing import Any
 
 from .composable_plan import (PlanOutcome, _PREFIXES, _pattern_predicate,
@@ -76,7 +77,8 @@ def _plan(family: str, as_of: date, *, bill: dict | None = None,
                 "office": {"type": "NamedOffice", "mention": office, "resolution": "unresolved"},
                 "member": {"type": "Member", "answer": True}}
         if family == "office_overlap":
-            refs["member"] = {"type": "Member", "mention": mention, "answer": True}
+            refs["member"] = {"type": "Member", "mention": mention, "answer": True,
+                               "resolution": "unresolved"}
         relations = [_relation("member-holding", "member_has_office_holding", "member", "holding"),
                      _relation("holding-office", "office_holding_of_office", "holding", "office")]
         if interval:
@@ -251,11 +253,18 @@ def plan_stage_b(question: str, *, as_of: date) -> dict[str, Any] | None:
         return _plan("committee_conflict", as_of, committee="Good Friday Committee")
     if re.fullmatch(r"(?i)who is minister for finance[?.!]*", text):
         return _plan("office_current_coverage", as_of, office="Minister for Finance")
-    match = re.fullmatch(r"(?i)was (?P<member>.+?) (?P<office>taoiseach) in september (?P<year>\d{4})[?.!]*", text)
+    match = re.fullmatch(r"(?i)was (?P<member>.+?) (?P<office>taoiseach) in (?P<month>[a-z]+) (?P<year>\d{4})[?.!]*", text)
     if match:
+        try:
+            month = datetime.strptime(match["month"], "%B").month
+            year = int(match["year"])
+            start = date(year, month, 1)
+            end = date(year, month, calendar.monthrange(year, month)[1])
+        except (ValueError, OverflowError):
+            return None
         return _plan("office_overlap", as_of, mention=" ".join(match["member"].split()),
-                     office="Taoiseach", interval=(f"{match['year']}-09-01", f"{match['year']}-09-30"))
-    match = re.fullmatch(r"(?i)who was (?P<office>minister for finance) on (?P<day>\d{1,2}) (?P<month>[a-z]+) (?P<year>\d{4})[?.!]*", text)
+                     office="Taoiseach", interval=(start.isoformat(), end.isoformat()))
+    match = re.fullmatch(r"(?i)who was (?P<office>.+?) on (?P<day>\d{1,2}) (?P<month>[a-z]+) (?P<year>\d{4})[?.!]*", text)
     if match:
         try:
             day = date.fromisoformat(f"{match['year']}-{__import__('datetime').datetime.strptime(match['month'], '%B').month:02d}-{int(match['day']):02d}")
@@ -337,7 +346,13 @@ def validate_stage_b_plan(plan: Any) -> dict[str, Any]:
             expected = _plan(family, date.fromisoformat(plan["asOf"]), office=mention)
         elif family == "office_overlap":
             mention = refs["member"]["mention"]
-            if refs["office"].get("mention") != "Taoiseach": fail("Office overlap requires the reviewed Taoiseach role.")
+            member = refs["member"]
+            if not isinstance(mention, str) or not mention.strip():
+                fail("Office overlap requires a grounded Member name.")
+            if not isinstance(refs["office"].get("mention"), str) or not refs["office"]["mention"].strip():
+                fail("Office overlap requires a grounded named-office role.")
+            if refs["office"]["mention"] != "Taoiseach":
+                fail("The bounded Member-overlap route is limited to the reviewed Taoiseach role.")
             interval = _constraint_value(plan, "interval")
             if not isinstance(interval, dict) or set(interval) != {"start", "end", "inclusive"} or interval["inclusive"] is not True:
                 fail("Office overlap requires a closed inclusive calendar interval.")
@@ -345,8 +360,44 @@ def validate_stage_b_plan(plan: Any) -> dict[str, Any]:
             if start > end: fail("Office interval start must not follow its end.")
             expected = _plan(family, date.fromisoformat(plan["asOf"]), mention=mention,
                              office=refs["office"]["mention"], interval=(start.isoformat(), end.isoformat()))
+            resolution = member.get("resolution", "unresolved")
+            if resolution == "unresolved":
+                if member != expected["referents"]["member"]:
+                    fail("Unresolved office Member referent contains unsupported identity fields.")
+            elif resolution == "resolved":
+                if set(member) != {"type", "mention", "answer", "resolution", "iri", "label"} or member.get("answer") is not True:
+                    fail("Resolved office Member referent has unsupported identity fields.")
+                from .composable_plan import _require_local_iri
+                _require_local_iri(member["iri"], "Member")
+                if not isinstance(member["label"], str) or not member["label"].strip():
+                    fail("Resolved office Member requires its exact local display label.")
+                expected["referents"]["member"] = dict(member)
+                expected["constraints"].append(_constraint("member", "memberIdentity", "equals", member["iri"]))
+            elif resolution in {"ambiguous", "not_found", "source_data_unavailable", "unsupported_mapping"}:
+                allowed = {"type", "mention", "answer", "resolution"}
+                if resolution == "ambiguous": allowed.add("candidates")
+                if set(member) != allowed or member.get("answer") is not True:
+                    fail("Unresolved office Member outcome has unsupported identity fields.")
+                if resolution == "ambiguous":
+                    candidates = member["candidates"]
+                    if not isinstance(candidates, list) or len(candidates) < 2:
+                        fail("Ambiguous office Member requires distinct local IRI candidates.")
+                    from .composable_plan import _require_local_iri
+                    seen_iris = set()
+                    for candidate in candidates:
+                        if (not isinstance(candidate, dict) or set(candidate) != {"iri", "label"}
+                                or not isinstance(candidate["label"], str) or not candidate["label"].strip()):
+                            fail("Ambiguous office Member candidates require a local IRI and readable label.")
+                        _require_local_iri(candidate["iri"], "Member candidate")
+                        if candidate["iri"] in seen_iris:
+                            fail("Ambiguous office Member candidates must have distinct IRIs.")
+                        seen_iris.add(candidate["iri"])
+                expected["referents"]["member"] = dict(member)
+            else:
+                fail("Office Member resolution must use a reviewed local identity outcome.")
         else:
-            if refs["office"].get("mention") != "Minister for Finance": fail("Office point requires the reviewed Minister for Finance role.")
+            if not isinstance(refs["office"].get("mention"), str) or not refs["office"]["mention"].strip():
+                fail("Office point requires a grounded named-office role.")
             point = _constraint_value(plan, "interval")
             if not isinstance(point, dict) or set(point) != {"start", "end", "inclusive"} or point["inclusive"] is not True or point["start"] != point["end"]:
                 fail("Office point lookup requires one inclusive calendar date.")
@@ -450,10 +501,12 @@ def _query(plan: dict[str, Any], supported_predicates) -> str:
           ?bill a eli-dl:DraftLegislationWork ; eli:type_document agents:Bill ; eli:title ?title .
           OPTIONAL {{ ?bill agents:legislativeYear ?year }}
           FILTER(LANG(?title) = "en")
-          ?process a eli-dl:LegislativeProcess .
-          OPTIONAL {{ ?process eli-dl:process_number ?number }}
-          OPTIONAL {{ ?process eli-dl:process_status ?status }}
-          OPTIONAL {{ ?activity a eli-dl:LegislativeActivity ; eli-dl:forms_part_of ?process ; eli-dl:activity_date ?eventDate ; eli-dl:had_activity_type ?eventType . FILTER(DATATYPE(?eventDate) = xsd:date) }}
+          OPTIONAL {{
+            ?process a eli-dl:LegislativeProcess .
+            OPTIONAL {{ ?process eli-dl:process_number ?number }}
+            OPTIONAL {{ ?process eli-dl:process_status ?status }}
+            OPTIONAL {{ ?activity a eli-dl:LegislativeActivity ; eli-dl:forms_part_of ?process ; eli-dl:activity_date ?eventDate ; eli-dl:had_activity_type ?eventType . FILTER(DATATYPE(?eventDate) = xsd:date) }}
+          }}
         }} FILTER(REGEX(STR(?graph), "{graph_regex}"))'''
         for token in _title_tokens_from_plan(plan): body += f' FILTER(CONTAINS(LCASE(STR(?title)), "{token}")) '
         select = "?bill ?title ?year ?process ?number ?status ?eventDate ?eventType"
@@ -469,15 +522,20 @@ def _query(plan: dict[str, Any], supported_predicates) -> str:
           ?bill a eli-dl:DraftLegislationWork ; eli:type_document agents:Bill ; eli:title ?title .
           OPTIONAL {{ ?bill agents:legislativeYear ?year }}
           FILTER(LANG(?title) = "en")
-          ?process a eli-dl:LegislativeProcess ; eli-dl:had_participation ?participation .
-          ?participation a eli-dl:Participation .
-          OPTIONAL {{ ?process eli-dl:process_number ?number }}
-          OPTIONAL {{ ?process eli-dl:process_status ?status }}
-          OPTIONAL {{ ?participation eli-dl:had_participant_person ?member .
-            OPTIONAL {{ GRAPH ?memberGraph {{ ?member a agents:Member ; foaf:name ?memberName }}
-              FILTER(REGEX(STR(?memberGraph), "{member_regex}")) }} }}
-          OPTIONAL {{ ?participation agents:isPrimarySponsor ?primary }}
-          OPTIONAL {{ ?participation rdfs:label ?role }}
+          OPTIONAL {{
+            ?process a eli-dl:LegislativeProcess .
+            OPTIONAL {{ ?process eli-dl:process_number ?number }}
+            OPTIONAL {{ ?process eli-dl:process_status ?status }}
+            OPTIONAL {{
+              ?process eli-dl:had_participation ?participation .
+              ?participation a eli-dl:Participation .
+              OPTIONAL {{ ?participation eli-dl:had_participant_person ?member .
+                OPTIONAL {{ GRAPH ?memberGraph {{ ?member a agents:Member ; foaf:name ?memberName }}
+                  FILTER(REGEX(STR(?memberGraph), "{member_regex}")) }} }}
+              OPTIONAL {{ ?participation agents:isPrimarySponsor ?primary }}
+              OPTIONAL {{ ?participation rdfs:label ?role }}
+            }}
+          }}
         }} FILTER(REGEX(STR(?graph), "{graph_regex}"))
         '''
         for token in _title_tokens_from_plan(plan): body += f' FILTER(CONTAINS(LCASE(STR(?title)), "{token}")) '
@@ -695,6 +753,12 @@ def _project_bill_result(family: str, result: QueryResult) -> tuple[QueryResult,
         if family == "bill_title_search":
             return candidate_table, "success", base_notice + " Candidate identity is the distinct Bill resource IRI."
         if family == "bill_status_history":
+            processes = {_cell(result, row, "process") for row in rows} - {"—"}
+            if not processes:
+                out = QueryResult("select", ("English title", "Current process status", "Bill number", "Legislative year", "Dated lifecycle history", "Official Bill"),
+                                  ((title, "No typed LegislativeProcess recorded", number, year,
+                                    "No process-linked dated history can be established", bill),))
+                return out, "incomplete_status_evidence", base_notice + " The title-matched typed Bill has no typed LegislativeProcess in its owner graph; no process status or lifecycle history can be established."
             statuses = {_cell(result, row, "status") for row in rows} - {"—"}
             if len(statuses) > 1:
                 label, status, note = "Conflicting process statuses", "conflicting_status_evidence", "The current process status is conflicting; no value was selected."
@@ -827,6 +891,47 @@ def handle_stage_b(question: str, *, as_of: date, fuseki, supported_predicates) 
         from .composable_plan import _execute_office_question, plan_question, validate_plan
         office_mention = _ref(plan, "office")["mention"]
         if family == "office_overlap":
+            from .stage_a import _resolve_member
+            member_ref = _ref(plan, "member")
+            member_mention = member_ref["mention"]
+            try:
+                candidates = _resolve_member(member_mention, fuseki, supported_predicates)
+            except NLQError as error:
+                resolution = "unsupported_mapping" if "requires a full name" in str(error) else "source_data_unavailable"
+                member_ref["resolution"] = resolution
+                _validate(plan)
+                status = "unsupported_capability" if resolution == "unsupported_mapping" else "source_data_unavailable"
+                return PlanOutcome(status, plan=plan,
+                                   diagnostic=f"The requested Member identity could not be resolved safely: {error}")
+            except Exception as error:
+                member_ref["resolution"] = "source_data_unavailable"
+                _validate(plan)
+                return PlanOutcome("query_execution_failed", plan=plan,
+                                   diagnostic=f"The read-only exact Member identity lookup did not complete: {error}")
+            if len(candidates) != 1:
+                if not candidates:
+                    member_ref["resolution"] = "not_found"
+                    _validate(plan)
+                    return PlanOutcome("not_found", plan=plan,
+                                       diagnostic=(f'No exact local Member identity matches “{member_mention}”; '
+                                                   "no office query or yes/no answer was produced."))
+                member_ref.update({
+                    "resolution": "ambiguous",
+                    "candidates": [{"iri": iri, "label": label}
+                                   for iri, label in sorted(candidates.items())],
+                })
+                _validate(plan)
+                candidate_outcomes = tuple({"iri": iri, "label": label}
+                                           for iri, label in sorted(candidates.items()))
+                return PlanOutcome("ambiguous", plan=plan,
+                                   candidates=candidate_outcomes,
+                                   diagnostic=(f'Several distinct local Member IRIs exactly match “{member_mention}”; '
+                                               "choose a candidate before testing the office interval."))
+            member_iri, member_label = next(iter(candidates.items()))
+            member_ref.update({"resolution": "resolved", "iri": member_iri, "label": member_label})
+            plan["constraints"].append(_constraint("member", "memberIdentity", "equals", member_iri))
+            _validate(plan)
+        if family == "office_overlap":
             value = _constraint_value(plan, "interval")
             start = date.fromisoformat(value["start"])
             end = date.fromisoformat(value["end"])
@@ -839,17 +944,41 @@ def handle_stage_b(question: str, *, as_of: date, fuseki, supported_predicates) 
         office_plan = plan_question(q35_question, as_of=as_of)
         if family == "office_point":
             office_plan["constraints"][0]["value"].update({"start": parsed.isoformat(), "end": parsed.isoformat()})
+        else:
+            member = _ref(plan, "member")
+            office_plan["referents"]["member"] = {
+                "type": "Member", "answer": True, "mention": member["mention"],
+                "resolution": "resolved", "iri": member["iri"], "label": member["label"],
+            }
+            office_plan["constraints"].append(_constraint("member", "memberIdentity", "equals", member["iri"]))
         office_plan = validate_plan(office_plan)
         outcome = _execute_office_question(office_plan, fuseki=fuseki,
                                            supported_predicates=supported_predicates)
-        if family == "office_overlap" and outcome.status == "success":
-            # Q25 must be restricted to the resolved Member IRI, not a display
-            # label. Until the office-plan contract carries that identity into
-            # the compiled path, do not turn an unfiltered holder list into Yes.
-            return PlanOutcome("source_data_unavailable", plan=plan,
-                               sparql=outcome.sparql,
-                               diagnostic=(f"Dated {office_mention} holdings were found, but this bounded Q35 path cannot yet bind "
-                                           f"{_ref(plan, 'member')['mention']} to an exact local Member IRI; no yes/no answer is inferred."))
+        if family == "office_overlap":
+            member = _ref(plan, "member")
+            start_text = _constraint_value(plan, "interval")["start"]
+            end_text = _constraint_value(plan, "interval")["end"]
+            qualified_note = (f"The inclusive calendar window is {start_text} through {end_text}. "
+                              "This reports locally evidenced accepted holdings only; historical coverage is not certified complete.")
+            if outcome.status == "success" and outcome.result is not None:
+                rows = tuple(("Yes", row[0], row[1], row[2]) for row in outcome.result.rows)
+                readable = QueryResult("select", ("Overlap", "Member", "Holding start", "Holding end"), rows)
+                return PlanOutcome("success", plan=plan, sparql=outcome.sparql, result=readable,
+                                   diagnostic=qualified_note + " At least one accepted holding for the exact Member IRI overlaps the requested interval.")
+            negative_markers = (
+                "No accepted Member-owned OfficeHolding record for this reviewed office is present",
+                "No accepted local holding is recorded overlapping",
+            )
+            if (outcome.status == "source_data_unavailable" and outcome.diagnostic
+                    and outcome.diagnostic.startswith(negative_markers[1])):
+                evidence_rows = (outcome.result.rows if outcome.result is not None else ())
+                rows = tuple(("No", row[0], row[1], row[2]) for row in evidence_rows)
+                readable = QueryResult("select", ("Overlap", "Member", "Holding start", "Holding end"), rows)
+                return PlanOutcome("success", plan=plan, sparql=outcome.sparql, result=readable,
+                                   diagnostic=(qualified_note + " No matching accepted holding is recorded for this exact local Member and office in the local dataset; this is a qualified local result, not proof of complete historical absence."))
+            return PlanOutcome(outcome.status, plan=plan, sparql=outcome.sparql,
+                               result=outcome.result, diagnostic=outcome.diagnostic,
+                               candidates=outcome.candidates)
         return PlanOutcome(outcome.status, plan=plan, sparql=outcome.sparql,
                            result=outcome.result, diagnostic=outcome.diagnostic,
                            candidates=outcome.candidates)

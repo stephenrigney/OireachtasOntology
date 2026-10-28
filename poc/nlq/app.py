@@ -165,7 +165,13 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                 is_q35 = bool(outcome.plan and outcome.plan.get("referents", {}).get("holding", {}).get("type") == "OfficeHolding")
                 is_q23 = bool(outcome.plan and outcome.plan.get("referents", {}).get("participation", {}).get("type") == "BillParticipation")
                 parsed_stage_a = parse_stage_a_question(question)
-                stage_a_family = (outcome.plan.get("family") if outcome.plan else
+                stage_a_family_ids = {
+                    "member_lookup", "previous_service", "dail_duration", "term_count",
+                    "seanad_entry", "seanad_representation", "current_collection",
+                    "committee_boolean", "committee_count", "house_terms", "dail_all",
+                }
+                plan_family = outcome.plan.get("family") if outcome.plan else None
+                stage_a_family = (plan_family if plan_family in stage_a_family_ids else
                                   parsed_stage_a.family if parsed_stage_a else None)
                 is_stage_a = stage_a_family is not None
                 parsed_stage_b = plan_stage_b(question, as_of=as_of)
@@ -209,6 +215,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     "bill_lookup": "Look up the exact Bill number and year using its Bill-owned graph, including its recorded status, dated history, and any queryable memorandum rendition.",
                     "bills_published": "Select Bills with a dated Published lifecycle event in the requested calendar year; legislative year alone is not publication evidence.",
                     "non_enacted_bills": "List recorded Bills with a known process status other than Enacted, grouped by that controlled status; missing or conflicting status evidence is not treated as non-enacted.",
+                    "bill_title_search": f"Resolve the supplied Bill title mention ({stage_b_bill_mention or 'not specified'}) and show distinct official Bill candidates; ambiguous title matches are not combined or selected by similarity.",
                     "bill_status_history": f"Resolve the supplied Bill title mention ({stage_b_bill_mention or 'not specified'}) against recorded titles, then report source-backed status/history without predicting a next step.",
                     "bill_sponsors": f"Resolve the supplied Bill title mention ({stage_b_bill_mention or 'not specified'}) and preserve each recorded sponsor Participation and its available evidence.",
                     "committee_chair": "Resolve the current Committee on Transport at the supplied as-of date; no chair will be inferred from membership or role labels.",
@@ -276,6 +283,15 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                 }
                 if is_stage_b:
                     message = outcome.diagnostic or "The local Bill/office/committee evidence is insufficient for this request."
+                    entity_outcomes = ()
+                    if outcome.status == "ambiguous" and outcome.plan:
+                        entity_outcomes = tuple(
+                            {"type": referent.get("type", "Entity"),
+                             "resolution": "ambiguous", "status": "ambiguous",
+                             "candidates": referent.get("candidates", [])}
+                            for referent in outcome.plan.get("referents", {}).values()
+                            if referent.get("resolution") == "ambiguous"
+                        )
                     return render(request, question=question, mode=mode,
                                   interpretation=summary, plan_json=plan_json,
                                    plan_heading="Validated composable query plan" if plan_is_validated else None,
@@ -284,8 +300,9 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                                   result=outcome.result, result_notice=outcome.diagnostic if outcome.result else None,
                                   sparql=outcome.sparql,
                                   debug_output=format_debug_payload({"diagnostic": outcome.diagnostic}),
-                                  debug_message="No answer query was executed." if outcome.sparql is None else "The read-only query executed.",
-                                  debug_source="Validated Stage B plan")
+                                   debug_message="No answer query was executed." if outcome.sparql is None else "The read-only query executed.",
+                                   debug_source="Validated Stage B plan" if plan_is_validated else "Rejected Stage B plan",
+                                   entity_outcomes=entity_outcomes)
                 if is_q23:
                     if outcome.status == "missing_sponsorship_evidence":
                         message = "Bill sponsorship evidence is missing from the local dataset; this is not a confirmed negative answer."
