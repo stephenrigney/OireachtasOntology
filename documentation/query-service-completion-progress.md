@@ -1,5 +1,20 @@
 # Query Service completion — recovery and progress record
 
+## Orchestrator Stage C exit
+
+Stage C is accepted for tested query/diagnostic behaviour, with no assertion of
+complete group, hearing, vote or transcript retrieval. Real Fuseki-style typed
+seat transport and owner-metadata omissions were corrected and pinned after
+review. Q16 returns the existing source-backed 160-seat fact; Q17 separates
+parties from missing recognised-group data. Q24 and Q31 distinguish local gaps
+from nonexistence. Q30/Q36/Q37 state exact missing capability/coverage.
+
+Orchestrator command:
+`.venv/bin/python -m pytest -q --disable-warnings tests/test_nlq_stage_c.py tests/test_nlq_stage_b.py tests/test_nlq_composable_stage_a.py tests/test_nlq_composable_q06.py tests/test_nlq_composable_q09.py tests/test_nlq_composable_q23.py tests/test_nlq_composable_q35.py tests/test_nlq_composable_debates.py tests/test_nlq_contract.py tests/test_nlq_poc.py tests/test_nlq_human_readable.py`
+— **306 passed** in 167.05s. Executor Stage C/Debate run: **79 passed**;
+ontology/mapping validation and `git diff --check` passed. Campaign-end full
+suite and final independent integration review are next; no master merge.
+
 ## Orchestrator Stage B exit
 
 Stage B is accepted for tested supported behaviour and precise unavailable
@@ -16,11 +31,10 @@ result; retry with a 300s allowance completed. Executor broader regression:
 **377 passed, 1 skipped**; ontology/mapping validation passed. No full-suite run
 yet after Stage B. `git diff --check` passed. Stage C is next.
 
-## Campaign checkpoint
+## Campaign checkpoint — Stage C implementation in progress
 
-- Branch: `query-service-completion`; baseline at campaign start: `844e51b6fc189a379003c71650e9254c71c67f88`.
-- Documentation-only campaign checkpoints: `8e08cc5`, `d7f26aa`, `24503e7`, `2ab5b02`. Stage A code checkpoint: `870aefc7bfe3172b848b034393598645cd212c69` (pushed); no master merge.
-- `c4c1e08cfc7a7713fe07cfe5a52bafe175262dbf` is the last code-tested parent; current `HEAD` also contains the separate documentation-only evidence update `3edab458e99e6d28710e5b7f648b686a3145e0bd`. B1, B2, B3, and the two independent B2 P1 corrections are implemented in the current uncommitted worktree and are **ready for Stage B review, not declared accepted**. Stage C is the next campaign unit and has not started.
+- Branch: `query-service-completion`; Stage C executor baseline/current HEAD: `ceed22becb79d3b91a1e4e36333c92b1049d89e6` (pushed Stage A/B checkpoint). Stage C changes below are uncommitted and unpushed; no master merge.
+- Stage A and B are campaign-accepted at this checkpoint. Stage C behavior and focused tests are implemented in the current worktree and are ready for parent review; do not mark the campaign complete or commit/push from this executor.
 - Authority: campaign spec, approved question catalogue, composable query contracts, query schema/ownership contract, and source mappings. No ontology, ETL mapping, source fixture, production, ingestion or deployment changes.
 - Preserve Q06/Q09/Q23/Q28/Q29/Q35 and their regressions. Compiler remains read-only and safety validated.
 
@@ -56,7 +70,36 @@ Behaviour and evidence are independent; synthetic execution is not a claim of pr
 | B | Q25 | Implemented exact Member resolution and IRI-bound Q35 holdings query; returns qualified yes/no only with typed dated local evidence, with inclusive calendar overlap and supporting start/end dates. | Executable named-graph `/ask` coverage: positive and partial-month overlap, not-found and ambiguous Member identities, nonmatching holder, dated local negative, empty holding evidence, conflicting dates and safety cap; authoritative validator mutation checks. | No production roster/history completeness claim; empty/conflicting/capped/incomplete evidence is unavailable, never a negative. |
 | B | Q26 | Implemented conservative incomplete-current-roster diagnostic; never selects a holder from an alias or stale local Finance holding. | Executable `/ask` check includes a tempting local Finance holder and verifies it is not disclosed as current. | The accepted development sample is incomplete; current Finance holder remains unavailable. |
 | B | Q27 | Implemented exact calendar-day lookup through Q35’s inclusive interval path; does not expand a point into the whole month. | Executable named-graph `/ask` coverage for accepted 2021-07-01 Finance interval, inclusive end-day, and exclusion immediately after the end. | Preserve exact local Office/Member identity; office alias start is not an establishment date. |
-| C | Q16,Q17,Q24,Q30,Q31,Q36,Q37 | not implemented in campaign | not checked here | Implement supported facts or precise coverage/capability diagnostics; never substitute seats/groups/votes/speech/latest with unrelated facts. |
+| C | Q16 | Implemented: reads one typed DailTerm's exact `agents:seats`; strictly decodes Fuseki's typed `xsd:integer` result and fails on absent, malformed, conflicting seat value or ambiguous term IRI. Never counts people. | Source-backed local: actual `parse_results` transport decoding over existing `tests/expected/houses.ttl` returns 160 for 33rd Dáil; tests ensure a second term lacking seats and a valid-plus-invalid typed assertion cannot be hidden. | No arbitrary Fuseki/current claim. Narrow `house-term-seat-complement` pattern added to query contract 2.8.0 with mapping/transform/golden authority note. |
+| C | Q17 | Implemented: resolves one unique typed HouseTerm before querying term-scoped ParliamentaryParty records; preserves party IRIs with missing labels; separately states ParliamentaryGroup data is missing, not that groups do not exist. 100-row cap is incomplete. | Synthetic `/ask` tests cover empty/missing Houses and Parties data, nonexistent/ambiguous terms, unlabelled parties, and owner/class/predicate gates. | Existing `parliamentary-group-records` limitation; no group inferred from parties/Independent/labels. |
+| C | Q24 | Implemented: exact Bill 2024/48 IRI plus exact owner graph check; absent record reports only local absence and separately explains the reviewed development-capture exclusion due to `bill-stage/None`. Present graph delegates to exact Bill lookup. | Reviewed quarantine evidence plus synthetic exact-identity and unrelated-Bill decoy tests. | No substitution, title-resolution failure, universal runtime-cause assertion, or nonexistence claim. |
+| C | Q30 | Specifically unavailable: alias PAC → Committee of Public Accounts is explicit; pinned metadata/link cannot establish substantive HSE examination or latest coverage. Injected `asOf` appears in the validated plan and diagnostic. | Source-backed pinned PAC Debate metadata is known; tests prove no answer query runs from its metadata. | Requires reviewed HSE-substantive hearing evidence and adequate coverage through `asOf`; no topic predicate, agenda-heading inference or completeness config added. |
+| C | Q31 | Implemented: reuses actual DebateSitting → produced DebateRecord route with date/chamber parameterization and human-readable link; local absence is a coverage diagnostic, not No; 100-row results are visibly incomplete. | Synthetic positive/negative `/ask` mechanics; source-backed pinned development slice inventory identifies only three graphs and no 2026-09-24 Dáil graph. Query/parser failures and unexpected result kinds fail closed as execution failures. | Absence of local graph is not a claim that no debate occurred. Written-answer record decoy does not satisfy sitting. |
+| C | Q36 | Specifically unavailable: Bill-linked voting data/path is absent; sponsorship is explicitly not votes. | `/ask` diagnostic with a sponsor-graph decoy; no query executes. | Requires future authoritative votes source and reviewed queryable path; none introduced. |
+| C | Q37 | Specifically unavailable: transcript text is outside RDF and no approved transcript retrieval exists; metadata/link is not speech content. | `/ask` diagnostic test; source-backed query contract explicitly marks transcript text not emitted. | Requires separately reviewed transcript retrieval capability; none introduced. |
+
+## Stage C verification — implementation worktree (not campaign completion)
+
+- Focused Stage C plus established Debate regressions:
+  `.venv/bin/python -m pytest tests/test_nlq_stage_c.py tests/test_nlq_composable_debates.py -q`
+  — **79 passed**. Follow-up corrections cover Fuseki's actual typed result
+  transport, term identities that must not disappear through OPTIONAL joins,
+  missing/ambiguous party and term evidence, Q16/Q17 owner/class/predicate
+  gates, Q24 exact Bill identity, C-family error presentation and Q31 cap/error
+  handling.
+- Combined Stage A/B/six established-slice regression command, now including
+  Stage C:
+  `.venv/bin/python -m pytest -q tests/test_nlq_stage_c.py tests/test_nlq_stage_b.py tests/test_nlq_composable_stage_a.py tests/test_nlq_composable_q06.py tests/test_nlq_composable_q09.py tests/test_nlq_composable_q23.py tests/test_nlq_composable_q35.py tests/test_nlq_composable_debates.py tests/test_nlq_contract.py tests/test_nlq_poc.py tests/test_nlq_human_readable.py`
+  — **306 passed**. This command preserves the earlier covered query slices
+  while exercising the corrected Stage C tests.
+- `.venv/bin/python tests/validate.py` — passed, **2,584 ontology triples**;
+  `.venv/bin/python -m tools.validation` — passed active mapping integrity.
+  No ontology or mapping file changed.
+- `.venv/bin/python -m compileall -q poc/nlq/app.py poc/nlq/composable_plan.py poc/nlq/stage_c.py tests/test_nlq_stage_c.py`, JSON parsing of all three plan/query contract artifacts, and `git diff --check` — passed.
+- The full pytest suite was not run, per the Stage C executor boundary. No
+  Fuseki corpus rebuild/production query, ETL/fixture mutation, commit, push,
+  deployment, or graph mutation was performed. The campaign's final full suite
+  and independent audit remain with the parent orchestrator.
 
 ## Stage A evidence boundaries
 

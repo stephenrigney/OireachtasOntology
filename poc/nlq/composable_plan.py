@@ -61,6 +61,7 @@ class PlanOutcome:
     candidates: tuple[dict[str, str], ...] = ()
     sparql: str | None = None
     result: QueryResult | None = None
+    request_family: str | None = None
 
 
 @dataclass(frozen=True)
@@ -532,6 +533,9 @@ def validate_plan(plan: Any) -> dict[str, Any]:
         from .stage_b import _B_FAMILIES, validate_stage_b_plan
         if plan["family"] in _B_FAMILIES:
             return validate_stage_b_plan(plan)
+        from .stage_c import _C_FAMILIES, validate_stage_c_plan
+        if plan["family"] in _C_FAMILIES:
+            return validate_stage_c_plan(plan)
         return _validate_stage_a_plan(plan)
     if any(ref.get("type") in {"DebateRecord", "DebateSitting"} for ref in refs.values()):
         return _validate_debate_plan(plan)
@@ -2227,6 +2231,11 @@ def execute_question(question: str, *, as_of: date, fuseki, supported_predicates
             stage_a_request, as_of=as_of, fuseki=fuseki,
             supported_predicates=supported_predicates,
         )
+    from .stage_c import handle_stage_c
+    stage_c_outcome = handle_stage_c(question, as_of=as_of, fuseki=fuseki,
+                                     supported_predicates=supported_predicates)
+    if stage_c_outcome is not None:
+        return stage_c_outcome
     from .stage_b import handle_stage_b
     stage_b_outcome = handle_stage_b(
         question, as_of=as_of, fuseki=fuseki,

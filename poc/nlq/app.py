@@ -170,16 +170,20 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     "seanad_entry", "seanad_representation", "current_collection",
                     "committee_boolean", "committee_count", "house_terms", "dail_all",
                 }
-                plan_family = outcome.plan.get("family") if outcome.plan else None
+                plan_family = outcome.plan.get("family") if outcome.plan else outcome.request_family
                 stage_a_family = (plan_family if plan_family in stage_a_family_ids else
                                   parsed_stage_a.family if parsed_stage_a else None)
                 is_stage_a = stage_a_family is not None
+                is_stage_c = plan_family in {
+                    "dail_seats", "dail_parties_and_groups", "bill_quarantine", "debate_lookup",
+                    "committee_topic_latest", "bill_votes", "debate_transcript",
+                }
                 parsed_stage_b = plan_stage_b(question, as_of=as_of)
-                is_stage_b = parsed_stage_b is not None or bool(outcome.plan and outcome.plan.get("family") in {
+                is_stage_b = not is_stage_c and (parsed_stage_b is not None or bool(outcome.plan and outcome.plan.get("family") in {
                     "bill_lookup", "bills_published", "non_enacted_bills", "bill_status_history", "bill_sponsors", "bill_title_search",
                     "committee_chair", "committee_conflict", "office_current_coverage",
                     "office_overlap", "office_point",
-                })
+                }))
                 member_mention = outcome.plan.get("referents", {}).get("member", {}).get("mention", "the named Member") if is_q06 else None
                 q35_office = outcome.plan.get("referents", {}).get("office", {}) if is_q35 else {}
                 q35_interval = outcome.plan.get("constraints", [{}])[0].get("value", {}) if is_q35 else {}
@@ -224,13 +228,24 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     "office_overlap": "Test whether the named Member's accepted OfficeHolding overlaps any part of the requested inclusive calendar month.",
                     "office_point": "Resolve a Minister for Finance holding on the requested calendar date from accepted Member-owned interval evidence.",
                 }
-                summary = (stage_a_summaries.get(stage_a_family) if is_stage_a else None) or (stage_b_summaries.get(stage_b_family) if is_stage_b else None) or (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
+                stage_c_summaries = {
+                    "dail_seats": "Read the exact typed Dáil HouseTerm seat complement from the Houses graph; Member/replacement counts are not used.",
+                    "dail_parties_and_groups": "List term-scoped ParliamentaryParty records separately and report that recognised ParliamentaryGroup instance data is missing.",
+                    "bill_quarantine": "Check the exact Bill 2024/48 owner graph and, if absent, explain the reviewed source-record problem without implying nonexistence.",
+                    "debate_lookup": f"Look for an actual Dáil DebateSitting on {(((outcome.plan or {}).get('constraints') or [{}])[0]).get('value', 'the requested date')} and its official record link in the local slice.",
+                    "committee_topic_latest": "PAC means Committee of Public Accounts; pinned Debate metadata cannot establish substantive HSE examination or latest coverage.",
+                    "bill_votes": "Check the supported capability boundary: sponsorship is not vote evidence, and Bill-linked voting data is unavailable.",
+                    "debate_transcript": "Check the approved transcript-content boundary; Debate metadata/link is not speech text.",
+                }
+                summary = (stage_a_summaries.get(stage_a_family) if is_stage_a else None) or (stage_c_summaries.get(plan_family) if is_stage_c else None) or (stage_b_summaries.get(stage_b_family) if is_stage_b else None) or (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
                            if is_q06 else ("Find the requested actual DebateSitting and its official record link."
                                              if is_debate else
                                              (q35_summary if is_q35 else
                                               (q23_summary if is_q23 else "Find distinct Members who represented this constituency in the previous Dáil."))))
                 answer_text = ("Dated Bill/office evidence is shown with explicit local-coverage qualifications; unresolved or unknown facts remain explicit."
-                               if is_stage_b else
+                                if is_stage_b else
+                                "Stage C answer uses only reviewed local RDF evidence; unavailable coverage is stated specifically and is not replaced by proxy facts."
+                                if is_stage_c else
                                "Distinct political-affiliation identities with separate supporting membership episodes."
                                if is_q06 else
                                "Yes/no based on an actual DebateSitting, not a dated written-answer record."
@@ -249,7 +264,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                                    plan_heading="Validated composable query plan" if plan_is_validated else None,
                                    plan_explanation={"summary": summary, "validated": plan_is_validated, "answer_text": answer_text},
                                    sparql=outcome.sparql, result=outcome.result,
-                                    result_notice=(outcome.diagnostic if is_stage_a or is_stage_b else
+                                   result_notice=(outcome.diagnostic if is_stage_a or is_stage_b or is_stage_c else
                                                    "Bill graphs are optional. These rows show recorded local sponsorship evidence; the dataset does not certify complete historical coverage."
                                                    if is_q23 else None),
                                   debug_output=outcome.result.raw_json if outcome.result else None,
@@ -271,7 +286,19 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                                   sparql=outcome.sparql, result=outcome.result,
                                   entity_outcomes=entity_outcomes,
                                   debug_output=getattr(outcome, "debug_output", None) or (outcome.result.raw_json if outcome.result else None),
-                                  debug_source=getattr(outcome, "debug_source", None) or ("Fuseki" if outcome.sparql else "Structured planner"))
+                                   debug_source=getattr(outcome, "debug_source", None) or ("Fuseki" if outcome.sparql else "Structured planner"))
+                if is_stage_c:
+                    return render(request, question=question, mode=mode,
+                                  interpretation=summary, plan_json=plan_json,
+                                  plan_heading="Validated composable query plan" if plan_is_validated else None,
+                                  plan_explanation=({"summary": summary, "validated": plan_is_validated} if plan_is_validated else None),
+                                  error=outcome.diagnostic or "The local data does not support this Stage C answer.",
+                                  interaction_status=outcome.status, result=outcome.result,
+                                  result_notice=outcome.diagnostic if outcome.result else None,
+                                  sparql=outcome.sparql,
+                                  debug_output=format_debug_payload({"diagnostic": outcome.diagnostic}),
+                                  debug_message="No answer query was executed." if outcome.sparql is None else "The reviewed read-only answer query executed.",
+                                  debug_source="Validated Stage C plan" if plan_is_validated else "Rejected Stage C plan")
                 messages = {
                     "unsupported_capability": "This query form is not supported; no answer query was run.",
                     "source_data_unavailable": "The local source data does not contain enough House-term evidence to resolve the previous Dáil.",

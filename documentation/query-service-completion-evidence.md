@@ -179,6 +179,13 @@ before Stage B exit. Q18/Q19/Q20/Q24A had no P1 findings. These review findings
 supersede any earlier broad statement of B2 acceptance for Q21/Q22; corrections
 and exact tested checkpoint belong in the progress record.
 
+Follow-up independently verified the exact archived `ceed22b` tree: both Bill
+P1s are resolved. Original adversarial cases and both missing-fact candidate
+orderings now preserve identity/ambiguity and specific missing-record messages.
+All **39 Stage B tests passed** in that isolated review, without modifying the
+shared worktree or inspecting Stage C. No P1 residuals remain in the reviewed
+Bill behaviour; B3 was outside that follow-up's scope.
+
 ## Independent Stage A acceptance review
 
 Read-only independent review at `c4c1e08` confirmed all six earlier P1 findings

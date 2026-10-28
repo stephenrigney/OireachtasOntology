@@ -763,7 +763,10 @@ Wikidata query or federation is performed.
   not an additive schema-only change: enforced safety-limit changes require an
   explicit compatibility decision. The finite reviewed Bill-document connector
   extension is additive, versioned as query contract `2.7.0` and local safety
-  `1.1.0`, and leaves limits and rejected features unchanged. Consumers reject
+  `1.1.0`, and leaves limits and rejected features unchanged. The Stage C
+  HouseTerm seat-complement pattern is additive in query contract `2.8.0`; its
+  authority is the active Houses mapping, transform and expected RDF, and it
+  does not count Member records. Consumers reject
   unsupported local-safety major versions.
 - The contract is consumed from this repository. Cross-repository packaging or
   distribution is deferred; no extraction mechanism is implied here.
