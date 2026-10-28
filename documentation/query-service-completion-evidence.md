@@ -28,6 +28,42 @@ catalogue remains unchanged.
 This verifies record availability in the preserved capture, not its presence
 in an arbitrary running Fuseki dataset or current real-world legislative status.
 
+### Memorandum queryability review
+
+Independent review confirmed that exposing the already-emitted document chain
+is a narrow Query Service contract extension permitted by the campaign, not a
+mapping/ontology/ownership change. Authority is `bill_mapping.csv` rows 74–80,
+the existing Bill transformer, pinned ELI 1.5 and Bill ETL chain tests:
+
+`Bill → eli:has_part → Work → eli:is_realized_by → LegalExpression → eli:is_embodied_by → Format → eli:uri_schema → rendition`.
+
+The existing safety allowlist lacks exactly the first three connector
+predicates; `eli:uri_schema` already passes the active-mapping safety gate.
+All four need compiler queryability metadata, and `eli:Format` needs the
+compiler class gate. Extension must be finite, deliberately versioned, checked
+against the reviewed emitted pattern and contained in the resolved Bill's own
+graph. Do not add mapping rows, ontology declarations, general ELI allowlisting,
+graph families or live document retrieval. Preserve every read-only safeguard.
+
+Tests must distinguish an absent Bill graph, a loaded Bill with no recorded
+memo, an unavailable query mapping, and available memo renditions. Failure to
+query the document chain must never be reported as absence of a memorandum.
+Final implementation/version evidence belongs in the recovery report.
+
+Compatibility review found a stale README sentence requiring major bumps for
+every capability extension, while its consumer-major number is also obsolete.
+The accepted ancestor `a2009a5` is the exact finite-connector precedent: it
+added `skos:altLabel`/`org:heldBy` to the same contract-owned allowlist with
+contract and safety **minor** bumps. `9e8b019` used a major bump for a breaking
+semantic cutover; Q23 (`ae26f53`) used a minor for additive queryability.
+Orchestration verified that `a2009a5` is an ancestor of campaign baseline.
+Follow the accepted additive discipline for the finite memorandum extension,
+record the versions, and correct the ordinary implementation README rather
+than silently retaining contradictory compatibility guidance. Rejected query
+features, enforced limits, federation and all existing semantic meanings remain
+unchanged. A breaking meaning/identity/ownership or safety-boundary change is
+not authorised by this reconciliation.
+
 ## Seat complement (Q16)
 
 The catalogue's data-readiness note says seats are not explicitly represented.
@@ -99,3 +135,12 @@ On baseline `844e51b`, `.venv/bin/python tests/validate.py` passed ontology
 consistency (2,584 triples), and `.venv/bin/python -m tools.validation` passed
 active mapping integrity. Campaign integration verification is recorded in
 `documentation/query-service-completion-progress.md`.
+
+While the Stage A writer was active, independent unchanged semantic-contract
+checks also passed:
+
+- `.venv/bin/python -m pytest -q tests/test_ontology_validation.py tests/test_mapping_integrity.py tests/test_debates_ontology_contract.py tests/test_debates_mapping_contract.py` — **24 passed**.
+- `.venv/bin/python -m pytest -q tests/test_houses_etl.py tests/test_reference_etl.py tests/test_members_etl.py tests/test_bills_etl.py` — **379 passed**.
+
+These checks protect reviewed input/transform semantics; they do not replace
+post-integration Query Service regression and final full-suite verification.

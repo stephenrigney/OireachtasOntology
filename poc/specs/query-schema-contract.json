@@ -3,7 +3,7 @@
   "contractId": "https://data.oireachtas.ie/specs/query-schema-contract",
   "contractSchema": "poc/specs/query-schema-contract.schema.json",
   "schemaVersion": 1,
-  "contractVersion": "2.5.0",
+  "contractVersion": "2.6.0",
   "description": "Queryable, currently emitted Oireachtas RDF patterns and local NLQ execution boundary.",
   "namespaces": {
     "agents": "https://data.oireachtas.ie/ontology#",
@@ -25,6 +25,7 @@
     "agents:House",
     "agents:DailTerm",
     "agents:SeanadTerm",
+    "dct:PeriodOfTime",
     "members:OireachtasMembership",
     "members:DailMembership",
     "members:SeanadMembership",
@@ -253,6 +254,7 @@
       "id": "house-term-description",
       "graphFamily": "houses",
       "availability": "emitted",
+      "queryableInLocalNlq": true,
       "triples": [["?term", "rdf:type", "agents:DailTerm or agents:SeanadTerm"], ["?term", "skos:prefLabel", "?englishLabel"], ["?term", "agents:termOf", "?house"]]
     },
     {
@@ -282,6 +284,7 @@
       "id": "member-collection-membership",
       "graphFamily": "member-records",
       "availability": "emitted",
+      "queryableInLocalNlq": true,
       "triples": [["?member", "members:hasMembersMembership", "?collectionMembership"], ["?collectionMembership", "members:inOireachtasMembership", "?membership"], ["?collectionMembership", "members:memberOfCollection", "?collection"]],
       "note": "Party records may additionally be typed members:PartyMembership and use members:isPartyMembershipOf. Independent records must use members:memberOfCollection; they are not members:PartyMembership."
     },
@@ -313,18 +316,21 @@
       "id": "representation-reference",
       "graphFamily": "member-records",
       "availability": "emitted",
+      "queryableInLocalNlq": true,
       "triples": [["?membership", "members:isRepresentativeFrom", "?representation"]]
     },
     {
       "id": "committee-membership-reference",
       "graphFamily": "member-records",
       "availability": "emitted",
+      "queryableInLocalNlq": true,
       "triples": [["?member", "members:hasMembersMembership", "?committeeMembership"], ["?committeeMembership", "rdf:type", "members:CommitteeMembership"], ["?committeeMembership", "members:isCommitteeMembershipOf", "?committee"]]
     },
     {
       "id": "committee-description",
       "graphFamily": "committees",
       "availability": "emitted",
+      "queryableInLocalNlq": true,
       "triples": [["?committee", "rdf:type", "members:Committee"], ["?committee", "members:committeeInHouseTerm", "?term"], ["?committee", "skos:prefLabel", "?englishOrIrishLabel"], ["?committee", "members:hasCommitteeDateRange", "?dateRange (optional)"], ["?dateRange", "members:StartDate", "?startDate"], ["?dateRange", "members:EndDate", "?endDate (optional)"]]
     },
     {
@@ -413,6 +419,7 @@
     {"fromGraphFamily": "member-records", "predicate": "members:isPartyMembershipOf", "toGraphFamily": "parties", "joinKey": "same RDF resource IRI", "appliesTo": "PartyMembership only; not independent collection membership"},
     {"fromGraphFamily": "member-records", "predicate": "members:isRepresentativeFrom", "toGraphFamily": "constituencies", "joinKey": "same RDF resource IRI"},
     {"fromGraphFamily": "member-records", "predicate": "members:isCommitteeMembershipOf", "toGraphFamily": "committees", "joinKey": "same RDF resource IRI"},
+    {"fromGraphFamily": "committees", "predicate": "members:committeeInHouseTerm", "toGraphFamily": "houses", "joinKey": "same RDF resource IRI"},
     {"fromGraphFamily": "bill-records", "predicate": "eli-dl:had_participant_person", "toGraphFamily": "member-records", "joinKey": "same RDF resource IRI"},
     {"fromGraphFamily": "member-records", "predicate": "members:heldOffice", "toGraphFamily": "offices", "joinKey": "same RDF resource IRI", "appliesTo": "Accepted OfficeHolding references only; the target is a reviewed local NamedOffice identity, not a source label or observation."}
   ],

@@ -5,15 +5,20 @@
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "asOf", "referents", "relations", "answer"],
+  "allOf": [
+    {"if": {"required": ["family"]}, "then": {"required": ["family"], "properties": {"family": {"enum": ["member_lookup", "previous_service", "dail_duration", "term_count", "seanad_entry", "seanad_representation", "current_collection", "committee_boolean", "committee_count", "house_terms", "dail_all"]}}}},
+    {"if": {"not": {"required": ["family"]}}, "then": {"properties": {"relations": {"minItems": 1}}}}
+  ],
   "properties": {
     "version": {"const": 2},
     "asOf": {"type": "string", "format": "date"},
+    "family": {"enum": ["member_lookup", "previous_service", "dail_duration", "term_count", "seanad_entry", "seanad_representation", "current_collection", "committee_boolean", "committee_count", "house_terms", "dail_all"]},
     "referents": {
       "type": "object", "minProperties": 1,
       "additionalProperties": {
         "type": "object", "additionalProperties": false, "required": ["type"],
         "properties": {
-          "type": {"enum": ["Member", "DailMembership", "DailTerm", "SeanadTerm", "DailConstituency", "PartyMembershipEpisode", "ParliamentaryParty", "PoliticalAffiliationIdentity", "OfficeHolding", "NamedOffice", "DebateRecord", "DebateSitting", "BillParticipation", "Bill"]},
+          "type": {"enum": ["Member", "DailMembership", "SeanadMembership", "CommitteeMembership", "DailTerm", "SeanadTerm", "DailConstituency", "SeanadPanel", "SeanadRepresentation", "Committee", "ParliamentaryCollectionMembership", "ParliamentaryMemberCollection", "IndependentMemberCollection", "PartyMembershipEpisode", "ParliamentaryParty", "PoliticalAffiliationIdentity", "OfficeHolding", "NamedOffice", "DebateRecord", "DebateSitting", "BillParticipation", "Bill"]},
           "selector": {"type": "object", "additionalProperties": false,
             "required": ["kind", "house"], "properties": {"kind": {"const": "previousTerm"}, "house": {"const": "Dail"}}},
           "mention": {"type": "string", "minLength": 1},
@@ -26,13 +31,16 @@
         }
       }
     },
-    "relations": {"type": "array", "minItems": 1, "items": {
+    "relations": {"type": "array", "items": {
       "type": "object", "additionalProperties": false,
       "required": ["id", "fact", "from", "to"],
       "properties": {"id": {"type": "string", "minLength": 1}, "fact": {"type": "string", "minLength": 1}, "from": {"type": "string", "minLength": 1}, "to": {"type": "string", "minLength": 1}}
     }},
     "constraints": {"type": "array", "items": {"$ref": "#/$defs/constraint"}},
     "answer": {"oneOf": [
+      {"type": "object", "additionalProperties": false, "required": ["kind", "referent"], "properties": {"kind": {"const": "family_result"}, "referent": {"type": "string", "minLength": 1}}},
+      {"type": "object", "additionalProperties": false, "required": ["kind", "referent", "distinctBy"], "properties": {"kind": {"const": "count"}, "referent": {"type": "string", "minLength": 1}, "distinctBy": {"const": "identity"}}},
+      {"type": "object", "additionalProperties": false, "required": ["kind", "referent"], "properties": {"kind": {"const": "values"}, "referent": {"type": "string", "minLength": 1}}},
       {"$ref": "#/$defs/entityAnswer"},
       {"$ref": "#/$defs/booleanAnswer"}
     ]}

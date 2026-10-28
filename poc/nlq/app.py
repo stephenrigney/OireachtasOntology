@@ -23,6 +23,7 @@ from .fuseki import (
 from .llm import ResponsesTranslator
 from .pipeline import process_question
 from .composable_plan import execute_question
+from .stage_a import parse_stage_a_question
 from .results import QueryResult, format_debug_payload
 from .schema import build_schema_context
 from .vocabulary import supported_predicates
@@ -110,7 +111,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
         contract = json.loads((repository_root / "poc/specs/composable-query-plan-contract.json").read_text())
         facts = {item["id"]: item for item in contract["relations"]}
         capabilities = [{
-            "id": fact["id"], "description": fact["predicate"],
+            "id": fact["id"], "description": fact.get("predicate", fact.get("association", fact.get("joinKey", fact["id"]))),
             "subjectTypes": [fact["subjectType"]], "objectTypes": [fact["objectType"]],
             "filters": [], "status": "Executable for the bounded composable query slices",
         } for fact in facts.values()]
@@ -155,6 +156,10 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                 is_debate = bool(outcome.plan and outcome.plan.get("referents", {}).get("sitting", {}).get("type") == "DebateSitting")
                 is_q35 = bool(outcome.plan and outcome.plan.get("referents", {}).get("holding", {}).get("type") == "OfficeHolding")
                 is_q23 = bool(outcome.plan and outcome.plan.get("referents", {}).get("participation", {}).get("type") == "BillParticipation")
+                parsed_stage_a = parse_stage_a_question(question)
+                stage_a_family = (outcome.plan.get("family") if outcome.plan else
+                                  parsed_stage_a.family if parsed_stage_a else None)
+                is_stage_a = stage_a_family is not None
                 member_mention = outcome.plan.get("referents", {}).get("member", {}).get("mention", "the named Member") if is_q06 else None
                 q35_office = outcome.plan.get("referents", {}).get("office", {}) if is_q35 else {}
                 q35_interval = outcome.plan.get("constraints", [{}])[0].get("value", {}) if is_q35 else {}
@@ -170,7 +175,20 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     f"exactly matches the resolved local Member identity for {q23_member}. Include every "
                     "recorded participation regardless of primary status and preserve its source evidence."
                 ) if is_q23 else None
-                summary = (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
+                stage_a_summaries = {
+                    "member_lookup": "Resolve the grounded Member name against local Member identities without guessing.",
+                    "previous_service": "Check Dáil membership in the previous term selected from House date evidence at the supplied as-of date.",
+                    "dail_duration": "Calculate the union of dated Dáil membership episodes and preserve gaps.",
+                    "term_count": "Count distinct Dáil term resources or distinct Dáil terms served, according to the requested referent.",
+                    "seanad_entry": "Find the earliest dated Seanad membership episode and retain later term episodes as separate evidence.",
+                    "seanad_representation": "Resolve the requested Seanad term and report its source-provided representation designation.",
+                    "current_collection": "Evaluate dated parliamentary collection membership at the supplied as-of date; Independent remains a status, not a political party.",
+                    "committee_boolean": "Check Member committee service against the uniquely dated current Committee incarnation.",
+                    "committee_count": "Count distinct Committee resource identities rather than membership records.",
+                    "house_terms": "List Dáil HouseTerm date evidence, distinguishing absent end dates from dated ends.",
+                    "dail_all": "Return every distinct matching Member identity with Dáil membership evidence.",
+                }
+                summary = (stage_a_summaries.get(stage_a_family) if is_stage_a else None) or (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
                            if is_q06 else ("Find the requested actual DebateSitting and its official record link."
                                              if is_debate else
                                              (q35_summary if is_q35 else
@@ -178,9 +196,9 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                 if outcome.status == "success":
                     return render(request, question=question, mode=mode,
                                   interpretation=summary, plan_json=plan_json,
-                                  plan_heading="Validated composable query plan",
-                                   plan_explanation={"summary": summary, "validated": True,
-                                                        "answer_text": ("Distinct political-affiliation identities with separate supporting membership episodes."
+                                    plan_heading="Validated composable query plan" if outcome.plan else None,
+                                    plan_explanation={"summary": summary, "validated": bool(outcome.plan),
+                                                         "answer_text": ("Distinct political-affiliation identities with separate supporting membership episodes."
                                                                          if is_q06 else ("Yes/no based on an actual DebateSitting, not a dated written-answer record."
                                                                                          if is_debate and outcome.result.kind == "ask" else
                                                                                          "Readable sitting date and official debate record link."
@@ -188,12 +206,31 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                                                                                          "Member names with exact start/end dates for every separate accepted holding; open ends are identified explicitly."
                                                                                          if is_q35 else
                                                                                          ("One row per Bill identity, with English short title, recorded sponsorship evidence, and source-backed number/year/link where available."
-                                                                                          if is_q23 else "Distinct Members, displayed by name.")))},
+                                                                                           if is_q23 else ("Stage A typed family result using reviewed RDF ownership, with identity and date qualifications preserved." if is_stage_a else "Distinct Members, displayed by name."))))},
                                    sparql=outcome.sparql, result=outcome.result,
-                                   result_notice=("Bill graphs are optional. These rows show recorded local sponsorship evidence; the dataset does not certify complete historical coverage."
-                                                  if is_q23 else None),
+                                    result_notice=(outcome.diagnostic if is_stage_a else
+                                                   "Bill graphs are optional. These rows show recorded local sponsorship evidence; the dataset does not certify complete historical coverage."
+                                                   if is_q23 else None),
                                   debug_output=outcome.result.raw_json if outcome.result else None,
-                                  debug_source="Fuseki")
+                                   debug_source="Fuseki")
+                if is_stage_a:
+                    message = outcome.diagnostic or "The local dataset does not contain enough reviewed evidence to answer this Stage A question."
+                    resolution_ref = (outcome.plan.get("referents", {}).get("committee", {})
+                                      if outcome.plan and outcome.plan.get("referents", {}).get("committee", {}).get("resolution") == "ambiguous"
+                                      else outcome.plan.get("referents", {}).get("member", {}) if outcome.plan else {})
+                    entity_outcomes = ()
+                    if resolution_ref.get("resolution") == "ambiguous":
+                        entity_outcomes = tuple({"type": resolution_ref.get("type", "Member"),
+                                                 "status": "ambiguous", "candidates": outcome.candidates}
+                                                for _ in (0,))
+                    return render(request, question=question, mode=mode, error=message,
+                                  interaction_status=outcome.status, plan_json=plan_json,
+                                   plan_heading="Validated composable query plan" if outcome.plan else None,
+                                   plan_explanation=({"summary": summary, "validated": True} if outcome.plan else None),
+                                  sparql=outcome.sparql, result=outcome.result,
+                                  entity_outcomes=entity_outcomes,
+                                  debug_output=getattr(outcome, "debug_output", None) or (outcome.result.raw_json if outcome.result else None),
+                                  debug_source=getattr(outcome, "debug_source", None) or ("Fuseki" if outcome.sparql else "Structured planner"))
                 messages = {
                     "unsupported_capability": "This query form is not supported; no answer query was run.",
                     "source_data_unavailable": "The local source data does not contain enough House-term evidence to resolve the previous Dáil.",
@@ -257,9 +294,14 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     outcome.plan.get("referents", {}).get("office", {}) if is_q35 and outcome.plan else
                     outcome.plan.get("referents", {}).get("member", {}) if (is_q06 or is_q23) and outcome.plan else {}
                 )
+                if is_stage_a and outcome.plan:
+                    resolution_ref = (outcome.plan.get("referents", {}).get("committee", {})
+                                      if stage_a_family == "committee_boolean" and
+                                      outcome.plan.get("referents", {}).get("committee")
+                                      else outcome.plan.get("referents", {}).get("member", {}))
                 entity_outcomes = ()
                 if resolution_ref.get("resolution") == "ambiguous":
-                    entity_type = "NamedOffice" if is_q35 else "Member"
+                    entity_type = "NamedOffice" if is_q35 else ("Committee" if resolution_ref.get("type") == "Committee" else "Member")
                     entity_outcomes = ({
                         "type": entity_type,
                         "label": resolution_ref.get("mention", "the requested entity"),
