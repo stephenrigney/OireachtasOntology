@@ -186,6 +186,16 @@ All **39 Stage B tests passed** in that isolated review, without modifying the
 shared worktree or inspecting Stage C. No P1 residuals remain in the reviewed
 Bill behaviour; B3 was outside that follow-up's scope.
 
+Final independent integration review at `5248f40` found no Stage C/shared P1s,
+with 261 focused tests independently passing. Separate B3 review found an
+office-point parser that discarded non-Finance mentions and substituted Finance.
+`09e2afd` restricts that route and its validator to Minister for Finance, rejects
+noncanonical bound-constraint order, and scopes missing holdings to the exact
+Member. Independent replay confirmed zero Finance queries/answers for other
+office mentions; 11 office tests passed and no B3 blockers remain. The full
+available suite ran before this final hardening; exact post-hardening focused
+verification and the final 33-case matrix are in the consolidated progress record.
+
 ## Independent Stage A acceptance review
 
 Read-only independent review at `c4c1e08` confirmed all six earlier P1 findings
