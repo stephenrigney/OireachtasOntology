@@ -50,7 +50,7 @@ def test_contract_artifact_loads_and_validates_its_versioned_shape():
         (ROOT / "poc/specs/query-schema-contract.schema.json").read_text(encoding="utf-8")
     )
 
-    assert contract["contractVersion"] == "2.5.0"
+    assert contract["contractVersion"] == "2.8.0"
     assert contract["schemaVersion"] == schema["properties"]["schemaVersion"]["const"] == 1
     assert contract["contractId"] == "https://data.oireachtas.ie/specs/query-schema-contract"
     assert contract["contractSchema"] == "poc/specs/query-schema-contract.schema.json"
@@ -160,12 +160,11 @@ def test_supported_predicates_come_from_contract_policy_and_active_sources():
     assert URIRef("https://data.oireachtas.ie/ontology/members#recognisedAsParty") in predicates
     assert URIRef("http://xmlns.com/foaf/0.1/isPrimaryTopicOf") in predicates
 
-    # These are real emitted triples but are deliberately not in the current
-    # executable grounding allowlist; the contract calls that out explicitly.
-    for excluded in ("eli:has_part", "eli:is_realized_by"):
-        prefix, local_name = excluded.split(":", 1)
-        assert URIRef(namespaces[prefix] + local_name) not in predicates
-        assert excluded not in contract["queryableProperties"]
+    # The finite reviewed Bill-document chain is now queryable.
+    for included in ("eli:has_part", "eli:is_realized_by", "eli:is_embodied_by", "eli:uri_schema"):
+        prefix, local_name = included.split(":", 1)
+        assert URIRef(namespaces[prefix] + local_name) in predicates
+        assert included in contract["queryableProperties"]
     assert URIRef(namespaces["dct"] + "temporal") in predicates
     assert "dct:temporal" in contract["queryableProperties"]
 
@@ -184,11 +183,11 @@ def test_grounding_is_generated_from_contract_scope_without_private_etl_imports(
 
     for term in ("agents:Member", "members:PartyMembership", "eli-dl:DraftLegislationWork"):
         assert term in context
-    assert "contract 2.5.0 (schema version 1)" in context
+    assert "contract 2.8.0 (schema version 1)" in context
     assert "https://data.oireachtas.ie/graph/committees" in context
     assert "same RDF resource IRI" in context
     assert "Reviewed Wikidata political-party item" in context
-    assert "not executable through the current local NLQ predicate allowlist" in context
+    assert "eli:has_part" in context
     assert "members:ParliamentaryGroup (" not in context
     assert "Queryable classes" in context
     assert "brick:" not in context  # unrelated ontology namespaces are not prompt grounding
@@ -249,11 +248,11 @@ def test_house_term_dates_are_queryable_but_bill_document_links_remain_unallowli
     patterns = {pattern["id"]: pattern for pattern in contract["emittedRdfPatterns"]}
 
     assert patterns["house-term-temporal-reference"]["queryableInLocalNlq"] is True
-    assert patterns["bill-document-work-links"]["queryableInLocalNlq"] is False
+    assert patterns["bill-document-work-links"]["queryableInLocalNlq"] is True
     assert patterns["conditionally-resolved-office-holdings"]["queryableInLocalNlq"] is True
     assert patterns["debate-record-identity"]["queryableInLocalNlq"] is True
     assert patterns["house-term-temporal-reference"]["availability"] == "emitted"
-    assert "not-queryable" in patterns["bill-document-work-links"]["availability"]
+    assert patterns["bill-document-work-links"]["availability"] == "emitted"
 
 
 def test_query_schema_v2_corrects_bill_process_ownership_and_exposes_only_reviewed_expansions():
@@ -261,7 +260,9 @@ def test_query_schema_v2_corrects_bill_process_ownership_and_exposes_only_review
     patterns = {pattern["id"]: pattern for pattern in contract["emittedRdfPatterns"]}
     bill_triples = patterns["bill-lifecycle"]["triples"]
 
-    assert ["?process", "eli-dl:latest_activity", "?activity"] in bill_triples
+    assert ["?process", "eli-dl:latest_activity", "?latestActivity (optional)"] in bill_triples
+    assert ["?activity", "rdf:type", "eli-dl:LegislativeActivity"] in bill_triples
+    assert ["?activity", "eli-dl:forms_part_of", "?process"] in bill_triples
     assert ["?bill", "eli-dl:latest_activity", "?activity"] not in bill_triples
     assert ["?bill", "eli:type_document", "agents:Bill"] in bill_triples
     assert patterns["named-office-description"]["queryableInLocalNlq"] is True

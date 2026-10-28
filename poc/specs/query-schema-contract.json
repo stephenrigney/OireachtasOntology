@@ -3,7 +3,7 @@
   "contractId": "https://data.oireachtas.ie/specs/query-schema-contract",
   "contractSchema": "poc/specs/query-schema-contract.schema.json",
   "schemaVersion": 1,
-  "contractVersion": "2.5.0",
+  "contractVersion": "2.8.0",
   "description": "Queryable, currently emitted Oireachtas RDF patterns and local NLQ execution boundary.",
   "namespaces": {
     "agents": "https://data.oireachtas.ie/ontology#",
@@ -25,6 +25,7 @@
     "agents:House",
     "agents:DailTerm",
     "agents:SeanadTerm",
+    "dct:PeriodOfTime",
     "members:OireachtasMembership",
     "members:DailMembership",
     "members:SeanadMembership",
@@ -51,7 +52,8 @@
     "eli:LegalResource",
     "eli:LegalExpression",
     "eli:Work",
-    "eli:Expression"
+    "eli:Expression",
+    "eli:Format"
   ],
   "queryableProperties": [
     "rdf:type",
@@ -119,6 +121,10 @@
     "eli-dl:parliamentary_term",
     "eli-dl:had_participation",
     "eli-dl:had_participant_person"
+    ,"eli:has_part"
+    ,"eli:is_realized_by"
+    ,"eli:is_embodied_by"
+    ,"eli:uri_schema"
   ],
   "graphFamilies": [
     {
@@ -253,7 +259,24 @@
       "id": "house-term-description",
       "graphFamily": "houses",
       "availability": "emitted",
+      "queryableInLocalNlq": true,
       "triples": [["?term", "rdf:type", "agents:DailTerm or agents:SeanadTerm"], ["?term", "skos:prefLabel", "?englishLabel"], ["?term", "agents:termOf", "?house"]]
+    },
+    {
+      "id": "house-term-ordinal",
+      "graphFamily": "houses",
+      "availability": "emitted",
+      "queryableInLocalNlq": true,
+      "triples": [["?term", "rdf:type", "agents:DailTerm"], ["?term", "agents:termNo", "?ordinal"]],
+      "note": "Authority: mappings/houses_mapping.csv, src/oireachtas_etl/transforms/houses.py, and the HouseTerm records in tests/expected/houses.ttl. This identifies a typed DailTerm by its mapped integer term number."
+    },
+    {
+      "id": "house-term-seat-complement",
+      "graphFamily": "houses",
+      "availability": "emitted",
+      "queryableInLocalNlq": true,
+      "triples": [["?term", "rdf:type", "agents:DailTerm"], ["?term", "agents:termNo", "?ordinal"], ["?term", "agents:seats", "?seatCount"]],
+      "note": "Authority: mappings/houses_mapping.csv ([].house.seats → agents:seats), src/oireachtas_etl/transforms/houses.py, and tests/expected/houses.ttl. This is the HouseTerm seat complement; it is not a count of Member identities or membership records. Added to Query Service contract 2.8.0."
     },
     {
       "id": "house-term-temporal-reference",
@@ -282,6 +305,7 @@
       "id": "member-collection-membership",
       "graphFamily": "member-records",
       "availability": "emitted",
+      "queryableInLocalNlq": true,
       "triples": [["?member", "members:hasMembersMembership", "?collectionMembership"], ["?collectionMembership", "members:inOireachtasMembership", "?membership"], ["?collectionMembership", "members:memberOfCollection", "?collection"]],
       "note": "Party records may additionally be typed members:PartyMembership and use members:isPartyMembershipOf. Independent records must use members:memberOfCollection; they are not members:PartyMembership."
     },
@@ -298,8 +322,8 @@
       "graphFamily": "parties",
       "availability": "emitted",
       "queryableInLocalNlq": true,
-      "triples": [["?party", "rdf:type", "members:ParliamentaryParty"], ["?party", "members:activeDuringTerm", "?term"]],
-      "note": "A party's active HouseTerm is the explicit term-scoped collection context; party membership evidence joins through the same OireachtasMembership term."
+      "triples": [["?party", "rdf:type", "members:ParliamentaryParty"], ["?party", "members:activeDuringTerm", "?term"], ["?party", "skos:prefLabel", "?englishLabel"]],
+      "note": "A party's active HouseTerm is the explicit term-scoped collection context; the Parties owner maps and emits its display label. Party membership evidence joins through the same OireachtasMembership term. Label authority: mappings/party_mapping.csv and src/oireachtas_etl/transforms/parties.py."
     },
     {
       "id": "reviewed-political-affiliation-identities",
@@ -313,18 +337,21 @@
       "id": "representation-reference",
       "graphFamily": "member-records",
       "availability": "emitted",
+      "queryableInLocalNlq": true,
       "triples": [["?membership", "members:isRepresentativeFrom", "?representation"]]
     },
     {
       "id": "committee-membership-reference",
       "graphFamily": "member-records",
       "availability": "emitted",
+      "queryableInLocalNlq": true,
       "triples": [["?member", "members:hasMembersMembership", "?committeeMembership"], ["?committeeMembership", "rdf:type", "members:CommitteeMembership"], ["?committeeMembership", "members:isCommitteeMembershipOf", "?committee"]]
     },
     {
       "id": "committee-description",
       "graphFamily": "committees",
       "availability": "emitted",
+      "queryableInLocalNlq": true,
       "triples": [["?committee", "rdf:type", "members:Committee"], ["?committee", "members:committeeInHouseTerm", "?term"], ["?committee", "skos:prefLabel", "?englishOrIrishLabel"], ["?committee", "members:hasCommitteeDateRange", "?dateRange (optional)"], ["?dateRange", "members:StartDate", "?startDate"], ["?dateRange", "members:EndDate", "?endDate (optional)"]]
     },
     {
@@ -340,8 +367,9 @@
       "graphFamily": "bill-records",
       "availability": "emitted",
       "queryableInLocalNlq": true,
-      "triples": [["?bill", "rdf:type", "eli-dl:DraftLegislationWork"], ["?bill", "eli:type_document", "agents:Bill"], ["?bill", "agents:legislativeYear", "?year"], ["?bill", "eli:title", "?englishOrIrishTitle"], ["?process", "rdf:type", "eli-dl:LegislativeProcess"], ["?process", "eli-dl:process_number", "?processNumber"], ["?process", "eli-dl:process_status", "?status"], ["?process", "eli-dl:latest_activity", "?activity"], ["?activity", "eli-dl:forms_part_of", "?process"]],
-      "note": "Bill and process resources are co-owned in the same one-Bill named graph; the ETL emits no direct Bill-to-process RDF edge. Process number is mapped on the LegislativeProcess. This corrects the earlier contract summary: latest_activity is emitted from the process to the activity, not from the Bill. Bill graphs remain optional data."
+      "triples": [["?bill", "rdf:type", "eli-dl:DraftLegislationWork"], ["?bill", "eli:type_document", "agents:Bill"], ["?bill", "agents:legislativeYear", "?year"], ["?bill", "eli:title", "?englishOrIrishTitle"], ["?process", "rdf:type", "eli-dl:LegislativeProcess"], ["?process", "eli-dl:process_number", "?processNumber"], ["?process", "eli-dl:process_status", "?status"], ["?process", "eli-dl:latest_activity", "?latestActivity (optional)"], ["?activity", "rdf:type", "eli-dl:LegislativeActivity"], ["?activity", "eli-dl:forms_part_of", "?process"], ["?activity", "eli-dl:activity_date", "?xsdDate eventDate"], ["?activity", "eli-dl:had_activity_type", "?eventType"]],
+      "controlledValues": ["agents:Bill", "agents:Published", "agents:AwaitingSignatureBill", "agents:CurrentBill", "agents:DefeatedBill", "agents:DeclaredRepugnantToConstitutionBill", "agents:DraftHeadsOfBill", "agents:EnactedBill", "agents:LapsedBill", "agents:WithdrawnBill", "agents:RejectedAtReferendumBill"],
+      "note": "Bill and process resources are co-owned in the same one-Bill named graph; the ETL emits no direct Bill-to-process RDF edge. Process number is mapped on the LegislativeProcess. latest_activity is an optional process pointer, but every typed LegislativeActivity with forms_part_of the process is emitted; lifecycle selection can inspect any such event. Bill graphs remain optional data."
     },
     {
       "id": "bill-sponsor-reference",
@@ -354,10 +382,11 @@
     {
       "id": "bill-document-work-links",
       "graphFamily": "bill-records",
-      "availability": "emitted-but-not-queryable-by-current-predicate-allowlist",
-      "queryableInLocalNlq": false,
-      "triples": [["?bill", "eli:has_part", "?documentWork"], ["?documentWork", "eli:is_realized_by", "?documentExpression"]],
-      "note": "These Bill ETL predicates are emitted but are not currently present in the active property mappings or shared allowlist. Do not generate these patterns as locally executable queries until their mapping/allowlist contract is reviewed."
+      "availability": "emitted",
+      "queryableInLocalNlq": true,
+      "triples": [["?bill", "eli:has_part", "?documentWork"], ["?documentWork", "rdf:type", "eli:Work"], ["?documentWork", "eli:type_document", "?documentType"], ["?documentWork", "eli:is_realized_by", "?documentExpression"], ["?documentExpression", "rdf:type", "eli:LegalExpression"], ["?documentExpression", "eli:is_embodied_by", "?format"], ["?format", "rdf:type", "eli:Format"], ["?format", "eli:uri_schema", "?rendition"]],
+      "controlledValues": ["agents:ExplanatoryMemo"],
+      "note": "The reviewed Bill ETL document chain is queryable within the resolved Bill's own named graph. ExplanatoryMemo documents require the controlled document type plus typed Work, LegalExpression and Format resources; the chain does not imply document co-ownership or retrieval outside the Bill graph."
     },
     {
       "id": "conditionally-resolved-office-holdings",
@@ -413,6 +442,7 @@
     {"fromGraphFamily": "member-records", "predicate": "members:isPartyMembershipOf", "toGraphFamily": "parties", "joinKey": "same RDF resource IRI", "appliesTo": "PartyMembership only; not independent collection membership"},
     {"fromGraphFamily": "member-records", "predicate": "members:isRepresentativeFrom", "toGraphFamily": "constituencies", "joinKey": "same RDF resource IRI"},
     {"fromGraphFamily": "member-records", "predicate": "members:isCommitteeMembershipOf", "toGraphFamily": "committees", "joinKey": "same RDF resource IRI"},
+    {"fromGraphFamily": "committees", "predicate": "members:committeeInHouseTerm", "toGraphFamily": "houses", "joinKey": "same RDF resource IRI"},
     {"fromGraphFamily": "bill-records", "predicate": "eli-dl:had_participant_person", "toGraphFamily": "member-records", "joinKey": "same RDF resource IRI"},
     {"fromGraphFamily": "member-records", "predicate": "members:heldOffice", "toGraphFamily": "offices", "joinKey": "same RDF resource IRI", "appliesTo": "Accepted OfficeHolding references only; the target is a reviewed local NamedOffice identity, not a source label or observation."}
   ],
@@ -472,14 +502,13 @@
     {"id": "parliamentary-group-records", "status": "ontology-only-not-currently-populated", "detail": "members:ParliamentaryGroup and related party/group concepts are not emitted as current queryable group instances; do not infer a group identity or relationship from party collection membership."},
     {"id": "act-descriptions", "status": "not-published", "detail": "Bill graphs may link to an Act via eli:basis_for; Act descriptions are owned by a later Acts ETL."},
     {"id": "bill-availability", "status": "optional-data", "detail": "Bill query patterns work only when Bill graphs have actually been loaded."},
-    {"id": "emitted-bill-document-links-not-allowlisted", "status": "emitted-but-not-queryable", "detail": "The Bills ETL emits eli:has_part and eli:is_realized_by, but they are not in the active property mappings or current local NLQ predicate allowlist."},
     {"id": "office-registry-data", "status": "partially-queryable", "detail": "Reviewed NamedOffice descriptions and accepted Member-owned OfficeHolding records are queryable. AdministrativeUnit metadata and CabinetMembership patterns are not grounded here; development evaluation data remains non-authoritative."},
     {"id": "executive-role-instances", "status": "not-currently-populated", "detail": "Ontology-only executive roles and unpopulated office-role patterns do not establish executive tenure. Deprecated MinisterOfStateMembership may appear in legacy datasets but is not emitted by the current canonical Member transformation."},
     {"id": "office-type-vocabulary", "status": "ontology-only-not-queryable", "detail": "members:OfficeType, members:hasRoleType, and TaoiseachRole/MinisterRole ontology concepts are outside the populated queryable model; registered NamedOffice descriptions and accepted OfficeHolding records are separate conditional patterns."},
     {"id": "collection-superclass-inference", "status": "not-inferred", "detail": "Do not rely on superclass type inference for ParliamentaryCollectionMembership; older published Member graphs may omit that explicit type. Prefer membership relationship predicates and specific PartyMembership type where applicable."}
   ],
   "localSafety": {
-    "version": "1.0.0",
+    "version": "1.1.0",
     "mode": "configured-local-fuseki",
     "allowedOperations": ["SELECT", "ASK"],
     "rejectedFeatures": ["SPARQL Update", "SERVICE", "FROM", "FROM NAMED", "subqueries", "variable predicates", "property paths"],
@@ -491,7 +520,7 @@
       "includeLocallyAnnotatedExternalProperties": true,
       "activeMappingStatuses": ["mapped", "new"],
       "activeMappingTermTypes": ["ObjectProperty", "DatatypeProperty", "AnnotationProperty"],
-      "unconditionalPredicates": ["rdf:type", "rdfs:label", "owl:sameAs", "foaf:isPrimaryTopicOf"]
+      "unconditionalPredicates": ["rdf:type", "rdfs:label", "owl:sameAs", "foaf:isPrimaryTopicOf", "eli:has_part", "eli:is_realized_by", "eli:is_embodied_by"]
     },
     "limits": {
       "maxQueryCharacters": 32000,

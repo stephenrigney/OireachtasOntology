@@ -73,7 +73,7 @@
     {% for entity in entity_outcomes %}
       {% if entity.resolution == "ambiguous" and entity.candidates %}
       <p>Possible local matches for <strong>{{ entity.type }} “{{ entity.label }}”</strong>:</p>
-      <ul>{% for candidate in entity.candidates %}<li>{{ candidate.label }}</li>{% endfor %}</ul>
+       <ul>{% for candidate in entity.candidates %}<li>{{ candidate.label }}{% if candidate.iri %} — <code>{{ candidate.iri }}</code>{% endif %}</li>{% endfor %}</ul>
       {% endif %}
     {% endfor %}
   </section>

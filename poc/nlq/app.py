@@ -23,6 +23,8 @@ from .fuseki import (
 from .llm import ResponsesTranslator
 from .pipeline import process_question
 from .composable_plan import execute_question
+from .stage_a import parse_stage_a_question
+from .stage_b import plan_stage_b
 from .results import QueryResult, format_debug_payload
 from .schema import build_schema_context
 from .vocabulary import supported_predicates
@@ -110,7 +112,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
         contract = json.loads((repository_root / "poc/specs/composable-query-plan-contract.json").read_text())
         facts = {item["id"]: item for item in contract["relations"]}
         capabilities = [{
-            "id": fact["id"], "description": fact["predicate"],
+            "id": fact["id"], "description": fact.get("predicate", fact.get("association", fact.get("joinKey", fact["id"]))),
             "subjectTypes": [fact["subjectType"]], "objectTypes": [fact["objectType"]],
             "filters": [], "status": "Executable for the bounded composable query slices",
         } for fact in facts.values()]
@@ -150,11 +152,38 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     question, as_of=as_of, fuseki=fuseki,
                     supported_predicates=predicate_vocabulary,
                 )
-                plan_json = format_debug_payload(outcome.plan) if outcome.plan else None
+                plan_is_validated = False
+                if outcome.plan:
+                    try:
+                        from .composable_plan import validate_plan
+                        plan_is_validated = validate_plan(outcome.plan) == outcome.plan
+                    except (ValueError, TypeError, KeyError):
+                        plan_is_validated = False
+                plan_json = format_debug_payload(outcome.plan) if plan_is_validated else None
                 is_q06 = bool(outcome.plan and outcome.plan.get("answer", {}).get("referent") == "affiliation")
                 is_debate = bool(outcome.plan and outcome.plan.get("referents", {}).get("sitting", {}).get("type") == "DebateSitting")
                 is_q35 = bool(outcome.plan and outcome.plan.get("referents", {}).get("holding", {}).get("type") == "OfficeHolding")
                 is_q23 = bool(outcome.plan and outcome.plan.get("referents", {}).get("participation", {}).get("type") == "BillParticipation")
+                parsed_stage_a = parse_stage_a_question(question)
+                stage_a_family_ids = {
+                    "member_lookup", "previous_service", "dail_duration", "term_count",
+                    "seanad_entry", "seanad_representation", "current_collection",
+                    "committee_boolean", "committee_count", "house_terms", "dail_all",
+                }
+                plan_family = outcome.plan.get("family") if outcome.plan else outcome.request_family
+                stage_a_family = (plan_family if plan_family in stage_a_family_ids else
+                                  parsed_stage_a.family if parsed_stage_a else None)
+                is_stage_a = stage_a_family is not None
+                is_stage_c = plan_family in {
+                    "dail_seats", "dail_parties_and_groups", "bill_quarantine", "debate_lookup",
+                    "committee_topic_latest", "bill_votes", "debate_transcript",
+                }
+                parsed_stage_b = plan_stage_b(question, as_of=as_of)
+                is_stage_b = not is_stage_c and (parsed_stage_b is not None or bool(outcome.plan and outcome.plan.get("family") in {
+                    "bill_lookup", "bills_published", "non_enacted_bills", "bill_status_history", "bill_sponsors", "bill_title_search",
+                    "committee_chair", "committee_conflict", "office_current_coverage",
+                    "office_overlap", "office_point",
+                }))
                 member_mention = outcome.plan.get("referents", {}).get("member", {}).get("mention", "the named Member") if is_q06 else None
                 q35_office = outcome.plan.get("referents", {}).get("office", {}) if is_q35 else {}
                 q35_interval = outcome.plan.get("constraints", [{}])[0].get("value", {}) if is_q35 else {}
@@ -170,30 +199,106 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     f"exactly matches the resolved local Member identity for {q23_member}. Include every "
                     "recorded participation regardless of primary status and preserve its source evidence."
                 ) if is_q23 else None
-                summary = (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
+                stage_a_summaries = {
+                    "member_lookup": "Resolve the grounded Member name against local Member identities without guessing.",
+                    "previous_service": "Check Dáil membership in the previous term selected from House date evidence at the supplied as-of date.",
+                    "dail_duration": "Calculate the union of dated Dáil membership episodes and preserve gaps.",
+                    "term_count": "Count distinct Dáil term resources or distinct Dáil terms served, according to the requested referent.",
+                    "seanad_entry": "Find the earliest dated Seanad membership episode and retain later term episodes as separate evidence.",
+                    "seanad_representation": "Resolve the requested Seanad term and report its source-provided representation designation.",
+                    "current_collection": "Evaluate dated parliamentary collection membership at the supplied as-of date; Independent remains a status, not a political party.",
+                    "committee_boolean": "Check Member committee service against the uniquely dated current Committee incarnation.",
+                    "committee_count": "Count distinct Committee resource identities rather than membership records.",
+                    "house_terms": "List Dáil HouseTerm date evidence, distinguishing absent end dates from dated ends.",
+                    "dail_all": "Return every distinct matching Member identity with Dáil membership evidence.",
+                }
+                stage_b_family = ((outcome.plan or parsed_stage_b or {}).get("family") if is_stage_b else None)
+                stage_b_bill_mention = ((outcome.plan or parsed_stage_b or {}).get("referents", {})
+                                        .get("bill", {}).get("mention")) if is_stage_b else None
+                stage_b_summaries = {
+                    "bill_lookup": "Look up the exact Bill number and year using its Bill-owned graph, including its recorded status, dated history, and any queryable memorandum rendition.",
+                    "bills_published": "Select Bills with a dated Published lifecycle event in the requested calendar year; legislative year alone is not publication evidence.",
+                    "non_enacted_bills": "List recorded Bills with a known process status other than Enacted, grouped by that controlled status; missing or conflicting status evidence is not treated as non-enacted.",
+                    "bill_title_search": f"Resolve the supplied Bill title mention ({stage_b_bill_mention or 'not specified'}) and show distinct official Bill candidates; ambiguous title matches are not combined or selected by similarity.",
+                    "bill_status_history": f"Resolve the supplied Bill title mention ({stage_b_bill_mention or 'not specified'}) against recorded titles, then report source-backed status/history without predicting a next step.",
+                    "bill_sponsors": f"Resolve the supplied Bill title mention ({stage_b_bill_mention or 'not specified'}) and preserve each recorded sponsor Participation and its available evidence.",
+                    "committee_chair": "Resolve the current Committee on Transport at the supplied as-of date; no chair will be inferred from membership or role labels.",
+                    "committee_conflict": "The reviewed development Committee source is conflicted; its records cannot verify a current Good Friday Committee roster.",
+                    "office_current_coverage": "A current officeholder requires a sufficiently complete accepted office-holding roster; an office alias or incomplete historical capture cannot establish the holder.",
+                    "office_overlap": "Test whether the named Member's accepted OfficeHolding overlaps any part of the requested inclusive calendar month.",
+                    "office_point": "Resolve a Minister for Finance holding on the requested calendar date from accepted Member-owned interval evidence.",
+                }
+                stage_c_summaries = {
+                    "dail_seats": "Read the exact typed Dáil HouseTerm seat complement from the Houses graph; Member/replacement counts are not used.",
+                    "dail_parties_and_groups": "List term-scoped ParliamentaryParty records separately and report that recognised ParliamentaryGroup instance data is missing.",
+                    "bill_quarantine": "Check the exact Bill 2024/48 owner graph and, if absent, explain the reviewed source-record problem without implying nonexistence.",
+                    "debate_lookup": f"Look for an actual Dáil DebateSitting on {(((outcome.plan or {}).get('constraints') or [{}])[0]).get('value', 'the requested date')} and its official record link in the local slice.",
+                    "committee_topic_latest": "PAC means Committee of Public Accounts; pinned Debate metadata cannot establish substantive HSE examination or latest coverage.",
+                    "bill_votes": "Check the supported capability boundary: sponsorship is not vote evidence, and Bill-linked voting data is unavailable.",
+                    "debate_transcript": "Check the approved transcript-content boundary; Debate metadata/link is not speech text.",
+                }
+                summary = (stage_a_summaries.get(stage_a_family) if is_stage_a else None) or (stage_c_summaries.get(plan_family) if is_stage_c else None) or (stage_b_summaries.get(stage_b_family) if is_stage_b else None) or (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
                            if is_q06 else ("Find the requested actual DebateSitting and its official record link."
                                              if is_debate else
                                              (q35_summary if is_q35 else
                                               (q23_summary if is_q23 else "Find distinct Members who represented this constituency in the previous Dáil."))))
+                answer_text = ("Dated Bill/office evidence is shown with explicit local-coverage qualifications; unresolved or unknown facts remain explicit."
+                                if is_stage_b else
+                                "Stage C answer uses only reviewed local RDF evidence; unavailable coverage is stated specifically and is not replaced by proxy facts."
+                                if is_stage_c else
+                               "Distinct political-affiliation identities with separate supporting membership episodes."
+                               if is_q06 else
+                               "Yes/no based on an actual DebateSitting, not a dated written-answer record."
+                               if is_debate and outcome.result and outcome.result.kind == "ask" else
+                               "Readable sitting date and official debate record link."
+                               if is_debate else
+                               "Member names with exact start/end dates for every separate accepted holding; open ends are identified explicitly."
+                               if is_q35 else
+                               "One row per Bill identity with title and recorded sponsorship evidence."
+                               if is_q23 else
+                               "Stage A typed family result using reviewed RDF ownership, with identity and date qualifications preserved."
+                               if is_stage_a else "Distinct Members, displayed by name.")
                 if outcome.status == "success":
                     return render(request, question=question, mode=mode,
                                   interpretation=summary, plan_json=plan_json,
-                                  plan_heading="Validated composable query plan",
-                                   plan_explanation={"summary": summary, "validated": True,
-                                                        "answer_text": ("Distinct political-affiliation identities with separate supporting membership episodes."
-                                                                         if is_q06 else ("Yes/no based on an actual DebateSitting, not a dated written-answer record."
-                                                                                         if is_debate and outcome.result.kind == "ask" else
-                                                                                         "Readable sitting date and official debate record link."
-                                                                                         if is_debate else
-                                                                                         "Member names with exact start/end dates for every separate accepted holding; open ends are identified explicitly."
-                                                                                         if is_q35 else
-                                                                                         ("One row per Bill identity, with English short title, recorded sponsorship evidence, and source-backed number/year/link where available."
-                                                                                          if is_q23 else "Distinct Members, displayed by name.")))},
+                                   plan_heading="Validated composable query plan" if plan_is_validated else None,
+                                   plan_explanation={"summary": summary, "validated": plan_is_validated, "answer_text": answer_text},
                                    sparql=outcome.sparql, result=outcome.result,
-                                   result_notice=("Bill graphs are optional. These rows show recorded local sponsorship evidence; the dataset does not certify complete historical coverage."
-                                                  if is_q23 else None),
+                                   result_notice=(outcome.diagnostic if is_stage_a or is_stage_b or is_stage_c else
+                                                   "Bill graphs are optional. These rows show recorded local sponsorship evidence; the dataset does not certify complete historical coverage."
+                                                   if is_q23 else None),
                                   debug_output=outcome.result.raw_json if outcome.result else None,
-                                  debug_source="Fuseki")
+                                   debug_source="Fuseki")
+                if is_stage_a:
+                    message = outcome.diagnostic or "The local dataset does not contain enough reviewed evidence to answer this Stage A question."
+                    resolution_ref = (outcome.plan.get("referents", {}).get("committee", {})
+                                      if outcome.plan and outcome.plan.get("referents", {}).get("committee", {}).get("resolution") == "ambiguous"
+                                      else outcome.plan.get("referents", {}).get("member", {}) if outcome.plan else {})
+                    entity_outcomes = ()
+                    if resolution_ref.get("resolution") == "ambiguous":
+                        entity_outcomes = tuple({"type": resolution_ref.get("type", "Member"),
+                                                 "status": "ambiguous", "candidates": outcome.candidates}
+                                                for _ in (0,))
+                    return render(request, question=question, mode=mode, error=message,
+                                  interaction_status=outcome.status, plan_json=plan_json,
+                                   plan_heading="Validated composable query plan" if plan_is_validated else None,
+                                   plan_explanation=({"summary": summary, "validated": plan_is_validated} if plan_is_validated else None),
+                                  sparql=outcome.sparql, result=outcome.result,
+                                  entity_outcomes=entity_outcomes,
+                                  debug_output=getattr(outcome, "debug_output", None) or (outcome.result.raw_json if outcome.result else None),
+                                   debug_source=getattr(outcome, "debug_source", None) or ("Fuseki" if outcome.sparql else "Structured planner"))
+                if is_stage_c:
+                    return render(request, question=question, mode=mode,
+                                  interpretation=summary, plan_json=plan_json,
+                                  plan_heading="Validated composable query plan" if plan_is_validated else None,
+                                  plan_explanation=({"summary": summary, "validated": plan_is_validated} if plan_is_validated else None),
+                                  error=outcome.diagnostic or "The local data does not support this Stage C answer.",
+                                  interaction_status=outcome.status, result=outcome.result,
+                                  result_notice=outcome.diagnostic if outcome.result else None,
+                                  sparql=outcome.sparql,
+                                  debug_output=format_debug_payload({"diagnostic": outcome.diagnostic}),
+                                  debug_message="No answer query was executed." if outcome.sparql is None else "The reviewed read-only answer query executed.",
+                                  debug_source="Validated Stage C plan" if plan_is_validated else "Rejected Stage C plan")
                 messages = {
                     "unsupported_capability": "This query form is not supported; no answer query was run.",
                     "source_data_unavailable": "The local source data does not contain enough House-term evidence to resolve the previous Dáil.",
@@ -203,6 +308,28 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     "unsupported_mapping": "A required relation or query mapping is unsupported; no answer was returned.",
                     "missing_identity_link": "Parliamentary party-membership evidence exists, but the reviewed local enduring-identity link is missing.",
                 }
+                if is_stage_b:
+                    message = outcome.diagnostic or "The local Bill/office/committee evidence is insufficient for this request."
+                    entity_outcomes = ()
+                    if outcome.status == "ambiguous" and outcome.plan:
+                        entity_outcomes = tuple(
+                            {"type": referent.get("type", "Entity"),
+                             "resolution": "ambiguous", "status": "ambiguous",
+                             "candidates": referent.get("candidates", [])}
+                            for referent in outcome.plan.get("referents", {}).values()
+                            if referent.get("resolution") == "ambiguous"
+                        )
+                    return render(request, question=question, mode=mode,
+                                  interpretation=summary, plan_json=plan_json,
+                                   plan_heading="Validated composable query plan" if plan_is_validated else None,
+                                   plan_explanation={"summary": summary, "validated": plan_is_validated},
+                                  error=message, interaction_status=outcome.status,
+                                  result=outcome.result, result_notice=outcome.diagnostic if outcome.result else None,
+                                  sparql=outcome.sparql,
+                                  debug_output=format_debug_payload({"diagnostic": outcome.diagnostic}),
+                                   debug_message="No answer query was executed." if outcome.sparql is None else "The read-only query executed.",
+                                   debug_source="Validated Stage B plan" if plan_is_validated else "Rejected Stage B plan",
+                                   entity_outcomes=entity_outcomes)
                 if is_q23:
                     if outcome.status == "missing_sponsorship_evidence":
                         message = "Bill sponsorship evidence is missing from the local dataset; this is not a confirmed negative answer."
@@ -257,9 +384,14 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     outcome.plan.get("referents", {}).get("office", {}) if is_q35 and outcome.plan else
                     outcome.plan.get("referents", {}).get("member", {}) if (is_q06 or is_q23) and outcome.plan else {}
                 )
+                if is_stage_a and outcome.plan:
+                    resolution_ref = (outcome.plan.get("referents", {}).get("committee", {})
+                                      if stage_a_family == "committee_boolean" and
+                                      outcome.plan.get("referents", {}).get("committee")
+                                      else outcome.plan.get("referents", {}).get("member", {}))
                 entity_outcomes = ()
                 if resolution_ref.get("resolution") == "ambiguous":
-                    entity_type = "NamedOffice" if is_q35 else "Member"
+                    entity_type = "NamedOffice" if is_q35 else ("Committee" if resolution_ref.get("type") == "Committee" else "Member")
                     entity_outcomes = ({
                         "type": entity_type,
                         "label": resolution_ref.get("mention", "the requested entity"),
@@ -267,8 +399,8 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     },)
                 return render(
                     request, question=question, mode=mode,
-                    interpretation=summary if outcome.plan else None, plan_json=plan_json,
-                    plan_heading=("Validated composable query plan" if outcome.sparql is not None else
+                    interpretation=summary if plan_is_validated else None, plan_json=plan_json,
+                    plan_heading=("Validated composable query plan" if plan_is_validated else
                                   "Proposed composable query plan") if outcome.plan else None,
                     error=message,
                     interaction_status=outcome.status,

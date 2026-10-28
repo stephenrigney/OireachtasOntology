@@ -674,7 +674,7 @@ Phase 2 close-out are recorded in
 
 The bounded expansion and its deferred boundaries are recorded in
 [`benchmarks/phase-2-controlled-capability-expansion.md`](benchmarks/phase-2-controlled-capability-expansion.md).
-It updates the query/schema contract to major version `2.0.0` because the prior
+It updated the query/schema contract to major version `2.0.0` because the prior
 Bill lifecycle pattern incorrectly attached `eli-dl:latest_activity` to the
 Bill rather than its process. Additive semantic-plan vocabulary support uses
 contract version `1.2.0`; plan-contract consumers still support major `1`.
@@ -701,7 +701,9 @@ examples, and validator:
 uv run --locked --extra test python -m pytest tests/test_nlq_query_plan.py
 ```
 
-Contract major version `1` allows additive optional extensions and additive
+The composable Query Service contract uses major version `2`; additive queryability
+extensions that preserve existing meanings use a minor bump. The older Phase 2
+plan contract uses major version `1` and allows additive optional extensions and additive
 reviewed entity types, semantic facts, or filter fields when existing meanings
 and validation behavior are unchanged. A breaking change to an existing field's
 meaning, supported resolution states, or validation expectations requires a
@@ -716,9 +718,10 @@ pinned ELI/ELI-DL vocabularies to add ontology descriptions, domains, ranges,
 and comments for terms selected by the contract. Active mapping files still
 provide the external-predicate definitions and safety allowlist entries. The
 contract is not a dump of every OWL declaration: a term's ontology declaration
-alone does not make it queryable. In particular, emitted `dct:temporal`,
-`eli:has_part`, and `eli:is_realized_by` triples are recorded as not executable
-through the current local NLQ predicate allowlist. The NLQ grounding path does
+alone does not make it queryable. Emitted `dct:temporal` triples remain outside
+the active local NLQ predicate allowlist. The reviewed finite Bill-document
+chain, whose connectors were initially recorded as unavailable, is now
+queryable within its Bill-owned graph. The NLQ grounding path does
 not import private `oireachtas_etl.config` constants.
 
 The contract distinguishes emitted data from ontology-only or currently
@@ -748,17 +751,22 @@ Wikidata query or federation is performed.
 
 - `schemaVersion` identifies the JSON shape. This consumer supports schema
   version `1` and fails clearly on any other value.
-- `contractVersion` is semantic versioning. Additive classes, properties,
+- `contractVersion` is semantic versioning. For the composable Query Service
+  contract (major `2`), additive classes, properties,
   graph families, emitted patterns, or descriptive metadata that preserve all
-  existing meanings may use a `1.x` minor/patch release. A removal, renamed
+  existing meanings may use a `2.x` minor/patch release. A removal, renamed
   term, changed graph owner or IRI pattern, changed label/pattern semantics,
   changed identity meaning, or incompatible entailment/safety change requires a
-  new contract major. This consumer supports major `1` and rejects others.
+  new contract major. This consumer supports major `2` and rejects others.
 - Consumers of a compatible minor version should ignore unknown optional
   fields while retaining the meaning of known fields. A new safety behavior is
-  not an additive schema-only change: a change to accepted query capability or
-  an enforced safety limit requires a `localSafety` major and contract major
-  bump, plus a consumer implementation/test update. This consumer rejects
+  not an additive schema-only change: enforced safety-limit changes require an
+  explicit compatibility decision. The finite reviewed Bill-document connector
+  extension is additive, versioned as query contract `2.7.0` and local safety
+  `1.1.0`, and leaves limits and rejected features unchanged. The Stage C
+  HouseTerm seat-complement pattern is additive in query contract `2.8.0`; its
+  authority is the active Houses mapping, transform and expected RDF, and it
+  does not count Member records. Consumers reject
   unsupported local-safety major versions.
 - The contract is consumed from this repository. Cross-repository packaging or
   distribution is deferred; no extraction mechanism is implied here.

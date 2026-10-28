@@ -61,6 +61,7 @@ class PlanOutcome:
     candidates: tuple[dict[str, str], ...] = ()
     sparql: str | None = None
     result: QueryResult | None = None
+    request_family: str | None = None
 
 
 @dataclass(frozen=True)
@@ -132,8 +133,17 @@ def _validate_office_plan(plan: dict[str, Any]) -> dict[str, Any]:
     refs = plan["referents"]
     if set(refs) != {"member", "holding", "office"}:
         raise PlanError("Q35 requires exactly Member, OfficeHolding, and NamedOffice referents.")
-    if refs["member"] != {"type": "Member", "answer": True}:
+    member = refs["member"]
+    if not isinstance(member, dict) or member.get("type") != "Member" or member.get("answer") is not True:
         raise PlanError("Q35 must return Member identities as its answer referent.")
+    member_bound = set(member) != {"type", "answer"}
+    if member_bound:
+        if (set(member) != {"type", "answer", "mention", "resolution", "iri", "label"}
+                or member.get("resolution") != "resolved"
+                or not isinstance(member.get("mention"), str) or not member["mention"].strip()
+                or not isinstance(member.get("label"), str) or not member["label"].strip()):
+            raise PlanError("A bound Q35 Member must be an exactly resolved person identity with a display-only label.")
+        _require_local_iri(member["iri"], "Member")
     if refs["holding"] != {"type": "OfficeHolding"}:
         raise PlanError("Q35 requires a plain OfficeHolding evidence referent.")
     office = refs["office"]
@@ -191,9 +201,17 @@ def _validate_office_plan(plan: dict[str, Any]) -> dict[str, Any]:
         raise PlanError("Q35 relations must follow the reviewed Member → OfficeHolding → NamedOffice path.")
 
     constraints = plan["constraints"]
-    if not isinstance(constraints, list) or len(constraints) != 1:
-        raise PlanError("Q35 requires exactly one inclusive office-holding overlap constraint.")
-    constraint = constraints[0]
+    expected_constraint_count = 2 if member_bound else 1
+    if not isinstance(constraints, list) or len(constraints) != expected_constraint_count:
+        raise PlanError("Q35 requires one inclusive interval and, only for person-bound routes, one exact Member-identity constraint.")
+    interval_constraints = [item for item in constraints if isinstance(item, dict) and item.get("field") == "interval"]
+    identity_constraints = [item for item in constraints if isinstance(item, dict) and item.get("field") == "memberIdentity"]
+    if len(interval_constraints) != 1 or len(identity_constraints) != (1 if member_bound else 0):
+        raise PlanError("Q35 constraints must contain exactly the interval and reviewed Member-identity binding.")
+    if (constraints[0] is not interval_constraints[0]
+            or member_bound and constraints[1] is not identity_constraints[0]):
+        raise PlanError("Q35 constraints must be ordered as interval first, followed by exact Member identity when present.")
+    constraint = interval_constraints[0]
     if (not isinstance(constraint, dict)
             or set(constraint) != {"referent", "field", "operator", "value"}
             or constraint.get("referent") != "holding"
@@ -214,6 +232,20 @@ def _validate_office_plan(plan: dict[str, Any]) -> dict[str, Any]:
         raise PlanError("Q35 interval boundaries must be valid ISO calendar dates.") from error
     if start > end:
         raise PlanError("Q35 interval start must be on or before its end.")
+    if member_bound:
+        identity = identity_constraints[0]
+        definition = _CONSTRAINT_MAPPINGS.get("memberIdentity", {})
+        if (definition.get("referentType") != "Member"
+                or definition.get("operator") != "equals"
+                or definition.get("valueKind") != "local_resource_iri"
+                or definition.get("graphFamily") != "member-records"
+                or not isinstance(identity, dict)
+                or set(identity) != {"referent", "field", "operator", "value"}
+                or identity.get("referent") != "member"
+                or identity.get("operator") != "equals"
+                or identity.get("value") != member["iri"]):
+            raise PlanError("Q35 exact Member binding must match the resolved person-role Member IRI.")
+        _require_local_iri(identity["value"], "Member identity constraint")
 
     expected_answer = {
         "kind": "entities", "referent": "member", "distinctBy": "identity",
@@ -480,7 +512,9 @@ def plan_question(question: str, *, as_of: date) -> dict[str, Any]:
 
 def validate_plan(plan: Any) -> dict[str, Any]:
     if not isinstance(plan, dict) or set(plan) not in ({"version", "asOf", "referents", "relations", "answer"},
-                                                       {"version", "asOf", "referents", "relations", "constraints", "answer"}):
+                                                       {"version", "asOf", "referents", "relations", "constraints", "answer"},
+                                                       {"version", "asOf", "family", "referents", "relations", "answer"},
+                                                       {"version", "asOf", "family", "referents", "relations", "constraints", "answer"}):
         raise PlanError("Plan must have exactly version, asOf, referents, relations, optional constraints, and answer.")
     if plan["version"] != PLAN_VERSION:
         raise PlanError("Unsupported composable plan version.")
@@ -496,6 +530,16 @@ def validate_plan(plan: Any) -> dict[str, Any]:
             raise PlanError("Every referent requires an ID and controlled type.")
         if ref["type"] not in _PLAN_CONTRACT["entityTypes"]:
             raise PlanError(f"Unsupported referent type {ref['type']!r}.")
+    if "family" in plan:
+        if not isinstance(plan["family"], str):
+            raise PlanError("Query family must be a controlled string identifier.")
+        from .stage_b import _B_FAMILIES, validate_stage_b_plan
+        if plan["family"] in _B_FAMILIES:
+            return validate_stage_b_plan(plan)
+        from .stage_c import _C_FAMILIES, validate_stage_c_plan
+        if plan["family"] in _C_FAMILIES:
+            return validate_stage_c_plan(plan)
+        return _validate_stage_a_plan(plan)
     if any(ref.get("type") in {"DebateRecord", "DebateSitting"} for ref in refs.values()):
         return _validate_debate_plan(plan)
     if "constraints" in plan:
@@ -580,6 +624,196 @@ def validate_plan(plan: Any) -> dict[str, Any]:
         if len(plan["relations"]) != len(q06_relations):
             raise PlanError("Q06 compiler cannot faithfully compile additional or repeated relationships.")
         raise PlanError("Accepted plan relations do not match a complete supported Q06 or Q09 path.")
+    return plan
+
+
+def _validate_stage_a_plan(plan: dict[str, Any]) -> dict[str, Any]:
+    """Closed validation for Stage A family plans before any query executes."""
+    families = {
+        "member_lookup": ({"member"}, "Member", {"family_result"}),
+        "previous_service": ({"member"}, "Member", {"family_result"}),
+        "dail_duration": ({"member"}, "Member", {"family_result"}),
+        "term_count": ({"member", "term"}, "DailTerm", {"count", "family_result"}),
+        "seanad_entry": ({"member"}, "Member", {"family_result"}),
+        "seanad_representation": ({"member"}, "Member", {"family_result"}),
+        "current_collection": ({"member"}, "Member", {"family_result"}),
+        "committee_boolean": ({"member"}, "Member", {"family_result"}),
+        "committee_count": ({"member"}, "Member", {"family_result"}),
+        "house_terms": ({"term"}, "DailTerm", {"values"}),
+        "dail_all": ({"member"}, "Member", {"family_result"}),
+    }
+    family = plan.get("family")
+    if family not in families:
+        raise PlanError("Unsupported closed Stage A query family.")
+    required_refs, required_type, answer_kinds = families[family]
+    refs = plan["referents"]
+    optional_committee = family in {"committee_boolean", "committee_count"} and set(refs) in (
+        {"member", "committeeMembership", "committee"},
+        {"member", "committeeMembership", "committee", "term"},
+    )
+    term_count_member = family == "term_count" and refs.get("member", {}).get("type") == "Member"
+    term_count_total = family == "term_count" and set(refs) == {"term"}
+    member_paths = {
+        "previous_service": {"member", "membership", "term"},
+        "dail_duration": {"member", "membership", "term"},
+        "dail_all": {"member", "membership", "term"},
+        "seanad_entry": {"member", "membership", "term"},
+        "seanad_representation": {"member", "membership", "term", "representation"},
+        "current_collection": {"member", "collectionMembership", "collection"},
+    }
+    supported_member_path = family in member_paths and set(refs) == member_paths[family]
+    if family == "term_count":
+        supported_member_path = term_count_member and set(refs) == {"member", "membership", "term"}
+    if set(refs) != required_refs and not optional_committee and not supported_member_path and not term_count_member and not term_count_total:
+        raise PlanError("Stage A family contains missing or unrelated referents.")
+    exact_types = {
+        "previous_service": {"member": "Member", "membership": "DailMembership", "term": "DailTerm"},
+        "dail_duration": {"member": "Member", "membership": "DailMembership", "term": "DailTerm"},
+        "dail_all": {"member": "Member", "membership": "DailMembership", "term": "DailTerm"},
+        "term_count_member": {"member": "Member", "membership": "DailMembership", "term": "DailTerm"},
+        "seanad_entry": {"member": "Member", "membership": "SeanadMembership", "term": "SeanadTerm"},
+        "seanad_representation": {"member": "Member", "membership": "SeanadMembership", "term": "SeanadTerm", "representation": "SeanadRepresentation"},
+        "current_collection": {"member": "Member", "collectionMembership": "ParliamentaryCollectionMembership", "collection": "ParliamentaryMemberCollection"},
+        "committee_count": {"member": "Member", "committeeMembership": "CommitteeMembership", "committee": "Committee"},
+        "committee_boolean": {"member": "Member", "committeeMembership": "CommitteeMembership", "committee": "Committee"},
+    }
+    expected_types = exact_types.get("term_count_member" if term_count_member else family)
+    if family == "committee_boolean" and "term" in refs:
+        expected_types = {**expected_types, "term": refs["term"].get("type")}
+        if expected_types["term"] not in {"DailTerm", "SeanadTerm"}:
+            raise PlanError("Committee term must be a reviewed HouseTerm type.")
+    if expected_types and (set(refs) != set(expected_types) or any(refs[key].get("type") != value for key, value in expected_types.items())):
+        raise PlanError("Stage A family referents do not match the exact reviewed path types.")
+    primary_key = "member" if "member" in refs else "term"
+    primary = refs[primary_key]
+    if set(primary) - {"type", "mention", "answer", "resolution", "iri", "label", "asOfEvidence", "candidates"}:
+        raise PlanError("Stage A referent contains unsupported identity fields.")
+    if primary.get("type") != ("Member" if term_count_member else required_type):
+        raise PlanError("Stage A referent has the wrong reviewed entity type.")
+    for key, ref in refs.items():
+        if key == primary_key:
+            continue
+        if not isinstance(ref, dict) or set(ref) - {"type", "iri", "label", "mention", "resolution", "candidates", "answer", "selector"}:
+            raise PlanError("Stage A auxiliary referent contains unsupported fields.")
+        if not isinstance(ref.get("type"), str) or ref["type"] not in _PLAN_CONTRACT["entityTypes"]:
+            raise PlanError("Stage A auxiliary referent type is not reviewed.")
+        if "iri" in ref:
+            _require_local_iri(ref["iri"], "Stage A referent")
+        if "label" in ref and not isinstance(ref["label"], str):
+            raise PlanError("Stage A referent label must be a string.")
+    if "member" in refs:
+        if not isinstance(primary.get("mention"), str) or not primary["mention"].strip():
+            raise PlanError("Stage A Member referent requires a grounded mention.")
+        if primary.get("resolution") not in {"resolved", "ambiguous", "not_found", "source_data_unavailable", "unsupported_mapping"}:
+            raise PlanError("Stage A Member resolution outcome is invalid.")
+        candidates = primary.get("candidates", [])
+        if not isinstance(candidates, list) or any(not isinstance(item, dict) or set(item) != {"iri", "label"}
+                or not isinstance(item["iri"], str) or not isinstance(item["label"], str) for item in candidates):
+            raise PlanError("Stage A candidate set is malformed.")
+        if len({item["iri"] for item in candidates}) != len(candidates):
+            raise PlanError("Stage A candidates must have distinct RDF identities.")
+        for item in candidates:
+            _require_local_iri(item["iri"], "Stage A entity candidate")
+        if primary["resolution"] == "resolved" and (len(candidates) != 1 or primary.get("iri") != candidates[0]["iri"]):
+            raise PlanError("Resolved Stage A identity must retain exactly its one candidate IRI.")
+        if primary["resolution"] == "ambiguous" and len(candidates) < 2:
+            raise PlanError("Ambiguous Stage A identity requires at least two candidates.")
+        if primary["resolution"] == "ambiguous" and "iri" in primary:
+            raise PlanError("Ambiguous Stage A identity cannot carry a singular selected IRI.")
+        if primary["resolution"] in {"not_found", "source_data_unavailable", "unsupported_mapping"} and (candidates or "iri" in primary):
+            raise PlanError("Unresolved Stage A identity cannot carry a selected or candidate IRI.")
+    if optional_committee:
+        committee = refs["committee"]
+        if set(committee) - {"type", "mention", "resolution", "iri", "label", "candidates"} or committee.get("type") != "Committee":
+            raise PlanError("Committee referent contains unsupported or inconsistent fields.")
+        if committee.get("resolution") not in {None, "resolved", "ambiguous", "not_found", "source_data_unavailable"}:
+            raise PlanError("Committee resolution outcome is invalid.")
+        committee_candidates = committee.get("candidates", [])
+        if (not isinstance(committee_candidates, list)
+                or any(not isinstance(item, dict) or set(item) != {"iri", "label"}
+                       or not isinstance(item["iri"], str) or not isinstance(item["label"], str)
+                       for item in committee_candidates)
+                or len({item["iri"] for item in committee_candidates}) != len(committee_candidates)):
+            raise PlanError("Committee candidate set is malformed or contains duplicate identities.")
+        for item in committee_candidates:
+            _require_local_iri(item["iri"], "Committee candidate")
+        if committee.get("resolution") == "ambiguous" and (len(committee_candidates) < 2 or "iri" in committee):
+            raise PlanError("Ambiguous Committee resolution requires candidates and cannot select one IRI.")
+        if committee.get("resolution") == "resolved" and (not isinstance(committee.get("iri"), str) or not isinstance(committee.get("label"), str)):
+            raise PlanError("Resolved Committee referent must retain its owner IRI and label.")
+        if committee.get("resolution") == "resolved":
+            _require_local_iri(committee["iri"], "Committee")
+        elif committee.get("resolution") in {"ambiguous", "not_found", "source_data_unavailable"} and "iri" in committee:
+            raise PlanError("Unresolved Committee identity cannot carry a selected IRI.")
+    facts = []
+    if not isinstance(plan["relations"], list):
+            raise PlanError("Stage A relations must be a closed list.")
+    if plan["relations"]:
+        seen_ids = set()
+        for relation in plan["relations"]:
+            if not isinstance(relation, dict) or set(relation) != {"id", "fact", "from", "to"}:
+                raise PlanError("Stage A relation edges require exactly id, fact, from, and to.")
+            if not all(isinstance(relation[key], str) and relation[key] for key in relation):
+                raise PlanError("Stage A relation fields must be non-empty strings.")
+            if relation["id"] in seen_ids or relation["from"] not in refs or relation["to"] not in refs:
+                raise PlanError("Stage A relation IDs must be unique and endpoints must exist.")
+            seen_ids.add(relation["id"])
+            mapping = _RELATION_MAPPINGS.get(relation["fact"])
+            if mapping is None or (refs[relation["from"]]["type"], refs[relation["to"]]["type"]) != _RELATION_TYPES[relation["fact"]]:
+                raise PlanError("Stage A relation does not match its reviewed typed mapping.")
+            facts.append(relation["fact"])
+    expected_facts = {
+        "member_lookup": [], "dail_all": ["member_has_membership", "membership_in_term"],
+        "previous_service": ["member_has_membership", "membership_in_term"],
+        "dail_duration": ["member_has_membership", "membership_in_term"],
+        "term_count": (["member_has_membership", "membership_in_term"] if term_count_member else []),
+        "seanad_entry": ["member_has_seanad_membership", "seanad_membership_in_term"],
+        "seanad_representation": ["member_has_seanad_membership", "seanad_membership_in_term", "seanad_membership_represents_resource"],
+        "current_collection": ["member_has_collection_membership", "collection_membership_of_collection"],
+        "committee_boolean": ["member_has_committee_membership", "committee_membership_of_committee", "committee_in_term"],
+        "committee_count": ["member_has_committee_membership", "committee_membership_of_committee"],
+        "house_terms": [],
+    }
+    if family == "committee_boolean" and refs.get("term", {}).get("type") == "SeanadTerm":
+        expected_facts[family] = ["member_has_committee_membership", "committee_membership_of_committee", "committee_in_seanad_term"]
+    if facts != expected_facts[family]:
+        raise PlanError("Stage A family relation path does not match the closed reviewed pattern.")
+    if len(facts) != len(set(facts)):
+        raise PlanError("Stage A relation paths cannot repeat an edge.")
+    expected_endpoints = {
+        "member_has_membership": ("member", "membership"),
+        "membership_in_term": ("membership", "term"),
+        "member_has_seanad_membership": ("member", "membership"),
+        "seanad_membership_in_term": ("membership", "term"),
+        "seanad_membership_represents_resource": ("membership", "representation"),
+        "member_has_collection_membership": ("member", "collectionMembership"),
+        "collection_membership_of_collection": ("collectionMembership", "collection"),
+        "member_has_committee_membership": ("member", "committeeMembership"),
+        "committee_membership_of_committee": ("committeeMembership", "committee"),
+        "committee_in_term": ("committee", "term"),
+        "committee_in_seanad_term": ("committee", "term"),
+    }
+    for relation in plan["relations"]:
+        if (relation["from"], relation["to"]) != expected_endpoints[relation["fact"]]:
+            raise PlanError("Stage A relation endpoints do not form the reviewed family path.")
+    declared_families = {item["id"]: item for item in _PLAN_CONTRACT.get("questionFamilies", [])}
+    family_contract = declared_families.get(family)
+    if family_contract is None:
+        raise PlanError("Stage A family has no reviewed question-family contract entry.")
+    for fact in facts:
+        relation_mapping = _RELATION_MAPPINGS[fact]
+        if relation_mapping.get("patternId") not in family_contract["patterns"]:
+            raise PlanError("Stage A relation is not covered by the family's reviewed emitted patterns.")
+    if "constraints" in plan:
+        raise PlanError("Stage A family plans do not accept free-form constraints.")
+    answer = plan["answer"]
+    if not isinstance(answer, dict) or answer.get("kind") not in answer_kinds or set(answer) != {"kind", "referent"}:
+        if not (family == "term_count" and answer == {"kind": "count", "referent": "term", "distinctBy": "identity"}):
+            if not (family == "house_terms" and answer == {"kind": "values", "referent": "term"}):
+                raise PlanError("Stage A answer shape does not match its closed family contract.")
+    expected_ref = "member" if "member" in refs else "term"
+    if answer.get("referent") != expected_ref:
+        raise PlanError("Stage A answer must target its family referent.")
     return plan
 
 
@@ -801,6 +1035,8 @@ def previous_dail_term_query(as_of: date, *, supported_predicates) -> str:
 
 
 def _date_binding(value: str) -> date:
+    if "^^" in value and "^^<http://www.w3.org/2001/XMLSchema#dateTime>" not in value and "^^<http://www.w3.org/2001/XMLSchema#date>" not in value:
+        raise NLQError("House-term date evidence has no reviewed xsd:date/dateTime datatype; no term was selected.")
     try:
         lexical = value.split("^^", 1)[0]
         if "@" in lexical:
@@ -1025,6 +1261,8 @@ def _office_query_mapping(plan: dict[str, Any]) -> dict[str, str]:
     if (not member_graph_prefix.startswith("https://data.oireachtas.ie/graph/member/")
             or not isinstance(office_graph, str)):
         raise PlanError("Q35 graph ownership does not match the reviewed Member/offices contract.")
+    member_binding = next((item["value"] for item in plan["constraints"]
+                           if item.get("field") == "memberIdentity"), None)
     return {
         "member_type": member_type,
         "holding_type": holding_type,
@@ -1040,6 +1278,8 @@ def _office_query_mapping(plan: dict[str, Any]) -> dict[str, str]:
         "member_graph_prefix": member_graph_prefix,
         "office_graph": office_graph,
         "office_iri": _require_local_iri(plan["referents"]["office"]["iri"], "NamedOffice"),
+        "member_iri": (_require_local_iri(member_binding, "Member identity constraint")
+                       if member_binding is not None else None),
     }
 
 
@@ -1063,8 +1303,10 @@ def compile_office_answer_query(plan: dict[str, Any], *, supported_predicates) -
     end_boundary_exclusive = f'"{end_exclusive.isoformat()}T00:00:00"^^xsd:dateTime'
     member_prefix = json.dumps(mapping["member_graph_prefix"])
     office_iri = f'<{mapping["office_iri"]}>'
+    member_values = f'VALUES ?member_member {{ <{mapping["member_iri"]}> }}' if mapping["member_iri"] else ""
     query = _PREFIXES + f'''SELECT DISTINCT ?member_member ?memberName ?holding_holding ?holdingStart ?holdingEnd WHERE {{
   GRAPH ?memberGraph {{
+    {member_values}
     ?member_member a {mapping["member_type"]} ; {mapping["member_name"]} ?memberName ;
       {mapping["member_holding"]} ?holding_holding .
     ?holding_holding a {mapping["holding_type"]} ;
@@ -1088,8 +1330,10 @@ def compile_office_evidence_query(plan: dict[str, Any], *, supported_predicates)
     mapping = _office_query_mapping(plan)
     member_prefix = json.dumps(mapping["member_graph_prefix"])
     office_iri = f'<{mapping["office_iri"]}>'
+    member_values = f'VALUES ?member_member {{ <{mapping["member_iri"]}> }}' if mapping["member_iri"] else ""
     query = _PREFIXES + f'''SELECT DISTINCT ?member_member ?memberName ?holding_holding ?holdingDateRange ?holdingStart ?holdingEnd WHERE {{
   GRAPH ?memberGraph {{
+    {member_values}
     ?member_member a {mapping["member_type"]} ; {mapping["member_name"]} ?memberName ;
       {mapping["member_holding"]} ?holding_holding .
     ?holding_holding a {mapping["holding_type"]} ; {mapping["holding_office"]} {office_iri} .
@@ -1770,6 +2014,13 @@ def _execute_office_question(plan: dict[str, Any], *, fuseki, supported_predicat
         return PlanOutcome("unsupported_mapping", plan=plan, diagnostic=str(error))
     try:
         evidence_result = fuseki.query(evidence_query)
+        if evidence_result.kind != "select":
+            raise NLQError("Office-holding evidence query returned an unexpected result kind.")
+        if len(evidence_result.rows) >= 100:
+            return PlanOutcome(
+                "insufficient_holding_evidence", plan=plan, sparql=evidence_query,
+                diagnostic="The office-holding evidence query reached the 100-row safety cap; no yes/no or complete interval result was inferred.",
+            )
         has_evidence, overlapping_holdings, evidence_issues = inspect_office_holding_evidence(
             evidence_result, plan,
         )
@@ -1779,10 +2030,16 @@ def _execute_office_question(plan: dict[str, Any], *, fuseki, supported_predicat
             diagnostic=f"Accepted local holding evidence could not be checked: {error}",
         )
     if not has_evidence:
+        member_bound = any(item.get("field") == "memberIdentity" for item in plan["constraints"])
+        if member_bound:
+            diagnostic = ("No accepted Member-owned OfficeHolding record for this reviewed office is present "
+                          "for the exact resolved Member in the local dataset; historical tenure cannot be determined.")
+        else:
+            diagnostic = ("No accepted Member-owned OfficeHolding record for this reviewed office "
+                          "is present in the local dataset; historical tenure cannot be determined.")
         return PlanOutcome(
             "source_data_unavailable", plan=plan,
-            diagnostic=("No accepted Member-owned OfficeHolding record for this reviewed office "
-                        "is present in the local dataset; historical tenure cannot be determined."),
+            diagnostic=diagnostic,
         )
 
     try:
@@ -1795,6 +2052,11 @@ def _execute_office_question(plan: dict[str, Any], *, fuseki, supported_predicat
             raise NLQError("Office-holding answer query returned an unexpected result kind.")
         if not {"member_member", "holding_holding"}.issubset(raw_result.columns):
             raise NLQError("Office-holding answer query omitted Member/holding identity evidence.")
+        if len(raw_result.rows) >= 100:
+            return PlanOutcome(
+                "insufficient_holding_evidence", plan=plan, sparql=answer_query,
+                diagnostic="The office-holding answer query reached the 100-row safety cap; no complete interval answer was inferred.",
+            )
         holding_index = raw_result.columns.index("holding_holding")
         answer_holding_ids = {
             _require_local_iri(row[holding_index], "OfficeHolding")
@@ -1820,11 +2082,36 @@ def _execute_office_question(plan: dict[str, Any], *, fuseki, supported_predicat
                         "dates can be verified; the local dataset is not historically complete."),
         )
     if result is None:
+        negative_evidence = None
+        if any(item.get("field") == "memberIdentity" for item in plan["constraints"]):
+            indexes = {name: evidence_result.columns.index(name) for name in
+                       ("member_member", "memberName", "holding_holding", "holdingStart", "holdingEnd")}
+            rows_by_holding: dict[str, tuple[str, str, str]] = {}
+            for row in evidence_result.rows:
+                member_iri = _require_local_iri(row[indexes["member_member"]], "Member")
+                if member_iri != plan["referents"]["member"]["iri"]:
+                    return PlanOutcome("source_data_unavailable", plan=plan, sparql=answer_query,
+                                       diagnostic="Office negative evidence contains a nonmatching Member identity; no yes/no answer was produced.")
+                holding = _require_local_iri(row[indexes["holding_holding"]], "OfficeHolding")
+                start_value, start_error = _office_datetime_binding(row[indexes["holdingStart"]])
+                end_value, end_error = _office_datetime_binding(row[indexes["holdingEnd"]])
+                if start_error or start_value is None or end_error:
+                    return PlanOutcome("insufficient_holding_evidence", plan=plan, sparql=answer_query,
+                                       diagnostic="A nonoverlapping office holding has incomplete or malformed date evidence; no negative result was produced.")
+                rows_by_holding[holding] = (
+                    row[indexes["memberName"]].removesuffix("@en"),
+                    _display_office_datetime(start_value),
+                    _display_office_datetime(end_value) if end_value is not None else "Open-ended (no end date recorded)",
+                )
+            negative_evidence = QueryResult(
+                "select", ("Member", "Holding start", "Holding end"),
+                tuple(rows_by_holding[key] for key in sorted(rows_by_holding)),
+            )
         return PlanOutcome(
             "source_data_unavailable", plan=plan, sparql=answer_query,
             diagnostic=(f"No accepted local holding is recorded overlapping {start} through {end}. "
                         "The dataset does not certify complete historical office coverage, so this is not "
-                        "a confirmed historical negative."),
+                        "a confirmed historical negative."), result=negative_evidence,
         )
     return PlanOutcome(
         "success", plan=plan, sparql=answer_query, result=result,
@@ -1945,6 +2232,26 @@ def _execute_bill_sponsorship_question(
 
 def execute_question(question: str, *, as_of: date, fuseki, supported_predicates) -> PlanOutcome:
     """Plan, resolve, validate, compile and execute bounded composable slices."""
+    from .stage_a import execute_stage_a, parse_stage_a_question
+
+    stage_a_request = parse_stage_a_question(question)
+    if stage_a_request is not None:
+        return execute_stage_a(
+            stage_a_request, as_of=as_of, fuseki=fuseki,
+            supported_predicates=supported_predicates,
+        )
+    from .stage_c import handle_stage_c
+    stage_c_outcome = handle_stage_c(question, as_of=as_of, fuseki=fuseki,
+                                     supported_predicates=supported_predicates)
+    if stage_c_outcome is not None:
+        return stage_c_outcome
+    from .stage_b import handle_stage_b
+    stage_b_outcome = handle_stage_b(
+        question, as_of=as_of, fuseki=fuseki,
+        supported_predicates=supported_predicates,
+    )
+    if stage_b_outcome is not None:
+        return stage_b_outcome
     try:
         plan = plan_question(question, as_of=as_of)
     except PlanError as error:
