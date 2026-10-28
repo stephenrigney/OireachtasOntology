@@ -65,6 +65,34 @@ unavailable result or substitution of a Member count.
 - Bill-linked voting has no reviewed Query Service path. Debate speech text is
   deliberately outside the RDF and has no approved transcript retrieval path.
 
+## Accepted office evidence (Q25–Q27)
+
+These are committed review citations, inspected without scanning raw captures or
+opening operational databases. They are not a fresh/current office census.
+
+- Q25: `reconciliation/office-decisions.json` accepts Micheál Martin's
+  Taoiseach observation, mapped to `https://data.oireachtas.ie/office/o-000001`,
+  starting 2025-01-23 with no recorded end. Review cites the 2026-10-02 Members
+  capture, skip 1100,
+  `/results/98/member/memberships/8/membership/offices/0/office`, page SHA-256
+  `aa591dff3ae205238f5a2731e9922f6ec08f42721f159795b073d9e55918b60c`.
+  This supports locally evidenced overlap with September 2026 under the mapped
+  open-ended interval convention, not proof of later/current roster completeness.
+- Q27: the same review file accepts Paschal Donohoe's Finance observation,
+  mapped to `https://data.oireachtas.ie/office/o-000003`, 2020-06-27 through
+  2022-12-17. Review cites the 2026-10-02 Members capture, skip 500,
+  `/results/71/member/memberships/3/membership/offices/0/office`, page SHA-256
+  `4b9f8031c4200bf7bfcbd2b3868b663a29693f0edee37b50fe8e9ddefa7cfbaa`.
+  This covers the requested 2021-07-01 date. A registry alias start is not an
+  office-establishment date.
+- Q26: no accepted Simon Harris Finance tenure is recorded in that review file.
+  Registered office identity/aliases do not establish the current holder. The
+  incomplete development holdings cannot certify the 2026-10-28 roster.
+
+Office identities are independently described in
+`registries/ministerial-office-registry.json`. Existing Q35 tests use synthetic
+RDF and must not be presented as real-data current-office acceptance.
+
 ## Initial semantic verification
 
 On baseline `844e51b`, `.venv/bin/python tests/validate.py` passed ontology
