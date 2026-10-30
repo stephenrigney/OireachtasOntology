@@ -583,3 +583,8 @@ Field-level mappings between Oireachtas API JSON responses and ontology terms ar
 | `new` | Term added during the alignment work |
 | `implicit` | No explicit property needed — the information is derivable from the individual's IRI or class typing |
 | `future_work` | No ontology term yet; deferred |
+
+
+## Reviewed enduring political affiliations (2026)
+
+`members:PoliticalAffiliationIdentity` is the locally curated enduring affiliation class. `members:hasPoliticalAffiliationIdentity` links a `members:ParliamentaryParty` (domain) to a `members:PoliticalAffiliationIdentity` (range). It is distinct from `members:recognisedAsParty`, which links to reviewed external identity. The separately replaceable graph `https://data.oireachtas.ie/graph/political-affiliations/identities` contains reviewed descriptions and associations; authoritative Parties and Member graphs are unchanged. Independent collections are excluded, and identical labels never justify identity merges. See [`documentation/political-affiliation-identity.md`](../documentation/political-affiliation-identity.md) and [`documentation/political-affiliation-publication.md`](../documentation/political-affiliation-publication.md).
