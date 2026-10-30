@@ -508,3 +508,25 @@ positive result; current production Debates availability is explicitly limited
 by [`phase-7-debates.md`](phase-7-debates.md). Re-run after data refresh and
 after Debates ingestion; see the direct exploration guide for local setup and
 dataset identity checks.
+
+
+### Reviewed enduring affiliations across parliamentary terms
+
+The following query groups term-scoped party collections by reviewed local identity without conflating identically labelled but distinct historical identities. It requires the political-affiliation enrichment graph to be loaded.
+
+```sparql
+PREFIX members: <https://data.oireachtas.ie/ontology/members#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+SELECT ?identity ?label (COUNT(DISTINCT ?collection) AS ?termCollections)
+WHERE {
+  GRAPH <https://data.oireachtas.ie/graph/political-affiliations/identities> {
+    ?collection members:hasPoliticalAffiliationIdentity ?identity .
+    ?identity a members:PoliticalAffiliationIdentity ; skos:prefLabel ?label .
+    FILTER(LANG(?label) = "en")
+  }
+}
+GROUP BY ?identity ?label
+ORDER BY ?label ?identity
+```
+
+To inspect the distinct reviewed Sinn Féin identities, filter the identity IRIs by their approved registry keys rather than collapsing on the shared alias `Sinn Féin`. Member affiliation dates belong to the separate `members:PartyMembership` episodes, not the enduring identity.
