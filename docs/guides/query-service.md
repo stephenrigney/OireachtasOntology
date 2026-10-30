@@ -1,6 +1,6 @@
 # Natural-language query POC
 
-This proof of concept lets you ask questions about the Oireachtas RDF dataset in plain English. Its normal development path is the structured Phase 2 flow: a Responses-compatible planner proposes a semantic plan, local code resolves exact entity labels and validates the plan, a deterministic compiler generates safety-validated SPARQL, and Fuseki executes it. The model does not generate executable SPARQL on this path.
+This proof of concept lets you ask questions about the Oireachtas RDF dataset in plain English. Its default Phase 2 route first retains the reviewed Stage A/B/C and deterministic composable families. When those do not recognize a question, a Responses-compatible planner may propose a semantic composable-v2 plan; local code resolves exact entity labels and validates the complete plan before the deterministic compiler generates safety-validated SPARQL. The model does not generate executable SPARQL on this path.
 
 The Stage 1 human-readable UI is available at `/` and its capability catalogue at
 `/capabilities`. The catalogue is generated from the query-plan contract and
@@ -72,6 +72,7 @@ Try questions such as:
 - Which TDs represented Dublin constituencies in the 32nd Dáil?
 - Which parliamentary member collection did Micheál Martin belong to in the 33rd Dáil?
 - How many members were in each parliamentary member collection in the 33rd Dáil?
+- Which Dáil terms did Micheál Martin and Mary Lou McDonald both serve in?
 
 On success, the application shows the result. In the default Phase 2 path, expand **Validated query plan** and **Generated SPARQL** to inspect the interpretation and executable query. Phase 1 continues to show its direct-generated query using the existing display.
 
@@ -87,8 +88,10 @@ Detailed diagnostics and the raw endpoint payload, when available, are in the ex
 Phase 2 is complete. The accepted structured local-query path is:
 
 ```text
-question → semantic planner → deterministic resolution → validated query plan
-         → deterministic SPARQL → local Fuseki → rendered result
+question → reviewed Stage A/B/C or deterministic composable family
+         → (unrecognized: semantic composable-v2 planner for supported slices)
+         → deterministic resolution and validation → deterministic SPARQL
+         → local Fuseki → rendered result
 ```
 
 It is the default browser development path. The accepted realistic benchmark is
@@ -110,6 +113,17 @@ quarantined/unavailable source cases as data-coverage limitations; planner/model
 variability; no repair/retry loop; and broader source selection, federation,
 and external querying deferred. See the [final benchmark and close-out
 report](../reports/query-service/realistic-phase2-benchmark.md).
+
+The first generalized semantic-composition slice answers questions about Dáil
+terms shared by exactly two independently resolved Members. It intersects the
+Members' recorded DailMembership paths by the same DailTerm RDF identity, not by
+matching display labels. Ambiguity, missing Member identity, same-identity
+aliases, unsupported relationships, and missing membership evidence fail closed.
+Empty results reflect recorded local evidence only and do not certify complete
+historical coverage. Seanad terms, extra filters/temporal constraints, and other
+compositions remain unsupported. Unrecognized questions use one strict
+Responses-compatible plan call with no repair/retry; planner failures are
+reported separately from unsupported semantics and source-evidence limitations.
 
 ### Other launcher commands
 

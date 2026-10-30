@@ -234,6 +234,9 @@ class ResponsesPlanGenerator:
         timeout: float = LLM_TIMEOUT_SECONDS,
         max_output_tokens: int = LLM_MAX_OUTPUT_TOKENS,
         transport: httpx.BaseTransport | None = None,
+        output_schema: dict[str, Any] | None = None,
+        schema_name: str = "oireachtas_query_plan_draft",
+        instructions: str | None = None,
     ):
         if not api_key:
             raise PlannerModelError("Set NLQ_LLM_API_KEY before requesting a structured plan.")
@@ -241,6 +244,9 @@ class ResponsesPlanGenerator:
         self.model = model
         self.api_key = api_key
         self.max_output_tokens = max_output_tokens
+        self.output_schema = output_schema
+        self.schema_name = schema_name
+        self.instructions = instructions
         self.client = httpx.Client(timeout=timeout, transport=transport)
         self.headers = {
             "Authorization": f"Bearer {api_key}",
@@ -249,15 +255,22 @@ class ResponsesPlanGenerator:
 
     def generate(self, question: str) -> str:
         """Make exactly one model request; never repair or automatically retry."""
+        schema = self.output_schema if self.output_schema is not None else _response_schema()
+        # Artifact metadata is useful to local consumers but is not part of the
+        # Responses-compatible strict JSON Schema subset.
+        schema = {
+            key: value for key, value in schema.items()
+            if key not in {"$schema", "$id", "title", "description"}
+        }
         body = {
             "model": self.model,
-            "instructions": build_planner_instructions(),
+            "instructions": self.instructions or build_planner_instructions(),
             "input": question,
             "text": {"format": {
                 "type": "json_schema",
-                "name": "oireachtas_query_plan_draft",
+                "name": self.schema_name,
                 "strict": True,
-                "schema": _response_schema(),
+                "schema": schema,
             }},
             "max_output_tokens": self.max_output_tokens,
         }
