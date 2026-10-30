@@ -2,7 +2,7 @@
 
 This guide connects to the project's existing local Fuseki and explains how to
 inspect its named graphs without the natural-language Query Service. It adds no
-service or UI. For the model see the [`ontology guide`](ontology-guide.md); for
+service or UI. For the model see the [`ontology guide`](../docs/guides/ontology.md); for
 queries see the [`SPARQL cookbook`](sparql-cookbook.md). The existing
 [`Fuseki User Guide`](fuseki-user-guide.md) remains the operational reference.
 

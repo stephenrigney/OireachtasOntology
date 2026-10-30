@@ -210,3 +210,38 @@ approve conditional deletion of stale/duplicate sources after claim and inbound
 link review; and resolve whether the target `docs/` tree is accepted. This
 document does not authorize moves/deletions, implementation changes, or merge
 of the inventory PR.
+
+## Tranche 2A closeout — ontology documentation
+
+The project owner approved this bounded slice. The tracked local wiki directory
+was retired after review of all 11 pages. This addendum supersedes the
+conditional disposition above for the ontology/wiki scope only; no ETL, Query
+Service, operations or historical report documents were reorganised.
+
+| Legacy page | Disposition |
+|---|---|
+| `Home.md` | Replaced by the concise root README and `docs/README.md` navigation; current authority links retained. |
+| `Agents.md` | Current institution/person distinctions summarized in the guide and institutions reference; obsolete ontology-era descriptions discarded. |
+| `Bill-Classes.md`, `Bill-Properties.md`, `Bills.md` | Current Bill/process/event distinctions retained in the guide and Bills/events reference; stale local class/property catalogue discarded in favor of ELI/ELI-DL OWL and mappings. |
+| `Concept-Schemes.md` | Replaced by navigation to the OWL modules, where current schemes and members are defined. |
+| `Debates.md`, `Debates-body.md` | Current model and material limits retained in the guide and Debates reference; legacy AKN field catalogue was not treated as current OWL/mapping authority. |
+| `Members.md` | Current term-scoped collection, dated membership, office and identity distinctions retained in guide and membership reference; term-specific authority links retained. |
+| `Departments.md` | Its explicit draft/deferred warning is retained in the institutions reference and ministerial-office phase record; speculative URI patterns and unverified legal claims were not migrated as fact. |
+| `Ordering-Business.md` | No current implementation authority was found; the order-paper and vote placeholders were not migrated. Parliamentary-question vocabulary is documented only where supported by the Debates ontology/mappings. |
+
+All linked subject descriptions were checked against the OWL modules and
+relevant active mappings. Historical wiki assertions that conflict with current
+terms or describe unimplemented work were not carried forward as current
+specification. The old inventory paths above are retained as historical audit
+evidence, not active links. A separate hosted GitHub Wiki was not verified by
+the Tranche 1 inventory and is outside this local-file retirement.
+
+The new navigation lives at `docs/README.md`; the practical guide is
+`docs/guides/ontology.md`; focused subject references are under
+`docs/reference/ontology/`. `ontology/README.md` is now a source-module index.
+The root README links to these pages and the existing ETL/POC/operator guides;
+it no longer carries a duplicate runbook.
+Inbound repository links were updated, including the ontology guide move and
+the phase record's reference to the retired Departments draft. W3C links using
+scheme-less destinations in the old README were removed with the superseded
+material. A full local Markdown-link check passed.

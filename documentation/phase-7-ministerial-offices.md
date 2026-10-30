@@ -160,7 +160,7 @@ episodes; then reconcile optional external identities and Bill sponsor roles.
 An observation can cause a reviewed addition to the registry, but the source
 label does not itself create an identity. The Departments wiki is explicitly
 draft/deferred and its function-derived URI sketches are not this contract
-(`documentation/wiki/Departments.md`).
+(the retired local Wiki Departments draft).
 
 For each generic Member `membership.offices[].office`, keep the Member IRI,
 containing House-membership IRI, label, optional source office URI, raw start
