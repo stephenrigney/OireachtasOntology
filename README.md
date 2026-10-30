@@ -236,3 +236,6 @@ Conceptually, the subject matter falls into four areas: **Legislative Documents*
 | dcat    | http://www.w3.org/ns/dcat#                                             |
 | lang    | http://publications.europa.eu/resource/authority/language              |
 | iana    | http://www.iana.org/assignments/media-types/                           |
+
+
+For the implemented distinction between term-scoped parliamentary parties, reviewed enduring local affiliations and external party reconciliation, see [political-affiliation identities](documentation/political-affiliation-identity.md) and [publication contract](documentation/political-affiliation-publication.md).
