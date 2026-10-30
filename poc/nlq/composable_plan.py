@@ -1609,7 +1609,10 @@ def compile_member_relationship_composition_query(
         elif semantic_type == "DailConstituency":
             if referent.get("resolution") != "resolved":
                 raise PlanError("The requested DailConstituency must resolve within its selected term.")
-            _require_local_iri(referent.get("iri"), "DailConstituency")
+            constituency_iri = URIRef(
+                _require_local_iri(referent.get("iri"), "DailConstituency")
+            ).n3()
+            graph_contents[graph_family].append(f"VALUES {variable} {{ {constituency_iri} }}")
 
     for relation in plan["relations"]:
         definition = mapping["relations"][relation["fact"]]

@@ -286,6 +286,19 @@ def test_integrated_ask_executes_fresh_member_relationship_paraphrases(question,
     assert "FROM NAMED" not in answer_query.upper()
 
 
+def test_resolved_constituency_identity_excludes_other_constituencies_in_the_same_term():
+    fixture = MemberRelationshipFixture()
+    outcome, _generator = _run(fixture, QUESTION_REPRESENTATION, _representation_draft())
+
+    assert outcome.status == "success"
+    assert outcome.result is not None
+    assert outcome.result.columns == ("Member", "Member identity")
+    assert set(outcome.result.rows) == {("Aoife Byrne", MEMBER_ALICE)}
+    selected_constituency = fixture.constituencies[("Dublin-Central-31", 31)]
+    assert f"VALUES ?constituency {{ <{selected_constituency}> }}" in outcome.sparql
+    assert MEMBER_BOB not in {row[1] for row in outcome.result.rows}
+
+
 @pytest.mark.parametrize(("question", "draft"), [
     (QUESTION_TERMS, _intersection_draft(first=32, second=32)),
     (QUESTION_TERMS, _intersection_draft(first=31, second=33)),
