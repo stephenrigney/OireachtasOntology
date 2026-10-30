@@ -3,9 +3,10 @@
 This guide explains the model that is implemented in the repository, not a
 proposal for a future model. Its terminology follows the executable OWL modules
 and active mappings. For formal axioms and complete term inventories see
-[`ontology/README.md`](../ontology/README.md); for API-to-RDF decisions see
-[`mapping_notes.md`](mapping_notes.md), the endpoint CSVs in `mappings/`, and
-[`etl-plan.md`](etl-plan.md). Focused design records are linked below.
+[`ontology/README.md`](../../ontology/README.md); for API-to-RDF decisions see
+[`mapping_notes.md`](../../documentation/mapping_notes.md), the endpoint CSVs in
+[`mappings/`](../../mappings/), and [`etl-plan.md`](../../documentation/etl-plan.md).
+Focused design records are linked below.
 
 ## Reading the graph
 
@@ -61,7 +62,7 @@ graph TD
 *Simplification:* the diagram leaves out the types, inverse links and time
 period resources. The constitutional President is not modelled/populated in
 this ETL scope; do not infer a President resource from the constitutional
-composition of the Oireachtas. See [`house_model.md`](house_model.md).
+composition of the Oireachtas. See [`house_model.md`](../../documentation/house_model.md).
 
 **Population:** HouseTerms and House labels are Houses-owned. The ontology
 defines the enduring Government individual, but a global lookup for its
@@ -123,9 +124,9 @@ dated membership record.
 concepts grounded in Standing Orders, not synonyms for party. A party might
 also be a group if independently evidenced, but one class does not imply the
 other. The current Parties/Members API ETL does not populate group instances.
-A separately reviewed local enduring affiliation identity (`members:PoliticalAffiliationIdentity`) is linked from a term-scoped `members:ParliamentaryParty` by `members:hasPoliticalAffiliationIdentity`. The local identity may denote a party, alliance or other reviewed affiliation, not necessarily a registered party. Its descriptions and links live in the separate `graph/political-affiliations/identities` enrichment graph. Identical labels do not establish identity, and Independent collections have no such link. See [`political-affiliation-identity.md`](political-affiliation-identity.md). Reviewed external matching of a term-scoped party collection uses
+A separately reviewed local enduring affiliation identity (`members:PoliticalAffiliationIdentity`) is linked from a term-scoped `members:ParliamentaryParty` by `members:hasPoliticalAffiliationIdentity`. The local identity may denote a party, alliance or other reviewed affiliation, not necessarily a registered party. Its descriptions and links live in the separate `graph/political-affiliations/identities` enrichment graph. Identical labels do not establish identity, and Independent collections have no such link. See [`political-affiliation-identity.md`](../../documentation/political-affiliation-identity.md). Reviewed external matching of a term-scoped party collection uses
 `members:recognisedAsParty`; it is not `owl:sameAs` and not a group-recognition
-assertion. See [`parliamentary-member-collection-model.md`](parliamentary-member-collection-model.md).
+assertion. See [`parliamentary-member-collection-model.md`](../../documentation/parliamentary-member-collection-model.md).
 
 ```mermaid
 graph LR
@@ -168,7 +169,7 @@ not replace that local identity: reviewed external identity links live in
 separate external-link graphs, and `owl:sameAs` is reserved for an accepted
 same-person identity (Wikipedia uses `foaf:isPrimaryTopicOf`). A name match
 alone is not identity evidence. See
-[`member-reconciliation.md`](member-reconciliation.md).
+[`member-reconciliation.md`](../../documentation/member-reconciliation.md).
 
 ## Committees and committee membership
 
@@ -213,8 +214,8 @@ layer from another. Office identity population is a reviewed local registry
 bootstrap; source office-name strings alone do not mint identities. Current
 development data has 3 NamedOffices, 22 OfficeHoldings, 22 CabinetMemberships
 and 1 AdministrativeUnit; this small count explicitly does not establish full
-office coverage. See [`ministerial-office-registry.md`](ministerial-office-registry.md)
-and [`office-external-reconciliation.md`](office-external-reconciliation.md).
+office coverage. See [`ministerial-office-registry.md`](../../documentation/ministerial-office-registry.md)
+and [`office-external-reconciliation.md`](../../documentation/office-external-reconciliation.md).
 
 ## Bills and parliamentary activity
 
@@ -237,8 +238,8 @@ Bill versions and related documents distinguish Work, Expression and Format;
 amendment lists, sponsorship participation and lifecycle events have their own
 resource identities as supported by source mappings. Source data gaps,
 quarantines and precise identity rules are documented in the authoritative
-[`etl-plan.md`](etl-plan.md) Phase 4 contract and
-[`mappings/bill_mapping.csv`](../mappings/bill_mapping.csv). Development Fuseki currently has
+[`etl-plan.md`](../../documentation/etl-plan.md) Phase 4 contract and
+[`mappings/bill_mapping.csv`](../../mappings/bill_mapping.csv). Development Fuseki currently has
 6,044 Bill graphs (2026-10-20 snapshot); this is local, non-production evidence.
 
 ## Debates, questions and votes
@@ -258,14 +259,15 @@ and is not treated as a vote.
 Debate graphs reference existing Member, House, HouseTerm, Committee, office and
 Bill resources where an exact supported resolver match exists; unresolved
 references do not create placeholder identities. Transcript text is not RDF.
-The ontology and deterministic transformer are implemented, but the current
-development snapshot had only three Debates graphs. Phase 7 says the approved
-2011+ production selection has not been ingested; production ingestion is
-blocked pending readiness/operational decisions. Thus schema support and
+The ontology and deterministic transformer are implemented, but the local
+development snapshot inspected on 2026-10-20 had only three Debates graphs.
+Phase 7 recorded that the approved 2011+ production selection had not been
+ingested at that time; production ingestion remained subject to
+readiness/operational decisions. Thus schema support and
 fixture/test evidence do not imply production availability. See
-[`phase-7-debates.md`](phase-7-debates.md),
-[`debates-identity-contract.md`](debates-identity-contract.md) and
-[`debates-semantic-review.md`](debates-semantic-review.md).
+[`phase-7-debates.md`](../../documentation/phase-7-debates.md),
+[`debates-identity-contract.md`](../../documentation/debates-identity-contract.md) and
+[`debates-semantic-review.md`](../../documentation/debates-semantic-review.md).
 
 ## Time, identity and graph traversal: practical rules
 
@@ -291,5 +293,5 @@ fixture/test evidence do not imply production availability. See
    linked by `members:recognisedAsParty`, not identity.
 
 For runnable patterns and explanation of named graph scope, continue to the
-[`SPARQL cookbook`](sparql-cookbook.md) and
-[`Direct graph exploration guide`](direct-graph-exploration.md).
+[`SPARQL cookbook`](../../documentation/sparql-cookbook.md) and
+[`Direct graph exploration guide`](../../documentation/direct-graph-exploration.md).
