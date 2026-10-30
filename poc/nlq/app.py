@@ -36,6 +36,11 @@ TEMPLATES = Path(__file__).resolve().parent / "templates"
 logger = logging.getLogger(__name__)
 
 
+def _dail_ordinal_label(number: int) -> str:
+    suffix = "th" if 10 <= number % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(number % 10, "th")
+    return f"{number}{suffix} Dáil"
+
+
 def create_app(
     *,
     repository_root: Path = ROOT,
@@ -180,6 +185,11 @@ def create_app(
                 }
                 plan_family = outcome.plan.get("family") if outcome.plan else outcome.request_family
                 is_shared_dail_terms = plan_family == "shared_dail_terms"
+                is_member_relationship_composition = plan_family == "member_relationship_composition"
+                is_composable_semantic = (
+                    is_shared_dail_terms or is_member_relationship_composition
+                    or plan_family == "composable_semantic"
+                )
                 stage_a_family = (plan_family if plan_family in stage_a_family_ids else
                                   parsed_stage_a.family if parsed_stage_a else None)
                 is_stage_a = stage_a_family is not None
@@ -224,6 +234,35 @@ def create_app(
                     f"{shared_term_names[1]}, intersecting their DailMembership paths on the same "
                     "DailTerm RDF identity."
                 ) if is_shared_dail_terms and len(shared_term_names) == 2 else None
+                composition_refs = (outcome.plan or {}).get("referents", {})
+                composition_terms = sorted(
+                    (
+                        referent["selector"]["number"]
+                        for referent in composition_refs.values()
+                        if referent.get("type") == "DailTerm"
+                        and isinstance(referent.get("selector"), dict)
+                        and type(referent["selector"].get("number")) is int
+                    )
+                )
+                composition_constituencies = [
+                    referent.get("label", referent.get("mention", "the requested constituency"))
+                    for referent in composition_refs.values()
+                    if referent.get("type") == "DailConstituency"
+                ]
+                member_relationship_summary = None
+                if is_member_relationship_composition and composition_terms:
+                    term_names = [f"the {_dail_ordinal_label(number)}" for number in composition_terms]
+                    if composition_constituencies and len(term_names) == 1:
+                        member_relationship_summary = (
+                            f"Find distinct local Members whose recorded DailMembership represents "
+                            f"{composition_constituencies[0]} in {term_names[0]}, with the constituency "
+                            "occurrence and membership joined to the same DailTerm identity."
+                        )
+                    elif len(term_names) == 2:
+                        member_relationship_summary = (
+                            f"Find distinct local Members with separate recorded DailMembership paths "
+                            f"in both {term_names[0]} and {term_names[1]}."
+                        )
                 stage_a_summaries = {
                     "member_lookup": "Resolve the grounded Member name against local Member identities without guessing.",
                     "previous_service": "Check Dáil membership in the previous term selected from House date evidence at the supplied as-of date.",
@@ -262,7 +301,7 @@ def create_app(
                     "bill_votes": "Check the supported capability boundary: sponsorship is not vote evidence, and Bill-linked voting data is unavailable.",
                     "debate_transcript": "Check the approved transcript-content boundary; Debate metadata/link is not speech text.",
                 }
-                summary = (stage_a_summaries.get(stage_a_family) if is_stage_a else None) or (stage_c_summaries.get(plan_family) if is_stage_c else None) or (stage_b_summaries.get(stage_b_family) if is_stage_b else None) or (shared_dail_terms_summary if is_shared_dail_terms else None) or (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
+                summary = (stage_a_summaries.get(stage_a_family) if is_stage_a else None) or (stage_c_summaries.get(plan_family) if is_stage_c else None) or (stage_b_summaries.get(stage_b_family) if is_stage_b else None) or (member_relationship_summary if is_member_relationship_composition else None) or (shared_dail_terms_summary if is_shared_dail_terms else None) or (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
                            if is_q06 else ("Find the requested actual DebateSitting and its official record link."
                                              if is_debate else
                                              (q35_summary if is_q35 else
@@ -279,9 +318,11 @@ def create_app(
                                if is_debate else
                                "Member names with exact start/end dates for every separate accepted holding; open ends are identified explicitly."
                                if is_q35 else
-                               "One row per Bill identity with title and recorded sponsorship evidence."
-                               if is_q23 else
-                                "Stage A typed family result using reviewed RDF ownership, with identity and date qualifications preserved."
+                                "One row per Bill identity with title and recorded sponsorship evidence."
+                                if is_q23 else
+                                "Distinct Member identities are retained by exact RDF IRI; historical source completeness is not certified."
+                                if is_member_relationship_composition else
+                                 "Stage A typed family result using reviewed RDF ownership, with identity and date qualifications preserved."
                                 if is_stage_a else
                                 "Distinct Dáil-term identities present in both independently resolved Member membership paths."
                                 if is_shared_dail_terms else "Distinct Members, displayed by name.")
@@ -294,7 +335,7 @@ def create_app(
                                    result_notice=(outcome.diagnostic if is_stage_a or is_stage_b or is_stage_c else
                                                     "Bill graphs are optional. These rows show recorded local sponsorship evidence; the dataset does not certify complete historical coverage."
                                                     if is_q23 else
-                                                    outcome.diagnostic if is_shared_dail_terms else None),
+                                                     outcome.diagnostic if is_composable_semantic else None),
                                   debug_output=outcome.result.raw_json if outcome.result else None,
                                    debug_source="Fuseki")
                 if is_stage_a:
@@ -327,17 +368,23 @@ def create_app(
                                   debug_output=format_debug_payload({"diagnostic": outcome.diagnostic}),
                                    debug_message="No answer query was executed." if outcome.sparql is None else "The reviewed read-only answer query executed.",
                                    debug_source="Validated Stage C plan" if plan_is_validated else "Rejected Stage C plan")
-                if is_shared_dail_terms:
+                if is_composable_semantic:
                     ambiguous_members = tuple(
                         {
-                            "type": referent.get("type", "Member"),
-                            "label": referent.get("mention", "the requested Member"),
+                            "type": referent.get("type", "Entity"),
+                            "label": (
+                                referent.get("mention")
+                                or (f"the {_dail_ordinal_label(referent['selector']['number'])}"
+                                    if referent.get("type") == "DailTerm"
+                                    and isinstance(referent.get("selector"), dict)
+                                    and type(referent["selector"].get("number")) is int
+                                    else f"the requested {referent.get('type', 'entity')}")
+                            ),
                             "resolution": "ambiguous",
                             "candidates": referent.get("candidates", []),
                         }
                         for referent in (outcome.plan or {}).get("referents", {}).values()
-                        if referent.get("type") == "Member"
-                        and referent.get("resolution") == "ambiguous"
+                        if referent.get("resolution") == "ambiguous"
                     )
                     if outcome.status == "success":
                         query_message = "The validated read-only answer query executed."
@@ -355,7 +402,7 @@ def create_app(
                                       "Proposed composable query plan") if outcome.plan else None,
                         plan_explanation=(
                             {"summary": summary, "validated": plan_is_validated,
-                             "answer_text": answer_text} if outcome.plan else None
+                              "answer_text": answer_text} if outcome.plan and summary else None
                         ),
                         error=outcome.diagnostic or "The semantic plan could not be executed safely.",
                         interaction_status=outcome.status,

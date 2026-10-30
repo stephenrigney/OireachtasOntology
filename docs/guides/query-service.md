@@ -125,6 +125,16 @@ compositions remain unsupported. Unrecognized questions use one strict
 Responses-compatible plan call with no repair/retry; planner failures are
 reported separately from unsupported semantics and source-evidence limitations.
 
+The reusable Member relationship composition also supports two bounded local
+queries: Members with recorded membership in each of two explicitly numbered
+Dáil terms, and Members whose recorded DailMembership represents an exact
+constituency occurrence in one numbered Dáil term. The constituency occurrence
+and membership must join to the same DailTerm RDF identity. Both use the same
+validated relation-graph compiler; term and constituency identities are resolved
+locally before an answer query runs. Results reflect recorded local evidence and
+do not certify historical completeness. Additional filters, more/fewer terms,
+Seanad terms, and unsupported relationships are refused rather than dropped.
+
 ### Other launcher commands
 
 ```bash
