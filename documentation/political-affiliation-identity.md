@@ -2,7 +2,7 @@
 
 ## Purpose and boundary
 
-`members:PoliticalAffiliationIdentity` is the proposed local identity for an
+`members:PoliticalAffiliationIdentity` is the implemented local identity for an
 enduring, recognised political affiliation represented in Oireachtas member
 records. It may describe a political party, an alliance, a combined
 electoral/parliamentary affiliation, or another recognised affiliation. The
@@ -14,7 +14,7 @@ to it.
 The identity is additional to, not a replacement for, the existing
 term-scoped `members:ParliamentaryParty`. The latter remains the Oireachtas
 source-backed collection with its authoritative source IRI, original
-`partyCode`, `showAs` label and term. A reviewed local link is proposed as
+`partyCode`, `showAs` label and term. A reviewed local link is expressed as
 `members:hasPoliticalAffiliationIdentity`:
 
 ```text
@@ -33,7 +33,7 @@ constituent membership.
 
 ## Identity and naming policy
 
-Proposed stable local identifiers use
+Stable local identifiers use
 `https://data.oireachtas.ie/ie/oireachtas/political-affiliation/{id}`.
 The final path segment is a permanent, lowercase ASCII registry key, not a
 source party code, term number, date, label slug, or external identifier.
@@ -126,32 +126,8 @@ record and no Cathaoirleach record). Date discrepancies and invalid/out-of-term
 affiliation intervals remain source-data limitations; they neither split nor
 merge identities.
 
-## Minimum implementation tranche after this decision
+## Implemented publication and Query Service
 
-1. **Ontology:** add `members:PoliticalAffiliationIdentity` and the local
-   ParliamentaryParty-to-identity property; document domain/range and the
-   distinction from `recognisedAsParty`. Do not declare all identities
-   registered organizations or assert `owl:sameAs`/temporal specialization.
-2. **Registry and reconciliation:** load the reviewed identity definitions
-   and full-source-IRI associations as deterministic reviewed data. Keep the
-   existing term-scoped source IRI as key; retain unresolved and excluded
-   outcomes, fail on duplicate/missing/unknown keys, and do not infer from
-   labels. Reuse existing Party reconciliation validation, review, audit and
-   recovery machinery rather than introducing another state subsystem.
-3. **RDF ownership/publication:** leave authoritative Parties and Member graphs
-   untouched. Reuse the existing replaceable derived-enrichment publication,
-   graph-validation and whole-graph-verification mechanisms. The graph IRI and
-   ownership for local identity descriptions/links are not decided here; settle
-   them against the ETL plan before coding, escalating if a new ownership rule
-   is required.
-4. **Query Service:** extend the existing vocabulary/capability allow-list and
-   query examples so users can retrieve term-scoped parties by their local
-   identity and preferred label/aliases. Preserve the source term and label in
-   results, distinguish this local link from external `recognisedAsParty`, and
-   do not treat ambiguous aliases as unique identifiers. Update its query
-   contract and focused tests.
+The approved registry and source-IRI associations are implemented as deterministic reviewed enrichment. `members:PoliticalAffiliationIdentity` and `members:hasPoliticalAffiliationIdentity` are declared in `ontology/members.owl.ttl`. Identity descriptions and links are published together in `https://data.oireachtas.ie/graph/political-affiliations/identities`, separate from authoritative Parties and Members graphs. Publication fails closed on changes to the reviewed inventory or association register and verifies the complete replaced graph. See [`political-affiliation-publication.md`](political-affiliation-publication.md).
 
-Implementation is deliberately not part of this decision tranche. The exact
-graph name/ownership, registry file schema and Query Service query surface are
-implementation details to fit existing mechanisms; any change to identity
-meaning or a new ownership rule requires review before implementation.
+Query Service Q06 follows dated Member PartyMembership records through term-scoped ParliamentaryParty collections to reviewed local identities, and uses their English preferred labels. It excludes Independent collections and does not resolve identities from labels or use external `recognisedAsParty` links. Its acceptance evidence is synthetic, not proof of production historical completeness; see [`query-service-q06-slice.md`](query-service-q06-slice.md).
