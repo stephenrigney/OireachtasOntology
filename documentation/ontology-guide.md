@@ -123,7 +123,7 @@ dated membership record.
 concepts grounded in Standing Orders, not synonyms for party. A party might
 also be a group if independently evidenced, but one class does not imply the
 other. The current Parties/Members API ETL does not populate group instances.
-Reviewed external matching of a term-scoped party collection uses
+A separately reviewed local enduring affiliation identity (`members:PoliticalAffiliationIdentity`) is linked from a term-scoped `members:ParliamentaryParty` by `members:hasPoliticalAffiliationIdentity`. The local identity may denote a party, alliance or other reviewed affiliation, not necessarily a registered party. Its descriptions and links live in the separate `graph/political-affiliations/identities` enrichment graph. Identical labels do not establish identity, and Independent collections have no such link. See [`political-affiliation-identity.md`](political-affiliation-identity.md). Reviewed external matching of a term-scoped party collection uses
 `members:recognisedAsParty`; it is not `owl:sameAs` and not a group-recognition
 assertion. See [`parliamentary-member-collection-model.md`](parliamentary-member-collection-model.md).
 
