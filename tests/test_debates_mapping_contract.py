@@ -140,7 +140,7 @@ def test_source_ordinal_mapping_is_positive_mixed_sibling_and_container_scoped()
 
 def test_unresolved_source_references_never_mint_placeholder_identities():
     identity_contract = " ".join((
-        ROOT / "documentation" / "debates-identity-contract.md"
+        ROOT / "docs" / "architecture" / "debate-identities.md"
     ).read_text(encoding="utf-8").split())
     rows = _mapping_rows()
     active = [row for row in rows if row["mapping_status"] in ACTIVE_STATUSES]

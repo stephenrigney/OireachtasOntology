@@ -31,8 +31,9 @@ HOUSE_TERM_RE = re.compile(r"^https://data\.oireachtas\.ie/ie/oireachtas/house/(
 COMMITTEE_TYPES = {"Select", "Joint", "Special"}
 COMMITTEE_PURPOSES = {"Policy", "Shadow Department"}
 
-# Project-owner decision documented in documentation/etl-plan.md.  This hash
-# binds the exception to the complete, reviewed raw observations (including
+# Project-owner decision documented in
+# docs/reports/etl/etl-plan-history.md. This hash binds the exception to the
+# complete, reviewed raw observations (including
 # Member-owned role and membership evidence), not merely to their numeric IDs.
 _APPROVED_COMMITTEE_IRI = (
     "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/"

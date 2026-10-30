@@ -24,7 +24,7 @@ below is not an outstanding implementation checklist.
 The implemented refresh design makes routine refresh restart-safe, idempotent,
 and efficient without introducing workflow infrastructure.
 
-The following invariants apply throughout the phase:
+The implemented contract preserves these invariants:
 
 - immutable raw API evidence remains separate from mutable operational state;
 - authoritative Oireachtas publication and external reconciliation remain
@@ -39,15 +39,15 @@ The following invariants apply throughout the phase:
   resource has disappeared from the source;
 - external-service failure must not roll back successful authoritative
   publication; and
-- Phase 5 introduces no Airflow, Kafka, worker hierarchy, or new scheduler.
+- Phase 5 introduced no Airflow, Kafka, worker hierarchy, or new scheduler.
 
 Deployment scheduling is an operations concern; see the
 [deployment and operations guide](../../development/operations.md).
 
 ## 2. State ownership
 
-Phase 5 introduces a SQLite operational-state store for the authoritative core
-ETL. It is distinct from the existing schema-v4 `ReconciliationStore`.
+The authoritative core ETL uses a SQLite operational-state store distinct from
+the schema-v4 `ReconciliationStore`.
 
 The stores have different authorities:
 
@@ -56,10 +56,9 @@ The stores have different authorities:
 | Core ETL SQLite | authoritative-source runs, endpoint synchronisation, resource observation, authoritative publication and incremental cursors |
 | `ReconciliationStore` | external identity decisions, evidence, review state, external-link publication recovery and external recheck scheduling |
 
-The existing Member and Bill JSON manifests are transitional state. Tranche 1
-must import them transactionally into the core SQLite store. After a successful
-migration SQLite is authoritative; the ETL must not dual-write SQLite and the
-legacy manifests.
+The Member and Bill JSON manifests were transitional import inputs. Core SQLite
+is authoritative after successful migration; the ETL does not dual-write SQLite
+and the legacy manifests.
 
 External-reconciliation fields do not belong in the core ETL state schema.
 Likewise, authoritative publication state does not move into
@@ -67,8 +66,8 @@ Likewise, authoritative publication state does not move into
 
 ## 3. Core ETL state model
 
-The implementation may refine table and column names, but it must preserve the
-following concepts and boundaries.
+The implementation's state model preserves the following concepts and
+boundaries.
 
 ### 3.1 Run state
 
@@ -99,7 +98,7 @@ naturally owned by one resource, including:
 - last successful complete scan; and
 - endpoint-level publication metadata where the endpoint owns a shared graph.
 
-Houses, Parties, and Constituencies use complete refreshes and should not gain
+Houses, Parties, and Constituencies use complete refreshes and do not have
 artificial per-resource publication state solely for schema uniformity.
 
 ### 3.3 Resource state
@@ -153,7 +152,7 @@ not silently mark an unverified graph clean.
 
 ## 5. Endpoint refresh policy
 
-| Endpoint | Routine Phase 5 policy |
+| Endpoint | Current routine policy (implemented in Phase 5) |
 |---|---|
 | Houses | complete refresh |
 | Parties | complete refresh |
@@ -204,8 +203,8 @@ overlap. Already-clean resources are skipped; dirty resources are retried.
 
 ### 6.3 Complete source reconciliation
 
-Legislation must periodically perform a complete extraction of the current
-source dataset. Complete reconciliation uses the same resource hashing,
+Legislation complete-source reconciliation performs a complete extraction of
+the current source dataset. It uses the same resource hashing,
 validation, publication, and recovery machinery as incremental refresh.
 
 Only a successful complete scan can establish that a previously known resource
@@ -224,8 +223,9 @@ non-destructively as `missing`. Confirmation requires the approved
 complete-scan policy to observe the absence again; implementation must not
 equate source absence with semantic deletion.
 
-Phase 5 must not automatically erase historical RDF solely because a resource
-is absent from an incremental response or a single complete extraction.
+The implementation does not automatically erase historical RDF solely because
+a resource is absent from an incremental response or a single complete
+extraction.
 Destructive graph removal, where ever appropriate, requires an explicit
 endpoint-specific policy and action. Do not use a generic `deleted` state as
 a synonym for source absence.
@@ -248,7 +248,7 @@ include `oir-etl run members`, `oir-etl run bills [--full]`,
 `oir-etl state status`, and the endpoint-specific `oir-etl reconcile ...`
 commands. There is no scheduler/worker subsystem in this refresh contract.
 
-Legacy Member/Bill JSON state is an explicit one-time import input. Core State
+Legacy Member/Bill JSON state was an explicit one-time import input. Core State
 SQLite is authoritative after successful migration; the JSON manifest is not
 dual-written. Schema upgrades and unsupported-schema handling are implemented
 in Core State and covered by tests, rather than prescribed by a future migration

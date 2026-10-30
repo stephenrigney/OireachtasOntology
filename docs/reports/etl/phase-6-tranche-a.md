@@ -264,7 +264,7 @@ batch (`oir-etl run debates --source-url URL` or `--replay SHA256`) with opt-in
 per-Work publication via `--publish`, not a complete-source run, broad
 production-corpus loader, or scheduler. The exact non-publishing inventory of
 the approved 2011+ Debates census is complete and recorded in
-`documentation/debates-production-readiness.md`; it found 264 quarantined
+`docs/reports/debates/production-readiness-history.md`; it found 264 quarantined
 Works but did not write production quarantine state. The separate Debates
 production gate remains open for human exception dispositions, operational
 limits, accepted source-listing completeness behavior, and staged operational

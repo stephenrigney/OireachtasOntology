@@ -22,8 +22,8 @@ relationship in its membership context. `members:ParliamentaryGroup` and
 `members:TechnicalGroup` are separate concepts; current Parties/Members data
 does not by itself establish group instances. Reviewed local affiliation and
 external party reconciliation are distinct links and identities; see the
-[identity](../../../documentation/political-affiliation-identity.md) and
-[publication](../../../documentation/political-affiliation-publication.md)
+[identity](../../architecture/party-identities.md) and
+[publication](../graph-publication-political-affiliations.md)
 contracts.
 
 ## Roles and offices
@@ -38,4 +38,4 @@ Some legacy declarations remain deprecated for migration compatibility. Consult
 the module's annotations and active Member mappings rather than using a
 deprecated term as a current target. Office and membership axioms are in
 [`members.owl.ttl`](../../../ontology/members.owl.ttl); reviewed population
-constraints are documented in the [office registry guide](../../../documentation/ministerial-office-registry.md).
+constraints are documented in the [office registry guide](../offices/registry.md).
