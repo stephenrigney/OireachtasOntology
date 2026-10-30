@@ -17,7 +17,7 @@ properties. Only source outcomes explicitly mapped as carried or lost establish
 those outcomes; an indeterminate declared outcome is not guessed. Committee
 roll-call attendance is not a division. See
 [`debates.owl.ttl`](../../../ontology/debates.owl.ttl) and the
-[Debates mapping contract](../../../documentation/debates-mapping.md).
+[Debates mapping contract](../debates/mapping-and-implementation.md).
 
 The ontology and transformer support Debates, but production availability is
 separate from schema/fixture support; consult current implementation evidence

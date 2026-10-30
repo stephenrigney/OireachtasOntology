@@ -1,6 +1,6 @@
 [Unit]
 Description=Daily Oireachtas ETL refresh timer
-Documentation=file:/opt/oireachtas-etl/documentation/production-operations.md
+Documentation=file:/opt/oireachtas-etl/docs/development/operations.md
 
 [Timer]
 OnCalendar=*-*-* 02:00:00

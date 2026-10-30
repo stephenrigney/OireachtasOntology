@@ -1,6 +1,6 @@
 [Unit]
 Description=Verify encrypted Oireachtas ETL backups and RPO
-Documentation=file:/opt/oireachtas-etl/documentation/production-operations.md
+Documentation=file:/opt/oireachtas-etl/docs/development/operations.md
 Requires=docker.service
 After=docker.service oir-backup.service
 OnFailure=oireachtas-ops-failure@%n.service

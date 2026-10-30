@@ -1,9 +1,9 @@
 # Complete Documentation Reorganisation — Tranche 1 Inventory
 
-**Status:** Complete inventory and recommendation for human review; no moves,
-deletions, or implementation changes are made by this tranche. Reviewed against
-`master` (`c2cd3e4`, 2026-10-30). The register is a proposal, not approval to
-execute Tranche 2.
+**Status:** Original Tranche 1 inventory, now completed by the Tranche 2A,
+2B and final-consolidation closeouts below. Its initial recommendations and
+approval gate are historical; final dispositions are recorded in the closeouts.
+Reviewed against `master` (`c2cd3e4`, 2026-10-30).
 
 ## Scope and inventory method
 
@@ -203,13 +203,12 @@ conditional on migration review and inbound-link updates.
 - Repository state: this branch is `docs/documentation-inventory-20261030`,
   based on `master`; the only intended tracked change is this inventory.
 
-**Approval required before Tranche 2:** confirm whether a separate hosted Wiki
-exists; approve the proposed canonical locations/owners (especially ETL and NLQ
-contracts); choose which historical debate/NLQ/phase evidence merits archival;
-approve conditional deletion of stale/duplicate sources after claim and inbound
-link review; and resolve whether the target `docs/` tree is accepted. This
-document does not authorize moves/deletions, implementation changes, or merge
-of the inventory PR.
+**Historical approval gate (superseded):** The project approved and completed
+Tranches 2A, 2B and final consolidation. The local Wiki was retired in Tranche
+2A; no separate hosted Wiki was verified. Final canonical locations and source
+retirements are recorded in the closeouts below. This original proposal table
+is retained as the audit trail; where it conflicts with a closeout, the later
+closeout is the final disposition.
 
 ## Tranche 2A closeout — ontology documentation
 
@@ -245,3 +244,90 @@ Inbound repository links were updated, including the ontology guide move and
 the phase record's reference to the retired Departments draft. W3C links using
 scheme-less destinations in the old README were removed with the superseded
 material. A full local Markdown-link check passed.
+
+## Tranche 2B closeout — ETL documentation
+
+The shared ETL documentation now has one current architecture overview at
+`docs/architecture/etl.md`, with distinct current homes for state/refresh and
+legislation contracts under `docs/reference/etl/` and deployment/operations at
+`docs/development/operations.md`. The root and docs indexes, `AGENTS.md`, and
+OpenCode authority guidance link to those current homes. Query Service, Debates
+and Ministerial Offices documentation was not consolidated; references to moved
+shared ETL or Phase 6 documents were updated without changing those subjects'
+contracts.
+
+| Former document | Tranche 2B disposition |
+|---|---|
+| `documentation/etl-plan.md` | Full plan retained at `docs/reports/etl/etl-plan-history.md` with an explicit historical/not-backlog notice. A short pointer remains at the former path for an unchanged implementation comment. The accepted Committee owner exception is restated in current architecture; Phase 7 Debates and office material was not migrated. |
+| `documentation/production-operations.md` | Moved intact to `docs/development/operations.md`; current command paths and Phase 6 evidence links were checked against the wrapper, Compose configuration and systemd units. Systemd `Documentation=` pointers and the existing doc-assertion test path were updated without changing service behavior or test assertions. |
+| `documentation/incremental-refresh-state.md` | Moved to `docs/reference/etl/state-and-refresh.md`; completed phase checklist and speculative CLI/migration direction were removed, and live command references now describe implemented behavior. |
+| `documentation/phase-4-legislative-lifecycle.md` | Retained as the current domain-specific `docs/reference/etl/legislation.md`; no Bill identity or mapping meaning was changed. |
+| `documentation/phase-5-refresh-operations.md` | Retained as `docs/reference/etl/external-reconciliation-refresh.md`, distinct from authoritative-source refresh. |
+| `documentation/phase-6-tranche-a.md`, `documentation/phase-6-tranche-c.md` | Archived at `docs/reports/etl/`; the revision-bound JSON evidence remains at `documentation/evidence/`, its implementation-configured path. |
+
+The repository had **83 tracked Markdown documents immediately before Tranche
+2B** and has **85 after it**: seven existing documents were relocated, one
+current architecture page and one compatibility pointer for the unchanged
+implementation comment were added, and no unique evidence was deleted. The
+original 2,784-line phase plan remains available but is no longer presented as
+current architecture/backlog. The 364-line refresh plan's unimplemented
+direction, migration and tranche checklists were removed from the current
+reference; its current state, cursor, absence and recovery rules remain. The
+722-line operations runbook was retained to avoid discarding actionable
+provisioning, incident, backup and recovery procedures. Phase 6 acceptance
+limits and machine-readable evidence remain linked and explicitly do not
+authorize production deployment.
+
+No unresolved authority conflict was identified in the shared ETL overview.
+Implementation, tests, OWL, mappings, local registries and endpoint-specific
+contracts remain authoritative. The Phase 6 production-host and Debates
+deployment authorizations remain explicitly outstanding; these are operational
+gates, not documentation authority conflicts.
+
+## Final tranche closeout — Query Service, Debates, offices and remaining docs
+
+The final tranche completes the approved inventory on the branch based on
+`origin/master` (`docs/final-consolidation`). Dispositions below supersede the
+initial proposals above. The reorganisation is documentation-only: no ontology,
+mapping, ETL/query behavior, tests' acceptance criteria, or machine-readable
+evidence was changed. Tests were updated only where they asserted moved
+documentation paths. Current implementation, tests, OWL, mappings and
+machine-readable registries remain authoritative.
+
+### Final canonical homes and dispositions
+
+| Inventory material | Final disposition |
+|---|---|
+| Root README, ontology guide, SPARQL cookbook, graph exploration, Fuseki guide | Root README reduced to repository scope and index links. Practical guides are under `docs/guides/`; the ontology source index and mapping notes remain beside their authoritative files. |
+| ETL plan, operations, refresh state, phase records | Tranche 2B dispositions stand: current architecture/reference/operations homes are under `docs/`; full ETL plan is `docs/reports/etl/etl-plan-history.md`, not a backlog; Phase 6 evidence remains archived and machine-readable evidence remains at `documentation/evidence/`. The obsolete `documentation/etl-plan.md` pointer was deleted after its implementation-comment reference was updated. |
+| Query Service POC README | Moved to `docs/guides/query-service.md` and condensed as the user/setup guide. It distinguishes implemented local Phase 2 flow, supported-but-data-dependent capabilities, benchmark results, and known limitations; it is not a query-semantic authority. |
+| Query Service technical specifications and approved questions | `poc/specs/query-service-plan.md` and `poc/specs/query-service-questions-approved.md` remain in `poc/specs/` as the authoritative technical specification and approved question set. The plan now labels implemented behavior separately from proposals and is not an active checklist. |
+| Query Service completion evidence, Q06 evidence, benchmarks and development-data evidence | Preserved under `docs/reports/query-service/`. Historical Phase 1 runs, the redesign documents and completed campaign are under `docs/reports/query-service/history/`; the progress snapshot is explicitly historical. No approved questions or measured result was removed. Machine benchmark JSON and schemas remain in `poc/`. Short pointers remain at `poc/nlq/README.md` and `poc/nlq/benchmarks/development-data-evidence.md` because checked-in schema/benchmark metadata records those exact paths; the machine-readable artifacts were not edited. |
+| Debates mapping and identity contracts | Current mapping/implementation reference is `docs/reference/debates/mapping-and-implementation.md`; accepted identity contract is `docs/architecture/debate-identities.md`. The old ontology outline remains explicitly historical at `docs/reference/debates/legacy-outline-history.md`, not a vocabulary authority. |
+| Debates vertical-slice plan, handoffs and tranche records | Archived under `docs/reports/debates/` as completed implementation/contract history, not active plans. Distinct source, semantic, benchmark, staging, readiness and resource-evidence reports are retained as separate reports. The production execution plan is marked historical; none grants production authorization. |
+| Ministerial-office design, registry and reconciliation | Completed design is archived at `docs/reports/offices/phase-7-implementation-history.md`. The current registry and occurrence contracts are under `docs/reference/offices/`; observation review and external identity reconciliation are merged in `docs/development/reconciliation/offices.md` with their distinct semantics retained. Bill-sponsor detail is under `docs/reference/etl/`. |
+| Identity, membership, institutions, party/member reconciliation, and private beta proposal | Current identity/collection material is under `docs/architecture/`; the House model's unique current explanation was merged into the ontology guide and its duplicate source deleted. Practical reconciliation material is under `docs/development/reconciliation/`; the private-beta document is clearly a proposal under `docs/development/`. Distinct identity and source evidence remains under `docs/reports/`. |
+| Semantic-enrichment POC plan, guide and results | Practical evaluation workflow is at `docs/guides/semantic-enrichment-evaluation.md`; the plan is archived as history and unique evaluation results/summary remain under `docs/reports/semantic-enrichment/`. Executable POC and machine-readable inputs remain in `poc/semantic-enrichment/`. |
+| Documentation navigation and retained authorities | `docs/README.md` is the main index, linked from the concise root README. `AGENTS.md`, `.opencode/`, `ontology/README.md`, `ontology/external-vocabulary-pins.md`, `documentation/mapping_notes.md`, and `poc/specs/` remain at their authority/configuration-adjacent paths. The two Query Service path pointers above are intentionally retained for machine-readable references. |
+
+No unique benchmark result, approved question set, accepted semantic decision,
+production-readiness limitation, or required machine-readable evidence was
+deleted. Former documentation locations were retired by moves except for the
+two machine-reference pointers noted above. `docs/README.md` is the index to current
+guidance, architecture, references, development workflows and historical
+reports. The repository had **85 tracked Markdown files immediately before this
+final tranche and 84 after it**. The House-model write-up's unique explanation
+was merged into the ontology guide; the office observation and external
+reconciliation pages were merged into one page without losing their distinct
+semantics; and the obsolete ETL compatibility pointer was deleted after its
+implementation comment was updated. The two retained Query Service pointers are
+counted in the final total. No unique evidence was deleted. The original inventory counted 89 before
+Tranche 2A; Tranche 2B closeout counted 83 immediately before its changes and
+85 afterward. The baseline counts use different tranche boundaries and should
+not be read as a net file-addition claim.
+
+The local Markdown destination check passed with no broken tracked links. The
+remaining production/deployment authorizations and any coverage limitations are
+explicitly identified in their evidence reports; no new authority conflict or
+blocking documentation decision was found. This closeout records disposition
+and does not authorize merging or production operations.

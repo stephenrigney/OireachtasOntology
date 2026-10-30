@@ -12,14 +12,15 @@ Oireachtas Open Data API -> immutable raw JSON -> RDF transformation -> validati
 ETL code implements the mapping contract; it does not redefine ontology or
 mapping meaning. Valid RDF must be produced and validated before publication.
 The ETL architecture, RDF ownership, deterministic identifier expectations,
-and named-graph strategy are defined in `documentation/etl-plan.md`.
+and named-graph strategy are summarized in `docs/architecture/etl.md`.
 
 ## Authoritative Information
 
 Read the smallest relevant authoritative material before changing behavior:
 
-- `documentation/etl-plan.md` for ETL architecture, phase boundaries, RDF
-  ownership, identifier strategy, named graphs, and acceptance expectations.
+- `docs/architecture/etl.md` for current ETL architecture and publication
+  boundaries; `docs/reference/etl/state-and-refresh.md` for current state and
+  refresh contracts; `docs/development/operations.md` for operational procedures.
 - `documentation/mapping_notes.md` and `mappings/*.csv` for field-level
   mapping meaning and status.
 - `ontology/*.owl.ttl` for executable Oireachtas vocabulary definitions.
@@ -123,4 +124,4 @@ Stop and report rather than deciding silently if work requires:
 - modifying source fixtures to make output pass;
 - permitting invalid or unvalidated RDF publication; or
 - a material architecture decision not already covered by
-  `documentation/etl-plan.md`.
+  `docs/architecture/etl.md`.

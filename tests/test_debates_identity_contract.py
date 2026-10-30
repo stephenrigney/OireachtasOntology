@@ -1,7 +1,7 @@
 """Check approved identity/source examples, not a Debates ETL implementation.
 
 The small calculations here are a test-local reference of the contract in
-documentation/debates-identity-contract.md. There is deliberately no import
+docs/architecture/debate-identities.md. There is deliberately no import
 from the ETL package and no assertion about transformed RDF. A few tests read
 immutable AKN fixtures to verify source evidence and the reference ordering rule;
 they still do not exercise runtime extraction, mapping or RDF publication.
@@ -20,8 +20,9 @@ from urllib.parse import quote, urlsplit
 
 CONTRACT = (
     Path(__file__).resolve().parents[1]
-    / "documentation"
-    / "debates-identity-contract.md"
+    / "docs"
+    / "architecture"
+    / "debate-identities.md"
 )
 CONTRACT_TEXT = CONTRACT.read_text(encoding="utf-8")
 ROOT = Path(__file__).resolve().parents[1]
@@ -317,7 +318,7 @@ class TestDebatesIdentityContract(unittest.TestCase):
             "https://data.oireachtas.ie/graph/debate/dail/2015-07-02/debate",
         )
 
-        review_path = ROOT / "documentation" / "debates-semantic-review.md"
+        review_path = ROOT / "docs" / "reports" / "debates" / "semantic-review.md"
         review = " ".join(review_path.read_text(encoding="utf-8").split())
         self.assertIn(
             "Where more than one Expression is *known* for the same Work, preserve each exact input but fail closed for that Work rather than replacing its graph from one file.",
