@@ -22,7 +22,7 @@ from rdflib import URIRef
 from .contract import load_query_contract
 from .errors import NLQError
 from .member_resolution import UnsupportedLocalEntityType, resolve_local_entity_label
-from .results import QueryResult
+from .results import QueryResult, format_debug_payload
 from .safety import validate_sparql
 
 
@@ -53,6 +53,10 @@ class PlanError(ValueError):
     """A draft plan is invalid or names an unsupported semantic relation."""
 
 
+class UnrecognizedQuestion(PlanError):
+    """No deterministic family recognized the question's surface form."""
+
+
 @dataclass(frozen=True)
 class PlanOutcome:
     status: str
@@ -62,6 +66,8 @@ class PlanOutcome:
     sparql: str | None = None
     result: QueryResult | None = None
     request_family: str | None = None
+    debug_output: str | None = None
+    debug_source: str | None = None
 
 
 @dataclass(frozen=True)
@@ -342,6 +348,135 @@ def _validate_bill_sponsorship_plan(plan: dict[str, Any]) -> dict[str, Any]:
     return plan
 
 
+def _validate_shared_dail_terms_plan(plan: dict[str, Any]) -> dict[str, Any]:
+    """Validate the exact v2 two-Member/shared-Dáil-term composition."""
+    if set(plan) != {"version", "asOf", "family", "referents", "relations", "answer"}:
+        raise PlanError(
+            "The shared-Dáil-term family does not accept filters, constraints, or extra plan fields."
+        )
+    if plan.get("family") != "shared_dail_terms":
+        raise PlanError("Unsupported shared-term plan family.")
+    if not isinstance(plan.get("referents"), dict):
+        raise PlanError("Shared-Dáil-term referents must be an object.")
+
+    refs = plan["referents"]
+    member_ids = [key for key, value in refs.items()
+                  if isinstance(value, dict) and value.get("type") == "Member"]
+    membership_ids = [key for key, value in refs.items()
+                      if isinstance(value, dict) and value.get("type") == "DailMembership"]
+    term_ids = [key for key, value in refs.items()
+                if isinstance(value, dict) and value.get("type") == "DailTerm"]
+    if (len(refs) != 5 or len(member_ids) != 2
+            or len(membership_ids) != 2 or len(term_ids) != 1):
+        raise PlanError(
+            "Shared-Dáil-term plans require exactly two Member, two DailMembership, and one DailTerm referent."
+        )
+
+    member_mentions: list[str] = []
+    for member_id in member_ids:
+        member = refs[member_id]
+        if not isinstance(member_id, str) or not member_id or not isinstance(member, dict):
+            raise PlanError("Member referent IDs and values must be valid.")
+        resolution = member.get("resolution")
+        allowed_fields = {
+            "unresolved": {"type", "mention", "resolution"},
+            "resolved": {"type", "mention", "resolution", "iri", "label"},
+            "ambiguous": {"type", "mention", "resolution", "candidates"},
+            "not_found": {"type", "mention", "resolution"},
+            "source_data_unavailable": {"type", "mention", "resolution"},
+            "unsupported_mapping": {"type", "mention", "resolution"},
+        }
+        if (not isinstance(resolution, str) or resolution not in allowed_fields
+                or set(member) != allowed_fields[resolution]):
+            raise PlanError(f"Member referent {member_id!r} has invalid resolution fields.")
+        mention = member.get("mention")
+        if not isinstance(mention, str) or not mention.strip():
+            raise PlanError("Each shared-term Member requires its exact name mention.")
+        member_mentions.append(unicodedata.normalize("NFC", mention).casefold())
+        if resolution == "resolved":
+            _require_local_iri(member["iri"], "Member")
+            if not isinstance(member["label"], str) or not member["label"].strip():
+                raise PlanError("A resolved Member requires its local display label.")
+        elif resolution == "ambiguous":
+            candidates = member["candidates"]
+            if not isinstance(candidates, list) or len(candidates) < 2:
+                raise PlanError("An ambiguous Member requires at least two local candidates.")
+            if any(
+                not isinstance(candidate, dict) or set(candidate) != {"iri", "label"}
+                or not isinstance(candidate["label"], str) or not candidate["label"].strip()
+                for candidate in candidates
+            ):
+                raise PlanError("Ambiguous Member candidates must contain local IRIs and labels.")
+            for candidate in candidates:
+                _require_local_iri(candidate["iri"], "Member candidate")
+            if len({candidate["iri"] for candidate in candidates}) != len(candidates):
+                raise PlanError("Ambiguous Member candidates must have distinct RDF identities.")
+        elif "iri" in member or "candidates" in member:
+            raise PlanError("An unresolved Member cannot carry a selected or candidate IRI.")
+    if member_mentions[0] == member_mentions[1]:
+        raise PlanError("The two Member referents must be independently named.")
+
+    for membership_id in membership_ids:
+        if not isinstance(membership_id, str) or not membership_id or refs[membership_id] != {"type": "DailMembership"}:
+            raise PlanError("Each DailMembership referent must be a plain typed evidence role.")
+    term_id = term_ids[0]
+    if (not isinstance(term_id, str) or not term_id
+            or refs[term_id] != {"type": "DailTerm", "answer": True}):
+        raise PlanError("The shared DailTerm must be the typed answer referent.")
+
+    if not isinstance(plan.get("relations"), list) or len(plan["relations"]) != 4:
+        raise PlanError("Both Members require a complete typed path to the shared DailTerm.")
+    actual_edges: list[tuple[str, str, str]] = []
+    relation_ids: set[str] = set()
+    for relation in plan["relations"]:
+        if (not isinstance(relation, dict) or set(relation) != {"id", "fact", "from", "to"}
+                or any(not isinstance(relation.get(field), str) or not relation[field]
+                       for field in ("id", "fact", "from", "to"))):
+            raise PlanError("Shared-term relationships require non-empty v2 relation fields only.")
+        if relation["id"] in relation_ids:
+            raise PlanError("Shared-term relation IDs must be unique.")
+        relation_ids.add(relation["id"])
+        fact = relation["fact"]
+        if fact not in _RELATION_TYPES:
+            raise PlanError(f"Unsupported semantic mapping: {fact!r}.")
+        if fact not in {"member_has_membership", "membership_in_term"}:
+            raise PlanError(f"Relationship {fact!r} is outside the shared-Dáil-term family.")
+        source, target = relation["from"], relation["to"]
+        if source not in refs or target not in refs:
+            raise PlanError("Shared-term relationship references an undeclared referent.")
+        if (refs[source]["type"], refs[target]["type"]) != _RELATION_TYPES[fact]:
+            raise PlanError(f"Relationship {fact!r} has incompatible typed referents.")
+        actual_edges.append((fact, source, target))
+
+    expected_edges: list[tuple[str, str, str]] = []
+    used_memberships: set[str] = set()
+    for member_id in member_ids:
+        linked = [edge for edge in actual_edges
+                  if edge[0] == "member_has_membership" and edge[1] == member_id]
+        if len(linked) != 1:
+            raise PlanError(f"Member {member_id!r} must have exactly one independent membership edge.")
+        membership_id = linked[0][2]
+        if refs[membership_id]["type"] != "DailMembership" or membership_id in used_memberships:
+            raise PlanError("Each Member requires a separate DailMembership referent.")
+        used_memberships.add(membership_id)
+        expected_edges.extend([
+            ("member_has_membership", member_id, membership_id),
+            ("membership_in_term", membership_id, term_id),
+        ])
+    if sorted(actual_edges) != sorted(expected_edges):
+        raise PlanError(
+            "Both membership paths must converge on the same answer DailTerm resource identity."
+        )
+
+    expected_answer = {
+        "kind": "entities", "referent": term_id, "distinctBy": "identity",
+        "display": ["label"],
+    }
+    if plan.get("answer") != expected_answer:
+        raise PlanError("Shared-Dáil-term answers must return distinct DailTerm identities and labels.")
+    return plan
+
+
 def _require_local_iri(value: str, what: str) -> str:
     if (not isinstance(value, str) or not value.startswith("https://data.oireachtas.ie/")
             or any(character.isspace() for character in value) or any(mark in value for mark in "<>\"{}|\\^`")):
@@ -487,7 +622,7 @@ def plan_question(question: str, *, as_of: date) -> dict[str, Any]:
         question.strip(), re.IGNORECASE,
     )
     if not match:
-        raise PlanError("This question is outside the supported previous-Dáil representation pattern.")
+        raise UnrecognizedQuestion("No deterministic composable family recognized this question.")
     constituency = re.sub(r"[?.!]+$", "", match.group(1)).strip()
     if not constituency:
         raise PlanError("A constituency name is required.")
@@ -539,6 +674,8 @@ def validate_plan(plan: Any) -> dict[str, Any]:
         from .stage_c import _C_FAMILIES, validate_stage_c_plan
         if plan["family"] in _C_FAMILIES:
             return validate_stage_c_plan(plan)
+        if plan["family"] == "shared_dail_terms":
+            return _validate_shared_dail_terms_plan(plan)
         return _validate_stage_a_plan(plan)
     if any(ref.get("type") in {"DebateRecord", "DebateSitting"} for ref in refs.values()):
         return _validate_debate_plan(plan)
@@ -1109,6 +1246,141 @@ class AmbiguousConstituency(NLQError):
     def __init__(self, mention: str, candidates: tuple[dict[str, str], ...]):
         super().__init__(f"Several constituencies named “{mention}” exist in the previous Dáil.")
         self.candidates = candidates
+
+
+def _shared_dail_terms_mapping(plan: dict[str, Any]) -> dict[str, Any]:
+    """Cross-check the v2 slice against the currently queryable RDF contracts."""
+    plan = validate_plan(plan)
+    if plan.get("family") != "shared_dail_terms":
+        raise PlanError("Shared-term query compilation requires the validated v2 family.")
+    member_refs = sorted(
+        (
+            (referent_id, referent)
+            for referent_id, referent in plan["referents"].items()
+            if referent.get("type") == "Member"
+        ),
+        key=lambda item: (item[1]["mention"].casefold(), item[1]["mention"], item[0]),
+    )
+    if any(ref.get("resolution") != "resolved" for _referent_id, ref in member_refs):
+        raise PlanError("Shared-term compilation requires two independently resolved Member identities.")
+    member_iris = tuple(
+        _require_local_iri(ref["iri"], "Member") for _referent_id, ref in member_refs
+    )
+    if len(set(member_iris)) != 2:
+        raise PlanError(
+            "The two Member referents resolve to the same RDF identity; an intersection needs two distinct identities."
+        )
+
+    query_contract = load_query_contract()
+    families = {item["id"]: item["graph"] for item in query_contract["graphFamilies"]}
+    member_graph = families.get("member-records", {})
+    houses_graph = families.get("houses", {})
+    if (member_graph.get("kind") != "resource-pattern"
+            or not isinstance(member_graph.get("iriTemplate"), str)
+            or "{" not in member_graph["iriTemplate"]
+            or houses_graph.get("kind") != "fixed"
+            or not isinstance(houses_graph.get("iri"), str)):
+        raise PlanError("Reviewed Member and Houses graph ownership is unavailable.")
+    member_graph_prefix = member_graph["iriTemplate"].split("{", 1)[0]
+
+    membership_pattern = _reviewed_pattern("member-house-membership", "member-records")
+    member_pattern = _reviewed_pattern("member-description", "member-records")
+    term_pattern = _reviewed_pattern("house-term-description", "houses")
+    ordinal_pattern = _reviewed_pattern("house-term-ordinal", "houses")
+    member_type = _pattern_rdf_type(member_pattern, "?member")
+    membership_type = _pattern_rdf_type(membership_pattern, "?membership")
+    membership_types = [
+        triple[2] for triple in membership_pattern.get("triples", [])
+        if triple[0] == "?membership" and triple[1] == "rdf:type"
+    ]
+    dail_membership_type = _PLAN_CONTRACT["entityTypeRdfTypes"]["DailMembership"]
+    if (member_type != _PLAN_CONTRACT["entityTypeRdfTypes"]["Member"]
+            or membership_type != "members:OireachtasMembership"
+            or not any(dail_membership_type in item.split(" or ") for item in membership_types)
+            or dail_membership_type not in query_contract["queryableClasses"]):
+        raise PlanError("Reviewed Member/DailMembership types disagree with the emitted pattern.")
+    term_types = [
+        triple[2] for triple in term_pattern.get("triples", [])
+        if triple[0] == "?term" and triple[1] == "rdf:type"
+    ]
+    dail_term_type = _PLAN_CONTRACT["entityTypeRdfTypes"]["DailTerm"]
+    if (not any(dail_term_type in item.split(" or ") for item in term_types)
+            or dail_term_type not in query_contract["queryableClasses"]):
+        raise PlanError("The Houses pattern does not expose the reviewed DailTerm type.")
+
+    member_link = _pattern_predicate(membership_pattern, "?member", "?membership")
+    term_link = _pattern_predicate(membership_pattern, "?membership", "?term")
+    term_label = _pattern_predicate(term_pattern, "?term", "?englishLabel")
+    term_number = _pattern_predicate(ordinal_pattern, "?term", "?ordinal")
+    if (_reviewed_predicate("member_has_membership") != member_link
+            or _reviewed_predicate("membership_in_term") != term_link):
+        raise PlanError("Shared-term predicates disagree with the reviewed v2 relation registry.")
+    _reviewed_cross_graph_join("member-records", term_link, "houses")
+    if term_label != query_contract["labelsByEntityType"]["DailTerm"].get("predicate"):
+        raise PlanError("DailTerm display labels disagree with the reviewed owner-label mapping.")
+    if term_label not in query_contract["queryableProperties"]:
+        raise PlanError("The DailTerm display label is not queryable.")
+    if term_number not in query_contract["queryableProperties"]:
+        raise PlanError("The DailTerm ordinal is not queryable.")
+
+    return {
+        "member_iris": member_iris,
+        "member_type": member_type,
+        "member_link": member_link,
+        "membership_type": membership_type,
+        "dail_membership_type": dail_membership_type,
+        "term_link": term_link,
+        "term_type": dail_term_type,
+        "term_label": term_label,
+        "term_number": term_number,
+        "member_graph_prefix": member_graph_prefix,
+        "houses_graph": houses_graph["iri"],
+    }
+
+
+def compile_shared_dail_terms_answer_query(plan: dict[str, Any], *, supported_predicates) -> str:
+    """Compile an identity intersection on the same asserted DailTerm IRI."""
+    mapping = _shared_dail_terms_mapping(plan)
+    first_member, second_member = (URIRef(value).n3() for value in mapping["member_iris"])
+    query = _PREFIXES + f'''SELECT DISTINCT ?term ?termLabel ?termNo WHERE {{
+  VALUES ?memberA {{ {first_member} }}
+  GRAPH ?memberGraphA {{
+    ?memberA a {mapping['member_type']} ; {mapping['member_link']} ?membershipA .
+    ?membershipA a {mapping['membership_type']}, {mapping['dail_membership_type']} ;
+      {mapping['term_link']} ?term .
+  }}
+  FILTER(STRSTARTS(STR(?memberGraphA), {json.dumps(mapping['member_graph_prefix'])}))
+  VALUES ?memberB {{ {second_member} }}
+  GRAPH ?memberGraphB {{
+    ?memberB a {mapping['member_type']} ; {mapping['member_link']} ?membershipB .
+    ?membershipB a {mapping['membership_type']}, {mapping['dail_membership_type']} ;
+      {mapping['term_link']} ?term .
+  }}
+  FILTER(STRSTARTS(STR(?memberGraphB), {json.dumps(mapping['member_graph_prefix'])}))
+  GRAPH <{mapping['houses_graph']}> {{
+    ?term a {mapping['term_type']} ; {mapping['term_label']} ?termLabel ;
+      {mapping['term_number']} ?termNo .
+  }}
+  FILTER(LANG(?termLabel) = "en")
+}} ORDER BY ?termNo ?termLabel ?term LIMIT 100'''
+    return _query(query, supported_predicates)
+
+
+def compile_shared_dail_terms_evidence_query(plan: dict[str, Any], *, supported_predicates) -> str:
+    """Check for recorded Dáil-term membership evidence for each resolved Member."""
+    mapping = _shared_dail_terms_mapping(plan)
+    member_values = " ".join(URIRef(value).n3() for value in mapping["member_iris"])
+    query = _PREFIXES + f'''SELECT DISTINCT ?member ?term WHERE {{
+  VALUES ?member {{ {member_values} }}
+  GRAPH ?memberGraph {{
+    ?member a {mapping['member_type']} ; {mapping['member_link']} ?membership .
+    ?membership a {mapping['membership_type']}, {mapping['dail_membership_type']} ;
+      {mapping['term_link']} ?term .
+  }}
+  FILTER(STRSTARTS(STR(?memberGraph), {json.dumps(mapping['member_graph_prefix'])}))
+  GRAPH <{mapping['houses_graph']}> {{ ?term a {mapping['term_type']} . }}
+}} LIMIT 100'''
+    return _query(query, supported_predicates)
 
 
 def compile_answer_query(plan: dict[str, Any], term_iri: str | None = None,
@@ -2230,7 +2502,332 @@ def _execute_bill_sponsorship_question(
     )
 
 
-def execute_question(question: str, *, as_of: date, fuseki, supported_predicates) -> PlanOutcome:
+def _execute_shared_dail_terms_question(
+    question: str,
+    *,
+    as_of: date,
+    fuseki,
+    supported_predicates,
+    planner_generator_factory,
+) -> PlanOutcome:
+    """Interpret, resolve, validate, compile, and execute the v2 intersection slice."""
+    from .composable_semantic_planner import (
+        InvalidComposableDraft,
+        InvalidComposableOutput,
+        UnsupportedComposableRequest,
+        complete_v2_plan,
+        parse_composable_plan_output,
+        validate_composable_plan_draft,
+    )
+
+    family = "shared_dail_terms"
+    generator = None
+    try:
+        generator = planner_generator_factory()
+        output = generator.generate(question)
+    except Exception as error:
+        return PlanOutcome(
+            "planner_failure",
+            diagnostic=f"The composable semantic planner could not produce a plan: {error}",
+            request_family=family,
+            debug_output=format_debug_payload({
+                "stage": "semantic planning", "error_type": type(error).__name__,
+                "diagnostic": str(error),
+            }),
+            debug_source="Composable semantic planner",
+        )
+    finally:
+        if generator is not None:
+            close = getattr(generator, "close", None)
+            if callable(close):
+                try:
+                    close()
+                except Exception:
+                    pass
+
+    try:
+        draft = parse_composable_plan_output(output)
+        draft_plan, unsupported_reason = validate_composable_plan_draft(
+            draft, question=question,
+        )
+    except UnsupportedComposableRequest as error:
+        return PlanOutcome(
+            "unsupported_request", diagnostic=str(error), request_family=family,
+            debug_output=format_debug_payload({"draft": output, "diagnostic": str(error)}),
+            debug_source="Composable semantic planner",
+        )
+    except InvalidComposableOutput as error:
+        return PlanOutcome(
+            "planner_failure", diagnostic=f"The composable planner returned invalid JSON: {error}",
+            request_family=family,
+            debug_output=format_debug_payload({"diagnostic": str(error)}),
+            debug_source="Composable semantic planner",
+        )
+    except InvalidComposableDraft as error:
+        return PlanOutcome(
+            "validation_failure", diagnostic=f"The semantic proposal was rejected: {error}",
+            request_family=family,
+            debug_output=format_debug_payload({"draft": output, "diagnostic": str(error)}),
+            debug_source="Composable plan validation",
+        )
+    except Exception as error:
+        return PlanOutcome(
+            "planner_failure", diagnostic=f"The composable semantic planner response failed validation: {error}",
+            request_family=family,
+            debug_output=format_debug_payload({
+                "stage": "semantic draft parsing", "error_type": type(error).__name__,
+                "diagnostic": str(error),
+            }),
+            debug_source="Composable semantic planner",
+        )
+
+    if draft_plan is None:
+        return PlanOutcome(
+            "unsupported_request", diagnostic=unsupported_reason,
+            request_family=family,
+        )
+    try:
+        plan = complete_v2_plan(draft_plan, as_of=as_of)
+        plan = validate_plan(plan)
+    except (PlanError, NLQError, TypeError, KeyError) as error:
+        return PlanOutcome(
+            "validation_failure", diagnostic=f"The v2 semantic plan was rejected: {error}",
+            request_family=family,
+            debug_output=format_debug_payload({"plan": draft_plan, "diagnostic": str(error)}),
+            debug_source="Composable plan validation",
+        )
+
+    # Resolve each named Member independently. Whole-question contextual
+    # narrowing is deliberately disabled: this family contains no Member-level
+    # term/constituency filter that could safely disambiguate either identity.
+    resolution_failures: list[tuple[str, str, str]] = []
+    ambiguous_candidates: list[dict[str, str]] = []
+    member_referents = [
+        (referent_id, referent)
+        for referent_id, referent in plan["referents"].items()
+        if referent["type"] == "Member"
+    ]
+    for referent_id, referent in member_referents:
+        mention = referent["mention"]
+        try:
+            resolution = resolve_local_entity_label(
+                "Member", mention, fuseki,
+                supported_predicates=supported_predicates,
+            )
+        except UnsupportedLocalEntityType as error:
+            referent["resolution"] = "unsupported_mapping"
+            resolution_failures.append(("unsupported_mapping", mention, str(error)))
+            continue
+        except NLQError as error:
+            referent["resolution"] = "source_data_unavailable"
+            resolution_failures.append(("source_data_unavailable", mention, str(error)))
+            continue
+
+        if resolution.state == "unresolved":
+            referent["resolution"] = "not_found"
+            resolution_failures.append(("not_found", mention, f'No exact local Member identity matches “{mention}”.'))
+        elif resolution.state == "ambiguous":
+            candidates = [
+                {"iri": item.iri, "label": item.label}
+                for item in resolution.candidates
+            ]
+            referent.update({"resolution": "ambiguous", "candidates": candidates})
+            ambiguous_candidates.extend(candidates)
+            resolution_failures.append((
+                "ambiguous", mention,
+                f'Several local Member identities match “{mention}”; none was selected.',
+            ))
+        elif resolution.state == "resolved" and len(resolution.candidates) == 1:
+            candidate = resolution.candidates[0]
+            referent.update({
+                "resolution": "resolved", "iri": candidate.iri,
+                "label": candidate.label,
+            })
+        else:
+            referent["resolution"] = "source_data_unavailable"
+            resolution_failures.append((
+                "source_data_unavailable", mention,
+                "The local Member resolver returned an inconsistent identity state.",
+            ))
+
+    try:
+        plan = validate_plan(plan)
+    except (PlanError, NLQError, TypeError, KeyError) as error:
+        return PlanOutcome(
+            "validation_failure", plan=plan,
+            diagnostic=f"The resolved v2 semantic plan was rejected: {error}",
+            request_family=family,
+            debug_output=format_debug_payload({"diagnostic": str(error)}),
+            debug_source="Composable plan validation",
+        )
+    if any(status == "ambiguous" for status, _mention, _diagnostic in resolution_failures):
+        return PlanOutcome(
+            "ambiguous", plan=plan,
+            diagnostic=" ".join(item[2] for item in resolution_failures if item[0] == "ambiguous"),
+            candidates=tuple(ambiguous_candidates), request_family=family,
+        )
+    if any(status == "unsupported_mapping" for status, _mention, _diagnostic in resolution_failures):
+        return PlanOutcome(
+            "unsupported_mapping", plan=plan,
+            diagnostic=" ".join(item[2] for item in resolution_failures),
+            request_family=family,
+        )
+    if any(status == "source_data_unavailable" for status, _mention, _diagnostic in resolution_failures):
+        return PlanOutcome(
+            "source_data_unavailable", plan=plan,
+            diagnostic=" ".join(item[2] for item in resolution_failures),
+            request_family=family,
+        )
+    if any(status == "not_found" for status, _mention, _diagnostic in resolution_failures):
+        return PlanOutcome(
+            "not_found", plan=plan,
+            diagnostic=" ".join(item[2] for item in resolution_failures if item[0] == "not_found"),
+            request_family=family,
+        )
+
+    resolved_iris = [referent["iri"] for _key, referent in member_referents]
+    if len(set(resolved_iris)) != 2:
+        return PlanOutcome(
+            "identity_collision", plan=plan,
+            diagnostic=("The two independently resolved Member mentions identify the same local RDF resource; "
+                        "no two-Member intersection query was run."),
+            request_family=family,
+        )
+
+    try:
+        answer_query = compile_shared_dail_terms_answer_query(
+            plan, supported_predicates=supported_predicates,
+        )
+        evidence_query = compile_shared_dail_terms_evidence_query(
+            plan, supported_predicates=supported_predicates,
+        )
+    except (PlanError, NLQError, TypeError, KeyError) as error:
+        return PlanOutcome(
+            "unsupported_mapping", plan=plan, diagnostic=str(error),
+            request_family=family,
+        )
+
+    try:
+        evidence = fuseki.query(evidence_query)
+        if (evidence.kind != "select"
+                or not {"member", "term"}.issubset(evidence.columns)):
+            raise NLQError("Member-term evidence query returned an unexpected result shape.")
+        if len(evidence.rows) >= 100:
+            return PlanOutcome(
+                "source_data_unavailable", plan=plan, sparql=answer_query,
+                diagnostic=("The bounded Member-term evidence check reached the 100-row safety cap; "
+                            "the intersection cannot be certified from this response."),
+                request_family=family,
+            )
+        evidence_by_member: dict[str, set[str]] = {iri: set() for iri in resolved_iris}
+        for row in evidence.rows:
+            if len(row) < 2:
+                raise NLQError("Member-term evidence query returned a truncated row.")
+            member_iri = _require_local_iri(row[evidence.columns.index("member")], "Member")
+            term_iri = _require_local_iri(row[evidence.columns.index("term")], "DailTerm")
+            if member_iri not in evidence_by_member:
+                raise NLQError("Member-term evidence query returned an unrequested Member identity.")
+            evidence_by_member[member_iri].add(term_iri)
+    except NLQError as error:
+        return PlanOutcome(
+            "source_data_unavailable", plan=plan, sparql=answer_query,
+            diagnostic=f"Local Dáil-membership evidence could not be established: {error}",
+            request_family=family,
+        )
+
+    missing_evidence = [
+        referent["label"] for _referent_id, referent in member_referents
+        if not evidence_by_member[referent["iri"]]
+    ]
+    if missing_evidence:
+        return PlanOutcome(
+            "source_data_unavailable", plan=plan, sparql=answer_query,
+            diagnostic=("No queryable recorded DailMembership-to-DailTerm evidence was returned for "
+                        + ", ".join(missing_evidence)
+                        + ". This absence is not a confirmed no-service finding."),
+            request_family=family,
+        )
+
+    try:
+        raw_result = fuseki.query(answer_query)
+    except NLQError as error:
+        return PlanOutcome(
+            "execution_failure", plan=plan, sparql=answer_query,
+            diagnostic=f"The validated shared-term query could not be executed: {error}",
+            request_family=family,
+        )
+    if (raw_result.kind != "select"
+            or not {"term", "termLabel", "termNo"}.issubset(raw_result.columns)):
+        return PlanOutcome(
+            "execution_failure", plan=plan, sparql=answer_query,
+            diagnostic="The shared-term answer query returned an unexpected result shape.",
+            request_family=family,
+        )
+    if len(raw_result.rows) >= 100:
+        return PlanOutcome(
+            "source_data_unavailable", plan=plan, sparql=answer_query,
+            diagnostic=("The shared-term answer reached the 100-row safety cap; "
+                        "the result may be incomplete."),
+            request_family=family,
+        )
+
+    shared_evidence = evidence_by_member[resolved_iris[0]] & evidence_by_member[resolved_iris[1]]
+    labels_by_term: dict[str, str] = {}
+    for row in raw_result.rows:
+        if len(row) <= max(raw_result.columns.index(name) for name in ("term", "termLabel", "termNo")):
+            return PlanOutcome(
+                "source_data_unavailable", plan=plan, sparql=answer_query,
+                diagnostic="The shared-term answer query returned a truncated evidence row.",
+                request_family=family,
+            )
+        term_iri = _require_local_iri(row[raw_result.columns.index("term")], "DailTerm")
+        label_binding = row[raw_result.columns.index("termLabel")]
+        label = label_binding.removesuffix("@en")
+        if not label.strip() or term_iri not in shared_evidence:
+            return PlanOutcome(
+                "source_data_unavailable", plan=plan, sparql=answer_query,
+                diagnostic=("The answer query did not reconcile to the independently checked shared-term "
+                            "identity evidence; no answer was returned."),
+                request_family=family,
+            )
+        previous_label = labels_by_term.get(term_iri)
+        if previous_label is not None and previous_label != label:
+            return PlanOutcome(
+                "source_data_unavailable", plan=plan, sparql=answer_query,
+                diagnostic="A DailTerm has conflicting English label evidence.",
+                request_family=family,
+            )
+        labels_by_term[term_iri] = label
+
+    display_rows = tuple(
+        (label,) for _iri, label in sorted(
+            labels_by_term.items(), key=lambda item: (item[1].casefold(), item[0]),
+        )
+    )
+    result = QueryResult(
+        "select", ("Shared Dáil term",), display_rows, raw_result.raw_json,
+    )
+    diagnostic = (
+        "No shared recorded Dáil terms were found. This intersection reflects local membership records only; "
+        "historical source completeness is not certified."
+        if not display_rows else
+        "Returned distinct Dáil terms joined by the same DailTerm RDF identity in both Members' recorded membership paths. "
+        "This reflects local recorded memberships; historical source completeness is not certified."
+    )
+    return PlanOutcome(
+        "success", plan=plan, sparql=answer_query, result=result,
+        diagnostic=diagnostic, request_family=family,
+    )
+
+
+def execute_question(
+    question: str,
+    *,
+    as_of: date,
+    fuseki,
+    supported_predicates,
+    semantic_plan_generator_factory=None,
+) -> PlanOutcome:
     """Plan, resolve, validate, compile and execute bounded composable slices."""
     from .stage_a import execute_stage_a, parse_stage_a_question
 
@@ -2254,6 +2851,14 @@ def execute_question(question: str, *, as_of: date, fuseki, supported_predicates
         return stage_b_outcome
     try:
         plan = plan_question(question, as_of=as_of)
+    except UnrecognizedQuestion as error:
+        if semantic_plan_generator_factory is None:
+            return PlanOutcome("unsupported_capability", diagnostic=str(error))
+        return _execute_shared_dail_terms_question(
+            question, as_of=as_of, fuseki=fuseki,
+            supported_predicates=supported_predicates,
+            planner_generator_factory=semantic_plan_generator_factory,
+        )
     except PlanError as error:
         return PlanOutcome("unsupported_capability", diagnostic=str(error))
     if plan["referents"].get("participation", {}).get("type") == "BillParticipation":

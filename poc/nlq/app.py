@@ -23,6 +23,7 @@ from .fuseki import (
 from .llm import ResponsesTranslator
 from .pipeline import process_question
 from .composable_plan import execute_question
+from .composable_semantic_planner import create_composable_plan_generator
 from .stage_a import parse_stage_a_question
 from .stage_b import plan_stage_b
 from .results import QueryResult, format_debug_payload
@@ -35,7 +36,11 @@ TEMPLATES = Path(__file__).resolve().parent / "templates"
 logger = logging.getLogger(__name__)
 
 
-def create_app(*, repository_root: Path = ROOT) -> FastAPI:
+def create_app(
+    *,
+    repository_root: Path = ROOT,
+    semantic_plan_generator_factory=None,
+) -> FastAPI:
     load_local_environment(repository_root)
     app = FastAPI(title="Oireachtas NLQ POC", docs_url=None, redoc_url=None)
     templates = Jinja2Templates(directory=str(TEMPLATES))
@@ -151,6 +156,9 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                 outcome = execute_question(
                     question, as_of=as_of, fuseki=fuseki,
                     supported_predicates=predicate_vocabulary,
+                    semantic_plan_generator_factory=(
+                        semantic_plan_generator_factory or create_composable_plan_generator
+                    ),
                 )
                 plan_is_validated = False
                 if outcome.plan:
@@ -171,6 +179,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     "committee_boolean", "committee_count", "house_terms", "dail_all",
                 }
                 plan_family = outcome.plan.get("family") if outcome.plan else outcome.request_family
+                is_shared_dail_terms = plan_family == "shared_dail_terms"
                 stage_a_family = (plan_family if plan_family in stage_a_family_ids else
                                   parsed_stage_a.family if parsed_stage_a else None)
                 is_stage_a = stage_a_family is not None
@@ -199,6 +208,22 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     f"exactly matches the resolved local Member identity for {q23_member}. Include every "
                     "recorded participation regardless of primary status and preserve its source evidence."
                 ) if is_q23 else None
+                shared_term_members = sorted(
+                    (
+                        referent for referent in (outcome.plan or {}).get("referents", {}).values()
+                        if referent.get("type") == "Member"
+                    ),
+                    key=lambda referent: referent.get("mention", "").casefold(),
+                )
+                shared_term_names = [
+                    referent.get("label", referent.get("mention", "the named Member"))
+                    for referent in shared_term_members
+                ]
+                shared_dail_terms_summary = (
+                    f"Find recorded Dáil terms served by both {shared_term_names[0]} and "
+                    f"{shared_term_names[1]}, intersecting their DailMembership paths on the same "
+                    "DailTerm RDF identity."
+                ) if is_shared_dail_terms and len(shared_term_names) == 2 else None
                 stage_a_summaries = {
                     "member_lookup": "Resolve the grounded Member name against local Member identities without guessing.",
                     "previous_service": "Check Dáil membership in the previous term selected from House date evidence at the supplied as-of date.",
@@ -237,7 +262,7 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                     "bill_votes": "Check the supported capability boundary: sponsorship is not vote evidence, and Bill-linked voting data is unavailable.",
                     "debate_transcript": "Check the approved transcript-content boundary; Debate metadata/link is not speech text.",
                 }
-                summary = (stage_a_summaries.get(stage_a_family) if is_stage_a else None) or (stage_c_summaries.get(plan_family) if is_stage_c else None) or (stage_b_summaries.get(stage_b_family) if is_stage_b else None) or (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
+                summary = (stage_a_summaries.get(stage_a_family) if is_stage_a else None) or (stage_c_summaries.get(plan_family) if is_stage_c else None) or (stage_b_summaries.get(stage_b_family) if is_stage_b else None) or (shared_dail_terms_summary if is_shared_dail_terms else None) or (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
                            if is_q06 else ("Find the requested actual DebateSitting and its official record link."
                                              if is_debate else
                                              (q35_summary if is_q35 else
@@ -256,8 +281,10 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                                if is_q35 else
                                "One row per Bill identity with title and recorded sponsorship evidence."
                                if is_q23 else
-                               "Stage A typed family result using reviewed RDF ownership, with identity and date qualifications preserved."
-                               if is_stage_a else "Distinct Members, displayed by name.")
+                                "Stage A typed family result using reviewed RDF ownership, with identity and date qualifications preserved."
+                                if is_stage_a else
+                                "Distinct Dáil-term identities present in both independently resolved Member membership paths."
+                                if is_shared_dail_terms else "Distinct Members, displayed by name.")
                 if outcome.status == "success":
                     return render(request, question=question, mode=mode,
                                   interpretation=summary, plan_json=plan_json,
@@ -265,8 +292,9 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                                    plan_explanation={"summary": summary, "validated": plan_is_validated, "answer_text": answer_text},
                                    sparql=outcome.sparql, result=outcome.result,
                                    result_notice=(outcome.diagnostic if is_stage_a or is_stage_b or is_stage_c else
-                                                   "Bill graphs are optional. These rows show recorded local sponsorship evidence; the dataset does not certify complete historical coverage."
-                                                   if is_q23 else None),
+                                                    "Bill graphs are optional. These rows show recorded local sponsorship evidence; the dataset does not certify complete historical coverage."
+                                                    if is_q23 else
+                                                    outcome.diagnostic if is_shared_dail_terms else None),
                                   debug_output=outcome.result.raw_json if outcome.result else None,
                                    debug_source="Fuseki")
                 if is_stage_a:
@@ -297,8 +325,51 @@ def create_app(*, repository_root: Path = ROOT) -> FastAPI:
                                   result_notice=outcome.diagnostic if outcome.result else None,
                                   sparql=outcome.sparql,
                                   debug_output=format_debug_payload({"diagnostic": outcome.diagnostic}),
-                                  debug_message="No answer query was executed." if outcome.sparql is None else "The reviewed read-only answer query executed.",
-                                  debug_source="Validated Stage C plan" if plan_is_validated else "Rejected Stage C plan")
+                                   debug_message="No answer query was executed." if outcome.sparql is None else "The reviewed read-only answer query executed.",
+                                   debug_source="Validated Stage C plan" if plan_is_validated else "Rejected Stage C plan")
+                if is_shared_dail_terms:
+                    ambiguous_members = tuple(
+                        {
+                            "type": referent.get("type", "Member"),
+                            "label": referent.get("mention", "the requested Member"),
+                            "resolution": "ambiguous",
+                            "candidates": referent.get("candidates", []),
+                        }
+                        for referent in (outcome.plan or {}).get("referents", {}).values()
+                        if referent.get("type") == "Member"
+                        and referent.get("resolution") == "ambiguous"
+                    )
+                    if outcome.status == "success":
+                        query_message = "The validated read-only answer query executed."
+                    elif outcome.status == "execution_failure":
+                        query_message = "The validated answer query was sent, but execution did not complete."
+                    elif outcome.sparql:
+                        query_message = "The answer SPARQL was generated but not executed because an essential identity or source-evidence check failed."
+                    else:
+                        query_message = "No answer query was executed."
+                    return render(
+                        request, question=question, mode=mode,
+                        interpretation=summary if plan_is_validated else None,
+                        plan_json=plan_json,
+                        plan_heading=("Validated composable query plan" if plan_is_validated else
+                                      "Proposed composable query plan") if outcome.plan else None,
+                        plan_explanation=(
+                            {"summary": summary, "validated": plan_is_validated,
+                             "answer_text": answer_text} if outcome.plan else None
+                        ),
+                        error=outcome.diagnostic or "The semantic plan could not be executed safely.",
+                        interaction_status=outcome.status,
+                        entity_outcomes=ambiguous_members,
+                        result=outcome.result,
+                        result_notice=outcome.diagnostic if outcome.result else None,
+                        sparql=outcome.sparql,
+                        debug_output=(outcome.debug_output or format_debug_payload({
+                            "diagnostic": outcome.diagnostic,
+                            "candidates": outcome.candidates,
+                        })),
+                        debug_message=query_message,
+                        debug_source=outcome.debug_source or "Composable semantic planner",
+                    )
                 messages = {
                     "unsupported_capability": "This query form is not supported; no answer query was run.",
                     "source_data_unavailable": "The local source data does not contain enough House-term evidence to resolve the previous Dáil.",

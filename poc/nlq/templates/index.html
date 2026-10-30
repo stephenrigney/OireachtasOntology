@@ -51,9 +51,10 @@
   </form>
 
   {% if error and interaction_status %}
-  <section class="{% if interaction_status in ['ambiguous_entity', 'unresolved_entity'] %}ambiguity{% else %}error{% endif %}" role="alert" aria-live="polite">
+  <section class="{% if interaction_status in ['ambiguous_entity', 'unresolved_entity', 'ambiguous', 'identity_collision'] %}ambiguity{% else %}error{% endif %}" role="alert" aria-live="polite">
     <h2>
-       {% if interaction_status == "ambiguous_entity" or interaction_status == "ambiguous" %}Ambiguous entity
+        {% if interaction_status == "ambiguous_entity" or interaction_status == "ambiguous" %}Ambiguous entity
+        {% elif interaction_status == "identity_collision" %}Member identities are not distinct
        {% elif interaction_status == "unresolved_entity" or interaction_status == "not_found" %}Entity not found
        {% elif interaction_status == "missing_identity_link" %}Reviewed identity link missing
         {% elif interaction_status == "source_data_unavailable" %}Source evidence unavailable

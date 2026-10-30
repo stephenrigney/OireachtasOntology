@@ -863,6 +863,80 @@ itself. For Phases 3 and 4:
 - carry bounded residual limitations forward rather than delaying phase exit for
   perfection.
 
+### Phase 2 follow-up — generalised semantic planning, first vertical slice
+
+The first generalisation tranche extends the existing composable plan-v2 route;
+it does not replace the Phase 2 exit baseline or add a query-plan-contract-v1
+execution path. Existing Stage A, Stage C, Stage B, and reviewed deterministic
+v2 families retain precedence. Only when those paths report that they do not
+recognize a question does the default `/ask` route invoke the Responses-compatible
+semantic planner. A recognized-but-invalid deterministic request is not retried
+through the model.
+
+The model's strict, IRI-free proposal uses composable plan version 2 and is
+accepted only for the closed `shared_dail_terms` projection. The final v2 plan
+must contain exactly two independently named Member referents, two separate
+DailMembership referents, and one answer DailTerm referent. Each Member must
+connect through its own `member_has_membership` and `membership_in_term` edges to
+that same DailTerm identity. The plan returns distinct term identities and a
+label; extra relations, filters, constraints, or answer shapes are rejected.
+Composable plan contract version `2.9.0` records this additive family. The
+query-schema contract remains `2.8.0`; all predicates, RDF types, named-graph
+owners, and cross-graph joins used by the slice were already queryable there.
+No ontology, mapping, ETL, IRI, or dataset behavior changed.
+
+Local code resolves each Member mention independently using the existing exact
+label resolver. Ambiguous or missing identities do not run an answer query; two
+mentions resolving to the same local Member IRI are also refused. The
+deterministic compiler cross-checks the v2 relation registry, emitted RDF
+patterns, query-schema ownership, and SPARQL safety allowlist. Both membership
+paths must bind the same `?term` resource in the Houses graph; labels are not
+used as the intersection key. A separate bounded, safe evidence probe
+distinguishes a Member with no queryable recorded Dáil-membership evidence from
+an empty intersection. Empty intersections are reported only when both Members
+have at least one recorded Dáil term, and do not establish complete historical
+coverage.
+
+The normal development UI displays the accepted v2 plan, generated answer
+SPARQL, readable result, and distinct ambiguity, unsupported-semantics,
+source-evidence, planner/validation, and execution failures. A missing LLM
+configuration or failed planner call on an unrecognized question is reported as
+a planner failure, not as a confirmed unsupported relationship. The LLM makes
+one strict-schema call with no repair/retry; it never emits executable SPARQL,
+IRIs, or resolution outcomes and does not determine mapping authority.
+
+Acceptance uses fresh paraphrases, deterministic planner doubles, and a
+synthetic named-graph fixture through the integrated `/ask` route. Existing
+Stage A/B/C and prior composable-family regression suites remain the regression
+gate. The supported scope is only two independently named Members intersected
+on Dáil-term identities. Seanad-term intersections, more than two Members,
+additional constraints, career/date-window operators, and other relationships
+remain unsupported; planner paraphrase variability and incomplete historical
+source coverage remain limitations. The approved 36-question unseen evaluation
+is not used to tune this slice.
+
+The implementation acceptance initially did not run a live LLM smoke because
+`NLQ_LLM_API_KEY` was not configured in that process. Follow-up live verification
+on 2026-10-30 loaded the key from the worktree-local `.env.local` into the test
+process only; the credential was not emitted. The configured model was
+`gpt-6-luna` at the Responses-compatible `opencode.ai` endpoint. Read-only
+Fuseki readiness was `ready`, and five requests were sent through the integrated
+Phase 2 `POST /ask` route:
+
+| Request | Semantic interpretation | Plan / query | Outcome |
+| --- | --- | --- | --- |
+| “Which Dáil terms did Micheál Martin and Mary Lou McDonald both serve in?” | Correct two-Member shared-term intent | Valid v2 plan; SPARQL matched deterministic compiler output and was read-only | Success: 31st, 32nd, 33rd, and 34th Dáil |
+| “Name the Dáil terms common to Micheál Martin's and Mary Lou McDonald's recorded service.” | Correct | Valid v2 plan; safe compiled SPARQL | Success: same four terms |
+| “In which Dáil terms do the recorded parliamentary memberships of Micheál Martin and Mary Lou McDonald overlap?” | Correct | Valid v2 plan; safe compiled SPARQL | Success: same four terms |
+| “Which Dáil terms did Micheál Martin and Mary Lou McDonald both serve in while representing Cork South-Central?” | Correctly recognized the extra constituency condition as unsupported | Rejected; no executable plan, SPARQL, or result | Unsupported question; no simplified answer |
+| “Who won the 2022 FIFA World Cup?” | Correctly recognized an unrelated request | Rejected; no executable plan, SPARQL, or result | Unsupported question |
+
+An additional read-only Fuseki query independently joined each resolved Member's
+recorded DailMembership to House-owned DailTerm resource identities. It found 9
+and 4 recorded term identities for the two Members and confirmed that their
+four-identity intersection and English labels match all three `/ask` results.
+This confirms the local result, not complete historical source coverage.
+
 ## 9. Phase 3 — Source selection and provenance
 
 ### Outcome

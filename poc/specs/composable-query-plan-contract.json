@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "contractId": "https://data.oireachtas.ie/specs/composable-query-plan-contract",
   "schemaVersion": 1,
-  "contractVersion": "2.8.0",
+  "contractVersion": "2.9.0",
   "planVersion": 2,
   "scope": "Local Oireachtas query planning; Stage A, Stage B and Stage C plans use one shared typed v2 envelope with closed family-specific semantic projections.",
   "resolutionOutcomes": ["unresolved", "resolved", "ambiguous", "not_found", "source_data_unavailable", "unsupported_mapping"],
@@ -66,7 +66,8 @@
     {"id": "debate_lookup", "cases": ["Q31"], "referentType": "DebateSitting", "patterns": ["debate-sitting-record"], "semantics": "Reuse the reviewed actual-sitting to produced DebateRecord path and graph-route chamber identity; local absence is not a claim that no debate occurred."},
     {"id": "committee_topic_latest", "cases": ["Q30"], "referentType": "Committee", "patterns": [], "semantics": "Resolve the reviewed alias PAC to Committee of Public Accounts, but do not infer substantive HSE examination or latest coverage from the pinned metadata-only hearing."},
     {"id": "bill_votes", "cases": ["Q36"], "referentType": "Bill", "patterns": [], "semantics": "Bill-linked voting is unavailable; sponsorship participation is not voting evidence."},
-    {"id": "debate_transcript", "cases": ["Q37"], "referentType": "DebateSitting", "patterns": [], "semantics": "Transcript speech content is unavailable because no approved transcript retrieval path exists; Debate metadata and links are not speech content."}
+    {"id": "debate_transcript", "cases": ["Q37"], "referentType": "DebateSitting", "patterns": [], "semantics": "Transcript speech content is unavailable because no approved transcript retrieval path exists; Debate metadata and links are not speech content."},
+    {"id": "shared_dail_terms", "cases": [], "referentType": "DailTerm", "patterns": ["member-house-membership", "house-term-description"], "semantics": "Resolve exactly two Member identities independently. Each must have its own DailMembership linked to the same shared DailTerm RDF identity. Return the intersection by that shared resource identity; label equality is not a join. This family does not imply complete historical source coverage or support additional filters, temporal constraints, Seanad terms, or other relationships."}
   ],
   "constraints": [
     {"id": "debate_sitting_date", "referentType": "DebateSitting", "field": "date", "operator": "on", "valueKind": "date", "predicate": "eli-dl:activity_date", "graphFamily": "debates"},

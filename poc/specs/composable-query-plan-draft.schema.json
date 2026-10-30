@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://data.oireachtas.ie/specs/composable-query-plan-draft.schema.json",
+  "title": "Composable Query Plan v2 Semantic Draft",
+  "description": "Strict IRI-free model proposal for the closed shared-Dáil-term v2 plan family. Local code validates the complete typed composition, resolves Member labels, and supplies the final v2 envelope.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "supported", "unsupportedReason", "intent", "referents", "relations", "answer"],
+  "properties": {
+    "version": {"type": "integer", "const": 2},
+    "supported": {"type": "boolean"},
+    "unsupportedReason": {"type": ["string", "null"]},
+    "intent": {"type": "string", "minLength": 1},
+    "referents": {
+      "anyOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["member_a", "membership_a", "member_b", "membership_b", "shared_term"],
+          "properties": {
+            "member_a": {"$ref": "#/$defs/memberReferent"},
+            "membership_a": {"$ref": "#/$defs/membershipReferent"},
+            "member_b": {"$ref": "#/$defs/memberReferent"},
+            "membership_b": {"$ref": "#/$defs/membershipReferent"},
+            "shared_term": {"$ref": "#/$defs/termReferent"}
+          }
+        }
+      ]
+    },
+    "relations": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/relation"}
+    },
+    "answer": {
+      "anyOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/answer"}
+      ]
+    }
+  },
+  "$defs": {
+    "identifier": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
+    "memberReferent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "mention"],
+      "properties": {
+        "type": {"type": "string", "const": "Member"},
+        "mention": {"type": "string", "minLength": 1}
+      }
+    },
+    "membershipReferent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "mention"],
+      "properties": {
+        "type": {"type": "string", "const": "DailMembership"},
+        "mention": {"type": "null"}
+      }
+    },
+    "termReferent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "mention"],
+      "properties": {
+        "type": {"type": "string", "const": "DailTerm"},
+        "mention": {"type": "null"}
+      }
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fact", "from", "to"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "fact": {"type": "string", "enum": ["member_has_membership", "membership_in_term"]},
+        "from": {"$ref": "#/$defs/identifier"},
+        "to": {"$ref": "#/$defs/identifier"}
+      }
+    },
+    "answer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "referent", "distinctBy", "display"],
+      "properties": {
+        "kind": {"type": "string", "const": "entities"},
+        "referent": {"$ref": "#/$defs/identifier"},
+        "distinctBy": {"type": "string", "const": "identity"},
+        "display": {"type": "array", "items": {"type": "string", "enum": ["label"]}}
+      }
+    }
+  }
+}
