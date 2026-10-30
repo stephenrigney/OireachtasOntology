@@ -937,6 +937,21 @@ and 4 recorded term identities for the two Members and confirmed that their
 four-identity intersection and English labels match all three `/ask` results.
 This confirms the local result, not complete historical source coverage.
 
+The next composable-v2 expansion adds `member_relationship_composition` under
+plan contract `2.10.0`; query-schema contract `2.8.0` and all RDF meanings remain
+unchanged. One validated relation-graph compiler supports both (a) distinct
+Members with separate DailMembership paths to each of two explicitly numbered
+DailTerms (U03 capability) and (b) Members whose DailMembership represents a
+named DailConstituency occurrence linked to the same numbered DailTerm (U01
+capability). Exact HouseTerm and term-scoped constituency identities resolve
+before answer compilation. Disconnected paths, omitted term/constituency
+constraints, unsupported operations, ambiguity, and missing source evidence do
+not produce weakened answer queries. Acceptance uses fresh paraphrases and
+controlled named-graph results through `/ask`; positive answers remain qualified
+as local recorded evidence, not complete historical coverage. Focused acceptance
+passed 394 relevant query-service tests, and one bounded real-LLM request also
+passed through `/ask` against the synthetic named-graph fixture.
+
 ## 9. Phase 3 — Source selection and provenance
 
 ### Outcome

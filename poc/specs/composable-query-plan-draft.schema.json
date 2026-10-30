@@ -2,13 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://data.oireachtas.ie/specs/composable-query-plan-draft.schema.json",
   "title": "Composable Query Plan v2 Semantic Draft",
-  "description": "Strict IRI-free model proposal for the closed shared-Dáil-term v2 plan family. Local code validates the complete typed composition, resolves Member labels, and supplies the final v2 envelope.",
+  "description": "Strict IRI-free model proposal for the closed shared-Dáil-term and Member relationship-composition v2 projections. Local code validates every relationship, resolves local identities, and supplies the final v2 envelope.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "supported", "unsupportedReason", "intent", "referents", "relations", "answer"],
+  "required": ["version", "supported", "family", "unsupportedReason", "intent", "referents", "relations", "answer"],
   "properties": {
     "version": {"type": "integer", "const": 2},
     "supported": {"type": "boolean"},
+    "family": {"type": ["string", "null"], "enum": ["shared_dail_terms", "member_relationship_composition", null]},
     "unsupportedReason": {"type": ["string", "null"]},
     "intent": {"type": "string", "minLength": 1},
     "referents": {
@@ -19,11 +20,34 @@
           "additionalProperties": false,
           "required": ["member_a", "membership_a", "member_b", "membership_b", "shared_term"],
           "properties": {
-            "member_a": {"$ref": "#/$defs/memberReferent"},
+            "member_a": {"$ref": "#/$defs/namedMemberReferent"},
             "membership_a": {"$ref": "#/$defs/membershipReferent"},
-            "member_b": {"$ref": "#/$defs/memberReferent"},
+            "member_b": {"$ref": "#/$defs/namedMemberReferent"},
             "membership_b": {"$ref": "#/$defs/membershipReferent"},
-            "shared_term": {"$ref": "#/$defs/termReferent"}
+            "shared_term": {"$ref": "#/$defs/unselectedTermReferent"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["member", "membership_a", "term_a", "membership_b", "term_b"],
+          "properties": {
+            "member": {"$ref": "#/$defs/memberAnswerReferent"},
+            "membership_a": {"$ref": "#/$defs/membershipReferent"},
+            "term_a": {"$ref": "#/$defs/selectedTermReferent"},
+            "membership_b": {"$ref": "#/$defs/membershipReferent"},
+            "term_b": {"$ref": "#/$defs/selectedTermReferent"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["member", "membership", "term", "constituency"],
+          "properties": {
+            "member": {"$ref": "#/$defs/memberAnswerReferent"},
+            "membership": {"$ref": "#/$defs/membershipReferent"},
+            "term": {"$ref": "#/$defs/selectedTermReferent"},
+            "constituency": {"$ref": "#/$defs/constituencyReferent"}
           }
         }
       ]
@@ -41,13 +65,22 @@
   },
   "$defs": {
     "identifier": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
-    "memberReferent": {
+    "namedMemberReferent": {
       "type": "object",
       "additionalProperties": false,
       "required": ["type", "mention"],
       "properties": {
         "type": {"type": "string", "const": "Member"},
         "mention": {"type": "string", "minLength": 1}
+      }
+    },
+    "memberAnswerReferent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "mention"],
+      "properties": {
+        "type": {"type": "string", "const": "Member"},
+        "mention": {"type": "null"}
       }
     },
     "membershipReferent": {
@@ -59,7 +92,7 @@
         "mention": {"type": "null"}
       }
     },
-    "termReferent": {
+    "unselectedTermReferent": {
       "type": "object",
       "additionalProperties": false,
       "required": ["type", "mention"],
@@ -68,13 +101,40 @@
         "mention": {"type": "null"}
       }
     },
+    "selectedTermReferent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "mention", "selector"],
+      "properties": {
+        "type": {"type": "string", "const": "DailTerm"},
+        "mention": {"type": "null"},
+        "selector": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "number"],
+          "properties": {
+            "kind": {"type": "string", "const": "termNumber"},
+            "number": {"type": "integer", "minimum": 1, "maximum": 999}
+          }
+        }
+      }
+    },
+    "constituencyReferent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "mention"],
+      "properties": {
+        "type": {"type": "string", "const": "DailConstituency"},
+        "mention": {"type": "string", "minLength": 1}
+      }
+    },
     "relation": {
       "type": "object",
       "additionalProperties": false,
       "required": ["id", "fact", "from", "to"],
       "properties": {
         "id": {"$ref": "#/$defs/identifier"},
-        "fact": {"type": "string", "enum": ["member_has_membership", "membership_in_term"]},
+        "fact": {"type": "string", "enum": ["member_has_membership", "membership_in_term", "membership_represents", "constituency_in_term"]},
         "from": {"$ref": "#/$defs/identifier"},
         "to": {"$ref": "#/$defs/identifier"}
       }
@@ -87,7 +147,7 @@
         "kind": {"type": "string", "const": "entities"},
         "referent": {"$ref": "#/$defs/identifier"},
         "distinctBy": {"type": "string", "const": "identity"},
-        "display": {"type": "array", "items": {"type": "string", "enum": ["label"]}}
+        "display": {"type": "array", "items": {"type": "string", "enum": ["label", "name"]}}
       }
     }
   }

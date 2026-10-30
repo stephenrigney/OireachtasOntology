@@ -136,6 +136,7 @@ def _draft(member_a="Micheál Martin", member_b="Mary Lou McDonald"):
     return {
         "version": 2,
         "supported": True,
+        "family": "shared_dail_terms",
         "unsupportedReason": None,
         "intent": "Find Dáil term identities both Members served in.",
         "referents": {
@@ -194,7 +195,7 @@ def test_v2_shared_dail_term_contract_and_draft_schema_are_synchronized():
     draft_schema = json.loads((ROOT / "poc/specs/composable-query-plan-draft.schema.json").read_text())
     Draft202012Validator.check_schema(plan_schema)
     Draft202012Validator.check_schema(draft_schema)
-    assert contract["contractVersion"] == "2.9.0"
+    assert contract["contractVersion"] == "2.10.0"
     assert contract["planVersion"] == plan_schema["properties"]["version"]["const"] == 2
     assert "shared_dail_terms" in plan_schema["properties"]["family"]["enum"]
     assert any(item["id"] == "shared_dail_terms" for item in contract["questionFamilies"])
@@ -285,6 +286,7 @@ def test_unsupported_semantics_and_unsupported_relationships_fail_closed():
     fixture = SharedDailTermsFixture()
     unsupported = {
         "version": 2, "supported": False,
+        "family": None,
         "unsupportedReason": "Bill voting is not represented by this query capability.",
         "intent": "The requested vote relationship is unavailable.",
         "referents": None, "relations": [], "answer": None,
