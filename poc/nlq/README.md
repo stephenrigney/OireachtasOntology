@@ -883,3 +883,8 @@ This POC exists to answer one question:
 > Can a schema-grounded LLM translate useful natural-language questions about the current OireachtasOntology graph into safe, inspectable SPARQL and return useful Fuseki results?
 
 It does not redesign the ontology, modify ETL semantics, use a vector database, provide a general agent framework, or write to Fuseki.
+
+
+### Q06 political-affiliation identity
+
+Q06 uses the reviewed local `members:PoliticalAffiliationIdentity` enrichment graph, not matching party names or external `members:recognisedAsParty` links. It preserves dated Member membership episodes and excludes Independent collections. Synthetic tests verify the query path; historical completeness depends on the corresponding Member, Parties and identity graphs being loaded. See [`query-service-q06-slice.md`](../../documentation/query-service-q06-slice.md).
