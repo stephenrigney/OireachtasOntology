@@ -16,6 +16,7 @@ from rdflib.namespace import RDF, RDFS, XSD
 from poc.nlq.composable_plan import (
     PlanError,
     compile_bill_sponsorship_answer_query,
+    compile_bill_sponsorship_coverage_query,
     execute_question,
     plan_question,
     validate_plan,
@@ -93,6 +94,11 @@ class BillSponsorshipFixture:
             graph.add((bill, URIRef(ELI + "title"), Literal(title_ga, lang="ga")))
         if include_process:
             process = URIRef(bill_text + "#process")
+            delivery = URIRef(bill_text + "#delivery")
+            graph.add((delivery, RDF.type, URIRef(AGENTS + "BillDelivery")))
+            graph.add((delivery, RDF.type, URIRef(ELI_DL + "LegislativeActivity")))
+            graph.add((delivery, URIRef(ELI_DL + "created_a_realization_of"), bill))
+            graph.add((delivery, URIRef(ELI_DL + "forms_part_of"), process))
             graph.add((process, RDF.type, URIRef(ELI_DL + "LegislativeProcess")))
             if include_number:
                 graph.add((process, URIRef(ELI_DL + "process_number"), Literal(number, datatype=XSD.string)))
@@ -168,7 +174,7 @@ def test_q23_plan_schema_and_validator_accept_only_the_typed_sponsorship_path():
         validate_plan(wrong_answer)
 
 
-def test_q23_compiler_is_deterministic_safe_and_uses_same_graph_ownership_not_a_direct_edge():
+def test_q23_compiler_is_deterministic_safe_and_uses_explicit_delivery_path():
     supported = supported_predicates(ROOT / "ontology")
     plan = _resolved_plan()
     query1 = compile_bill_sponsorship_answer_query(plan, supported_predicates=supported)
@@ -176,6 +182,7 @@ def test_q23_compiler_is_deterministic_safe_and_uses_same_graph_ownership_not_a_
     assert query1 == query2
     assert "SELECT DISTINCT ?billGraph ?bill ?participation" in query1
     assert "GRAPH ?billGraph" in query1
+    assert "?delivery a agents:BillDelivery ; eli-dl:created_a_realization_of ?bill ; eli-dl:forms_part_of ?process" in query1
     assert "?process a eli-dl:LegislativeProcess ; eli-dl:had_participation ?participation" in query1
     assert "eli-dl:had_participant_person <" + MEMBER_IRI + ">" in query1
     assert "agents:isPrimarySponsor ?primaryEvidence" in query1
@@ -193,12 +200,14 @@ def test_q23_compiler_is_deterministic_safe_and_uses_same_graph_ownership_not_a_
 
 def test_q23_mapping_contract_matches_emitted_ontology_and_bill_transform_evidence():
     contract = json.loads((ROOT / "poc/specs/query-schema-contract.json").read_text())
-    assert contract["contractVersion"] == "2.8.0"
+    assert contract["contractVersion"] == "2.9.0"
     assert "agents:isPrimarySponsor" in contract["queryableProperties"]
     pattern = next(item for item in contract["emittedRdfPatterns"] if item["id"] == "bill-sponsor-reference")
     assert ["?participation", "agents:isPrimarySponsor", "?optionalBoolean"] in pattern["triples"]
     assert "absence means unknown" in pattern["note"]
     assert "no direct Bill-to-process predicate" in pattern["note"]
+    assert ["?delivery", "eli-dl:created_a_realization_of", "?bill"] in pattern["triples"]
+    assert ["?delivery", "eli-dl:forms_part_of", "?process"] in pattern["triples"]
     assert any(
         join["fromGraphFamily"] == "bill-records"
         and join["predicate"] == "eli-dl:had_participant_person"
@@ -212,6 +221,36 @@ def test_q23_mapping_contract_matches_emitted_ontology_and_bill_transform_eviden
     primary = next(row for row in rows if row["json_path"] == "results[].bill.sponsors[].sponsor.isPrimary")
     assert (primary["ontology_term"], primary["mapping_status"]) == (":isPrimarySponsor", "new")
     assert "Null means unknown" in primary["notes"]
+
+
+def test_q23_shared_graph_never_associates_another_bills_sponsor_or_number():
+    fixture = BillSponsorshipFixture()
+    own = fixture.add_bill(2026, "93", "Own Bill 2026", ({"primary": True},))
+    other = fixture.add_bill(2026, "94", "Other Bill 2026", ({
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Other",
+    },))
+    owner = fixture.dataset.graph(URIRef("https://data.oireachtas.ie/graph/bill/2026/93"))
+    other_graph = fixture.dataset.graph(URIRef("https://data.oireachtas.ie/graph/bill/2026/94"))
+    owner += other_graph
+    other_graph.remove((None, None, None))
+    result = fixture.query(compile_bill_sponsorship_answer_query(
+        _resolved_plan(), supported_predicates=supported_predicates(ROOT / "ontology")))
+    rows = [dict(zip(result.columns, row)) for row in result.rows]
+    assert {row["bill"] for row in rows} == {own}
+    assert {row["billNumber"] for row in rows} == {"93^^<http://www.w3.org/2001/XMLSchema#string>"}
+    # Old/unlinked data must not fall back to the neighbouring process.
+    delivery = URIRef(own + "#delivery")
+    owner.remove((delivery, URIRef(ELI_DL + "created_a_realization_of"), URIRef(own)))
+    assert not fixture.query(compile_bill_sponsorship_answer_query(
+        _resolved_plan(), supported_predicates=supported_predicates(ROOT / "ontology"))).rows
+    # Coverage must not count an unlinked Bill's Participation just because it
+    # shares the remaining Bill's graph.
+    owner.remove((URIRef(other + "#delivery"), URIRef(ELI_DL + "created_a_realization_of"), URIRef(other)))
+    coverage = fixture.query(compile_bill_sponsorship_coverage_query(
+        _resolved_plan(), supported_predicates=supported_predicates(ROOT / "ontology")))
+    row = dict(zip(coverage.columns, coverage.rows[0]))
+    assert row["billCount"].split("^^")[0] == "2"
+    assert row["participationCount"].split("^^")[0] == "0"
 
 
 def test_q23_returns_every_matching_bill_once_and_preserves_each_participation_status_and_role():

@@ -71,7 +71,15 @@ def verify_member_competency(client: FusekiSparqlClient, graph_iri: str, member_
 
 
 def verify_bill_competency(client: FusekiSparqlClient, graph_iri: str, bill_iri: str, expected_triples: int | None = None) -> None:
-    query = f'''SELECT ?bill ?latest WHERE {{ GRAPH <{graph_iri}> {{ BIND(<{bill_iri}> AS ?bill) . <{bill_iri}> a <http://data.europa.eu/eli/eli-draft-legislation-ontology#DraftLegislationWork> . <{bill_iri}#process> <http://data.europa.eu/eli/eli-draft-legislation-ontology#latest_activity> ?latest . ?latest a <http://data.europa.eu/eli/eli-draft-legislation-ontology#LegislativeActivity> }} }}'''
+    query = f'''PREFIX dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>
+SELECT ?bill ?latest WHERE {{ GRAPH <{graph_iri}> {{
+  BIND(<{bill_iri}> AS ?bill)
+  ?bill a dl:DraftLegislationWork .
+  ?delivery a <https://data.oireachtas.ie/ontology#BillDelivery> ;
+    dl:created_a_realization_of ?bill ; dl:forms_part_of <{bill_iri}#process> .
+  <{bill_iri}#process> a dl:LegislativeProcess ; dl:latest_activity ?latest .
+  ?latest a dl:LegislativeActivity .
+}} }}'''
     actual = [{name: binding["value"] for name, binding in row.items()} for row in client.query(query)]
     if len(actual) != 1 or actual[0].get("bill") != bill_iri:
         raise ValueError(f"post-load Bill competency check failed for {bill_iri}")

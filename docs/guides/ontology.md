@@ -281,12 +281,18 @@ A Bill can also refer to an originating House, numbered House terms
 and sponsoring Members. Sponsorship, amendments and lifecycle
 activities have their own records where supported by the source.
 
-**Important limitation:** the current transformer creates both the
-Bill Work and its LegislativeProcess in the Bill graph, but does
-**not** assert a direct RDF link from the Work to its process.
-They therefore cannot be traversed through such a link in a SPARQL
-query. This is a known mapping/design-contract gap, not a relationship
-the reader should assume exists.
+The introduction/presentation activity (`oir:BillDelivery`) produces the
+Bill Work (`eli-dl:DraftLegislationWork`) through
+`eli-dl:created_a_realization_of`. That same activity belongs to its
+`eli-dl:LegislativeProcess` through `eli-dl:forms_part_of`. This two-edge
+path connects a Bill to **its own process**, even if a query encounters
+several Bills in one graph. It also covers application/by-application
+delivery methods; no delivery date is inferred. There is no new direct
+Bill-to-process property. Existing `eli:LegalResource` typing, document
+type, titles and metadata are retained in this first correction tranche.
+
+Previously published graphs need regeneration before this path can be
+queried; graph co-ownership alone is not relationship evidence.
 
 For the exact mapped fields and source limitations, see the
 [legislation ETL reference](../reference/etl/legislation.md) and
@@ -339,7 +345,7 @@ coverage figures:
 | Houses and terms | House labels and HouseTerms are Houses-owned. The enduring Government resource was defined in the ontology, but a global lookup found no description for it in that dataset. Office and Cabinet records did refer to Government. |
 | Committees | 267 Committee identities and 3,054 CommitteeMembership records. Some committee lifecycle fields were not mapped. |
 | Offices | 3 NamedOffices, 22 OfficeHoldings, 22 CabinetMemberships and 1 AdministrativeUnit. These numbers do **not** imply complete office coverage. |
-| Bills | 6,044 Bill graphs. The Work-to-LegislativeProcess link gap described above remained. |
+| Bills | 6,044 Bill graphs. That historical snapshot predated the BillDelivery-to-Work relationship correction; its graphs were not verified to contain the new path. |
 | Debates | Only 3 Debates graphs. The ontology and transformer existed, but the approved 2011+ production selection had not been ingested at that point. |
 
 Do not interpret a missing description in that snapshot as evidence

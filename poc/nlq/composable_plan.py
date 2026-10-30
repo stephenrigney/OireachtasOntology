@@ -1191,7 +1191,7 @@ def _reviewed_cross_graph_join(from_family: str, predicate: str, to_family: str)
 
 
 def _bill_sponsorship_query_mapping(plan: dict[str, Any]) -> dict[str, str]:
-    """Resolve Q23's two reviewed edges without inventing a Bill→process edge."""
+    """Resolve Q23 sponsorship through the explicit BillDelivery/Work/process path."""
     plan = validate_plan(plan)
     if not any(ref.get("type") == "BillParticipation" for ref in plan["referents"].values()):
         raise PlanError("Bill sponsorship compilation requires a validated Q23 plan.")
@@ -1203,7 +1203,7 @@ def _bill_sponsorship_query_mapping(plan: dict[str, Any]) -> dict[str, str]:
     relation_mappings = {item["id"]: item for item in _PLAN_CONTRACT["relations"]}
     ownership = relation_mappings.get("bill_has_sponsor_participation", {})
     participant_join = relation_mappings.get("participation_has_participant", {})
-    if (ownership.get("association") != "same_named_graph_co_ownership"
+    if (ownership.get("association") != "bill_delivery_process_path"
             or ownership.get("viaType") != "eli-dl:LegislativeProcess"
             or ownership.get("patternId") != "bill-sponsor-reference"
             or ownership.get("subjectGraph") != "bill-records"
@@ -1231,6 +1231,13 @@ def _bill_sponsorship_query_mapping(plan: dict[str, Any]) -> dict[str, str]:
     rdf_types = _PLAN_CONTRACT["entityTypeRdfTypes"]
     bill_type = _pattern_rdf_type(lifecycle, "?bill")
     process_type = _pattern_rdf_type(sponsor, "?process")
+    delivery_type = _pattern_rdf_type(sponsor, "?delivery")
+    delivery_work = _pattern_predicate(sponsor, "?delivery", "?bill")
+    delivery_process = _pattern_predicate(sponsor, "?delivery", "?process")
+    if (delivery_type != "agents:BillDelivery"
+            or delivery_work != "eli-dl:created_a_realization_of"
+            or delivery_process != "eli-dl:forms_part_of"):
+        raise PlanError("Q23 requires the explicit BillDelivery Work/process relationship.")
     participation_type = _pattern_rdf_type(sponsor, "?participation")
     member_type = _pattern_rdf_type(member_pattern, "?member")
     for semantic_type, actual in (
@@ -1273,6 +1280,9 @@ def _bill_sponsorship_query_mapping(plan: dict[str, Any]) -> dict[str, str]:
         "bill_type": bill_type,
         "bill_kind": bill_kind,
         "process_type": process_type,
+        "delivery_type": delivery_type,
+        "delivery_work": delivery_work,
+        "delivery_process": delivery_process,
         "process_participation": process_participation,
         "participation_type": participation_type,
         "participant": participant,
@@ -1292,6 +1302,7 @@ def compile_bill_sponsorship_answer_query(plan: dict[str, Any], *, supported_pre
     query = _PREFIXES + f'''SELECT DISTINCT ?billGraph ?bill ?participation ?primaryEvidence ?participationRole ?englishTitle ?billNumber ?billYear WHERE {{
   GRAPH ?billGraph {{
     ?bill a {mapping["bill_type"]} ; {mapping["bill_kind"]} agents:Bill .
+    ?delivery a {mapping["delivery_type"]} ; {mapping["delivery_work"]} ?bill ; {mapping["delivery_process"]} ?process .
     ?process a {mapping["process_type"]} ; {mapping["process_participation"]} ?participation .
     ?participation a {mapping["participation_type"]} ; {mapping["participant"]} {member_iri} .
     OPTIONAL {{ ?participation {mapping["primary_status"]} ?primaryEvidence . }}
@@ -1312,6 +1323,7 @@ def compile_bill_sponsorship_coverage_query(plan: dict[str, Any], *, supported_p
   GRAPH ?billGraph {{
     ?bill a {mapping["bill_type"]} ; {mapping["bill_kind"]} agents:Bill .
     OPTIONAL {{
+      ?delivery a {mapping["delivery_type"]} ; {mapping["delivery_work"]} ?bill ; {mapping["delivery_process"]} ?process .
       ?process a {mapping["process_type"]} ; {mapping["process_participation"]} ?participation .
       ?participation a {mapping["participation_type"]} .
     }}

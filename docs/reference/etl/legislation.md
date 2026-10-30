@@ -50,6 +50,33 @@ create an invalid second `#` fragment. Resolved sponsors use
 `eli-dl:had_participant_person`; unresolved role text is retained only as an
 `rdfs:label` on the Participation.
 
+The existing `oir:BillDelivery` introduction/presentation activity produces
+the Bill Work via `eli-dl:created_a_realization_of` and belongs to its process
+via `eli-dl:forms_part_of`. This applies to `introduced`, `presented`,
+`application` and `by-application` methods (the latter two still map to
+`oir:Application`). The delivery identity remains derived from Bill URI and
+the original `methodURI`; aliases do not rewrite established IRIs. No new
+direct Bill-to-process property or First Stage occurrence is created, and
+no date is inferred from stages or publication events. Validation requires
+the exact source-derived delivery, method, output Bill and process membership;
+missing or unsupported method information fails closed.
+
+Query Service status and sponsor patterns follow this explicit path, never
+solely graph co-ownership. Unlinked older graphs report missing relationship
+evidence rather than borrowing another Bill's process. Existing
+`eli:LegalResource`, document type and metadata behavior is unchanged (Tranche 1;
+classification cleanup is deferred). No production graphs were republished as
+part of this correction. Existing clean records may be skipped on source hashes;
+deploying code or running an ordinary incremental refresh does not establish
+that older graphs have been regenerated. Any backfill needs a separately
+authorized operational procedure.
+
+Focused API checks on 30 October 2026 confirmed explicit methods on `2025/60`
+(Presented), `2026/93` (Introduced), and `2023/85` (By Application). The known
+`1959/P3`, `1965/P1`, and `1965/P3` records also explicitly say By Application,
+but still have null stage dates: their existing quarantine remains required.
+These checks do not establish full-corpus source completeness or a delivery date.
+
 Related-document source IRIs identify Bill-owned Work groups rooted as
 `{source-uri}#work`. Each Work has its controlled `eli:type_document`; its
 Expressions are derived from source URI, type, language, date, and `showAs`,

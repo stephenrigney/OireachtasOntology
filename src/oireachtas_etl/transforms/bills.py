@@ -577,6 +577,7 @@ def transform_bill_with_report(wrapper: dict) -> tuple[Graph, list[dict]]:
     graph.add((process, ELIDL.was_submitted_by, _source(data.get("sourceURI"), "sourceURI")))
     delivery = _derived(bill, "delivery", {"methodURI": data.get("methodURI")})
     graph.add((delivery, RDF.type, ELIDL.LegislativeActivity)); graph.add((delivery, RDF.type, OIR.BillDelivery)); graph.add((delivery, ELIDL.forms_part_of, process)); graph.add((delivery, ELIDL.had_activity_type, _def(data.get("methodURI"), METHODS, "methodURI")))
+    graph.add((delivery, ELIDL.created_a_realization_of, bill))
     stages = data.get("stages")
     if not isinstance(stages, list) or not stages:
         raise ValueError("bill.stages must be a non-empty array")

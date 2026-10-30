@@ -103,6 +103,11 @@ def add_bill_record(fixture, *, year=2025, number="23", title="Pregnancy Loss (M
     bill = URIRef(f"https://data.oireachtas.ie/ie/oireachtas/bill/{year}/{number}")
     graph = fixture.dataset.graph(URIRef(f"https://data.oireachtas.ie/graph/bill/{year}/{number}{graph_suffix}"))
     process = URIRef(str(bill) + "#process")
+    delivery = URIRef(str(bill) + "#delivery")
+    graph.add((delivery, RDF.type, URIRef(AGENTS + "BillDelivery")))
+    graph.add((delivery, RDF.type, URIRef(ELIDL + "LegislativeActivity")))
+    graph.add((delivery, URIRef(ELIDL + "created_a_realization_of"), bill))
+    graph.add((delivery, URIRef(ELIDL + "forms_part_of"), process))
     if bill_type:
         graph.add((bill, RDF.type, URIRef(ELIDL + "DraftLegislationWork")))
         graph.add((bill, URIRef(ELI + "type_document"), URIRef(AGENTS + "Bill")))
@@ -173,6 +178,57 @@ def add_bill(fixture, *, memo=False, status="published", title="Pregnancy Loss (
     memos = [{"renditions": ["https://data.oireachtas.ie/memo.pdf"]}] if memo else []
     return add_bill_record(fixture, status=status, title=title, memos=memos,
                            events=[("2025-07-09", AGENTS + "Published")])
+
+
+def test_all_stage_b_bill_process_queries_use_only_the_explicitly_linked_process():
+    fixture = TinyDataset()
+    own, graph = add_bill_record(
+        fixture, year=2026, number="93", title="Artificial Intelligence Companion Services Bill 2026",
+        status="current", sponsors=({"role": "Own sponsor"},),
+        events=(("2024-01-02", AGENTS + "Published"),))
+    other, other_graph = add_bill_record(
+        fixture, year=2026, number="94", title="Unrelated Bill 2026",
+        status="enacted", sponsors=({"role": "Other sponsor"},),
+        events=(("2024-03-04", AGENTS + "Published"),))
+    graph += other_graph
+    other_graph.remove((None, None, None))
+    questions = [
+        "Tell me about Bill 93 from 2026",
+        "What Bills were published in 2024",
+        "What 2026 Bills haven't been enacted",
+        "What is happening to the AI Companion Services Bill?",
+        "Who is the sponsor of the AI Companion Services Bill?",
+    ]
+    for question in questions:
+        plan = plan_stage_b(question, as_of=AS_OF)
+        assert plan is not None
+        query = _query(plan, supported_predicates(ROOT / "ontology"))
+        result = fixture.query(query)
+        rows = [dict(zip(result.columns, row)) for row in result.rows]
+        own_rows = [row for row in rows if row["bill"] == str(own)]
+        assert own_rows, question
+        for row in own_rows:
+            if "process" in row:
+                assert row["process"] == str(own) + "#process"
+            if "status" in row:
+                assert row["status"] == AGENTS + "CurrentBill"
+            if "number" in row:
+                assert row["number"] == "93"
+            if "role" in row:
+                assert row["role"] == "Own sponsor"
+            if "eventDate" in row:
+                assert row["eventDate"] != "2024-03-04^^<http://www.w3.org/2001/XMLSchema#date>"
+        # No co-ownership fallback for a Bill with missing relationship evidence.
+        delivery = URIRef(str(own) + "#delivery")
+        graph.remove((delivery, URIRef(ELIDL + "created_a_realization_of"), own))
+        unlinked = fixture.query(query)
+        for raw in unlinked.rows:
+            row = dict(zip(unlinked.columns, raw))
+            if row["bill"] == str(own):
+                for column in ("process", "status", "number", "role", "eventDate"):
+                    if column in row:
+                        assert row[column] == "—"
+        graph.add((delivery, URIRef(ELIDL + "created_a_realization_of"), own))
 
 
 def _run(fixture, question):

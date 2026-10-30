@@ -745,10 +745,14 @@ class _Compiler:
         elif fact == "bill_sponsor":
             member = values["object"]
             process = f"?billProcess{index}"
+            delivery = f"?billDelivery{index}"
             participation = f"?sponsorParticipation{index}"
             self._add_pattern(
                 requirement_id, "bill-sponsor-reference", "bill-records", subject,
-                ((process, "rdf:type", "eli-dl:LegislativeProcess"),
+                ((delivery, "rdf:type", "agents:BillDelivery"),
+                 (delivery, "eli-dl:created_a_realization_of", subject),
+                 (delivery, "eli-dl:forms_part_of", process),
+                 (process, "rdf:type", "eli-dl:LegislativeProcess"),
                  (process, "eli-dl:had_participation", participation),
                  (participation, "rdf:type", "eli-dl:Participation"),
                  (participation, "eli-dl:had_participant_person", member)),
@@ -759,6 +763,7 @@ class _Compiler:
             status_var = f"?billStatus{index}"
             value_var = f"?value{index}"
             process = f"?billProcess{index}"
+            delivery = f"?billDelivery{index}"
             allowed = _FILTER_FIELDS["bill_status"]["allowedValues"]
             if any("resource" not in item for item in allowed):
                 raise _UnsupportedGeneration(
@@ -772,7 +777,10 @@ class _Compiler:
             self.values_clauses.append(f"VALUES ({status_var} {value_var}) {{ {rows} }}")
             self._add_pattern(
                 requirement_id, "bill-lifecycle", "bill-records", subject,
-                ((process, "rdf:type", "eli-dl:LegislativeProcess"),
+                ((delivery, "rdf:type", "agents:BillDelivery"),
+                 (delivery, "eli-dl:created_a_realization_of", subject),
+                 (delivery, "eli-dl:forms_part_of", process),
+                 (process, "rdf:type", "eli-dl:LegislativeProcess"),
                  (process, "eli-dl:process_status", status_var)),
             )
             values["value"] = value_var

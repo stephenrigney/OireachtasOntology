@@ -310,6 +310,93 @@ def test_unknown_bill_method_suffix_fails_closed():
         transform_bill_with_report(changed)
 
 
+@pytest.mark.parametrize("suffix, expected", EXPECTED_BILL_METHODS.items())
+def test_delivery_explicitly_connects_its_bill_work_and_process_for_every_method(
+        suffix, expected):
+    changed = _bill_with_method(
+        2025, 60,
+        f"https://data.oireachtas.ie/ie/oireachtas/def/bill-method/{suffix}",
+        suffix.title())
+    graph, report = transform_bill_with_report(changed)
+    delivery = _derived(BILL, "delivery", {"methodURI": changed["bill"]["methodURI"]})
+    process = URIRef(f"{BILL}#process")
+    assert set(graph.subject_objects(ELIDL.created_a_realization_of)) == {(delivery, BILL)}
+    assert list(graph.objects(delivery, ELIDL.had_activity_type)) == [expected]
+    assert list(graph.objects(delivery, ELIDL.forms_part_of)) == [process]
+    assert not list(graph.objects(delivery, ELIDL.activity_date))  # no invented date
+    assert (BILL, RDF.type, URIRef(ELI + "LegalResource")) in graph
+    assert (BILL, URIRef(ELI + "type_document"), OIR.Bill) in graph
+    rows = graph.query('''
+        PREFIX dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>
+        SELECT ?process WHERE {
+          ?delivery dl:created_a_realization_of ?bill ; dl:forms_part_of ?process .
+        }''', initBindings={"bill": BILL})
+    assert [row.process for row in rows] == [process]
+    assert validate_bill(changed, graph) == report
+    repeat, repeat_report = transform_bill_with_report(changed)
+    assert nquads(graph, bill_graph_iri(changed["bill"])) == nquads(
+        repeat, bill_graph_iri(changed["bill"]))
+    assert report == repeat_report
+
+
+@pytest.mark.parametrize("mutation", [
+    "missing", "reversed", "wrong_work", "extra_work", "wrong_process",
+    "extra_process", "wrong_method", "wrong_identity", "extra_creator",
+])
+def test_bill_validation_rejects_missing_or_misassociated_delivery(mutation):
+    graph, _ = transform_bill_with_report(RECORD)
+    delivery = next(graph.subjects(RDF.type, OIR.BillDelivery))
+    other = URIRef("https://data.oireachtas.ie/ie/oireachtas/bill/2025/99")
+    if mutation in {"missing", "reversed", "wrong_work"}:
+        graph.remove((delivery, ELIDL.created_a_realization_of, BILL))
+    if mutation == "reversed":
+        graph.add((BILL, ELIDL.created_a_realization_of, delivery))
+    elif mutation in {"wrong_work", "extra_work"}:
+        graph.add((delivery, ELIDL.created_a_realization_of, other))
+    elif mutation == "wrong_process":
+        graph.set((delivery, ELIDL.forms_part_of, URIRef(f"{other}#process")))
+    elif mutation == "extra_process":
+        graph.add((delivery, ELIDL.forms_part_of, URIRef(f"{other}#process")))
+    elif mutation == "wrong_method":
+        graph.set((delivery, ELIDL.had_activity_type, OIR.Introduction))
+    elif mutation == "wrong_identity":
+        for predicate, obj in list(graph.predicate_objects(delivery)):
+            graph.remove((delivery, predicate, obj))
+            graph.add((other, predicate, obj))
+    elif mutation == "extra_creator":
+        graph.add((other, ELIDL.created_a_realization_of, BILL))
+    with pytest.raises(ValueError, match="Bill delivery must preserve"):
+        validate_bill(RECORD, graph)
+
+
+def test_bill_shacl_independently_requires_delivery_output_and_process():
+    from pyshacl import validate
+
+    shapes = ROOT / "src/oireachtas_etl/validation/resources/bills.ttl"
+    graph, _ = transform_bill_with_report(RECORD)
+    assert validate(graph, shacl_graph=str(shapes), inference="none")[0]
+    delivery = next(graph.subjects(RDF.type, OIR.BillDelivery))
+    for predicate, obj in [
+        (ELIDL.created_a_realization_of, BILL),
+        (ELIDL.forms_part_of, URIRef(f"{BILL}#process")),
+        (RDF.type, OIR.BillDelivery),
+    ]:
+        broken = Graph()
+        broken += graph
+        broken.remove((delivery, predicate, obj))
+        assert not validate(broken, shacl_graph=str(shapes), inference="none")[0]
+
+
+@pytest.mark.parametrize("missing", [None, ""])
+def test_missing_delivery_method_is_not_inferred_from_stage_or_label(missing):
+    changed = copied()
+    changed["bill"]["methodURI"] = missing
+    with pytest.raises(ValueError):
+        validate_bill_source(changed)
+    with pytest.raises(ValueError):
+        transform_bill_with_report(changed)
+
+
 @pytest.mark.parametrize(
     "bill_identity", DECLARED_REPUGNANT_STATUS_CAPTURE["bill_identities"],
 )
@@ -1419,6 +1506,26 @@ def test_bill_competency_query_resources_execute_against_named_graph():
     assert [int(row["order"]) for row in rows["bill-stage-chronology.rq"]] == list(range(1, 11))
     assert rows["bill-resulting-act.rq"][0]["act"] == URIRef(RECORD["bill"]["act"]["uri"])
     assert rows["bills-updated.rq"][0]["bill"] == BILL
+    delivery = next(graph.subjects(RDF.type, OIR.BillDelivery))
+    graph.remove((delivery, ELIDL.created_a_realization_of, BILL))
+    for filename in ("bill-latest-stage.rq", "bill-status.rq"):
+        # Even the established #process IRI is not a substitute for RDF evidence.
+        assert not list(dataset.query(QUERIES.joinpath(filename).read_text()))
+
+
+def test_post_load_bill_competency_requires_explicit_delivery_path():
+    from oireachtas_etl.competency import verify_bill_competency
+    from tests._in_memory_fuseki import InMemoryFuseki
+
+    client = InMemoryFuseki()
+    graph_iri = bill_graph_iri(RECORD["bill"])
+    graph = client.dataset.graph(URIRef(graph_iri))
+    graph += transform_bill_with_report(RECORD)[0]
+    verify_bill_competency(client, graph_iri, str(BILL), len(graph))
+    delivery = next(graph.subjects(RDF.type, OIR.BillDelivery))
+    graph.remove((delivery, ELIDL.created_a_realization_of, BILL))
+    with pytest.raises(ValueError, match="post-load Bill competency check failed"):
+        verify_bill_competency(client, graph_iri, str(BILL))
 
 
 @pytest.mark.parametrize(("suffix", "expected"), [

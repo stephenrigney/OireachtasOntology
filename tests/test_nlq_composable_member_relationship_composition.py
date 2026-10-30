@@ -229,7 +229,7 @@ def test_v2_contract_and_strict_draft_schema_cover_both_relationship_projections
     draft_schema = load_composable_draft_schema()
     Draft202012Validator.check_schema(plan_schema)
     Draft202012Validator.check_schema(draft_schema)
-    assert contract["contractVersion"] == "2.10.0"
+    assert contract["contractVersion"] == "2.11.0"
     assert "member_relationship_composition" in plan_schema["properties"]["family"]["enum"]
     assert any(item["id"] == "member_relationship_composition" for item in contract["questionFamilies"])
     validator = Draft202012Validator(draft_schema)

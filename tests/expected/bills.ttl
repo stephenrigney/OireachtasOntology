@@ -54,6 +54,7 @@
 
 <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d> a eli-dl:LegislativeActivity,
         oir:BillDelivery ;
+    eli-dl:created_a_realization_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60> ;
     eli-dl:forms_part_of <https://data.oireachtas.ie/ie/oireachtas/bill/2025/60#process> ;
     eli-dl:had_activity_type oir:Presentation .
 
