@@ -6,7 +6,7 @@ compatibility: opencode
 
 # OireachtasOntology Phase Orchestrator
 
-Read `AGENTS.md`, `documentation/etl-plan.md`, and the current phase prompt before mutation.
+Read `AGENTS.md`, `docs/architecture/etl.md`, the relevant current ETL references, and the current phase prompt before mutation.
 
 ## Responsibilities
 
@@ -73,7 +73,7 @@ Deferred work should be recorded explicitly rather than implemented early.
 Make routine engineering decisions when they are already constrained by:
 
 - `AGENTS.md`;
-- `documentation/etl-plan.md`;
+- `docs/architecture/etl.md` and the relevant current ETL references;
 - current mappings;
 - ontology definitions;
 - existing repository conventions;
@@ -105,7 +105,7 @@ Stop at a safe boundary and escalate to the user if work requires or reveals:
 - weakening SHACL, competency queries, mapping validation, or other acceptance checks;
 - publishing invalid or unvalidated RDF;
 - changing production triple-store semantics or configuration;
-- a material architecture decision not already covered by `documentation/etl-plan.md`;
+- a material architecture decision not already covered by the current ETL architecture and references;
 - destructive handling of unrelated user work;
 - phase acceptance criteria that cannot be met without later-phase work.
 

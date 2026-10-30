@@ -5,7 +5,7 @@ proposal for a future model. Its terminology follows the executable OWL modules
 and active mappings. For formal axioms and complete term inventories see
 [`ontology/README.md`](../../ontology/README.md); for API-to-RDF decisions see
 [`mapping_notes.md`](../../documentation/mapping_notes.md), the endpoint CSVs in
-[`mappings/`](../../mappings/), and [`etl-plan.md`](../../documentation/etl-plan.md).
+[`mappings/`](../../mappings/), and the [ETL architecture](../architecture/etl.md).
 Focused design records are linked below.
 
 ## Reading the graph
@@ -238,7 +238,7 @@ Bill versions and related documents distinguish Work, Expression and Format;
 amendment lists, sponsorship participation and lifecycle events have their own
 resource identities as supported by source mappings. Source data gaps,
 quarantines and precise identity rules are documented in the authoritative
-[`etl-plan.md`](../../documentation/etl-plan.md) Phase 4 contract and
+[legislation ETL reference](../reference/etl/legislation.md) and
 [`mappings/bill_mapping.csv`](../../mappings/bill_mapping.csv). Development Fuseki currently has
 6,044 Bill graphs (2026-10-20 snapshot); this is local, non-production evidence.
 

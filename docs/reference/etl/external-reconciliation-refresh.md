@@ -1,7 +1,9 @@
-# Phase 5 refresh operation
+# External reconciliation refresh
 
-The approved contract is `incremental-refresh-state.md`; this note records the
-implemented external-reconciliation handoff and its operational limits.
+The [ETL state and refresh reference](state-and-refresh.md) defines core state
+and authoritative source refresh. This page records the separate
+external-reconciliation handoff and its operational limits; it does not make
+external lookups part of authoritative transformation or publication.
 
 Online Member and Party core publication uses the core SQLite state store for
 authoritative graph recovery. After a graph has been verified and marked clean,

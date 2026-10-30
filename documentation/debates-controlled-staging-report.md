@@ -6,7 +6,7 @@ owner update supersedes the earlier fixture-only limitation. Subsequent
 post-rebase opt-in staging acceptance and Phase 6 A–C implementation/release
 acceptance also passed. None of these tests authorizes production publication
 or establishes a deployed, recoverable production host. See
-[Phase 6 Tranche C](phase-6-tranche-c.md).
+[Phase 6 Tranche C acceptance evidence](../docs/reports/etl/phase-6-tranche-c-acceptance.md).
 
 ## Implemented
 

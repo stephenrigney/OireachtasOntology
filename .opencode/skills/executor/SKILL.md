@@ -21,7 +21,8 @@ not durable evidence and never expands repository authority.
 Stop and report rather than altering ontology or mapping semantics, RDF
 ownership, IRI strategy, named-graph identity or ownership, semantic
 acceptance, protected fixtures, production triple-store configuration, or an
-architectural decision not covered by `documentation/etl-plan.md`. Do not
+architectural decision not covered by `docs/architecture/etl.md` and its linked
+current references. Do not
 weaken validation, constraints, identifiers, fixtures, or acceptance checks to
 make a result pass.
 

@@ -1,4 +1,9 @@
-# Phase 6 Tranche A — operational ETL foundation
+# Phase 6 Tranche A — operational ETL foundation (historical record)
+
+> This is retained as phase acceptance and technical-history evidence, not as
+> the current architecture or operator runbook. See the [ETL architecture](../../architecture/etl.md),
+> [state and refresh reference](../../reference/etl/state-and-refresh.md), and
+> [operations guide](../../development/operations.md) for current authority.
 
 This note describes the implemented Core State, failure handling, provenance,
 and recovery behavior. It is not a production deployment or Debates-readiness

@@ -59,7 +59,7 @@ def test_manual_and_scheduled_etl_use_the_same_production_compose_path(tmp_path)
 
 def test_runtime_example_matches_clean_host_durable_storage_provisioning():
     example = (ROOT / "deployment/production.env.example").read_text(encoding="utf-8")
-    operations = (ROOT / "documentation/production-operations.md").read_text(
+    operations = (ROOT / "docs/development/operations.md").read_text(
         encoding="utf-8")
     durable = next(line.split("=", 1)[1] for line in example.splitlines()
                    if line.startswith("OIR_DURABLE_PARENT="))

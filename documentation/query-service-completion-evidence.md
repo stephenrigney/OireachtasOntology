@@ -88,12 +88,14 @@ unavailable result or substitution of a Member count.
 ## Retained evidence boundaries
 
 - Bill 2024/48: reviewed source stage identity ending `bill-stage/None`;
-  no graph in the pinned development dataset. See `documentation/etl-plan.md`
+  no graph in the pinned development dataset. See the
+  [ETL historical plan](../docs/reports/etl/etl-plan-history.md)
   and `poc/nlq/benchmarks/development-data-evidence.md`.
 - Good Friday committee: authoritative owner decision for the exact reviewed
   33rd-term ID-115 evidence does **not** change the development bootstrap's
   non-authoritative conflict/quarantine treatment, nor establish a current
-  committee roster. See `documentation/etl-plan.md` reference-coverage section.
+  committee roster. See the historical plan's reference-coverage section at
+  [ETL historical plan](../docs/reports/etl/etl-plan-history.md).
 - Offices: pinned development bootstrap has 22 accepted holdings across three
   registered offices, not a complete current roster.
 - PAC: one pinned Committee of Public Accounts debate (2026-09-24) does not

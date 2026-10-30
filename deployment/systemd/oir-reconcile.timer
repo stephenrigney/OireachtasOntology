@@ -1,6 +1,6 @@
 [Unit]
 Description=Daily external identity reconciliation timer
-Documentation=file:/opt/oireachtas-etl/documentation/production-operations.md
+Documentation=file:/opt/oireachtas-etl/docs/development/operations.md
 
 [Timer]
 OnCalendar=*-*-* 03:00:00

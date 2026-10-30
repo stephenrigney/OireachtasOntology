@@ -133,7 +133,7 @@ Keep these evidence layers separate:
 Before relying on a result, run graph counts and compare them with the current
 development bootstrap identity/coverage report. Then inspect the exact source
 graph and resource. See the top-level [`README.md`](../README.md),
-[`etl-plan.md`](etl-plan.md), [`fuseki-user-guide.md`](fuseki-user-guide.md),
+[ETL architecture](../docs/architecture/etl.md), [`fuseki-user-guide.md`](fuseki-user-guide.md),
 and [`poc/nlq/README.md`](../poc/nlq/README.md) for commands and data provenance.
 
 ## Debates availability note

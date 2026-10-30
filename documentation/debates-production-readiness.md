@@ -17,7 +17,7 @@ The operational **production-host** recovery/credentials/container verification
 and the remaining Debates deployment/authorisation gates remain open.
 Owner policy positions A–C were recorded on 2026-10-13 below. Generic Phase 6 recovery
 acceptance is not a verified backup of the intended production dataset. See
-[Phase 6 Tranche C](phase-6-tranche-c.md) and the
+[Phase 6 Tranche C acceptance evidence](../docs/reports/etl/phase-6-tranche-c-acceptance.md) and the
 [Debates execution plan](debates-production-execution-plan.md).
 
 **Latest D/E/F reassessment (2026-10-19):** Disposable Decision D staging

@@ -245,3 +245,42 @@ Inbound repository links were updated, including the ontology guide move and
 the phase record's reference to the retired Departments draft. W3C links using
 scheme-less destinations in the old README were removed with the superseded
 material. A full local Markdown-link check passed.
+
+## Tranche 2B closeout — ETL documentation
+
+The shared ETL documentation now has one current architecture overview at
+`docs/architecture/etl.md`, with distinct current homes for state/refresh and
+legislation contracts under `docs/reference/etl/` and deployment/operations at
+`docs/development/operations.md`. The root and docs indexes, `AGENTS.md`, and
+OpenCode authority guidance link to those current homes. Query Service, Debates
+and Ministerial Offices documentation was not consolidated; references to moved
+shared ETL or Phase 6 documents were updated without changing those subjects'
+contracts.
+
+| Former document | Tranche 2B disposition |
+|---|---|
+| `documentation/etl-plan.md` | Full plan retained at `docs/reports/etl/etl-plan-history.md` with an explicit historical/not-backlog notice. A short pointer remains at the former path for an unchanged implementation comment. The accepted Committee owner exception is restated in current architecture; Phase 7 Debates and office material was not migrated. |
+| `documentation/production-operations.md` | Moved intact to `docs/development/operations.md`; current command paths and Phase 6 evidence links were checked against the wrapper, Compose configuration and systemd units. Systemd `Documentation=` pointers and the existing doc-assertion test path were updated without changing service behavior or test assertions. |
+| `documentation/incremental-refresh-state.md` | Moved to `docs/reference/etl/state-and-refresh.md`; completed phase checklist and speculative CLI/migration direction were removed, and live command references now describe implemented behavior. |
+| `documentation/phase-4-legislative-lifecycle.md` | Retained as the current domain-specific `docs/reference/etl/legislation.md`; no Bill identity or mapping meaning was changed. |
+| `documentation/phase-5-refresh-operations.md` | Retained as `docs/reference/etl/external-reconciliation-refresh.md`, distinct from authoritative-source refresh. |
+| `documentation/phase-6-tranche-a.md`, `documentation/phase-6-tranche-c.md` | Archived at `docs/reports/etl/`; the revision-bound JSON evidence remains at `documentation/evidence/`, its implementation-configured path. |
+
+The repository had **83 tracked Markdown documents immediately before Tranche
+2B** and has **85 after it**: seven existing documents were relocated, one
+current architecture page and one compatibility pointer for the unchanged
+implementation comment were added, and no unique evidence was deleted. The
+original 2,784-line phase plan remains available but is no longer presented as
+current architecture/backlog. The 364-line refresh plan's unimplemented
+direction, migration and tranche checklists were removed from the current
+reference; its current state, cursor, absence and recovery rules remain. The
+722-line operations runbook was retained to avoid discarding actionable
+provisioning, incident, backup and recovery procedures. Phase 6 acceptance
+limits and machine-readable evidence remain linked and explicitly do not
+authorize production deployment.
+
+No unresolved authority conflict was identified in the shared ETL overview.
+Implementation, tests, OWL, mappings, local registries and endpoint-specific
+contracts remain authoritative. The Phase 6 production-host and Debates
+deployment authorizations remain explicitly outstanding; these are operational
+gates, not documentation authority conflicts.
