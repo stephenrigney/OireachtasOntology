@@ -148,3 +148,8 @@ three Debate graphs. Do not equate those with the approved production corpus.
 The cookbook's debate-to-Bill event example has no verified positive crosswalk
 against accepted evidence. Recheck dataset evidence and those examples after
 Debates ingestion; no ingestion or publication is part of this guide.
+
+
+### Reviewed political-affiliation identities (2026)
+
+The implemented `members:PoliticalAffiliationIdentity` provides a local, enduring, reviewed affiliation identity distinct from the term-scoped `members:ParliamentaryParty` source collection and from externally reconciled party identities. `members:hasPoliticalAffiliationIdentity` links the term-scoped collection to the local identity; `members:recognisedAsParty` remains a separate reviewed external link. The approved register (`reports/party-identity-decisions.json`) contains 33 identities, 314 accepted links among 315 reviewed non-Independent records, and one excluded Ceann Comhairle record. Independents have no political-affiliation identity. Neither labels nor aliases establish identity; the four reviewed Sinn Féin identities remain distinct. Descriptions and reviewed links are published together in the replaceable derived graph `https://data.oireachtas.ie/graph/political-affiliations/identities`, without modifying Parties or Members owner graphs. Q06 uses the local identity with synthetic execution evidence only; production completeness is not established. See [`political-affiliation-identity.md`](political-affiliation-identity.md), [`political-affiliation-publication.md`](political-affiliation-publication.md) and [`query-service-q06-slice.md`](query-service-q06-slice.md).
