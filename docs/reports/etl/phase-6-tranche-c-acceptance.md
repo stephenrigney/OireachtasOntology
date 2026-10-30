@@ -161,7 +161,7 @@ treated as complete:
   exception dispositions.
 
 The private-beta design, staging-security, controlled-launch and evaluation
-gates in `documentation/private-beta-deployment-plan.md` remain separate. The
+gates in `docs/development/private-beta-proposal.md` remain separate. The
 controlled Debates production plan remains blocked pending its own decisions and
 evidence. No production deployment, private beta, or Debates production
 ingestion is authorised by this implementation acceptance.

@@ -1,4 +1,12 @@
-# Query Service Roadmap
+# Query Service Technical Specification and Roadmap
+
+> **Status:** This is the authoritative technical specification and records
+> both implemented behavior and planned direction. It is not an active delivery
+> checklist. The local Phase 2 structured query path is implemented; see the
+> [user guide](../../docs/guides/query-service.md) and the [measured Phase 2
+> report](../../docs/reports/query-service/realistic-phase2-benchmark.md) for
+> current use, benchmark evidence and limitations. Any future-direction text
+> below remains a proposal unless implemented and verified in code and tests.
 
 ## 1. Objective
 
@@ -22,7 +30,7 @@ The roadmap deliberately separates:
 The current implementation remains under `poc/nlq/` until the service boundary
 is stable enough to extract into a separate repository.
 
-The proposed cloud-hosted, invitation-only SME evaluation deployment is governed by [Private Beta Deployment Plan](../../documentation/private-beta-deployment-plan.md). Its security and access-control gates are separate from Query Service functional acceptance and do not settle the eventual RDF store or institutional hosting architecture.
+The proposed cloud-hosted, invitation-only SME evaluation deployment is governed by [Private Beta Deployment Plan](../../docs/development/private-beta-proposal.md). Its security and access-control gates are separate from Query Service functional acceptance and do not settle the eventual RDF store or institutional hosting architecture.
 
 ## 2. Current baseline
 
@@ -374,7 +382,7 @@ bump. Consumers reject unsupported schema, contract-major, and local-safety
 major versions. The current local safety baseline remains SELECT/ASK only,
 without Update, `SERVICE`, `FROM`/`FROM NAMED`, subqueries, variable predicates,
 or property paths; exact limits and endpoint caveats are in the artifact and
-`poc/nlq/README.md`. Federation remains disabled.
+`docs/guides/query-service.md`. Federation remains disabled.
 
 Contract `1.1.0` is a compatible minor expansion: it adds query terms and
 patterns for the already-emitted reviewed Office/AdministrativeUnit registry
@@ -419,12 +427,12 @@ selection and federation can be evaluated independently.
 Phase 1A measured the complete 42-case benchmark against an isolated,
 capture-backed Phase 0A development dataset. Results, configuration, coverage
 outcomes and diagnostic limitations are recorded in
-[`poc/nlq/benchmarks/phase-1a-baseline.md`](../nlq/benchmarks/phase-1a-baseline.md).
+[`docs/reports/query-service/history/phase-1a-baseline.md`](../../docs/reports/query-service/history/phase-1a-baseline.md).
 
 Phase 1B corrected benchmark contract and capture-coverage defects without
 changing NLQ behavior. The versioned v0.2.0 baseline and the case-by-case
 validity decisions are recorded in
-[`poc/nlq/benchmarks/phase-1b-baseline.md`](../nlq/benchmarks/phase-1b-baseline.md).
+[`docs/reports/query-service/history/phase-1b-baseline.md`](../../docs/reports/query-service/history/phase-1b-baseline.md).
 
 #### Schema grounding
 
@@ -489,8 +497,8 @@ claim unsupported temporal predicates.
 
 The Phase 1E gate is the deterministic v0.3.0 regression tier and offline
 pipeline/safety/entity-resolution tests described in
-[`poc/nlq/README.md`](../nlq/README.md) and
-[`poc/nlq/benchmarks/phase-1-completion.md`](../nlq/benchmarks/phase-1-completion.md).
+[`Query Service guide`](../../docs/guides/query-service.md) and
+[`docs/reports/query-service/history/phase-1-completion.md`](../../docs/reports/query-service/history/phase-1-completion.md).
 Measured full-benchmark LLM runs are diagnostic evidence, not byte-for-byte CI
 fixtures; missing source prerequisites stay separately classified as coverage.
 Planner/federation work must preserve this local deterministic tier, known-prefix
@@ -509,7 +517,7 @@ approved and documented.
 
 Phase 1 is complete and passes its exit gate as of Phase 1E. The durable audit,
 measured v0.3.0 result, known limitations, and regression policy are recorded in
-[`poc/nlq/benchmarks/phase-1-completion.md`](../nlq/benchmarks/phase-1-completion.md).
+[`docs/reports/query-service/history/phase-1-completion.md`](../../docs/reports/query-service/history/phase-1-completion.md).
 The direct NL-to-SPARQL path remains in place until Phase 2. Mechanical binding
 of context-resolved entities is explicitly deferred to Phase 2 query planning.
 
@@ -719,7 +727,7 @@ cases. The Boolean planner case has an intentional question override and is not
 included in the Phase 1 comparison. The opt-in capture-backed Phase 0A Fuseki
 acceptance exercises representative Member, HouseTerm, collection,
 representation, Committee, Boolean, and count plans; see
-[`poc/nlq/benchmarks/phase-2c-report.md`](../nlq/benchmarks/phase-2c-report.md)
+[`docs/reports/query-service/phase-2c-report.md`](../../docs/reports/query-service/phase-2c-report.md)
 for the run record and limitations. This completes the Phase 2C compiler and
 controlled-evaluation tranche. At that point in the sequence, visible plan
 integration and the realistic-question benchmark were still outstanding; the
@@ -784,7 +792,7 @@ below.
       evidence of good real-user query experience.
 
 The accepted final realistic benchmark and its case-level outcomes are recorded
-in [`poc/nlq/benchmarks/realistic-phase2-report.md`](../nlq/benchmarks/realistic-phase2-report.md).
+in [`docs/reports/query-service/realistic-phase2-benchmark.md`](../../docs/reports/query-service/realistic-phase2-benchmark.md).
 
 ### Exit criteria
 

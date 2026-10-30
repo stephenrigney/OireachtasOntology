@@ -155,7 +155,7 @@ def test_contract_documents_reviewed_entity_type_extensions_within_major_one():
     assert "contract major version 1" in compatibility["compatibleChanges"]
     assert "and semantic vocabulary values" in compatibility["consumerSupport"]
 
-    readme = (ROOT / "poc/nlq/README.md").read_text(encoding="utf-8")
+    readme = (ROOT / "docs/guides/query-service.md").read_text(encoding="utf-8")
     assert "reviewed, supported** entity" in readme
     assert "major version `1`" in readme
 

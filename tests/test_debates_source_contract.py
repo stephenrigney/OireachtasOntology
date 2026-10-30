@@ -19,8 +19,8 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE_DIR = ROOT / "data" / "debates_examples"
 MAPPING_PATH = ROOT / "mappings" / "debates_mapping.csv"
-MAPPING_DOC = ROOT / "documentation" / "debates-mapping.md"
-SEMANTIC_REVIEW = ROOT / "documentation" / "debates-semantic-review.md"
+MAPPING_DOC = ROOT / "docs" / "reference" / "debates" / "mapping-and-implementation.md"
+SEMANTIC_REVIEW = ROOT / "docs" / "reports" / "debates" / "semantic-review.md"
 AKN_NAMESPACE = "http://docs.oasis-open.org/legaldocml/ns/akn/3.0/CSD13"
 NS = {"akn": AKN_NAMESPACE}
 
@@ -44,7 +44,7 @@ def test_unresolved_source_placeholder_is_non_rdf_evidence_not_a_member_identity
     assert placeholders
 
     identity_contract = " ".join((
-        ROOT / "documentation" / "debates-identity-contract.md"
+        ROOT / "docs" / "architecture" / "debate-identities.md"
     ).read_text(encoding="utf-8").split())
     assert 'speech/@by="#"' in identity_contract
     assert "report `unresolved` with reason `source-placeholder`" in identity_contract

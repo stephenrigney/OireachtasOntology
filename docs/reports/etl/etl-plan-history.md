@@ -518,7 +518,7 @@ Establish a reusable external-identity reconciliation layer using Members as the
 The Phase 3.5 pilot implements these decisions in
 `src/oireachtas_etl/reconciliation.py`. Operational details, failure handling,
 and the review workflow are documented in
-`documentation/member-reconciliation.md`.
+`docs/development/reconciliation/members.md`.
 
 Conceptually:
 
@@ -814,7 +814,7 @@ Separate the ontology's current umbrella use of `:Oireachtas` from the identity 
 #### Design record
 
 The semantic contract for this tranche is documented in
-`documentation/parliamentary-member-collection-model.md`.
+`docs/architecture/member-collections.md`.
 
 The Oireachtas API's term-scoped party resources are treated as parliamentary
 collections of Members, not as temporal versions of enduring political-party
@@ -893,7 +893,7 @@ relationship rather than identity.
 - [x] Publish only `members:recognisedAsParty` for an accepted external political-party target; never publish `owl:sameAs` or `prov:specializationOf` between the ParliamentaryParty and enduring PoliticalParty.
 - [x] Publish accepted links in independently replaceable external-link graphs without importing external party facts into authoritative Parties graphs.
 - [x] Preserve Phase 3.5 recovery semantics: unresolved/ambiguous/service-failure outcomes do not clear an accepted graph; explicit reviewed rejection may clear it; dirty state replays the exact stored payload before new lookup work, including changed source/review and `--all` runs.
-- [x] Define coverage and false-match review metrics before broad publication (see `documentation/party-reconciliation.md`); actual sampling requires reviewed accepted links.
+- [x] Define coverage and false-match review metrics before broad publication (see `docs/development/reconciliation/parties.md`); actual sampling requires reviewed accepted links.
 - [ ] Decide separately whether DBpedia/Wikipedia enrichment adds sufficient value once the Wikidata relationship is accepted.
 
 #### Tranche 2 verification record
@@ -925,7 +925,7 @@ part of this delivery.
 #### Design record
 
 The semantic and architectural contract for this tranche is documented in
-`documentation/institutional-reconciliation.md`.
+`docs/development/reconciliation/institutions.md`.
 
 The initial reconciliation scope is limited to the three enduring institutional
 identities established by Tranche 1:
@@ -2169,8 +2169,8 @@ These slices should not block completion of the core ETL system.
 ### Debates vertical slice
 
 The approved Debates design is recorded in
-`documentation/phase-7-debates.md`. The existing ontology-specific baseline
-remains `documentation/debates_ontology_outline.md` and
+`docs/reports/debates/phase-7-implementation-history.md`. The existing ontology-specific baseline
+remains `docs/reference/debates/legacy-outline-history.md` and
 `ontology/debates.owl.ttl`.
 
 **Status (2026-10-12):** Debates Tranches 1–4 and the subsequent
@@ -2181,9 +2181,9 @@ Bill-linkage filter. The preserved 2011+ `/v1/debates` census has **10,913
 Works: 10,649 inventory-eligible and 264 exceptions withheld for human
 disposition**. Its source-listing inventory does not prove global
 Work/Expression completeness. See
-[the readiness assessment](../../../documentation/debates-production-readiness.md),
-[the controlled-staging report](../../../documentation/debates-controlled-staging-report.md) and
-[the execution plan](../../../documentation/debates-production-execution-plan.md).
+[the readiness assessment](../debates/production-readiness-history.md),
+[the controlled-staging report](../debates/controlled-staging.md) and
+[the execution plan](../debates/production-execution-plan-history.md).
 
 The approved follow-up implements frozen-manifest selection, deterministic
 bounded batches (up to 25 Works / 64 MiB of source XML), configurable resource
@@ -2213,7 +2213,7 @@ Settled boundaries include:
 - representative transformation includes Dáil, Seanad, committees and
   written answers, but the approved **initial production load** covers only
   Dáil, Seanad and committee debates dated 2011-01-01 or later. The all-years
-  census/benchmark is recorded in `documentation/debates-production-benchmark.md`;
+  census/benchmark is recorded in `docs/reports/debates/production-benchmark.md`;
   the separate 2026-10-06 scoped resource assessment informed this decision.
   Neither written answers nor Bill-only filtering belong to the first load.
   Earlier debates and written answers remain explicit expansion work;
@@ -2243,7 +2243,7 @@ is used only when the approved `FRBRname` and Work-path rule identifies an
 actual non-written sitting; written-answer Works receive no `DebateSitting`.
 Known multiple Expressions for one Work fail closed for that Work, rather than
 publishing a graph from one Expression alone. The full rules are in
-`documentation/debates-identity-contract.md`.
+`docs/architecture/debate-identities.md`.
 
 #### Debates implementation tranches
 
@@ -2262,13 +2262,13 @@ publishing a graph from one Expression alone. The full rules are in
    and retain auditable unresolved evidence. Add SHACL, quality checks,
    competency queries and graph-boundary tests. The bounded representative
    acceptance and deferred competencies are recorded in
-   `documentation/phase-7-debates.md`.
+   `docs/reports/debates/phase-7-implementation-history.md`.
 4. **Source ingestion, state and publication mechanics** — preserve AKN input,
    persist source identity/hashes, add replay/idempotency and per-record graph
    replacement through the normal ETL path. The census/benchmark of all
    in-scope XML (including `writtens`), runtime and RDF output/working storage
    required before broad ingestion has been measured and is recorded in
-   `documentation/debates-production-benchmark.md`. The initial 2011+
+   `docs/reports/debates/production-benchmark.md`. The initial 2011+
    debates-only scope is now selected and its exact preserved-census inventory
    is complete (see the readiness report and inventory JSON). Human exception
    dispositions, operational limits, the completeness-boundary decision and
@@ -2304,7 +2304,7 @@ publishing a graph from one Expression alone. The full rules are in
   sample-based estimate of approximately 301. Assessment outcomes do not write
   production quarantine state or repair source bytes. **Human review and
   disposition of all 264 exceptions remain required before ingestion.** See
-  `documentation/debates-production-readiness.md`.
+  `docs/reports/debates/production-readiness-history.md`.
 - [ ] **Before initial ingestion — operational limits:** approve configurable
   Phase 6 warning/stop thresholds and space headroom for Fuseki/TDB2, raw XML,
   immutable reference-report sidecars, Core State, temporary data and backups.
@@ -2358,7 +2358,7 @@ unless new evidence affects its safety):**
 ### Ministerial office/tenure slice — approved design; Tranches 1–6 complete
 
 The first ministerial office/tenure vertical slice has a complete approved
-implementation design in [phase-7-ministerial-offices.md](../../../documentation/phase-7-ministerial-offices.md).
+implementation design in [phase-7-ministerial-offices.md](../offices/phase-7-implementation-history.md).
 Tranches 1–3 are implemented, including the new ontology vocabulary,
 reviewed office/unit registry publication, local source-observation review and
 the occurrence/evidence ledger. The initial registry and decisions are a small,
@@ -2371,14 +2371,14 @@ evidence remains quarantined under the existing non-destructive policy.
 Production graphs were not mutated during Tranche 3 verification. Tranche 4
 implemented reviewed external office identity reconciliation with independently
 replaceable per-office link graphs; see
-`documentation/office-external-reconciliation.md` for its contract and
+`docs/development/reconciliation/offices.md` for its contract and
 verification record. Tranche 5 adds independently replaceable local Bill
 sponsor office/holding links with source Bill evidence unchanged; see
-`documentation/bill-sponsor-reconciliation.md`. A known
+`docs/reference/etl/bill-sponsors.md`. A known
 conservative limitation remains: if an accepted holding loses its entire
 containing House membership, the prior Member graph is retained and publication
 for that Member is blocked pending review. See
-`documentation/office-observation-reconciliation.md` for verification evidence
+`docs/development/reconciliation/offices.md` for verification evidence
 and operational details. Bill **core** RDF behavior remains unchanged.
 Tranches 1–5 were implemented and merged on master; Tranche 6 acceptance is
 complete as recorded below. This closes only the ministerial office/tenure

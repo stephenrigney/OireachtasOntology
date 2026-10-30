@@ -213,8 +213,8 @@ def test_q24a_captured_bill_fields_and_same_graph_absence_are_distinguished():
     assert "No explanatory memorandum Work is recorded" in outcome.result.rows[0][5]
     assert "orphan-memo" not in outcome.result.rows[0][5]
     assert "does not prove none exists elsewhere" in outcome.diagnostic
-    assert "Bill 2025/23" in (ROOT / "documentation/query-service-completion-evidence.md").read_text()
-    assert "24dff7eaa325d649f82fb3f9b36b12c98d81aab844048cd24546f94919011ec2" in (ROOT / "documentation/query-service-completion-evidence.md").read_text()
+    assert "Bill 2025/23" in (ROOT / "docs/reports/query-service/completion-evidence.md").read_text()
+    assert "24dff7eaa325d649f82fb3f9b36b12c98d81aab844048cd24546f94919011ec2" in (ROOT / "docs/reports/query-service/completion-evidence.md").read_text()
 
 
 def test_q24a_available_memo_chain_is_queryable_only_in_its_bill_graph():
