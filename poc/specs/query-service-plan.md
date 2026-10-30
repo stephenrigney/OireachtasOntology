@@ -915,11 +915,27 @@ remain unsupported; planner paraphrase variability and incomplete historical
 source coverage remain limitations. The approved 36-question unseen evaluation
 is not used to tune this slice.
 
-A live LLM smoke was not run for this tranche because `NLQ_LLM_API_KEY` was not
-configured. The one-call Responses transport was verified with a mocked
-Responses-compatible endpoint, and the read-only Fuseki readiness probe
-reported ready; no live shared-term answer query or dataset-identity check was
-performed.
+The implementation acceptance initially did not run a live LLM smoke because
+`NLQ_LLM_API_KEY` was not configured in that process. Follow-up live verification
+on 2026-10-30 loaded the key from the worktree-local `.env.local` into the test
+process only; the credential was not emitted. The configured model was
+`gpt-6-luna` at the Responses-compatible `opencode.ai` endpoint. Read-only
+Fuseki readiness was `ready`, and five requests were sent through the integrated
+Phase 2 `POST /ask` route:
+
+| Request | Semantic interpretation | Plan / query | Outcome |
+| --- | --- | --- | --- |
+| “Which Dáil terms did Micheál Martin and Mary Lou McDonald both serve in?” | Correct two-Member shared-term intent | Valid v2 plan; SPARQL matched deterministic compiler output and was read-only | Success: 31st, 32nd, 33rd, and 34th Dáil |
+| “Name the Dáil terms common to Micheál Martin's and Mary Lou McDonald's recorded service.” | Correct | Valid v2 plan; safe compiled SPARQL | Success: same four terms |
+| “In which Dáil terms do the recorded parliamentary memberships of Micheál Martin and Mary Lou McDonald overlap?” | Correct | Valid v2 plan; safe compiled SPARQL | Success: same four terms |
+| “Which Dáil terms did Micheál Martin and Mary Lou McDonald both serve in while representing Cork South-Central?” | Correctly recognized the extra constituency condition as unsupported | Rejected; no executable plan, SPARQL, or result | Unsupported question; no simplified answer |
+| “Who won the 2022 FIFA World Cup?” | Correctly recognized an unrelated request | Rejected; no executable plan, SPARQL, or result | Unsupported question |
+
+An additional read-only Fuseki query independently joined each resolved Member's
+recorded DailMembership to House-owned DailTerm resource identities. It found 9
+and 4 recorded term identities for the two Members and confirmed that their
+four-identity intersection and English labels match all three `/ask` results.
+This confirms the local result, not complete historical source coverage.
 
 ## 9. Phase 3 — Source selection and provenance
 
