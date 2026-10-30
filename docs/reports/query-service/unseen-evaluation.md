@@ -12,16 +12,22 @@ The review source was retrieved directly from
 That branch tip still labels the file a draft and all its approval boxes were
 unchecked. The user explicitly approved those exact 36 questions during this
 evaluation. The evaluation branch therefore contains the separate frozen copy
-[`poc/specs/query-service-unseen-questions-approved.md`](../poc/specs/query-service-unseen-questions-approved.md).
+[`poc/specs/query-service-unseen-questions-approved.md`](../../../poc/specs/query-service-unseen-questions-approved.md).
 All 36 question headings and question sections are unchanged; only approval,
 track and provenance metadata was updated.
+
+The current technical specification is
+[`poc/specs/query-service-plan.md`](../../../poc/specs/query-service-plan.md).
+Redesign requirements cited by the approved-question file are archived
+historical context, not the current specification.
 
 | Artifact | Identity |
 | --- | --- |
 | Review-branch source file | `poc/specs/query-service-unseen-questions-draft.md` |
 | Source Git blob SHA-1 | `ef3a07d2c3ace8c92a0f7ae565d3019d446df157` |
 | Source file SHA-256 | `f0e8945d143d72b4055316748f13e79f06be821e9ef6540c70290f760020ab6f` |
-| Frozen evaluation copy SHA-256 (question-set hash) | `fa41f56f81d24ae17c76cfb350a948dd0b3c8c56d938a4dbaa5c5053c1039b00` |
+| Frozen evaluation copy SHA-256 as evaluated | `fa41f56f81d24ae17c76cfb350a948dd0b3c8c56d938a4dbaa5c5053c1039b00` |
+| Frozen evaluation copy SHA-256 after documentation-link correction | `a580ed9416b0aea6bf221623a7cdcf09e6bd00a3299db8a0d6be905d8c0f2e4e` |
 
 This is a baseline of the unchanged Query Service, not a repair exercise. The
 application, planners, compilers, query contracts, mappings, ontology, and
@@ -253,9 +259,11 @@ available and no bootstrap/load flags:
   --output /tmp/opencode/query-service-unseen-evaluation/phase2-observations.jsonl
 ```
 
-The runner verifies the frozen file SHA-256 and U01–U36 ordering, fixes `asOf`,
-removes LLM credentials for the process, and posts every question through
-`/ask` with `mode=phase2`. It reads only Fuseki query responses. It does not
+The runner verifies the frozen file SHA-256
+(`a580ed9416b0aea6bf221623a7cdcf09e6bd00a3299db8a0d6be905d8c0f2e4e`) and
+U01–U36 ordering, fixes `asOf`, removes LLM credentials for the process, and
+posts every question through `/ask` with `mode=phase2`. It reads only Fuseki
+query responses. It does not
 start/rebuild Fuseki, load data, or call the legacy translator. Readiness can be
 rechecked independently with the existing read-only `FusekiQueryClient.readiness()`
 probe in `poc/nlq/fuseki.py`.

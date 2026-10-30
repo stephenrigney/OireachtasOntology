@@ -2,7 +2,7 @@
 
 **Status:** Approved by the user on 2026-10-30 for baseline evaluation. This is the frozen copy of all 36 cases; question wording and stated requirements are preserved from the review-branch source.
 **Purpose:** Assess generalisation to previously untrained parliamentary questions after the current approved-question campaign. Questions are intentionally not copied from the approved catalogue; some require capabilities or evidence not currently available.
-**Authority:** User approval for this baseline evaluation, [approved questions](query-service-questions-approved.md), [Query-plan redesign requirements](query-plan-redesign-requirements.md), and the [current Query Service contract](query-schema-contract.json). These are reference material, not evidence that any answer is historically true.
+**Authority:** User approval for this baseline evaluation, [approved questions](query-service-questions-approved.md), archived [Query-plan redesign requirements](../../docs/reports/query-service/history/query-plan-redesign-requirements.md), and the [current Query Service contract](query-schema-contract.json). These are reference material, not evidence that any answer is historically true.
 **Evidence caveat:** The first 12 are *research-style questions*, **not** questions actually solicited from external researchers. Historical answers and dataset completeness have not been verified. Requirements below are expected behaviours, not assertions of historical facts.
 **Isolation:** This frozen copy is on a separate evaluation branch and is not a technically secret holdout after this run.
 

@@ -22,7 +22,7 @@ from dotenv import dotenv_values
 
 ROOT = Path(__file__).resolve().parents[1]
 QUESTION_SET = ROOT / "poc/specs/query-service-unseen-questions-approved.md"
-QUESTION_SET_SHA256 = "fa41f56f81d24ae17c76cfb350a948dd0b3c8c56d938a4dbaa5c5053c1039b00"
+QUESTION_SET_SHA256 = "a580ed9416b0aea6bf221623a7cdcf09e6bd00a3299db8a0d6be905d8c0f2e4e"
 AS_OF = date(2026, 10, 28)
 DEFAULT_OUTPUT = Path("/tmp/opencode/query-service-unseen-evaluation/phase2-observations.jsonl")
 
