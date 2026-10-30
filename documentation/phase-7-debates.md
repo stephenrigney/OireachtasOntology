@@ -313,7 +313,7 @@ Human exception dispositions, configurable operational budgets, accepted
 source-listing completeness behavior and staged production acceptance remain
 open. Historical-source and pre-2013 written-answer fragmentation findings
 remain separate expansion work. Phase 6 retains scan cadence, scheduling and
-reconciliation policy. See `documentation/etl-plan.md`'s Debates backlog for
+reconciliation policy. See the historical ETL plan's Debates section for
 required pre-ingestion actions and reopening conditions.
 
 ### Tranche 3 — Cross-dataset integration and validation

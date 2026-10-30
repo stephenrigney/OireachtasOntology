@@ -1,25 +1,28 @@
-# Phase 5 — Incremental Refresh and ETL State
+# ETL state and refresh contract
 
 ## Status
 
-This document is the authoritative design for Phase 5. The architecture is
-approved. Phase 5 implementation must preserve the ontology, mapping, RDF
-ownership, graph-identity, and external-reconciliation decisions established in
-earlier phases.
+This reference records the current state ownership, refresh and recovery
+contract. The implementation and tests determine current behavior; the phase
+history below is retained only as provenance and is not an active implementation
+plan. For the overall pipeline and publication boundaries, see the
+[ETL architecture](../../architecture/etl.md). Current external reconciliation
+handoff behavior is described in the separate
+[external refresh reference](external-reconciliation-refresh.md).
 
-Phase 5 has three gated implementation tranches:
+The original Phase 5 plan divided delivery into three tranches:
 
 1. core ETL operational state;
 2. legislation incremental refresh and complete source reconciliation; and
 3. external-reconciliation refresh integration.
 
-A tranche must satisfy its acceptance checks before implementation proceeds to
-the next tranche.
+Those tranches are complete. Their labels are historical; the current contract
+below is not an outstanding implementation checklist.
 
 ## 1. Scope and invariants
 
-Phase 5 makes routine refresh restart-safe, idempotent, and efficient without
-introducing workflow infrastructure.
+The implemented refresh design makes routine refresh restart-safe, idempotent,
+and efficient without introducing workflow infrastructure.
 
 The following invariants apply throughout the phase:
 
@@ -38,7 +41,8 @@ The following invariants apply throughout the phase:
   publication; and
 - Phase 5 introduces no Airflow, Kafka, worker hierarchy, or new scheduler.
 
-Deployment scheduling remains a Phase 6 concern.
+Deployment scheduling is an operations concern; see the
+[deployment and operations guide](../../development/operations.md).
 
 ## 2. State ownership
 
@@ -226,139 +230,30 @@ Destructive graph removal, where ever appropriate, requires an explicit
 endpoint-specific policy and action. Do not use a generic `deleted` state as
 a synonym for source absence.
 
-## 8. External reconciliation integration
+## 8. External reconciliation boundary
 
-Core publication and external identity refresh remain separate pipelines.
+Core publication and external identity refresh remain separate pipelines. The
+existing reconciliation store owns external decisions, retry/publication state
+and recheck scheduling; core publication does not call external services or
+create a second queue. Entity-specific fingerprints determine which changes
+make reconciliation due. Core source freshness and external-link freshness can
+therefore differ. Current handoff, retry and failure details are in the
+[external reconciliation refresh reference](external-reconciliation-refresh.md).
 
-Phase 5 must not introduce a second reconciliation queue or duplicate periodic
-scheduler. The existing schema-v4 `ReconciliationStore` remains authoritative
-for reconciliation state, dirty publication recovery, retry information, and
-`next_recheck_at` scheduling.
+## Current commands and completion
 
-Successful core processing must make external reconciliation due when:
+Phase 5 delivery is complete. Current supported commands and flags are defined
+by `oir-etl --help` and `src/oireachtas_etl/cli.py`; the principal interfaces
+include `oir-etl run members`, `oir-etl run bills [--full]`,
+`oir-etl state status`, and the endpoint-specific `oir-etl reconcile ...`
+commands. There is no scheduler/worker subsystem in this refresh contract.
 
-- a reconcilable entity is new; or
-- an identity-relevant source fingerprint changes.
-
-A change to an identity-irrelevant field must not force external
-reconciliation. Existing entity-specific reconciliation policy fingerprints
-remain the boundary for deciding relevance.
-
-The handoff/invalidation mechanism may be implemented through the existing
-reconciliation API/state, but it must be durable and must not couple successful
-core publication to availability of an external service. It must not create a
-parallel scheduling authority.
-
-Accepted identities continue to be periodically re-verified using the existing
-reconciliation scheduling model. Redirects, retired identifiers, disappeared
-external targets, and transient external failures are handled by the
-reconciliation subsystem. Core source freshness and external-link freshness
-remain independent.
-
-## 9. CLI direction
-
-Keep the existing command vocabulary and extend it minimally. The intended
-shape is:
-
-```text
-oir-etl run members
-oir-etl run bills
-oir-etl run bills --full
-oir-etl reconcile members|parties|institutions [--all]
-oir-etl state status
-```
-
-Exact option spelling may follow existing CLI conventions, but Phase 5 should
-not introduce scheduler, worker, queue-consumer, or orchestration commands.
-
-The existing core-state file option should be migrated deliberately rather than
-silently interpreting a legacy JSON file as SQLite. Backward compatibility,
-deprecation, or a renamed SQLite option may be selected during Tranche 1
-implementation provided migration is explicit, tested, and unambiguous.
-
-## 10. Migration
-
-When legacy Member or Bill manifest state is present and the corresponding core
-SQLite state has not yet been established, Tranche 1 must provide a
-transactional one-time import.
-
-Migration must:
-
-- preserve clean versus dirty publication meaning;
-- preserve published and pending source hashes;
-- validate imported identities and graph IRIs;
-- fail without partially establishing authoritative SQLite state if input is
-  invalid;
-- record the state/schema version needed for future migrations; and
-- stop writing the legacy JSON manifest after SQLite becomes authoritative.
-
-The existing reconciliation schema-v1-to-v4 migration path is unchanged.
-
-## 11. Implementation tranches
-
-### Tranche 1 — Core ETL operational state
-
-Implement the core SQLite schema and state API, migration of Member and Bill
-manifest state, durable publication recovery, graph/publication hash tracking,
-run and endpoint state, and state inspection. Port current Member and Bill
-full-scan behavior to the new store without changing their semantic output.
-
-Exit requires the existing Member/Bill behavior to pass against SQLite,
-including unchanged skipping, dirty recovery, failed publication recovery, and
-legacy-state migration.
-
-### Tranche 2 — Legislation incremental refresh and complete reconciliation
-
-Add parameterised legislation extraction, `last_updated` cursor semantics,
-fixed run upper boundary, overlap, deduplication, safe cursor advancement,
-periodic complete extraction, missing-resource detection, and graph/state
-mismatch handling.
-
-Exit requires an interrupted run to be safely rerunnable without lost updates
-or duplicate publication; incremental absence must never imply missingness; and
-a complete reconciliation must detect known resources omitted by the complete
-source result.
-
-### Tranche 3 — External reconciliation refresh integration
-
-Integrate core entity changes with the existing reconciliation subsystem using
-identity-relevant fingerprints and the existing due/recheck model. Add handling
-and tests for new entities, identity-relevant changes, periodic accepted-link
-verification, redirects/retired/disappeared targets, independent retry, and
-independent core/external freshness.
-
-Exit requires authoritative core publication to succeed while reconciliation
-may independently be stale, pending, or failed, and for later reconciliation
-to restore external-link freshness without regenerating authoritative graphs.
-
-## 12. Verification and Phase 5 exit criteria
-
-At minimum, automated acceptance must demonstrate:
-
-- unchanged Member and Bill resources do not transform or publish again;
-- new and changed resources publish exactly as required;
-- dirty resources retry regardless of hash equality;
-- crashes before completion, graph PUT failures, and post-PUT verification
-  failures are recoverable;
-- an incremental cursor never advances past an incomplete run;
-- a successful cursor advances to the fixed run boundary;
-- overlap does not cause duplicate graph publication;
-- incremental absence never marks a resource missing;
-- complete reconciliation can detect missing resources;
-- missing state does not automatically erase historical RDF;
-- graph/state mismatch is repaired through verified publication or fails
-  closed;
-- legacy manifest migration preserves clean/dirty meaning;
-- core publication succeeds independently of external-service availability;
-- identity-relevant changes make reconciliation due while irrelevant changes do
-  not;
-- existing periodic reconciliation scheduling continues to operate;
-- accepted external identities can be periodically re-verified; and
-- all Phase 0–4.5 regression tests remain green.
-
-Phase 5 is complete when routine core refresh is restart-safe and idempotent,
-the legislation cursor cannot advance past unprocessed source time, periodic
-complete reconciliation detects missed or disappeared source resources,
-authoritative and external-link state can fail and recover independently, and
-no destructive action is inferred solely from absence in an incremental
-response.
+Legacy Member/Bill JSON state is an explicit one-time import input. Core State
+SQLite is authoritative after successful migration; the JSON manifest is not
+dual-written. Schema upgrades and unsupported-schema handling are implemented
+in Core State and covered by tests, rather than prescribed by a future migration
+plan here. See the
+[Phase 6 operational foundation record](../../reports/etl/phase-6-tranche-a.md)
+for revision-specific acceptance detail and the
+[operations guide](../../development/operations.md) for scheduled operations,
+backup and recovery procedures.

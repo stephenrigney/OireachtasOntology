@@ -1,6 +1,6 @@
 [Unit]
 Description=Daily Oireachtas ETL backup timer
-Documentation=file:/opt/oireachtas-etl/documentation/production-operations.md
+Documentation=file:/opt/oireachtas-etl/docs/development/operations.md
 
 [Timer]
 OnCalendar=*-*-* 04:00:00

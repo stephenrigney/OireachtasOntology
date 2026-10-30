@@ -1,4 +1,9 @@
-# Phase 4 legislative lifecycle implementation
+# Legislation ETL reference
+
+This is the current domain-specific contract for Bill and legislative-lifecycle
+publication. The [ETL architecture](../../architecture/etl.md) and
+[state/refresh reference](state-and-refresh.md) describe shared pipeline rules.
+The executable implementation, tests, ontology and mapping remain authoritative.
 
 Bills are transformed into one Bill-owned graph named
 `https://data.oireachtas.ie/graph/bill/{year}/{number}`.  A Graph Store PUT

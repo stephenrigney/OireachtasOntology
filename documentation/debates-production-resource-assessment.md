@@ -9,7 +9,7 @@ This report closes the **measurement half** of the Phase 7 Debates
 production-scope/resource gate for two proposed initial-production scopes. It
 does not select a scope, publish production RDF, start ingestion, or change
 Debates semantics. No operational resource budget exists in the repository (see
-[Phase 6 production hardening](etl-plan.md)), so this is measured/extrapolated
+[Phase 6 production hardening](../docs/reports/etl/etl-plan-history.md)), so this is measured/extrapolated
 capacity awaiting an operational acceptability decision, not a pass/fail result.
 
 The earlier [`debates-production-benchmark.md`](debates-production-benchmark.md)
@@ -330,7 +330,7 @@ easy to verify. This is a scope recommendation only and requires human approval.
 ## 12. Operational thresholds
 
 No explicit numeric resource/threshold budget for Debates ingestion exists in
-Phase 6 or elsewhere ([Phase 6](etl-plan.md) defines configurable policy but not
+Phase 6 or elsewhere ([Phase 6](../docs/reports/etl/etl-plan-history.md) defines configurable policy but not
 values). No pass/fail budget is invented here. For separate human approval, the
 following conservative **configurable** thresholds are proposed (not adopted):
 

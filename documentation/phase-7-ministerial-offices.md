@@ -32,12 +32,12 @@ Before Tranche 3 the Member transformer interpreted every
 an occurrence-specific `MinisterOfStateRole`. The validated Member graph
 replacement now retires that legacy behavior. See `mappings/member_mapping.csv`,
 `src/oireachtas_etl/transforms/members.py` and
-`documentation/etl-plan.md` (Phase 7). The example has null
+`docs/reports/etl/etl-plan-history.md` (Phase 7). The example has null
 `officeName.uri` values and an observation naming two departments
 (`data/api_examples/member.json`); an office label or external identifier is
 not a sufficient local identity. Bills already preserve unresolved sponsor
 role text on their Participation (`src/oireachtas_etl/transforms/bills.py`,
-`documentation/phase-4-legislative-lifecycle.md`).
+`docs/reference/etl/legislation.md`).
 
 ## 1. Enduring identities and RDF vocabulary
 
@@ -143,7 +143,7 @@ per-Bill local-link graphs contain only approved Participation links. Every
 graph-scoped PUT affects only its owner, so replacing a Member graph cannot
 erase an office description, and replacing a Bill core graph cannot erase its
 separate local links. This extends the existing endpoint reference-only and
-graph-replacement rules (`documentation/etl-plan.md` §§3.4–3.6) and the
+graph-replacement rules ([ETL architecture](../docs/architecture/etl.md)) and the
 institutional external-link precedent
 (`documentation/institutional-reconciliation.md`, graph ownership section).
 Local Participation links must **not** be placed in an external-link graph.
@@ -240,7 +240,7 @@ holding and preserve both source/evidence snapshots. Only an explicit,
 reviewed erroneous/revoked-assertion action removes it. Recompute Cabinet
 episodes and invalidate dependent Bill links after such an action. This
 implements the non-destructive missing-resource policy in
-`documentation/incremental-refresh-state.md` §7 for nested observations.
+`docs/reference/etl/state-and-refresh.md` §7 for nested observations.
 
 ## 5. Administrative units, succession and external office identity
 
@@ -266,7 +266,7 @@ review precedence, due/recheck, dirty replay and exact post-PUT verification;
 extend its entity-kind whitelist and policy registry deliberately
 (`src/oireachtas_etl/reconciliation.py:ReconciliationStore.mark_due`,
 `reconcile_entities`). External failure cannot prevent valid authoritative
-publication (`documentation/etl-plan.md`, Phase 3.5 architectural rules).
+publication (`docs/reports/etl/etl-plan-history.md`, Phase 3.5 architectural rules).
 
 ## 6. Bill sponsor-role local reconciliation
 

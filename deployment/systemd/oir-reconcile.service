@@ -1,6 +1,6 @@
 [Unit]
 Description=External identity reconciliation refresh
-Documentation=file:/opt/oireachtas-etl/documentation/production-operations.md
+Documentation=file:/opt/oireachtas-etl/docs/development/operations.md
 Requires=oir-fuseki.service
 After=oir-fuseki.service docker.service
 OnFailure=oireachtas-ops-failure@%n.service

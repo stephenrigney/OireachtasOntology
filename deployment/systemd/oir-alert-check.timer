@@ -1,6 +1,6 @@
 [Unit]
 Description=Daily repeated-degradation alert evaluation
-Documentation=file:/opt/oireachtas-etl/documentation/production-operations.md
+Documentation=file:/opt/oireachtas-etl/docs/development/operations.md
 
 [Timer]
 OnCalendar=*-*-* 06:00:00

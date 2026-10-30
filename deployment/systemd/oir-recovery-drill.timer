@@ -1,6 +1,6 @@
 [Unit]
 Description=Weekly disposable Oireachtas recovery drill
-Documentation=file:/opt/oireachtas-etl/documentation/production-operations.md
+Documentation=file:/opt/oireachtas-etl/docs/development/operations.md
 
 [Timer]
 OnCalendar=Sun *-*-* 06:00:00

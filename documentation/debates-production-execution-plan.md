@@ -7,8 +7,8 @@ and human decisions below are closed. Phase 6 Tranches A–C have since passed
 implementation and hosted disposable acceptance, including representative
 Restic backup/restore and a fresh Fuseki rebuild; the intended production
 host, coordinated recovery point and Debates publication remain unverified
-and unauthorised. See [Phase 6 Tranche C](phase-6-tranche-c.md) and
-[production operations](production-operations.md). No production operation
+and unauthorised. See [Phase 6 Tranche C acceptance evidence](../docs/reports/etl/phase-6-tranche-c-acceptance.md) and
+[production operations](../docs/development/operations.md). No production operation
 was performed to prepare this plan.
 
 **Owner policy record (2026-10-13):** Decision A (withhold the 264
@@ -156,7 +156,7 @@ exercise the actual deployed container/runtime path; take a consistent
 recovery point with writers coordinated; and independently restore/rebuild
 the complete intended dataset, including pre-existing owners, Debate graphs and
 provenance. Do not assume TDB2 snapshots are the canonical backup. See
-[production operations](production-operations.md) for the implemented
+[production operations](../docs/development/operations.md) for the implemented
 commands and their limits.
 
 The minimum acceptable controlled recovery point, taken during a maintenance
@@ -190,7 +190,7 @@ test closes this gate.
 
 The repository now supplies backup, check, stage/activate-restore and
 fresh-projection rebuild tooling described in
-[production operations](production-operations.md). The operator must
+[production operations](../docs/development/operations.md). The operator must
 configure and validate that implementation on the intended host, provide the
 approved protected backup destination, demonstrate coordinated full-state
 recovery in isolation, and pin the recovery-point evidence before publication;

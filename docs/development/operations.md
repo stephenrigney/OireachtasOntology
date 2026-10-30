@@ -1,11 +1,11 @@
-# Production operations — Phase 6 Tranche B
+# ETL deployment and operations
 
 This is an operations guide to the implementation currently in this checkout.
 It describes the initial single-host Compose deployment, systemd jobs, backup
 and restore commands, and Fuseki projection reconstruction. It is not itself a
 production acceptance result. Tranche C's disposable implementation acceptance
-and its limits are recorded in `documentation/phase-6-tranche-c.md` and the
-linked machine-readable evidence; production-host provisioning, external
+and its limits are recorded in [Phase 6 acceptance evidence](../reports/etl/phase-6-tranche-c-acceptance.md)
+and the linked machine-readable evidence; production-host provisioning, external
 service acceptance, security review and deployment authorization remain
 separate. Debates production ingestion is explicitly out of scope.
 
@@ -664,7 +664,7 @@ drill timer until its separate paths/password have been tested with a manual
   The backup checker is not a complete disaster-recovery proof. Production-host
   acceptance, external/production testing, and Debates ingestion/readiness are
   not claimed by this guide; the disposable implementation acceptance is
-  separately documented in `documentation/phase-6-tranche-c.md`.
+  separately documented in [Phase 6 acceptance evidence](../reports/etl/phase-6-tranche-c-acceptance.md).
 
 ## Tranche B implementation status and deployment prerequisites
 
@@ -681,7 +681,7 @@ complete following Tranche C's accepted disposable release gate; that result
 does not constitute production deployment acceptance. Production-host and
 external-service acceptance remain separate, and this guide does not claim
 Debates production ingestion/readiness. The implementation status and remaining
-deployment prerequisites are recorded in `documentation/phase-6-tranche-c.md`.
+deployment prerequisites are recorded in [Phase 6 acceptance evidence](../reports/etl/phase-6-tranche-c-acceptance.md).
 
 ### Independent review finding disposition
 
