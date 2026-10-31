@@ -26,6 +26,7 @@ from poc.nlq.composable_semantic_planner import (
     build_composable_planner_instructions,
     load_composable_draft_schema,
 )
+from poc.nlq.safety import MAX_RESULT_OFFSET
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,7 +58,10 @@ def _binding(value) -> str:
 
 
 class MemberRelationshipFixture:
-    def __init__(self, *, duplicate_term_31: bool = False, duplicate_constituency_31: bool = False):
+    def __init__(
+        self, *, duplicate_term_31: bool = False,
+        duplicate_constituency_31: bool = False, extra_shared_members: int = 0,
+    ):
         self.dataset = Dataset()
         self.queries: list[str] = []
         houses = self.dataset.graph(URIRef(HOUSE_GRAPH))
@@ -98,6 +102,14 @@ class MemberRelationshipFixture:
         ))
         single_episode = URIRef(f"{MEMBER_SINGLE_EPISODE}#dail-membership-32")
         single_episode_graph.add((single_episode, URIRef(MEMBERS + "inHouseTerm"), URIRef(self.terms[33])))
+
+        for index in range(extra_shared_members):
+            key = f"Large-Result-Member-{index:03d}"
+            self._add_member(
+                f"https://data.oireachtas.ie/ie/oireachtas/member/id/{key}",
+                f"Large Result Member {index:03d}", key,
+                {32: None, 33: None},
+            )
 
     def _add_constituency(self, label: str, ordinal: int, key: str) -> None:
         iri = f"https://data.oireachtas.ie/ie/oireachtas/constituency/dail/{key}"
@@ -297,6 +309,35 @@ def test_integrated_ask_executes_fresh_member_relationship_paraphrases(question,
     assert "FROM NAMED" not in answer_query.upper()
 
 
+def test_integrated_ask_paginates_complete_member_results_over_100(monkeypatch):
+    from poc.nlq import app as app_module
+
+    fixture = MemberRelationshipFixture(extra_shared_members=125)
+    generator = FixedPlanGenerator(_intersection_draft())
+    monkeypatch.setenv("OIR_NLQ_AS_OF_DATE", AS_OF.isoformat())
+    monkeypatch.setattr(app_module, "FusekiQueryClient", lambda *args, **kwargs: fixture)
+    response = TestClient(app_module.create_app(
+        repository_root=ROOT,
+        semantic_plan_generator_factory=lambda: generator,
+    )).post("/ask", data={"question": QUESTION_TERMS, "mode": "phase2"})
+
+    assert response.status_code == 200
+    assert "Validated composable query plan" in response.text
+    assert "Complete matching results were retrieved in 2 bounded pages" in response.text
+    assert "&#34;pageSize&#34;: 100" in response.text
+    assert "&#34;offsets&#34;" in response.text
+    assert "Large Result Member 000" in response.text
+    assert "Large Result Member 124" in response.text
+    assert generator.calls == [QUESTION_TERMS]
+    assert generator.closed
+    assert len(fixture.queries) == 4  # two term resolutions and two answer pages
+    first_page, second_page = fixture.queries[-2:]
+    assert "LIMIT 100 OFFSET 0" in first_page
+    assert "LIMIT 100 OFFSET 100" in second_page
+    assert "SERVICE" not in first_page.upper()
+    assert "FROM NAMED" not in second_page.upper()
+
+
 def test_resolved_constituency_identity_excludes_other_constituencies_in_the_same_term():
     fixture = MemberRelationshipFixture()
     outcome, _generator = _run(fixture, QUESTION_REPRESENTATION, _representation_draft())
@@ -391,3 +432,33 @@ def test_answer_compiler_revalidates_the_complete_relation_graph():
         compile_member_relationship_composition_query(
             broken, supported_predicates=supported_predicates(ROOT / "ontology"),
         )
+
+
+def test_member_relationship_page_offsets_obey_the_existing_safety_contract():
+    fixture = MemberRelationshipFixture()
+    outcome, _generator = _run(fixture, QUESTION_TERMS, _intersection_draft())
+    assert outcome.status == "success"
+    assert f"OFFSET {MAX_RESULT_OFFSET}" in compile_member_relationship_composition_query(
+        outcome.plan,
+        supported_predicates=supported_predicates(ROOT / "ontology"),
+        offset=MAX_RESULT_OFFSET,
+    )
+    with pytest.raises(PlanError, match="page offset"):
+        compile_member_relationship_composition_query(
+            outcome.plan,
+            supported_predicates=supported_predicates(ROOT / "ontology"),
+            offset=MAX_RESULT_OFFSET + 1,
+        )
+
+
+def test_member_relationship_pagination_limit_fails_closed_without_partial_answer(monkeypatch):
+    import poc.nlq.composable_plan as plan_module
+
+    monkeypatch.setattr(plan_module, "MAX_RESULT_OFFSET", 0)
+    fixture = MemberRelationshipFixture(extra_shared_members=125)
+    outcome, _generator = _run(fixture, QUESTION_TERMS, _intersection_draft())
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert "no partial answer was returned" in outcome.diagnostic
+    assert len(fixture.queries) == 3  # resolutions and first page only
