@@ -128,7 +128,11 @@ def create_app(
         } for fact in facts.values()]
         return templates.TemplateResponse(request, "capabilities.html", {
             "request": request, "capabilities": capabilities,
-            "temporal_constraints": ["previousTerm(Dail, asOf) using date evidence", "Separate dated party-membership evidence episodes", "Inclusive calendar-day overlap for accepted Member office holdings"],
+            "temporal_constraints": [
+                "previousTerm(Dail, asOf) using date evidence",
+                "PartyMembership episodes overlap the exact DailMembership interval using inclusive xsd:dateTime endpoints; absent end is open-ended and missing range/start is uncertain",
+                "Inclusive calendar-day overlap for accepted Member office holdings",
+            ],
             "answer_shapes": [{"kind": "entities", "description": "Distinct Member or reviewed enduring affiliation identities with readable labels and separate supporting episodes."}],
         })
 
@@ -252,7 +256,27 @@ def create_app(
                 member_relationship_summary = None
                 if is_member_relationship_composition and composition_terms:
                     term_names = [f"the {_dail_ordinal_label(number)}" for number in composition_terms]
-                    if composition_constituencies and len(term_names) == 1:
+                    temporal_affiliation = (outcome.plan or {}).get("referents", {}).get("affiliation", {})
+                    has_party_episode = any(
+                        referent.get("type") == "PartyMembershipEpisode"
+                        for referent in composition_refs.values()
+                    )
+                    if has_party_episode and composition_constituencies and len(term_names) == 1:
+                        constituency_name = composition_constituencies[0]
+                        if (outcome.plan or {}).get("answer", {}).get("referent") == "affiliation":
+                            member_relationship_summary = (
+                                f"Find distinct reviewed political-affiliation identities represented by TDs for "
+                                f"{constituency_name} during {term_names[0]}, requiring the PartyMembership episode "
+                                "to overlap the exact DailMembership interval for that constituency representation."
+                            )
+                        else:
+                            affiliation_name = temporal_affiliation.get("label", temporal_affiliation.get("mention", "the selected party"))
+                            member_relationship_summary = (
+                                f"Find distinct Members affiliated with {affiliation_name} while representing "
+                                f"{constituency_name} during {term_names[0]}, using the exact term/constituency identities "
+                                "and established interval overlap."
+                            )
+                    elif composition_constituencies and len(term_names) == 1:
                         member_relationship_summary = (
                             f"Find distinct local Members whose recorded DailMembership represents "
                             f"{composition_constituencies[0]} in {term_names[0]}, with the constituency "
@@ -320,8 +344,20 @@ def create_app(
                                if is_q35 else
                                 "One row per Bill identity with title and recorded sponsorship evidence."
                                 if is_q23 else
-                                "Distinct Member identities are retained by exact RDF IRI; historical source completeness is not certified."
-                                if is_member_relationship_composition else
+                                ("Distinct reviewed political-affiliation identities are returned with each qualifying TD and "
+                                 "established overlap episode retained; historical source completeness is not certified."
+                                 if is_member_relationship_composition and is_q06 and any(
+                                     ref.get("type") == "PartyMembershipEpisode"
+                                     for ref in (outcome.plan or {}).get("referents", {}).values()
+                                 ) else
+                                 "Distinct Member identities are returned only for the resolved party identity and established "
+                                 "representation/affiliation overlap; historical source completeness is not certified."
+                                 if is_member_relationship_composition and any(
+                                     ref.get("type") == "PartyMembershipEpisode"
+                                     for ref in (outcome.plan or {}).get("referents", {}).values()
+                                 ) else
+                                 "Distinct Member identities are retained by exact RDF IRI; historical source completeness is not certified.")
+                                 if is_member_relationship_composition else
                                  "Stage A typed family result using reviewed RDF ownership, with identity and date qualifications preserved."
                                 if is_stage_a else
                                 "Distinct Dáil-term identities present in both independently resolved Member membership paths."

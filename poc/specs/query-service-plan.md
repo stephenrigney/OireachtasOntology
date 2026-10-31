@@ -952,6 +952,73 @@ as local recorded evidence, not complete historical coverage. Focused acceptance
 passed 394 relevant query-service tests, and one bounded real-LLM request also
 passed through `/ask` against the synthetic named-graph fixture.
 
+#### Follow-up — dated party/constituency composition
+
+Composable query-plan contract `2.11.0` introduced the extension to the same validated
+`member_relationship_composition` family for U06/U16-style questions. It reuses
+the existing relation-graph compiler and adds exactly one supported shape:
+Member → DailMembership → numbered DailTerm + term-specific DailConstituency,
+with a typed PartyMembership episode linked to that exact same DailMembership,
+its term-scoped ParliamentaryParty, and the party's reviewed enduring
+PoliticalAffiliationIdentity. No current affiliation or label-equality join is
+used. At introduction, the query-schema contract remained `2.8.0`; this temporal
+extension made no ontology, mapping, ETL, identifier, graph-ownership, or
+source-data behavior changes.
+
+The PartyMembership-owned interval and the containing DailMembership-owned
+representation interval are checked separately using inclusive `xsd:dateTime`
+endpoints. A missing `EndDate` is open-ended; a missing range/start, malformed
+date, or conflicting range evidence is uncertain and fails closed. The local
+evaluator retains exact episode identities and overlap evidence instead of
+filtering incomplete intervals into a false negative. Only typed
+`PartyMembership` records are political-party evidence; Independent collection
+membership is not a party. For a party list, answers are distinct reviewed
+affiliation identities; for a named-party Member question, the exact identity
+filter is resolved only among ParliamentaryParty records active in the selected
+term, so reused historical aliases are not resolved globally.
+
+The supported plan requires one explicitly numbered Dáil and one named
+constituency occurrence. Additional date windows, current/as-of conditions,
+aggregates, other relationships, and omitted constraints are rejected rather
+than simplified. Impossible dates and missing term scope are reported before
+LLM planning or answer-query execution. Unsupported relationships remain
+distinct from missing or uncertain RDF evidence. Acceptance uses fresh U06/U16
+paraphrases through `/ask` and controlled named-graph fixtures for endpoint,
+open-end, missing/conflicting date, alias-ambiguity, and historical
+non-overlap cases; positive findings remain qualified as local evidence, not
+complete historical coverage.
+
+Planner instructions state the exact answer and constraint objects required by
+each supported family because local validation enforces those evidence
+projections exactly. On 2026-10-31, one bounded real-LLM planner request passed
+through the integrated Phase 2 `POST /ask` route against the controlled
+named-graph fixture. For “Which political parties were represented by TDs for
+Galway West during the 33rd Dáil?”, the planner returned a validated plan, the
+read-only compiled query ran against the fixture, and the rendered result
+included Sinn Féin and Fianna Fáil with Aoife Byrne's recorded episode evidence
+and the historical-completeness qualification. The credential was used only in
+the test process and was neither emitted nor recorded.
+
+#### Reconciled BillDelivery and temporal-composition contracts
+
+Composable query-plan contract `2.12.0` combines the dated party/constituency
+extension above with the explicit BillDelivery relationship correction. Both
+changes independently used `2.11.0` before integration. The combined contract
+retains the temporal relations, inclusive interval constraint, separate episode
+projection and fail-closed uncertainty behavior, while requiring Bill lifecycle
+and sponsorship queries to traverse a typed BillDelivery's
+`eli-dl:created_a_realization_of` Bill and `eli-dl:forms_part_of` process links
+within the Bill-owned graph. The legacy plan fact ID `bill_process_cocontained`
+is retained for compatibility; it no longer permits graph co-ownership as the
+association rule.
+
+The current query-schema contract is `2.9.0`, recording that explicit delivery
+path. Plan envelope version `2` and schema version `1` are unchanged. Previously
+published Bill graphs without the delivery-to-Work edge fail closed for these
+relationship-dependent queries; code deployment or a source-hash-skipping
+incremental refresh does not backfill them. Regeneration requires a separately
+authorized operation. Bill classification cleanup remains outside this tranche.
+
 ## 9. Phase 3 — Source selection and provenance
 
 ### Outcome
