@@ -10,6 +10,7 @@ from __future__ import annotations
 import calendar
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
+from functools import lru_cache
 import json
 import re
 import unicodedata
@@ -29,6 +30,7 @@ from .safety import validate_sparql
 PLAN_VERSION = 2
 _PLAN_CONTRACT_PATH = Path(__file__).resolve().parents[1] / "specs" / "composable-query-plan-contract.json"
 _PLAN_CONTRACT = json.loads(_PLAN_CONTRACT_PATH.read_text(encoding="utf-8"))
+_AFFILIATION_DECISIONS_PATH = Path(__file__).resolve().parents[2] / "reports" / "party-identity-decisions.json"
 _RELATION_TYPES = {
     relation["id"]: (relation["subjectType"], relation["objectType"])
     for relation in _PLAN_CONTRACT["relations"]
@@ -477,10 +479,216 @@ def _validate_shared_dail_terms_plan(plan: dict[str, Any]) -> dict[str, Any]:
     return plan
 
 
+def _validate_member_party_composition_plan(plan: dict[str, Any]) -> dict[str, Any]:
+    """Validate the shared term/constituency/party episode temporal graph."""
+    if set(plan) != {"version", "asOf", "family", "referents", "relations", "constraints", "answer"}:
+        raise PlanError("Dated party/representation composition requires its fixed temporal constraint and no extra fields.")
+    refs = plan.get("referents")
+    expected_types = {
+        "member": "Member", "membership": "DailMembership", "term": "DailTerm",
+        "constituency": "DailConstituency", "episode": "PartyMembershipEpisode",
+        "party": "ParliamentaryParty", "affiliation": "PoliticalAffiliationIdentity",
+    }
+    if not isinstance(refs, dict) or set(refs) != set(expected_types):
+        raise PlanError("Dated party/representation composition requires exactly seven reviewed referents.")
+    answer = plan.get("answer")
+    if not isinstance(answer, dict) or answer.get("kind") != "entities":
+        raise PlanError("Dated party/representation composition requires an entity answer.")
+    answer_ref = answer.get("referent")
+    party_answer = answer_ref == "affiliation"
+    if answer_ref not in {"member", "affiliation"}:
+        raise PlanError("The composition must answer either Member identities or reviewed political-affiliation identities.")
+
+    for key, semantic_type in expected_types.items():
+        ref = refs[key]
+        if not isinstance(ref, dict) or ref.get("type") != semantic_type:
+            raise PlanError(f"Referent {key!r} must have reviewed type {semantic_type!r}.")
+    expected_member = {"type": "Member"} if party_answer else {"type": "Member", "answer": True}
+    if refs["member"] != expected_member:
+        raise PlanError("The Member answer role does not match the selected composition projection.")
+    for key in ("membership", "episode", "party"):
+        if refs[key] != {"type": expected_types[key]}:
+            raise PlanError(f"Referent {key!r} must be a plain typed evidence role.")
+
+    term = refs["term"]
+    selector = term.get("selector")
+    if (not isinstance(selector, dict)
+            or selector != {"kind": "termNumber", "number": selector.get("number")}
+            or type(selector.get("number")) is not int or not 1 <= selector["number"] <= 999):
+        raise PlanError("The DailTerm must use one reviewed numeric term selector.")
+    term_resolution = term.get("resolution")
+    if term_resolution is None:
+        if set(term) != {"type", "selector"}:
+            raise PlanError("An unresolved DailTerm contains unsupported fields.")
+    elif term_resolution == "resolved":
+        if set(term) != {"type", "selector", "resolution", "iri"}:
+            raise PlanError("A resolved DailTerm must carry its exact local identity only.")
+        _require_local_iri(term["iri"], "DailTerm")
+    elif term_resolution in {"ambiguous", "not_found", "source_data_unavailable", "unsupported_mapping"}:
+        if term_resolution == "ambiguous":
+            if set(term) != {"type", "selector", "resolution", "candidates"} or not isinstance(term["candidates"], list) or len(term["candidates"]) < 2:
+                raise PlanError("An ambiguous DailTerm requires distinct local identity candidates.")
+            for candidate in term["candidates"]:
+                if not isinstance(candidate, dict) or set(candidate) != {"iri", "label"}:
+                    raise PlanError("DailTerm candidates must contain local identities and labels.")
+                _require_local_iri(candidate["iri"], "DailTerm candidate")
+        elif set(term) != {"type", "selector", "resolution"}:
+            raise PlanError("Unavailable DailTerm resolution contains unsupported identity fields.")
+    else:
+        raise PlanError("DailTerm resolution state is outside the reviewed outcomes.")
+
+    constituency = refs["constituency"]
+    constituency_states = {
+        "unresolved": {"type", "mention", "resolution"},
+        "resolved": {"type", "mention", "resolution", "iri", "label"},
+        "ambiguous": {"type", "mention", "resolution", "candidates"},
+        "not_found": {"type", "mention", "resolution"},
+        "source_data_unavailable": {"type", "mention", "resolution"},
+        "unsupported_mapping": {"type", "mention", "resolution"},
+    }
+    state = constituency.get("resolution")
+    if (state not in constituency_states or set(constituency) != constituency_states[state]
+            or not isinstance(constituency.get("mention"), str) or not constituency["mention"].strip()):
+        raise PlanError("DailConstituency resolution fields or exact mention are invalid.")
+    if state == "resolved":
+        _require_local_iri(constituency["iri"], "DailConstituency")
+        if not isinstance(constituency["label"], str) or not constituency["label"].strip():
+            raise PlanError("A resolved DailConstituency requires its local label.")
+    if state == "ambiguous":
+        candidates = constituency["candidates"]
+        if not isinstance(candidates, list) or len(candidates) < 2:
+            raise PlanError("Ambiguous constituency resolution requires distinct candidates.")
+        for candidate in candidates:
+            if not isinstance(candidate, dict) or set(candidate) != {"iri", "label"}:
+                raise PlanError("Constituency candidates must contain local identities and labels.")
+            _require_local_iri(candidate["iri"], "DailConstituency candidate")
+
+    affiliation = refs["affiliation"]
+    if party_answer:
+        if affiliation != {"type": "PoliticalAffiliationIdentity", "answer": True}:
+            raise PlanError("A party-list answer must return distinct reviewed affiliation identities.")
+    else:
+        affiliation_states = {
+            "unresolved": {"type", "mention", "resolution"},
+            "resolved": {"type", "mention", "resolution", "iri", "label"},
+            "ambiguous": {"type", "mention", "resolution", "candidates"},
+            "not_found": {"type", "mention", "resolution"},
+            "source_data_unavailable": {"type", "mention", "resolution"},
+            "unsupported_mapping": {"type", "mention", "resolution"},
+        }
+        affiliation_state = affiliation.get("resolution")
+        if (affiliation_state not in affiliation_states
+                or set(affiliation) != affiliation_states[affiliation_state]
+                or not isinstance(affiliation.get("mention"), str) or not affiliation["mention"].strip()):
+            raise PlanError("The named PoliticalAffiliationIdentity requires a valid resolution state and mention.")
+        if affiliation_state == "resolved":
+            _require_local_iri(affiliation["iri"], "PoliticalAffiliationIdentity")
+            if not isinstance(affiliation["label"], str) or not affiliation["label"].strip():
+                raise PlanError("A resolved PoliticalAffiliationIdentity requires its reviewed local label.")
+        if affiliation_state == "ambiguous":
+            candidates = affiliation["candidates"]
+            if not isinstance(candidates, list) or len(candidates) < 2:
+                raise PlanError("Ambiguous affiliation resolution requires distinct identity candidates.")
+            for candidate in candidates:
+                if not isinstance(candidate, dict) or set(candidate) != {"iri", "label"}:
+                    raise PlanError("Affiliation candidates must contain local identities and labels.")
+                _require_local_iri(candidate["iri"], "PoliticalAffiliationIdentity candidate")
+
+    relations = plan.get("relations")
+    expected_edges = {
+        "member_has_membership": ("member", "membership"),
+        "membership_in_term": ("membership", "term"),
+        "membership_represents": ("membership", "constituency"),
+        "constituency_in_term": ("constituency", "term"),
+        "member_party_membership": ("member", "episode"),
+        "party_episode_in_membership": ("episode", "membership"),
+        "episode_in_parliamentary_party": ("episode", "party"),
+        "party_active_during_term": ("party", "term"),
+        "parliamentary_party_has_affiliation_identity": ("party", "affiliation"),
+    }
+    if not isinstance(relations, list) or len(relations) != len(expected_edges):
+        raise PlanError("The temporal party composition requires every reviewed relation exactly once.")
+    relation_defs = {item["id"]: item for item in _PLAN_CONTRACT["relations"]}
+    actual_edges: dict[str, tuple[str, str]] = {}
+    relation_ids: set[str] = set()
+    for relation in relations:
+        if (not isinstance(relation, dict) or set(relation) != {"id", "fact", "from", "to"}
+                or any(not isinstance(relation.get(field), str) or not relation[field]
+                       for field in ("id", "fact", "from", "to"))):
+            raise PlanError("Temporal composition relations require non-empty IDs and typed endpoints.")
+        if relation["id"] in relation_ids or relation["fact"] in actual_edges:
+            raise PlanError("Temporal composition relation IDs and facts must be unique.")
+        relation_ids.add(relation["id"])
+        fact = relation["fact"]
+        if fact not in _RELATION_TYPES:
+            raise PlanError(f"Unsupported semantic mapping: {fact!r}.")
+        edge = (relation["from"], relation["to"])
+        if fact not in expected_edges or edge != expected_edges[fact]:
+            raise PlanError(f"Relationship {fact!r} is outside the exact party/representation composition.")
+        if (expected_types[edge[0]], expected_types[edge[1]]) != _RELATION_TYPES[fact]:
+            raise PlanError(f"Relationship {fact!r} has incompatible typed referents.")
+        actual_edges[fact] = edge
+    if actual_edges != expected_edges:
+        raise PlanError("The temporal party graph is disconnected or missing an essential relationship.")
+
+    constraint_mapping = _CONSTRAINT_MAPPINGS.get("partyEpisodeInterval")
+    expected_constraint = {
+        "referent": "episode", "field": "partyEpisodeInterval", "operator": "overlaps", "value": "membership",
+    }
+    if (constraint_mapping is None
+            or constraint_mapping.get("referentType") != "PartyMembershipEpisode"
+            or constraint_mapping.get("otherReferentType") != "DailMembership"
+            or constraint_mapping.get("valueKind") != "referent_interval"
+            or constraint_mapping.get("dateDatatype") != "xsd:dateTime"
+            or constraint_mapping.get("startRequiredByMapping") is not True
+            or constraint_mapping.get("endAbsentMeans") != "open-ended"
+            or constraint_mapping.get("rangeOrStartAbsentMeans") != "uncertain"
+            or constraint_mapping.get("boundary") != "inclusive_endpoint"
+            or plan.get("constraints") != [expected_constraint]):
+        raise PlanError("The required inclusive PartyMembershipEpisode/DailMembership interval-overlap constraint is absent or inconsistent.")
+
+    if answer == {
+        "kind": "entities", "referent": "affiliation", "distinctBy": "identity", "display": ["label"],
+        "details": [
+            {"referent": "member", "display": ["name"]},
+            {"referent": "episode", "display": ["start", "end"]},
+            {"referent": "membership", "display": ["start", "end"]},
+        ],
+        "preserveEvidence": True,
+    }:
+        if not party_answer:
+            raise PlanError("Party-list answers must target PoliticalAffiliationIdentity.")
+    elif answer == {
+        "kind": "entities", "referent": "member", "distinctBy": "identity", "display": ["name"],
+        "details": [
+            {"referent": "affiliation", "display": ["label"]},
+            {"referent": "episode", "display": ["start", "end"]},
+            {"referent": "membership", "display": ["start", "end"]},
+        ],
+        "preserveEvidence": True,
+    }:
+        if party_answer:
+            raise PlanError("Named-party Member answers must preserve the exact affiliation filter.")
+    else:
+        raise PlanError("Temporal party answers must preserve exact identity and separate interval evidence.")
+    return plan
+
+
 def _validate_member_relationship_composition_plan(plan: dict[str, Any]) -> dict[str, Any]:
     """Validate the bounded Member–membership–Dáil-term graph projections."""
-    if set(plan) != {"version", "asOf", "family", "referents", "relations", "answer"}:
+    if "constraints" in plan and any(
+        isinstance(ref, dict) and ref.get("type") == "PartyMembershipEpisode"
+        for ref in (plan.get("referents", {}).values() if isinstance(plan.get("referents"), dict) else ())
+    ):
+        return _validate_member_party_composition_plan(plan)
+    allowed_fields = {
+        frozenset({"version", "asOf", "family", "referents", "relations", "answer"}),
+        frozenset({"version", "asOf", "family", "referents", "relations", "constraints", "answer"}),
+    }
+    if frozenset(plan) not in allowed_fields:
         raise PlanError("Member relationship composition does not accept extra constraints or plan fields.")
+    if "constraints" in plan and plan["constraints"] != []:
+        raise PlanError("Non-party Member relationship composition does not accept extra constraints.")
     if plan.get("family") != "member_relationship_composition":
         raise PlanError("Unsupported Member relationship composition family.")
     refs = plan.get("referents")
@@ -1470,11 +1678,17 @@ def _member_relationship_composition_mapping(
     plan = validate_plan(plan)
     if plan.get("family") != "member_relationship_composition":
         raise PlanError("Member relationship compilation requires its validated v2 family.")
+    temporal = any(
+        ref.get("type") == "PartyMembershipEpisode"
+        for ref in plan.get("referents", {}).values()
+    )
     query_contract = load_query_contract()
     families = {item["id"]: item for item in query_contract["graphFamilies"]}
     member_graph = families.get("member-records", {}).get("graph", {})
     houses_graph = families.get("houses", {}).get("graph", {})
     constituency_graph = families.get("constituencies", {}).get("graph", {})
+    party_graph = families.get("parties", {}).get("graph", {})
+    identity_graph = families.get("political-affiliations", {}).get("graph", {})
     if (member_graph.get("kind") != "resource-pattern"
             or not isinstance(member_graph.get("iriTemplate"), str)
             or "{" not in member_graph["iriTemplate"]
@@ -1490,6 +1704,15 @@ def _member_relationship_composition_mapping(
         if family.get("owner") != owner or not isinstance(graph.get("iri"), str):
             raise PlanError(f"Reviewed {owner} graph ownership is malformed.")
 
+    if temporal:
+        for family_id, graph, owner in (
+            ("parties", party_graph, "Parties ETL"),
+            ("political-affiliations", identity_graph, "Reviewed political-affiliation identity enrichment publication"),
+        ):
+            family = families.get(family_id, {})
+            if family.get("owner") != owner or graph.get("kind") != "fixed" or not isinstance(graph.get("iri"), str):
+                raise PlanError(f"Reviewed {owner} graph ownership is malformed or unavailable.")
+
     patterns = {
         "member": _reviewed_pattern("member-description", "member-records"),
         "membership": _reviewed_pattern("member-house-membership", "member-records"),
@@ -1497,6 +1720,12 @@ def _member_relationship_composition_mapping(
         "term": _reviewed_pattern("house-term-ordinal", "houses"),
         "constituency": _reviewed_pattern("constituency-term-occurrence", "constituencies"),
     }
+    if temporal:
+        patterns.update({
+            "party_episode": _reviewed_pattern("party-membership-episode", "member-records"),
+            "party_term": _reviewed_pattern("party-term-occurrence", "parties"),
+            "identity": _reviewed_pattern("reviewed-political-affiliation-identities", "political-affiliations"),
+        })
     rdf_types = _PLAN_CONTRACT["entityTypeRdfTypes"]
     member_type = _pattern_rdf_type(patterns["member"], "?member")
     member_name = _pattern_predicate(patterns["member"], "?member", "?plainLiteralName")
@@ -1505,6 +1734,23 @@ def _member_relationship_composition_mapping(
     representation_link = _pattern_predicate(patterns["representation"], "?membership", "?representation")
     constituency_term_link = _pattern_predicate(patterns["constituency"], "?constituency", "?term")
     term_number_link = _pattern_predicate(patterns["term"], "?term", "?ordinal")
+    party_episode_membership = None
+    member_party_link = None
+    episode_party_link = None
+    party_term_link = None
+    party_identity_link = None
+    if temporal:
+        member_party_link = _pattern_predicate(
+            patterns["party_episode"], "?member", "?partyEpisode",
+        )
+        party_episode_membership = _pattern_predicate(
+            patterns["party_episode"], "?partyEpisode", "?oireachtasMembership",
+        )
+        episode_party_link = _pattern_predicate(
+            patterns["party_episode"], "?partyEpisode", "?parliamentaryParty",
+        )
+        party_term_link = _pattern_predicate(patterns["party_term"], "?party", "?term")
+        party_identity_link = _pattern_predicate(patterns["identity"], "?party", "?identity")
     constituency_type_candidates = [
         triple[2].split(" and ") for triple in patterns["constituency"].get("triples", [])
         if triple[0] == "?constituency" and triple[1] == "rdf:type"
@@ -1524,7 +1770,24 @@ def _member_relationship_composition_mapping(
             or not any(rdf_types["DailConstituency"] in items for items in constituency_type_candidates)
             or _pattern_rdf_type(patterns["term"], "?term") != rdf_types["DailTerm"]):
         raise PlanError("Reviewed RDF patterns disagree with the Member relationship registry.")
-    for semantic_type in ("Member", "DailMembership", "DailTerm", "DailConstituency"):
+    if temporal:
+        party_episode_types = [
+            triple[2].split(" or ") for triple in patterns["party_episode"].get("triples", [])
+            if triple[0] == "?partyEpisode" and triple[1] == "rdf:type"
+        ]
+        if (not any(rdf_types["PartyMembershipEpisode"] in values for values in party_episode_types)
+                or _pattern_rdf_type(patterns["party_term"], "?party") != rdf_types["ParliamentaryParty"]
+                or _pattern_rdf_type(patterns["identity"], "?identity") != rdf_types["PoliticalAffiliationIdentity"]
+                or member_party_link != _reviewed_predicate("member_party_membership")
+                or party_episode_membership != _reviewed_predicate("party_episode_in_membership")
+                or episode_party_link != _reviewed_predicate("episode_in_parliamentary_party")
+                or party_term_link != _reviewed_predicate("party_active_during_term")
+                or party_identity_link != _reviewed_predicate("parliamentary_party_has_affiliation_identity")):
+            raise PlanError("Reviewed PartyMembership, term-party, or affiliation-identity patterns disagree with the v2 relation registry.")
+    types_to_check = ["Member", "DailMembership", "DailTerm", "DailConstituency"]
+    if temporal:
+        types_to_check.extend(("PartyMembershipEpisode", "ParliamentaryParty", "PoliticalAffiliationIdentity"))
+    for semantic_type in types_to_check:
         if rdf_types[semantic_type] not in query_contract["queryableClasses"]:
             raise PlanError(f"Reviewed RDF type for {semantic_type!r} is not queryable.")
     if member_name not in query_contract["queryableProperties"]:
@@ -1536,6 +1799,12 @@ def _member_relationship_composition_mapping(
         "DailTerm": "houses",
         "DailConstituency": "constituencies",
     }
+    if temporal:
+        type_graph.update({
+            "PartyMembershipEpisode": "member-records",
+            "ParliamentaryParty": "parties",
+            "PoliticalAffiliationIdentity": "political-affiliations",
+        })
     relations = {item["id"]: item for item in _PLAN_CONTRACT["relations"]}
     for relation in plan["relations"]:
         definition = relations.get(relation["fact"])
@@ -1551,6 +1820,14 @@ def _member_relationship_composition_mapping(
         "membership_represents": representation_link,
         "constituency_in_term": constituency_term_link,
     }
+    if temporal:
+        expected_predicates.update({
+            "member_party_membership": member_party_link,
+            "party_episode_in_membership": party_episode_membership,
+            "episode_in_parliamentary_party": episode_party_link,
+            "party_active_during_term": party_term_link,
+            "parliamentary_party_has_affiliation_identity": party_identity_link,
+        })
     if any(relations[fact].get("predicate") != predicate for fact, predicate in expected_predicates.items()):
         raise PlanError("Member relationship predicates disagree with the reviewed emitted RDF patterns.")
     for from_family, predicate, to_family in (
@@ -1560,16 +1837,73 @@ def _member_relationship_composition_mapping(
     ):
         _reviewed_cross_graph_join(from_family, predicate, to_family)
 
+    if temporal:
+        for from_family, predicate, to_family in (
+            ("parties", party_term_link, "houses"),
+            ("parties", party_identity_link, "political-affiliations"),
+        ):
+            _reviewed_cross_graph_join(from_family, predicate, to_family)
+        constraint = _CONSTRAINT_MAPPINGS.get("partyEpisodeInterval")
+        party_pattern = patterns["party_episode"]
+        membership_range = _pattern_predicate(patterns["membership"], "?membership", "?dateRange")
+        member_start = _pattern_predicate(patterns["membership"], "?dateRange", "?startDate")
+        member_end = _pattern_predicate(patterns["membership"], "?dateRange", "?endDate (optional)")
+        party_range = _pattern_predicate(party_pattern, "?partyEpisode", "?partyDateRange (optional for query projection)")
+        party_start = _pattern_predicate(party_pattern, "?partyDateRange", "?affiliationStart (optional)")
+        party_end = _pattern_predicate(party_pattern, "?partyDateRange", "?affiliationEnd (optional)")
+        member_range_type = _pattern_rdf_type(patterns["membership"], "?dateRange")
+        party_range_type = _pattern_rdf_type(party_pattern, "?partyDateRange")
+        party_label = _pattern_predicate(patterns["party_term"], "?party", "?englishLabel")
+        affiliation_label = _pattern_predicate(patterns["identity"], "?identity", "?englishPreferredLabel")
+        affiliation_label_language = query_contract["labelsByEntityType"].get("PoliticalAffiliationIdentity", {}).get("language")
+        if (constraint is None or constraint.get("referentType") != "PartyMembershipEpisode"
+                or constraint.get("otherReferentType") != "DailMembership"
+                or constraint.get("valueKind") != "referent_interval"
+                or constraint.get("dateDatatype") != "xsd:dateTime"
+                or constraint.get("startRequiredByMapping") is not True
+                or constraint.get("dateRangePredicate") != membership_range
+                or constraint.get("dateRangePredicate") != party_range
+                or constraint.get("startPredicate") not in {member_start, party_start}
+                or constraint.get("endPredicate") not in {member_end, party_end}
+                or constraint.get("endAbsentMeans") != "open-ended"
+                or constraint.get("rangeOrStartAbsentMeans") != "uncertain"
+                or constraint.get("boundary") != "inclusive_endpoint"):
+            raise PlanError("Reviewed mapped date-range predicates do not support the required party/member temporal distinction.")
+        if (member_range_type != "members:DateRange"
+                or party_range_type != "members:DateRange"
+                or affiliation_label != query_contract["labelsByEntityType"]["PoliticalAffiliationIdentity"].get("predicate")
+                or affiliation_label_language != "en"):
+            raise PlanError("Reviewed interval types or affiliation labels disagree with the query-schema contract.")
+
     return {
         "member_prefix": member_prefix,
         "member_graph": member_graph,
         "houses_graph": houses_graph["iri"],
         "constituency_graph": constituency_graph["iri"],
+        "party_graph": party_graph.get("iri") if temporal else None,
+        "identity_graph": identity_graph.get("iri") if temporal else None,
         "rdf_types": rdf_types,
         "member_name": member_name,
         "term_number": term_number_link,
         "relations": relations,
         "type_graph": type_graph,
+        "temporal": temporal,
+        "party_episode_membership": party_episode_membership,
+        "member_party_link": member_party_link,
+        "episode_party_link": episode_party_link,
+        "party_term_link": party_term_link,
+        "party_identity_link": party_identity_link,
+        "member_range": membership_range if temporal else None,
+        "member_range_type": member_range_type if temporal else None,
+        "member_start": member_start if temporal else None,
+        "member_end": member_end if temporal else None,
+        "party_range": party_range if temporal else None,
+        "party_range_type": party_range_type if temporal else None,
+        "party_start": party_start if temporal else None,
+        "party_end": party_end if temporal else None,
+        "party_label": party_label if temporal else None,
+        "affiliation_label": affiliation_label if temporal else None,
+        "affiliation_label_language": affiliation_label_language if temporal else None,
     }
 
 
@@ -1582,6 +1916,10 @@ def compile_member_relationship_composition_query(
     mapping = _member_relationship_composition_mapping(
         plan, supported_predicates=supported_predicates,
     )
+    if mapping["temporal"]:
+        return _compile_member_party_temporal_query(
+            plan, mapping, supported_predicates=supported_predicates,
+        )
     refs = plan["referents"]
     member_id = plan["answer"]["referent"]
     graph_contents: dict[str, list[str]] = {
@@ -1652,6 +1990,128 @@ def compile_member_relationship_composition_query(
     query = _PREFIXES + f'''SELECT DISTINCT ?{member_id} ?memberName WHERE {{
   {blocks}
 }} ORDER BY ?memberName ?{member_id} LIMIT 100'''
+    return _query(query, supported_predicates)
+
+
+def _compile_member_party_temporal_query(plan: dict[str, Any], mapping: dict[str, Any], *, supported_predicates) -> str:
+    """Compile the single validated party/representation interval composition."""
+    refs = plan["referents"]
+    term = refs["term"]
+    constituency = refs["constituency"]
+    if term.get("resolution") != "resolved" or constituency.get("resolution") != "resolved":
+        raise PlanError("The exact DailTerm and constituency occurrence must resolve before temporal composition.")
+    if plan["answer"].get("referent") == "member":
+        affiliation = refs["affiliation"]
+        if affiliation.get("resolution") != "resolved":
+            raise PlanError("A named-party answer requires the exact resolved affiliation identity before compilation.")
+        _require_local_iri(affiliation.get("iri"), "PoliticalAffiliationIdentity")
+    term_iri = URIRef(_require_local_iri(term.get("iri"), "DailTerm")).n3()
+    constituency_iri = URIRef(_require_local_iri(constituency.get("iri"), "DailConstituency")).n3()
+    term_number = term["selector"]["number"]
+    types = mapping["rdf_types"]
+    relations = mapping["relations"]
+    facts = {item["fact"]: item for item in plan["relations"]}
+    subject = lambda fact: f"?{facts[fact]['from']}"
+    object_ = lambda fact: f"?{facts[fact]['to']}"
+    required_patterns = (
+        ("member_has_membership", "member", "membership"),
+        ("membership_in_term", "membership", "term"),
+        ("membership_represents", "membership", "constituency"),
+        ("constituency_in_term", "constituency", "term"),
+        ("member_party_membership", "member", "episode"),
+        ("party_episode_in_membership", "episode", "membership"),
+        ("episode_in_parliamentary_party", "episode", "party"),
+        ("party_active_during_term", "party", "term"),
+        ("parliamentary_party_has_affiliation_identity", "party", "affiliation"),
+    )
+    for fact, expected_from, expected_to in required_patterns:
+        edge = facts.get(fact)
+        if edge is None or (edge["from"], edge["to"]) != (expected_from, expected_to):
+            raise PlanError(f"Temporal composition compiler cannot bind the reviewed {fact!r} edge.")
+        definition = relations.get(fact)
+        if definition is None or definition["predicate"] != _reviewed_predicate(fact):
+            raise PlanError(f"Temporal composition relation {fact!r} disagrees with its reviewed predicate.")
+
+    member = subject("member_has_membership")
+    membership = object_("member_has_membership")
+    term_variable = object_("membership_in_term")
+    constituency_variable = object_("membership_represents")
+    episode = object_("member_party_membership")
+    party = object_("episode_in_parliamentary_party")
+    affiliation = object_("parliamentary_party_has_affiliation_identity")
+    predicates = {
+        fact: _reviewed_predicate(fact) for fact, _source, _target in required_patterns
+    }
+    query = _PREFIXES + f'''SELECT DISTINCT ?member ?memberName ?membership ?membershipRange ?membershipStart ?membershipEnd
+  ?episode ?party ?partyLabel ?partyRange ?partyStart ?partyEnd ?affiliation ?affiliationLabel WHERE {{
+  GRAPH ?memberGraph {{
+    {member} a {types['Member']} ;
+      {predicates['member_has_membership']} {membership}, {episode} .
+    OPTIONAL {{ {member} {mapping['member_name']} ?memberName . }}
+    {membership} a {types['DailMembership']} ;
+      {predicates['membership_in_term']} {term_variable} ;
+      {predicates['membership_represents']} {constituency_variable} .
+    {episode} a {types['PartyMembershipEpisode']} ;
+      {predicates['party_episode_in_membership']} {membership} ;
+      {predicates['episode_in_parliamentary_party']} {party} .
+    OPTIONAL {{
+      {membership} {mapping['member_range']} ?membershipRange .
+      ?membershipRange a {mapping['member_range_type']} .
+      OPTIONAL {{ ?membershipRange {mapping['member_start']} ?membershipStart . }}
+      OPTIONAL {{ ?membershipRange {mapping['member_end']} ?membershipEnd . }}
+    }}
+    OPTIONAL {{
+      {episode} {mapping['party_range']} ?partyRange .
+      ?partyRange a {mapping['party_range_type']} .
+      OPTIONAL {{ ?partyRange {mapping['party_start']} ?partyStart . }}
+      OPTIONAL {{ ?partyRange {mapping['party_end']} ?partyEnd . }}
+    }}
+  }}
+  FILTER(STRSTARTS(STR(?memberGraph), {json.dumps(mapping['member_prefix'])}))
+  GRAPH <{mapping['houses_graph']}> {{
+    VALUES {term_variable} {{ {term_iri} }}
+    {term_variable} a {types['DailTerm']} ; {mapping['term_number']} "{term_number}"^^xsd:integer .
+  }}
+  GRAPH <{mapping['constituency_graph']}> {{
+    VALUES {constituency_variable} {{ {constituency_iri} }}
+    {constituency_variable} a {types['DailConstituency']} ; {predicates['constituency_in_term']} {term_variable} .
+  }}
+  GRAPH <{mapping['party_graph']}> {{
+    {party} a {types['ParliamentaryParty']} ; {predicates['party_active_during_term']} {term_variable} .
+    OPTIONAL {{ {party} {mapping['party_label']} ?partyLabel . FILTER(LANG(?partyLabel) = "en") }}
+  }}
+  OPTIONAL {{ GRAPH <{mapping['identity_graph']}> {{
+    {party} {predicates['parliamentary_party_has_affiliation_identity']} {affiliation} .
+    {affiliation} a {types['PoliticalAffiliationIdentity']} .
+    OPTIONAL {{ {affiliation} {mapping['affiliation_label']} ?affiliationLabel . FILTER(LANG(?affiliationLabel) = "{mapping['affiliation_label_language']}") }}
+  }} }}
+}} ORDER BY ?affiliationLabel ?memberName ?partyStart ?membershipStart ?episode ?membership LIMIT 100'''
+    return _query(query, supported_predicates)
+
+
+def compile_party_affiliation_resolution_query(plan: dict[str, Any], *, supported_predicates) -> str:
+    """List reviewed affiliations only among party occurrences in the selected term."""
+    plan = validate_plan(plan)
+    mapping = _member_relationship_composition_mapping(plan, supported_predicates=supported_predicates)
+    if not mapping["temporal"]:
+        raise PlanError("Affiliation identity resolution requires the dated party composition.")
+    term = plan["referents"]["term"]
+    if term.get("resolution") != "resolved":
+        raise PlanError("Affiliation resolution requires the exact selected DailTerm identity.")
+    term_iri = URIRef(_require_local_iri(term.get("iri"), "DailTerm")).n3()
+    party_type = mapping["rdf_types"]["ParliamentaryParty"]
+    identity_type = mapping["rdf_types"]["PoliticalAffiliationIdentity"]
+    query = _PREFIXES + f'''SELECT DISTINCT ?party ?partyLabel ?affiliation ?affiliationLabel WHERE {{
+  GRAPH <{mapping['party_graph']}> {{
+    ?party a {party_type} ; {mapping['party_term_link']} {term_iri} .
+    OPTIONAL {{ ?party {mapping['party_label']} ?partyLabel . FILTER(LANG(?partyLabel) = "en") }}
+  }}
+  OPTIONAL {{ GRAPH <{mapping['identity_graph']}> {{
+    ?party {mapping['party_identity_link']} ?affiliation .
+    ?affiliation a {identity_type} .
+    OPTIONAL {{ ?affiliation {mapping['affiliation_label']} ?affiliationLabel . FILTER(LANG(?affiliationLabel) = "en") }}
+  }} }}
+}} ORDER BY ?affiliationLabel ?partyLabel ?party ?affiliation LIMIT 100'''
     return _query(query, supported_predicates)
 
 
@@ -2914,6 +3374,388 @@ def _dail_ordinal_label(number: int) -> str:
     return f"{number}{suffix} Dáil"
 
 
+class AmbiguousPoliticalAffiliation(NLQError):
+    def __init__(self, mention: str, candidates: tuple[dict[str, str], ...]):
+        super().__init__(f"Several reviewed term-scoped political-affiliation identities match “{mention}”; none was selected.")
+        self.candidates = candidates
+
+
+@lru_cache(maxsize=1)
+def _reviewed_affiliation_labels() -> dict[str, frozenset[str]]:
+    """Load preferred names and reviewed aliases keyed by exact identity IRI."""
+    try:
+        document = json.loads(_AFFILIATION_DECISIONS_PATH.read_text(encoding="utf-8"))
+        identities = document["identities"]
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        raise NLQError("The reviewed political-affiliation identity register is unavailable or malformed.") from error
+    if not isinstance(identities, list):
+        raise NLQError("The reviewed political-affiliation identity register has an invalid identity list.")
+    labels_by_iri: dict[str, frozenset[str]] = {}
+    for item in identities:
+        if (not isinstance(item, dict) or not isinstance(item.get("iri"), str)
+                or not item["iri"].startswith("https://data.oireachtas.ie/ie/oireachtas/political-affiliation/")
+                or not isinstance(item.get("label"), str) or not item["label"].strip()
+                or not isinstance(item.get("aliases"), list)
+                or any(not isinstance(alias, str) or not alias.strip() for alias in item["aliases"])):
+            raise NLQError("The reviewed political-affiliation identity register contains a malformed identity.")
+        iri = item["iri"]
+        if iri in labels_by_iri:
+            raise NLQError("The reviewed political-affiliation identity register repeats an identity IRI.")
+        labels_by_iri[iri] = frozenset((item["label"], *item["aliases"]))
+    return labels_by_iri
+
+
+def _resolve_term_scoped_affiliation(
+    result: QueryResult,
+    mention: str,
+) -> tuple[str, str]:
+    if result.kind != "select" or not {"party", "partyLabel", "affiliation", "affiliationLabel"}.issubset(result.columns):
+        raise NLQError("The term-scoped affiliation resolver returned an unexpected result shape.")
+    if len(result.rows) >= 100:
+        raise NLQError("The selected Dáil's party-identity lookup reached the 100-row safety cap.")
+    indexes = {name: result.columns.index(name) for name in ("party", "partyLabel", "affiliation", "affiliationLabel")}
+    wanted = _normalise_label(mention)
+    labels_by_iri = _reviewed_affiliation_labels()
+    identities: dict[str, set[str]] = {}
+    unlinked_matching_parties: set[str] = set()
+    unlabeled_matching_identities: set[str] = set()
+    for row in result.rows:
+        if len(row) <= max(indexes.values()):
+            raise NLQError("The term-scoped affiliation resolver returned a truncated row.")
+        party = row[indexes["party"]]
+        party_label = row[indexes["partyLabel"]].removesuffix("@en")
+        identity = row[indexes["affiliation"]]
+        identity_label = row[indexes["affiliationLabel"]].removesuffix("@en")
+        _require_local_iri(party, "ParliamentaryParty")
+        if identity not in {"—", ""}:
+            _require_local_iri(identity, "PoliticalAffiliationIdentity")
+            reviewed_labels = labels_by_iri.get(identity)
+            if reviewed_labels is None:
+                raise NLQError("A term-scoped party links to an identity absent from the reviewed identity register.")
+            alias_matches = wanted in {_normalise_label(label) for label in reviewed_labels}
+            if identity_label in {"—", ""}:
+                if alias_matches or party_label and _normalise_label(party_label) == wanted:
+                    unlabeled_matching_identities.add(identity)
+            elif _normalise_label(identity_label) == wanted or alias_matches:
+                identities.setdefault(identity, set()).add(identity_label)
+        elif party_label and _normalise_label(party_label) == wanted:
+            unlinked_matching_parties.add(party)
+
+    if len(identities) > 1:
+        candidates = tuple(
+            {"iri": iri, "label": sorted(labels, key=lambda item: (item.casefold(), item))[0]}
+            for iri, labels in sorted(identities.items())
+        )
+        raise AmbiguousPoliticalAffiliation(mention, candidates)
+    if unlinked_matching_parties:
+        raise NLQError(
+            "A term-scoped ParliamentaryParty label matches the request, but no reviewed PoliticalAffiliationIdentity link is present."
+        )
+    if unlabeled_matching_identities:
+        raise NLQError(
+            "A term-scoped party links to a matching reviewed identity, but its English preferred label is missing."
+        )
+    if identities:
+        iri, labels = next(iter(identities.items()))
+        if len(labels) != 1:
+            raise NLQError("The matching reviewed affiliation identity has conflicting preferred labels.")
+        return iri, next(iter(labels))
+    if not result.rows:
+        raise NLQError("No term-scoped ParliamentaryParty/identity evidence is available for the selected Dáil.")
+    raise NLQError(
+        f"No reviewed PoliticalAffiliationIdentity matching “{mention}” is linked from a party active in the selected Dáil."
+    )
+
+
+def _parse_member_datetime(value: str, *, what: str) -> datetime:
+    datatype = "http://www.w3.org/2001/XMLSchema#dateTime"
+    lexical, marker, type_text = value.rpartition("^^<")
+    if marker != "^^<" or not type_text.endswith(">") or type_text[:-1] != datatype:
+        raise NLQError(f"{what} must be a mapped xsd:dateTime value.")
+    if not re.fullmatch(
+        r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})?",
+        lexical,
+    ):
+        raise NLQError(f"{what} is not a valid xsd:dateTime lexical form; temporal overlap is uncertain.")
+    try:
+        parsed = datetime.fromisoformat(lexical.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise NLQError(f"{what} is malformed; temporal overlap is uncertain.") from error
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+    return parsed
+
+
+def _mapped_member_interval(
+    values: set[tuple[str, str, str]],
+    *,
+    label: str,
+) -> tuple[datetime, datetime | None]:
+    if len(values) != 1:
+        raise NLQError(f"{label} has missing or conflicting date-range evidence; interval overlap is uncertain.")
+    range_iri, start_text, end_text = next(iter(values))
+    if range_iri in {"—", ""} or start_text in {"—", ""}:
+        raise NLQError(f"{label} has no mapped date-range/start; interval overlap is uncertain (not an open start).")
+    _require_local_iri(range_iri, "DateRange")
+    start = _parse_member_datetime(start_text, what=f"{label} StartDate")
+    end = None if end_text in {"—", ""} else _parse_member_datetime(end_text, what=f"{label} EndDate")
+    if end is not None and end < start:
+        raise NLQError(f"{label} has an EndDate before its StartDate; interval overlap is uncertain.")
+    return start, end
+
+
+def _interval_overlap(
+    first: tuple[datetime, datetime | None],
+    second: tuple[datetime, datetime | None],
+) -> tuple[datetime, datetime | None] | None:
+    first_start, first_end = first
+    second_start, second_end = second
+    if ((first_end is not None and second_start > first_end)
+            or (second_end is not None and first_start > second_end)):
+        return None
+    overlap_start = max(first_start, second_start)
+    finite_ends = [end for end in (first_end, second_end) if end is not None]
+    overlap_end = min(finite_ends) if finite_ends else None
+    if overlap_end is not None and overlap_start > overlap_end:
+        return None
+    return overlap_start, overlap_end
+
+
+def _display_member_interval(value: tuple[datetime, datetime | None]) -> str:
+    start, end = value
+    return f"{start.isoformat()} – {end.isoformat() if end is not None else 'open-ended'}"
+
+
+def _temporal_member_party_result(
+    raw_result: QueryResult,
+    plan: dict[str, Any],
+    *,
+    answer_query: str,
+) -> PlanOutcome:
+    columns = (
+        "member", "memberName", "membership", "membershipRange", "membershipStart", "membershipEnd",
+        "episode", "party", "partyLabel", "partyRange", "partyStart", "partyEnd",
+        "affiliation", "affiliationLabel",
+    )
+    if raw_result.kind != "select" or not set(columns).issubset(raw_result.columns):
+        return PlanOutcome("execution_failure", plan=plan, sparql=answer_query,
+                           diagnostic="The temporal party/representation query returned an unexpected result shape.",
+                           request_family="member_relationship_composition")
+    if len(raw_result.rows) >= 100:
+        return PlanOutcome("source_data_unavailable", plan=plan, sparql=answer_query,
+                           diagnostic="The temporal party/representation query reached the 100-row cap; evidence may be incomplete.",
+                           request_family="member_relationship_composition")
+    index = {name: raw_result.columns.index(name) for name in columns}
+    records: dict[tuple[str, str, str, str], dict[str, Any]] = {}
+    for row in raw_result.rows:
+        if len(row) <= max(index.values()):
+            return PlanOutcome("source_data_unavailable", plan=plan, sparql=answer_query,
+                               diagnostic="A temporal composition row was truncated; overlap cannot be established.",
+                               request_family="member_relationship_composition")
+        try:
+            member_iri = _require_local_iri(row[index["member"]], "Member")
+            membership_iri = _require_local_iri(row[index["membership"]], "DailMembership")
+            episode_iri = _require_local_iri(row[index["episode"]], "PartyMembershipEpisode")
+            party_iri = _require_local_iri(row[index["party"]], "ParliamentaryParty")
+        except NLQError as error:
+            return PlanOutcome("source_data_unavailable", plan=plan, sparql=answer_query,
+                               diagnostic=f"A temporal composition row contains an invalid relationship identity: {error}",
+                               request_family="member_relationship_composition")
+        key = (member_iri, membership_iri, episode_iri, party_iri)
+        entry = records.setdefault(key, {
+            "names": set(), "party_labels": set(), "affiliations": {},
+            "missing_affiliation": False, "membership_ranges": set(), "party_ranges": set(),
+        })
+        name = row[index["memberName"]].removesuffix("@en").strip()
+        if name not in {"—", ""}:
+            entry["names"].add(name)
+        party_label = row[index["partyLabel"]].removesuffix("@en").strip()
+        if party_label not in {"—", ""}:
+            entry["party_labels"].add(party_label)
+        identity = row[index["affiliation"]]
+        identity_label = row[index["affiliationLabel"]].removesuffix("@en").strip()
+        if identity in {"—", ""}:
+            entry["missing_affiliation"] = True
+        else:
+            try:
+                _require_local_iri(identity, "PoliticalAffiliationIdentity")
+            except NLQError as error:
+                return PlanOutcome("source_data_unavailable", plan=plan, sparql=answer_query,
+                                   diagnostic=f"A party record contains an invalid reviewed affiliation identity: {error}",
+                                   request_family="member_relationship_composition")
+            entry["affiliations"].setdefault(identity, set())
+            if identity_label not in {"—", ""}:
+                entry["affiliations"][identity].add(identity_label)
+        entry["membership_ranges"].add((
+            row[index["membershipRange"]], row[index["membershipStart"]], row[index["membershipEnd"]],
+        ))
+        entry["party_ranges"].add((
+            row[index["partyRange"]], row[index["partyStart"]], row[index["partyEnd"]],
+        ))
+
+    if not records:
+        return PlanOutcome(
+            "source_data_unavailable", plan=plan, sparql=answer_query,
+            diagnostic=("No local PartyMembership episode was joined to a DailMembership representing the selected "
+                        "constituency occurrence in the selected term. This absence does not establish complete coverage."),
+            request_family="member_relationship_composition",
+        )
+
+    party_answer = plan["answer"]["referent"] == "affiliation"
+    selected_identity = None if party_answer else plan["referents"]["affiliation"].get("iri")
+    evidence_by_identity: dict[str, dict[str, Any]] = {}
+    evidence_by_member: dict[str, dict[str, Any]] = {}
+    for (member_iri, _membership_iri, episode_iri, party_iri), entry in records.items():
+        known_identities = set(entry["affiliations"])
+        if not party_answer and known_identities and selected_identity not in known_identities:
+            continue
+        try:
+            membership_interval = _mapped_member_interval(
+                entry["membership_ranges"], label=f"DailMembership {member_iri}",
+            )
+            party_interval = _mapped_member_interval(
+                entry["party_ranges"], label=f"PartyMembership episode {episode_iri}",
+            )
+        except NLQError as error:
+            return PlanOutcome(
+                "source_data_unavailable", plan=plan, sparql=answer_query,
+                diagnostic=f"Temporal overlap is uncertain: {error}",
+                request_family="member_relationship_composition",
+            )
+        overlap = _interval_overlap(membership_interval, party_interval)
+        if overlap is None:
+            continue
+        if not known_identities:
+            return PlanOutcome(
+                "missing_identity_link", plan=plan, sparql=answer_query,
+                diagnostic=(f"PartyMembership episode {episode_iri} has an established overlap with representation, "
+                            "but no reviewed PoliticalAffiliationIdentity link; no party or filtered Member answer was returned."),
+                request_family="member_relationship_composition",
+            )
+        relevant_identities = {selected_identity} if selected_identity else known_identities
+        for identity in relevant_identities:
+            labels = entry["affiliations"].get(identity, set())
+            if len(labels) != 1:
+                return PlanOutcome(
+                    "source_data_unavailable", plan=plan, sparql=answer_query,
+                    diagnostic=(f"An overlapping reviewed identity {identity} has missing or conflicting English label evidence; "
+                                "no partial answer was returned."),
+                    request_family="member_relationship_composition",
+                )
+            names = entry["names"]
+            if len(names) != 1:
+                return PlanOutcome(
+                    "source_data_unavailable", plan=plan, sparql=answer_query,
+                    diagnostic=(f"Overlapping Member {member_iri} has missing or conflicting local name evidence; "
+                                "no partial answer was returned."),
+                    request_family="member_relationship_composition",
+                )
+            identity_label = next(iter(labels))
+            member_name = next(iter(names))
+            evidence = (
+                f"{member_name} ({member_iri}); affiliation {_display_member_interval(party_interval)}; "
+                f"Dáil representation {_display_member_interval(membership_interval)}; "
+                f"established overlap {_display_member_interval(overlap)}; episode {episode_iri}; party {party_iri}"
+            )
+            if party_answer:
+                record = evidence_by_identity.setdefault(identity, {"label": identity_label, "evidence": set()})
+                if record["label"] != identity_label:
+                    return PlanOutcome("source_data_unavailable", plan=plan, sparql=answer_query,
+                                       diagnostic="A reviewed PoliticalAffiliationIdentity has conflicting display labels.",
+                                       request_family="member_relationship_composition")
+                record["evidence"].add(evidence)
+            else:
+                record = evidence_by_member.setdefault(member_iri, {"name": member_name, "evidence": set()})
+                if record["name"] != member_name:
+                    return PlanOutcome("source_data_unavailable", plan=plan, sparql=answer_query,
+                                       diagnostic="A local Member identity has conflicting display names.",
+                                       request_family="member_relationship_composition")
+                record["evidence"].add(f"{identity_label}; {evidence}")
+
+    if party_answer and evidence_by_identity:
+        result = QueryResult(
+            "select", ("Political party", "Political-affiliation identity", "Established overlapping TD evidence"),
+            tuple(
+                (value["label"], identity, "; ".join(sorted(value["evidence"], key=lambda item: (item.casefold(), item))))
+                for identity, value in sorted(evidence_by_identity.items(), key=lambda item: (item[1]["label"].casefold(), item[0]))
+            ), raw_result.raw_json,
+        )
+    elif not party_answer and evidence_by_member:
+        result = QueryResult(
+            "select", ("TD", "Member identity", "Established affiliation/representation overlap evidence"),
+            tuple(
+                (value["name"], member_iri, "; ".join(sorted(value["evidence"], key=lambda item: (item.casefold(), item))))
+                for member_iri, value in sorted(evidence_by_member.items(), key=lambda item: (item[1]["name"].casefold(), item[0]))
+            ), raw_result.raw_json,
+        )
+    else:
+        return PlanOutcome(
+            "source_data_unavailable", plan=plan, sparql=answer_query,
+            diagnostic=("No local PartyMembership interval has an established inclusive overlap with the selected "
+                        "DailMembership interval for this term/constituency/identity. This does not establish a complete historical negative."),
+            request_family="member_relationship_composition",
+        )
+    return PlanOutcome(
+        "success", plan=plan, sparql=answer_query, result=result,
+        diagnostic=("Only established inclusive endpoint overlaps are reported. An absent EndDate is preserved as open-ended; "
+                    "missing date ranges/starts never count as overlap. PartyMembership and DailMembership retain their separate "
+                    "source intervals; local historical source completeness is not certified."),
+        request_family="member_relationship_composition",
+    )
+
+
+def _execute_member_party_temporal_composition(
+    plan: dict[str, Any],
+    *,
+    fuseki,
+    supported_predicates,
+) -> PlanOutcome:
+    affiliation = plan["referents"]["affiliation"]
+    if "mention" in affiliation:
+        try:
+            identity_query = compile_party_affiliation_resolution_query(
+                plan, supported_predicates=supported_predicates,
+            )
+        except (PlanError, NLQError) as error:
+            affiliation["resolution"] = "unsupported_mapping"
+            return PlanOutcome("unsupported_mapping", plan=plan, diagnostic=str(error),
+                               request_family="member_relationship_composition")
+        try:
+            identity_result = fuseki.query(identity_query)
+            identity_iri, identity_label = _resolve_term_scoped_affiliation(
+                identity_result, affiliation["mention"],
+            )
+        except AmbiguousPoliticalAffiliation as error:
+            affiliation.update({"resolution": "ambiguous", "candidates": list(error.candidates)})
+            plan = validate_plan(plan)
+            return PlanOutcome("ambiguous", plan=plan, diagnostic=str(error),
+                               candidates=error.candidates,
+                               request_family="member_relationship_composition")
+        except NLQError as error:
+            affiliation["resolution"] = "source_data_unavailable"
+            plan = validate_plan(plan)
+            status = "missing_identity_link" if "no reviewed PoliticalAffiliationIdentity link" in str(error) else "source_data_unavailable"
+            return PlanOutcome(status, plan=plan, diagnostic=str(error),
+                               request_family="member_relationship_composition")
+        affiliation.update({"resolution": "resolved", "iri": identity_iri, "label": identity_label})
+
+    try:
+        plan = validate_plan(plan)
+        answer_query = compile_member_relationship_composition_query(
+            plan, supported_predicates=supported_predicates,
+        )
+    except (PlanError, NLQError, TypeError, KeyError) as error:
+        return PlanOutcome("unsupported_mapping", plan=plan, diagnostic=str(error),
+                           request_family="member_relationship_composition")
+    try:
+        raw_result = fuseki.query(answer_query)
+    except NLQError as error:
+        return PlanOutcome("execution_failure", plan=plan, sparql=answer_query,
+                           diagnostic=f"The validated temporal party query could not be executed: {error}",
+                           request_family="member_relationship_composition")
+    return _temporal_member_party_result(raw_result, plan, answer_query=answer_query)
+
+
 def _execute_member_relationship_composition_plan(
     plan: dict[str, Any],
     *,
@@ -2921,6 +3763,15 @@ def _execute_member_relationship_composition_plan(
     supported_predicates,
 ) -> PlanOutcome:
     """Resolve exact term/constituency identities, then execute one graph composition."""
+    try:
+        mapping = _member_relationship_composition_mapping(
+            plan, supported_predicates=supported_predicates,
+        )
+    except (PlanError, NLQError, TypeError, KeyError) as error:
+        return PlanOutcome(
+            "unsupported_mapping", plan=plan, diagnostic=str(error),
+            request_family="member_relationship_composition",
+        )
     term_referents = [
         (referent_id, referent)
         for referent_id, referent in plan["referents"].items()
@@ -3097,6 +3948,16 @@ def _execute_member_relationship_composition_plan(
             "resolution": "resolved", "iri": constituency_iri,
             "label": constituency_label,
         })
+
+    if mapping["temporal"]:
+        try:
+            plan = validate_plan(plan)
+        except (PlanError, NLQError, TypeError, KeyError) as error:
+            return PlanOutcome("validation_failure", plan=plan, diagnostic=str(error),
+                               request_family="member_relationship_composition")
+        return _execute_member_party_temporal_composition(
+            plan, fuseki=fuseki, supported_predicates=supported_predicates,
+        )
 
     try:
         plan = validate_plan(plan)
@@ -3510,6 +4371,167 @@ def _execute_shared_dail_terms_question(
     )
 
 
+_MONTHS = {
+    name.casefold(): number for number, names in enumerate((
+        ("January", "Jan"), ("February", "Feb"), ("March", "Mar"),
+        ("April", "Apr"), ("May",), ("June", "Jun"), ("July", "Jul"),
+        ("August", "Aug"), ("September", "Sep", "Sept"),
+        ("October", "Oct"), ("November", "Nov"), ("December", "Dec"),
+    ), start=1) for name in names
+}
+_TEXT_DATE = re.compile(
+    r"\b(?P<day>[0-9]{1,2})(?:st|nd|rd|th)?\s+(?P<month>January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\s+(?P<year>[0-9]{4})\b"
+    r"|\b(?P<month_first>January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\s+(?P<day_first>[0-9]{1,2})(?:st|nd|rd|th)?,?\s+(?P<year_first>[0-9]{4})\b",
+    re.IGNORECASE,
+)
+_ISO_DATE = re.compile(r"(?<![0-9])(?P<year>[0-9]{4})-(?P<month>[0-9]{2})-(?P<day>[0-9]{2})(?![0-9])")
+_PARTY_REPRESENTATION_INTENT = re.compile(
+    r"\b(?:party|parties|political affiliation|affiliated|independent|parliamentary group)\b", re.IGNORECASE,
+)
+_UNSUPPORTED_PARTY_COMPOSITION_CONDITIONS = re.compile(
+    r"\b(?:currently|current|as of|before|after|since|until|between|throughout|"
+    r"last month|last year|next month|next year|never|ever|count|how many|at least|"
+    r"more than|fewer than|except|excluding|also|committee|minister|office|bill|vote|"
+    r"sponsor|independent|parliamentary group)\b"
+    r"|\bfrom\s+(?:[0-9]{1,2}\s|(?:19|20)[0-9]{2}\b|January\b|February\b|March\b|April\b|May\b|June\b|July\b|August\b|September\b|October\b|November\b|December\b)"
+    r"|\bwhile\s+(?:serving|holding|being|also|a\s+member)\b",
+    re.IGNORECASE,
+)
+
+
+def _question_calendar_dates(question: str) -> tuple[list[date], str | None]:
+    """Parse only common explicit calendar-date forms; reject impossible dates."""
+    found: list[date] = []
+    for match in _ISO_DATE.finditer(question):
+        try:
+            found.append(date(int(match["year"]), int(match["month"]), int(match["day"])))
+        except ValueError:
+            return found, match.group(0)
+    for match in _TEXT_DATE.finditer(question):
+        month_text = (match.group("month") or match.group("month_first") or "").casefold()
+        year_text = match.group("year") or match.group("year_first")
+        day_text = match.group("day") or match.group("day_first")
+        month = _MONTHS.get(month_text)
+        try:
+            if month is None:
+                raise ValueError
+            found.append(date(int(year_text), month, int(day_text)))
+        except (TypeError, ValueError):
+            return found, match.group(0)
+    return found, None
+
+
+def _reviewed_affiliation_mention_matches(question: str) -> bool:
+    for labels in _reviewed_affiliation_labels().values():
+        for label in labels:
+            if re.search(r"(?<!\w)" + re.escape(label) + r"(?!\w)", question, re.IGNORECASE):
+                return True
+    return False
+
+
+def _without_reviewed_affiliation_mentions(question: str) -> str:
+    masked = question
+    labels = sorted(
+        {label for values in _reviewed_affiliation_labels().values() for label in values},
+        key=lambda value: (-len(value), value.casefold()),
+    )
+    for label in labels:
+        masked = re.sub(
+            r"(?<!\w)" + re.escape(label) + r"(?!\w)", " ", masked,
+            flags=re.IGNORECASE,
+        )
+    return masked
+
+
+def _composable_interpretation_preflight(question: str, as_of: date) -> PlanOutcome | None:
+    has_representation_scope = bool(
+        re.search(r"\b(?:represent(?:ed|s|ing)?|representation|tds?|constituenc(?:y|ies))\b", question, re.IGNORECASE)
+        and re.search(r"\b(?:dáil|dail)\b", question, re.IGNORECASE)
+    )
+    if not has_representation_scope:
+        return None
+    try:
+        has_party_scope = bool(_PARTY_REPRESENTATION_INTENT.search(question)
+                               or _reviewed_affiliation_mention_matches(question))
+    except NLQError as error:
+        return PlanOutcome(
+            "unsupported_mapping", diagnostic=str(error), request_family="composable_semantic",
+        )
+    if not has_party_scope:
+        return None
+
+    dates, invalid_date = _question_calendar_dates(question)
+    if invalid_date is not None:
+        return PlanOutcome(
+            "clarification_required",
+            diagnostic=f"{invalid_date} is not a valid calendar date. Please provide a real date; no answer query was run.",
+            request_family="composable_semantic",
+        )
+    future_dates = sorted({item for item in dates if item > as_of})
+    if future_dates:
+        return PlanOutcome(
+            "clarification_required",
+            diagnostic=(f"The requested date {future_dates[0].isoformat()} is after the configured as-of date "
+                        f"{as_of.isoformat()}; clarify whether you intend a future period or an elapsed period. No answer query was run."),
+            request_family="composable_semantic",
+        )
+    if dates:
+        return PlanOutcome(
+            "unsupported_request",
+            diagnostic=("This composition does not support an additional calendar-date filter; no simplified answer was run."),
+            request_family="composable_semantic",
+        )
+    if re.search(r"\b(?:throughout|the whole of|all of|the entire)\s+(?P<year>[0-9]{4})\b", question, re.IGNORECASE):
+        year = int(re.search(r"\b(?:throughout|the whole of|all of|the entire)\s+(?P<year>[0-9]{4})\b", question, re.IGNORECASE)["year"])
+        try:
+            end_of_year = date(year, 12, 31)
+        except ValueError:
+            end_of_year = as_of
+        if end_of_year > as_of:
+            return PlanOutcome(
+                "clarification_required",
+                diagnostic=(f"The requested full-year interval ends after the configured as-of date {as_of.isoformat()}. "
+                            "Clarify whether you mean only elapsed days or the whole future-spanning year; no answer query was run."),
+                request_family="composable_semantic",
+            )
+    try:
+        from .composable_semantic_planner import _question_dail_ordinals
+        ordinals = _question_dail_ordinals(question)
+    except ValueError as error:
+        return PlanOutcome(
+            "clarification_required", diagnostic=f"The Dáil term selector is invalid: {error} No answer query was run.",
+            request_family="composable_semantic",
+        )
+    if not ordinals:
+        return PlanOutcome(
+            "clarification_required",
+            diagnostic="Please specify which numbered Dáil term you mean; this composition does not guess a current or relative term.",
+            request_family="composable_semantic",
+        )
+    if len(ordinals) != 1:
+        return PlanOutcome(
+            "unsupported_request",
+            diagnostic="This composition supports one numbered Dáil term; a multi-term condition cannot be dropped or simplified.",
+            request_family="composable_semantic",
+        )
+    condition_text = _without_reviewed_affiliation_mentions(question)
+    if re.search(r"\b(?:independent|parliamentary group)\b", condition_text, re.IGNORECASE):
+        return PlanOutcome(
+            "unsupported_request",
+            diagnostic=("Independent collections and parliamentary groups are not dated ParliamentaryParty affiliation evidence; "
+                        "no simplified answer was run."),
+            request_family="composable_semantic",
+        )
+    if _UNSUPPORTED_PARTY_COMPOSITION_CONDITIONS.search(condition_text):
+        return PlanOutcome(
+            "unsupported_request",
+            diagnostic=("The question contains an additional date, temporal, aggregate, or relationship condition that this "
+                        "bounded party/representation composition cannot preserve. No simplified answer was run."),
+            request_family="composable_semantic",
+        )
+    return None
+
+
 def execute_question(
     question: str,
     *,
@@ -3520,6 +4542,10 @@ def execute_question(
 ) -> PlanOutcome:
     """Plan, resolve, validate, compile and execute bounded composable slices."""
     from .stage_a import execute_stage_a, parse_stage_a_question
+
+    preflight = _composable_interpretation_preflight(question, as_of)
+    if preflight is not None:
+        return preflight
 
     stage_a_request = parse_stage_a_question(question)
     if stage_a_request is not None:
