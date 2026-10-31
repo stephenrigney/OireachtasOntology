@@ -39,27 +39,32 @@
 
 #################################################################
 #
-#    Annotations on imported ELI properties
+#    Annotations on imported metadata properties
 #
 #################################################################
 
-<http://data.europa.eu/eli/ontology#title_alternative> rdfs:label "Long title of a Bill"@en .
+dct:alternative rdfs:comment "For Oireachtas Bill Works: the source long title, preserving its language tag and source markup. No title is inferred for individual Expressions."@en .
 
-<http://data.europa.eu/eli/ontology#title> rdfs:label "Short title of a Bill" .
+dct:title rdfs:comment "For Oireachtas Bill Works: the source short title in English or Irish. ELI title properties have Expression domains and are not used on the Bill Work."@en .
+
+dct:identifier rdfs:comment "For Oireachtas Bill Works: the full compound identifier, e.g. 2025/60, as xsd:string. eli:id_local has a Format/LegalExpression/LegalResource union domain and is not used on the Bill Work."@en .
 
 <http://data.europa.eu/eli/ontology#basis_for> rdfs:comment "A Bill is the basis for an Act" .
 
 eli-dl:process_number
-    rdfs:comment "For Oireachtas bills: carries the bill number (e.g. \"60\") as a string. The compound identifier {year}/{number} is expressed via eli:id_local on the DraftLegislationWork."@en .
+    rdfs:comment "For Oireachtas bills: carries the bill number (e.g. \"60\") as a string on the LegislativeProcess. The compound identifier {year}/{number} is expressed via dct:identifier on the DraftLegislationWork."@en .
 
 <http://data.europa.eu/eli/ontology#id_local>
-    rdfs:comment "For Oireachtas bills: the full compound identifier, e.g. \"2025/60\" for the bill or \"2025/18\" for the resulting act (eli:LegalResource). The year component alone is expressed via :legislativeYear; the number component alone via eli-dl:process_number."@en .
+    rdfs:comment "Reserved for compatible ELI resources such as enacted Acts (eli:LegalResource); not used on Oireachtas Bill Works. Bill compound identifiers use dct:identifier."@en .
 
 eli-dl:process_status
     rdfs:comment "For Oireachtas Bills, set on the eli-dl:LegislativeProcess from the controlled bill.statusURI source field. stages[].stageOutcome remains preserved source evidence only and does not set process_status or create BillEventOutcome assertions. ELI-DL 3.0 has no activity-completion boolean predicate; stageCompleted remains source evidence and eli-dl:latest_activity identifies the latest completed activity."@en .
 
 <http://data.europa.eu/eli/ontology#type_document>
-    rdfs:comment "For Oireachtas bills: apply at Work level (eli-dl:DraftLegislationWork or eli:LegalResource) only. Bill-stage version expressions (eli:LegalExpression) do not carry eli:type_document — their document type is inferred from the Work. Exception: the enacted act is a separate eli:LegalResource (typed eli:type_document :Act) linked to the DraftLegislationWork via eli:basis_for. The JSON field versions[].docType = \"act\" signals this transition to the Act LegalResource."@en .
+    rdfs:comment "Has domain eli:LegalResource. Not used on Oireachtas Bill Works: use eli:work_type :Bill instead. Enacted Acts remain separate eli:LegalResource resources; their descriptions and Expressions are deferred to Acts ETL. Existing related-document use is outside the Bill classification correction."@en .
+
+<http://data.europa.eu/eli/ontology#work_type>
+    rdfs:comment "For Oireachtas Bill Works: use :Bill, an eli:WorkType in eli:WorkTypeTable. The generic Work domain avoids reclassifying a draft as eli:LegalResource."@en .
 
 eli-dl:process_type
     rdfs:comment "For Oireachtas bills: set to one of the peer :PublicBill, :PrivateBill, or :HybridBill eli-dl:ProcessType individuals on the eli-dl:LegislativeProcess instance. Replaces the former :hasBillType property (added in Feb 2026 session, now removed)."@en .
@@ -147,14 +152,14 @@ dct:modified rdfs:comment "For Oireachtas bill records, dct:modified carries the
 
                  rdfs:range xsd:integer ;
 
-                 rdfs:comment "The calendar year component of the bill or act identifier (from eli:id_local). Applied to eli-dl:DraftLegislationWork (billYear) and eli:LegalResource Act instances (actYear). Note: xsd:gYear is the ideal range but is outside the OWL 2 DL datatype map; xsd:integer is used for HermiT compatibility."@en ;
+                 rdfs:comment "The calendar year component of the bill (dct:identifier) or act (eli:id_local) identifier. Applied to eli-dl:DraftLegislationWork (billYear) and eli:LegalResource Act instances (actYear). Note: xsd:gYear is the ideal range but is outside the OWL 2 DL datatype map; xsd:integer is used for HermiT compatibility."@en ;
 
                  skos:prefLabel "Legislative year"@en .
 
 
 #################################################################
 #
-#    Individuals — ELI Resource Types
+#    Individuals — ELI Work and Resource Types
 #
 #################################################################
 
@@ -173,14 +178,14 @@ dct:modified rdfs:comment "For Oireachtas bill records, dct:modified carries the
 
 ###  https://data.oireachtas.ie/ontology#Bill
 
-:Bill rdf:type <http://data.europa.eu/eli/ontology#ResourceType> ,
+:Bill rdf:type <http://data.europa.eu/eli/ontology#WorkType> ,
                owl:NamedIndividual ;
 
       skos:prefLabel "Bill"@en ;
 
-      skos:inScheme <http://data.europa.eu/eli/ontology#ResourceTypeTable> ;
+      skos:inScheme <http://data.europa.eu/eli/ontology#WorkTypeTable> ;
 
-      skos:topConceptOf <http://data.europa.eu/eli/ontology#ResourceTypeTable> .
+      skos:topConceptOf <http://data.europa.eu/eli/ontology#WorkTypeTable> .
 
 
 ###  https://data.oireachtas.ie/ontology#DraftBill

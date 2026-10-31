@@ -119,7 +119,7 @@ _FACTS: dict[str, _FactMapping] = {
     "constituency_panel_label": _FactMapping((), "label"),
     "committee_label": _FactMapping(("committee-description",), "label"),
     "committee_code": _FactMapping((), "literal", "members:committeeCode"),
-    "bill_title": _FactMapping(("bill-lifecycle",), "label", "eli:title"),
+    "bill_title": _FactMapping(("bill-lifecycle",), "label", "dct:title"),
     "bill_year": _FactMapping(("bill-lifecycle",), "literal", "agents:legislativeYear"),
     "bill_status": _FactMapping(("bill-lifecycle",), "label", "eli-dl:process_status"),
     "bill_sponsor": _FactMapping(("bill-sponsor-reference",), "resource"),
@@ -569,7 +569,7 @@ class _Compiler:
         if entity_type == "Bill":
             self._add_triple(
                 requirement_id, "bill-records", anchor_var, value_var,
-                "eli:type_document", "agents:Bill", pattern_id="bill-lifecycle",
+                "eli:work_type", "agents:Bill", pattern_id="bill-lifecycle",
             )
 
     def _add_pattern(self, requirement_id: str, pattern_id: str, family_id: str,
@@ -745,10 +745,14 @@ class _Compiler:
         elif fact == "bill_sponsor":
             member = values["object"]
             process = f"?billProcess{index}"
+            delivery = f"?billDelivery{index}"
             participation = f"?sponsorParticipation{index}"
             self._add_pattern(
                 requirement_id, "bill-sponsor-reference", "bill-records", subject,
-                ((process, "rdf:type", "eli-dl:LegislativeProcess"),
+                ((delivery, "rdf:type", "agents:BillDelivery"),
+                 (delivery, "eli-dl:created_a_realization_of", subject),
+                 (delivery, "eli-dl:forms_part_of", process),
+                 (process, "rdf:type", "eli-dl:LegislativeProcess"),
                  (process, "eli-dl:had_participation", participation),
                  (participation, "rdf:type", "eli-dl:Participation"),
                  (participation, "eli-dl:had_participant_person", member)),
@@ -759,6 +763,7 @@ class _Compiler:
             status_var = f"?billStatus{index}"
             value_var = f"?value{index}"
             process = f"?billProcess{index}"
+            delivery = f"?billDelivery{index}"
             allowed = _FILTER_FIELDS["bill_status"]["allowedValues"]
             if any("resource" not in item for item in allowed):
                 raise _UnsupportedGeneration(
@@ -772,7 +777,10 @@ class _Compiler:
             self.values_clauses.append(f"VALUES ({status_var} {value_var}) {{ {rows} }}")
             self._add_pattern(
                 requirement_id, "bill-lifecycle", "bill-records", subject,
-                ((process, "rdf:type", "eli-dl:LegislativeProcess"),
+                ((delivery, "rdf:type", "agents:BillDelivery"),
+                 (delivery, "eli-dl:created_a_realization_of", subject),
+                 (delivery, "eli-dl:forms_part_of", process),
+                 (process, "rdf:type", "eli-dl:LegislativeProcess"),
                  (process, "eli-dl:process_status", status_var)),
             )
             values["value"] = value_var
@@ -1425,12 +1433,12 @@ def build_label_lookup_query(
         )
     elif mapping.graph_family == "bill-records":
         graph_term = "?labelGraph"
-        if "eli:type_document" not in _QUERYABLE_PROPERTIES:
-            raise ValueError("Bill type-document predicate is not queryable.")
-        qnames.extend(("eli:type_document", "agents:Bill"))
+        if "eli:work_type" not in _QUERYABLE_PROPERTIES:
+            raise ValueError("Bill Work-type predicate is not queryable.")
+        qnames.extend(("eli:work_type", "agents:Bill"))
         graph_pattern = (
             f"GRAPH {graph_term} {{ {subject} {predicate} ?label ; "
-            "eli:type_document agents:Bill . }"
+            "eli:work_type agents:Bill . }"
         )
         graph_filter = (
             f"FILTER(REGEX(STR({graph_term}), "

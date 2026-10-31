@@ -10,12 +10,12 @@ from rdflib.namespace import DCTERMS, RDF, RDFS, XSD
 
 from .common import ELIDL, OIR, date_literal, datetime_literal, integer, iri, string
 
+BILLS_PUBLICATION_CONTRACT = 2
+
 ELI = URIRef("http://data.europa.eu/eli/ontology#")
 ELI_NS = "http://data.europa.eu/eli/ontology#"
 ELI_TYPE = URIRef(ELI_NS + "type_document")
-ELI_TITLE = URIRef(ELI_NS + "title")
-ELI_ALT_TITLE = URIRef(ELI_NS + "title_alternative")
-ELI_ID = URIRef(ELI_NS + "id_local")
+ELI_WORK_TYPE = URIRef(ELI_NS + "work_type")
 ELI_BASIS = URIRef(ELI_NS + "basis_for")
 ELI_HAS_PART = URIRef(ELI_NS + "has_part")
 ELI_REALIZED_BY = URIRef(ELI_NS + "is_realized_by")
@@ -562,10 +562,10 @@ def transform_bill_with_report(wrapper: dict) -> tuple[Graph, list[dict]]:
     graph_iri = bill_graph_iri(data)  # validates identity invariant
     graph, omissions = Graph(), []
     graph.bind("oir", OIR); graph.bind("eli", ELI_NS); graph.bind("eli-dl", ELIDL)
-    graph.add((bill, RDF.type, ELIDL.DraftLegislationWork)); graph.add((bill, RDF.type, URIRef(ELI_NS + "LegalResource")))
-    graph.add((bill, ELI_TYPE, OIR.Bill))
-    graph.add((bill, OIR.legislativeYear, integer(data.get("billYear")))); graph.add((bill, ELI_ID, string(f"{data['billYear']}/{data['billNo']}")))
-    for field, predicate, lang in (("shortTitleEn", ELI_TITLE, "en"), ("shortTitleGa", ELI_TITLE, "ga"), ("longTitleEn", ELI_ALT_TITLE, "en"), ("longTitleGa", ELI_ALT_TITLE, "ga")):
+    graph.add((bill, RDF.type, ELIDL.DraftLegislationWork))
+    graph.add((bill, ELI_WORK_TYPE, OIR.Bill))
+    graph.add((bill, OIR.legislativeYear, integer(data.get("billYear")))); graph.add((bill, DCTERMS.identifier, string(f"{data['billYear']}/{data['billNo']}")))
+    for field, predicate, lang in (("shortTitleEn", DCTERMS.title, "en"), ("shortTitleGa", DCTERMS.title, "ga"), ("longTitleEn", DCTERMS.alternative, "en"), ("longTitleGa", DCTERMS.alternative, "ga")):
         if data.get(field) is not None:
             graph.add((bill, predicate, Literal(data[field], lang=lang)))
     graph.add((bill, OIR.originHouse, _house(data.get("originHouseURI"), "originHouseURI")))
@@ -577,6 +577,7 @@ def transform_bill_with_report(wrapper: dict) -> tuple[Graph, list[dict]]:
     graph.add((process, ELIDL.was_submitted_by, _source(data.get("sourceURI"), "sourceURI")))
     delivery = _derived(bill, "delivery", {"methodURI": data.get("methodURI")})
     graph.add((delivery, RDF.type, ELIDL.LegislativeActivity)); graph.add((delivery, RDF.type, OIR.BillDelivery)); graph.add((delivery, ELIDL.forms_part_of, process)); graph.add((delivery, ELIDL.had_activity_type, _def(data.get("methodURI"), METHODS, "methodURI")))
+    graph.add((delivery, ELIDL.created_a_realization_of, bill))
     stages = data.get("stages")
     if not isinstance(stages, list) or not stages:
         raise ValueError("bill.stages must be a non-empty array")

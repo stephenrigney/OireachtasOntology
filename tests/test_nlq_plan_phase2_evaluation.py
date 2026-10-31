@@ -127,8 +127,8 @@ def test_bill_and_named_office_label_lookups_are_scoped_to_their_owner_graphs():
         supported_predicates=GENERATOR.supported_predicates,
     )
 
-    assert "eli:title" in bill_query
-    assert "eli:type_document agents:Bill" in bill_query
+    assert "dct:title" in bill_query
+    assert "eli:work_type agents:Bill" in bill_query
     assert "/graph/bill/[^/]+/[^/]+" in bill_query
     assert "GRAPH <https://data.oireachtas.ie/graph/offices>" in office_query
     assert "members:NamedOffice" in office_query

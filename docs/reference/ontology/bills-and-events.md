@@ -9,6 +9,19 @@ activities are different facts. Controlled stage, event and status values are
 not occurrences. The local `legislation.owl` module annotates reused ELI/ELI-DL
 terms for Oireachtas usage; `events.owl` defines Oireachtas event concepts.
 
+The existing `oir:BillDelivery` introduction/presentation activity links to
+its Bill Work with `eli-dl:created_a_realization_of` and to its process with
+`eli-dl:forms_part_of`, including application/by-application delivery methods.
+Use this explicit two-edge relationship for Bill status and sponsorship;
+named-graph co-ownership is not a substitute for it.
+
+The Bill Work is an `eli-dl:DraftLegislationWork`, not an `eli:LegalResource`.
+It uses `eli:work_type :Bill` (`:Bill` is in `eli:WorkTypeTable`), `dct:title`,
+`dct:alternative` and `dct:identifier`. This avoids ELI properties whose domains
+would classify the Work as a LegalResource or Expression. Existing expressions,
+resource identities and the enacted Act's separate LegalResource model remain
+unchanged; Bills ETL owns no Act descriptions.
+
 Amendment documents and amendment activities are distinct resources. A source
 status or controlled stage value does not by itself assert that a particular
 event occurred. Sponsoring participation and House/term references follow the

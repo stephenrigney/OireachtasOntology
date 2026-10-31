@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 
 from pyshacl import validate
 from rdflib import Graph, Literal, URIRef
-from rdflib.namespace import RDF, RDFS, XSD
+from rdflib.namespace import DCTERMS, RDF, RDFS, XSD
 
 from ..transforms.bills import (EVENTS, LANGUAGES, MEDIA_TYPES, METHODS, STAGES,
                                 STATUSES, VERSIONS, _amendment_list_records,
@@ -22,7 +22,7 @@ from ..transforms.bills import (EVENTS, LANGUAGES, MEDIA_TYPES, METHODS, STAGES,
                                 _unresolved_amendment_stage_omission,
                                 bill_event_type, bill_graph_iri,
                                 bill_stage_type)
-from ..transforms.common import ELIDL, OIR, date_literal, datetime_literal, iri
+from ..transforms.common import ELIDL, OIR, date_literal, datetime_literal, iri, string
 from .houses import validate_rdf
 from .vocabulary import assert_phase4_vocabulary, pinned_vocabulary_graphs
 
@@ -151,6 +151,7 @@ def validate_bill_source(wrapper: dict) -> list[dict]:
         raise ValueError("each Legislation result must contain a bill object")
     bill = wrapper["bill"]
     bill_graph_iri(bill)
+    _def(bill.get("methodURI"), METHODS, "methodURI")
     datetime_literal(bill.get("lastUpdated"))
     if not isinstance(bill.get("stages"), list) or not bill["stages"]:
         raise ValueError("bill.stages must be a non-empty array")
@@ -209,6 +210,44 @@ def validate_bill(wrapper: dict, graph: Graph) -> list[dict]:
     process = URIRef(f"{bill}#process")
     if (bill, RDF.type, ELIDL.DraftLegislationWork) not in graph or (process, RDF.type, ELIDL.LegislativeProcess) not in graph:
         raise ValueError("Bill and deterministic LegislativeProcess are required")
+    if any((bill, RDF.type, URIRef(ELI + name)) in graph for name in (
+            "LegalResource", "Expression", "LegalExpression", "Format")):
+        raise ValueError("Bill Work must not be classified as a LegalResource, Expression or Format")
+    for name in ("type_document", "title", "title_alternative", "id_local"):
+        if list(graph.objects(bill, URIRef(ELI + name))):
+            raise ValueError("Bill Work must not carry obsolete ELI metadata")
+    data = wrapper["bill"]
+    expected_metadata = {
+        URIRef(ELI + "work_type"): {OIR.Bill},
+        DCTERMS.identifier: {string(f"{data['billYear']}/{data['billNo']}")},
+        DCTERMS.title: {Literal(data[field], lang=lang)
+                        for field, lang in (("shortTitleEn", "en"), ("shortTitleGa", "ga"))
+                        if data.get(field) is not None},
+        DCTERMS.alternative: {Literal(data[field], lang=lang)
+                              for field, lang in (("longTitleEn", "en"), ("longTitleGa", "ga"))
+                              if data.get(field) is not None},
+    }
+    for predicate, values in expected_metadata.items():
+        if set(graph.objects(bill, predicate)) != values:
+            raise ValueError("Bill Work metadata must preserve source values and language tags")
+    # No source field supplies Expression-level titles or compound identifiers.
+    for predicate in (DCTERMS.title, DCTERMS.alternative, DCTERMS.identifier,
+                      URIRef(ELI + "title"), URIRef(ELI + "title_alternative"),
+                      URIRef(ELI + "id_local")):
+        if set(graph.subjects(predicate, None)) - {bill}:
+            raise ValueError("Bill-level metadata must not be distributed across Expressions or other resources")
+    delivery = _derived(bill, "delivery", {
+        "methodURI": wrapper["bill"].get("methodURI")})
+    expected_method = _def(wrapper["bill"].get("methodURI"), METHODS,
+                           "methodURI")
+    if (set(graph.subjects(RDF.type, OIR.BillDelivery)) != {delivery}
+            or (delivery, RDF.type, ELIDL.LegislativeActivity) not in graph
+            or list(graph.objects(delivery, ELIDL.had_activity_type)) != [expected_method]
+            or list(graph.objects(delivery, ELIDL.forms_part_of)) != [process]
+            or set(graph.subject_objects(ELIDL.created_a_realization_of))
+               != {(delivery, bill)}):
+        raise ValueError(
+            "Bill delivery must preserve its deterministic source identity and method, create its Bill Work and belong to its process")
     expected_status = _def(wrapper["bill"].get("statusURI"), STATUSES,
                            "statusURI")
     if list(graph.objects(process, ELIDL.process_status)) != [expected_status]:

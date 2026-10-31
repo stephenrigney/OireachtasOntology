@@ -153,7 +153,7 @@
       },
       {
         "id": "bill_title",
-        "description": "A Bill's short title (English and/or Irish) as emitted with eli:title.",
+        "description": "A Bill Work's short title (English and/or Irish) as emitted with dct:title.",
         "subjectTypes": ["Bill"],
         "objectTypes": []
       },

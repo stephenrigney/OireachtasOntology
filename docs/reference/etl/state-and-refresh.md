@@ -172,6 +172,10 @@ Core State. The publish path reuses this resource-publication ordering without
 changing Phase 6 production refresh policy.
 
 The Bills CLI continues to represent Bill-resource ETL over the Legislation API.
+The current Bills publication contract is version 2: unchanged source hashes
+do not skip an older contract. The combined delivery/classification migration,
+absent-source legacy dirty deferral and separately authorized complete reload
+requirements are in the [legislation reference](legislation.md#contract-2-rollout-not-performed-here).
 
 ## 6. Legislation incremental refresh
 

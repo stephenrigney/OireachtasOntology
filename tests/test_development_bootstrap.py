@@ -405,7 +405,7 @@ def test_bootstrap_reuses_accepted_member_output_and_clean_bill_publication_read
         _publish_resource(state, "members", accepted_wrapper, accepted_graph,
                           contract_version=3, run_id="reviewed-member-source")
         _publish_resource(state, "legislation", bill_wrapper, bill_graph,
-                          contract_version=1, run_id="bill-publication-source")
+                          contract_version=2, run_id="bill-publication-source")
 
     for path, value in ((reconciliation_path, "reconciliation-unchanged"),
                         (office_state_path, "office-ledger-unchanged")):
@@ -540,10 +540,10 @@ def test_development_bill_selector_reads_temp_core_state_and_skips_nonqualifying
                                        source_digest, "dirty-bill-source")
                 state.mark_publication_dirty(
                     "legislation", bill["uri"], source_hash=source_digest,
-                    graph_iri=graph_iri, payload=ntriples(graph), contract_version=1)
+                    graph_iri=graph_iri, payload=ntriples(graph), contract_version=2)
             else:
                 _publish_resource(state, "legislation", wrapper, graph,
-                                  contract_version=2 if number == 62 else 1,
+                                  contract_version=1 if number == 62 else 2,
                                   run_id=f"bill-source-{number}")
         state.connection.execute(
             "UPDATE resource_state SET observed_source_hash=? "
@@ -637,7 +637,7 @@ def test_development_bill_selector_fails_closed_for_corrupt_clean_publication(
     validate_bill(wrapper, graph)
     with CoreStateStore(state_path) as state:
         _publish_resource(state, "legislation", wrapper, graph,
-                          contract_version=1, run_id="bill-source")
+                          contract_version=2, run_id="bill-source")
     row = read_resource_state(state_path, ("legislation",))["legislation"][0]
     if corruption == "graph":
         row["graph_iri"] = "https://data.oireachtas.ie/graph/bill/2025/999"
