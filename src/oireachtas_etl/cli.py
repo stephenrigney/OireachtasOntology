@@ -5432,6 +5432,13 @@ DEVELOPMENT_API_CAPTURE_SELECTION = (
 DEVELOPMENT_ACCEPTED_DATASET_ID = (
     "sha256:9da63abc5878387f991e4d4717f35cca67606850db34be589e0a8fc0cc1504e2"
 )
+# This evidence is separate from the source-based dataset identity: aggregate
+# counts alone cannot authorize reuse of Bill RDF validation across contracts.
+# It is populated only after a full offline validation of the pinned capture.
+DEVELOPMENT_ACCEPTED_BILL_RDF_EVIDENCE = {
+    "publication_contract": 2,
+    "inventory_sha256": "cf03661413b811f0b07a6616e3aebdfce60e09f20cda4d4aaf29208d619a99cb",
+}
 DEVELOPMENT_ACCEPTED_GRAPH_COUNTS = {
     "houses": (1, 721),
     "parties": (1, 1890),
@@ -5941,6 +5948,50 @@ def _development_identity_evidence(
     return identity_material, holding_evidence_sha256
 
 
+def _development_bill_rdf_inventory_sha256(
+        graph_hashes: list[tuple[str, str]]) -> str:
+    """Fingerprint every transformed Bill graph and its publication contract.
+
+    The source-based dataset identity is intentionally unchanged. This separate
+    digest binds the validation shortcut to the exact Bill RDF inventory and
+    contract version, so unchanged aggregate counts cannot mask changed output.
+    """
+    ordered = sorted(graph_hashes)
+    graph_iris = [graph_iri for graph_iri, _digest in ordered]
+    if len(graph_iris) != len(set(graph_iris)):
+        raise ValueError("Bill RDF acceptance inventory contains duplicate graph IRIs")
+    material = {
+        "publication_contract": BILLS_PUBLICATION_CONTRACT,
+        "graphs": [
+            {"graph_iri": graph_iri, "rdf11_semantic_sha256": digest}
+            for graph_iri, digest in ordered
+        ],
+    }
+    return hashlib.sha256(json.dumps(
+        material, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")).hexdigest()
+
+
+def _development_bill_rdf_evidence_matches(inventory_sha256: str) -> bool:
+    """Return true only for the explicitly accepted current-contract Bill RDF."""
+    evidence = DEVELOPMENT_ACCEPTED_BILL_RDF_EVIDENCE
+    return (
+        evidence.get("publication_contract") == BILLS_PUBLICATION_CONTRACT
+        and evidence.get("inventory_sha256") == inventory_sha256
+    )
+
+
+def _can_reuse_development_bill_validation(
+        *, source_identity_matches: bool, candidate_output_requested: bool,
+        inventory_sha256: str) -> bool:
+    """Gate Bill validator reuse on source identity and exact RDF acceptance."""
+    return (
+        source_identity_matches
+        and not candidate_output_requested
+        and _development_bill_rdf_evidence_matches(inventory_sha256)
+    )
+
+
 def _development_dataset_id(captures: dict, office_inputs: dict,
                             accepted_holding_evidence: list[dict],
                             debate_evidence: dict) -> str:
@@ -6117,6 +6168,7 @@ def _development_dataset_baseline(
             "unresolved_amendment_stage_references": (
                 bills["unresolved_amendment_stage_references"]),
         },
+        "bill_rdf_acceptance": bills["rdf_acceptance"],
         "quarantined_conflict_count": development_status[
             "quarantined_conflict_count"],
         "quarantined_conflicted_identities": development_status[
@@ -6126,9 +6178,10 @@ def _development_dataset_baseline(
         "unresolved_references": development_status["unresolved_references"],
         "reference_closure": development_status["reference_closure"],
         "scope_note": (
-            "Counts describe the graph payloads owned by this bootstrap; the accepted "
-            "pinned dataset is checked against recorded family/resource counts, while "
-            "other input identities retain per-resource Member/Bill validation. "
+            "Counts describe the graph payloads owned by this bootstrap. Bill "
+            "per-resource validation reuse additionally requires the exact accepted "
+            "RDF inventory fingerprint and publication contract; aggregate counts "
+            "alone do not authorize reuse. "
             "The dataset is development/evaluation data, not authoritative or a live "
             "census of unrelated graphs in a persistent Fuseki dataset."
         ),
@@ -6469,9 +6522,9 @@ def _run_development_evaluation_bootstrap(args: argparse.Namespace) -> int:
         office_types)
     phase_timings["office and holding preparation"] = perf_counter() - started
 
-    # Debate replay contributes to the dataset identity. The accepted fast path
-    # is available only when every source and side-input hash recreates the
-    # exact dataset that already passed complete Member/Bill validation.
+    # Debate replay contributes to the dataset identity. Its source/side-input
+    # identity still gates Member acceptance reuse; Bill acceptance is separately
+    # bound to the transformed RDF inventory and publication contract below.
     started = perf_counter()
     # run_debate_batch writes reference sidecars beside the raw object, so stage
     # exact verified bytes under a disposable directory rather than touching
@@ -6485,26 +6538,25 @@ def _run_development_evaluation_bootstrap(args: argparse.Namespace) -> int:
         captures, office_inputs, accepted_holding_evidence, debate_evidence)
     accepted_identity_matches = (
         accepted_identity == DEVELOPMENT_ACCEPTED_DATASET_ID)
-    # Retain the local bootstrap's identity-gated repeat optimization, but do
-    # not carry that validation shortcut into benchmark candidate generation:
-    # each offline candidate must pass the full per-resource RDF validators.
-    reuse_accepted_record_validation = (
+    # Member acceptance remains tied to the exact accepted dataset inputs.
+    # Bill validation has an additional RDF-inventory/contract gate below;
+    # source identity or aggregate counts alone cannot authorize it.
+    reuse_accepted_member_validation = (
         accepted_identity_matches and candidate_output_path is None)
     if candidate_output_path is not None and not accepted_identity_matches:
         raise ValueError(
             "benchmark candidate generation requires the exact previously accepted dataset identity"
         )
-    if reuse_accepted_record_validation:
+    if reuse_accepted_member_validation:
         print(
-            "  Reusing prior full Member/Bill acceptance for the exact pinned "
-            "development dataset; transforms, source checks, RDF syntax, and "
-            "accepted output counts are still checked.",
+            "  Reusing prior full Member acceptance for the exact pinned "
+            "development dataset; transforms and source checks are still run.",
             file=sys.stderr, flush=True,
         )
 
-    # Source checks run on every bootstrap. Full per-resource RDF acceptance
-    # checks run for benchmark candidates and whenever the local repeat fast path
-    # is not applicable.
+    # Source checks and transforms run on every bootstrap. Member acceptance is
+    # reused only for the exact accepted source identity; candidate generation
+    # still validates every Member graph.
     member_graphs_with_sources: list[tuple[dict, str, Graph, list[dict]]] = []
     member_graphs: list[tuple[str, Graph]] = []
     member_graph = Graph()
@@ -6558,14 +6610,14 @@ def _run_development_evaluation_bootstrap(args: argparse.Namespace) -> int:
     if candidate_spool is None:
         for index, (wrapper, graph_iri_value, graph, resolutions) in enumerate(
                 member_graphs_with_sources, start=1):
-            if not reuse_accepted_record_validation:
+            if not reuse_accepted_member_validation:
                 started = perf_counter()
                 validate_member(wrapper, graph, office_resolutions=resolutions,
                                 office_types=office_types)
                 member_graph_validation_seconds += perf_counter() - started
             member_graph += graph
             member_graphs.append((graph_iri_value, graph))
-            if (not reuse_accepted_record_validation
+            if (not reuse_accepted_member_validation
                     and (index % 250 == 0 or index == len(member_graphs_with_sources))):
                 print(
                     f"  timing progress Member validation {index}/{len(members)}: "
@@ -6602,6 +6654,7 @@ def _run_development_evaluation_bootstrap(args: argparse.Namespace) -> int:
     bill_source_validation_seconds = 0.0
     bill_graph_validation_seconds = 0.0
     bill_transform_seconds = 0.0
+    bill_rdf_graph_hashes: list[tuple[str, str]] = []
     eligible_bills = []
     for wrapper in bills:
         quarantines = known_bill_source_quarantines(wrapper)
@@ -6620,6 +6673,8 @@ def _run_development_evaluation_bootstrap(args: argparse.Namespace) -> int:
         graph, diagnostics = transform_bill_with_report(wrapper)
         graph_iri_value = bill_graph_iri(wrapper["bill"])
         bill_transform_seconds += perf_counter() - started
+        bill_rdf_graph_hashes.append(
+            (graph_iri_value, rdf11_ntriples_sha256(graph)))
         if candidate_spool is not None:
             started = perf_counter()
             validate_bill(wrapper, graph)
@@ -6651,10 +6706,17 @@ def _run_development_evaluation_bootstrap(args: argparse.Namespace) -> int:
             )
     phase_timings["Bill transformations"] = bill_transform_seconds
     phase_timings["Bill source validation"] = bill_source_validation_seconds
+    bill_rdf_inventory_sha256 = _development_bill_rdf_inventory_sha256(
+        bill_rdf_graph_hashes)
+    reuse_accepted_bill_validation = _can_reuse_development_bill_validation(
+        source_identity_matches=accepted_identity_matches,
+        candidate_output_requested=candidate_output_path is not None,
+        inventory_sha256=bill_rdf_inventory_sha256,
+    )
     if candidate_spool is None:
         for index, (wrapper, diagnostics, graph, graph_iri_value) in enumerate(
                 bill_graphs_with_sources, start=1):
-            if not reuse_accepted_record_validation:
+            if not reuse_accepted_bill_validation:
                 started = perf_counter()
                 validate_bill(wrapper, graph)
                 bill_graph_validation_seconds += perf_counter() - started
@@ -6664,7 +6726,7 @@ def _run_development_evaluation_bootstrap(args: argparse.Namespace) -> int:
                 for item in diagnostics
             )
             bill_graphs.append((graph_iri_value, graph))
-            if (not reuse_accepted_record_validation
+            if (not reuse_accepted_bill_validation
                     and (index % 500 == 0 or index == len(bill_graphs_with_sources))):
                 print(
                     f"  timing progress Bill validation {index}/{len(bill_graphs_with_sources)}: "
@@ -6728,6 +6790,10 @@ def _run_development_evaluation_bootstrap(args: argparse.Namespace) -> int:
             item["bill_identity"] for item in bill_quarantines}),
         "quarantine_diagnostic_paths": len(bill_quarantines),
         "unresolved_amendment_stage_references": unresolved_amendment_stage_references,
+        "rdf_acceptance": {
+            "publication_contract": BILLS_PUBLICATION_CONTRACT,
+            "inventory_sha256": bill_rdf_inventory_sha256,
+        },
     }
     started = perf_counter()
     baseline = _development_dataset_baseline(
@@ -6811,10 +6877,18 @@ def _run_development_evaluation_bootstrap(args: argparse.Namespace) -> int:
     else:
         print(f"  Stale bootstrap-owned graphs removed: {len(stale_graphs)}")
     print(f"  Dataset identity: {baseline['dataset']['id']}")
-    if reuse_accepted_record_validation:
-        print("  Member/Bill per-resource RDF acceptance: reused for exact pinned dataset")
+    if reuse_accepted_member_validation:
+        print("  Member per-resource RDF acceptance: reused for exact pinned dataset")
     elif candidate_output_path is not None:
-        print("  Member/Bill per-resource RDF acceptance: validated for benchmark candidate")
+        print("  Member per-resource RDF acceptance: validated for benchmark candidate")
+    if reuse_accepted_bill_validation:
+        print("  Bill per-resource RDF acceptance: reused for exact contract-2 RDF inventory")
+    elif candidate_output_path is not None:
+        print("  Bill per-resource RDF acceptance: validated for benchmark candidate")
+    else:
+        print("  Bill per-resource RDF acceptance: validated (no matching accepted RDF evidence)")
+    print(f"  Bill RDF acceptance contract: {BILLS_PUBLICATION_CONTRACT}")
+    print(f"  Bill RDF inventory SHA-256: {bill_rdf_inventory_sha256}")
     if baseline_output_path:
         baseline_output_path.parent.mkdir(parents=True, exist_ok=True)
         baseline_output_path.write_text(

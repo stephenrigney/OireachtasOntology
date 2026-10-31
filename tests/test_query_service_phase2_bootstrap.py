@@ -411,6 +411,8 @@ def test_local_development_bootstrap_does_not_require_or_modify_core_state(
     assert baseline["bill_diagnostic_counts"]["represented_graphs"] == 1
     assert baseline["bill_diagnostic_counts"]["quarantined_bills"] == 4
     assert baseline["bill_diagnostic_counts"]["quarantine_diagnostic_paths"] == 5
+    assert baseline["bill_rdf_acceptance"]["publication_contract"] == 2
+    assert len(baseline["bill_rdf_acceptance"]["inventory_sha256"]) == 64
     assert "4 quarantined Bills; 5 quarantine diagnostic paths" in output
     assert baseline["accepted_holding_evidence"]["accepted_holding_count"] == 1
     assert len(baseline["debate_selection"]["sources"]) == 3
@@ -481,14 +483,21 @@ def test_local_development_bootstrap_does_not_require_or_modify_core_state(
         assert state.endpoint_publication("parties") == accepted_publication
         assert state.endpoint_publication("parties")["coverage_authoritative"] is True
 
-    # Repeating the bootstrap over exactly the same preserved capture runs
-    # produces byte-for-byte identical machine-readable evaluation metadata.
+    # Pin the first fully validated output for this synthetic dataset. A repeat
+    # may reuse both validators only while source and exact Bill RDF evidence
+    # continue to match; transforms/source checks still execute.
+    monkeypatch.setattr(cli, "DEVELOPMENT_ACCEPTED_DATASET_ID", baseline["dataset"]["id"])
+    monkeypatch.setattr(
+        cli, "DEVELOPMENT_ACCEPTED_BILL_RDF_EVIDENCE",
+        baseline["bill_rdf_acceptance"],
+    )
+    monkeypatch.setattr(cli, "_validate_development_accepted_output", lambda *_args: None)
     repeated_args = Namespace(**{
         **vars(args),
         "dataset_baseline_output": str(tmp_path / "baseline-2.json"),
     })
     assert cli._run_development_bootstrap(repeated_args) == 0
-    assert validation_calls == {"member": 2, "bill": 2}
+    assert validation_calls == {"member": 1, "bill": 1}
     assert baseline_path.read_bytes() == Path(
         repeated_args.dataset_baseline_output).read_bytes()
     assert _hash(state_path) == state_hash
@@ -496,8 +505,6 @@ def test_local_development_bootstrap_does_not_require_or_modify_core_state(
 
     # Benchmark candidates must not inherit the ordinary bootstrap's
     # identity-gated Member/Bill validation shortcut.
-    monkeypatch.setattr(cli, "DEVELOPMENT_ACCEPTED_DATASET_ID", baseline["dataset"]["id"])
-    monkeypatch.setattr(cli, "_validate_development_accepted_output", lambda *_args: None)
     candidate_args = Namespace(**{
         **vars(args),
         "fuseki_gsp_url": None,
@@ -507,7 +514,7 @@ def test_local_development_bootstrap_does_not_require_or_modify_core_state(
         "benchmark_candidate_evidence_output": str(tmp_path / "candidate-evidence.json"),
     })
     assert cli._run_development_bootstrap(candidate_args) == 0
-    assert validation_calls == {"member": 3, "bill": 3}
+    assert validation_calls == {"member": 2, "bill": 2}
     candidate_evidence = json.loads(
         Path(candidate_args.benchmark_candidate_evidence_output).read_text(encoding="utf-8"))
     assert candidate_evidence["graph_count"] > 0
