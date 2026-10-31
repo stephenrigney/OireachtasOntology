@@ -166,11 +166,14 @@ def _member_owner_regex() -> str:
 def _bill_pattern_gate(*, activity: bool = False, sponsor: bool = False,
                        documents: bool = False) -> None:
     lifecycle = _reviewed_pattern("bill-lifecycle", "bill-records")
-    types = {"?bill": "eli-dl:DraftLegislationWork", "?process": "eli-dl:LegislativeProcess"}
+    types = {"?bill": "eli-dl:DraftLegislationWork", "?process": "eli-dl:LegislativeProcess",
+             "?delivery": "agents:BillDelivery"}
     if activity: types["?activity"] = "eli-dl:LegislativeActivity"
     predicates = [("?bill", "agents:Bill", "eli:type_document"),
                   ("?bill", "?englishOrIrishTitle", "eli:title"),
-                  ("?process", "?status", "eli-dl:process_status")]
+                  ("?process", "?status", "eli-dl:process_status"),
+                  ("?delivery", "?bill", "eli-dl:created_a_realization_of"),
+                  ("?delivery", "?process", "eli-dl:forms_part_of")]
     if activity:
         predicates.extend([("?activity", "?process", "eli-dl:forms_part_of"),
                            ("?activity", "?xsdDate eventDate", "eli-dl:activity_date"),
@@ -452,7 +455,8 @@ def _query(plan: dict[str, Any], supported_predicates) -> str:
           BIND(<{bill}> AS ?bill)
           OPTIONAL {{ <{bill}> eli:title ?title . FILTER(LANG(?title) = "en") }}
           OPTIONAL {{ <{bill}> agents:legislativeYear ?year }}
-          OPTIONAL {{ ?process a eli-dl:LegislativeProcess . OPTIONAL {{ ?process eli-dl:process_number ?number }} OPTIONAL {{ ?process eli-dl:process_status ?status }}
+          OPTIONAL {{ ?delivery a agents:BillDelivery ; eli-dl:created_a_realization_of ?bill ; eli-dl:forms_part_of ?process .
+            ?process a eli-dl:LegislativeProcess . OPTIONAL {{ ?process eli-dl:process_number ?number }} OPTIONAL {{ ?process eli-dl:process_status ?status }}
             OPTIONAL {{ ?activity a eli-dl:LegislativeActivity ; eli-dl:forms_part_of ?process ; eli-dl:activity_date ?eventDate ; eli-dl:had_activity_type ?eventType . FILTER(DATATYPE(?eventDate) = xsd:date) }} }}
           OPTIONAL {{ <{bill}> eli:has_part ?memoWork . ?memoWork a eli:Work ; eli:type_document agents:ExplanatoryMemo .
             OPTIONAL {{ ?memoWork eli:is_realized_by ?memoExpression . ?memoExpression a eli:LegalExpression ; eli:is_embodied_by ?memoFormat . ?memoFormat a eli:Format ; eli:uri_schema ?memo }} }}
@@ -467,6 +471,7 @@ def _query(plan: dict[str, Any], supported_predicates) -> str:
               OPTIONAL {{ ?bill eli:title ?title . FILTER(LANG(?title) = "en") }}
               OPTIONAL {{ ?bill agents:legislativeYear ?year }}
               ?process a eli-dl:LegislativeProcess .
+              ?delivery a agents:BillDelivery ; eli-dl:created_a_realization_of ?bill ; eli-dl:forms_part_of ?process .
               ?activity a eli-dl:LegislativeActivity ; eli-dl:forms_part_of ?process ;
                 eli-dl:activity_date ?eventDate ; eli-dl:had_activity_type <{_PUBLISHED}> .
               FILTER(DATATYPE(?eventDate) = xsd:date)
@@ -480,7 +485,8 @@ def _query(plan: dict[str, Any], supported_predicates) -> str:
               OPTIONAL {{ ?bill agents:legislativeYear ?year }}
               FILTER(EXISTS {{ ?bill agents:legislativeYear ?requestedYear . FILTER(?requestedYear = {year}) }})
               OPTIONAL {{ ?bill eli:title ?title . FILTER(LANG(?title) = "en") }}
-              OPTIONAL {{ ?process a eli-dl:LegislativeProcess . OPTIONAL {{ ?process eli-dl:process_number ?number }} OPTIONAL {{ ?process eli-dl:process_status ?status }} }}
+              OPTIONAL {{ ?delivery a agents:BillDelivery ; eli-dl:created_a_realization_of ?bill ; eli-dl:forms_part_of ?process .
+                ?process a eli-dl:LegislativeProcess . OPTIONAL {{ ?process eli-dl:process_number ?number }} OPTIONAL {{ ?process eli-dl:process_status ?status }} }}
             }} FILTER(REGEX(STR(?graph), "{graph_regex}"))'''
             select = "?bill ?title ?year ?process ?number ?status"
     elif family == "bill_title_search":
@@ -505,6 +511,7 @@ def _query(plan: dict[str, Any], supported_predicates) -> str:
           FILTER(LANG(?title) = "en")
           OPTIONAL {{
             ?process a eli-dl:LegislativeProcess .
+            ?delivery a agents:BillDelivery ; eli-dl:created_a_realization_of ?bill ; eli-dl:forms_part_of ?process .
             OPTIONAL {{ ?process eli-dl:process_number ?number }}
             OPTIONAL {{ ?process eli-dl:process_status ?status }}
             OPTIONAL {{ ?activity a eli-dl:LegislativeActivity ; eli-dl:forms_part_of ?process ; eli-dl:activity_date ?eventDate ; eli-dl:had_activity_type ?eventType . FILTER(DATATYPE(?eventDate) = xsd:date) }}
@@ -526,6 +533,7 @@ def _query(plan: dict[str, Any], supported_predicates) -> str:
           FILTER(LANG(?title) = "en")
           OPTIONAL {{
             ?process a eli-dl:LegislativeProcess .
+            ?delivery a agents:BillDelivery ; eli-dl:created_a_realization_of ?bill ; eli-dl:forms_part_of ?process .
             OPTIONAL {{ ?process eli-dl:process_number ?number }}
             OPTIONAL {{ ?process eli-dl:process_status ?status }}
             OPTIONAL {{
@@ -758,9 +766,9 @@ def _project_bill_result(family: str, result: QueryResult) -> tuple[QueryResult,
             processes = {_cell(result, row, "process") for row in rows} - {"—"}
             if not processes:
                 out = QueryResult("select", ("English title", "Current process status", "Bill number", "Legislative year", "Dated lifecycle history", "Official Bill"),
-                                  ((title, "No typed LegislativeProcess recorded", number, year,
+                                  ((title, "No typed LegislativeProcess linked via BillDelivery", number, year,
                                     "No process-linked dated history can be established", bill),))
-                return out, "incomplete_status_evidence", base_notice + " The title-matched typed Bill has no typed LegislativeProcess in its owner graph; no process status or lifecycle history can be established."
+                return out, "incomplete_status_evidence", base_notice + " The title-matched typed Bill has no typed LegislativeProcess explicitly linked via BillDelivery in its owner graph; no process status or lifecycle history can be established."
             statuses = {_cell(result, row, "status") for row in rows} - {"—"}
             if len(statuses) > 1:
                 label, status, note = "Conflicting process statuses", "conflicting_status_evidence", "The current process status is conflicting; no value was selected."

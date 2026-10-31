@@ -7,7 +7,8 @@ import json
 from pathlib import Path
 
 import pytest
-from rdflib import URIRef
+from rdflib import Dataset, Literal, Namespace, URIRef
+from rdflib.namespace import RDF
 
 from poc.nlq.errors import NLQError
 from poc.nlq.plan_contract import validate_query_plan
@@ -359,6 +360,50 @@ def test_named_bill_sponsor_is_bill_to_member_relation_and_returns_member_role()
     assert f"VALUES ?entity0 {{ <{bill_iri}> }}" in result.sparql
     assert result.semantic_answer_shape == {"kind": "entities", "entityType": "Member"}
     assert member_iri not in result.sparql  # the answer Member is a type-only role
+
+
+@pytest.mark.parametrize("fact", ["bill_status", "bill_sponsor"])
+def test_generated_bill_facts_do_not_cross_associate_processes_in_one_graph(fact):
+    dl = Namespace("http://data.europa.eu/eli/eli-draft-legislation-ontology#")
+    oir = Namespace("https://data.oireachtas.ie/ontology#")
+    eli = Namespace("http://data.europa.eu/eli/ontology#")
+    dataset = Dataset()
+    graph = dataset.graph(URIRef("https://data.oireachtas.ie/graph/bill/2026/93"))
+    own = URIRef("https://data.oireachtas.ie/ie/oireachtas/bill/2026/93")
+    other = URIRef("https://data.oireachtas.ie/ie/oireachtas/bill/2026/94")
+    for bill, status, member in [(own, oir.CurrentBill, URIRef(_MEMBER)),
+                                  (other, oir.EnactedBill, URIRef(_MEMBER + "-other"))]:
+        process = URIRef(str(bill) + "#process")
+        delivery = URIRef(str(bill) + "#delivery")
+        participation = URIRef(str(bill) + "#sponsor")
+        graph.add((bill, RDF.type, dl.DraftLegislationWork))
+        graph.add((bill, eli.type_document, oir.Bill))
+        graph.add((bill, eli.title, Literal("Test Bill", lang="en")))
+        graph.add((delivery, RDF.type, oir.BillDelivery))
+        graph.add((delivery, dl.created_a_realization_of, bill))
+        graph.add((delivery, dl.forms_part_of, process))
+        graph.add((process, RDF.type, dl.LegislativeProcess))
+        graph.add((process, dl.process_status, status))
+        graph.add((process, dl.had_participation, participation))
+        graph.add((participation, RDF.type, dl.Participation))
+        graph.add((participation, dl.had_participant_person, member))
+        member_graph = dataset.graph(URIRef("https://data.oireachtas.ie/graph/member/" + str(member).split("/")[-1]))
+        member_graph.add((member, RDF.type, oir.Member))
+    requirement = {"id": "fact", "fact": fact, "subject": {"entity": "bill"}}
+    if fact == "bill_sponsor":
+        requirement["object"] = {"type": "Member"}
+    answer = ({"kind": "entities", "entityType": "Member"} if fact == "bill_sponsor"
+              else {"kind": "fact", "target": "fact"})
+    plan = _plan(entities=[_entity("bill", "Bill", str(own))],
+                 requirements=[requirement], answer=answer)
+    generated = _generate(plan)
+    assert generated.generated
+    assert "eli-dl:created_a_realization_of" in generated.sparql
+    rows = list(dataset.query(generated.sparql))
+    assert len(rows) == 1
+    assert rows[0][0] == (Literal("Current") if fact == "bill_status" else URIRef(_MEMBER))
+    graph.remove((URIRef(str(own) + "#delivery"), dl.created_a_realization_of, own))
+    assert not list(dataset.query(generated.sparql))
 
 
 def test_office_holder_on_date_compiles_inclusive_officeholding_range():

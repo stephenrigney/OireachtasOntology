@@ -50,7 +50,7 @@ def test_contract_artifact_loads_and_validates_its_versioned_shape():
         (ROOT / "poc/specs/query-schema-contract.schema.json").read_text(encoding="utf-8")
     )
 
-    assert contract["contractVersion"] == "2.8.0"
+    assert contract["contractVersion"] == "2.9.0"
     assert contract["schemaVersion"] == schema["properties"]["schemaVersion"]["const"] == 1
     assert contract["contractId"] == "https://data.oireachtas.ie/specs/query-schema-contract"
     assert contract["contractSchema"] == "poc/specs/query-schema-contract.schema.json"
@@ -59,6 +59,51 @@ def test_contract_artifact_loads_and_validates_its_versioned_shape():
         "graphFamilies", "emittedRdfPatterns", "externalIdentityPredicates", "localSafety",
     }.issubset(schema["required"])
     assert contract["namespaces"]["agents"] == "https://data.oireachtas.ie/ontology#"
+
+
+def test_composable_contract_preserves_temporal_and_explicit_bill_relationships_together():
+    contract = json.loads(
+        (ROOT / "poc/specs/composable-query-plan-contract.json").read_text(encoding="utf-8")
+    )
+    assert contract["contractVersion"] == "2.12.0"
+    assert contract["planVersion"] == 2
+    assert contract["answer"]["temporalCompositionProjection"] == {
+        "referents": ["PartyMembershipEpisode", "DailMembership"],
+        "fields": ["start", "end", "establishedOverlap"],
+        "preserveSeparateEpisodes": True,
+        "openEnd": "unbounded",
+        "unknownDates": "never treated as overlap or non-overlap; fail closed",
+    }
+    assert contract["answer"]["sponsorshipProjection"] == {
+        "referentType": "BillParticipation",
+        "fields": ["role", "primaryEvidence"],
+        "preserveSeparateParticipations": True,
+        "billIdentity": "RDF resource IRI",
+        "billProcessAssociation": (
+            "BillDelivery created_a_realization_of Bill and forms_part_of "
+            "LegislativeProcess within the Bill-owned graph; never graph co-ownership alone"
+        ),
+    }
+    relations = {item["id"]: item for item in contract["relations"]}
+    assert relations["party_episode_in_membership"]["predicate"] == "members:inOireachtasMembership"
+    for relation_id in ("bill_has_sponsor_participation", "bill_process_cocontained"):
+        assert relations[relation_id]["association"] == "bill_delivery_process_path"
+    interval = next(item for item in contract["constraints"]
+                    if item["id"] == "party_affiliation_interval_overlaps_membership_interval")
+    assert interval["dateDatatype"] == "xsd:dateTime"
+    assert interval["boundary"] == "inclusive_endpoint"
+    assert interval["endAbsentMeans"] == "open-ended"
+    assert interval["rangeOrStartAbsentMeans"] == "uncertain"
+
+    patterns = {item["id"]: item for item in load_query_contract()["emittedRdfPatterns"]}
+    assert ["?partyEpisode", "members:inOireachtasMembership", "?oireachtasMembership"] in (
+        patterns["party-membership-episode"]["triples"]
+    )
+    for pattern_id in ("bill-lifecycle", "bill-sponsor-reference"):
+        triples = patterns[pattern_id]["triples"]
+        assert ["?delivery", "rdf:type", "agents:BillDelivery"] in triples
+        assert ["?delivery", "eli-dl:created_a_realization_of", "?bill"] in triples
+        assert ["?delivery", "eli-dl:forms_part_of", "?process"] in triples
 
 
 def test_contract_minor_additions_are_compatible_and_unknown_fields_are_ignored(tmp_path):
@@ -183,7 +228,7 @@ def test_grounding_is_generated_from_contract_scope_without_private_etl_imports(
 
     for term in ("agents:Member", "members:PartyMembership", "eli-dl:DraftLegislationWork"):
         assert term in context
-    assert "contract 2.8.0 (schema version 1)" in context
+    assert "contract 2.9.0 (schema version 1)" in context
     assert "https://data.oireachtas.ie/graph/committees" in context
     assert "same RDF resource IRI" in context
     assert "Reviewed Wikidata political-party item" in context
@@ -265,6 +310,11 @@ def test_query_schema_v2_corrects_bill_process_ownership_and_exposes_only_review
     assert ["?activity", "eli-dl:forms_part_of", "?process"] in bill_triples
     assert ["?bill", "eli-dl:latest_activity", "?activity"] not in bill_triples
     assert ["?bill", "eli:type_document", "agents:Bill"] in bill_triples
+    assert ["?delivery", "rdf:type", "agents:BillDelivery"] in bill_triples
+    assert ["?delivery", "eli-dl:created_a_realization_of", "?bill"] in bill_triples
+    assert ["?delivery", "eli-dl:forms_part_of", "?process"] in bill_triples
+    assert "eli-dl:created_a_realization_of" in contract["queryableProperties"]
+    assert URIRef(contract["namespaces"]["eli-dl"] + "created_a_realization_of") in supported_predicates(ROOT / "ontology")
     assert patterns["named-office-description"]["queryableInLocalNlq"] is True
     assert patterns["conditionally-resolved-office-holdings"]["queryableInLocalNlq"] is True
     assert patterns["member-description"]["queryableInLocalNlq"] is True

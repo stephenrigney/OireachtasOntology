@@ -8,7 +8,14 @@
 oir:BillShape a sh:NodeShape ; sh:targetClass dl:DraftLegislationWork ;
   sh:property [ sh:path oir:legislativeYear ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:integer ] ;
   sh:property [ sh:path eli:id_local ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
-  sh:property [ sh:path oir:originHouse ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] .
+  sh:property [ sh:path oir:originHouse ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+  sh:property [ sh:path [ sh:inversePath dl:created_a_realization_of ] ; sh:minCount 1 ; sh:maxCount 1 ; sh:class oir:BillDelivery ; sh:nodeKind sh:IRI ] .
+
+oir:DeliveryShape a sh:NodeShape ; sh:targetClass oir:BillDelivery ;
+  sh:class dl:LegislativeActivity ;
+  sh:property [ sh:path dl:created_a_realization_of ; sh:minCount 1 ; sh:maxCount 1 ; sh:class dl:DraftLegislationWork ; sh:nodeKind sh:IRI ] ;
+  sh:property [ sh:path dl:forms_part_of ; sh:minCount 1 ; sh:maxCount 1 ; sh:class dl:LegislativeProcess ] ;
+  sh:property [ sh:path dl:had_activity_type ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ( oir:Introduction oir:Presentation oir:Application ) ] .
 
 oir:ProcessShape a sh:NodeShape ; sh:targetClass dl:LegislativeProcess ;
   sh:property [ sh:path dl:process_number ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;

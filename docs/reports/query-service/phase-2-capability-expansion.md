@@ -1,5 +1,11 @@
 # Phase 2 — Controlled semantic capability expansion
 
+**Historical report:** Bill status and sponsorship associations below originally
+used graph co-ownership. The subsequent Bill–LegislativeProcess Tranche 1
+correction replaces that association with the explicit BillDelivery
+`created_a_realization_of` / `forms_part_of` path; see the
+[current legislation contract](../../reference/etl/legislation.md).
+
 ## Scope
 
 This tranche extends the separate validated-plan compiler, not the Phase 1

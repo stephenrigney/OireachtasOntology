@@ -954,15 +954,16 @@ passed through `/ask` against the synthetic named-graph fixture.
 
 #### Follow-up — dated party/constituency composition
 
-Composable query-plan contract `2.11.0` extends the same validated
+Composable query-plan contract `2.11.0` introduced the extension to the same validated
 `member_relationship_composition` family for U06/U16-style questions. It reuses
 the existing relation-graph compiler and adds exactly one supported shape:
 Member → DailMembership → numbered DailTerm + term-specific DailConstituency,
 with a typed PartyMembership episode linked to that exact same DailMembership,
 its term-scoped ParliamentaryParty, and the party's reviewed enduring
 PoliticalAffiliationIdentity. No current affiliation or label-equality join is
-used. The query-schema contract remains `2.8.0`; no ontology, mapping, ETL,
-identifier, graph-ownership, or source-data behavior changes.
+used. At introduction, the query-schema contract remained `2.8.0`; this temporal
+extension made no ontology, mapping, ETL, identifier, graph-ownership, or
+source-data behavior changes.
 
 The PartyMembership-owned interval and the containing DailMembership-owned
 representation interval are checked separately using inclusive `xsd:dateTime`
@@ -997,6 +998,26 @@ read-only compiled query ran against the fixture, and the rendered result
 included Sinn Féin and Fianna Fáil with Aoife Byrne's recorded episode evidence
 and the historical-completeness qualification. The credential was used only in
 the test process and was neither emitted nor recorded.
+
+#### Reconciled BillDelivery and temporal-composition contracts
+
+Composable query-plan contract `2.12.0` combines the dated party/constituency
+extension above with the explicit BillDelivery relationship correction. Both
+changes independently used `2.11.0` before integration. The combined contract
+retains the temporal relations, inclusive interval constraint, separate episode
+projection and fail-closed uncertainty behavior, while requiring Bill lifecycle
+and sponsorship queries to traverse a typed BillDelivery's
+`eli-dl:created_a_realization_of` Bill and `eli-dl:forms_part_of` process links
+within the Bill-owned graph. The legacy plan fact ID `bill_process_cocontained`
+is retained for compatibility; it no longer permits graph co-ownership as the
+association rule.
+
+The current query-schema contract is `2.9.0`, recording that explicit delivery
+path. Plan envelope version `2` and schema version `1` are unchanged. Previously
+published Bill graphs without the delivery-to-Work edge fail closed for these
+relationship-dependent queries; code deployment or a source-hash-skipping
+incremental refresh does not backfill them. Regeneration requires a separately
+authorized operation. Bill classification cleanup remains outside this tranche.
 
 ## 9. Phase 3 — Source selection and provenance
 

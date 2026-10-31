@@ -464,14 +464,34 @@ This looks up the Bill Work and its local identifier in the Bill-owned graph.
 Bill 2022. `eli:is_realized_by` is a Work-to-Expression predicate in the
 implemented Bill transform; do not use it to guess a Work-to-process link.
 
-The code also emits a deterministic Process and `eli-dl:latest_activity` on
-that Process, while activities use `eli-dl:forms_part_of` to point to it.
-However, inspection of the transformer and current graphs found **no asserted
-predicate linking the Bill Work to its Process**. The Process IRI convention
-(`{bill IRI}#process`) and common named-graph placement do not themselves create
-an RDF edge. Thus a SPARQL query cannot semantically traverse Bill Work →
-Process → latest activity. This is a documented implementation/design-contract
-gap for owner review, not a query to work around by manufacturing a join.
+The corrected transformer connects the Bill through its introduction/presentation
+activity to its Process. Traverse the asserted relationships, not the Process IRI
+convention (`{bill IRI}#process`) or common named-graph placement:
+
+```sparql
+PREFIX oir: <https://data.oireachtas.ie/ontology#>
+PREFIX eli-dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>
+SELECT ?bill ?process ?status ?latest ?sponsor
+WHERE {
+  GRAPH ?billGraph {
+    ?bill a eli-dl:DraftLegislationWork .
+    ?delivery a oir:BillDelivery ;
+      eli-dl:created_a_realization_of ?bill ;
+      eli-dl:forms_part_of ?process .
+    ?process a eli-dl:LegislativeProcess ; eli-dl:process_status ?status .
+    OPTIONAL { ?process eli-dl:latest_activity ?latest }
+    OPTIONAL {
+      ?process eli-dl:had_participation ?participation .
+      ?participation a eli-dl:Participation ; eli-dl:had_participant_person ?sponsor .
+    }
+  }
+}
+```
+
+This path also covers by-application deliveries. It has regression coverage over
+multiple Bills in one graph. It is **not** a claim that the historical development
+dataset has been republished: older graphs without the delivery-to-Work edge
+return no relationship rows and require regeneration under the corrected mapping.
 
 ### 4.2 Follow a Debate to a process or supported Bill event
 
@@ -502,8 +522,7 @@ development dataset, no rows returned; no positive example verified.** The
 approved Phase 7 evidence records section-to-Bill event crosswalks as deferred,
 and the local snapshot contained only three Debate graphs. The query's design
 supports future source-resolved links, but none is demonstrated by current
-loaded evidence. Do not use the missing Bill Work-to-Process edge above as a
-surrogate join.
+loaded evidence. Do not use graph co-ownership as a surrogate Bill/event join.
 
 ## 5. Diagnostics and empty results
 
