@@ -172,7 +172,11 @@ def _intersection_draft(first: int = 32, second: int = 33) -> dict:
             {"id": "member-to-second-membership", "fact": "member_has_membership", "from": "member", "to": "membership_b"},
             {"id": "second-membership-to-term", "fact": "membership_in_term", "from": "membership_b", "to": "term_b"},
         ],
-        "answer": {"kind": "entities", "referent": "member", "distinctBy": "identity", "display": ["name"]},
+        "constraints": [],
+        "answer": {
+            "kind": "entities", "referent": "member", "distinctBy": "identity",
+            "display": ["name"], "details": [], "preserveEvidence": False,
+        },
     }
 
 
@@ -195,7 +199,11 @@ def _representation_draft(ordinal: int = 31, constituency: str = "Dublin Central
             {"id": "membership-constituency", "fact": "membership_represents", "from": "membership", "to": "constituency"},
             {"id": "constituency-term", "fact": "constituency_in_term", "from": "constituency", "to": "term"},
         ],
-        "answer": {"kind": "entities", "referent": "member", "distinctBy": "identity", "display": ["name"]},
+        "constraints": [],
+        "answer": {
+            "kind": "entities", "referent": "member", "distinctBy": "identity",
+            "display": ["name"], "details": [], "preserveEvidence": False,
+        },
     }
 
 
@@ -229,7 +237,7 @@ def test_v2_contract_and_strict_draft_schema_cover_both_relationship_projections
     draft_schema = load_composable_draft_schema()
     Draft202012Validator.check_schema(plan_schema)
     Draft202012Validator.check_schema(draft_schema)
-    assert contract["contractVersion"] == "2.10.0"
+    assert contract["contractVersion"] == "2.11.0"
     assert "member_relationship_composition" in plan_schema["properties"]["family"]["enum"]
     assert any(item["id"] == "member_relationship_composition" for item in contract["questionFamilies"])
     validator = Draft202012Validator(draft_schema)
@@ -341,6 +349,7 @@ def test_unsupported_semantics_are_not_simplified_to_a_member_query():
         "intent": "The request contains unsupported filters.",
         "referents": None,
         "relations": [],
+        "constraints": [],
         "answer": None,
     }
     assert Draft202012Validator(load_composable_draft_schema()).is_valid(unsupported)

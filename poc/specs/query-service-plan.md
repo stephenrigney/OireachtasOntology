@@ -952,6 +952,52 @@ as local recorded evidence, not complete historical coverage. Focused acceptance
 passed 394 relevant query-service tests, and one bounded real-LLM request also
 passed through `/ask` against the synthetic named-graph fixture.
 
+#### Follow-up — dated party/constituency composition
+
+Composable query-plan contract `2.11.0` extends the same validated
+`member_relationship_composition` family for U06/U16-style questions. It reuses
+the existing relation-graph compiler and adds exactly one supported shape:
+Member → DailMembership → numbered DailTerm + term-specific DailConstituency,
+with a typed PartyMembership episode linked to that exact same DailMembership,
+its term-scoped ParliamentaryParty, and the party's reviewed enduring
+PoliticalAffiliationIdentity. No current affiliation or label-equality join is
+used. The query-schema contract remains `2.8.0`; no ontology, mapping, ETL,
+identifier, graph-ownership, or source-data behavior changes.
+
+The PartyMembership-owned interval and the containing DailMembership-owned
+representation interval are checked separately using inclusive `xsd:dateTime`
+endpoints. A missing `EndDate` is open-ended; a missing range/start, malformed
+date, or conflicting range evidence is uncertain and fails closed. The local
+evaluator retains exact episode identities and overlap evidence instead of
+filtering incomplete intervals into a false negative. Only typed
+`PartyMembership` records are political-party evidence; Independent collection
+membership is not a party. For a party list, answers are distinct reviewed
+affiliation identities; for a named-party Member question, the exact identity
+filter is resolved only among ParliamentaryParty records active in the selected
+term, so reused historical aliases are not resolved globally.
+
+The supported plan requires one explicitly numbered Dáil and one named
+constituency occurrence. Additional date windows, current/as-of conditions,
+aggregates, other relationships, and omitted constraints are rejected rather
+than simplified. Impossible dates and missing term scope are reported before
+LLM planning or answer-query execution. Unsupported relationships remain
+distinct from missing or uncertain RDF evidence. Acceptance uses fresh U06/U16
+paraphrases through `/ask` and controlled named-graph fixtures for endpoint,
+open-end, missing/conflicting date, alias-ambiguity, and historical
+non-overlap cases; positive findings remain qualified as local evidence, not
+complete historical coverage.
+
+Planner instructions state the exact answer and constraint objects required by
+each supported family because local validation enforces those evidence
+projections exactly. On 2026-10-31, one bounded real-LLM planner request passed
+through the integrated Phase 2 `POST /ask` route against the controlled
+named-graph fixture. For “Which political parties were represented by TDs for
+Galway West during the 33rd Dáil?”, the planner returned a validated plan, the
+read-only compiled query ran against the fixture, and the rendered result
+included Sinn Féin and Fianna Fáil with Aoife Byrne's recorded episode evidence
+and the historical-completeness qualification. The credential was used only in
+the test process and was neither emitted nor recorded.
+
 ## 9. Phase 3 — Source selection and provenance
 
 ### Outcome
