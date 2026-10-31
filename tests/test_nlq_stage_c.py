@@ -67,7 +67,7 @@ class StageCFixture:
             graph.add((URIRef("https://data.oireachtas.ie/ie/oireachtas/bill/2024/48"), RDF.type,
                        URIRef(ELI_DL + "DraftLegislationWork")))
             graph.add((URIRef("https://data.oireachtas.ie/ie/oireachtas/bill/2024/48"),
-                       URIRef("http://data.europa.eu/eli/ontology#type_document"), URIRef(AGENTS + "Bill")))
+                       URIRef("http://data.europa.eu/eli/ontology#work_type"), URIRef(AGENTS + "Bill")))
 
     def _add_sitting(self, *, count=1):
         graph = self.dataset.graph(URIRef("https://data.oireachtas.ie/graph/debate/dail/2026-09-24/debate"))

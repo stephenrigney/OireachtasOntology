@@ -954,6 +954,10 @@ passed through `/ask` against the synthetic named-graph fixture.
 
 #### Follow-up — dated party/constituency composition
 
+Revision record: the versions in this subsection describe PR #13 before Bill
+integration. The current versions are composable `2.12.0` and query-schema
+`2.10.0`, as recorded in the integrated-contract subsection below.
+
 Composable query-plan contract `2.11.0` extends the same validated
 `member_relationship_composition` family for U06/U16-style questions. It reuses
 the existing relation-graph compiler and adds exactly one supported shape:
@@ -997,6 +1001,25 @@ read-only compiled query ran against the fixture, and the rendered result
 included Sinn Féin and Fianna Fáil with Aoife Byrne's recorded episode evidence
 and the historical-completeness qualification. The credential was used only in
 the test process and was neither emitted nor recorded.
+
+#### Integrated contract — Bill Work and temporal composition
+
+Composable query-plan contract `2.12.0` combines the dated party/constituency
+capability above with the explicit BillDelivery Work/process relationship.
+It retains exact membership/term/constituency/party identity joins, inclusive
+interval overlap, separate episode evidence and fail-closed uncertain dates.
+The legacy `bill_process_cocontained` plan fact remains accepted, but its RDF
+association requires a typed BillDelivery with `eli-dl:created_a_realization_of`
+the Bill and `eli-dl:forms_part_of` the process; graph co-ownership is never a
+fallback for status, lifecycle or sponsorship queries.
+
+The separately versioned query-schema contract is `2.10.0`: Bills are
+`eli-dl:DraftLegislationWork` with `eli:work_type agents:Bill` and Work-level
+`dct:title`, `dct:alternative` and `dct:identifier`. These integrated versions
+supersede the revision-specific versions recorded above. No temporal capability
+is removed or inferred from Bill metadata. Bills publication contract 2 and its
+separately authorized migration boundary remain as documented in the
+[legislation reference](../../docs/reference/etl/legislation.md#contract-2-rollout-not-performed-here).
 
 ## 9. Phase 3 — Source selection and provenance
 

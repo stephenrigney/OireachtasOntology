@@ -50,7 +50,7 @@ def test_contract_artifact_loads_and_validates_its_versioned_shape():
         (ROOT / "poc/specs/query-schema-contract.schema.json").read_text(encoding="utf-8")
     )
 
-    assert contract["contractVersion"] == "2.8.0"
+    assert contract["contractVersion"] == "2.10.0"
     assert contract["schemaVersion"] == schema["properties"]["schemaVersion"]["const"] == 1
     assert contract["contractId"] == "https://data.oireachtas.ie/specs/query-schema-contract"
     assert contract["contractSchema"] == "poc/specs/query-schema-contract.schema.json"
@@ -59,6 +59,45 @@ def test_contract_artifact_loads_and_validates_its_versioned_shape():
         "graphFamilies", "emittedRdfPatterns", "externalIdentityPredicates", "localSafety",
     }.issubset(schema["required"])
     assert contract["namespaces"]["agents"] == "https://data.oireachtas.ie/ontology#"
+
+
+def test_integrated_composable_contract_preserves_temporal_and_bill_paths():
+    query_contract = load_query_contract()
+    plan_contract = json.loads(
+        (ROOT / "poc/specs/composable-query-plan-contract.json").read_text(encoding="utf-8")
+    )
+    assert plan_contract["contractVersion"] == "2.12.0"
+    assert query_contract["contractVersion"] == "2.10.0"
+    relations = {item["id"]: item for item in plan_contract["relations"]}
+    patterns = {item["id"]: item for item in query_contract["emittedRdfPatterns"]}
+
+    episode_join = relations["party_episode_in_membership"]
+    assert (episode_join["subjectType"], episode_join["objectType"]) == (
+        "PartyMembershipEpisode", "DailMembership",
+    )
+    assert ["?partyEpisode", episode_join["predicate"], "?oireachtasMembership"] in (
+        patterns["party-membership-episode"]["triples"]
+    )
+    overlap = next(item for item in plan_contract["constraints"]
+                   if item["id"] == "party_affiliation_interval_overlaps_membership_interval")
+    assert (overlap["operator"], overlap["dateDatatype"], overlap["boundary"]) == (
+        "overlaps", "xsd:dateTime", "inclusive_endpoint",
+    )
+    projection = plan_contract["answer"]["temporalCompositionProjection"]
+    assert projection["preserveSeparateEpisodes"] is True
+    assert projection["unknownDates"] == "never treated as overlap or non-overlap; fail closed"
+
+    for fact in ("bill_has_sponsor_participation", "bill_process_cocontained"):
+        assert relations[fact]["association"] == "bill_delivery_process_path"
+    sponsor_pattern = patterns["bill-sponsor-reference"]["triples"]
+    assert ["?delivery", "eli-dl:created_a_realization_of", "?bill"] in sponsor_pattern
+    assert ["?delivery", "eli-dl:forms_part_of", "?process"] in sponsor_pattern
+    assert "never graph co-ownership alone" in (
+        plan_contract["answer"]["sponsorshipProjection"]["billProcessAssociation"]
+    )
+    assert plan_contract["entityTypeRdfTypes"]["Bill"] == "eli-dl:DraftLegislationWork"
+    assert query_contract["labelsByEntityType"]["Bill"]["predicate"] == "dct:title"
+    assert ["?bill", "eli:work_type", "agents:Bill"] in patterns["bill-lifecycle"]["triples"]
 
 
 def test_contract_minor_additions_are_compatible_and_unknown_fields_are_ignored(tmp_path):
@@ -154,7 +193,9 @@ def test_supported_predicates_come_from_contract_policy_and_active_sources():
     }
 
     assert queryable.issubset(predicates)
-    assert URIRef("http://data.europa.eu/eli/ontology#title") in predicates
+    assert URIRef("http://purl.org/dc/terms/title") in predicates
+    assert URIRef("http://data.europa.eu/eli/ontology#work_type") in predicates
+    assert URIRef("http://data.europa.eu/eli/ontology#title") not in predicates
     assert URIRef("http://data.europa.eu/eli/eli-draft-legislation-ontology#forms_part_of") in predicates
     assert URIRef("http://www.w3.org/2002/07/owl#sameAs") in predicates
     assert URIRef("https://data.oireachtas.ie/ontology/members#recognisedAsParty") in predicates
@@ -183,7 +224,7 @@ def test_grounding_is_generated_from_contract_scope_without_private_etl_imports(
 
     for term in ("agents:Member", "members:PartyMembership", "eli-dl:DraftLegislationWork"):
         assert term in context
-    assert "contract 2.8.0 (schema version 1)" in context
+    assert "contract 2.10.0 (schema version 1)" in context
     assert "https://data.oireachtas.ie/graph/committees" in context
     assert "same RDF resource IRI" in context
     assert "Reviewed Wikidata political-party item" in context
@@ -264,7 +305,12 @@ def test_query_schema_v2_corrects_bill_process_ownership_and_exposes_only_review
     assert ["?activity", "rdf:type", "eli-dl:LegislativeActivity"] in bill_triples
     assert ["?activity", "eli-dl:forms_part_of", "?process"] in bill_triples
     assert ["?bill", "eli-dl:latest_activity", "?activity"] not in bill_triples
-    assert ["?bill", "eli:type_document", "agents:Bill"] in bill_triples
+    assert ["?bill", "eli:work_type", "agents:Bill"] in bill_triples
+    assert ["?delivery", "rdf:type", "agents:BillDelivery"] in bill_triples
+    assert ["?delivery", "eli-dl:created_a_realization_of", "?bill"] in bill_triples
+    assert ["?delivery", "eli-dl:forms_part_of", "?process"] in bill_triples
+    assert "eli-dl:created_a_realization_of" in contract["queryableProperties"]
+    assert URIRef(contract["namespaces"]["eli-dl"] + "created_a_realization_of") in supported_predicates(ROOT / "ontology")
     assert patterns["named-office-description"]["queryableInLocalNlq"] is True
     assert patterns["conditionally-resolved-office-holdings"]["queryableInLocalNlq"] is True
     assert patterns["member-description"]["queryableInLocalNlq"] is True

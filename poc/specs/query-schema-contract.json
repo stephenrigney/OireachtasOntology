@@ -3,7 +3,7 @@
   "contractId": "https://data.oireachtas.ie/specs/query-schema-contract",
   "contractSchema": "poc/specs/query-schema-contract.schema.json",
   "schemaVersion": 1,
-  "contractVersion": "2.8.0",
+  "contractVersion": "2.10.0",
   "description": "Queryable, currently emitted Oireachtas RDF patterns and local NLQ execution boundary.",
   "namespaces": {
     "agents": "https://data.oireachtas.ie/ontology#",
@@ -47,6 +47,7 @@
     "agents:DebateSitting",
     "eli-dl:DraftLegislationWork",
     "eli-dl:LegislativeProcess",
+    "agents:BillDelivery",
     "eli-dl:LegislativeActivity",
     "eli-dl:Participation",
     "eli:LegalResource",
@@ -103,10 +104,11 @@
     "foaf:isPrimaryTopicOf",
     "members:recognisedAsParty",
     "dct:modified",
-    "eli:title",
-    "eli:title_alternative",
+    "dct:title",
+    "dct:alternative",
+    "dct:identifier",
+    "eli:work_type",
     "eli:type_document",
-    "eli:id_local",
     "eli:basis_for",
     "eli:date_document",
     "eli-dl:process_number",
@@ -115,6 +117,7 @@
     "eli-dl:was_submitted_by",
     "eli-dl:latest_activity",
     "eli-dl:forms_part_of",
+    "eli-dl:created_a_realization_of",
     "eli-dl:had_activity_type",
     "eli-dl:occured_at_stage",
     "eli-dl:activity_date",
@@ -242,8 +245,8 @@
     "DailConstituency": {"predicate": "skos:prefLabel", "language": "en"},
     "SeanadPanel": {"predicate": "skos:prefLabel", "language": "en"},
     "Committee": {"predicate": "skos:prefLabel", "languages": ["en", "ga"]},
-    "DraftLegislationWork": {"predicate": "eli:title", "languages": ["en", "ga"], "note": "Alternative titles use eli:title_alternative."},
-    "Bill": {"predicate": "eli:title", "languages": ["en", "ga"], "note": "Semantic Bill entity type; the emitted resource is typed eli-dl:DraftLegislationWork and eli:type_document agents:Bill."},
+    "DraftLegislationWork": {"predicate": "dct:title", "languages": ["en", "ga"], "note": "Bill Work titles; alternative titles use dct:alternative. No Expression title is inferred."},
+    "Bill": {"predicate": "dct:title", "languages": ["en", "ga"], "note": "Semantic Bill entity type; the emitted Work is typed eli-dl:DraftLegislationWork with eli:work_type agents:Bill, never eli:LegalResource."},
     "NamedOffice": {"predicate": "skos:prefLabel", "languages": ["en", "ga"], "note": "Reviewed local office registry labels; holding assertions remain conditional on accepted office resolution."},
     "BillLifecycleResource": {"predicate": "rdfs:label", "language": "none", "note": "Used for event, version, expression, and related-document resources; not the Bill's primary title."}
   },
@@ -367,17 +370,17 @@
       "graphFamily": "bill-records",
       "availability": "emitted",
       "queryableInLocalNlq": true,
-      "triples": [["?bill", "rdf:type", "eli-dl:DraftLegislationWork"], ["?bill", "eli:type_document", "agents:Bill"], ["?bill", "agents:legislativeYear", "?year"], ["?bill", "eli:title", "?englishOrIrishTitle"], ["?process", "rdf:type", "eli-dl:LegislativeProcess"], ["?process", "eli-dl:process_number", "?processNumber"], ["?process", "eli-dl:process_status", "?status"], ["?process", "eli-dl:latest_activity", "?latestActivity (optional)"], ["?activity", "rdf:type", "eli-dl:LegislativeActivity"], ["?activity", "eli-dl:forms_part_of", "?process"], ["?activity", "eli-dl:activity_date", "?xsdDate eventDate"], ["?activity", "eli-dl:had_activity_type", "?eventType"]],
+      "triples": [["?bill", "rdf:type", "eli-dl:DraftLegislationWork"], ["?bill", "eli:work_type", "agents:Bill"], ["?bill", "agents:legislativeYear", "?year"], ["?bill", "dct:title", "?englishOrIrishTitle"], ["?bill", "dct:alternative", "?longTitle (optional)"], ["?bill", "dct:identifier", "?compoundIdentifier"], ["?delivery", "rdf:type", "agents:BillDelivery"], ["?delivery", "eli-dl:created_a_realization_of", "?bill"], ["?delivery", "eli-dl:forms_part_of", "?process"], ["?process", "rdf:type", "eli-dl:LegislativeProcess"], ["?process", "eli-dl:process_number", "?processNumber"], ["?process", "eli-dl:process_status", "?status"], ["?process", "eli-dl:latest_activity", "?latestActivity (optional)"], ["?activity", "rdf:type", "eli-dl:LegislativeActivity"], ["?activity", "eli-dl:forms_part_of", "?process"], ["?activity", "eli-dl:activity_date", "?xsdDate eventDate"], ["?activity", "eli-dl:had_activity_type", "?eventType"]],
       "controlledValues": ["agents:Bill", "agents:Published", "agents:AwaitingSignatureBill", "agents:CurrentBill", "agents:DefeatedBill", "agents:DeclaredRepugnantToConstitutionBill", "agents:DraftHeadsOfBill", "agents:EnactedBill", "agents:LapsedBill", "agents:WithdrawnBill", "agents:RejectedAtReferendumBill"],
-      "note": "Bill and process resources are co-owned in the same one-Bill named graph; the ETL emits no direct Bill-to-process RDF edge. Process number is mapped on the LegislativeProcess. latest_activity is an optional process pointer, but every typed LegislativeActivity with forms_part_of the process is emitted; lifecycle selection can inspect any such event. Bill graphs remain optional data."
+      "note": "The BillDelivery introduction/presentation activity produces its Bill Work via created_a_realization_of and belongs to its own LegislativeProcess via forms_part_of, including application/by-application methods. Queries must traverse these explicit relationships, not infer association from graph co-ownership. No direct Bill-to-process predicate is introduced. Process number is mapped on the LegislativeProcess. latest_activity is an optional process pointer; lifecycle selection can inspect any typed dated activity in that process. Delivery has no inferred activity date. Bill graphs remain optional data."
     },
     {
       "id": "bill-sponsor-reference",
       "graphFamily": "bill-records",
       "availability": "emitted",
       "queryableInLocalNlq": true,
-      "triples": [["?process", "rdf:type", "eli-dl:LegislativeProcess"], ["?process", "eli-dl:had_participation", "?participation"], ["?participation", "rdf:type", "eli-dl:Participation"], ["?participation", "eli-dl:had_participant_person", "?member"], ["?participation", "agents:isPrimarySponsor", "?optionalBoolean"], ["?participation", "rdfs:label", "?optionalRoleLabel"]],
-      "note": "The process is associated with its Bill by co-ownership in the Bill's named graph; no direct Bill-to-process predicate is emitted. The participant person IRI joins to the corresponding Member-owned graph by exact RDF resource IRI. Optional agents:isPrimarySponsor on Participation preserves true/false; absence means unknown and never removes the participation."
+      "triples": [["?delivery", "rdf:type", "agents:BillDelivery"], ["?delivery", "eli-dl:created_a_realization_of", "?bill"], ["?delivery", "eli-dl:forms_part_of", "?process"], ["?process", "rdf:type", "eli-dl:LegislativeProcess"], ["?process", "eli-dl:had_participation", "?participation"], ["?participation", "rdf:type", "eli-dl:Participation"], ["?participation", "eli-dl:had_participant_person", "?member"], ["?participation", "agents:isPrimarySponsor", "?optionalBoolean"], ["?participation", "rdfs:label", "?optionalRoleLabel"]],
+      "note": "The process is associated with its Bill through BillDelivery created_a_realization_of and forms_part_of, never solely by graph co-ownership; no direct Bill-to-process predicate is emitted. The participant person IRI joins to the corresponding Member-owned graph by exact RDF resource IRI. Optional agents:isPrimarySponsor on Participation preserves true/false; absence means unknown and never removes the participation."
     },
     {
       "id": "bill-document-work-links",

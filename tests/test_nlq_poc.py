@@ -135,7 +135,9 @@ def test_direct_predicates_are_accepted():
 def test_predicates_are_checked_against_ontology_and_active_mappings():
     vocabulary = supported_predicates(ROOT / "ontology")
     assert URIRef("http://xmlns.com/foaf/0.1/name") in vocabulary
-    assert URIRef("http://data.europa.eu/eli/ontology#title") in vocabulary
+    assert URIRef("http://purl.org/dc/terms/title") in vocabulary
+    assert URIRef("http://data.europa.eu/eli/ontology#work_type") in vocabulary
+    assert URIRef("http://data.europa.eu/eli/ontology#title") not in vocabulary
     assert URIRef("http://data.europa.eu/eli/eli-draft-legislation-ontology#forms_part_of") in vocabulary
     assert URIRef("http://www.w3.org/2002/07/owl#sameAs") in vocabulary
     query = "PREFIX members: <https://data.oireachtas.ie/ontology/members#> SELECT ?x WHERE { ?x members:memberOfCollection ?collection } LIMIT 10"
@@ -500,7 +502,8 @@ def test_schema_context_comes_from_real_member_and_agent_ontology():
     assert "agents:DailTerm" in context
     assert "agents:HouseTerm" in context
     assert "eli-dl:DraftLegislationWork" in context
-    assert "eli:title (DatatypeProperty)" in context
+    assert "dct:title (DatatypeProperty)" in context
+    assert "eli:work_type (ObjectProperty)" in context
     assert "eli-dl:process_status (ObjectProperty)" in context
     assert "eli-dl:forms_part_of" in context
     assert "foaf:firstName (AnnotationProperty)" in context

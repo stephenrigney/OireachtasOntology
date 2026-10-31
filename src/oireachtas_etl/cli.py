@@ -38,7 +38,8 @@ from .transforms.members import (member_graph_iri, prior_party_membership_eviden
                                  source_hash, transform_member_with_report)
 from .transforms.common import MEMBERS, datetime_literal, iri
 from .transforms.offices import office_iri
-from .transforms.bills import bill_graph_iri, source_hash as bill_source_hash, transform_bill_with_report
+from .transforms.bills import (BILLS_PUBLICATION_CONTRACT, bill_graph_iri,
+                               source_hash as bill_source_hash, transform_bill_with_report)
 from .state import (CoreStateStore, expected_graph_iri, read_resource_state,
                     state_lock)
 from .validation.bills import (known_bill_source_quarantines,
@@ -3382,7 +3383,8 @@ def _published_bill_sponsor_graph(core: CoreStateStore, wrapper: dict,
     row = core.get_resource("legislation", identity)
     if (row is None or row["publication_state"] != "clean"
             or row["source_presence"] != "present"
-            or row["graph_iri"] != graph_iri or row["contract_version"] != 1
+            or row["graph_iri"] != graph_iri
+            or row["contract_version"] != BILLS_PUBLICATION_CONTRACT
             or row["published_source_hash"] != bill_source_hash(bill)):
         raise ValueError(f"Bill core graph is not published from current source: {identity}")
     payload = row["published_payload"]
@@ -3629,11 +3631,12 @@ def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = Non
             context = _run_context(args, run_id=run_id)
             if context is not None:
                 context.setdefault("retry_attempts", []).extend(retry_ids)
-        # Hash-first source gate; unchanged Bills never construct RDF or invoke a loader.
+        # Hash-first source gate only under the current publication contract.
+        # Older contracts regenerate even when the source bytes are unchanged.
         try:
             omissions = validate_bill_source(wrapper)
             if (not args.offline and old.get("publication_state") == "clean"
-                    and old.get("contract_version") == 1
+                    and old.get("contract_version") == BILLS_PUBLICATION_CONTRACT
                     and old.get("published_source_hash") == digest
                     and old.get("graph_iri") == graph_iri):
                 work.append((wrapper, None, identity, digest, omissions, "skipped"))
@@ -3664,6 +3667,7 @@ def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = Non
     if endpoint and not query_endpoint: raise ValueError("Fuseki SPARQL endpoint is required for post-load competency verification")
     published = skipped = 0
     repaired: list[str] = []
+    deferred_dirty: list[dict] = []
     known = store.resources("legislation") if store is not None else []
     seen = ({identity for _, _, identity, _, _, _ in work}
             | quarantined_identities)
@@ -3692,16 +3696,24 @@ def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = Non
             payload = ntriples(graph)
             payload_hash = store.mark_publication_dirty("legislation", identity, source_hash=digest,
                                                         graph_iri=graph_iri, payload=payload,
-                                                        contract_version=1)
+                                                        contract_version=BILLS_PUBLICATION_CONTRACT)
             loader.replace(graph_iri, payload, content_type="application/n-triples")
             verify_bill_competency(client, graph_iri, identity, len(graph))
             verify_core_graph(client, graph_iri, payload)
             store.complete_publication("legislation", identity, source_hash=digest,
                                        graph_iri=graph_iri, payload_hash=payload_hash,
-                                       contract_version=1)
+                                       contract_version=BILLS_PUBLICATION_CONTRACT)
             published += 1
         for row in known:
             if row["resource_iri"] in seen or row["publication_state"] != "dirty":
+                continue
+            if row.get("contract_version") != BILLS_PUBLICATION_CONTRACT:
+                deferred_dirty.append({
+                    "resource_iri": row["resource_iri"],
+                    "contract_version": row.get("contract_version"),
+                    "reason": "legacy dirty Bill payload is not replayed while absent from the source scan; "
+                              "retain its current graph and retry after the Bill reappears for current-contract validation",
+                })
                 continue
             _replay_missing_dirty("legislation", row, store, loader, client,
                                   verify_bill_competency)
@@ -3727,6 +3739,7 @@ def _run_bills_impl(args: argparse.Namespace, store: CoreStateStore | None = Non
         "new": identities["new"],
         "changed": identities["changed"],
         "skipped_identities": identities["skipped"],
+        "deferred_dirty": deferred_dirty,
         "omitted": [item for *_, report, _ in work for item in report],
     }, sort_keys=True))
     context = _run_context(args, run_id=run_id)
@@ -6152,7 +6165,7 @@ def _development_bills(rows: list[dict]) -> tuple[list[tuple[str, Graph, dict]],
         if row.get("publication_state") != "clean":
             skip("not-clean")
             continue
-        if row.get("contract_version") != 1:
+        if row.get("contract_version") != BILLS_PUBLICATION_CONTRACT:
             skip("unsupported-contract-version")
             continue
         observed_hash = row.get("observed_source_hash")
