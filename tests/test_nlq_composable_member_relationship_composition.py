@@ -244,6 +244,9 @@ def test_v2_contract_and_strict_draft_schema_cover_both_relationship_projections
     assert validator.is_valid(_intersection_draft())
     assert validator.is_valid(_representation_draft())
     assert "Never output SPARQL" in build_composable_planner_instructions()
+    instructions = build_composable_planner_instructions()
+    assert "describe the missing capability actually requested" in instructions
+    assert "do not describe every unsupported question as a member-relationship limitation" in instructions.casefold()
 
 
 @pytest.mark.parametrize(("question", "draft", "expected"), [
