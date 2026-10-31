@@ -323,6 +323,80 @@ explicit open-end overlap policy; inspect names and periods and check the
 intended date before interpreting it as a roster. It is a historical overlap
 query, not a current membership question.
 
+### 2.5 Party identities represented by TDs in a selected term/constituency
+
+The Query Service's U06/U16 composition starts by collecting the separate date
+evidence for the exact Member, constituency, and PartyMembership paths. It does
+not use a current party label or an Independent collection record as affiliation
+evidence:
+
+```sparql
+PREFIX agents: <https://data.oireachtas.ie/ontology#>
+PREFIX members: <https://data.oireachtas.ie/ontology/members#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+SELECT DISTINCT ?member ?name ?membership ?membershipRange ?membershipStart ?membershipEnd
+                ?episode ?party ?partyRange ?partyStart ?partyEnd ?affiliation ?affiliationLabel
+WHERE {
+  VALUES ?term { <https://data.oireachtas.ie/ie/oireachtas/houseTerm/dail/33> }
+  VALUES ?constituency { <https://data.oireachtas.ie/ie/oireachtas/constituency/dail/Galway-West-33> }
+
+  GRAPH ?memberGraph {
+    ?member a agents:Member ; foaf:name ?name ;
+      members:hasMembersMembership ?membership, ?episode .
+    ?membership a members:DailMembership ;
+      members:inHouseTerm ?term ; members:isRepresentativeFrom ?constituency .
+    ?episode a members:PartyMembership ;
+      members:inOireachtasMembership ?membership ;
+      members:isPartyMembershipOf ?party .
+    OPTIONAL {
+      ?membership members:hasMembershipDateRange ?membershipRange .
+      ?membershipRange a members:DateRange .
+      OPTIONAL { ?membershipRange members:StartDate ?membershipStart }
+      OPTIONAL { ?membershipRange members:EndDate ?membershipEnd }
+    }
+    OPTIONAL {
+      ?episode members:hasMembershipDateRange ?partyRange .
+      ?partyRange a members:DateRange .
+      OPTIONAL { ?partyRange members:StartDate ?partyStart }
+      OPTIONAL { ?partyRange members:EndDate ?partyEnd }
+    }
+  }
+  FILTER(STRSTARTS(STR(?memberGraph), "https://data.oireachtas.ie/graph/member/"))
+
+  GRAPH <https://data.oireachtas.ie/graph/houses> {
+    ?term a agents:DailTerm ; agents:termNo "33"^^xsd:integer
+  }
+  GRAPH <https://data.oireachtas.ie/graph/constituencies> {
+    ?constituency a members:DailConstituency ; members:constituencyInHouseTerm ?term
+  }
+  GRAPH <https://data.oireachtas.ie/graph/parties> {
+    ?party a members:ParliamentaryParty ; members:activeDuringTerm ?term
+  }
+  OPTIONAL {
+    GRAPH <https://data.oireachtas.ie/graph/political-affiliations/identities> {
+      ?party members:hasPoliticalAffiliationIdentity ?affiliation .
+      ?affiliation a members:PoliticalAffiliationIdentity ; skos:prefLabel ?affiliationLabel .
+      FILTER(LANG(?affiliationLabel) = "en")
+    }
+  }
+}
+ORDER BY ?affiliationLabel ?name ?partyStart ?membershipStart
+```
+
+This is an evidence query, not a stand-alone negative test. The application
+evaluates overlap with inclusive `xsd:dateTime` endpoints after collecting the
+two separate intervals: equal endpoints count as overlap, an absent end is
+open-ended, and a missing range/start or conflicting/malformed date is
+uncertain—not a match or a confirmed non-overlap. Party and HouseTerm identity
+joins use exact RDF resources; the PartyMembership episode must point to the
+same DailMembership that represents the selected constituency in the selected
+term. An answer for a named affiliation resolves its preferred label or reviewed
+alias only among ParliamentaryParty records active in that term, then filters by
+the linked identity IRI. No result from this local query establishes complete
+historical source coverage.
+
 ## 3. Governments and ministerial offices
 
 ### 3.1 Inspect enduring Government and accountability link

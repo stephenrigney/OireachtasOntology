@@ -152,9 +152,11 @@ def _draft(member_a="Micheál Martin", member_b="Mary Lou McDonald"):
             {"id": "b_membership", "fact": "member_has_membership", "from": "member_b", "to": "membership_b"},
             {"id": "b_term", "fact": "membership_in_term", "from": "membership_b", "to": "shared_term"},
         ],
+        "constraints": [],
         "answer": {
             "kind": "entities", "referent": "shared_term",
             "distinctBy": "identity", "display": ["label"],
+            "details": [], "preserveEvidence": False,
         },
     }
 
@@ -195,7 +197,7 @@ def test_v2_shared_dail_term_contract_and_draft_schema_are_synchronized():
     draft_schema = json.loads((ROOT / "poc/specs/composable-query-plan-draft.schema.json").read_text())
     Draft202012Validator.check_schema(plan_schema)
     Draft202012Validator.check_schema(draft_schema)
-    assert contract["contractVersion"] == "2.11.0"
+    assert contract["contractVersion"] == "2.12.0"
     assert contract["planVersion"] == plan_schema["properties"]["version"]["const"] == 2
     assert "shared_dail_terms" in plan_schema["properties"]["family"]["enum"]
     assert any(item["id"] == "shared_dail_terms" for item in contract["questionFamilies"])
@@ -272,7 +274,9 @@ def test_incomplete_or_weakened_drafts_fail_before_resolution_or_answer_executio
         draft["referents"]["other_term"] = {"type": "DailTerm", "mention": None}
         draft["relations"][-1]["to"] = "other_term"
     elif broken == "extra_constraint":
-        draft["constraints"] = []
+        draft["constraints"] = [{
+            "referent": "shared_term", "field": "date", "operator": "on", "value": "2026-01-01",
+        }]
     elif broken == "wrong_answer":
         draft["answer"]["referent"] = "member_a"
 
@@ -289,7 +293,7 @@ def test_unsupported_semantics_and_unsupported_relationships_fail_closed():
         "family": None,
         "unsupportedReason": "Bill voting is not represented by this query capability.",
         "intent": "The requested vote relationship is unavailable.",
-        "referents": None, "relations": [], "answer": None,
+        "referents": None, "relations": [], "constraints": [], "answer": None,
     }
     assert Draft202012Validator(load_composable_draft_schema()).is_valid(unsupported)
     outcome, _ = _run(fixture, question="Which Bills did these Members vote for?", draft=unsupported)

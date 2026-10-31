@@ -32,10 +32,13 @@ by the deferred Acts ETL. No source fixtures or external vocabulary pins changed
 
 ## Integration and publication
 
-Query/schema contract 2.10.0, deterministic plan compilation, label resolution
+Query-schema contract 2.10.0, deterministic plan compilation, label resolution
 and lookup, composable sponsorship, Stage B queries and Stage C Bill existence
 checks use the final metadata. The existing explanatory-memorandum chain is
 unchanged. Query Service has no fallback to the obsolete Bill metadata model.
+Composable plan contract 2.12.0 combines this Bill path with the temporal
+party/constituency composition integrated from PR #13; the query-schema contract
+remains independently versioned at 2.10.0.
 
 Bills publication contract 2 invalidates the old source-hash skip gate. Observed
 contract-1 Bills are transformed and validated even with unchanged hashes, then
@@ -75,6 +78,59 @@ intact. Current-contract durable replay is retained.
   title resolution/lookup, status, sponsorship, existence and memorandum retrieval.
   Controlled source variants add a person reference solely to test sponsor joins;
   they are not claims about the captured Finance Bill's actual sponsors.
+
+## Master integration — 31 October 2026
+
+Integrated `origin/master` at `e44d61e` (PR #13) into
+`feature/bill-classification-tranche-2`. At integration time remote PR #11 was
+still open, contrary to the task premise; its BillDelivery commit `0b99f6b` was
+already an ancestor of this branch and is retained. No PR was merged by this
+task. PR #12 now targets `master` and includes both approved Bill
+tranches.
+
+The overlapping composable answer contract now preserves both PR #13's temporal
+composition projection and the explicit BillDelivery sponsorship association.
+The integrated composable version is 2.12.0; the separate query-schema 2.10.0 and
+structured-plan 1.2.0 artifacts are unchanged from PR #12. A combined regression
+pins the temporal membership join, inclusive date-time interval boundary,
+separate evidence, fail-closed uncertainty, explicit Bill path and final Work
+metadata together. The merged strict draft-schema acceptance and negative tests
+are retained, not relaxed.
+
+This integration introduces no further ontology, mapping, source-fixture,
+golden-output or ETL publication-contract changes. Publication contract 2,
+legacy-dirty deferral, exact current-contract recovery, Act ownership and the
+separately authorized rollout boundary remain intact.
+
+Integrated verification:
+
+- Full suite (`.venv/bin/python -m pytest tests -q --disable-warnings -ra`):
+  **1,850 passed, 25 skipped, 23 subtests passed**. Skips remain the explicitly
+  gated disposable-Fuseki, capture-backed and production-release acceptance
+  checks; they are not claimed as acceptance. Initial two-minute tool-limited
+  runs were incomplete and are not counted; the successful reruns had no tool
+  time limit.
+- Focused temporal/composition, Bill classification/publication and Query
+  Service regression selection: **519 passed**.
+- All Query Service tests (`tests/test_nlq*.py`): **720 passed, 1 skipped**.
+- Ontology validation: **passed**, including HermiT consistency and
+  unsatisfiability checks over 2,586 local triples.
+- Mapping integrity: **5 passed**.
+- All **20** cookbook SPARQL queries translate successfully with their documented
+  prefixes. The temporal evidence query returns both separate party episodes
+  against the controlled named-graph fixture. The Bill relationship query runs
+  against actual final transformer output and returns no rows after removing
+  the explicit delivery-to-Work edge. No operational store was queried or changed.
+- Deterministic contract conservation checks retain all temporal definitions and
+  both explicit Bill associations; separate schema/plan artifacts are byte-identical
+  to the pre-integration PR #12 versions. No new semantic decision was required.
+- Independent read-only integration review found no material semantic regression
+  or acceptance weakening. Its staging observation was resolved by staging the
+  contract and both version-pin tests; the index was checked explicitly. A
+  revision note distinguishes PR #13's historical version prose from the current
+  integrated versions. Open-ended party/representation overlap remains distinct
+  from the existing as-of-bounded cumulative-service calculation; neither
+  behavior was changed.
 
 ## Residual issues and limitations (not expanded here)
 

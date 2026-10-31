@@ -61,6 +61,45 @@ def test_contract_artifact_loads_and_validates_its_versioned_shape():
     assert contract["namespaces"]["agents"] == "https://data.oireachtas.ie/ontology#"
 
 
+def test_integrated_composable_contract_preserves_temporal_and_bill_paths():
+    query_contract = load_query_contract()
+    plan_contract = json.loads(
+        (ROOT / "poc/specs/composable-query-plan-contract.json").read_text(encoding="utf-8")
+    )
+    assert plan_contract["contractVersion"] == "2.12.0"
+    assert query_contract["contractVersion"] == "2.10.0"
+    relations = {item["id"]: item for item in plan_contract["relations"]}
+    patterns = {item["id"]: item for item in query_contract["emittedRdfPatterns"]}
+
+    episode_join = relations["party_episode_in_membership"]
+    assert (episode_join["subjectType"], episode_join["objectType"]) == (
+        "PartyMembershipEpisode", "DailMembership",
+    )
+    assert ["?partyEpisode", episode_join["predicate"], "?oireachtasMembership"] in (
+        patterns["party-membership-episode"]["triples"]
+    )
+    overlap = next(item for item in plan_contract["constraints"]
+                   if item["id"] == "party_affiliation_interval_overlaps_membership_interval")
+    assert (overlap["operator"], overlap["dateDatatype"], overlap["boundary"]) == (
+        "overlaps", "xsd:dateTime", "inclusive_endpoint",
+    )
+    projection = plan_contract["answer"]["temporalCompositionProjection"]
+    assert projection["preserveSeparateEpisodes"] is True
+    assert projection["unknownDates"] == "never treated as overlap or non-overlap; fail closed"
+
+    for fact in ("bill_has_sponsor_participation", "bill_process_cocontained"):
+        assert relations[fact]["association"] == "bill_delivery_process_path"
+    sponsor_pattern = patterns["bill-sponsor-reference"]["triples"]
+    assert ["?delivery", "eli-dl:created_a_realization_of", "?bill"] in sponsor_pattern
+    assert ["?delivery", "eli-dl:forms_part_of", "?process"] in sponsor_pattern
+    assert "never graph co-ownership alone" in (
+        plan_contract["answer"]["sponsorshipProjection"]["billProcessAssociation"]
+    )
+    assert plan_contract["entityTypeRdfTypes"]["Bill"] == "eli-dl:DraftLegislationWork"
+    assert query_contract["labelsByEntityType"]["Bill"]["predicate"] == "dct:title"
+    assert ["?bill", "eli:work_type", "agents:Bill"] in patterns["bill-lifecycle"]["triples"]
+
+
 def test_contract_minor_additions_are_compatible_and_unknown_fields_are_ignored(tmp_path):
     def add_compatible_pattern(document):
         document["contractVersion"] = "2.4.2"

@@ -2,10 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://data.oireachtas.ie/specs/composable-query-plan-draft.schema.json",
   "title": "Composable Query Plan v2 Semantic Draft",
-  "description": "Strict IRI-free model proposal for the closed shared-Dáil-term and Member relationship-composition v2 projections. Local code validates every relationship, resolves local identities, and supplies the final v2 envelope.",
+  "description": "Strict IRI-free model proposal for the closed shared-Dáil-term and Member relationship-composition v2 projections, including bounded dated party/representation composition. Local code validates every relationship, resolves local identities, and supplies the final v2 envelope.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "supported", "family", "unsupportedReason", "intent", "referents", "relations", "answer"],
+  "required": ["version", "supported", "family", "unsupportedReason", "intent", "referents", "relations", "constraints", "answer"],
   "properties": {
     "version": {"type": "integer", "const": 2},
     "supported": {"type": "boolean"},
@@ -49,6 +49,20 @@
             "term": {"$ref": "#/$defs/selectedTermReferent"},
             "constituency": {"$ref": "#/$defs/constituencyReferent"}
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["member", "membership", "term", "constituency", "episode", "party", "affiliation"],
+          "properties": {
+            "member": {"$ref": "#/$defs/memberAnswerReferent"},
+            "membership": {"$ref": "#/$defs/membershipReferent"},
+            "term": {"$ref": "#/$defs/selectedTermReferent"},
+            "constituency": {"$ref": "#/$defs/constituencyReferent"},
+            "episode": {"$ref": "#/$defs/partyEpisodeReferent"},
+            "party": {"$ref": "#/$defs/parliamentaryPartyReferent"},
+            "affiliation": {"$ref": "#/$defs/affiliationReferent"}
+          }
         }
       ]
     },
@@ -56,6 +70,7 @@
       "type": "array",
       "items": {"$ref": "#/$defs/relation"}
     },
+    "constraints": {"type": "array", "items": {"$ref": "#/$defs/referentIntervalOverlap"}},
     "answer": {
       "anyOf": [
         {"type": "null"},
@@ -128,13 +143,41 @@
         "mention": {"type": "string", "minLength": 1}
       }
     },
+    "partyEpisodeReferent": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "mention"],
+      "properties": {"type": {"type": "string", "const": "PartyMembershipEpisode"}, "mention": {"type": "null"}}
+    },
+    "parliamentaryPartyReferent": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "mention"],
+      "properties": {"type": {"type": "string", "const": "ParliamentaryParty"}, "mention": {"type": "null"}}
+    },
+    "affiliationReferent": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "mention"],
+      "properties": {
+        "type": {"type": "string", "const": "PoliticalAffiliationIdentity"},
+        "mention": {"type": ["string", "null"], "minLength": 1}
+      }
+    },
+    "referentIntervalOverlap": {
+      "type": "object", "additionalProperties": false,
+      "required": ["referent", "field", "operator", "value"],
+      "properties": {
+        "referent": {"type": "string", "const": "episode"},
+        "field": {"type": "string", "const": "partyEpisodeInterval"},
+        "operator": {"type": "string", "const": "overlaps"},
+        "value": {"type": "string", "const": "membership"}
+      }
+    },
     "relation": {
       "type": "object",
       "additionalProperties": false,
       "required": ["id", "fact", "from", "to"],
       "properties": {
         "id": {"$ref": "#/$defs/identifier"},
-        "fact": {"type": "string", "enum": ["member_has_membership", "membership_in_term", "membership_represents", "constituency_in_term"]},
+        "fact": {"type": "string", "enum": ["member_has_membership", "membership_in_term", "membership_represents", "constituency_in_term", "member_party_membership", "party_episode_in_membership", "episode_in_parliamentary_party", "party_active_during_term", "parliamentary_party_has_affiliation_identity"]},
         "from": {"$ref": "#/$defs/identifier"},
         "to": {"$ref": "#/$defs/identifier"}
       }
@@ -142,12 +185,22 @@
     "answer": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "referent", "distinctBy", "display"],
+      "required": ["kind", "referent", "distinctBy", "display", "details", "preserveEvidence"],
       "properties": {
         "kind": {"type": "string", "const": "entities"},
         "referent": {"$ref": "#/$defs/identifier"},
         "distinctBy": {"type": "string", "const": "identity"},
-        "display": {"type": "array", "items": {"type": "string", "enum": ["label", "name"]}}
+        "display": {"type": "array", "items": {"type": "string", "enum": ["label", "name"]}},
+        "details": {"type": "array", "items": {"$ref": "#/$defs/answerDetail"}},
+        "preserveEvidence": {"type": "boolean"}
+      }
+    },
+    "answerDetail": {
+      "type": "object", "additionalProperties": false,
+      "required": ["referent", "display"],
+      "properties": {
+        "referent": {"$ref": "#/$defs/identifier"},
+        "display": {"type": "array", "items": {"type": "string", "enum": ["label", "name", "start", "end"]}}
       }
     }
   }
