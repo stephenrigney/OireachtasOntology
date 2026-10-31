@@ -85,13 +85,13 @@ class BillSponsorshipFixture:
         bill = URIRef(bill_text)
         graph = self.dataset.graph(URIRef(f"https://data.oireachtas.ie/graph/bill/{year}/{number}"))
         graph.add((bill, RDF.type, URIRef(ELI_DL + "DraftLegislationWork")))
-        graph.add((bill, URIRef(ELI + "type_document"), URIRef(AGENTS + "Bill")))
+        graph.add((bill, URIRef(ELI + "work_type"), URIRef(AGENTS + "Bill")))
         if include_year:
             graph.add((bill, URIRef(AGENTS + "legislativeYear"), Literal(year, datatype=XSD.integer)))
         if title_en is not None:
-            graph.add((bill, URIRef(ELI + "title"), Literal(title_en, lang="en")))
+            graph.add((bill, URIRef("http://purl.org/dc/terms/title"), Literal(title_en, lang="en")))
         if title_ga is not None:
-            graph.add((bill, URIRef(ELI + "title"), Literal(title_ga, lang="ga")))
+            graph.add((bill, URIRef("http://purl.org/dc/terms/title"), Literal(title_ga, lang="ga")))
         if include_process:
             process = URIRef(bill_text + "#process")
             delivery = URIRef(bill_text + "#delivery")
@@ -149,6 +149,32 @@ def _resolved_plan():
     return plan
 
 
+def test_q23_executes_against_final_transformer_output_without_legacy_metadata():
+    from oireachtas_etl.transforms.bills import bill_graph_iri, transform_bill_with_report
+    from oireachtas_etl.validation.bills import validate_bill
+
+    # Controlled source variant: not a claim about the captured Bill's sponsors.
+    record = json.loads((ROOT / "data/api_examples/bill.json").read_text())["results"][0]
+    record["bill"]["sponsors"].append({"sponsor": {
+        "as": {"showAs": None, "uri": None},
+        "by": {"showAs": "Malcolm Byrne", "uri": MEMBER_IRI}, "isPrimary": False}})
+    emitted, _ = transform_bill_with_report(record)
+    validate_bill(record, emitted)
+    fixture = BillSponsorshipFixture()
+    graph = fixture.dataset.graph(URIRef(bill_graph_iri(record["bill"])))
+    graph += emitted
+    outcome = _run(fixture)
+    assert outcome.status == "success"
+    assert len(outcome.result.rows) == 1
+    assert outcome.result.rows[0][0:4] == ("Finance Bill 2025", "Supporting", "60", "2025")
+    assert outcome.result.rows[0][-1] == record["bill"]["uri"]
+    assert not any("eli:title" in query or "eli:type_document agents:Bill" in query
+                   for query in fixture.queries)
+    delivery = next(graph.subjects(RDF.type, URIRef(AGENTS + "BillDelivery")))
+    graph.remove((delivery, URIRef(ELI_DL + "created_a_realization_of"), URIRef(record["bill"]["uri"])))
+    assert _run(fixture).status != "success"
+
+
 def test_q23_plan_schema_and_validator_accept_only_the_typed_sponsorship_path():
     plan = plan_question(QUESTION, as_of=AS_OF)
     schema = json.loads((ROOT / "poc/specs/composable-query-plan.schema.json").read_text())
@@ -200,7 +226,7 @@ def test_q23_compiler_is_deterministic_safe_and_uses_explicit_delivery_path():
 
 def test_q23_mapping_contract_matches_emitted_ontology_and_bill_transform_evidence():
     contract = json.loads((ROOT / "poc/specs/query-schema-contract.json").read_text())
-    assert contract["contractVersion"] == "2.9.0"
+    assert contract["contractVersion"] == "2.10.0"
     assert "agents:isPrimarySponsor" in contract["queryableProperties"]
     pattern = next(item for item in contract["emittedRdfPatterns"] if item["id"] == "bill-sponsor-reference")
     assert ["?participation", "agents:isPrimarySponsor", "?optionalBoolean"] in pattern["triples"]
@@ -271,8 +297,8 @@ def test_q23_returns_every_matching_bill_once_and_preserves_each_participation_s
     detached_bill = URIRef("https://data.oireachtas.ie/ie/oireachtas/bill/2024/99")
     detached_graph = fixture.dataset.graph(URIRef("https://data.oireachtas.ie/graph/bill/2024/99"))
     detached_graph.add((detached_bill, RDF.type, URIRef(ELI_DL + "DraftLegislationWork")))
-    detached_graph.add((detached_bill, URIRef(ELI + "type_document"), URIRef(AGENTS + "Bill")))
-    detached_graph.add((detached_bill, URIRef(ELI + "title"), Literal("Detached Bill 2024", lang="en")))
+    detached_graph.add((detached_bill, URIRef(ELI + "work_type"), URIRef(AGENTS + "Bill")))
+    detached_graph.add((detached_bill, URIRef("http://purl.org/dc/terms/title"), Literal("Detached Bill 2024", lang="en")))
     foreign_graph = fixture.dataset.graph(URIRef("https://data.oireachtas.ie/graph/bill/2024/100"))
     foreign_process = URIRef("https://data.oireachtas.ie/ie/oireachtas/bill/2024/100#process")
     foreign_participation = URIRef(str(foreign_process) + "%23sponsor-foreign")

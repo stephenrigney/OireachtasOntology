@@ -374,20 +374,25 @@ and Member holdings were present; use this query to inspect the current rows.
 ### 4.1 Find a Bill Work by title
 
 ```sparql
+PREFIX oir: <https://data.oireachtas.ie/ontology#>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX eli: <http://data.europa.eu/eli/ontology#>
 PREFIX eli-dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>
 SELECT ?bill ?title
 WHERE {
   GRAPH <https://data.oireachtas.ie/graph/bill/2022/1> {
-    ?bill a eli-dl:DraftLegislationWork ; eli:title ?title ;
-      eli:id_local "2022/1" .
+    ?bill a eli-dl:DraftLegislationWork ; dct:title ?title ;
+      dct:identifier "2022/1"^^xsd:string ; eli:work_type oir:Bill .
   }
 }
 ```
 
 This looks up the Bill Work and its local identifier in the Bill-owned graph.
-**Tested on development dataset:** returned the Higher Education Authority
-Bill 2022. `eli:is_realized_by` is a Work-to-Expression predicate in the
+The earlier metadata form returned the Higher Education Authority Bill 2022 on
+the historical development dataset. The query above uses the final contract-2
+Work metadata and requires regenerated Bill graphs; it was not rerun against an
+operational dataset. `eli:is_realized_by` is a Work-to-Expression predicate in the
 implemented Bill transform; do not use it to guess a Work-to-process link.
 
 The corrected transformer connects the Bill through its introduction/presentation

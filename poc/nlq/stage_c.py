@@ -353,15 +353,15 @@ def _parties_presence_query(*, supported_predicates) -> str:
 def _bill_exists_query(year: int, number: str, *, supported_predicates) -> str:
     pattern = _reviewed_pattern("bill-lifecycle", "bill-records")
     if (_pattern_rdf_type(pattern, "?bill") != "eli-dl:DraftLegislationWork"
-            or _pattern_predicate(pattern, "?bill", "?englishOrIrishTitle") != "eli:title"):
+            or _pattern_predicate(pattern, "?bill", "?englishOrIrishTitle") != "dct:title"):
         raise PlanError("Reviewed Bill lifecycle pattern is missing its Bill type.")
-    if not any(triple[0] == "?bill" and triple[1] == "eli:type_document" and triple[2] == "agents:Bill"
+    if not any(triple[0] == "?bill" and triple[1] == "eli:work_type" and triple[2] == "agents:Bill"
                for triple in pattern.get("triples", [])):
         raise PlanError("Reviewed Bill lifecycle pattern does not distinguish Bill documents.")
     _, route = _route("bill-records")
     bill_iri = f"https://data.oireachtas.ie/ie/oireachtas/bill/{year}/{number}"
     query = _PREFIXES + f'''ASK WHERE {{
-  GRAPH ?billGraph {{ <{bill_iri}> a eli-dl:DraftLegislationWork ; eli:type_document agents:Bill . }}
+  GRAPH ?billGraph {{ <{bill_iri}> a eli-dl:DraftLegislationWork ; eli:work_type agents:Bill . }}
   FILTER(STR(?billGraph) = "https://data.oireachtas.ie/graph/bill/{year}/{number}")
   FILTER(REGEX(STR(?billGraph), {json.dumps(route)}))
 }}'''

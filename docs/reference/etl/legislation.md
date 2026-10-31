@@ -12,7 +12,8 @@ Competency verification runs against the graph after PUT; a PUT or competency
 failure leaves the record dirty for retry. The shared core ETL SQLite database
 stores each complete Bill source hash, deterministic publication payload hash
 and durable pending publication data, so unchanged records are source-validated
-and skipped before RDF transformation or publication. The former
+and skipped before RDF transformation or publication only when the saved Bills
+publication contract is also current (version 2). The former
 `bills-state.json` file is imported once as read-only legacy state. Phase 5
 online Bills runs now use incremental `last_updated` extraction by default;
 `run bills --full` performs complete source reconciliation. The first incremental
@@ -33,7 +34,7 @@ Fixture-backed online runs may exercise graph publication but do not advance
 the API source-time cursor or establish source-absence evidence, because a
 fixture cannot attest to the completeness of the current API dataset.
 
-The Bill is an `eli-dl:DraftLegislationWork`/`eli:LegalResource` and owns one
+The Bill is an `eli-dl:DraftLegislationWork`, not an `eli:LegalResource`, and owns one
 `{bill-uri}#process`. Stages and supported lifecycle events are owned
 `eli-dl:LegislativeActivity` resources. Stage occurrence IRIs remain their
 source URIs; supported lifecycle-event occurrence IRIs are derived from the
@@ -63,13 +64,49 @@ missing or unsupported method information fails closed.
 
 Query Service status and sponsor patterns follow this explicit path, never
 solely graph co-ownership. Unlinked older graphs report missing relationship
-evidence rather than borrowing another Bill's process. Existing
-`eli:LegalResource`, document type and metadata behavior is unchanged (Tranche 1;
-classification cleanup is deferred). No production graphs were republished as
-part of this correction. Existing clean records may be skipped on source hashes;
-deploying code or running an ordinary incremental refresh does not establish
-that older graphs have been regenerated. Any backfill needs a separately
-authorized operational procedure.
+evidence rather than borrowing another Bill's process. The final Bill Work uses
+`eli:work_type :Bill`, where the established `:Bill` concept is an `eli:WorkType`
+in `eli:WorkTypeTable`. Short titles, long titles and the compound identifier use
+`dct:title`, `dct:alternative` and `dct:identifier` respectively. Values, language
+tags and source HTML are preserved. No Expression-level titles are invented.
+
+This avoids the pinned ELI 1.5 domains: `eli:type_document` infers
+`eli:LegalResource`; `eli:title` and `eli:title_alternative` infer `eli:Expression`;
+`eli:id_local` requires membership in `Format ∪ LegalExpression ∪ LegalResource`.
+Simply deleting the explicit LegalResource triple is therefore insufficient.
+`eli:work_type` has domain `eli:Work` and range `eli:WorkType`. Enacted Acts retain
+their separate LegalResource model and remain reference-only in Bills ETL.
+Related-document classification is not changed by this correction.
+
+## Contract-2 rollout (not performed here)
+
+Bills publication contract 2 covers both the delivery relationship and the Work
+classification/metadata correction. A clean contract-1 record is regenerated,
+validated, PUT to its **same** named graph and whole-graph verified even when its
+source hash is unchanged. Whole-graph replacement removes obsolete typing and
+predicates, rather than adding new metadata alongside them. Dirty state always
+prevents skipping; failed PUT/verification retains the exact pending contract-2
+payload and does not report a clean publication. A dirty older-contract Bill
+absent from the selected source is retained and reported as `deferred_dirty`,
+not replayed or relabelled as contract 2 without current source validation.
+Current-contract missing-source dirty recovery still replays the saved payload.
+Sponsor-link publication and development snapshots require current-contract core
+Bill evidence; they do not accept an older clean graph as migrated.
+
+No operational reload or production publication is part of this change. A single,
+separately authorized complete Bills source reconciliation (`run bills --full`)
+after deployment is needed to cover Bills outside the incremental window. Deploy
+the combined ontology, mappings, ETL and Query Service together, back up Core State
+and raw evidence under the operation lock, and retain existing quarantine rules.
+Review the run/catalog and per-resource contract versions, dirty/deferred rows,
+quarantine and missing-source inventory, whole-graph verification and representative
+Query Service title/status/sponsorship results before declaring migration complete.
+Full scans do not advance the incremental cursor or authorize deleting missing
+graphs. Previously published Bills that are absent or quarantined cannot be
+claimed migrated solely because the full run completed; resolve those separately.
+Do not clear source hashes or bulk-delete graphs to force this migration.
+The [Tranche 2 report](../../reports/etl/bill-classification-tranche-2.md) records
+the bounded regression evidence and residual related-document/Debates issues.
 
 Focused API checks on 30 October 2026 confirmed explicit methods on `2025/60`
 (Presented), `2026/93` (Introduced), and `2023/85` (By Application). The known
@@ -145,9 +182,7 @@ zero-or-one.
 
 The Bill process status is derived only from controlled `bill.statusURI`.
 `stageOutcome` is preserved source evidence only: it neither sets
-`eli-dl:process_status` nor creates `BillEventOutcome` assertions. The initial
-Bills publication contract remains version 1; no accepted Bill graph had been
-published before this contract correction.
+`eli-dl:process_status` nor creates `BillEventOutcome` assertions.
 
 The complete-source runner quarantines only the reviewed malformed source
 records (the invalid `2024/48` stage identity and missing required stage dates

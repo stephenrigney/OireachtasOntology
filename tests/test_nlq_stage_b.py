@@ -96,6 +96,44 @@ class TinyDataset:
         houses_graph.add((period, URIRef("http://www.w3.org/ns/dcat#startDate"), Literal("2025-01-23T00:00:00", datatype=XSD.dateTime)))
 
 
+def test_query_service_bill_lookup_resolution_and_existence_use_final_etl_rdf():
+    import json
+    from oireachtas_etl.transforms.bills import bill_graph_iri, transform_bill_with_report
+    from oireachtas_etl.validation.bills import validate_bill
+    from poc.nlq.member_resolution import resolve_local_entity_label
+    from poc.nlq.stage_c import _bill_exists_query
+
+    record = json.loads((ROOT / "data/api_examples/bill.json").read_text())["results"][0]
+    emitted, _ = transform_bill_with_report(record)
+    validate_bill(record, emitted)
+    fixture = TinyDataset()
+    graph = fixture.dataset.graph(URIRef(bill_graph_iri(record["bill"])))
+    graph += emitted
+    supported = supported_predicates(ROOT / "ontology")
+    outcome = _run(fixture, "Tell me about Bill 60 from 2025")
+    assert outcome.status == "success"
+    assert outcome.result.rows[0][0] == "Finance Bill 2025"
+    assert outcome.result.rows[0][1] == "Enacted"
+    assert "memo" in outcome.result.rows[0][5]
+    for question in ("Find the full title of the Finance Bill",
+                     "What is happening to the Finance Bill",
+                     "Who is the sponsor of the Finance Bill"):
+        result = _run(fixture, question)
+        assert result.result is not None and result.result.rows
+        assert "Finance Bill 2025" in repr(result.result.rows)
+    resolution = resolve_local_entity_label(
+        "Bill", "Finance Bill 2025", fixture, supported_predicates=supported)
+    assert resolution.state == "resolved"
+    assert resolution.candidates[0].iri == record["bill"]["uri"]
+    existence = _bill_exists_query(2025, "60", supported_predicates=supported)
+    assert fixture.query(existence).boolean is True
+    assert not any("eli:type_document agents:Bill" in query or "eli:title" in query
+                   for query in fixture.queries)
+    delivery = next(graph.subjects(RDF.type, URIRef(AGENTS + "BillDelivery")))
+    graph.remove((delivery, URIRef(ELIDL + "created_a_realization_of"), URIRef(record["bill"]["uri"])))
+    assert _run(fixture, "Tell me about Bill 60 from 2025").status == "incomplete_status_evidence"
+
+
 def add_bill_record(fixture, *, year=2025, number="23", title="Pregnancy Loss (Miscellaneous Provisions) Bill 2025",
                     status="published", events=(), sponsors=(), memos=(), year_values=None,
                     bill_type=True, graph_suffix=""):
@@ -110,13 +148,13 @@ def add_bill_record(fixture, *, year=2025, number="23", title="Pregnancy Loss (M
     graph.add((delivery, URIRef(ELIDL + "forms_part_of"), process))
     if bill_type:
         graph.add((bill, RDF.type, URIRef(ELIDL + "DraftLegislationWork")))
-        graph.add((bill, URIRef(ELI + "type_document"), URIRef(AGENTS + "Bill")))
+        graph.add((bill, URIRef(ELI + "work_type"), URIRef(AGENTS + "Bill")))
     for bill_year in (year_values if year_values is not None else [year]):
         graph.add((bill, URIRef(AGENTS + "legislativeYear"), Literal(bill_year, datatype=XSD.integer)))
     if title:
         values = title if isinstance(title, (list, tuple)) else [title]
         for value in values:
-            graph.add((bill, URIRef(ELI + "title"), Literal(value, lang="en")))
+            graph.add((bill, URIRef("http://purl.org/dc/terms/title"), Literal(value, lang="en")))
     graph.add((process, RDF.type, URIRef(ELIDL + "LegislativeProcess")))
     graph.add((process, URIRef(ELIDL + "process_number"), Literal(str(number))))
     status_map = {
@@ -574,7 +612,7 @@ def test_q12_resolves_dated_current_committee_before_reporting_chair_gap():
 
 def test_q18_q19_q20_q21_q22_compile_only_reviewed_bounded_bill_patterns():
     questions = {
-        "Find the full title of the AI protection of children Bill": ("eli:title", "protection", "children"),
+        "Find the full title of the AI protection of children Bill": ("dct:title", "protection", "children"),
         "What Bills were published in 2024": ("Published", "eventDate", "2024-01-01"),
         "What 2026 Bills haven't been enacted": ("process_status", "?status", "OPTIONAL"),
         "What is happening to the AI Companion Services Bill?": ("process_status", "activity_date", "forms_part_of"),
@@ -836,8 +874,8 @@ def test_q19_published_query_uses_any_exact_typed_dated_event_and_owner_graph(mo
     decoy_graph = fixture.dataset.graph(URIRef("https://data.oireachtas.ie/graph/bill/2024/5/extra"))
     decoy = URIRef("https://data.oireachtas.ie/ie/oireachtas/bill/2024/99")
     decoy_graph.add((decoy, RDF.type, URIRef(ELIDL + "DraftLegislationWork")))
-    decoy_graph.add((decoy, URIRef(ELI + "type_document"), URIRef(AGENTS + "Bill")))
-    decoy_graph.add((decoy, URIRef(ELI + "title"), Literal("Fake Bill", lang="en")))
+    decoy_graph.add((decoy, URIRef(ELI + "work_type"), URIRef(AGENTS + "Bill")))
+    decoy_graph.add((decoy, URIRef("http://purl.org/dc/terms/title"), Literal("Fake Bill", lang="en")))
 
     response = _ask(monkeypatch, fixture, "What Bills were published in 2024")
     outcome = _run(fixture, "What Bills were published in 2024")

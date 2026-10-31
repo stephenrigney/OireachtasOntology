@@ -1256,7 +1256,7 @@ def _bill_sponsorship_query_mapping(plan: dict[str, Any]) -> dict[str, str]:
     participant = _pattern_predicate(sponsor, "?participation", "?member")
     primary_status = _pattern_predicate(sponsor, "?participation", "?optionalBoolean")
     participation_role = _pattern_predicate(sponsor, "?participation", "?optionalRoleLabel")
-    if bill_kind != "eli:type_document" or primary_status != "agents:isPrimarySponsor":
+    if bill_kind != "eli:work_type" or primary_status != "agents:isPrimarySponsor":
         raise PlanError("Q23 Bill-kind or primary-sponsor mappings disagree with the emitted RDF contract.")
     if _reviewed_predicate("participation_has_participant") != participant:
         raise PlanError("The participant identity join disagrees with the emitted Bill sponsorship pattern.")
@@ -1264,7 +1264,7 @@ def _bill_sponsorship_query_mapping(plan: dict[str, Any]) -> dict[str, str]:
 
     labels = contract["labelsByEntityType"].get("Bill", {})
     if (labels.get("predicate") != bill_title or "en" not in labels.get("languages", [])
-            or bill_title != "eli:title"):
+            or bill_title != "dct:title"):
         raise PlanError("Q23 requires the reviewed English Bill short-title mapping.")
     for predicate in (bill_year, process_number, primary_status, participation_role):
         _reviewed_predicate_for_qname(predicate)

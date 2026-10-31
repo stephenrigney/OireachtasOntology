@@ -169,8 +169,8 @@ def _bill_pattern_gate(*, activity: bool = False, sponsor: bool = False,
     types = {"?bill": "eli-dl:DraftLegislationWork", "?process": "eli-dl:LegislativeProcess",
              "?delivery": "agents:BillDelivery"}
     if activity: types["?activity"] = "eli-dl:LegislativeActivity"
-    predicates = [("?bill", "agents:Bill", "eli:type_document"),
-                  ("?bill", "?englishOrIrishTitle", "eli:title"),
+    predicates = [("?bill", "agents:Bill", "eli:work_type"),
+                  ("?bill", "?englishOrIrishTitle", "dct:title"),
                   ("?process", "?status", "eli-dl:process_status"),
                   ("?delivery", "?bill", "eli-dl:created_a_realization_of"),
                   ("?delivery", "?process", "eli-dl:forms_part_of")]
@@ -451,9 +451,9 @@ def _query(plan: dict[str, Any], supported_predicates) -> str:
         bill = _bill_uri(plan)
         graph = _bill_graph(identity["year"], identity["number"])
         body = f'''GRAPH <{graph}> {{
-          <{bill}> a eli-dl:DraftLegislationWork ; eli:type_document agents:Bill .
+          <{bill}> a eli-dl:DraftLegislationWork ; eli:work_type agents:Bill .
           BIND(<{bill}> AS ?bill)
-          OPTIONAL {{ <{bill}> eli:title ?title . FILTER(LANG(?title) = "en") }}
+          OPTIONAL {{ <{bill}> dct:title ?title . FILTER(LANG(?title) = "en") }}
           OPTIONAL {{ <{bill}> agents:legislativeYear ?year }}
           OPTIONAL {{ ?delivery a agents:BillDelivery ; eli-dl:created_a_realization_of ?bill ; eli-dl:forms_part_of ?process .
             ?process a eli-dl:LegislativeProcess . OPTIONAL {{ ?process eli-dl:process_number ?number }} OPTIONAL {{ ?process eli-dl:process_status ?status }}
@@ -467,8 +467,8 @@ def _query(plan: dict[str, Any], supported_predicates) -> str:
         _template, graph_regex = _bill_owner_route()
         if family == "bills_published":
             body = f'''GRAPH ?graph {{
-              ?bill a eli-dl:DraftLegislationWork ; eli:type_document agents:Bill .
-              OPTIONAL {{ ?bill eli:title ?title . FILTER(LANG(?title) = "en") }}
+              ?bill a eli-dl:DraftLegislationWork ; eli:work_type agents:Bill .
+              OPTIONAL {{ ?bill dct:title ?title . FILTER(LANG(?title) = "en") }}
               OPTIONAL {{ ?bill agents:legislativeYear ?year }}
               ?process a eli-dl:LegislativeProcess .
               ?delivery a agents:BillDelivery ; eli-dl:created_a_realization_of ?bill ; eli-dl:forms_part_of ?process .
@@ -481,10 +481,10 @@ def _query(plan: dict[str, Any], supported_predicates) -> str:
         else:
             _template, graph_regex = _bill_owner_route()
             body = f'''GRAPH ?graph {{
-              ?bill a eli-dl:DraftLegislationWork ; eli:type_document agents:Bill .
+              ?bill a eli-dl:DraftLegislationWork ; eli:work_type agents:Bill .
               OPTIONAL {{ ?bill agents:legislativeYear ?year }}
               FILTER(EXISTS {{ ?bill agents:legislativeYear ?requestedYear . FILTER(?requestedYear = {year}) }})
-              OPTIONAL {{ ?bill eli:title ?title . FILTER(LANG(?title) = "en") }}
+              OPTIONAL {{ ?bill dct:title ?title . FILTER(LANG(?title) = "en") }}
               OPTIONAL {{ ?delivery a agents:BillDelivery ; eli-dl:created_a_realization_of ?bill ; eli-dl:forms_part_of ?process .
                 ?process a eli-dl:LegislativeProcess . OPTIONAL {{ ?process eli-dl:process_number ?number }} OPTIONAL {{ ?process eli-dl:process_status ?status }} }}
             }} FILTER(REGEX(STR(?graph), "{graph_regex}"))'''
@@ -494,7 +494,7 @@ def _query(plan: dict[str, Any], supported_predicates) -> str:
         # candidate identities are returned rather than selecting by similarity.
         _template, graph_regex = _bill_owner_route()
         body = f'''GRAPH ?graph {{
-          ?bill a eli-dl:DraftLegislationWork ; eli:type_document agents:Bill ; eli:title ?title .
+          ?bill a eli-dl:DraftLegislationWork ; eli:work_type agents:Bill ; dct:title ?title .
           OPTIONAL {{ ?bill agents:legislativeYear ?year }}
           FILTER(LANG(?title) = "en")
          }} FILTER(REGEX(STR(?graph), "{graph_regex}"))'''
@@ -506,7 +506,7 @@ def _query(plan: dict[str, Any], supported_predicates) -> str:
     elif family == "bill_status_history":
         _template, graph_regex = _bill_owner_route()
         body = f'''GRAPH ?graph {{
-          ?bill a eli-dl:DraftLegislationWork ; eli:type_document agents:Bill ; eli:title ?title .
+          ?bill a eli-dl:DraftLegislationWork ; eli:work_type agents:Bill ; dct:title ?title .
           OPTIONAL {{ ?bill agents:legislativeYear ?year }}
           FILTER(LANG(?title) = "en")
           OPTIONAL {{
@@ -528,7 +528,7 @@ def _query(plan: dict[str, Any], supported_predicates) -> str:
         _template, graph_regex = _bill_owner_route()
         member_regex = _member_owner_regex()
         body = f'''GRAPH ?graph {{
-          ?bill a eli-dl:DraftLegislationWork ; eli:type_document agents:Bill ; eli:title ?title .
+          ?bill a eli-dl:DraftLegislationWork ; eli:work_type agents:Bill ; dct:title ?title .
           OPTIONAL {{ ?bill agents:legislativeYear ?year }}
           FILTER(LANG(?title) = "en")
           OPTIONAL {{

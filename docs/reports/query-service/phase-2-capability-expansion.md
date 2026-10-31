@@ -27,8 +27,9 @@ existing major version `1`.
 ### Bills
 
 - Bill identity is a resolved local Bill IRI; Bill lookup uses the reviewed
-  `eli:type_document agents:Bill` designation and the Bill graph family.
-- `bill_title` returns the emitted English and/or Irish `eli:title` values.
+  `eli:work_type agents:Bill` designation and the Bill graph family (updated by
+  Bill Classification Tranche 2; query/schema contract 2.10.0).
+- `bill_title` returns the emitted English and/or Irish Bill Work `dct:title` values.
 - `bill_year` uses the explicitly emitted `agents:legislativeYear` value.
 - `bill_status` follows the co-owned `eli-dl:LegislativeProcess` and
   `eli-dl:process_status` path. It returns one of the reviewed English labels

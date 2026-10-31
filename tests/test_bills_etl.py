@@ -324,8 +324,8 @@ def test_delivery_explicitly_connects_its_bill_work_and_process_for_every_method
     assert list(graph.objects(delivery, ELIDL.had_activity_type)) == [expected]
     assert list(graph.objects(delivery, ELIDL.forms_part_of)) == [process]
     assert not list(graph.objects(delivery, ELIDL.activity_date))  # no invented date
-    assert (BILL, RDF.type, URIRef(ELI + "LegalResource")) in graph
-    assert (BILL, URIRef(ELI + "type_document"), OIR.Bill) in graph
+    assert (BILL, RDF.type, URIRef(ELI + "LegalResource")) not in graph
+    assert (BILL, URIRef(ELI + "work_type"), OIR.Bill) in graph
     rows = graph.query('''
         PREFIX dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>
         SELECT ?process WHERE {
@@ -1446,7 +1446,9 @@ def test_bill_publication_failure_and_competency_failure_are_dirty_and_retry(tmp
         assert store.get_resource("legislation", RECORD["bill"]["uri"])["publication_state"] == "clean"
 
 
-def test_bills_full_scan_replays_durable_dirty_payload_for_unobserved_bill(tmp_path, monkeypatch, capsys):
+@pytest.mark.parametrize("contract_version", [1, 2])
+def test_bills_full_scan_replays_only_current_dirty_payload_for_unobserved_bill(
+        tmp_path, monkeypatch, capsys, contract_version):
     from oireachtas_etl import cli
     from oireachtas_etl.serialization import ntriples
     from oireachtas_etl.state import CoreStateStore, PROVENANCE_GRAPH_IRI
@@ -1454,8 +1456,9 @@ def test_bills_full_scan_replays_durable_dirty_payload_for_unobserved_bill(tmp_p
 
     identity = "https://data.oireachtas.ie/ie/oireachtas/bill/2026/999"
     graph_iri = "https://data.oireachtas.ie/graph/bill/2026/999"
-    graph = Graph()
-    graph.add((URIRef(identity), RDF.type, ELIDL.DraftLegislationWork))
+    absent = _bill_with_method(2026, 999, RECORD["bill"]["methodURI"], "Presented")
+    graph, _ = transform_bill_with_report(absent)
+    validate_bill(absent, graph)
     payload = ntriples(graph)
     database = tmp_path / "core.sqlite"
     with CoreStateStore(database) as store:
@@ -1463,7 +1466,7 @@ def test_bills_full_scan_replays_durable_dirty_payload_for_unobserved_bill(tmp_p
                                  parameters={"seed": True})
         store.observe_resource("legislation", identity, graph_iri, "a" * 64, run_id)
         store.mark_publication_dirty("legislation", identity, source_hash="a" * 64,
-                                     graph_iri=graph_iri, payload=payload, contract_version=1)
+                                     graph_iri=graph_iri, payload=payload, contract_version=contract_version)
         store.finish_run(run_id, success=False, error="interrupted before verification")
 
     calls = []
@@ -1476,7 +1479,6 @@ def test_bills_full_scan_replays_durable_dirty_payload_for_unobserved_bill(tmp_p
                 calls.append((graph_iri, raw))
     monkeypatch.setattr(cli, "FusekiGraphStoreLoader", Loader)
     monkeypatch.setattr(cli, "FusekiSparqlClient", lambda *args, **kwargs: fuseki)
-    monkeypatch.setattr(cli, "verify_bill_competency", lambda *args, **kwargs: None)
     fixture = ROOT / "data/api_examples/bill.json"
     args = Namespace(fixture=str(fixture), offline=False, raw_dir=str(tmp_path / "raw"),
                      state_db=str(database), output_nq=None, output_ttl=None,
@@ -1484,15 +1486,21 @@ def test_bills_full_scan_replays_durable_dirty_payload_for_unobserved_bill(tmp_p
                      fuseki_sparql_url="http://example.test/query")
     assert cli.run_bills(args) == 0
     result = json.loads(capsys.readouterr().out)
-    assert result["published"] == 2
-    assert (graph_iri, payload) in calls
+    assert result["published"] == (2 if contract_version == 2 else 1)
+    assert ((graph_iri, payload) in calls) == (contract_version == 2)
+    assert bool(result["deferred_dirty"]) == (contract_version == 1)
     assert len(fuseki.construct_graph(PROVENANCE_GRAPH_IRI)) > 0
     assert any(f"GRAPH <{PROVENANCE_GRAPH_IRI}>" in query for query in fuseki.queries)
     with CoreStateStore(database) as store:
         recovered = store.get_resource("legislation", identity)
-        assert recovered["publication_state"] == "clean"
-        assert recovered["published_source_hash"] == "a" * 64
-        assert recovered["pending_payload"] is None
+        if contract_version == 2:
+            assert recovered["publication_state"] == "clean"
+            assert recovered["published_source_hash"] == "a" * 64
+            assert recovered["pending_payload"] is None
+        else:
+            assert recovered["publication_state"] == "dirty"
+            assert recovered["published_source_hash"] is None
+            assert recovered["pending_payload"] == payload
 
 
 def test_bill_competency_query_resources_execute_against_named_graph():

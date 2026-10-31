@@ -50,7 +50,7 @@ def test_contract_artifact_loads_and_validates_its_versioned_shape():
         (ROOT / "poc/specs/query-schema-contract.schema.json").read_text(encoding="utf-8")
     )
 
-    assert contract["contractVersion"] == "2.9.0"
+    assert contract["contractVersion"] == "2.10.0"
     assert contract["schemaVersion"] == schema["properties"]["schemaVersion"]["const"] == 1
     assert contract["contractId"] == "https://data.oireachtas.ie/specs/query-schema-contract"
     assert contract["contractSchema"] == "poc/specs/query-schema-contract.schema.json"
@@ -154,7 +154,9 @@ def test_supported_predicates_come_from_contract_policy_and_active_sources():
     }
 
     assert queryable.issubset(predicates)
-    assert URIRef("http://data.europa.eu/eli/ontology#title") in predicates
+    assert URIRef("http://purl.org/dc/terms/title") in predicates
+    assert URIRef("http://data.europa.eu/eli/ontology#work_type") in predicates
+    assert URIRef("http://data.europa.eu/eli/ontology#title") not in predicates
     assert URIRef("http://data.europa.eu/eli/eli-draft-legislation-ontology#forms_part_of") in predicates
     assert URIRef("http://www.w3.org/2002/07/owl#sameAs") in predicates
     assert URIRef("https://data.oireachtas.ie/ontology/members#recognisedAsParty") in predicates
@@ -183,7 +185,7 @@ def test_grounding_is_generated_from_contract_scope_without_private_etl_imports(
 
     for term in ("agents:Member", "members:PartyMembership", "eli-dl:DraftLegislationWork"):
         assert term in context
-    assert "contract 2.9.0 (schema version 1)" in context
+    assert "contract 2.10.0 (schema version 1)" in context
     assert "https://data.oireachtas.ie/graph/committees" in context
     assert "same RDF resource IRI" in context
     assert "Reviewed Wikidata political-party item" in context
@@ -264,7 +266,7 @@ def test_query_schema_v2_corrects_bill_process_ownership_and_exposes_only_review
     assert ["?activity", "rdf:type", "eli-dl:LegislativeActivity"] in bill_triples
     assert ["?activity", "eli-dl:forms_part_of", "?process"] in bill_triples
     assert ["?bill", "eli-dl:latest_activity", "?activity"] not in bill_triples
-    assert ["?bill", "eli:type_document", "agents:Bill"] in bill_triples
+    assert ["?bill", "eli:work_type", "agents:Bill"] in bill_triples
     assert ["?delivery", "rdf:type", "agents:BillDelivery"] in bill_triples
     assert ["?delivery", "eli-dl:created_a_realization_of", "?bill"] in bill_triples
     assert ["?delivery", "eli-dl:forms_part_of", "?process"] in bill_triples

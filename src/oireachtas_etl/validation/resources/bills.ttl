@@ -4,10 +4,19 @@
 @prefix eli: <http://data.europa.eu/eli/ontology#> .
 @prefix dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#> .
 @prefix oir: <https://data.oireachtas.ie/ontology#> .
+@prefix dct: <http://purl.org/dc/terms/> .
 
 oir:BillShape a sh:NodeShape ; sh:targetClass dl:DraftLegislationWork ;
+  sh:not [ sh:or ( [ sh:class eli:LegalResource ] [ sh:class eli:Expression ] [ sh:class eli:LegalExpression ] [ sh:class eli:Format ] ) ] ;
+  sh:property [ sh:path eli:work_type ; sh:minCount 1 ; sh:maxCount 1 ; sh:hasValue oir:Bill ] ;
+  sh:property [ sh:path eli:type_document ; sh:maxCount 0 ] ;
+  sh:property [ sh:path eli:title ; sh:maxCount 0 ] ;
+  sh:property [ sh:path eli:title_alternative ; sh:maxCount 0 ] ;
+  sh:property [ sh:path eli:id_local ; sh:maxCount 0 ] ;
+  sh:property [ sh:path dct:title ; sh:datatype rdf:langString ; sh:uniqueLang true ; sh:languageIn ( "en" "ga" ) ] ;
+  sh:property [ sh:path dct:alternative ; sh:datatype rdf:langString ; sh:uniqueLang true ; sh:languageIn ( "en" "ga" ) ] ;
   sh:property [ sh:path oir:legislativeYear ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:integer ] ;
-  sh:property [ sh:path eli:id_local ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path dct:identifier ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
   sh:property [ sh:path oir:originHouse ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
   sh:property [ sh:path [ sh:inversePath dl:created_a_realization_of ] ; sh:minCount 1 ; sh:maxCount 1 ; sh:class oir:BillDelivery ; sh:nodeKind sh:IRI ] .
 

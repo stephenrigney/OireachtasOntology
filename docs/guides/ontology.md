@@ -288,11 +288,17 @@ Bill Work (`eli-dl:DraftLegislationWork`) through
 path connects a Bill to **its own process**, even if a query encounters
 several Bills in one graph. It also covers application/by-application
 delivery methods; no delivery date is inferred. There is no new direct
-Bill-to-process property. Existing `eli:LegalResource` typing, document
-type, titles and metadata are retained in this first correction tranche.
+Bill-to-process property. The Bill is not an `eli:LegalResource`: its Work type
+is `eli:work_type oir:Bill`, with `oir:Bill` an ELI WorkType. Bill Work short and
+long titles use `dct:title` and `dct:alternative`; the compound identifier uses
+`dct:identifier`. Values and language tags are preserved on the Work, not
+invented on individual Expressions. Enacted Acts remain separate LegalResources.
 
 Previously published graphs need regeneration before this path can be
-queried; graph co-ownership alone is not relationship evidence.
+queried; graph co-ownership alone is not relationship evidence. Bills publication
+contract 2 forces regeneration of older observed Bills even with unchanged source
+hashes. Complete coverage needs the separately authorized single full Bills reload,
+not merely an incremental refresh.
 
 For the exact mapped fields and source limitations, see the
 [legislation ETL reference](../reference/etl/legislation.md) and

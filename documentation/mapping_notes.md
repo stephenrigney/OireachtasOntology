@@ -1,5 +1,10 @@
 # Mapping Notes — `data/houses.json`
 
+Bill-specific mappings are maintained in `mappings/bill_mapping.csv` and the
+[legislation contract](../docs/reference/etl/legislation.md). The approved Bill
+classification correction uses DraftLegislationWork with Work-compatible
+metadata; it does not change Houses mappings documented below.
+
 Conversion notes for transforming the Oireachtas houses API response (`data/houses.json`) into RDF triples conforming to the Oireachtas ontology.
 
 ---

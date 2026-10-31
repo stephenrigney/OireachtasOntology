@@ -745,7 +745,7 @@ def test_generalised_resolver_uses_supported_type_and_owner_graph(entity_type, c
     assert class_name in fuseki.queries[0]
     assert graph in fuseki.queries[0]
     if entity_type == "Bill":
-        assert "eli:type_document agents:Bill" in fuseki.queries[0]
+        assert "eli:work_type agents:Bill" in fuseki.queries[0]
         assert "FILTER(REGEX(STR(?entityGraph)" in fuseki.queries[0]
 
 
@@ -761,7 +761,7 @@ def test_bill_resolver_matches_only_canonical_title_with_qualifier_and_year_omit
     assert result.state == "resolved"
     assert result.candidates == (type(result.candidates[0])(bill_iri, full_title),)
     assert 'CONTAINS(LCASE(STR(?label)), LCASE(STR("Artificial Intelligence Companion Services")))' in fuseki.queries[0]
-    assert "eli:type_document agents:Bill" in fuseki.queries[0]
+    assert "eli:work_type agents:Bill" in fuseki.queries[0]
 
 
 def test_bill_canonical_title_resolution_preserves_ambiguity_across_resources():

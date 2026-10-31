@@ -330,12 +330,48 @@ def test_bill_year_and_status_list_has_title_relation_and_controlled_filters():
 
     assert result.generated
     assert result.semantic_answer_shape == {"kind": "entities", "entityType": "Bill"}
-    assert "eli:title" in result.sparql
+    assert "dct:title" in result.sparql
     assert "agents:legislativeYear" in result.sparql
     assert "eli-dl:process_status" in result.sparql
     assert "agents:Bill" in result.sparql
     assert 'FILTER(?value2 = "2026"^^<http://www.w3.org/2001/XMLSchema#integer>)' in result.sparql
     assert "FILTER(?billStatus0 = <https://data.oireachtas.ie/ontology#CurrentBill>)" in result.sparql
+
+
+@pytest.mark.parametrize("fact", ["bill_title", "bill_status", "bill_sponsor"])
+def test_deterministic_bill_compiler_and_label_lookup_match_final_etl_graph(fact):
+    from oireachtas_etl.transforms.bills import bill_graph_iri, transform_bill_with_report
+    from oireachtas_etl.validation.bills import validate_bill
+    from poc.nlq.plan_sparql import build_label_lookup_query
+
+    record = json.loads((ROOT / "data/api_examples/bill.json").read_text())["results"][0]
+    record["bill"]["sponsors"].append({"sponsor": {
+        "as": {"showAs": None, "uri": None},
+        "by": {"showAs": None, "uri": _MEMBER}, "isPrimary": True}})
+    emitted, _ = transform_bill_with_report(record)
+    validate_bill(record, emitted)
+    dataset = Dataset()
+    graph = dataset.graph(URIRef(bill_graph_iri(record["bill"])))
+    graph += emitted
+    member_graph = dataset.graph(URIRef("https://data.oireachtas.ie/graph/member/Timmy-Dooley.S.2002-09-12"))
+    member_graph.add((URIRef(_MEMBER), RDF.type, URIRef("https://data.oireachtas.ie/ontology#Member")))
+    requirement = {"id": "value", "fact": fact, "subject": {"entity": "bill"}}
+    if fact == "bill_sponsor":
+        requirement["object"] = {"type": "Member"}
+    answer = ({"kind": "entities", "entityType": "Member"} if fact == "bill_sponsor"
+              else {"kind": "fact", "target": "value"})
+    plan = _plan(entities=[_entity("bill", "Bill", record["bill"]["uri"])],
+                 requirements=[requirement], answer=answer)
+    compiled = _generate(plan)
+    assert compiled.generated
+    values = {row[0] for row in dataset.query(compiled.sparql)}
+    expected = {"bill_title": {Literal(record["bill"]["shortTitleEn"], lang="en"),
+                               Literal(record["bill"]["shortTitleGa"], lang="ga")},
+                "bill_status": {Literal("Enacted")}, "bill_sponsor": {URIRef(_MEMBER)}}
+    assert values == expected[fact]
+    lookup = build_label_lookup_query("Bill", record["bill"]["uri"],
+                                      supported_predicates=supported_predicates(ROOT / "ontology"))
+    assert {row[0] for row in dataset.query(lookup)} == expected["bill_title"]
 
 
 def test_named_bill_sponsor_is_bill_to_member_relation_and_returns_member_role():
@@ -377,8 +413,8 @@ def test_generated_bill_facts_do_not_cross_associate_processes_in_one_graph(fact
         delivery = URIRef(str(bill) + "#delivery")
         participation = URIRef(str(bill) + "#sponsor")
         graph.add((bill, RDF.type, dl.DraftLegislationWork))
-        graph.add((bill, eli.type_document, oir.Bill))
-        graph.add((bill, eli.title, Literal("Test Bill", lang="en")))
+        graph.add((bill, eli.work_type, oir.Bill))
+        graph.add((bill, URIRef("http://purl.org/dc/terms/title"), Literal("Test Bill", lang="en")))
         graph.add((delivery, RDF.type, oir.BillDelivery))
         graph.add((delivery, dl.created_a_realization_of, bill))
         graph.add((delivery, dl.forms_part_of, process))

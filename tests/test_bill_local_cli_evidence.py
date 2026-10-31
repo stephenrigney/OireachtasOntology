@@ -70,12 +70,16 @@ def test_bill_and_office_evidence_requires_exact_published_core_graphs():
     bill = RECORD["bill"]
     bill_graph = transform_bill_with_report(RECORD)[0]
     office_graph = transform_offices(REGISTRY)
-    core = Core(legislation=_row(bill_graph, bill_graph_iri(bill), contract=1,
+    core = Core(legislation=_row(bill_graph, bill_graph_iri(bill), contract=2,
                                  source=source_hash(bill)),
                 offices=_row(office_graph, OFFICES_GRAPH, contract=1))
     client = Client({bill_graph_iri(bill): bill_graph, OFFICES_GRAPH: office_graph})
     _require_published_sponsor_offices(core, REGISTRY, client)
     assert set(_published_bill_sponsor_graph(core, RECORD, client)) == set(bill_graph)
+    core.legislation["contract_version"] = 1
+    with pytest.raises(ValueError, match="not published"):
+        _published_bill_sponsor_graph(core, RECORD, client)
+    core.legislation["contract_version"] = 2
     client.graphs[bill_graph_iri(bill)] = Graph()
     with pytest.raises(ValueError, match="mismatch"):
         _published_bill_sponsor_graph(core, RECORD, client)

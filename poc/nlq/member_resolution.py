@@ -244,8 +244,8 @@ def _entity_lookup_query(entity_type: str, label: str) -> str:
     qnames = [class_name, label_qname]
     extra_patterns = ""
     if entity_type == "Bill":
-        qnames.extend(("eli:type_document", "agents:Bill"))
-        extra_patterns = " ; eli:type_document agents:Bill"
+        qnames.extend(("eli:work_type", "agents:Bill"))
+        extra_patterns = " ; eli:work_type agents:Bill"
     lookup_label = (
         _bill_title_lookup_hint(label) if entity_type == "Bill"
         else unicodedata.normalize("NFC", label)
