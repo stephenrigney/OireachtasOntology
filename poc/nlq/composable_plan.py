@@ -24,7 +24,7 @@ from .contract import load_query_contract
 from .errors import NLQError
 from .member_resolution import UnsupportedLocalEntityType, resolve_local_entity_label
 from .results import QueryResult, format_debug_payload
-from .safety import validate_sparql
+from .safety import MAX_RESULT_OFFSET, MAX_RESULT_ROWS, validate_sparql
 
 
 PLAN_VERSION = 2
@@ -1923,12 +1923,17 @@ def compile_member_relationship_composition_query(
     plan: dict[str, Any],
     *,
     supported_predicates,
+    offset: int = 0,
 ) -> str:
     """Compile a connected relation graph from reviewed predicates/owners only."""
+    if type(offset) is not int or not 0 <= offset <= MAX_RESULT_OFFSET:
+        raise PlanError(f"Member relationship page offset must be between 0 and {MAX_RESULT_OFFSET}.")
     mapping = _member_relationship_composition_mapping(
         plan, supported_predicates=supported_predicates,
     )
     if mapping["temporal"]:
+        if offset:
+            raise PlanError("Bounded pagination is not implemented for temporal Member relationship queries.")
         return _compile_member_party_temporal_query(
             plan, mapping, supported_predicates=supported_predicates,
         )
@@ -2001,7 +2006,7 @@ def compile_member_relationship_composition_query(
         blocks = f"{blocks}\n  {distinct_memberships}"
     query = _PREFIXES + f'''SELECT DISTINCT ?{member_id} ?memberName WHERE {{
   {blocks}
-}} ORDER BY ?memberName ?{member_id} LIMIT 100'''
+}} ORDER BY ?memberName ?{member_id} LIMIT {MAX_RESULT_ROWS} OFFSET {offset}'''
     return _query(query, supported_predicates)
 
 
@@ -3973,36 +3978,95 @@ def _execute_member_relationship_composition_plan(
 
     try:
         plan = validate_plan(plan)
-        answer_query = compile_member_relationship_composition_query(
-            plan, supported_predicates=supported_predicates,
-        )
     except (PlanError, NLQError, TypeError, KeyError) as error:
         return PlanOutcome(
             "unsupported_mapping", plan=plan, diagnostic=str(error),
             request_family="member_relationship_composition",
         )
-    try:
-        raw_result = fuseki.query(answer_query)
-    except NLQError as error:
+    page_offset = 0
+    page_offsets: list[int] = []
+    page_queries: list[str] = []
+    answer_rows: list[tuple[str, ...]] = []
+    answer_columns: tuple[str, ...] | None = None
+    first_page_result: QueryResult | None = None
+    while True:
+        try:
+            page_query = compile_member_relationship_composition_query(
+                plan, supported_predicates=supported_predicates, offset=page_offset,
+            )
+        except (PlanError, NLQError) as error:
+            return PlanOutcome(
+                "unsupported_mapping", plan=plan,
+                sparql=page_queries[0] if page_queries else None,
+                diagnostic=f"The Member relationship page query could not be compiled safely: {error}",
+                request_family="member_relationship_composition",
+            )
+        try:
+            page_result = fuseki.query(page_query)
+        except NLQError as error:
+            return PlanOutcome(
+                "execution_failure", plan=plan,
+                sparql=page_queries[0] if page_queries else None,
+                diagnostic=(f"The validated Member relationship query page at offset {page_offset} "
+                            f"could not be executed: {error}"),
+                request_family="member_relationship_composition",
+            )
+        if page_result.kind != "select" or not {plan["answer"]["referent"], "memberName"}.issubset(page_result.columns):
+            return PlanOutcome(
+                "execution_failure", plan=plan, sparql=page_queries[0] if page_queries else page_query,
+                diagnostic="The Member relationship answer query returned an unexpected result shape.",
+                request_family="member_relationship_composition",
+            )
+        if len(page_result.rows) > MAX_RESULT_ROWS:
+            return PlanOutcome(
+                "execution_failure", plan=plan, sparql=page_queries[0] if page_queries else page_query,
+                diagnostic="Fuseki returned more Member relationship rows than the validated page limit.",
+                request_family="member_relationship_composition",
+            )
+        if answer_columns is None:
+            answer_columns = page_result.columns
+            first_page_result = page_result
+        elif page_result.columns != answer_columns:
+            return PlanOutcome(
+                "execution_failure", plan=plan, sparql=page_queries[0],
+                diagnostic="Member relationship result columns changed between bounded pages.",
+                request_family="member_relationship_composition",
+            )
+        page_offsets.append(page_offset)
+        page_queries.append(page_query)
+        answer_rows.extend(page_result.rows)
+        if len(page_result.rows) < MAX_RESULT_ROWS:
+            break
+        if page_offset >= MAX_RESULT_OFFSET:
+            return PlanOutcome(
+                "source_data_unavailable", plan=plan, sparql=page_queries[0],
+                diagnostic=(f"The Member relationship answer exceeds the bounded pagination range "
+                            f"(maximum offset {MAX_RESULT_OFFSET}); no partial answer was returned."),
+                request_family="member_relationship_composition",
+            )
+        page_offset = min(page_offset + MAX_RESULT_ROWS, MAX_RESULT_OFFSET)
+
+    answer_query = page_queries[0]
+    if len(page_offsets) == 1:
+        raw_result = first_page_result
+    else:
+        raw_result = QueryResult(
+            "select", answer_columns or (), tuple(answer_rows),
+            raw_json=format_debug_payload({
+                "pagination": {
+                    "pageSize": MAX_RESULT_ROWS,
+                    "offsets": page_offsets,
+                    "note": "The visible generated SPARQL is the first page; later pages use the same query with these OFFSET values.",
+                },
+            }),
+        )
+    if raw_result is None:
         return PlanOutcome(
             "execution_failure", plan=plan, sparql=answer_query,
-            diagnostic=f"The validated Member relationship query could not be executed: {error}",
+            diagnostic="No Member relationship result page was returned.",
             request_family="member_relationship_composition",
         )
     member_id = plan["answer"]["referent"]
-    if (raw_result.kind != "select"
-            or not {member_id, "memberName"}.issubset(raw_result.columns)):
-        return PlanOutcome(
-            "execution_failure", plan=plan, sparql=answer_query,
-            diagnostic="The Member relationship answer query returned an unexpected result shape.",
-            request_family="member_relationship_composition",
-        )
-    if len(raw_result.rows) >= 100:
-        return PlanOutcome(
-            "source_data_unavailable", plan=plan, sparql=answer_query,
-            diagnostic="The Member relationship answer reached the 100-row safety cap; the local result may be incomplete.",
-            request_family="member_relationship_composition",
-        )
     name_index = raw_result.columns.index("memberName")
     member_index = raw_result.columns.index(member_id)
     names_by_member: dict[str, set[str]] = {}
@@ -4049,11 +4113,14 @@ def _execute_member_relationship_composition_plan(
         ))
     )
     result = QueryResult(
-        "select", ("Member", "Member identity"), rows, raw_result.raw_json,
+        "select", ("Member", "Member identity"), rows, raw_json=raw_result.raw_json,
     )
     return PlanOutcome(
         "success", plan=plan, sparql=answer_query, result=result,
-        diagnostic=("Members are deduplicated by exact RDF identity and matched through the complete selected "
+        diagnostic=((f"Complete matching results were retrieved in {len(page_offsets)} bounded pages "
+                     f"(page size {MAX_RESULT_ROWS}); the displayed SPARQL is the first page. "
+                     if len(page_offsets) > 1 else "")
+                    + "Members are deduplicated by exact RDF identity and matched through the complete selected "
                     "membership/term/constituency graph. Results reflect local records; historical source completeness is not certified."),
         request_family="member_relationship_composition",
     )
