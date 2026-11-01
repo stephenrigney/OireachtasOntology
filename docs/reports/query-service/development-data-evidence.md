@@ -1,4 +1,4 @@
-# Query Service development-data evidence (updated 2026-10-19)
+# Query Service development-data evidence (updated 2026-10-31)
 
 ## Outcome and boundary
 
@@ -8,10 +8,11 @@ data surface. The bootstrap selects preserved complete API captures from
 reads the reviewed office inputs, and replays exactly the three Debate sources
 pinned in [`development-source-selection.json`](../../../poc/nlq/benchmarks/development-source-selection.json).
 The machine-readable API pins remove the dependency on a surviving Core State
-capture-index snapshot. The bootstrap does not acquire source data, alter Bills
-publication contract v1, or claim
-production/authoritative coverage. Raw XML and API pages remain outside Git in
-the immutable local raw store.
+capture-index snapshot. The bootstrap does not acquire source data or claim
+production/authoritative coverage. The original accepted dataset below used
+Bills publication contract 1; its source identity and aggregate counts alone
+are not acceptance evidence for contract-2 Bill RDF. Raw XML and API pages remain
+outside Git in the immutable local raw store.
 
 ## Phase 2 development-bootstrap acceptance (2026-10-18)
 
@@ -50,25 +51,24 @@ status, run ID, URL, pagination, body digests, and source-record counts before
 use. These pins preserve the accepted complete-capture selection; they do not
 promote the development data to authoritative status or write Core State.
 
-### Repeated-bootstrap validation boundary (2026-10-19)
+### Original repeated-bootstrap validation boundary (2026-10-19)
 
-For the exact accepted dataset identity above, the bootstrap reuses the full
-per-resource Member/Bill RDF acceptance already recorded by the 2026-10-18
-development runs and the Bills publication acceptance below. It still verifies
-every raw page and accepted run pin, runs Member/Bill source checks and
-deterministic transforms, replays the pinned Debate slice, parses every emitted
-N-Triples payload locally, and checks the accepted graph-family, resource,
+The original implementation reused full per-resource Member/Bill RDF acceptance
+for the exact accepted dataset identity recorded by the 2026-10-18 development
+runs and Bills publication acceptance below. That source-identity-only Bill
+shortcut is historical and is superseded by the contract-specific Bill evidence
+recorded below. The bootstrap still verifies every raw page and accepted run pin,
+runs source checks and deterministic transforms, replays the pinned Debate
+slice, parses emitted N-Triples locally, and checks graph-family, resource,
 quarantine, and unresolved-reference counts before publication. After whole-graph
 PUTs it verifies each remote graph against its serialized RDF payload and checks
 Fuseki's per-graph triple counts and inventory. No generated RDF is cached.
 
-This shortcut is identity-gated: a different dataset ID retains the full
-per-resource `validate_member` and `validate_bill` checks. The authoritative ETL
-publication paths are unchanged, and the full validators remain exercised by
-the ETL test/acceptance suites. The shortcut is only for repeated setup of this
-exact local benchmark dataset; it is not a relaxation of source, mapping, RDF,
-or production publication acceptance. Offline benchmark-candidate generation
-does not use this shortcut and runs the full per-resource validators.
+The Member shortcut remains tied to exact accepted input identity. Current Bill
+validation reuse additionally requires an exact contract-specific Bill RDF
+inventory fingerprint; any identity or contract mismatch retains full
+per-resource validation. Offline benchmark-candidate generation always runs the
+full per-resource validators.
 
 ### Realistic-query benchmark bulk-load exception (2026-10-19)
 
@@ -224,6 +224,43 @@ N-Triples/N-Quads serialization now uses RDFLib output with deterministic sorted
 lines; other endpoints may consequently produce different payload bytes/hashes
 when next republished, without a change to their RDF meaning. No other endpoint
 was republished as part of this acceptance.
+
+## Contract-2 Bill bootstrap acceptance evidence (2026-10-31)
+
+The original accepted dataset identity remains
+`sha256:9da63abc5878387f991e4d4717f35cca67606850db34be589e0a8fc0cc1504e2`;
+its source captures and side-inputs are unchanged. That source identity and the
+historic aggregate counts do not authorize Bill validation reuse across
+publication contracts. The bootstrap now binds that shortcut separately to the
+active Bill publication contract and a SHA-256 over the sorted per-graph RDF 1.1
+semantic hashes for every represented Bill.
+
+The pinned 13 October 2026 capture was regenerated offline through the
+benchmark-candidate path. It validated all 6,044 eligible Bill graphs with the
+contract-2 Bill validator, preserved the four reviewed quarantines and 28
+diagnostic paths, parsed the complete N-Quads candidate, and did not connect to
+Fuseki or write Core State or raw captures. It also performed full Member
+validation as required by the candidate-generation path. The verified output
+contains 6,044 Bill graphs and **917,294 Bill triples**, exactly the historical
+contract-1 aggregate total. This demonstrates why aggregate counts cannot be
+used as the Bill acceptance key.
+
+Accepted contract-2 Bill RDF evidence:
+
+- publication contract: `2`;
+- Bill graph inventory SHA-256 (contract plus graph IRIs and RDF 1.1 semantic
+  hashes): `cf03661413b811f0b07a6616e3aebdfce60e09f20cda4d4aaf29208d619a99cb`;
+- candidate N-Quads SHA-256: `b0b9711543fabb5b21fe70cdc07d9e03780312898fce511549fc64417405975c`;
+- candidate graph inventory SHA-256: `d909a6756c83a855c0f00ae7da9fc58731e9feb60dbc19a63d7f48d88532ebd0`;
+- full candidate: 7,981 graphs and 1,119,467 triples; reference closure remains
+  non-authoritative and incomplete.
+
+The source-based dataset ID is deliberately retained. Bootstrap repeats still
+verify captures and re-transform Bills, but reuse Bill per-resource validation
+only when both the exact accepted source identity and the current contract-2
+RDF-inventory fingerprint match. A contract change or any Bill graph-content
+change forces per-resource validation even if graph and triple counts remain
+unchanged. No Fuseki refresh was part of this acceptance.
 
 ## Office registry and review evidence
 

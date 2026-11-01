@@ -10,7 +10,7 @@ from pathlib import Path
 import sqlite3
 
 import pytest
-from rdflib import Graph, URIRef
+from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import RDF
 
 from oireachtas_etl import cli
@@ -602,6 +602,63 @@ def test_read_resource_state_supports_v4_read_only_publication_schema(tmp_path):
     assert _hash(state_path) == before
     with sqlite3.connect(f"file:{state_path}?mode=ro", uri=True) as connection:
         assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
+
+
+def test_development_bill_rdf_acceptance_rejects_stale_contract_even_when_counts_match(
+        monkeypatch):
+    first = Graph()
+    first.add((URIRef("urn:bill"), URIRef("urn:title"), Literal("same count")))
+    changed = Graph()
+    changed.add((URIRef("urn:bill"), URIRef("urn:label"), Literal("same count")))
+    assert len(first) == len(changed)
+
+    monkeypatch.setattr(cli, "BILLS_PUBLICATION_CONTRACT", 1)
+    stale_inventory = cli._development_bill_rdf_inventory_sha256([
+        ("https://data.oireachtas.ie/graph/bill/2025/60",
+         cli.rdf11_ntriples_sha256(first)),
+    ])
+    monkeypatch.setattr(cli, "BILLS_PUBLICATION_CONTRACT", 2)
+    current_inventory = cli._development_bill_rdf_inventory_sha256([
+        ("https://data.oireachtas.ie/graph/bill/2025/60",
+         cli.rdf11_ntriples_sha256(changed)),
+    ])
+    assert stale_inventory != current_inventory
+
+    monkeypatch.setattr(cli, "DEVELOPMENT_ACCEPTED_BILL_RDF_EVIDENCE", {
+        "publication_contract": 1,
+        "inventory_sha256": stale_inventory,
+    })
+    assert not cli._can_reuse_development_bill_validation(
+        source_identity_matches=True, candidate_output_requested=False,
+        inventory_sha256=current_inventory)
+
+
+def test_development_bill_validation_reuse_requires_current_contract_and_exact_inventory(
+        monkeypatch):
+    graph_inventory = [("https://data.oireachtas.ie/graph/bill/2025/60", "a" * 64)]
+    monkeypatch.setattr(cli, "BILLS_PUBLICATION_CONTRACT", 2)
+    current = cli._development_bill_rdf_inventory_sha256(graph_inventory)
+    monkeypatch.setattr(cli, "DEVELOPMENT_ACCEPTED_BILL_RDF_EVIDENCE", {
+        "publication_contract": 2,
+        "inventory_sha256": current,
+    })
+
+    assert cli._can_reuse_development_bill_validation(
+        source_identity_matches=True, candidate_output_requested=False,
+        inventory_sha256=current)
+    assert not cli._can_reuse_development_bill_validation(
+        source_identity_matches=False, candidate_output_requested=False,
+        inventory_sha256=current)
+    assert not cli._can_reuse_development_bill_validation(
+        source_identity_matches=True, candidate_output_requested=True,
+        inventory_sha256=current)
+
+    monkeypatch.setattr(cli, "BILLS_PUBLICATION_CONTRACT", 3)
+    changed_contract = cli._development_bill_rdf_inventory_sha256(graph_inventory)
+    assert changed_contract != current
+    assert not cli._can_reuse_development_bill_validation(
+        source_identity_matches=True, candidate_output_requested=False,
+        inventory_sha256=changed_contract)
 
 
 def test_development_office_reference_check_fails_closed_for_registry_mismatch():

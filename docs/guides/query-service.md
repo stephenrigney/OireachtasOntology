@@ -149,10 +149,16 @@ source selections. It verifies immutable raw-page evidence and office
 registry/review inputs, derives holdings only from current explicitly accepted
 office evidence, validates transformed RDF, checks the accepted graph/resource
 counts, and loads the non-authoritative evaluation graphs into loopback Fuseki.
-For the exact dataset ID already accepted for this benchmark, it reuses the
-recorded full Member/Bill RDF acceptance while rechecking source evidence,
-deterministic transforms, RDF syntax, output counts, and Fuseki's per-graph
-counts. A different input identity takes the full per-resource validation path.
+For the exact dataset ID already accepted for this benchmark, Member RDF
+validation may be reused while source evidence and deterministic transforms are
+rechecked. Bill validation reuse additionally requires the current Bills
+publication contract and an exact per-graph RDF 1.1 semantic-hash inventory
+matching the accepted contract-specific evidence. Bill transforms and source
+checks still run on each bootstrap; changed RDF, a changed Bill contract, or a
+different dataset identity requires full Bill validation. Aggregate graph and
+triple counts are checked separately and cannot authorize reuse. Benchmark
+candidate generation always performs full Member and Bill validation. The
+bootstrap also checks serialized RDF and Fuseki per-graph counts.
 It does not fetch current API data, run the authoritative publication path, or
 advance Core State, office-occurrence, or external-reconciliation state.
 Materially conflicted reference identities remain quarantined, and reference
@@ -165,7 +171,7 @@ supplied. It reads complete API captures and current clean Member/Bill
 publications from Core State in read-only mode. Only exact-source-matching clean
 contract-3 Member publications contribute OfficeHolding/CabinetMembership
 output; other Members receive no office resolutions. Bill graphs are optional
-and loaded only from current clean contract-1 Core State publications with
+and loaded only from current clean contract-2 Core State publications with
 intact payloads. The NLQ launcher and Phase 2 benchmark runners pass
 `reconciliation/office-decisions.json` explicitly when they require the pinned
 Phase 2 evaluation dataset.
