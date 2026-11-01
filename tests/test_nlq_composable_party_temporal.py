@@ -35,6 +35,8 @@ FOAF = "http://xmlns.com/foaf/0.1/"
 SKOS = "http://www.w3.org/2004/02/skos/core#"
 TERM = "https://data.oireachtas.ie/ie/oireachtas/houseTerm/dail/33"
 CONSTITUENCY = "https://data.oireachtas.ie/ie/oireachtas/constituency/dail/Galway-West-33"
+CURRENT_TERM = "https://data.oireachtas.ie/ie/oireachtas/houseTerm/dail/34"
+CURRENT_CONSTITUENCY = "https://data.oireachtas.ie/ie/oireachtas/constituency/dail/Galway-West-34"
 MEMBER = "https://data.oireachtas.ie/ie/oireachtas/member/id/Aoife-Byrne"
 SF_IDENTITY = "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein"
 FF_IDENTITY = "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail"
@@ -64,6 +66,10 @@ class PartyRepresentationFixture:
         omit_membership_range=False,
         omit_membership_start=False,
         conflicting_membership_range=False,
+        term_iri=TERM,
+        term_number=33,
+        constituency_iri=CONSTITUENCY,
+        term_dates=None,
     ):
         if episodes is None:
             episodes = [
@@ -80,6 +86,10 @@ class PartyRepresentationFixture:
             ]
         self.dataset = Dataset()
         self.queries: list[str] = []
+        self.term_iri = term_iri
+        self.term_number = term_number
+        self.constituency_iri = constituency_iri
+        self.term_dates = term_dates
         self._add_shared_occurrences()
         self._add_member(
             membership_interval,
@@ -92,15 +102,25 @@ class PartyRepresentationFixture:
 
     def _add_shared_occurrences(self):
         houses = self.dataset.graph(URIRef("https://data.oireachtas.ie/graph/houses"))
-        term = URIRef(TERM)
+        term = URIRef(self.term_iri)
         houses.add((term, RDF.type, URIRef(AGENTS + "DailTerm")))
-        houses.add((term, URIRef(AGENTS + "termNo"), Literal(33, datatype=XSD.integer)))
+        houses.add((term, URIRef(AGENTS + "termNo"), Literal(self.term_number, datatype=XSD.integer)))
+        if self.term_dates is not None:
+            self._add_term_dates(houses, term, self.term_dates)
 
         constituencies = self.dataset.graph(URIRef("https://data.oireachtas.ie/graph/constituencies"))
-        constituency = URIRef(CONSTITUENCY)
+        constituency = URIRef(self.constituency_iri)
         constituencies.add((constituency, RDF.type, URIRef(MEMBERS + "DailConstituency")))
         constituencies.add((constituency, URIRef(SKOS + "prefLabel"), Literal("Galway West", lang="en")))
         constituencies.add((constituency, URIRef(MEMBERS + "constituencyInHouseTerm"), term))
+
+    @staticmethod
+    def _add_term_dates(graph, term, dates, *, suffix="dates"):
+        period = URIRef(f"{term}#{suffix}")
+        graph.add((term, URIRef("http://purl.org/dc/terms/temporal"), period))
+        graph.add((period, URIRef("http://www.w3.org/ns/dcat#startDate"), Literal(dates[0], datatype=XSD.date)))
+        if dates[1] is not None:
+            graph.add((period, URIRef("http://www.w3.org/ns/dcat#endDate"), Literal(dates[1], datatype=XSD.date)))
 
     def _add_member(self, interval, *, omit_range, omit_start, conflicting_range):
         graph = self.dataset.graph(URIRef("https://data.oireachtas.ie/graph/member/Aoife-Byrne"))
@@ -111,8 +131,8 @@ class PartyRepresentationFixture:
         graph.add((member, URIRef(MEMBERS + "hasMembersMembership"), membership))
         graph.add((membership, RDF.type, URIRef(MEMBERS + "OireachtasMembership")))
         graph.add((membership, RDF.type, URIRef(MEMBERS + "DailMembership")))
-        graph.add((membership, URIRef(MEMBERS + "inHouseTerm"), URIRef(TERM)))
-        graph.add((membership, URIRef(MEMBERS + "isRepresentativeFrom"), URIRef(CONSTITUENCY)))
+        graph.add((membership, URIRef(MEMBERS + "inHouseTerm"), URIRef(self.term_iri)))
+        graph.add((membership, URIRef(MEMBERS + "isRepresentativeFrom"), URIRef(self.constituency_iri)))
         if omit_range:
             return
         for range_index in range(2 if conflicting_range else 1):
@@ -131,7 +151,7 @@ class PartyRepresentationFixture:
         member = URIRef(MEMBER)
         membership = URIRef(MEMBER + "#dail-membership-33")
         episode = URIRef(MEMBER + f"#party-membership-{index}")
-        party = URIRef("https://data.oireachtas.ie/ie/oireachtas/party/dail/33/" + item["key"])
+        party = URIRef(f"https://data.oireachtas.ie/ie/oireachtas/party/dail/{self.term_number}/" + item["key"])
         graph.add((member, URIRef(MEMBERS + "hasMembersMembership"), episode))
         graph.add((episode, RDF.type, URIRef(MEMBERS + "PartyMembership")))
         graph.add((episode, URIRef(MEMBERS + "inOireachtasMembership"), membership))
@@ -140,7 +160,7 @@ class PartyRepresentationFixture:
         parties = self.dataset.graph(URIRef("https://data.oireachtas.ie/graph/parties"))
         parties.add((party, RDF.type, URIRef(MEMBERS + "ParliamentaryParty")))
         parties.add((party, URIRef(SKOS + "prefLabel"), Literal(item["party_label"], lang="en")))
-        parties.add((party, URIRef(MEMBERS + "activeDuringTerm"), URIRef(TERM)))
+        parties.add((party, URIRef(MEMBERS + "activeDuringTerm"), URIRef(self.term_iri)))
 
         identities = self.dataset.graph(URIRef("https://data.oireachtas.ie/graph/political-affiliations/identities"))
         identity = URIRef(item["identity"])
@@ -206,8 +226,12 @@ class FixedPlanGenerator:
         self.closed = True
 
 
-def _temporal_draft(*, answer_referent="affiliation", affiliation_mention=None, constituency="Galway West"):
+def _temporal_draft(
+    *, answer_referent="affiliation", affiliation_mention=None,
+    constituency="Galway West", term_selector=None,
+):
     party_list = answer_referent == "affiliation"
+    term_selector = term_selector or {"kind": "termNumber", "number": 33}
     return {
         "version": 2,
         "supported": True,
@@ -217,7 +241,7 @@ def _temporal_draft(*, answer_referent="affiliation", affiliation_mention=None, 
         "referents": {
             "member": {"type": "Member", "mention": None},
             "membership": {"type": "DailMembership", "mention": None},
-            "term": {"type": "DailTerm", "mention": None, "selector": {"kind": "termNumber", "number": 33}},
+            "term": {"type": "DailTerm", "mention": None, "selector": term_selector},
             "constituency": {"type": "DailConstituency", "mention": constituency},
             "episode": {"type": "PartyMembershipEpisode", "mention": None},
             "party": {"type": "ParliamentaryParty", "mention": None},
@@ -255,6 +279,25 @@ def _temporal_draft(*, answer_referent="affiliation", affiliation_mention=None, 
             "preserveEvidence": True,
         }),
     }
+
+
+def _current_term_fixture(
+    *,
+    membership_interval=("2024-11-29T00:00:00", None),
+    party_interval=("2024-11-29T00:00:00", None),
+    term_dates=("2024-11-29", None),
+):
+    return PartyRepresentationFixture(
+        membership_interval=membership_interval,
+        episodes=[{
+            "key": "sinn-fein-34", "party_label": "Sinn Féin, 34th Dáil",
+            "identity": SF_IDENTITY, "identity_label": "Sinn Féin", "interval": party_interval,
+        }],
+        term_iri=CURRENT_TERM,
+        term_number=34,
+        constituency_iri=CURRENT_CONSTITUENCY,
+        term_dates=term_dates,
+    )
 
 
 def _run(fixture: PartyRepresentationFixture, question: str, draft: dict):
@@ -331,6 +374,130 @@ def test_integrated_ask_executes_u06_and_u16_paraphrases(question, draft, monkey
         assert "Aoife Byrne" in response.text
     else:
         assert "Aoife Byrne" in response.text and "Sinn Féin" in response.text
+
+
+def test_current_term_party_composition_runs_through_integrated_ask(monkeypatch):
+    question = "Which political parties were represented by TDs for Galway West in the current Dáil?"
+    fixture = _current_term_fixture()
+    response, generator = _ask(
+        monkeypatch, fixture, question,
+        _temporal_draft(term_selector={"kind": "currentTerm"}),
+    )
+
+    assert response.status_code == 200
+    assert "Validated composable query plan" in response.text
+    assert "current Dáil as of 2026-10-28" in response.text
+    assert "both the PartyMembership episode and exact DailMembership interval to contain 2026-10-28" in response.text
+    assert "local current source completeness is not certified" in response.text
+    assert "Sinn Féin" in response.text and "Aoife Byrne" in response.text
+    assert generator.calls == [question]
+    assert generator.closed
+    assert len(fixture.queries) == 3
+    assert "dct:temporal" in fixture.queries[0] and "dcat:startDate" in fixture.queries[0]
+    assert CURRENT_TERM in fixture.queries[-1]
+    assert "termNo" not in fixture.queries[-1]
+
+
+def test_current_named_party_composition_preserves_exact_identity_and_date_evidence(monkeypatch):
+    question = "Which Sinn Féin TDs represented Galway West in the current Dáil?"
+    fixture = _current_term_fixture(
+        membership_interval=("2024-11-29T00:00:00", None),
+        party_interval=("2026-10-28T00:00:00", None),
+    )
+    response, generator = _ask(
+        monkeypatch, fixture, question,
+        _temporal_draft(answer_referent="member", affiliation_mention="Sinn Féin",
+                        term_selector={"kind": "currentTerm"}),
+    )
+
+    assert response.status_code == 200
+    assert "Validated composable query plan" in response.text
+    assert "Sinn Féin" in response.text and "Aoife Byrne" in response.text
+    assert "both intervals to contain 2026-10-28" in response.text
+    assert generator.calls == [question]
+    assert len(fixture.queries) == 4
+    assert "activeDuringTerm" in fixture.queries[2]
+    assert CURRENT_TERM in fixture.queries[-1] and "termNo" not in fixture.queries[-1]
+
+
+def test_current_term_selector_resolves_house_dates_and_matches_the_final_plan_schema():
+    fixture = _current_term_fixture()
+    question = "Which political parties were represented by TDs for Galway West now?"
+    outcome, _ = _run(
+        fixture, question, _temporal_draft(term_selector={"kind": "currentTerm"}),
+    )
+
+    assert outcome.status == "success", outcome.diagnostic
+    assert outcome.plan["referents"]["term"]["selector"] == {"kind": "currentTerm", "house": "Dail"}
+    final_schema = json.loads((ROOT / "poc/specs/composable-query-plan.schema.json").read_text())
+    Draft202012Validator(final_schema).validate(outcome.plan)
+    assert len(fixture.queries) == 3
+    assert "dct:temporal" in fixture.queries[0]
+    assert CURRENT_TERM in fixture.queries[-1] and "termNo" not in fixture.queries[-1]
+    assert outcome.result.rows[0][0] == "Sinn Féin"
+    assert "both contain 2026-10-28" in outcome.diagnostic
+
+
+@pytest.mark.parametrize(("membership_interval", "party_interval", "matches"), [
+    (("2026-10-28T00:00:00", "2026-10-28T00:00:00"),
+     ("2026-10-28T00:00:00", "2026-10-28T00:00:00"), True),
+    (("2024-11-29T00:00:00", "2026-10-27T23:59:59"),
+     ("2024-11-29T00:00:00", None), False),
+    (("2024-11-29T00:00:00", None),
+     ("2024-11-29T00:00:00", "2026-10-27T23:59:59"), False),
+    (("2024-11-29T00:00:00", None),
+     ("2026-10-29T00:00:00", None), False),
+    (("2026-10-29T00:00:00", None),
+     ("2024-11-29T00:00:00", None), False),
+])
+def test_current_party_and_representation_intervals_must_independently_contain_as_of(
+    membership_interval, party_interval, matches,
+):
+    fixture = _current_term_fixture(
+        membership_interval=membership_interval, party_interval=party_interval,
+    )
+    question = "Which political parties were represented by TDs for Galway West in the current Dáil?"
+    outcome, _ = _run(
+        fixture, question, _temporal_draft(term_selector={"kind": "currentTerm"}),
+    )
+
+    if matches:
+        assert outcome.status == "success", outcome.diagnostic
+        assert outcome.result.rows[0][0] == "Sinn Féin"
+    else:
+        assert outcome.status == "source_data_unavailable"
+        assert outcome.result is None
+        assert "both contain 2026-10-28" in outcome.diagnostic
+
+
+@pytest.mark.parametrize("house_dates", [("2027-01-01", None), ("2019-01-01", "2020-01-01")])
+def test_current_term_composition_fails_closed_without_one_active_house_term(house_dates):
+    fixture = _current_term_fixture(term_dates=house_dates)
+    question = "Which political parties were represented by TDs for Galway West in the current Dáil?"
+    outcome, _ = _run(
+        fixture, question, _temporal_draft(term_selector={"kind": "currentTerm"}),
+    )
+
+    assert outcome.status == "source_data_unavailable"
+    assert "exactly one current Dáil" in outcome.diagnostic
+    assert outcome.result is None
+    assert len(fixture.queries) == 1
+
+
+def test_current_term_request_cannot_be_silently_replaced_by_an_explicit_ordinal():
+    fixture = PartyRepresentationFixture()
+    question = "Which political parties currently represented TDs for Galway West in the 33rd Dáil?"
+    generator = FixedPlanGenerator(_temporal_draft())
+    outcome = execute_question(
+        question, as_of=AS_OF, fuseki=fixture,
+        supported_predicates=supported_predicates(ROOT / "ontology"),
+        semantic_plan_generator_factory=lambda: generator,
+    )
+
+    assert outcome.status == "unsupported_request"
+    assert "Do not combine" in outcome.diagnostic
+    assert generator.calls == []
+    assert not fixture.queries
 
 
 @pytest.mark.parametrize("interval", [

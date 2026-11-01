@@ -255,29 +255,54 @@ def create_app(
                     for referent in composition_refs.values()
                     if referent.get("type") == "DailConstituency"
                 ]
+                composition_current_term = any(
+                    referent.get("type") == "DailTerm"
+                    and isinstance(referent.get("selector"), dict)
+                    and referent["selector"].get("kind") == "currentTerm"
+                    for referent in composition_refs.values()
+                )
+                composition_has_party_episode = any(
+                    referent.get("type") == "PartyMembershipEpisode"
+                    for referent in composition_refs.values()
+                )
                 member_relationship_summary = None
-                if is_member_relationship_composition and composition_terms:
+                if is_member_relationship_composition and (composition_terms or composition_current_term):
                     term_names = [f"the {_dail_ordinal_label(number)}" for number in composition_terms]
-                    temporal_affiliation = (outcome.plan or {}).get("referents", {}).get("affiliation", {})
-                    has_party_episode = any(
-                        referent.get("type") == "PartyMembershipEpisode"
-                        for referent in composition_refs.values()
+                    term_label = (
+                        f"the current Dáil as of {as_of.isoformat()}"
+                        if composition_current_term else term_names[0] if len(term_names) == 1 else None
                     )
-                    if has_party_episode and composition_constituencies and len(term_names) == 1:
+                    temporal_affiliation = (outcome.plan or {}).get("referents", {}).get("affiliation", {})
+                    if composition_has_party_episode and composition_constituencies and term_label:
                         constituency_name = composition_constituencies[0]
                         if (outcome.plan or {}).get("answer", {}).get("referent") == "affiliation":
-                            member_relationship_summary = (
-                                f"Find distinct reviewed political-affiliation identities represented by TDs for "
-                                f"{constituency_name} during {term_names[0]}, requiring the PartyMembership episode "
-                                "to overlap the exact DailMembership interval for that constituency representation."
-                            )
+                            if composition_current_term:
+                                member_relationship_summary = (
+                                    f"Find distinct reviewed political-affiliation identities represented by TDs for "
+                                    f"{constituency_name} in {term_label}, resolving the term from House-owned dates "
+                                    f"and requiring both the PartyMembership episode and exact DailMembership interval "
+                                    f"to contain {as_of.isoformat()}."
+                                )
+                            else:
+                                member_relationship_summary = (
+                                    f"Find distinct reviewed political-affiliation identities represented by TDs for "
+                                    f"{constituency_name} during {term_label}, requiring the PartyMembership episode "
+                                    "to overlap the exact DailMembership interval for that constituency representation."
+                                )
                         else:
                             affiliation_name = temporal_affiliation.get("label", temporal_affiliation.get("mention", "the selected party"))
-                            member_relationship_summary = (
-                                f"Find distinct Members affiliated with {affiliation_name} while representing "
-                                f"{constituency_name} during {term_names[0]}, using the exact term/constituency identities "
-                                "and established interval overlap."
-                            )
+                            if composition_current_term:
+                                member_relationship_summary = (
+                                    f"Find distinct Members affiliated with {affiliation_name} while representing "
+                                    f"{constituency_name} in {term_label}, using exact term/constituency identities "
+                                    f"and requiring both intervals to contain {as_of.isoformat()}."
+                                )
+                            else:
+                                member_relationship_summary = (
+                                    f"Find distinct Members affiliated with {affiliation_name} while representing "
+                                    f"{constituency_name} during {term_label}, using the exact term/constituency identities "
+                                    "and established interval overlap."
+                                )
                     elif composition_constituencies and len(term_names) == 1:
                         member_relationship_summary = (
                             f"Find distinct local Members whose recorded DailMembership represents "
@@ -374,8 +399,17 @@ def create_app(
                                  if is_member_relationship_composition else
                                  "Stage A typed family result using reviewed RDF ownership, with identity and date qualifications preserved."
                                 if is_stage_a else
-                                "Distinct Dáil-term identities present in both independently resolved Member membership paths."
-                                 if is_shared_dail_terms else "Distinct Members, displayed by name.")
+                                 "Distinct Dáil-term identities present in both independently resolved Member membership paths."
+                                  if is_shared_dail_terms else "Distinct Members, displayed by name.")
+                if is_member_relationship_composition and composition_current_term and composition_has_party_episode:
+                    answer_text = (
+                        f"Distinct reviewed affiliation identities are returned only when both the PartyMembership and "
+                        f"DailMembership intervals contain {as_of.isoformat()}; local current source completeness is not certified."
+                        if is_q06 else
+                        f"Distinct Member identities are filtered to the exact party identity and returned only when both "
+                        f"the PartyMembership and DailMembership intervals contain {as_of.isoformat()}; local current "
+                        "source completeness is not certified."
+                    )
                 if is_representation:
                     answer_text = "Constituency and Dáil-term evidence is retained by exact RDF identity; local coverage is not certified complete."
                 if is_government:
