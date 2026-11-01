@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "contractId": "https://data.oireachtas.ie/specs/composable-query-plan-contract",
   "schemaVersion": 1,
-  "contractVersion": "2.12.0",
+  "contractVersion": "2.13.0",
   "planVersion": 2,
   "scope": "Local Oireachtas query planning; Stage A, Stage B and Stage C plans use one shared typed v2 envelope with closed family-specific semantic projections.",
   "resolutionOutcomes": ["unresolved", "resolved", "ambiguous", "not_found", "source_data_unavailable", "unsupported_mapping"],
@@ -39,6 +39,7 @@
     ,{"id": "bill_has_explanatory_memo_work", "subjectType": "Bill", "objectType": "ExplanatoryMemoWork", "patternId": "bill-document-work-links", "predicate": "eli:has_part", "subjectGraph": "bill-records", "objectGraph": "bill-records", "note": "The typed Work constraint is family-specific and requires the reviewed ExplanatoryMemo -> LegalExpression -> Format rendition chain."}
   ],
   "questionFamilies": [
+    {"id": "constituency_representation", "cases": [], "referentType": "DailConstituency", "patterns": ["member-house-membership", "representation-reference", "constituency-term-occurrence", "house-term-temporal-reference"], "semantics": "Project a named Member's current or career-wide constituency occurrences with their exact Dáil terms, or return current TDs for one named constituency. Current Dáil is uniquely resolved from House-owned term dates at asOf, never an ordinal. Current membership requires its own mapped date interval spanning asOf, within that term. Historical answers preserve term-scoped constituency identities. No source completeness claim is implied."},
     {"id": "member_lookup", "cases": ["Q01", "Q32", "Q34"], "referentType": "Member", "patterns": ["member-description"], "semantics": "Grounded name tokens resolve to zero, one, or a set of distinct local Member IRIs; ambiguity is not collapsed."},
     {"id": "previous_service", "cases": ["Q02"], "referentType": "DailMembership", "patterns": ["member-house-membership", "house-term-temporal-reference"], "semantics": "Previous Dáil is selected from HouseTerm start/end evidence relative to explicit asOf; membership is tested in that term."},
     {"id": "dail_duration", "cases": ["Q03"], "referentType": "DailMembership", "patterns": ["member-house-membership"], "semantics": "Cumulative service is the union of dated membership intervals through asOf; gaps are preserved and open ends are not unbounded."},

@@ -197,7 +197,7 @@ def test_v2_shared_dail_term_contract_and_draft_schema_are_synchronized():
     draft_schema = json.loads((ROOT / "poc/specs/composable-query-plan-draft.schema.json").read_text())
     Draft202012Validator.check_schema(plan_schema)
     Draft202012Validator.check_schema(draft_schema)
-    assert contract["contractVersion"] == "2.12.0"
+    assert contract["contractVersion"] == "2.13.0"
     assert contract["planVersion"] == plan_schema["properties"]["version"]["const"] == 2
     assert "shared_dail_terms" in plan_schema["properties"]["family"]["enum"]
     assert any(item["id"] == "shared_dail_terms" for item in contract["questionFamilies"])

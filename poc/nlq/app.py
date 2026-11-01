@@ -190,8 +190,9 @@ def create_app(
                 plan_family = outcome.plan.get("family") if outcome.plan else outcome.request_family
                 is_shared_dail_terms = plan_family == "shared_dail_terms"
                 is_member_relationship_composition = plan_family == "member_relationship_composition"
+                is_representation = plan_family == "constituency_representation"
                 is_composable_semantic = (
-                    is_shared_dail_terms or is_member_relationship_composition
+                    is_shared_dail_terms or is_member_relationship_composition or is_representation
                     or plan_family == "composable_semantic"
                 )
                 stage_a_family = (plan_family if plan_family in stage_a_family_ids else
@@ -329,7 +330,14 @@ def create_app(
                            if is_q06 else ("Find the requested actual DebateSitting and its official record link."
                                              if is_debate else
                                              (q35_summary if is_q35 else
-                                              (q23_summary if is_q23 else "Find distinct Members who represented this constituency in the previous Dáil."))))
+                                               (q23_summary if is_q23 else "Find distinct Members who represented this constituency in the previous Dáil."))))
+                if is_representation:
+                    current_representation = "selector" in composition_refs.get("term", {})
+                    summary = (
+                        f"Find recorded constituency representation at {as_of.isoformat()}, resolving the current Dáil from House-owned dates and checking membership dates."
+                        if current_representation else
+                        "Find the named Member's historical constituency occurrences, preserving their Dáil terms and exact identities."
+                    )
                 answer_text = ("Dated Bill/office evidence is shown with explicit local-coverage qualifications; unresolved or unknown facts remain explicit."
                                 if is_stage_b else
                                 "Stage C answer uses only reviewed local RDF evidence; unavailable coverage is stated specifically and is not replaced by proxy facts."
@@ -361,7 +369,9 @@ def create_app(
                                  "Stage A typed family result using reviewed RDF ownership, with identity and date qualifications preserved."
                                 if is_stage_a else
                                 "Distinct Dáil-term identities present in both independently resolved Member membership paths."
-                                if is_shared_dail_terms else "Distinct Members, displayed by name.")
+                                 if is_shared_dail_terms else "Distinct Members, displayed by name.")
+                if is_representation:
+                    answer_text = "Constituency and Dáil-term evidence is retained by exact RDF identity; local coverage is not certified complete."
                 if outcome.status == "success":
                     return render(request, question=question, mode=mode,
                                   interpretation=summary, plan_json=plan_json,
@@ -508,7 +518,7 @@ def create_app(
                     else:
                         message = messages.get(outcome.status, outcome.diagnostic)
                 elif outcome.status == "source_data_unavailable" and is_q06:
-                    message = "The local dataset has no usable dated party-membership evidence for this Member."
+                    message = outcome.diagnostic or "The local party-membership evidence could not be read completely."
                 elif outcome.status == "source_data_unavailable" and is_debate:
                     message = "No matching actual sitting was found. The local dataset does not certify complete coverage for this date, so absence cannot be reported as a confirmed No."
                 elif outcome.status == "source_data_unavailable" and is_q35:

@@ -66,7 +66,7 @@ def test_integrated_composable_contract_preserves_temporal_and_bill_paths():
     plan_contract = json.loads(
         (ROOT / "poc/specs/composable-query-plan-contract.json").read_text(encoding="utf-8")
     )
-    assert plan_contract["contractVersion"] == "2.12.0"
+    assert plan_contract["contractVersion"] == "2.13.0"
     assert query_contract["contractVersion"] == "2.10.0"
     relations = {item["id"]: item for item in plan_contract["relations"]}
     patterns = {item["id"]: item for item in query_contract["emittedRdfPatterns"]}

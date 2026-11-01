@@ -91,7 +91,13 @@ Use distinct referent IDs for separate membership/term resources. Do not substit
 
 For a dated political-party/constituency composition, use family "member_relationship_composition" and exactly the referents member, membership, term, constituency, episode, party, and affiliation. Connect member→membership→term, membership→constituency, constituency→term, member→episode, episode→membership, episode→party, party→term, and party→affiliation using their exact reviewed fact IDs. The episode must point to the exact same DailMembership that represents the constituency in the selected term. Set "constraints" to exactly [{{"referent":"episode","field":"partyEpisodeInterval","operator":"overlaps","value":"membership"}}] (inclusive xsd:dateTime endpoints; an absent end is open-ended; missing interval/start means uncertain, never a positive or negative match). Only typed PartyMembership records count; Independent is not a party. For "which parties" questions, use a null affiliation mention and set "answer" to exactly {{"kind":"entities","referent":"affiliation","distinctBy":"identity","display":["label"],"details":[{{"referent":"member","display":["name"]}},{{"referent":"episode","display":["start","end"]}},{{"referent":"membership","display":["start","end"]}}],"preserveEvidence":true}}. For a named-party TD question, keep the exact named affiliation mention as a required identity filter and set "answer" to exactly {{"kind":"entities","referent":"member","distinctBy":"identity","display":["name"],"details":[{{"referent":"affiliation","display":["label"]}},{{"referent":"episode","display":["start","end"]}},{{"referent":"membership","display":["start","end"]}}],"preserveEvidence":true}}. Never use current party state, party-label equality, or term context as a substitute for the dated episode and exact identity links.
 
-If a question asks for any other relationship, more or fewer terms than the supported shapes, an extra filter, temporal restriction, different answer, or anything outside these capabilities, return supported=false with a concise unsupportedReason, null family, null referents, empty relations, "constraints": [], and null answer. The unsupportedReason must describe the missing capability actually requested (for example, debate-date lookup, voting evidence, or an unsupported Member relationship). Do not describe every unsupported question as a Member-relationship limitation, and do not mention Dáil or Member capabilities when they are unrelated to the question. For unrelated topics, state briefly that the question is outside the local parliamentary query scope. Never simplify an unsupported request by dropping an essential relation or constraint.
+Additional implemented capabilities (do not declare these unsupported):
+- Party history, including ordinary 'join', 'belonged to' and 'member of' paraphrases, uses family "member_party_history", referents member (named Member), episode (PartyMembershipEpisode), party (ParliamentaryParty), affiliation (PoliticalAffiliationIdentity). Only member has a non-null mention. Edges are member_party_membership member→episode, episode_in_parliamentary_party episode→party, parliamentary_party_has_affiliation_identity party→affiliation. Answer affiliation with display ["label"], details [], preserveEvidence true. This asks about recorded party membership, not joining events; Independent is not a party.
+- Bills sponsored by a named Member uses family "member_bill_sponsorship", referents member (named Member), bill (Bill), participation (BillParticipation). Only member has a non-null mention. Edges are bill_has_sponsor_participation bill→participation and participation_has_participant participation→member. Answer bill with display ["label"], details [], preserveEvidence true. Local projection supplies Bill titles/numbers/links and primary, supporting or unknown-primary evidence; never restrict to primary sponsorship.
+- Constituency representation uses family "constituency_representation", referents member, membership (DailMembership), term (DailTerm), constituency (DailConstituency). Exactly one of member/constituency has a user-mentioned label; all others have null mentions. term also has selector "currentTerm" for present-tense/current questions, or null for a named Member's career-wide/historical constituencies. Connect member_has_membership member→membership, membership_in_term membership→term, membership_represents membership→constituency, constituency_in_term constituency→term. Answer the unmentioned member (display ["name"]) or constituency (display ["label"]), details [{{"referent":"term","display":["label"]}}], preserveEvidence true. Current is date-relative, never a guessed ordinal.
+For all three additional capabilities, constraints is []. Preserve all conditions; extra party, office, temporal-window or aggregate filters are not supported by these slices.
+
+If a question asks for any other relationship, more or fewer terms than the supported shapes, an extra filter, temporal restriction, different answer, or anything outside these capabilities, return supported=false with a concise unsupportedReason, null family, null referents, empty relations, "constraints": [], and null answer. The unsupportedReason must describe the missing capability actually requested (for example, voting evidence, or an unsupported Member relationship). Do not describe every unsupported question as a Member-relationship limitation, and do not mention Dáil or Member capabilities when they are unrelated to the question. For unrelated topics, state briefly that the question is outside the local parliamentary query scope. Never simplify an unsupported request by dropping an essential relation or constraint.
 
 Semantic interpretation only. Never output SPARQL, predicates, graph names, variables, endpoints, URLs, IRIs, candidates, or resolution decisions. Do not decide whether a mapping is authoritative; local code checks all proposed relation IDs against the reviewed v2 and query-schema contracts. Do not add assumptions about source completeness.
 
@@ -160,6 +166,9 @@ def validate_composable_plan_draft(
         return None, reason.strip()
     if value["unsupportedReason"] is not None:
         raise InvalidComposableDraft("A supported proposal cannot also carry an unsupported reason.")
+
+    if value["family"] in {"constituency_representation", "member_party_history", "member_bill_sponsorship"}:
+        return _validate_existing_capability_draft(value, question=question), None
 
     if value["family"] == "member_relationship_composition":
         return _validate_member_relationship_draft(value, question=question), None
@@ -296,6 +305,69 @@ def validate_composable_plan_draft(
         "relations": [dict(item) for item in value["relations"]],
         "answer": expected_answer,
     }, None
+
+
+def _validate_existing_capability_draft(value, *, question):
+    """Accept only exact, grounded graphs for already implemented compilers."""
+    from .composable_plan import plan_question
+    from .representation import representation_plan
+
+    refs = value["referents"]
+    if not isinstance(refs, dict) or value["constraints"]:
+        raise InvalidComposableDraft("This capability does not support extra constraints.")
+    for ref in refs.values():
+        if not isinstance(ref, dict):
+            raise InvalidComposableDraft("Every referent must be a typed object.")
+        mention = ref.get("mention")
+        if mention is not None and (not isinstance(mention, str) or _label_position(question, mention) is None):
+            raise InvalidComposableDraft("Every named referent must be grounded in the user's question.")
+    # These slices cannot preserve additional constraints or negation. Do not
+    # let a model turn a restricted question into an unrestricted history list.
+    condition_text = question
+    for ref in refs.values():
+        if ref.get("mention"):
+            condition_text = re.sub(re.escape(ref["mention"]), " ", condition_text, flags=re.I)
+    if re.search(r"\b(?:not|never|except|excluding|only|before|after|since|until|between|while|count|how many|primary|supporting)\b|[0-9]{4}", condition_text, re.I):
+        raise UnsupportedComposableRequest("This slice cannot preserve the question's additional constraint.")
+    placeholder = date(2000, 1, 1)  # discarded; complete_v2_plan supplies the actual reference date
+    family = value["family"]
+    if family == "constituency_representation":
+        term = refs.get("term", {})
+        selector = term.get("selector")
+        if selector not in (None, "currentTerm"):
+            raise InvalidComposableDraft("Invalid relative Dáil selector.")
+        member = refs.get("member", {}).get("mention")
+        constituency = refs.get("constituency", {}).get("mention")
+        if bool(member) == bool(constituency):
+            raise InvalidComposableDraft("Exactly one representation participant must be named.")
+        if selector is None and re.search(r"\b(?:current|currently|now|does|are)\b", condition_text, re.I):
+            raise InvalidComposableDraft("A current question cannot be converted into career-wide representation.")
+        plan = representation_plan(as_of=placeholder, member=member, constituency=constituency, current=selector == "currentTerm")
+        expected_answer = plan["answer"]
+    else:
+        mention = refs.get("member", {}).get("mention")
+        if not isinstance(mention, str) or not mention.strip():
+            raise InvalidComposableDraft("A Member name is required.")
+        if re.search(r"\b(?:current|currently|now|government|minister|constituenc(?:y|ies))\b", condition_text, re.I):
+            raise UnsupportedComposableRequest("This history slice cannot preserve an additional current or relationship condition.")
+        canonical = (f"What parties was {mention} a member of?" if family == "member_party_history"
+                     else f"Which Bills did {mention} sponsor?")
+        plan = plan_question(canonical, as_of=placeholder)
+        expected_answer = {"kind": "entities", "referent": "affiliation" if family == "member_party_history" else "bill",
+                           "distinctBy": "identity", "display": ["label"], "details": [], "preserveEvidence": True}
+    expected_refs = {}
+    for key, ref in plan["referents"].items():
+        expected_refs[key] = {"type": ref["type"], "mention": ref.get("mention")}
+        if key == "term":
+            expected_refs[key]["selector"] = selector
+    if refs != expected_refs or value["answer"] != expected_answer:
+        raise InvalidComposableDraft("The proposed referents or answer differ from the complete supported projection.")
+    edges = lambda relations: sorted((item["fact"], item["from"], item["to"]) for item in relations)
+    if (any(set(item) != {"id", "fact", "from", "to"} for item in value["relations"])
+            or len({item["id"] for item in value["relations"]}) != len(value["relations"])
+            or edges(value["relations"]) != edges(plan["relations"])):
+        raise InvalidComposableDraft("Every relationship in the supported graph is required exactly once.")
+    return {key: item for key, item in plan.items() if key not in {"version", "asOf"}}
 
 
 def _ordinal_suffix(number: int) -> str:
