@@ -3,7 +3,7 @@
   "contractId": "https://data.oireachtas.ie/specs/query-schema-contract",
   "contractSchema": "poc/specs/query-schema-contract.schema.json",
   "schemaVersion": 1,
-  "contractVersion": "2.10.0",
+  "contractVersion": "2.11.0",
   "description": "Queryable, currently emitted Oireachtas RDF patterns and local NLQ execution boundary.",
   "namespaces": {
     "agents": "https://data.oireachtas.ie/ontology#",
@@ -21,6 +21,9 @@
     "xsd": "http://www.w3.org/2001/XMLSchema#"
   },
   "queryableClasses": [
+    "agents:Government",
+    "members:CabinetMembership",
+    "members:CabinetMember",
     "agents:Member",
     "agents:House",
     "agents:DailTerm",
@@ -57,6 +60,9 @@
     "eli:Format"
   ],
   "queryableProperties": [
+    "members:isCabinetMembershipOf",
+    "members:hasCabinetRole",
+    "members:supportedByOfficeHolding",
     "rdf:type",
     "rdfs:label",
     "skos:prefLabel",
@@ -392,6 +398,14 @@
       "note": "The reviewed Bill ETL document chain is queryable within the resolved Bill's own named graph. ExplanatoryMemo documents require the controlled document type plus typed Work, LegalExpression and Format resources; the chain does not imply document co-ownership or retrieval outside the Bill graph."
     },
     {
+      "id": "derived-cabinet-membership",
+      "graphFamily": "member-records",
+      "availability": "emitted",
+      "queryableInLocalNlq": true,
+      "triples": [["?member", "members:hasMembersMembership", "?cabinet"], ["?cabinet", "rdf:type", "members:CabinetMembership"], ["?cabinet", "members:isCabinetMembershipOf", "<https://data.oireachtas.ie/government>"], ["?cabinet", "members:hasCabinetRole", "?role"], ["?role", "rdf:type", "members:CabinetMember"], ["?cabinet", "members:supportedByOfficeHolding", "?holding"], ["?cabinet", "members:hasMembershipDateRange", "?dateRange"], ["?dateRange", "rdf:type", "members:DateRange"], ["?dateRange", "members:StartDate", "?startDate"], ["?dateRange", "members:EndDate", "?endDate (optional)"]],
+      "note": "Existing Member ETL-derived constitutional Government membership supported by qualifying accepted OfficeHoldings. Minister-of-State-only holdings do not create this pattern. The Government target is the enduring institution, not a numbered administration. Point-date party joins require contemporaneous episode, containing parliamentary membership and HouseTerm evidence; optional local data never certifies a complete current roster."
+    },
+    {
       "id": "conditionally-resolved-office-holdings",
       "graphFamily": "member-records",
       "availability": "emitted",
@@ -505,7 +519,7 @@
     {"id": "parliamentary-group-records", "status": "ontology-only-not-currently-populated", "detail": "members:ParliamentaryGroup and related party/group concepts are not emitted as current queryable group instances; do not infer a group identity or relationship from party collection membership."},
     {"id": "act-descriptions", "status": "not-published", "detail": "Bill graphs may link to an Act via eli:basis_for; Act descriptions are owned by a later Acts ETL."},
     {"id": "bill-availability", "status": "optional-data", "detail": "Bill query patterns work only when Bill graphs have actually been loaded."},
-    {"id": "office-registry-data", "status": "partially-queryable", "detail": "Reviewed NamedOffice descriptions and accepted Member-owned OfficeHolding records are queryable. AdministrativeUnit metadata and CabinetMembership patterns are not grounded here; development evaluation data remains non-authoritative."},
+    {"id": "office-registry-data", "status": "partially-queryable", "detail": "Reviewed NamedOffice descriptions, accepted Member-owned OfficeHolding and derived constitutional CabinetMembership records are queryable. AdministrativeUnit metadata is not grounded here; current-office coverage is not certified complete and development evaluation data remains non-authoritative."},
     {"id": "executive-role-instances", "status": "not-currently-populated", "detail": "Ontology-only executive roles and unpopulated office-role patterns do not establish executive tenure. Deprecated MinisterOfStateMembership may appear in legacy datasets but is not emitted by the current canonical Member transformation."},
     {"id": "office-type-vocabulary", "status": "ontology-only-not-queryable", "detail": "members:OfficeType, members:hasRoleType, and TaoiseachRole/MinisterRole ontology concepts are outside the populated queryable model; registered NamedOffice descriptions and accepted OfficeHolding records are separate conditional patterns."},
     {"id": "collection-superclass-inference", "status": "not-inferred", "detail": "Do not rely on superclass type inference for ParliamentaryCollectionMembership; older published Member graphs may omit that explicit type. Prefer membership relationship predicates and specific PartyMembership type where applicable."}

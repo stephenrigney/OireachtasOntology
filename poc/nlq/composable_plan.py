@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote, unquote
 
-from rdflib import URIRef
+from rdflib import Literal, URIRef
 
 from .contract import load_query_contract
 from .errors import NLQError
@@ -867,7 +867,7 @@ def _normalise_label(value: str) -> str:
 def plan_question(question: str, *, as_of: date) -> dict[str, Any]:
     """Interpret the bounded composable query question families."""
     bill_sponsorship = re.search(
-        r"\bwhich\s+bills?\s+did\s+(?P<member>.+?)\s+sponsor\s*[?.!]*$",
+        r"^(?:what|which)\s+bills?\s+(?:did|has)\s+(?P<member>.+?)\s+(?:sponsor|sponsored)\s*[?.!]*$",
         question.strip(), re.IGNORECASE,
     )
     if bill_sponsorship:
@@ -967,11 +967,12 @@ def plan_question(question: str, *, as_of: date) -> dict[str, Any]:
                        {"kind": "entities", "referent": "sitting", "distinctBy": "identity", "display": ["date", "officialLink"]}),
         })
     affiliation = re.search(
-        r"\bwhat\s+parties\s+was\s+(.+?)\s+a\s+member\s+of\s*[?.!]*$",
+        r"^(?:what|which)\s+(?:political\s+)?parties\s+(?:was|has)\s+(.+?)\s+(?:a\s+member\s+of|been\s+a\s+member\s+of|belonged\s+to)\s*[?.!]*$"
+        r"|^(?:what|which)\s+(?:political\s+)?parties\s+did\s+(.+?)\s+(?:join|belong\s+to)\s*[?.!]*$",
         question.strip(), re.IGNORECASE,
     )
     if affiliation:
-        member_name = re.sub(r"[?.!]+$", "", affiliation.group(1)).strip()
+        member_name = re.sub(r"[?.!]+$", "", affiliation.group(1) or affiliation.group(2)).strip()
         if not member_name:
             raise PlanError("A Member name is required for the party-membership question.")
         return validate_plan({
@@ -1043,6 +1044,12 @@ def validate_plan(plan: Any) -> dict[str, Any]:
     if "family" in plan:
         if not isinstance(plan["family"], str):
             raise PlanError("Query family must be a controlled string identifier.")
+        if plan["family"] == "constituency_representation":
+            from .representation import validate_representation_plan
+            return validate_representation_plan(plan)
+        if plan["family"] == "government_party_members":
+            from .government import validate_government_plan
+            return validate_government_plan(plan)
         from .stage_b import _B_FAMILIES, validate_stage_b_plan
         if plan["family"] in _B_FAMILIES:
             return validate_stage_b_plan(plan)
@@ -1520,7 +1527,7 @@ def compile_bill_sponsorship_answer_query(plan: dict[str, Any], *, supported_pre
     OPTIONAL {{ ?bill {mapping["bill_year"]} ?billYear . }}
   }}
   FILTER(REGEX(STR(?billGraph), {json.dumps(mapping["bill_graph_route"])}))
-}} ORDER BY ?billYear ?billNumber ?bill ?participation ?primaryEvidence ?participationRole ?englishTitle'''
+}} ORDER BY ?billYear ?billNumber ?bill ?participation ?primaryEvidence ?participationRole ?englishTitle ?billGraph'''
     return _query(query, supported_predicates)
 
 
@@ -2970,7 +2977,7 @@ class AmbiguousMember(NLQError):
         self.candidates = candidates
 
 
-def member_resolution_query(*, supported_predicates) -> str:
+def member_resolution_query(mention: str, *, supported_predicates) -> str:
     member_graph = next(item["graph"]["iriTemplate"].split("{", 1)[0]
                         for item in load_query_contract()["graphFamilies"]
                         if item["id"] == "member-records")
@@ -2978,11 +2985,17 @@ def member_resolution_query(*, supported_predicates) -> str:
     return _query(_PREFIXES + f'''SELECT DISTINCT ?member ?name WHERE {{
   GRAPH ?memberGraph {{ ?member a agents:Member ; {name} ?name . }}
   FILTER(STRSTARTS(STR(?memberGraph), "{member_graph}"))
-}}''', supported_predicates)
+  FILTER(CONTAINS(LCASE(STR(?name)), LCASE(STR({Literal(unicodedata.normalize('NFC', mention)).n3()}))))
+}} ORDER BY ?member ?name LIMIT 100''', supported_predicates)
 
 
 def resolve_member(result: QueryResult, mention: str) -> tuple[str, str]:
-    wanted = _normalise_label(mention)
+    from .member_resolution import _normalise_text
+    if result.kind != "select" or not {"member", "name"} <= set(result.columns):
+        raise NLQError("Member resolution query returned an unexpected result shape.")
+    if len(result.rows) >= 100:
+        raise NLQError("Member resolution reached its 100-row safety cap; no identity was selected.")
+    wanted = _normalise_text(mention)
     candidates: dict[str, str] = {}
     for row in result.rows:
         if len(row) < 2:
@@ -2990,7 +3003,7 @@ def resolve_member(result: QueryResult, mention: str) -> tuple[str, str]:
         iri, label = row[:2]
         _require_local_iri(iri, "Member")
         label = label.removesuffix("@en")
-        if _normalise_label(label) == wanted:
+        if _normalise_text(label) == wanted:
             candidates[iri] = label
     if not candidates:
         raise NLQError(f"No local Member record was found for “{mention}”.")
@@ -3068,6 +3081,7 @@ def compile_affiliation_answer_query(plan: dict[str, Any], *, supported_predicat
     if preferred_label != label:
         raise PlanError("Political-affiliation preferred-label mappings disagree across reviewed contracts.")
     return _query(_PREFIXES + f'''SELECT DISTINCT ?member ?episode ?identity ?affiliationLabel ?start ?end WHERE {{
+  VALUES ?member {{ <{member_iri}> }}
   GRAPH ?memberGraph {{
     <{member_iri}> a {member_type} ; {member_membership} ?episode .
     ?episode a {episode_type} ; {linked_membership} ?membership ; {party_membership} ?party .
@@ -3086,7 +3100,7 @@ def compile_affiliation_answer_query(plan: dict[str, Any], *, supported_predicat
     ?identity a {identity_type} .
     OPTIONAL {{ ?identity {preferred_label} ?affiliationLabel . FILTER(LANG(?affiliationLabel) = "{label_language}") }}
   }} }}
-}} ORDER BY ?affiliationLabel ?start ?end''', supported_predicates)
+}} ORDER BY ?affiliationLabel ?identity ?episode ?start ?end ?member''', supported_predicates)
 
 
 def readable_affiliation_result(result: QueryResult) -> QueryResult:
@@ -3110,8 +3124,10 @@ def readable_affiliation_result(result: QueryResult) -> QueryResult:
         _require_local_iri(episode_iri, "PartyMembershipEpisode")
         starts = row[indexes["start"]]
         ends = row[indexes["end"]]
-        episode = (starts.removesuffix("^^http://www.w3.org/2001/XMLSchema#date"),
-                   ends.removesuffix("^^http://www.w3.org/2001/XMLSchema#date"))
+        episode = tuple(
+            _rdf_literal_parts(value)[0] or ""
+            for value in (starts, ends)
+        )
         grouped.setdefault(identity, (label, {}))[1][episode_iri] = episode
     rows = []
     for identity, (label, episodes) in sorted(grouped.items(), key=lambda item: (item[1][0].casefold(), item[0])):
@@ -3297,7 +3313,7 @@ def _execute_bill_sponsorship_question(
     member_ref = plan["referents"]["member"]
     mention = member_ref["mention"]
     try:
-        resolution_query = member_resolution_query(supported_predicates=supported_predicates)
+        resolution_query = member_resolution_query(mention, supported_predicates=supported_predicates)
     except (PlanError, NLQError) as error:
         member_ref["resolution"] = "unsupported_mapping"
         return PlanOutcome("unsupported_mapping", plan=plan, diagnostic=str(error))
@@ -3324,7 +3340,8 @@ def _execute_bill_sponsorship_question(
     except (PlanError, NLQError) as error:
         return PlanOutcome("unsupported_mapping", plan=plan, diagnostic=str(error))
     try:
-        raw_result = fuseki.query(answer_query)
+        from .pagination import select_pages
+        raw_result = select_pages(answer_query, fuseki=fuseki, supported_predicates=supported_predicates)
         if raw_result.kind != "select":
             raise NLQError("Bill sponsorship answer query returned an unexpected result kind.")
     except NLQError as error:
@@ -3362,15 +3379,8 @@ def _execute_bill_sponsorship_question(
     except NLQError as error:
         return PlanOutcome("source_data_unavailable", plan=plan, sparql=answer_query, diagnostic=str(error))
     diagnostics = list(projection.diagnostics)
-    truncated = len(raw_result.rows) >= 100
-    if truncated:
-        diagnostics.append(
-            "The local query result reached the 100-row safety cap; additional participation evidence may be omitted."
-        )
     if projection.conflicting_evidence:
         status = "conflicting_sponsorship_evidence"
-    elif truncated:
-        status = "incomplete_sponsorship_evidence"
     elif projection.incomplete_display:
         status = "incomplete_display_evidence"
     elif projection.missing_primary_status:
@@ -4221,7 +4231,17 @@ def _execute_shared_dail_terms_question(
             debug_source="Composable plan validation",
         )
 
+    if plan["referents"].get("participation", {}).get("type") == "BillParticipation":
+        return _execute_bill_sponsorship_question(plan, fuseki=fuseki, supported_predicates=supported_predicates)
+    if plan["referents"].get("affiliation", {}).get("type") == "PoliticalAffiliationIdentity" and "family" not in plan:
+        return _execute_affiliation_question(plan, fuseki=fuseki, supported_predicates=supported_predicates)
     family = plan["family"]
+    if family == "constituency_representation":
+        from .representation import execute_representation
+        return execute_representation(plan, fuseki=fuseki, supported_predicates=supported_predicates)
+    if family == "government_party_members":
+        from .government import execute_government
+        return execute_government(plan, fuseki=fuseki, supported_predicates=supported_predicates)
     if family == "member_relationship_composition":
         return _execute_member_relationship_composition_plan(
             plan, fuseki=fuseki, supported_predicates=supported_predicates,
@@ -4611,6 +4631,42 @@ def _composable_interpretation_preflight(question: str, as_of: date) -> PlanOutc
     return None
 
 
+def _execute_affiliation_question(plan, *, fuseki, supported_predicates):
+    mention = plan["referents"]["member"]["mention"]
+    try:
+        resolution = fuseki.query(member_resolution_query(mention, supported_predicates=supported_predicates))
+        member_iri, member_label = resolve_member(resolution, mention)
+    except AmbiguousMember as error:
+        plan["referents"]["member"].update({"resolution": "ambiguous", "candidates": list(error.candidates)})
+        return PlanOutcome("ambiguous", plan=plan, diagnostic=str(error), candidates=error.candidates)
+    except NLQError as error:
+        state = "not_found" if "No local Member" in str(error) else "source_data_unavailable"
+        plan["referents"]["member"]["resolution"] = state
+        return PlanOutcome(state, plan=plan, diagnostic=str(error))
+    plan["referents"]["member"].update({"resolution": "resolved", "iri": member_iri, "label": member_label})
+    query = None
+    try:
+        from .pagination import select_pages
+        query = compile_answer_query(plan, supported_predicates=supported_predicates)
+        raw_result = select_pages(query, fuseki=fuseki, supported_predicates=supported_predicates)
+        if not raw_result.rows:
+            return PlanOutcome("source_data_unavailable", plan=plan, sparql=query,
+                               diagnostic="No dated parliamentary party-membership evidence was found for this Member in the local dataset.")
+        identity_index = raw_result.columns.index("identity")
+        label_index = raw_result.columns.index("affiliationLabel")
+        if any(len(row) <= identity_index or row[identity_index] in {"—", ""} for row in raw_result.rows):
+            return PlanOutcome("missing_identity_link", plan=plan, sparql=query,
+                               diagnostic="Party-membership evidence exists, but no reviewed local affiliation-identity link is present.")
+        if any(len(row) <= label_index or row[label_index] in {"—", ""} for row in raw_result.rows):
+            return PlanOutcome("source_data_unavailable", plan=plan, sparql=query,
+                               diagnostic="A reviewed affiliation identity is present, but its preferred label is missing.")
+        result = readable_affiliation_result(raw_result)
+    except (PlanError, NLQError) as error:
+        return PlanOutcome("source_data_unavailable", plan=plan, sparql=query, diagnostic=str(error))
+    return PlanOutcome("success", plan=plan, sparql=query, result=result,
+                       diagnostic="Affiliations are grouped by reviewed local identity; dated source episodes remain separate.")
+
+
 def execute_question(
     question: str,
     *,
@@ -4625,6 +4681,16 @@ def execute_question(
     preflight = _composable_interpretation_preflight(question, as_of)
     if preflight is not None:
         return preflight
+
+    from .representation import plan_representation_question, execute_representation
+    representation_plan = plan_representation_question(question, as_of=as_of)
+    if representation_plan is not None:
+        return execute_representation(representation_plan, fuseki=fuseki,
+                                      supported_predicates=supported_predicates)
+    from .government import plan_government_question, execute_government
+    government = plan_government_question(question, as_of=as_of)
+    if government is not None:
+        return execute_government(government, fuseki=fuseki, supported_predicates=supported_predicates)
 
     stage_a_request = parse_stage_a_question(question)
     if stage_a_request is not None:
@@ -4683,37 +4749,7 @@ def execute_question(
         return PlanOutcome("success", plan=plan, sparql=query, result=result,
                            diagnostic="Matched an actual DebateSitting through its produced DebateRecord and reviewed graph-route chamber identity.")
     if plan["answer"]["referent"] == "affiliation":
-        mention = plan["referents"]["member"]["mention"]
-        try:
-            resolution = fuseki.query(member_resolution_query(supported_predicates=supported_predicates))
-            member_iri, member_label = resolve_member(resolution, mention)
-        except AmbiguousMember as error:
-            plan["referents"]["member"].update({"resolution": "ambiguous", "candidates": list(error.candidates)})
-            return PlanOutcome("ambiguous", plan=plan, diagnostic=str(error), candidates=error.candidates)
-        except NLQError as error:
-            state = "not_found" if "No local Member" in str(error) else "source_data_unavailable"
-            plan["referents"]["member"]["resolution"] = state
-            return PlanOutcome(state, plan=plan, diagnostic=str(error))
-        plan["referents"]["member"].update({"resolution": "resolved", "iri": member_iri, "label": member_label})
-        try:
-            query = compile_answer_query(plan, supported_predicates=supported_predicates)
-            raw_result = fuseki.query(query)
-            if not raw_result.rows:
-                return PlanOutcome("source_data_unavailable", plan=plan,
-                                   diagnostic="No dated parliamentary party-membership evidence was found for this Member in the local dataset.")
-            identity_index = raw_result.columns.index("identity")
-            label_index = raw_result.columns.index("affiliationLabel")
-            if any(len(row) <= identity_index or row[identity_index] in {"—", ""} for row in raw_result.rows):
-                return PlanOutcome("missing_identity_link", plan=plan,
-                                   diagnostic="Party-membership evidence exists, but no reviewed local affiliation-identity link is present.")
-            if any(len(row) <= label_index or row[label_index] in {"—", ""} for row in raw_result.rows):
-                return PlanOutcome("source_data_unavailable", plan=plan,
-                                   diagnostic="A reviewed affiliation identity is present, but its preferred label is missing.")
-            result = readable_affiliation_result(raw_result)
-        except (PlanError, NLQError) as error:
-            return PlanOutcome("unsupported_mapping", plan=plan, diagnostic=str(error))
-        return PlanOutcome("success", plan=plan, sparql=query, result=result,
-                           diagnostic="Affiliations are grouped by reviewed local identity; dated source episodes remain separate.")
+        return _execute_affiliation_question(plan, fuseki=fuseki, supported_predicates=supported_predicates)
     try:
         term_result = fuseki.query(previous_dail_term_query(as_of, supported_predicates=supported_predicates))
         previous_term, current_term = resolve_previous_dail(term_result, as_of)

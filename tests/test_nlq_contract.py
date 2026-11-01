@@ -50,7 +50,7 @@ def test_contract_artifact_loads_and_validates_its_versioned_shape():
         (ROOT / "poc/specs/query-schema-contract.schema.json").read_text(encoding="utf-8")
     )
 
-    assert contract["contractVersion"] == "2.10.0"
+    assert contract["contractVersion"] == "2.11.0"
     assert contract["schemaVersion"] == schema["properties"]["schemaVersion"]["const"] == 1
     assert contract["contractId"] == "https://data.oireachtas.ie/specs/query-schema-contract"
     assert contract["contractSchema"] == "poc/specs/query-schema-contract.schema.json"
@@ -66,8 +66,8 @@ def test_integrated_composable_contract_preserves_temporal_and_bill_paths():
     plan_contract = json.loads(
         (ROOT / "poc/specs/composable-query-plan-contract.json").read_text(encoding="utf-8")
     )
-    assert plan_contract["contractVersion"] == "2.12.0"
-    assert query_contract["contractVersion"] == "2.10.0"
+    assert plan_contract["contractVersion"] == "2.14.0"
+    assert query_contract["contractVersion"] == "2.11.0"
     relations = {item["id"]: item for item in plan_contract["relations"]}
     patterns = {item["id"]: item for item in query_contract["emittedRdfPatterns"]}
 
@@ -224,7 +224,7 @@ def test_grounding_is_generated_from_contract_scope_without_private_etl_imports(
 
     for term in ("agents:Member", "members:PartyMembership", "eli-dl:DraftLegislationWork"):
         assert term in context
-    assert "contract 2.10.0 (schema version 1)" in context
+    assert "contract 2.11.0 (schema version 1)" in context
     assert "https://data.oireachtas.ie/graph/committees" in context
     assert "same RDF resource IRI" in context
     assert "Reviewed Wikidata political-party item" in context
