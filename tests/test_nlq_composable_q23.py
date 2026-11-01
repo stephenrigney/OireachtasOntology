@@ -226,7 +226,7 @@ def test_q23_compiler_is_deterministic_safe_and_uses_explicit_delivery_path():
 
 def test_q23_mapping_contract_matches_emitted_ontology_and_bill_transform_evidence():
     contract = json.loads((ROOT / "poc/specs/query-schema-contract.json").read_text())
-    assert contract["contractVersion"] == "2.10.0"
+    assert contract["contractVersion"] == "2.11.0"
     assert "agents:isPrimarySponsor" in contract["queryableProperties"]
     pattern = next(item for item in contract["emittedRdfPatterns"] if item["id"] == "bill-sponsor-reference")
     assert ["?participation", "agents:isPrimarySponsor", "?optionalBoolean"] in pattern["triples"]

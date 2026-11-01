@@ -191,8 +191,9 @@ def create_app(
                 is_shared_dail_terms = plan_family == "shared_dail_terms"
                 is_member_relationship_composition = plan_family == "member_relationship_composition"
                 is_representation = plan_family == "constituency_representation"
+                is_government = plan_family == "government_party_members"
                 is_composable_semantic = (
-                    is_shared_dail_terms or is_member_relationship_composition or is_representation
+                    is_shared_dail_terms or is_member_relationship_composition or is_representation or is_government
                     or plan_family == "composable_semantic"
                 )
                 stage_a_family = (plan_family if plan_family in stage_a_family_ids else
@@ -338,6 +339,11 @@ def create_app(
                         if current_representation else
                         "Find the named Member's historical constituency occurrences, preserving their Dáil terms and exact identities."
                     )
+                if is_government:
+                    summary = (
+                        f"Find recorded constitutional Government members of the resolved political party at {as_of.isoformat()}, "
+                        "requiring contemporaneous Cabinet and party membership. Minister-of-State-only holdings do not qualify."
+                    )
                 answer_text = ("Dated Bill/office evidence is shown with explicit local-coverage qualifications; unresolved or unknown facts remain explicit."
                                 if is_stage_b else
                                 "Stage C answer uses only reviewed local RDF evidence; unavailable coverage is stated specifically and is not replaced by proxy facts."
@@ -372,6 +378,8 @@ def create_app(
                                  if is_shared_dail_terms else "Distinct Members, displayed by name.")
                 if is_representation:
                     answer_text = "Constituency and Dáil-term evidence is retained by exact RDF identity; local coverage is not certified complete."
+                if is_government:
+                    answer_text = "Recorded matches with dated Cabinet and party evidence—not a complete Government roster."
                 if outcome.status == "success":
                     return render(request, question=question, mode=mode,
                                   interpretation=summary, plan_json=plan_json,
@@ -499,9 +507,9 @@ def create_app(
                         message = "Bill sponsorship evidence is missing from the local dataset; this is not a confirmed negative answer."
                     elif outcome.status == "source_data_unavailable":
                         message = (
-                            "Local Member identity evidence could not be read."
-                            if outcome.plan.get("referents", {}).get("member", {}).get("resolution") == "source_data_unavailable"
-                            else "The local dataset contains no matching sponsorship evidence for this Member, and its historical coverage is not certified complete."
+                             "Local Member identity evidence could not be read."
+                             if outcome.plan.get("referents", {}).get("member", {}).get("resolution") == "source_data_unavailable"
+                             else outcome.diagnostic or "The local sponsorship evidence could not be read completely; no negative answer is established."
                         )
                     elif outcome.status == "incomplete_primary_status_evidence":
                         message = "Some Participation records do not contain isPrimarySponsor; those sponsorship statuses are shown as Unknown."

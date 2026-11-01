@@ -30,6 +30,16 @@ The roadmap deliberately separates:
 The current implementation remains under `poc/nlq/` until the service boundary
 is stable enough to extract into a separate repository.
 
+The bounded composable route also supports current/career-wide constituency
+projection, recorded party history (including ordinary “join” paraphrases),
+all recorded sponsor participations, and constitutional Government members of a
+named party at the reference date. These use the existing emitted RDF paths;
+the composable and query-schema manifests describe their closed compiler
+contracts. Current Dáil selection uses House-owned dates, not a fixed ordinal.
+Government results require contemporaneous Cabinet and party evidence and are
+explicitly recorded matches, not certification of a complete current roster.
+See the [eight-question correction evidence](../../docs/reports/query-service/eight-question-corrections.md).
+
 The proposed cloud-hosted, invitation-only SME evaluation deployment is governed by [Private Beta Deployment Plan](../../docs/development/private-beta-proposal.md). Its security and access-control gates are separate from Query Service functional acceptance and do not settle the eventual RDF store or institutional hosting architecture.
 
 ## 2. Current baseline

@@ -97,6 +97,8 @@ Additional implemented capabilities (do not declare these unsupported):
 - Constituency representation uses family "constituency_representation", referents member, membership (DailMembership), term (DailTerm), constituency (DailConstituency). Exactly one of member/constituency has a user-mentioned label; all others have null mentions. term also has selector "currentTerm" for present-tense/current questions, or null for a named Member's career-wide/historical constituencies. Connect member_has_membership member→membership, membership_in_term membership→term, membership_represents membership→constituency, constituency_in_term constituency→term. Answer the unmentioned member (display ["name"]) or constituency (display ["label"]), details [{{"referent":"term","display":["label"]}}], preserveEvidence true. Current is date-relative, never a guessed ordinal.
 For all three additional capabilities, constraints is []. Preserve all conditions; extra party, office, temporal-window or aggregate filters are not supported by these slices.
 
+Constitutional Government members of a named party at the reference date are also implemented: family "government_party_members"; referents member (Member), cabinet (CabinetMembership), government (Government), episode (PartyMembershipEpisode), party (ParliamentaryParty), affiliation (PoliticalAffiliationIdentity). Only affiliation has a non-null user-mentioned label. Use member_has_cabinet_membership member→cabinet, cabinet_membership_of_government cabinet→government, member_party_membership member→episode, episode_in_parliamentary_party episode→party, parliamentary_party_has_affiliation_identity party→affiliation. Use constraints []; local code supplies the reference-date point constraints. Answer member, display ["name"], details [{{"referent":"affiliation","display":["label"]}},{{"referent":"cabinet","display":["start","end"]}},{{"referent":"episode","display":["start","end"]}}], preserveEvidence true. This is constitutional Cabinet membership, not the wider GovernmentExecutive or Government benches; Ministers of State alone do not qualify. Completeness cannot be inferred from the optional office dataset. Requests for the wider executive or additional conditions remain unsupported.
+
 If a question asks for any other relationship, more or fewer terms than the supported shapes, an extra filter, temporal restriction, different answer, or anything outside these capabilities, return supported=false with a concise unsupportedReason, null family, null referents, empty relations, "constraints": [], and null answer. The unsupportedReason must describe the missing capability actually requested (for example, voting evidence, or an unsupported Member relationship). Do not describe every unsupported question as a Member-relationship limitation, and do not mention Dáil or Member capabilities when they are unrelated to the question. For unrelated topics, state briefly that the question is outside the local parliamentary query scope. Never simplify an unsupported request by dropping an essential relation or constraint.
 
 Semantic interpretation only. Never output SPARQL, predicates, graph names, variables, endpoints, URLs, IRIs, candidates, or resolution decisions. Do not decide whether a mapping is authoritative; local code checks all proposed relation IDs against the reviewed v2 and query-schema contracts. Do not add assumptions about source completeness.
@@ -167,7 +169,7 @@ def validate_composable_plan_draft(
     if value["unsupportedReason"] is not None:
         raise InvalidComposableDraft("A supported proposal cannot also carry an unsupported reason.")
 
-    if value["family"] in {"constituency_representation", "member_party_history", "member_bill_sponsorship"}:
+    if value["family"] in {"constituency_representation", "member_party_history", "member_bill_sponsorship", "government_party_members"}:
         return _validate_existing_capability_draft(value, question=question), None
 
     if value["family"] == "member_relationship_composition":
@@ -331,7 +333,16 @@ def _validate_existing_capability_draft(value, *, question):
         raise UnsupportedComposableRequest("This slice cannot preserve the question's additional constraint.")
     placeholder = date(2000, 1, 1)  # discarded; complete_v2_plan supplies the actual reference date
     family = value["family"]
-    if family == "constituency_representation":
+    if family == "government_party_members":
+        from .government import government_plan
+        mention = refs.get("affiliation", {}).get("mention")
+        if not isinstance(mention, str) or not mention.strip():
+            raise InvalidComposableDraft("A named party identity is required.")
+        if re.search(r"\b(?:executive|benches|ministers? of state|including|committee|constituenc(?:y|ies))\b", condition_text, re.I):
+            raise UnsupportedComposableRequest("The constitutional Government slice cannot substitute for a wider executive or additional relationship.")
+        plan = government_plan(mention, as_of=placeholder)
+        expected_answer = plan["answer"]
+    elif family == "constituency_representation":
         term = refs.get("term", {})
         selector = term.get("selector")
         if selector not in (None, "currentTerm"):
@@ -367,7 +378,11 @@ def _validate_existing_capability_draft(value, *, question):
             or len({item["id"] for item in value["relations"]}) != len(value["relations"])
             or edges(value["relations"]) != edges(plan["relations"])):
         raise InvalidComposableDraft("Every relationship in the supported graph is required exactly once.")
-    return {key: item for key, item in plan.items() if key not in {"version", "asOf"}}
+    final = {key: item for key, item in plan.items() if key not in {"version", "asOf"}}
+    if family == "government_party_members":
+        # The real date is supplied only by complete_v2_plan, not the model.
+        final.pop("constraints")
+    return final
 
 
 def _ordinal_suffix(number: int) -> str:
@@ -747,7 +762,11 @@ def _validate_member_relationship_draft(
 
 def complete_v2_plan(draft_plan: dict[str, Any], *, as_of: date) -> dict[str, Any]:
     """Add only deterministic composable-v2 envelope metadata to a draft."""
-    return {"version": 2, "asOf": as_of.isoformat(), **draft_plan}
+    plan = {"version": 2, "asOf": as_of.isoformat(), **draft_plan}
+    if plan.get("family") == "government_party_members":
+        from .government import government_plan
+        plan["constraints"] = government_plan(plan["referents"]["affiliation"]["mention"], as_of=as_of)["constraints"]
+    return plan
 
 
 def parse_composable_plan_output(output: str) -> Any:

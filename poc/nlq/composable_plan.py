@@ -1047,6 +1047,9 @@ def validate_plan(plan: Any) -> dict[str, Any]:
         if plan["family"] == "constituency_representation":
             from .representation import validate_representation_plan
             return validate_representation_plan(plan)
+        if plan["family"] == "government_party_members":
+            from .government import validate_government_plan
+            return validate_government_plan(plan)
         from .stage_b import _B_FAMILIES, validate_stage_b_plan
         if plan["family"] in _B_FAMILIES:
             return validate_stage_b_plan(plan)
@@ -4236,6 +4239,9 @@ def _execute_shared_dail_terms_question(
     if family == "constituency_representation":
         from .representation import execute_representation
         return execute_representation(plan, fuseki=fuseki, supported_predicates=supported_predicates)
+    if family == "government_party_members":
+        from .government import execute_government
+        return execute_government(plan, fuseki=fuseki, supported_predicates=supported_predicates)
     if family == "member_relationship_composition":
         return _execute_member_relationship_composition_plan(
             plan, fuseki=fuseki, supported_predicates=supported_predicates,
@@ -4681,6 +4687,10 @@ def execute_question(
     if representation_plan is not None:
         return execute_representation(representation_plan, fuseki=fuseki,
                                       supported_predicates=supported_predicates)
+    from .government import plan_government_question, execute_government
+    government = plan_government_question(question, as_of=as_of)
+    if government is not None:
+        return execute_government(government, fuseki=fuseki, supported_predicates=supported_predicates)
 
     stage_a_request = parse_stage_a_question(question)
     if stage_a_request is not None:

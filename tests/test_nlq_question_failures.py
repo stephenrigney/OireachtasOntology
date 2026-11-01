@@ -11,6 +11,7 @@ Adversarial additions are explicitly synthetic and never change source/goldens.
 """
 
 import copy
+import hashlib
 import json
 from datetime import date
 from pathlib import Path
@@ -340,7 +341,9 @@ def test_pagination_limit_cannot_produce_a_partial_complete_answer(monkeypatch):
     outcome = run(fixture, QUESTIONS[6])
     assert outcome.status == "source_data_unavailable" and outcome.result is None
     assert "no partial answer" in outcome.diagnostic
-    assert "Synthetic Limit Bill 1</td>" not in ask(monkeypatch, fixture, QUESTIONS[6]).text
+    response = ask(monkeypatch, fixture, QUESTIONS[6])
+    assert "Synthetic Limit Bill 1</td>" not in response.text
+    assert "no partial answer was returned" in response.text
 
 
 @pytest.mark.parametrize(("question", "canonical"), [
@@ -424,3 +427,28 @@ def test_semantic_fallback_never_drops_an_additional_condition(monkeypatch, ques
     assert outcome.status == "unsupported_request" and outcome.result is None
     assert not fixture.queries
     assert "additional constraint" in ask(monkeypatch, fixture, question, generator=generator).text
+
+
+def test_preserved_bill_2017_9_transformer_output_answers_ask_when_available(monkeypatch):
+    """One pinned raw page, not a corpus scan or a source-fixture rewrite."""
+    from oireachtas_etl.transforms.bills import transform_bill_with_report
+    from oireachtas_etl.validation.bills import validate_bill
+    page = ROOT / "data/raw/legislation/2026-10-09/run-dbaf2d97-deab-477a-b359-972c769fb3e5/skip-001100.json"
+    if not page.exists():
+        pytest.skip("optional preserved source capture is not installed")
+    data = page.read_bytes()
+    assert hashlib.sha256(data).hexdigest() == "04a6f9f1a16dd3e30d18e12a5eb064ce9645da4ae9eb460db755f65d9d909628"
+    record = next(row for row in json.loads(data)["results"] if row["bill"]["uri"] == BASE + "ie/oireachtas/bill/2017/9")
+    emitted, _report = transform_bill_with_report(record)
+    validate_bill(record, emitted)
+    fixture = SourceFixture()
+    owner = fixture.dataset.graph(URIRef(BASE + "graph/bill/2017/9"))
+    owner.remove((None, None, None))
+    for triple in emitted:
+        owner.add(triple)
+    outcome = run(fixture, QUESTIONS[6])
+    assert outcome.status == "success", outcome.diagnostic
+    assert len(outcome.result.rows) == 1
+    assert "2017/9" in repr(outcome.result.rows)
+    response = ask(monkeypatch, fixture, QUESTIONS[6])
+    assert "Supporting" in response.text and "Prohibition of Above-cost Ticket Touting Bill 2017" in response.text

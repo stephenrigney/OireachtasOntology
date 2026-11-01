@@ -9,12 +9,17 @@
   "properties": {
     "version": {"type": "integer", "const": 2},
     "supported": {"type": "boolean"},
-    "family": {"type": ["string", "null"], "enum": ["shared_dail_terms", "member_relationship_composition", "constituency_representation", "member_party_history", "member_bill_sponsorship", null]},
+    "family": {"type": ["string", "null"], "enum": ["shared_dail_terms", "member_relationship_composition", "constituency_representation", "member_party_history", "member_bill_sponsorship", "government_party_members", null]},
     "unsupportedReason": {"type": ["string", "null"]},
     "intent": {"type": "string", "minLength": 1},
     "referents": {
       "anyOf": [
         {"type": "null"},
+        {"type": "object", "additionalProperties": false, "required": ["member", "cabinet", "government", "episode", "party", "affiliation"],
+         "properties": {"member": {"$ref": "#/$defs/memberAnswerReferent"},
+           "cabinet": {"type": "object", "additionalProperties": false, "required": ["type", "mention"], "properties": {"type": {"type": "string", "const": "CabinetMembership"}, "mention": {"type": "null"}}},
+           "government": {"type": "object", "additionalProperties": false, "required": ["type", "mention"], "properties": {"type": {"type": "string", "const": "Government"}, "mention": {"type": "null"}}},
+           "episode": {"$ref": "#/$defs/partyEpisodeReferent"}, "party": {"$ref": "#/$defs/parliamentaryPartyReferent"}, "affiliation": {"$ref": "#/$defs/affiliationReferent"}}},
         {"type": "object", "additionalProperties": false, "required": ["member", "episode", "party", "affiliation"],
          "properties": {"member": {"$ref": "#/$defs/namedMemberReferent"}, "episode": {"$ref": "#/$defs/partyEpisodeReferent"}, "party": {"$ref": "#/$defs/parliamentaryPartyReferent"}, "affiliation": {"$ref": "#/$defs/affiliationReferent"}}},
         {"type": "object", "additionalProperties": false, "required": ["member", "bill", "participation"],
@@ -189,7 +194,7 @@
       "required": ["id", "fact", "from", "to"],
       "properties": {
         "id": {"$ref": "#/$defs/identifier"},
-        "fact": {"type": "string", "enum": ["member_has_membership", "membership_in_term", "membership_represents", "constituency_in_term", "member_party_membership", "party_episode_in_membership", "episode_in_parliamentary_party", "party_active_during_term", "parliamentary_party_has_affiliation_identity", "bill_has_sponsor_participation", "participation_has_participant"]},
+        "fact": {"type": "string", "enum": ["member_has_membership", "membership_in_term", "membership_represents", "constituency_in_term", "member_party_membership", "party_episode_in_membership", "episode_in_parliamentary_party", "party_active_during_term", "parliamentary_party_has_affiliation_identity", "bill_has_sponsor_participation", "participation_has_participant", "member_has_cabinet_membership", "cabinet_membership_of_government"]},
         "from": {"$ref": "#/$defs/identifier"},
         "to": {"$ref": "#/$defs/identifier"}
       }
