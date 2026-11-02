@@ -1253,6 +1253,125 @@ without tuning or retry. See the [implementation and verification
 report](../../docs/reports/query-service/bounded-composition-reuse.md) for measured
 results, reuse evidence and the architectural decision. Exclusions above remain.
 
+### Query Service follow-up — Temporal selection and bounded aggregation (approved, pending implementation)
+
+This is one combined, bounded post-Phase-2 delivery tranche, following accepted
+composition reuse (composable contract `2.18.0`). Reuse validated local RDF
+selection for both **lists** and **counts**. This does not authorize unrestricted
+date reasoning, general aggregation, new ontology semantics or a query-engine
+redesign. The implementation may extend the composable contract additively
+where needed, with synchronized schemas, validators and capability discovery.
+
+#### Temporal selection contract
+
+- **House term from calendar time:** Resolve a Dáil term by House-owned
+  start/end dates, using exact HouseTerm identity. A calendar date denotes a
+  point; a named month denotes the full month interval. For “which Dáil was
+  in office during June 1994?” require the relevant term to cover the requested
+  interval, or present multiple overlapping terms if warranted by authoritative
+  evidence. Never silently pick the month's first or last day or equate
+  *in office* with evidence of an actual parliamentary sitting.
+  Once resolved, project the recorded House-owned term start date (e.g.
+  the 27th Dáil beginning 1992-12-14). Unknown, contradictory or incomplete
+  term dates fail closed, not guessed. Preserve the original time scope and
+  term identity in the validated plan.
+- **Dated officeholder lookup:** Reuse the accepted OfficeHolding window/date
+  compiler and interval evaluator for an officeholder at a specified date or
+  during a month/year, returning every accepted episode intersecting the
+  requested period. Month and year mean complete calendar windows; use
+  date-point semantics only for a date point. Do not interpret a match for
+  part of a window as service throughout it. Keep accepted episode endpoints
+  visible and label incomplete office coverage explicitly. Missing accepted
+  episodes cannot be backfilled from raw observations, office labels or
+  membership/service dates; current-office roster completeness is not implied.
+- **Latest recorded Member term:** From one resolved Member's accepted
+  DailMembership episodes and HouseTerm chronology, select the latest
+  *recorded* Dáil term by House-owned ordering and show its term-scoped
+  constituency identity. Do not equate the last recorded term with a last
+  election event. Ambiguous identity, tied/conflicting chronology and
+  missing dates or representation evidence fail closed.
+- **Explicit and implicit context:** Use an explicit named/numeric term or
+  grounded calendar reference; continue the approved narrowly scoped
+  current-date default where applicable. The `/ask` interface remains
+  stateless: “this Dáil” following an earlier question does **not** inherit
+  its antecedent. Ask for the missing term or return a structured ambiguity
+  outcome rather than silently selecting today's Dáil.
+
+#### Bounded aggregation contract
+
+- Provide a **count-distinct-Member-identity** answer projection on the
+  *same validated, temporally scoped Member selection* used for listing.
+  The selected term, constituency, date/interval, source predicates and
+  identity joins must be identical for list and count; the count cannot
+  bypass the original filters or rely on display-label deduplication.
+  Preserve query bounds and completeness safeguards: never return a
+  confidently complete numeric total from a truncated or uncertain result.
+- Distinguish three separate measures:
+  (a) **distinct recorded people serving at any time during a Dáil term**,
+  (b) **distinct recorded people serving on an explicit date**, and
+  (c) **constituency seats / originally elected people**. Only (a) and
+  (b) are in scope where their relevant Member evidence is available.
+  Seat allocations and election-event counts are *not* derived from
+  membership rows or used as silent substitutes.
+- For “How many TDs represented Dublin Central in the 27th Dáil?”,
+  the intended in-scope answer is the number of distinct recorded Members
+  with matching term-scoped representation (four in the investigated local
+  evidence), **not** a claim of five seats or five people elected. For a
+  date-qualified version, apply the requested date to each Member's accepted
+  membership interval. An unqualified “this Dáil” without grounded context
+  must not default to the 27th Dáil or current Dáil.
+- Positive counts must be described as **recorded counts** unless suitable
+  accepted completeness evidence supports a stronger claim. Zero rows is
+  not proof that no Member served when the underlying evidence is missing
+  or unaccepted. Surface coverage limitations without inventing totals.
+
+#### Reuse, safeguards and exclusions
+
+- Add small, reviewed temporal selectors and answer projections to the
+  existing structured planner/validator/compiler. Prefer a shared scoped
+  Member selection with alternative list/count projections over parallel
+  query families, special-case number recognizers, client-side counting of
+  arbitrary truncated pages, or model-generated SPARQL.
+- Retain exact RDF identities, source/graph ownership, accepted office
+  evidence, inclusive interval boundaries, missing/conflicting-date
+  fail-closed handling, read-only limits, and full-intent preservation.
+  A requested unsupported election count or clause must not be dropped
+  to produce an easier answer.
+- Exclude new election-event ingestion, certified seat allocations,
+  source/office reconciliation, cross-House career composition,
+  conversational memory, unrestricted aggregation, temporal arithmetic,
+  arbitrary date-window conjunctions, general federation and RDF/ETL
+  publication changes. Adjacent gaps are not blockers for this tranche.
+
+#### Acceptance, verification and exit
+
+- Date → Dáil: an explicit June-1994 request identifies the recorded
+  27th Dáil and its 1992-12-14 start, grounded in House dates. A request
+  for *actual sitting* must not silently substitute term existence.
+- Historical officeholders: June-1994 Taoiseach queries return accepted
+  Albert Reynolds evidence; a 1994 window preserves all accepted matching
+  episodes and identifies missing historical coverage rather than inventing
+  John Bruton's holding. Also test a window that crosses an accepted
+  holder transition, when such evidence is available in controlled fixtures.
+- Latest Member term: Bertie Ahern resolves to the recorded 30th Dáil and
+  Dublin Central, preserving Member and term-scoped constituency identity.
+- List/count parity: the Dublin Central 27th-Dáil Member listing and its
+  distinct-count projection agree on the exact identity set, and temporal
+  date-point changes are tested. Differentiate four recorded Member identities
+  from elected-seat counts. Verify empty, incomplete, duplicate and
+  pagination-bound cases fail or qualify appropriately.
+- Check ordinary and unfamiliar phrasings through integrated `/ask`,
+  controlled fixtures and a small **fresh, untuned** holdout. Run focused
+  regressions and relevant contract/safety tests, not a production
+  acceptance replay or full historical scan.
+- The final report must show reuse of common temporal selectors and
+  validated list/count execution, any added duplicated compilation or
+  recognizers, remaining evidence gaps, and whether the bounded architecture
+  remains viable. **Close when the above exit criteria hold.** Escalate
+  only if reuse requires bespoke per-question query families, weakening
+  correctness guards or an architectural redesign; do not expand scope
+  merely to answer other questions in the diagnostic set.
+
 ## 9. Phase 3 — Source selection and provenance
 
 ### Outcome
