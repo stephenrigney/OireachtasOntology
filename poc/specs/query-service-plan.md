@@ -1031,7 +1031,7 @@ is removed or inferred from Bill metadata. Bills publication contract 2 and its
 separately authorized migration boundary remain as documented in the
 [legislation reference](../../docs/reference/etl/legislation.md#contract-2-rollout-not-performed-here).
 
-### Query Service follow-up — Interpretation and clarification contract (approved, pending implementation)
+### Query Service follow-up — Interpretation and clarification contract
 
 This is one bounded post-Phase-2 usability/generalisation tranche, not a reopening
 of the accepted Phase 2 exit gate or a prerequisite for Phase 3 federation.
@@ -1040,6 +1040,13 @@ failure motivate it. Its purpose is to make *existing* supported operations
 reachable and coherent across semantic interpretation, validation, identity
 resolution and the development UI, without question-specific recognizers or
 a separate agent harness.
+
+Implemented in composable contract `2.17.0` with synchronized strict draft/final
+schemas, scoped interpretation evidence, shared interaction outcomes and a bounded
+candidate-choice continuation. See the [implementation and acceptance report](../../docs/reports/query-service/interpretation-clarification.md)
+for focused regression results, real local `/ask` acceptance and the fresh
+six-question untuned holdout. RDF, ETL and publication contracts are unchanged.
+The implementation branch remains unmerged pending ChatGPT review.
 
 #### Interpretation policy
 

@@ -85,6 +85,37 @@ The application also reports:
 
 Detailed diagnostics and the raw endpoint payload, when available, are in the expandable query debugger. Internal exceptions are not used as the primary user-facing message.
 
+### Interpretation and candidate choices
+
+An unqualified present-tense request for TDs representing a named constituency
+(also with a named-party filter) defaults to the query date. The plan records
+`present_constituency_as_of` and its date; the answer displays that date.
+Current terms come from House-owned dating evidence, and representation and
+party episodes must independently contain the date. Historical numbered terms
+remain exact; no election date is inferred from a membership start.
+
+Partial-name Deputy lookup offers source-identified alternatives with recorded
+Dáil service, rather than guessing a person. Select a candidate and press
+**Continue with selected Member**. The single-use choice expires after ten
+minutes and is bound to the original question and reference date. Continuation
+rechecks current local identity/service evidence and validates the same lookup;
+it does not call the model again. Restart the question after server restart,
+expiry or source changes. Only this bounded name-lookup flow has interactive
+continuation; other ambiguities still require a more precise question.
+
+An exact source `pId` spelling can ground an alias (whitespace is ignored only
+between name tokens); this is not a nickname dictionary or fuzzy identity merge.
+For example, the source identifier `JackLynch` distinguishes one recorded John
+Lynch identity; a question naming John Lynch can still be ambiguous.
+
+The structured route exposes `answer`, `clarification_required`,
+`unresolved_identity`, `unsupported_capability`, `missing_or_unaccepted_evidence`,
+`validation_failure`, and `execution_failure` as `data-outcome` on the response.
+Candidate lists and interpretations are not answers. Office-registry absence is
+reported as missing accepted evidence, not an invented tenure; first-election
+questions remain outside the queryable election-event capability. See the
+[bounded acceptance report](../reports/query-service/interpretation-clarification.md).
+
 Phase 2 is complete. The accepted structured local-query path is:
 
 ```text

@@ -70,6 +70,24 @@ class PlanOutcome:
     request_family: str | None = None
     debug_output: str | None = None
     debug_source: str | None = None
+    clarification: dict[str, Any] | None = None
+
+    @property
+    def interaction(self) -> str:
+        """Stable end-to-end outcome categories; legacy diagnostic detail remains."""
+        if self.status == "success" and self.result is not None:
+            return "answer"
+        if self.status in {"ambiguous", "clarification_required"}:
+            return "clarification_required"
+        if self.status in {"not_found", "unresolved_identity"}:
+            return "unresolved_identity"
+        if self.status in {"unsupported_capability", "unsupported_request"}:
+            return "unsupported_capability"
+        if self.status in {"validation_failure", "unsupported_mapping", "identity_collision", "planner_failure"}:
+            return "validation_failure"
+        if self.status in {"execution_failure", "query_execution_failed"}:
+            return "execution_failure"
+        return "missing_or_unaccepted_evidence"
 
 
 @dataclass(frozen=True)
@@ -481,7 +499,7 @@ def _validate_shared_dail_terms_plan(plan: dict[str, Any]) -> dict[str, Any]:
 
 def _validate_member_party_composition_plan(plan: dict[str, Any]) -> dict[str, Any]:
     """Validate the shared term/constituency/party episode temporal graph."""
-    if set(plan) != {"version", "asOf", "family", "referents", "relations", "constraints", "answer"}:
+    if set(plan) - {"interpretation"} != {"version", "asOf", "family", "referents", "relations", "constraints", "answer"}:
         raise PlanError("Dated party/representation composition requires its fixed temporal constraint and no extra fields.")
     refs = plan.get("referents")
     expected_types = {
@@ -519,6 +537,11 @@ def _validate_member_party_composition_plan(plan: dict[str, Any]) -> dict[str, A
         and 1 <= selector["number"] <= 999
     )
     current_term = selector == {"kind": "currentTerm", "house": "Dail"}
+    from .interpretation import validate_default
+    try:
+        validate_default(plan, constituency=refs["constituency"].get("mention", ""), current=current_term)
+    except ValueError as error:
+        raise PlanError(str(error)) from error
     if not (numeric_term or current_term):
         raise PlanError("The DailTerm must use one reviewed numeric or date-relative current-term selector.")
     term_resolution = term.get("resolution")
@@ -1027,11 +1050,13 @@ def plan_question(question: str, *, as_of: date) -> dict[str, Any]:
 
 
 def validate_plan(plan: Any) -> dict[str, Any]:
-    if not isinstance(plan, dict) or set(plan) not in ({"version", "asOf", "referents", "relations", "answer"},
+    if not isinstance(plan, dict) or set(plan) - {"interpretation"} not in ({"version", "asOf", "referents", "relations", "answer"},
                                                        {"version", "asOf", "referents", "relations", "constraints", "answer"},
                                                        {"version", "asOf", "family", "referents", "relations", "answer"},
                                                        {"version", "asOf", "family", "referents", "relations", "constraints", "answer"}):
         raise PlanError("Plan must have exactly version, asOf, referents, relations, optional constraints, and answer.")
+    if "interpretation" in plan and plan.get("family") not in {"constituency_representation", "member_relationship_composition"}:
+        raise PlanError("This family has no approved interpretation default.")
     if plan["version"] != PLAN_VERSION:
         raise PlanError("Unsupported composable plan version.")
     try:
@@ -1630,6 +1655,7 @@ def resolve_constituency(
     *,
     term_label: str = "the previous Dáil",
 ) -> tuple[str, str]:
+    from .errors import IdentityNotFound
     wanted = _normalise_label(mention)
     candidates: dict[str, str] = {}
     for row in result.rows:
@@ -1641,7 +1667,7 @@ def resolve_constituency(
         if _normalise_label(label) == wanted:
             candidates[iri] = label
     if not candidates:
-        raise NLQError(f"No matching constituency was found in {term_label} for “{mention}”.")
+        raise IdentityNotFound(f"No matching constituency was found in {term_label} for “{mention}”.")
     if len(candidates) != 1:
         raise AmbiguousConstituency(
             mention,
@@ -2991,19 +3017,21 @@ def member_resolution_query(mention: str, *, supported_predicates) -> str:
                         for item in load_query_contract()["graphFamilies"]
                         if item["id"] == "member-records")
     name = load_query_contract()["labelsByEntityType"]["Member"]["predicate"]
-    return _query(_PREFIXES + f'''SELECT DISTINCT ?member ?name WHERE {{
-  GRAPH ?memberGraph {{ ?member a agents:Member ; {name} ?name . }}
+    return _query(_PREFIXES + f'''SELECT DISTINCT ?member ?name ?sourceId WHERE {{
+  GRAPH ?memberGraph {{ ?member a agents:Member ; {name} ?name . OPTIONAL {{ ?member agents:pId ?sourceId . }} }}
   FILTER(STRSTARTS(STR(?memberGraph), "{member_graph}"))
-  FILTER(CONTAINS(LCASE(STR(?name)), LCASE(STR({Literal(unicodedata.normalize('NFC', mention)).n3()}))))
+  FILTER(CONTAINS(LCASE(STR(?name)), LCASE(STR({Literal(unicodedata.normalize('NFC', mention)).n3()}))) ||
+         LCASE(STR(?sourceId)) = LCASE(STR({Literal(''.join(unicodedata.normalize('NFC', mention).split())).n3()})))
 }} ORDER BY ?member ?name LIMIT 100''', supported_predicates)
 
 
 def resolve_member(result: QueryResult, mention: str) -> tuple[str, str]:
     from .member_resolution import _normalise_text
+    from .errors import IdentityNotFound, QueryLimitError
     if result.kind != "select" or not {"member", "name"} <= set(result.columns):
         raise NLQError("Member resolution query returned an unexpected result shape.")
     if len(result.rows) >= 100:
-        raise NLQError("Member resolution reached its 100-row safety cap; no identity was selected.")
+        raise QueryLimitError("Member resolution reached its 100-row safety cap; no identity was selected.")
     wanted = _normalise_text(mention)
     candidates: dict[str, str] = {}
     for row in result.rows:
@@ -3012,10 +3040,13 @@ def resolve_member(result: QueryResult, mention: str) -> tuple[str, str]:
         iri, label = row[:2]
         _require_local_iri(iri, "Member")
         label = label.removesuffix("@en")
-        if _normalise_text(label) == wanted:
+        source_id = row[result.columns.index("sourceId")] if "sourceId" in result.columns else ""
+        # Exact source identifier spelling with whitespace removed only. No
+        # nickname dictionary, accent folding, prefix or fuzzy identity merge.
+        if _normalise_text(label) == wanted or _normalise_text(source_id) == "".join(wanted.split()):
             candidates[iri] = label
     if not candidates:
-        raise NLQError(f"No local Member record was found for “{mention}”.")
+        raise IdentityNotFound(f"No local Member record was found for “{mention}”.")
     if len(candidates) > 1:
         raise AmbiguousMember(mention, tuple({"iri": iri, "label": candidates[iri]} for iri in sorted(candidates)))
     iri = next(iter(candidates))
@@ -4279,6 +4310,18 @@ def _execute_shared_dail_terms_question(
     if draft_plan.get("family") == "capability_selection":
         capability = draft_plan["capability"]
         parameters = draft_plan["parameters"]
+        if capability == "member_lookup":
+            from .stage_a import StageARequest, execute_stage_a
+            return execute_stage_a(StageARequest("member_lookup", mention=parameters["member"], house=parameters["house"]),
+                                   as_of=as_of, fuseki=fuseki, supported_predicates=supported_predicates)
+        if capability == "dail_parties_and_groups":
+            from .stage_c import _make_plan, execute_stage_c
+            plan = _make_plan(capability, as_of, ordinal=parameters["termNumber"])
+            plan["answer"]["includeGroups"] = parameters["includeGroups"]
+            return execute_stage_c(plan, as_of=as_of, fuseki=fuseki, supported_predicates=supported_predicates)
+        if capability == "office_holding_evidence":
+            from .interpretation import office_holding_boundary
+            return office_holding_boundary(parameters, fuseki=fuseki, supported_predicates=supported_predicates)
         if capability == "seanad_entry":
             from .stage_a import StageARequest, execute_stage_a
             return execute_stage_a(
@@ -4626,7 +4669,6 @@ def _without_reviewed_affiliation_mentions(question: str) -> str:
 def _composable_interpretation_preflight(question: str, as_of: date) -> PlanOutcome | None:
     has_representation_scope = bool(
         re.search(r"\b(?:represent(?:ed|s|ing)?|representation|tds?|constituenc(?:y|ies))\b", question, re.IGNORECASE)
-        and re.search(r"\b(?:dáil|dail)\b", question, re.IGNORECASE)
     )
     if not has_representation_scope:
         return None
@@ -4685,7 +4727,11 @@ def _composable_interpretation_preflight(question: str, as_of: date) -> PlanOutc
     current_term_request = bool(re.search(
         r"\b(?:current|currently|now|today)\b", question, re.IGNORECASE,
     ))
-    if not ordinals and not current_term_request:
+    from .interpretation import present_constituency_default
+    # This preflight only blocks unsafe scope. The typed semantic draft must
+    # still ground its constituency and pass the shared policy before defaulting.
+    possible_default = present_constituency_default(question, "")
+    if not ordinals and not current_term_request and not possible_default:
         return PlanOutcome(
             "clarification_required",
             diagnostic="Please specify which numbered Dáil term you mean; this composition does not guess a current or relative term.",
@@ -4769,6 +4815,40 @@ def execute_question(
     as_of: date,
     fuseki,
     supported_predicates,
+    semantic_plan_generator_factory=None,
+    continuation=None,
+) -> PlanOutcome:
+    """Shared execution/error boundary, including a grounded candidate choice."""
+    from .errors import QueryExecutionFailure, QueryLimitError
+
+    class ReadOnlyExecution:
+        def query(self, query):
+            try:
+                return fuseki.query(query)
+            except NLQError as error:
+                raise QueryExecutionFailure(str(error), query=query) from error
+
+    try:
+        if continuation is not None:
+            from .stage_a import StageARequest, execute_stage_a
+            request, selected = continuation
+            return execute_stage_a(StageARequest(**request), as_of=as_of, fuseki=ReadOnlyExecution(),
+                                   supported_predicates=supported_predicates, selected_member_iri=selected)
+        return _execute_question(question, as_of=as_of, fuseki=ReadOnlyExecution(),
+                                 supported_predicates=supported_predicates,
+                                 semantic_plan_generator_factory=semantic_plan_generator_factory)
+    except QueryExecutionFailure as error:
+        cause = error.__cause__
+        return PlanOutcome("execution_failure", diagnostic=f"The local read-only query failed: {error}",
+                           request_family="composable_semantic", debug_source="Fuseki",
+                           debug_output=format_debug_payload({"failed_read_only_query": error.query,
+                                                              "endpoint_debug": getattr(cause, "debug_output", None)}))
+    except QueryLimitError as error:
+        return PlanOutcome("validation_failure", diagnostic=str(error), request_family="composable_semantic")
+
+
+def _execute_question(
+    question: str, *, as_of: date, fuseki, supported_predicates,
     semantic_plan_generator_factory=None,
 ) -> PlanOutcome:
     """Plan, resolve, validate, compile and execute bounded composable slices."""
