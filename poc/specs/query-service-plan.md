@@ -1031,6 +1031,108 @@ is removed or inferred from Bill metadata. Bills publication contract 2 and its
 separately authorized migration boundary remain as documented in the
 [legislation reference](../../docs/reference/etl/legislation.md#contract-2-rollout-not-performed-here).
 
+### Query Service follow-up — Interpretation and clarification contract (approved, pending implementation)
+
+This is one bounded post-Phase-2 usability/generalisation tranche, not a reopening
+of the accepted Phase 2 exit gate or a prerequisite for Phase 3 federation.
+The six-question investigation and the 2026-11-02 live `currentTerm` validation
+failure motivate it. Its purpose is to make *existing* supported operations
+reachable and coherent across semantic interpretation, validation, identity
+resolution and the development UI, without question-specific recognizers or
+a separate agent harness.
+
+#### Interpretation policy
+
+- An unqualified present-tense request for TDs representing a named constituency
+  (including a party-filtered request) defaults to representation **as of the
+  query date**. The plan must explicitly record that inferred default and the
+  date, and the answer must display its temporal qualification. This is a
+  narrowly scoped user-intent default: do not infer `currentTerm` for explicitly
+  historical questions, term-wide questions, election events, or other unrelated
+  query families. An explicit term/date overrides the default.
+- A defaulted current term is admissible to validation only when the request
+  falls within this approved interpretation policy, the selected term is
+  established from House-owned dating evidence, and all representation and
+  political-affiliation episodes satisfy the existing contemporaneous temporal
+  checks. In particular, align planner and validator contracts rather than
+  disabling the `currentTerm` guard.
+- Prefer an approved, scoped default where one exists; otherwise ask a
+  clarification only when different supported interpretations materially change
+  the answer. Do not use clarification to paper over unsupported composition,
+  absent accepted source evidence or execution failure.
+- Keep historically numbered Dáil terms exact; preserve distinct term-scoped
+  constituency/party identities. Current-state queries must not silently use
+  historical interval overlap or an arbitrary term number as a substitute for
+  date-relative membership.
+
+#### Clarification and outcome contract
+
+- Expose shared, structured outcomes for `answer`, `clarification_required`,
+  `unresolved_identity`, `unsupported_capability`,
+  `missing_or_unaccepted_evidence`, `validation_failure` and
+  `execution_failure` (names may follow existing interfaces, but distinctions
+  must survive end-to-end). An echoed question or mere interpretation is not an
+  answer.
+- Where multiple grounded people match (e.g. “Find a Deputy called Browne”),
+  offer distinguishable candidates with their source identities and appropriate
+  Dáil-service restriction; do not choose Noel Browne by assumption. A selected
+  candidate resumes the original intent through the same validated planner and
+  query-execution safeguards. No arbitrary user-supplied IRI or broadened fuzzy
+  identity merge is allowed.
+- Ground aliases in reviewed/source-backed identity evidence; “Jack Lynch” may
+  resolve to the appropriate recorded John/Jack Lynch identity without conflating
+  distinct people named John Lynch. Preserve ambiguity when evidence cannot
+  resolve it.
+- Implement only the minimal UI clarification-and-continuation interaction
+  needed for this slice. Do not add general chat memory, autonomous replanning
+  or a multi-agent harness. A simple structured candidate choice suffices.
+- Keep election-date evidence separate from the start of recorded parliamentary
+  membership; do not claim a first-election date from a membership start.
+  Unreviewed Minister for Health observations are not accepted OfficeHolding
+  evidence and must not be used to manufacture a tenure answer.
+
+#### Capability generalisation and delivery boundary
+
+- Ordinary paraphrases must reach the same advertised and validated capability
+  as equivalent recognized phrasings (including 12th-Dáil party listing and
+  partial-name Deputy lookup); do not grow a separate per-question recognition
+  path. Party-only requests should not acquire irrelevant group completeness
+  warnings.
+- Reuse existing current-term selection, dated representation/affiliation joins,
+  Member resolution, SPARQL compilation and read-only safety limits.
+  Do not change ontology, ETL, office registries, source captures, Fuseki
+  publication or election-event ingestion in this tranche.
+- Keep existing fail-closed behaviour for unknown/malformed dates, unresolved
+  identities, unsupported relationships and incomplete authority evidence.
+  Report genuinely missing evidence separately from planner limitations.
+- A new interpretation or clarification path must not bypass deterministic
+  validation, query bounds, named-graph ownership or source provenance.
+
+#### Acceptance and architectural decision
+
+- Through the integrated `/ask` route, the unqualified Dublin Central/Sinn
+  Féin request must resolve at a fixed test date to Mary Lou McDonald using
+  contemporaneous evidence, without hard-coding a term number. Explicit
+  historical variants remain historical, and invalid/uncertain dates fail closed.
+- “Find a Deputy called Browne” yields grounded, Dáil-qualified alternatives and
+  a working choice-to-answer continuation; do not force a singular Noel answer.
+  “What were the parties during the 12th Dáil?” reaches the existing party
+  compiler and returns six recorded parties. “What constituencies did Jack Lynch
+  represent?” resolves grounded alias evidence and retains all nine term-scoped
+  occurrences, without merging distinct John Lynch identities.
+- The Donnelly Health-tenure and Jack Lynch first-election requests must
+  accurately report missing accepted evidence versus unsupported capabilities,
+  without inventing an answer. These are coverage boundaries, not conditions
+  requiring ingestion work to close this tranche.
+- Run focused regressions, one integrated UI clarification flow and a small
+  **fresh, untuned** paraphrase/entity/term holdout. The implementation report
+  must identify whether reuse was achieved or duplicated recognizer/compiler
+  logic was added; no full-corpus or production-grade acceptance replay.
+- Close the tranche when these criteria hold. If reaching them requires another
+  set of question-specific relation compositions, weakening identity/temporal
+  safeguards, or substantial new orchestration, stop that expansion and return
+  the architectural evidence for review instead of silently redesigning.
+
 ## 9. Phase 3 — Source selection and provenance
 
 ### Outcome
