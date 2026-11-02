@@ -1140,6 +1140,108 @@ The implementation branch remains unmerged pending ChatGPT review.
   safeguards, or substantial new orchestration, stop that expansion and return
   the architectural evidence for review instead of silently redesigning.
 
+### Query Service follow-up — Bounded composition reuse (approved, pending implementation)
+
+This is one post-Phase-2 architectural test, not a general NLQ expansion or a
+reopening of the completed interpretation/clarification tranche. The
+2026-11-02 temporal/compositional investigation found that individual dated
+office, party/constituency and term capabilities execute, while the current
+closed-family validators/compilers cannot combine some already registered
+relationships. The purpose is to test **reusable bounded composition**, not
+to achieve a checklist of fifteen example answers.
+
+#### Intent and capability selection
+
+- Preserve the complete requested intent before deterministic preflight,
+  including every relationship, temporal qualifier, additional clause and
+  answer projection. A recognizer must not consume an unsupported clause as
+  part of an entity label, discard it, or demand a numbered Dáil when the
+  request supplies a different temporal anchor (e.g. “while he was Taoiseach”).
+- Distinguish genuine ambiguity requiring user clarification from missing
+  capabilities, missing accepted RDF and invalid temporal/identity evidence.
+  Do not use clarification as a substitute for unsupported composition.
+- Advertise the **existing** accepted dated OfficeHolding window operation to
+  semantic capability selection. Reuse its current compiler and source
+  restrictions; a calendar-month request means the bounded month interval,
+  not a guessed date point. An equivalent June-1994 Taoiseach window request
+  already returns Albert Reynolds in the investigated local dataset.
+- A compound request must remain unsupported as a *whole* when a required
+  projection (e.g. first-election evidence) cannot be provided. No partial
+  answer presented as complete merely because one subquery is supported.
+
+#### Approved reusable composition operators
+
+Extend the existing composable-v2 contract, deterministic validator and
+compiler only as needed for these **bounded, reviewed** operations:
+
+1. **Grounded identity sets:** an explicit finite OR set of exact
+   term-scoped constituency identities (e.g. Galway East OR Galway West)
+   within the existing dated party/constituency representation path. Join
+   and deduplicate by exact Member identity, not strings or merged answers.
+   Do not infer “the two Galway constituencies” from substring matching:
+   resolve a reviewed set or offer grounded clarification, including the
+   potentially relevant Roscommon-Galway occurrence.
+2. **Independent Member paths and shared identities:** an anchor Member
+   and answer Members each retain their own parliamentary membership,
+   with a shared *exact term-scoped constituency resource* and an explicit
+   distinct-Member condition. Do not join solely on display labels.
+3. **Common temporal intersection:** require a nonempty intersection of
+   the anchor Member's **accepted** relevant OfficeHolding episode, both
+   Members' constituency representation/membership intervals, and the
+   answer Member's reviewed PartyMembership episode tied to that exact
+   DáilMembership. Honour independently owned start/end evidence, open
+   endpoints and the existing uncertainty/fail-closed rules. Preserve
+   interval and episode evidence in the answer.
+
+These operators must reuse current graph ownership, resolver, relationship
+registry, interval evaluator and safe read-only compilation machinery. They
+are **not** authorization for arbitrary user/model SPARQL, free graph traversal,
+unbounded joins, bespoke Ahern/Galway templates, or a new agent harness.
+The existing typed relation graph remains the trusted execution boundary.
+
+#### Acceptance and decision boundary
+
+- **Primary case Q15:** “Who are the Fine Gael TDs in Galway East and
+  Galway West?” returns the evidence-backed union of the two existing
+  single-constituency results at the reference date, with Member-identity
+  deduplication and contemporaneous party/representation checks. An
+  implicit “the two Galway constituencies” request must not guess which
+  constituency set was intended.
+- **Stress test Q3:** “Who were the other Fianna Fáil TDs in the same
+  constituency as Bertie Ahern while he was Taoiseach?” uses reusable
+  independent Member paths, shared constituency identity and common
+  interval semantics, without requiring an irrelevant numbered-term
+  clarification. The investigated local dataset has only one accepted
+  Ahern Taoiseach episode (2007-06-14–2008-05-07), so report results
+  explicitly as **partial accepted-evidence coverage**, not a complete
+  historical roster; do not invent earlier holdings.
+- **Capability-accessibility control:** ordinary June-1994 historical
+  Taoiseach phrasing should reach the existing dated office-window
+  capability and return its accepted evidence without implying complete
+  1994 office coverage.
+- **Whole-intent safety controls:** preserve election clauses, unsupported
+  aggregations and other compound constraints; reject unsupported requests
+  without a misleading entity-not-found or silently reduced answer.
+- Verify the implementation with focused existing regressions, controlled
+  date/identity/ambiguity tests, live read-only `/ask` checks where
+  available, and a small **fresh untuned** set of varied identities,
+  constituencies and date windows. No production reload or full-corpus scan.
+  Report which operators genuinely reuse shared machinery and any new
+  parallel recognizers, validators or compilers.
+
+**Stop/escalate:** If Q15 and Q3 require separate fixed query families,
+substantial duplicate compilation, weakening temporal/identity safeguards
+or an unrestricted generic graph engine, do not force completion. Return
+concrete architecture evidence for review. Stop the tranche once the
+bounded operators and safety checks are demonstrated; do not expand to
+other questions merely because adjacent features are desirable.
+
+**Excluded:** election-event ingestion, office reconciliation or certified
+current Taoiseach roster, general aggregation, last-term selection,
+cross-House composition, conversational context, broad date-query support,
+ontology changes, RDF publication and federation. Retain these as separate
+future decisions, not prerequisites for this architectural test.
+
 ## 9. Phase 3 — Source selection and provenance
 
 ### Outcome
