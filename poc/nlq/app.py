@@ -220,7 +220,7 @@ def create_app(
                 plan_json = format_debug_payload(outcome.plan) if plan_is_validated else None
                 is_q06 = bool(outcome.plan and outcome.plan.get("answer", {}).get("referent") == "affiliation")
                 is_debate = bool(outcome.plan and outcome.plan.get("referents", {}).get("sitting", {}).get("type") == "DebateSitting")
-                is_q35 = bool(outcome.plan and outcome.plan.get("referents", {}).get("holding", {}).get("type") == "OfficeHolding")
+                is_q35 = bool(outcome.plan and "family" not in outcome.plan and outcome.plan.get("referents", {}).get("holding", {}).get("type") == "OfficeHolding")
                 is_q23 = bool(outcome.plan and outcome.plan.get("referents", {}).get("participation", {}).get("type") == "BillParticipation")
                 parsed_stage_a = parse_stage_a_question(question)
                 stage_a_family_ids = {
@@ -292,7 +292,7 @@ def create_app(
                     )
                 )
                 composition_constituencies = [
-                    referent.get("label", referent.get("mention", "the requested constituency"))
+                    " OR ".join(item.get("label", item.get("mention", "the requested constituency")) for item in referent.get("members", [referent]))
                     for referent in composition_refs.values()
                     if referent.get("type") == "DailConstituency"
                 ]
@@ -307,6 +307,15 @@ def create_app(
                     for referent in composition_refs.values()
                 )
                 member_relationship_summary = None
+                if is_member_relationship_composition and "anchor" in composition_refs:
+                    anchor = composition_refs["anchor"]
+                    office = composition_refs["office"]
+                    member_relationship_summary = (
+                        f"Find other Members with the requested reviewed party identity sharing an exact term-scoped constituency "
+                        f"with {anchor.get('label', anchor.get('mention'))}, requiring a common temporal intersection of "
+                        f"their independent representation intervals, the answer Member's party episode and the anchor's accepted "
+                        f"{office.get('label', office.get('mention'))} holding. Partial accepted-evidence coverage, not a complete historical roster."
+                    )
                 if is_member_relationship_composition and (composition_terms or composition_current_term):
                     term_names = [f"the {_dail_ordinal_label(number)}" for number in composition_terms]
                     term_label = (

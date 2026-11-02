@@ -7,6 +7,25 @@ from datetime import date
 POLICY = "present_constituency_as_of"
 
 
+def unsupported_whole_intent(question):
+    """Unsupported projections invalidate the whole request before recognition."""
+    if re.search(r"\b(?:elected|election|elections|re-elected)\b", question, re.I):
+        return "Election-event evidence is not queryable; no membership start or partial compound answer was substituted."
+    if (re.search(r"\b(?:constituenc(?:y|ies)|represent(?:ed|s|ing)?|TDs?)\b", question, re.I)
+            and re.search(r"\b(?:how many|count|average|rank|most|fewest|percentage)\b", question, re.I)):
+        return "This representation composition does not support the requested aggregation; no reduced list answer was run."
+    return None
+
+
+def semantic_composition_scope(question):
+    """Keep compound representation requests out of singular-name recognizers.
+
+    This only selects the existing semantic path; it never constructs a plan.
+    """
+    return bool(re.search(r"\b(?:constituenc(?:y|ies)|TDs?|represent(?:ed|s|ing)?)\b", question, re.I)
+                and re.search(r"\b(?:and|or|while|same|shared)\b", question, re.I))
+
+
 def present_constituency_default(question: str, constituency: str) -> bool:
     """Only unqualified present-tense constituency representation is defaulted.
 

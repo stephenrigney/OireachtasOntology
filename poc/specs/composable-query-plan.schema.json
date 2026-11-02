@@ -32,6 +32,7 @@
             {"type": "object", "additionalProperties": false, "required": ["kind", "date", "chamber"], "properties": {"kind": {"const": "sittingDate"}, "date": {"type": "string", "format": "date"}, "chamber": {"const": "dail"}}}
           ]},
           "mention": {"type": "string", "minLength": 1},
+          "members": {"type": "array", "minItems": 2, "maxItems": 4, "items": {"type": "object", "additionalProperties": false, "required": ["type", "mention", "resolution"], "properties": {"type": {"const": "DailConstituency"}, "mention": {"type": "string", "minLength": 1}, "resolution": {"enum": ["unresolved", "resolved", "ambiguous", "not_found", "source_data_unavailable", "unsupported_mapping"]}, "iri": {"type": "string", "format": "uri"}, "label": {"type": "string"}, "candidates": {"type": "array", "items": {"type": "object", "required": ["iri", "label"], "additionalProperties": false, "properties": {"iri": {"type": "string"}, "label": {"type": "string"}}}}}}},
           "answer": {"type": "boolean"},
           "resolution": {"enum": ["unresolved", "resolved", "ambiguous", "not_found", "source_data_unavailable", "unsupported_mapping"]},
           "iri": {"type": "string", "format": "uri"},
@@ -70,11 +71,12 @@
       "required": ["referent", "field", "operator", "value"],
       "properties": {
         "referent": {"type": "string", "minLength": 1},
-        "field": {"enum": ["interval", "partyEpisodeInterval", "date", "chamber", "legislativeYear", "activityTypeAndDate", "processStatus", "temporalOwner", "coverage", "memberIdentity"]},
-        "operator": {"enum": ["overlaps", "on", "equals", "publishedInCalendarYear", "knownExcept", "currentAt", "knownConflict", "requires"]},
+        "field": {"enum": ["identity", "interval", "partyEpisodeInterval", "date", "chamber", "legislativeYear", "activityTypeAndDate", "processStatus", "temporalOwner", "coverage", "memberIdentity"]},
+        "operator": {"enum": ["distinctFrom", "commonIntersection", "overlaps", "on", "equals", "publishedInCalendarYear", "knownExcept", "currentAt", "knownConflict", "requires"]},
         "value": {
           "oneOf": [
             {"$ref": "#/$defs/inclusiveCalendarInterval"},
+            {"type": "array", "minItems": 2, "maxItems": 4, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
           {"type": "string", "minLength": 1},
           {"type": "integer", "minimum": 1800, "maximum": 2200}
           ]

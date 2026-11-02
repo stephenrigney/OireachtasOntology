@@ -15,6 +15,17 @@
     "referents": {
       "anyOf": [
         {"type": "null"},
+        {"type": "object", "additionalProperties": false,
+         "required": ["member", "membership", "term", "constituency", "episode", "party", "affiliation", "anchor", "anchor_membership", "holding", "office"],
+         "properties": {
+           "member": {"$ref": "#/$defs/memberAnswerReferent"}, "membership": {"$ref": "#/$defs/membershipReferent"},
+           "term": {"$ref": "#/$defs/unselectedTermReferent"},
+           "constituency": {"type": "object", "additionalProperties": false, "required": ["type", "mention"], "properties": {"type": {"type": "string", "const": "DailConstituency"}, "mention": {"type": "null"}}},
+           "episode": {"$ref": "#/$defs/partyEpisodeReferent"}, "party": {"$ref": "#/$defs/parliamentaryPartyReferent"}, "affiliation": {"$ref": "#/$defs/affiliationReferent"},
+           "anchor": {"$ref": "#/$defs/namedMemberReferent"}, "anchor_membership": {"$ref": "#/$defs/membershipReferent"},
+           "holding": {"type": "object", "additionalProperties": false, "required": ["type", "mention"], "properties": {"type": {"type": "string", "const": "OfficeHolding"}, "mention": {"type": "null"}}},
+           "office": {"type": "object", "additionalProperties": false, "required": ["type", "mention"], "properties": {"type": {"type": "string", "const": "NamedOffice"}, "mention": {"type": "string", "minLength": 1}}}
+         }},
         {"type": "object", "additionalProperties": false, "required": ["member", "cabinet", "government", "episode", "party", "affiliation"],
          "properties": {"member": {"$ref": "#/$defs/memberAnswerReferent"},
            "cabinet": {"type": "object", "additionalProperties": false, "required": ["type", "mention"], "properties": {"type": {"type": "string", "const": "CabinetMembership"}, "mention": {"type": "null"}}},
@@ -86,9 +97,10 @@
           "additionalProperties": false,
           "required": ["capability", "parameters"],
           "properties": {
-             "capability": {"type": "string", "enum": ["seanad_entry", "bill_lookup", "member_lookup", "dail_parties_and_groups", "office_holding_evidence"]},
+             "capability": {"type": "string", "enum": ["seanad_entry", "bill_lookup", "member_lookup", "dail_parties_and_groups", "office_holding_evidence", "office_holding_window"]},
             "parameters": {
-               "anyOf": [
+                "anyOf": [
+                  {"type": "object", "additionalProperties": false, "required": ["office", "startMonth", "startYear", "endMonth", "endYear"], "properties": {"office": {"type": "string", "minLength": 1}, "startMonth": {"type": "integer", "minimum": 1, "maximum": 12}, "endMonth": {"type": "integer", "minimum": 1, "maximum": 12}, "startYear": {"type": "integer", "minimum": 1, "maximum": 9998}, "endYear": {"type": "integer", "minimum": 1, "maximum": 9998}}},
                  {"type": "object", "additionalProperties": false, "required": ["member", "house"],
                   "properties": {"member": {"type": "string", "minLength": 1}, "house": {"type": ["string", "null"], "enum": ["Dail", "Seanad", null]}}},
                  {"type": "object", "additionalProperties": false, "required": ["termNumber", "includeGroups"],
@@ -110,7 +122,11 @@
       "type": "array",
       "items": {"$ref": "#/$defs/relation"}
     },
-    "constraints": {"type": "array", "items": {"$ref": "#/$defs/referentIntervalOverlap"}},
+    "constraints": {"type": "array", "items": {"anyOf": [
+      {"$ref": "#/$defs/referentIntervalOverlap"},
+      {"type": "object", "additionalProperties": false, "required": ["referent", "field", "operator", "value"], "properties": {"referent": {"type": "string", "const": "member"}, "field": {"type": "string", "const": "identity"}, "operator": {"type": "string", "const": "distinctFrom"}, "value": {"type": "string", "const": "anchor"}}},
+      {"type": "object", "additionalProperties": false, "required": ["referent", "field", "operator", "value"], "properties": {"referent": {"type": "string", "const": "holding"}, "field": {"type": "string", "const": "interval"}, "operator": {"type": "string", "const": "commonIntersection"}, "value": {"type": "array", "items": {"type": "string", "enum": ["holding", "anchor_membership", "membership", "episode"]}}}}
+    ]}},
     "answer": {
       "anyOf": [
         {"type": "null"},
@@ -173,6 +189,11 @@
       }
     },
     "constituencyReferent": {
+      "anyOf": [{"$ref": "#/$defs/namedConstituencyReferent"},
+        {"type": "object", "additionalProperties": false, "required": ["type", "members"], "properties": {"type": {"type": "string", "const": "DailConstituency"}, "members": {"type": "array", "items": {"$ref": "#/$defs/namedConstituencyReferent"}}}}
+      ]
+    },
+    "namedConstituencyReferent": {
       "type": "object",
       "additionalProperties": false,
       "required": ["type", "mention"],
@@ -215,7 +236,7 @@
       "required": ["id", "fact", "from", "to"],
       "properties": {
         "id": {"$ref": "#/$defs/identifier"},
-        "fact": {"type": "string", "enum": ["member_has_membership", "membership_in_term", "membership_represents", "constituency_in_term", "member_party_membership", "party_episode_in_membership", "episode_in_parliamentary_party", "party_active_during_term", "parliamentary_party_has_affiliation_identity", "bill_has_sponsor_participation", "participation_has_participant", "member_has_cabinet_membership", "cabinet_membership_of_government"]},
+        "fact": {"type": "string", "enum": ["member_has_membership", "membership_in_term", "membership_represents", "constituency_in_term", "member_party_membership", "party_episode_in_membership", "episode_in_parliamentary_party", "party_active_during_term", "parliamentary_party_has_affiliation_identity", "bill_has_sponsor_participation", "participation_has_participant", "member_has_cabinet_membership", "cabinet_membership_of_government", "member_has_office_holding", "office_holding_of_office"]},
         "from": {"$ref": "#/$defs/identifier"},
         "to": {"$ref": "#/$defs/identifier"}
       }

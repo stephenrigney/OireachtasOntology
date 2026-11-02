@@ -85,6 +85,12 @@ For partial-name person lookup use capability_selection member_lookup with param
 For a numbered-Dáil party listing use capability_selection dail_parties_and_groups with parameters {{"termNumber":N,"includeGroups":false}}; true only if groups are also requested. This reuses the existing party compiler, not the constituency composition.
 For a named person's office tenure use capability_selection office_holding_evidence with parameters {{"member":"exact mention","office":"exact office mention"}}. This checks accepted local OfficeHolding evidence only; unreviewed observations cannot answer tenure. A first-election date is unsupported: election-event evidence is not queryable, and a membership start is not an election date. Never substitute service entry for election.
 
+For who held a named office during a calendar month or an explicit month-to-month window, use capability_selection office_holding_window with parameters {{"office":"exact mention","startMonth":6,"startYear":1994,"endMonth":6,"endYear":1994}} (numeric months). A single calendar month means its full first-to-last-day interval, never a guessed point. Local code reuses the accepted dated OfficeHolding compiler and incomplete-coverage qualification.
+
+Bounded operators extend the SAME member_relationship_composition graph below, not new families:
+- For an explicitly named OR set of two to four constituencies, replace constituency with {{"type":"DailConstituency","members":[{{"type":"DailConstituency","mention":"exact first mention"}},{{"type":"DailConstituency","mention":"exact second mention"}}]}}. All existing edges and the party/membership overlap constraint and Member evidence answer remain unchanged. Local code resolves each occurrence in the same selected term and compiles one VALUES identity set; never merge string results. Never infer a set from 'the two Galway constituencies'; that is ambiguous (Roscommon-Galway may also be relevant).
+- For other named-party TDs sharing a constituency with a named anchor Member while that anchor held a named office, keep member, membership, episode, party, affiliation and their edges as below; term is {{"type":"DailTerm","mention":null}} and constituency is {{"type":"DailConstituency","mention":null}} (unselected shared resource identities). Add anchor (Member, exact named mention), anchor_membership (DailMembership, null mention), holding (OfficeHolding, null mention), office (NamedOffice, exact office mention). Add edges member_has_membership anchor→anchor_membership, membership_in_term anchor_membership→term, membership_represents anchor_membership→constituency, member_has_office_holding anchor→holding, office_holding_of_office holding→office. Keep both independent membership paths to the SAME exact constituency and term. No numbered-term clarification is needed: the accepted office episode anchors time. Constraints are exactly [{{"referent":"episode","field":"partyEpisodeInterval","operator":"overlaps","value":"membership"}},{{"referent":"member","field":"identity","operator":"distinctFrom","value":"anchor"}},{{"referent":"holding","field":"interval","operator":"commonIntersection","value":["holding","anchor_membership","membership","episode"]}}]. Use the existing Member evidence answer below and append details holding [start,end], anchor_membership [start,end], constituency [label]. Local code requires one common inclusive intersection of ALL four independently owned intervals, not merely pairwise overlaps, and reports partial accepted-evidence coverage, never a complete roster. Additional filters or projections remain unsupported as a whole.
+
 Existing shared-term capability: {shared_terms['semantics']}
 
 Reusable Member relationship capability: {member_composition['semantics']}
@@ -184,6 +190,16 @@ def validate_composable_plan_draft(
     if value["unsupportedReason"] is not None:
         raise InvalidComposableDraft("A supported proposal cannot also carry an unsupported reason.")
 
+    from .interpretation import unsupported_whole_intent
+    reason = unsupported_whole_intent(question)
+    if reason:
+        raise InvalidComposableDraft(reason)
+
+    if re.search(r"\b(?:same|shared)\s+constituency\b", question, re.I):
+        if (value["family"] != "member_relationship_composition"
+                or not isinstance(value["referents"], dict) or "anchor" not in value["referents"]):
+            raise InvalidComposableDraft("The requested independent Member/shared-constituency operator is absent; no simplified plan is accepted.")
+
     if value["family"] == "capability_selection":
         return _validate_capability_selection_draft(value, question=question), None
 
@@ -191,6 +207,9 @@ def validate_composable_plan_draft(
         return _validate_existing_capability_draft(value, question=question), None
 
     if value["family"] == "member_relationship_composition":
+        refs = value.get("referents")
+        if isinstance(refs, dict) and ("anchor" in refs or "members" in refs.get("constituency", {})):
+            return _validate_bounded_composition_draft(value, question=question), None
         return _validate_member_relationship_draft(value, question=question), None
     if value["family"] != "shared_dail_terms":
         raise UnsupportedComposableRequest(
@@ -494,6 +513,15 @@ def _validate_member_party_composition_draft(
             normalized[key] = {"type": semantic_type, "mention": mention.strip() if isinstance(mention, str) else None}
 
     term_selector = normalized["term"]["selector"]
+    residual = question
+    for item in normalized.values():
+        mention = item.get("mention")
+        if mention:
+            if re.search(r"\b(?:and|or|while|when|elected|election|before|after)\b", mention, re.I):
+                raise InvalidComposableDraft("An entity mention cannot consume another requested clause or identity.")
+            residual = re.sub(re.escape(mention), " ", residual, flags=re.I)
+    if re.search(r"\b(?:and|or|while|same|shared|election|elected|count|how many)\b", residual, re.I):
+        raise InvalidComposableDraft("The proposed single-constituency graph omits a requested operator or projection.")
     term_numbers = _question_dail_ordinals(question)
     if term_selector["kind"] == "termNumber":
         if len(term_numbers) != 1 or term_numbers[0] != term_selector["number"]:
@@ -689,6 +717,21 @@ def _validate_capability_selection_draft(value: dict[str, Any], *, question: str
         if re.search(r"\b(?:represent|constituenc(?:y|ies)|TDs|members|minister|current|now|before|after|count|how many|except|excluding|only|without|bills?|sponsor(?:ed|s|ing)?|votes?|voted|committees?)\b|[0-9]{4}", question, re.I):
             raise UnsupportedComposableRequest("Party listing cannot replace a Member relationship or additional condition.")
         normalized_parameters = dict(parameters)
+    elif capability == "office_holding_window":
+        if (not isinstance(parameters, dict) or set(parameters) != {"office", "startMonth", "startYear", "endMonth", "endYear"}
+                or not isinstance(parameters.get("office"), str) or _label_position(question, parameters["office"]) is None):
+            raise InvalidComposableDraft("Office windows require a grounded office and explicit month/year boundaries.")
+        if (any(type(parameters[key]) is not int for key in ("startMonth", "endMonth", "startYear", "endYear"))
+                or any(not 1 <= parameters[key] <= 12 for key in ("startMonth", "endMonth"))
+                or any(not 1 <= parameters[key] <= 9998 for key in ("startYear", "endYear"))):
+            raise InvalidComposableDraft("Office month/year boundaries must be bounded calendar integers.")
+        bounds = _question_month_window(question)
+        if tuple(parameters[key] for key in ("startYear", "startMonth", "endYear", "endMonth")) != bounds:
+            raise InvalidComposableDraft("Preserve the complete requested calendar-month window; never replace it by a date point.")
+        residual = re.sub(re.escape(parameters["office"]), " ", question, flags=re.I)
+        if re.search(r"\b(?:and|while|constituenc(?:y|ies)|party|parties|TDs?|members?|elected|election|count|how many|only|except|excluding|before|after|since|until|not)\b", residual, re.I):
+            raise UnsupportedComposableRequest("A dated office window cannot drop an additional relationship, projection or condition.")
+        normalized_parameters = dict(parameters)
     elif capability == "office_holding_evidence":
         if (not isinstance(parameters, dict) or set(parameters) != {"member", "office"}
                 or any(not isinstance(parameters.get(key), str) or not parameters[key].strip()
@@ -742,6 +785,101 @@ def _validate_capability_selection_draft(value: dict[str, Any], *, question: str
 
     return {"family": "capability_selection", "capability": capability,
             "parameters": normalized_parameters}
+
+
+def _question_month_window(question):
+    """Ground only the already supported full-month window, not broad date NLQ."""
+    import calendar
+    months = {name.casefold(): number for number, name in enumerate(calendar.month_name) if name}
+    matches = re.findall(r"\b(" + "|".join(months) + r")\s+([0-9]{4})\b", question, re.I)
+    if not 1 <= len(matches) <= 2:
+        raise InvalidComposableDraft("Supply one calendar month or two explicit month/year boundaries.")
+    bounds = [(int(year), months[month.casefold()]) for month, year in matches]
+    if len(bounds) == 1:
+        bounds *= 2
+    if bounds[0] > bounds[1]:
+        raise InvalidComposableDraft("The month window is reversed.")
+    return (*bounds[0], *bounds[1])
+
+
+def _validate_bounded_composition_draft(value, *, question):
+    """Normalize operator inputs; the shared final validator owns graph meaning."""
+    from .composable_plan import validate_plan, PlanError
+    from .interpretation import present_constituency_default
+    from .structured_planner import _label_position
+    refs = value["referents"]
+    anchored = "anchor" in refs
+    normalized = {}
+    mentions = []
+    for key, ref in refs.items():
+        if not isinstance(ref, dict):
+            raise InvalidComposableDraft("Every referent must be a typed object.")
+        if key == "constituency" and "members" in ref:
+            if set(ref) != {"type", "members"} or not isinstance(ref["members"], list):
+                raise InvalidComposableDraft("An identity set contains only typed, explicitly named alternatives.")
+            items = ref["members"]
+        else:
+            items = [ref]
+        converted = []
+        for item in items:
+            if not isinstance(item, dict) or set(item) - {"type", "mention", "selector"}:
+                raise InvalidComposableDraft("The model may propose mentions/selectors, never identity resolution or arbitrary fields.")
+            semantic_type = item.get("type")
+            result = {"type": semantic_type}
+            mention = item.get("mention")
+            if mention is not None:
+                if (not isinstance(mention, str) or not mention.strip() or _label_position(question, mention) is None
+                        or re.search(r"\b(?:and|or|while|when|during|elected|election|first|before|after|except|excluding)\b", mention, re.I)):
+                    raise InvalidComposableDraft("A referent must be an exact entity mention, not a consumed additional clause.")
+                mentions.append(mention)
+                result.update(mention=mention, resolution="unresolved")
+            if "selector" in item:
+                selector = item["selector"]
+                if not isinstance(selector, dict):
+                    raise InvalidComposableDraft("Invalid term selector.")
+                if selector == {"kind": "currentTerm"}:
+                    selector = {"kind": "currentTerm", "house": "Dail"}
+                result["selector"] = selector
+            converted.append(result)
+        normalized[key] = {"type": ref["type"], "members": converted} if "members" in ref else converted[0]
+    normalized["member"]["answer"] = True
+    plan = {"version": 2, "asOf": "2000-01-01", "family": value["family"],
+            "referents": normalized, "relations": value["relations"], "constraints": value["constraints"], "answer": value["answer"]}
+    residual = question
+    for mention in mentions:
+        residual = re.sub(re.escape(mention), " ", residual, flags=re.I)
+    if re.search(r"\b(?:not|never|except|excluding|only|before|after|since|until|between|count|how many|votes?|voted|bills?|committees?|elected|election|first|last)\b|[0-9]{4}", residual, re.I):
+        raise UnsupportedComposableRequest("The bounded operators cannot preserve this additional constraint/projection; no partial answer is permitted.")
+    # A bounded grammar is deliberately conservative. Unconsumed names/clauses
+    # must not disappear merely because every proposed name occurs somewhere.
+    scope_text = re.sub(r"\b[0-9]{1,3}(?:st|nd|rd|th)\b", " ", residual, flags=re.I)
+    allowed = set("who what which were was are is did do does have has had the a an other another others td tds deputy deputies member members in for of from as same shared constituency constituencies with while when during he she they his her their s and or both either any represent represents represented representing representation serve served service held hold office term dáil dail current currently now today please list name show give me recorded records local evidence evidenced identify find tell can could you that those these whom fellow alongside parliamentary".split())
+    if set(re.findall(r"[^\W\d_]+", scope_text.casefold())) - allowed:
+        raise UnsupportedComposableRequest("Unconsumed wording remains outside the bounded composition; no clause or identity was silently dropped.")
+    if anchored:
+        if not re.search(r"\b(?:same|shared)\s+constituency\b", residual, re.I) or not re.search(r"\b(?:while|when|during)\b", residual, re.I):
+            raise InvalidComposableDraft("The shared-constituency and office temporal anchor must both be requested.")
+        if _question_dail_ordinals(question) or re.search(r"\b(?:current|now|today)\b", residual, re.I):
+            raise UnsupportedComposableRequest("Additional term/current scope cannot replace the office anchor.")
+    else:
+        scope = normalized["constituency"]
+        selector = normalized["term"].get("selector")
+        if selector == {"kind": "currentTerm", "house": "Dail"}:
+            if not re.search(r"\b(?:current|currently|now|today)\b", question, re.I):
+                if not all(present_constituency_default(question, item["mention"]) for item in scope["members"]):
+                    raise InvalidComposableDraft("The OR set requires the same approved present-tense temporal default for every item.")
+                plan["interpretation"] = {"policy": "present_constituency_as_of", "question": question, "date": plan["asOf"]}
+            if _question_dail_ordinals(question):
+                raise InvalidComposableDraft("Current selection cannot replace a numbered term.")
+        elif not isinstance(selector, dict) or _question_dail_ordinals(question) != [selector.get("number")]:
+            raise InvalidComposableDraft("Preserve the exact explicitly numbered term.")
+        if not re.search(r"\b(?:and|or)\b", residual, re.I):
+            raise InvalidComposableDraft("An identity OR set must be explicitly requested, not inferred from a geographic substring.")
+    try:
+        validate_plan(plan)
+    except (PlanError, KeyError, TypeError) as error:
+        raise InvalidComposableDraft(str(error)) from error
+    return {key: item for key, item in plan.items() if key not in {"version", "asOf"}}
 
 
 def _question_dail_ordinals(question: str) -> list[int]:
