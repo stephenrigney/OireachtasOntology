@@ -512,10 +512,15 @@ def _validate_member_party_composition_plan(plan: dict[str, Any]) -> dict[str, A
 
     term = refs["term"]
     selector = term.get("selector")
-    if (not isinstance(selector, dict)
-            or selector != {"kind": "termNumber", "number": selector.get("number")}
-            or type(selector.get("number")) is not int or not 1 <= selector["number"] <= 999):
-        raise PlanError("The DailTerm must use one reviewed numeric term selector.")
+    numeric_term = (
+        isinstance(selector, dict)
+        and selector == {"kind": "termNumber", "number": selector.get("number")}
+        and type(selector.get("number")) is int
+        and 1 <= selector["number"] <= 999
+    )
+    current_term = selector == {"kind": "currentTerm", "house": "Dail"}
+    if not (numeric_term or current_term):
+        raise PlanError("The DailTerm must use one reviewed numeric or date-relative current-term selector.")
     term_resolution = term.get("resolution")
     if term_resolution is None:
         if set(term) != {"type", "selector"}:
@@ -2031,7 +2036,11 @@ def _compile_member_party_temporal_query(plan: dict[str, Any], mapping: dict[str
         _require_local_iri(affiliation.get("iri"), "PoliticalAffiliationIdentity")
     term_iri = URIRef(_require_local_iri(term.get("iri"), "DailTerm")).n3()
     constituency_iri = URIRef(_require_local_iri(constituency.get("iri"), "DailConstituency")).n3()
-    term_number = term["selector"]["number"]
+    term_number = term["selector"].get("number")
+    term_ordinal_pattern = (
+        f'; {mapping["term_number"]} "{term_number}"^^xsd:integer'
+        if term["selector"]["kind"] == "termNumber" else ""
+    )
     types = mapping["rdf_types"]
     relations = mapping["relations"]
     facts = {item["fact"]: item for item in plan["relations"]}
@@ -2094,7 +2103,7 @@ def _compile_member_party_temporal_query(plan: dict[str, Any], mapping: dict[str
   FILTER(STRSTARTS(STR(?memberGraph), {json.dumps(mapping['member_prefix'])}))
   GRAPH <{mapping['houses_graph']}> {{
     VALUES {term_variable} {{ {term_iri} }}
-    {term_variable} a {types['DailTerm']} ; {mapping['term_number']} "{term_number}"^^xsd:integer .
+    {term_variable} a {types['DailTerm']} {term_ordinal_pattern} .
   }}
   GRAPH <{mapping['constituency_graph']}> {{
     VALUES {constituency_variable} {{ {constituency_iri} }}
@@ -3630,11 +3639,14 @@ def _temporal_member_party_result(
 
     party_answer = plan["answer"]["referent"] == "affiliation"
     selected_identity = None if party_answer else plan["referents"]["affiliation"].get("iri")
+    current_term = plan["referents"]["term"]["selector"]["kind"] == "currentTerm"
+    as_of = date.fromisoformat(plan["asOf"]) if current_term else None
     evidence_by_identity: dict[str, dict[str, Any]] = {}
     evidence_by_member: dict[str, dict[str, Any]] = {}
     for (member_iri, _membership_iri, episode_iri, party_iri), entry in records.items():
         known_identities = set(entry["affiliations"])
-        if not party_answer and known_identities and selected_identity not in known_identities:
+        if (not party_answer and known_identities
+                and selected_identity not in known_identities):
             continue
         try:
             membership_interval = _mapped_member_interval(
@@ -3649,6 +3661,17 @@ def _temporal_member_party_result(
                 diagnostic=f"Temporal overlap is uncertain: {error}",
                 request_family="member_relationship_composition",
             )
+        if current_term:
+            membership_current = (
+                membership_interval[0].date() <= as_of
+                and (membership_interval[1] is None or as_of <= membership_interval[1].date())
+            )
+            party_current = (
+                party_interval[0].date() <= as_of
+                and (party_interval[1] is None or as_of <= party_interval[1].date())
+            )
+            if not (membership_current and party_current):
+                continue
         overlap = _interval_overlap(membership_interval, party_interval)
         if overlap is None:
             continue
@@ -3716,17 +3739,27 @@ def _temporal_member_party_result(
             ), raw_result.raw_json,
         )
     else:
+        no_match = (
+            f"No exact PartyMembership and DailMembership intervals both contain {as_of.isoformat()} "
+            "for the selected current-term constituency/affiliation evidence."
+            if current_term else
+            "No local PartyMembership interval has an established inclusive overlap with the selected "
+            "DailMembership interval for this term/constituency/identity."
+        )
         return PlanOutcome(
             "source_data_unavailable", plan=plan, sparql=answer_query,
-            diagnostic=("No local PartyMembership interval has an established inclusive overlap with the selected "
-                        "DailMembership interval for this term/constituency/identity. This does not establish a complete historical negative."),
+            diagnostic=no_match + (
+                " This does not establish a complete current negative because local current source completeness is not certified."
+                if current_term else " This does not establish a complete historical negative."
+            ),
             request_family="member_relationship_composition",
         )
     return PlanOutcome(
         "success", plan=plan, sparql=answer_query, result=result,
         diagnostic=("Only established inclusive endpoint overlaps are reported. An absent EndDate is preserved as open-ended; "
                     "missing date ranges/starts never count as overlap. PartyMembership and DailMembership retain their separate "
-                    "source intervals; local historical source completeness is not certified."),
+                    + (f"source intervals that both contain {as_of.isoformat()}; local current source completeness is not certified."
+                       if current_term else "source intervals; local historical source completeness is not certified.")),
         request_family="member_relationship_composition",
     )
 
@@ -3790,6 +3823,7 @@ def _execute_member_relationship_composition_plan(
     supported_predicates,
 ) -> PlanOutcome:
     """Resolve exact term/constituency identities, then execute one graph composition."""
+    as_of = date.fromisoformat(plan["asOf"])
     try:
         mapping = _member_relationship_composition_mapping(
             plan, supported_predicates=supported_predicates,
@@ -3807,7 +3841,25 @@ def _execute_member_relationship_composition_plan(
     ambiguous_candidates: list[dict[str, str]] = []
     resolution_failures: list[tuple[str, str]] = []
     for _referent_id, referent in term_referents:
-        ordinal = referent["selector"]["number"]
+        selector = referent["selector"]
+        if selector["kind"] == "currentTerm":
+            try:
+                query = previous_dail_term_query(as_of, supported_predicates=supported_predicates)
+                result = fuseki.query(query)
+                if (result.kind != "select"
+                        or not {"term", "start", "end"}.issubset(result.columns)
+                        or len(result.rows) >= 100):
+                    raise NLQError("House-term date evidence is incomplete; no current Dáil was selected.")
+                from .representation import resolve_current_dail
+                current_term = resolve_current_dail(result, as_of)
+            except (PlanError, NLQError) as error:
+                referent["resolution"] = "source_data_unavailable"
+                resolution_failures.append(("source_data_unavailable", str(error)))
+                continue
+            referent.update({"resolution": "resolved", "iri": current_term})
+            continue
+
+        ordinal = selector["number"]
         try:
             query = dail_term_ordinal_resolution_query(
                 ordinal, supported_predicates=supported_predicates,
@@ -3925,8 +3977,12 @@ def _execute_member_relationship_composition_plan(
             if item["fact"] == "constituency_in_term" and item["from"] == constituency_id
         )
         term_ref = plan["referents"][relation["to"]]
-        ordinal = term_ref["selector"]["number"]
-        term_label = _dail_ordinal_label(ordinal)
+        term_selector = term_ref["selector"]
+        term_label = (
+            _dail_ordinal_label(term_selector["number"])
+            if term_selector["kind"] == "termNumber"
+            else f"the current Dáil as of {as_of.isoformat()}"
+        )
         try:
             query = constituency_resolution_query(
                 constituency["mention"], term_ref["iri"],
@@ -4218,6 +4274,31 @@ def _execute_shared_dail_terms_question(
     if draft_plan is None:
         return PlanOutcome(
             "unsupported_request", diagnostic=unsupported_reason,
+            request_family=family,
+        )
+    if draft_plan.get("family") == "capability_selection":
+        capability = draft_plan["capability"]
+        parameters = draft_plan["parameters"]
+        if capability == "seanad_entry":
+            from .stage_a import StageARequest, execute_stage_a
+            return execute_stage_a(
+                StageARequest("seanad_entry", mention=parameters["member"]),
+                as_of=as_of, fuseki=fuseki,
+                supported_predicates=supported_predicates,
+            )
+        if capability == "bill_lookup":
+            from .stage_b import _plan as stage_b_plan, execute_stage_b
+            plan = stage_b_plan(
+                "bill_lookup", as_of,
+                bill={"year": parameters["billYear"], "number": parameters["billNumber"]},
+            )
+            return execute_stage_b(
+                plan, fuseki=fuseki,
+                supported_predicates=supported_predicates,
+            )
+        return PlanOutcome(
+            "validation_failure",
+            diagnostic=f"No reviewed executor is registered for semantic capability {capability!r}.",
             request_family=family,
         )
     try:
@@ -4601,19 +4682,34 @@ def _composable_interpretation_preflight(question: str, as_of: date) -> PlanOutc
             "clarification_required", diagnostic=f"The Dáil term selector is invalid: {error} No answer query was run.",
             request_family="composable_semantic",
         )
-    if not ordinals:
+    current_term_request = bool(re.search(
+        r"\b(?:current|currently|now|today)\b", question, re.IGNORECASE,
+    ))
+    if not ordinals and not current_term_request:
         return PlanOutcome(
             "clarification_required",
             diagnostic="Please specify which numbered Dáil term you mean; this composition does not guess a current or relative term.",
             request_family="composable_semantic",
         )
-    if len(ordinals) != 1:
+    if ordinals and current_term_request:
+        return PlanOutcome(
+            "unsupported_request",
+            diagnostic=("Do not combine an explicitly numbered Dáil with a date-relative current-term request; "
+                        "no term or current-service condition was dropped."),
+            request_family="composable_semantic",
+        )
+    if len(ordinals) > 1:
         return PlanOutcome(
             "unsupported_request",
             diagnostic="This composition supports one numbered Dáil term; a multi-term condition cannot be dropped or simplified.",
             request_family="composable_semantic",
         )
     condition_text = _without_reviewed_affiliation_mentions(question)
+    if current_term_request:
+        condition_text = re.sub(
+            r"\b(?:current|currently|now|today)\b", " ", condition_text,
+            flags=re.IGNORECASE,
+        )
     if re.search(r"\b(?:independent|parliamentary group)\b", condition_text, re.IGNORECASE):
         return PlanOutcome(
             "unsupported_request",

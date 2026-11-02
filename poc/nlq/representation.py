@@ -99,10 +99,18 @@ def validate_representation_plan(plan):
 
 
 def resolve_current_dail(result, as_of):
-    if result.kind != "select" or len(result.rows) >= 100:
+    required_columns = {"term", "start", "end"}
+    if (result.kind != "select" or not required_columns.issubset(result.columns)
+            or len(result.rows) >= 100):
         raise NLQError("House-term date lookup is incomplete; no current Dáil was selected.")
+    indexes = {name: result.columns.index(name) for name in required_columns}
     intervals = {}
-    for iri, start, end in result.rows:
+    for row in result.rows:
+        if len(row) <= max(indexes.values()):
+            raise NLQError("House-term date lookup returned a truncated row; no current Dáil was selected.")
+        iri, start, end = (row[indexes[name]] for name in ("term", "start", "end"))
+        if not all(isinstance(value, str) for value in (iri, start, end)):
+            raise NLQError("House-term date lookup returned malformed values; no current Dáil was selected.")
         _require_local_iri(iri, "DailTerm")
         interval = (_date_binding(start), None if end in {"—", ""} else _date_binding(end))
         if interval[1] is not None and interval[1] < interval[0]:

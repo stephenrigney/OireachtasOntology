@@ -2,14 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://data.oireachtas.ie/specs/composable-query-plan-draft.schema.json",
   "title": "Composable Query Plan v2 Semantic Draft",
-  "description": "Strict IRI-free model proposal for the closed shared-Dáil-term and Member relationship-composition v2 projections, including bounded dated party/representation composition. Local code validates every relationship, resolves local identities, and supplies the final v2 envelope.",
+  "description": "Strict IRI-free model proposal for closed composable v2 projections or selection of a named existing validated Stage A/B capability. Local code validates every relationship and selector, resolves local identities, and supplies the final v2 envelope.",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "supported", "family", "unsupportedReason", "intent", "referents", "relations", "constraints", "answer"],
   "properties": {
     "version": {"type": "integer", "const": 2},
     "supported": {"type": "boolean"},
-    "family": {"type": ["string", "null"], "enum": ["shared_dail_terms", "member_relationship_composition", "constituency_representation", "member_party_history", "member_bill_sponsorship", "government_party_members", null]},
+    "family": {"type": ["string", "null"], "enum": ["shared_dail_terms", "member_relationship_composition", "constituency_representation", "member_party_history", "member_bill_sponsorship", "government_party_members", "capability_selection", null]},
     "unsupportedReason": {"type": ["string", "null"]},
     "intent": {"type": "string", "minLength": 1},
     "referents": {
@@ -80,6 +80,23 @@
             "party": {"$ref": "#/$defs/parliamentaryPartyReferent"},
             "affiliation": {"$ref": "#/$defs/affiliationReferent"}
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["capability", "parameters"],
+          "properties": {
+            "capability": {"type": "string", "enum": ["seanad_entry", "bill_lookup"]},
+            "parameters": {
+              "anyOf": [
+                {"type": "object", "additionalProperties": false, "required": ["member"],
+                 "properties": {"member": {"type": "string", "minLength": 1}}},
+                {"type": "object", "additionalProperties": false, "required": ["billNumber", "billYear"],
+                 "properties": {"billNumber": {"type": "string", "pattern": "^[0-9]+$"},
+                   "billYear": {"type": "integer", "minimum": 1800, "maximum": 2200}}}
+              ]
+            }
+          }
         }
       ]
     },
@@ -140,15 +157,13 @@
       "properties": {
         "type": {"type": "string", "const": "DailTerm"},
         "mention": {"type": "null"},
-        "selector": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["kind", "number"],
-          "properties": {
-            "kind": {"type": "string", "const": "termNumber"},
-            "number": {"type": "integer", "minimum": 1, "maximum": 999}
-          }
-        }
+        "selector": {"anyOf": [
+          {"type": "object", "additionalProperties": false, "required": ["kind", "number"],
+           "properties": {"kind": {"type": "string", "const": "termNumber"},
+             "number": {"type": "integer", "minimum": 1, "maximum": 999}}},
+          {"type": "object", "additionalProperties": false, "required": ["kind"],
+           "properties": {"kind": {"type": "string", "const": "currentTerm"}}}
+        ]}
       }
     },
     "constituencyReferent": {
