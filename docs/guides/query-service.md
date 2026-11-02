@@ -166,6 +166,22 @@ locally before an answer query runs. Results reflect recorded local evidence and
 do not certify historical completeness. Additional filters, more/fewer terms,
 Seanad terms, and unsupported relationships are refused rather than dropped.
 
+The dated party/representation path additionally supports bounded composition
+operators (composable contract `2.18.0`): an explicit OR set of two to four
+constituency names resolved in the same numbered/current Dáil, or independent
+anchor/answer Member paths sharing the **same constituency resource and term**
+while the anchor held an accepted named office. The latter requires one common
+intersection of the office, both representation intervals and the answer
+Member's party episode. Answers preserve source episodes and intervals and are
+explicitly partial accepted-evidence coverage, not complete historical rosters.
+An implicit geographic set prompts for exact alternatives; substring matches
+may suggest grounded occurrences but never choose the set. Semantic capability
+selection also exposes the existing full-calendar-month OfficeHolding window.
+Compound election/unsupported aggregate requests are refused as a whole, not
+reduced to supported subqueries. See the [bounded composition implementation
+report](../reports/query-service/bounded-composition-reuse.md), including its
+untuned holdout failure and limits; this is not arbitrary graph traversal.
+
 ### Other launcher commands
 
 ```bash

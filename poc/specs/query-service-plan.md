@@ -1140,7 +1140,7 @@ The implementation branch remains unmerged pending ChatGPT review.
   safeguards, or substantial new orchestration, stop that expansion and return
   the architectural evidence for review instead of silently redesigning.
 
-### Query Service follow-up — Bounded composition reuse (approved, pending implementation)
+### Query Service follow-up — Bounded composition reuse (implemented)
 
 This is one post-Phase-2 architectural test, not a general NLQ expansion or a
 reopening of the completed interpretation/clarification tranche. The
@@ -1241,6 +1241,17 @@ current Taoiseach roster, general aggregation, last-term selection,
 cross-House composition, conversational context, broad date-query support,
 ontology changes, RDF publication and federation. Retain these as separate
 future decisions, not prerequisites for this architectural test.
+
+Implemented in composable contract `2.18.0`, without a new question family or
+query-schema/RDF change. The existing dated party/representation validator,
+graph compiler and interval evaluator implement the bounded operators; semantic
+selection dispatches full-month office windows to the existing office compiler.
+Controlled `/ask` acceptance and live read-only evidence demonstrate Q15 and Q3;
+Q3 reports only partial accepted-evidence coverage. The fresh five-question live
+holdout had four expected outcomes and one fail-closed planner omission, retained
+without tuning or retry. See the [implementation and verification
+report](../../docs/reports/query-service/bounded-composition-reuse.md) for measured
+results, reuse evidence and the architectural decision. Exclusions above remain.
 
 ## 9. Phase 3 — Source selection and provenance
 
