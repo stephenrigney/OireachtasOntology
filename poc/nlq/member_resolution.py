@@ -17,7 +17,7 @@ from urllib.parse import urlsplit
 from rdflib import Literal, URIRef
 
 from .contract import load_query_contract
-from .errors import NLQError
+from .errors import NLQError, QueryLimitError
 from .safety import validate_sparql
 
 
@@ -374,7 +374,7 @@ def resolve_local_entity_label(
     if result.kind != "select" or not {"entity", "label"} <= set(result.columns):
         raise NLQError("Fuseki returned an unexpected response to local entity resolution.")
     if len(result.rows) >= 100:
-        raise NLQError(
+        raise QueryLimitError(
             f"Local {entity_type} label resolution reached its 100-row safety cap; "
             "no entity was selected."
         )

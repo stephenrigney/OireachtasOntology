@@ -7,6 +7,10 @@ import os
 import json
 from pathlib import Path
 from datetime import date
+from collections import OrderedDict
+from threading import Lock
+from time import monotonic
+from secrets import token_urlsafe
 
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
@@ -51,6 +55,9 @@ def create_app(
     templates = Jinja2Templates(directory=str(TEMPLATES))
     schema_context = build_schema_context(repository_root / "ontology")
     predicate_vocabulary = supported_predicates(repository_root / "ontology")
+    # Short-lived, bounded candidate-choice state only; no chat or model memory.
+    pending_choices = OrderedDict()
+    choice_lock = Lock()
 
     def check_fuseki_readiness() -> FusekiReadiness:
         client = None
@@ -90,7 +97,8 @@ def create_app(
                readiness: FusekiReadiness | None = None,
                mode: str = "phase2", interaction_status: str | None = None,
                plan_json: str | None = None, plan_heading: str | None = None,
-               entity_outcomes: tuple[dict, ...] = (), plan_explanation=None):
+               entity_outcomes: tuple[dict, ...] = (), plan_explanation=None,
+               clarification=None):
         if readiness is None:
             readiness = check_fuseki_readiness()
         return templates.TemplateResponse(request, "index.html", {
@@ -111,6 +119,8 @@ def create_app(
             "plan_heading": plan_heading,
             "entity_outcomes": entity_outcomes,
             "plan_explanation": plan_explanation,
+            "clarification": clarification,
+            "outcome_kind": getattr(request.state, "query_outcome", None),
         })
 
     @app.get("/", response_class=HTMLResponse)
@@ -137,7 +147,10 @@ def create_app(
         })
 
     @app.post("/ask", response_class=HTMLResponse)
-    def ask(request: Request, question: str = Form(...), mode: str = Form("phase2")):
+    def ask(request: Request, question: str = Form(...), mode: str = Form("phase2"),
+            continuation: str = Form(""), choice: str = Form("")):
+        if mode == "phase2" or continuation or choice:
+            request.state.query_outcome = "validation_failure"
         question = question.strip()
         if not question:
             return render(request, question=question, mode=mode,
@@ -147,7 +160,10 @@ def create_app(
                           error="Questions must be 2,000 characters or fewer.")
         if mode not in {"phase1", "phase2"}:
             return render(request, question=question, mode="phase2",
-                          error="Choose a supported development query path.")
+                           error="Choose a supported development query path.")
+        if mode != "phase2" and (continuation or choice):
+            return render(request, question=question, mode=mode, interaction_status="validation_failure",
+                          error="Candidate continuation is available only on the structured query path.")
 
         if mode == "phase2":
             fuseki = None
@@ -155,8 +171,21 @@ def create_app(
                 try:
                     as_of = date.fromisoformat(os.getenv("OIR_NLQ_AS_OF_DATE", date.today().isoformat()))
                 except ValueError:
+                    request.state.query_outcome = "validation_failure"
                     return render(request, question=question, mode=mode,
-                                  error="OIR_NLQ_AS_OF_DATE must be an ISO calendar date.")
+                                   error="OIR_NLQ_AS_OF_DATE must be an ISO calendar date.")
+                resumed = None
+                if continuation or choice:
+                    with choice_lock:
+                        saved = pending_choices.pop(continuation, None)
+                    if (saved is None or monotonic() - saved["created"] > 600
+                            or saved["question"] != question or saved["as_of"] != as_of
+                            or len(choice) > 2 or not choice.isascii() or not choice.isdecimal()
+                            or int(choice) >= len(saved["candidates"])):
+                        request.state.query_outcome = "validation_failure"
+                        return render(request, question=question, mode=mode, interaction_status="validation_failure",
+                                      error="The candidate choice is invalid, expired or already used. Ask the original question again.")
+                    resumed = (saved["request"], saved["candidates"][int(choice)]["iri"])
                 fuseki = FusekiQueryClient(
                     os.getenv(FUSEKI_QUERY_URL_ENV, DEFAULT_FUSEKI_QUERY_URL),
                     username=os.getenv("OIR_FUSEKI_USER"),
@@ -165,10 +194,22 @@ def create_app(
                 outcome = execute_question(
                     question, as_of=as_of, fuseki=fuseki,
                     supported_predicates=predicate_vocabulary,
+                    **({"continuation": resumed} if resumed is not None else {}),
                     semantic_plan_generator_factory=(
                         semantic_plan_generator_factory or create_composable_plan_generator
                     ),
                 )
+                request.state.query_outcome = outcome.interaction
+                if outcome.clarification is not None:
+                    token = token_urlsafe(32)
+                    with choice_lock:
+                        pending_choices[token] = {**outcome.clarification, "question": question,
+                                                  "as_of": as_of, "created": monotonic()}
+                        while len(pending_choices) > 128:
+                            pending_choices.popitem(last=False)
+                    return render(request, question=question, mode=mode, interaction_status="clarification_required",
+                                  error=outcome.diagnostic,
+                                  clarification={"token": token, "candidates": outcome.clarification["candidates"]})
                 plan_is_validated = False
                 if outcome.plan:
                     try:
@@ -352,6 +393,8 @@ def create_app(
                     "bill_votes": "Check the supported capability boundary: sponsorship is not vote evidence, and Bill-linked voting data is unavailable.",
                     "debate_transcript": "Check the approved transcript-content boundary; Debate metadata/link is not speech text.",
                 }
+                if is_stage_c and plan_family == "dail_parties_and_groups" and not (outcome.plan or {}).get("answer", {}).get("includeGroups", True):
+                    stage_c_summaries[plan_family] = "List recorded ParliamentaryParty identities for the exactly numbered Dáil term."
                 summary = (stage_a_summaries.get(stage_a_family) if is_stage_a else None) or (stage_c_summaries.get(plan_family) if is_stage_c else None) or (stage_b_summaries.get(stage_b_family) if is_stage_b else None) or (member_relationship_summary if is_member_relationship_composition else None) or (shared_dail_terms_summary if is_shared_dail_terms else None) or (f"Find {member_mention}’s distinct enduring political affiliations, grouped by reviewed local identity."
                            if is_q06 else ("Find the requested actual DebateSitting and its official record link."
                                              if is_debate else
@@ -623,6 +666,7 @@ def create_app(
                 )
             except Exception:
                 logger.exception("Unexpected failure in composable Query Service plan")
+                request.state.query_outcome = "execution_failure"
                 return render(
                     request, question=question, mode=mode,
                     error="An unexpected problem prevented the query from being processed.",

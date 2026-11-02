@@ -51,9 +51,10 @@
   </form>
 
   {% if error and interaction_status %}
-  <section class="{% if interaction_status in ['ambiguous_entity', 'unresolved_entity', 'ambiguous', 'identity_collision'] %}ambiguity{% else %}error{% endif %}" role="alert" aria-live="polite">
+  <section class="{% if interaction_status in ['clarification_required', 'ambiguous_entity', 'unresolved_entity', 'ambiguous', 'identity_collision'] %}ambiguity{% else %}error{% endif %}" role="alert" aria-live="polite">
     <h2>
-        {% if interaction_status == "ambiguous_entity" or interaction_status == "ambiguous" %}Ambiguous entity
+        {% if interaction_status == "clarification_required" %}Clarification required
+        {% elif interaction_status == "ambiguous_entity" or interaction_status == "ambiguous" %}Ambiguous entity
         {% elif interaction_status == "identity_collision" %}Member identities are not distinct
        {% elif interaction_status == "unresolved_entity" or interaction_status == "not_found" %}Entity not found
        {% elif interaction_status == "missing_identity_link" %}Reviewed identity link missing
@@ -67,7 +68,7 @@
        {% elif interaction_status == "unsupported_mapping" %}Unsupported query mapping
        {% elif interaction_status == "unsupported_request" %}Unsupported question
       {% elif interaction_status == "validation_failure" %}Query validation failed
-      {% elif interaction_status == "execution_failure" %}Query execution failed
+      {% elif interaction_status in ["execution_failure", "query_execution_failed"] %}Query execution failed
       {% else %}Planner could not complete{% endif %}
     </h2>
     <p>{{ error }}</p>
@@ -99,6 +100,24 @@
       </li>
     {% endfor %}
     </ul>
+  </section>
+  {% endif %}
+
+  {% if outcome_kind %}<p class="query-outcome" data-outcome="{{ outcome_kind }}">Outcome: {{ outcome_kind|replace('_', ' ') }}</p>{% endif %}
+  {% if clarification %}
+  <section class="ambiguity" aria-live="polite">
+    <h2>Choose a grounded Member identity</h2>
+    <form action="/ask" method="post">
+      <input type="hidden" name="question" value="{{ question }}">
+      <input type="hidden" name="mode" value="phase2">
+      <input type="hidden" name="continuation" value="{{ clarification.token }}">
+      {% for candidate in clarification.candidates %}
+      <p><label><input type="radio" name="choice" value="{{ loop.index0 }}" required>
+        <strong>{{ candidate.label }}</strong> — {{ candidate.context }}<br><code>{{ candidate.iri }}</code>
+      </label></p>
+      {% endfor %}
+      <button type="submit">Continue with selected Member</button>
+    </form>
   </section>
   {% endif %}
 

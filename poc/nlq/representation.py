@@ -14,6 +14,7 @@ from .composable_plan import (
 from .contract import load_query_contract
 from .pagination import select_pages
 from .results import QueryResult
+from .errors import IdentityNotFound, QueryLimitError
 
 
 EDGES = {
@@ -50,7 +51,11 @@ def plan_representation_question(question, *, as_of):
         r"(?:who are (?:the )?(?:current )?(?:TDs|deputies)|which (?:TDs|deputies) represent)"
         r" (?:for )?(?P<constituency>.+?)(?: in the (?:current|present) D[áa]il)?", text, re.I)
     if match:
-        return representation_plan(as_of=as_of, constituency=match["constituency"])
+        plan = representation_plan(as_of=as_of, constituency=match["constituency"])
+        from .interpretation import default_evidence, present_constituency_default
+        if present_constituency_default(question, match["constituency"]):
+            plan["interpretation"] = default_evidence(question, as_of)
+        return validate_representation_plan(plan)
     match = re.fullmatch(
         r"(?:what|which) constituenc(?:y|ies) (?P<tense>does|did|has) (?P<member>.+?) "
         r"(?:represent|represented)(?: (?:now|currently|in the current D[áa]il))?", text, re.I)
@@ -61,7 +66,7 @@ def plan_representation_question(question, *, as_of):
 
 def validate_representation_plan(plan):
     refs = plan["referents"]
-    if set(plan) != {"version", "asOf", "family", "referents", "relations", "answer"}:
+    if set(plan) - {"interpretation"} != {"version", "asOf", "family", "referents", "relations", "answer"}:
         raise PlanError("Representation plans do not accept additional constraints.")
     if set(refs) != {"member", "membership", "term", "constituency"}:
         raise PlanError("Representation requires the complete membership/constituency/term path.")
@@ -80,6 +85,11 @@ def validate_representation_plan(plan):
     if len(named) != 1 or any(not isinstance(refs[key]["mention"], str) or not refs[key]["mention"].strip() for key in named):
         raise PlanError("Exactly one Member or constituency mention is required.")
     current = "selector" in refs["term"]
+    from .interpretation import validate_default
+    try:
+        validate_default(plan, constituency=refs["constituency"].get("mention", ""), current=current)
+    except ValueError as error:
+        raise PlanError(str(error)) from error
     if current and refs["term"]["selector"] != {"kind": "currentTerm", "house": "Dail"}:
         raise PlanError("Representation supports only the current date-relative term selector.")
     if not current and named != ["member"]:
@@ -198,5 +208,6 @@ def execute_representation(plan, *, fuseki, supported_predicates):
         refs[key].update(resolution="ambiguous", candidates=list(error.candidates))
         return PlanOutcome("ambiguous", plan=plan, candidates=error.candidates, diagnostic=str(error))
     except NLQError as error:
-        status = "not_found" if "No local Member" in str(error) or "No matching constituency" in str(error) else "source_data_unavailable"
+        status = ("validation_failure" if isinstance(error, QueryLimitError) else
+                  "not_found" if isinstance(error, IdentityNotFound) else "source_data_unavailable")
         return PlanOutcome(status, plan=plan, sparql=query, diagnostic=str(error))

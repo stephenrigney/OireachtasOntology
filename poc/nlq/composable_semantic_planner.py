@@ -80,6 +80,11 @@ def build_composable_planner_instructions() -> str:
     )
     return f"""Interpret one user question as a semantic proposal for composable query plan v2.
 
+Interpretation contract: an unqualified present-tense request for TDs representing a named constituency, including a named-party filter, means representation as of the query date. Use currentTerm for this scoped default as well as explicit current/now wording. Never default historical, term-wide or election questions. Explicit numbered terms remain exact. Additional calendar-date filters are not supported by this composition; do not drop them.
+For partial-name person lookup use capability_selection member_lookup with parameters {{"member":"exact name mention","house":"Dail"}} for Deputy/TD, "Seanad" for Senator, or null for unqualified Member. Local code offers grounded alternatives; never expand a surname to an assumed full name.
+For a numbered-Dáil party listing use capability_selection dail_parties_and_groups with parameters {{"termNumber":N,"includeGroups":false}}; true only if groups are also requested. This reuses the existing party compiler, not the constituency composition.
+For a named person's office tenure use capability_selection office_holding_evidence with parameters {{"member":"exact mention","office":"exact office mention"}}. This checks accepted local OfficeHolding evidence only; unreviewed observations cannot answer tenure. A first-election date is unsupported: election-event evidence is not queryable, and a membership start is not an election date. Never substitute service entry for election.
+
 Existing shared-term capability: {shared_terms['semantics']}
 
 Reusable Member relationship capability: {member_composition['semantics']}
@@ -87,14 +92,14 @@ Reusable Member relationship capability: {member_composition['semantics']}
 Existing validated single-family capabilities:
 {dispatch_guidance}
 
-When one of those existing capabilities directly answers the request, use family "capability_selection", put its exact ID in referents.capability, and provide only the matching semantic inputs in referents.parameters. For seanad_entry use {{"member":"the exact grounded Member name"}}. For bill_lookup use {{"billNumber":"the explicitly supplied Bill number","billYear":2025}}. Set relations to [], constraints to [], and answer to null. Local code checks the inputs against the question, then invokes the same validated Stage A/B plan builder and executor used by deterministic recognition. Never use this route to answer another relationship or drop a requested condition.
+When one of those existing capabilities directly answers the request, use family "capability_selection", put its exact ID in referents.capability, and provide only the matching semantic inputs in referents.parameters. For seanad_entry use {{"member":"the exact grounded Member name"}}. For bill_lookup use {{"billNumber":"the explicitly supplied Bill number","billYear":2025}}. Set relations to [], constraints to [], and answer to null. Local code checks the inputs against the question, then invokes the same validated Stage A/B/C plan builder and executor used by deterministic recognition, or the named evidence-boundary resolver. Never use this route to answer another relationship or drop a requested condition.
 
 Use the existing semantic relationship identifiers below; these are proposals, not authority decisions:
 {relation_guidance}
 
 For the existing shared-term capability, use family "shared_dail_terms" and fixed referent keys member_a, membership_a, member_b, membership_b, and shared_term. Member entries use exact user-supplied labels. Each Member has an independent DailMembership path to the same shared DailTerm identity; set "constraints": [] and set "answer" to exactly {{"kind":"entities","referent":"shared_term","distinctBy":"identity","display":["label"],"details":[],"preserveEvidence":false}}.
 
-For the reusable Member relationship capability, use family "member_relationship_composition" and one Member answer referent with a null mention. Every DailTerm referent must carry selector {{"kind":"termNumber","number":N}} for an explicitly requested numeric Dáil ordinal. In the dated party/representation shape only, use selector {{"kind":"currentTerm"}} instead when the question explicitly asks for current/now and its meaning is at the supplied reference date. Use one of these complete typed graph shapes only:
+For the reusable Member relationship capability, use family "member_relationship_composition" and one Member answer referent with a null mention. Every DailTerm referent must carry selector {{"kind":"termNumber","number":N}} for an explicitly requested numeric Dáil ordinal. In the dated party/representation shape only, use selector {{"kind":"currentTerm"}} instead for explicit current/now or the approved unqualified present-tense constituency default. Use one of these complete typed graph shapes only:
 - keys member, membership_a, term_a, membership_b, and term_b: two distinct selected DailTerms, each reached from the same answer Member through a separate DailMembership; this returns Members with recorded membership in both exact term identities;
 - keys member, membership, term, and constituency: one selected DailTerm and one exact user-mentioned DailConstituency, where the same DailMembership links the Member to that term and constituency, and the constituency occurrence links to that same term identity.
 Use distinct referent IDs for separate membership/term resources. Do not substitute matching labels for RDF identity joins. Preserve every selected term and the constituency when required. For either of these non-temporal shapes, set "constraints": [] and use exactly this answer value: {{"kind":"entities","referent":"member","distinctBy":"identity","display":["name"],"details":[],"preserveEvidence":false}}.
@@ -342,7 +347,7 @@ def _validate_existing_capability_draft(value, *, question):
     for ref in refs.values():
         if ref.get("mention"):
             condition_text = re.sub(re.escape(ref["mention"]), " ", condition_text, flags=re.I)
-    if re.search(r"\b(?:not|never|except|excluding|only|before|after|since|until|between|while|count|how many|primary|supporting)\b|[0-9]{4}", condition_text, re.I):
+    if re.search(r"\b(?:not|never|except|excluding|only|before|after|since|until|between|while|count|how many|primary|supporting|elected|election|tenure)\b|[0-9]{4}", condition_text, re.I):
         raise UnsupportedComposableRequest("This slice cannot preserve the question's additional constraint.")
     placeholder = date(2000, 1, 1)  # discarded; complete_v2_plan supplies the actual reference date
     family = value["family"]
@@ -356,6 +361,12 @@ def _validate_existing_capability_draft(value, *, question):
         plan = government_plan(mention, as_of=placeholder)
         expected_answer = plan["answer"]
     elif family == "constituency_representation":
+        if re.search(r"\b(?:senators?|seanad|panels?)\b", condition_text, re.I):
+            raise UnsupportedComposableRequest("Dáil constituency representation cannot substitute for Seanad service.")
+        from .composable_plan import _reviewed_affiliation_mention_matches
+        if (re.search(r"\b(?:party|parties|affiliation|independent|groups?)\b", condition_text, re.I)
+                or _reviewed_affiliation_mention_matches(condition_text)):
+            raise UnsupportedComposableRequest("A party-filtered representation request requires the dated affiliation graph; no party filter may be dropped.")
         term = refs.get("term", {})
         selector = term.get("selector")
         if selector not in (None, "currentTerm"):
@@ -367,6 +378,16 @@ def _validate_existing_capability_draft(value, *, question):
         if selector is None and re.search(r"\b(?:current|currently|now|does|are)\b", condition_text, re.I):
             raise InvalidComposableDraft("A current question cannot be converted into career-wide representation.")
         plan = representation_plan(as_of=placeholder, member=member, constituency=constituency, current=selector == "currentTerm")
+        from .interpretation import present_constituency_default
+        explicit_current = bool(re.search(r"\b(?:current|currently|now|today)\b", question, re.I))
+        inferred_current = bool(constituency and present_constituency_default(question, constituency))
+        member_present = bool(member and re.search(r"\bdoes\b", condition_text, re.I))
+        if selector == "currentTerm" and not explicit_current and not inferred_current and not member_present:
+            raise InvalidComposableDraft("Current representation must preserve approved temporal scope.")
+        if inferred_current and selector != "currentTerm":
+            raise InvalidComposableDraft("Present constituency representation requires the approved query-date default.")
+        if inferred_current and not explicit_current:
+            plan["interpretation"] = {"policy": "present_constituency_as_of", "question": question}
         expected_answer = plan["answer"]
     else:
         mention = refs.get("member", {}).get("mention")
@@ -410,6 +431,8 @@ def _validate_member_party_composition_draft(
     question: str,
 ) -> dict[str, Any]:
     """Validate the one shared graph and temporal operator used by U06/U16."""
+    if re.search(r"\b(?:senators?|seanad|panels?)\b", question, re.I):
+        raise UnsupportedComposableRequest("Dáil representation cannot substitute for a Seanad/panel relationship.")
     referents = value["referents"]
     expected_types = {
         "member": "Member",
@@ -444,7 +467,10 @@ def _validate_member_party_composition_draft(
                     and 1 <= selector["number"] <= 999):
                 normalized[key] = {"type": semantic_type, "selector": selector}
             elif isinstance(selector, dict) and selector == {"kind": "currentTerm"}:
-                if not re.search(r"\b(?:current|currently|now|today)\b", question, re.IGNORECASE):
+                from .interpretation import present_constituency_default
+                constituency = referents.get("constituency", {}).get("mention")
+                inferred = isinstance(constituency, str) and present_constituency_default(question, constituency)
+                if not re.search(r"\b(?:current|currently|now|today)\b", question, re.IGNORECASE) and not inferred:
                     raise InvalidComposableDraft("A currentTerm selector requires an explicit current/as-of request.")
                 normalized[key] = {
                     "type": semantic_type,
@@ -581,13 +607,16 @@ def _validate_member_party_composition_draft(
         else:
             final_referents[key] = {"type": semantic_type}
 
-    return {
+    final = {
         "family": "member_relationship_composition",
         "referents": final_referents,
         "relations": [dict(item) for item in value["relations"]],
         "constraints": [dict(item) for item in value["constraints"]],
         "answer": answer,
     }
+    if term_selector["kind"] == "currentTerm" and not re.search(r"\b(?:current|currently|now|today)\b", question, re.I):
+        final["interpretation"] = {"policy": "present_constituency_as_of", "question": question}
+    return final
 
 
 def _bill_number_year_mentions(question: str) -> set[tuple[str, int]]:
@@ -631,7 +660,42 @@ def _validate_capability_selection_draft(value: dict[str, Any], *, question: str
             f"Existing semantic capability {capability!r} is not exposed for semantic selection."
         )
 
-    if capability == "seanad_entry":
+    if capability == "member_lookup":
+        if (entry.get("handler") != "stage_a" or not isinstance(parameters, dict)
+                or set(parameters) != {"member", "house"}
+                or parameters.get("house") not in (None, "Dail", "Seanad")
+                or not isinstance(parameters.get("member"), str)
+                or not parameters["member"].strip()
+                or _label_position(question, parameters["member"]) is None):
+            raise InvalidComposableDraft("Member lookup requires a grounded name and explicit chamber restriction.")
+        house = parameters["house"]
+        if bool(re.search(r"\b(?:deputy|deputies|TDs?|D[áa]il)\b", question, re.I)) != (house == "Dail"):
+            raise InvalidComposableDraft("Preserve the requested Dáil-service restriction.")
+        if bool(re.search(r"\b(?:senators?|Seanad)\b", question, re.I)) != (house == "Seanad"):
+            raise InvalidComposableDraft("Preserve the requested Seanad-service restriction.")
+        condition_text = re.sub(re.escape(parameters["member"]), " ", question, flags=re.I)
+        if re.search(r"\b(?:party|parties|constituenc(?:y|ies)|current|now|elected|election|minister|when|before|after|during|served|count|and|with|except|excluding|only|bills?|sponsor(?:ed|s|ing)?|committees?|votes?|voted)\b|[0-9]", condition_text, re.I):
+            raise UnsupportedComposableRequest("Name lookup cannot replace another relationship or temporal question.")
+        normalized_parameters = {"member": parameters["member"].strip(), "house": house}
+    elif capability == "dail_parties_and_groups":
+        if (entry.get("handler") != "stage_c" or not isinstance(parameters, dict)
+                or set(parameters) != {"termNumber", "includeGroups"}
+                or type(parameters.get("termNumber")) is not int
+                or _question_dail_ordinals(question) != [parameters["termNumber"]]
+                or type(parameters.get("includeGroups")) is not bool):
+            raise InvalidComposableDraft("Party listing requires the exact numbered Dáil and requested group scope.")
+        if parameters["includeGroups"] != bool(re.search(r"\bgroups?\b", question, re.I)):
+            raise InvalidComposableDraft("Preserve party/group answer scope.")
+        if re.search(r"\b(?:represent|constituenc(?:y|ies)|TDs|members|minister|current|now|before|after|count|how many|except|excluding|only|without|bills?|sponsor(?:ed|s|ing)?|votes?|voted|committees?)\b|[0-9]{4}", question, re.I):
+            raise UnsupportedComposableRequest("Party listing cannot replace a Member relationship or additional condition.")
+        normalized_parameters = dict(parameters)
+    elif capability == "office_holding_evidence":
+        if (not isinstance(parameters, dict) or set(parameters) != {"member", "office"}
+                or any(not isinstance(parameters.get(key), str) or not parameters[key].strip()
+                       or _label_position(question, parameters[key]) is None for key in ("member", "office"))):
+            raise InvalidComposableDraft("Office evidence lookup requires grounded Member and office mentions.")
+        normalized_parameters = dict(parameters)
+    elif capability == "seanad_entry":
         if (entry.get("handler") != "stage_a" or entry.get("input") != "member_mention"
                 or not isinstance(parameters, dict) or set(parameters) != {"member"}
                 or not isinstance(parameters.get("member"), str)
@@ -639,7 +703,7 @@ def _validate_capability_selection_draft(value: dict[str, Any], *, question: str
                 or _label_position(question, parameters["member"]) is None):
             raise InvalidComposableDraft("Seanad-entry selection requires an exact grounded Member mention.")
         if re.search(
-            r"\b(?:current|currently|now|Dáil|deputy|panel|constituenc(?:y|ies)|represent(?:s|ed)?|party|how many|count|between|until)\b",
+            r"\b(?:current|currently|now|Dáil|deputy|panel|constituenc(?:y|ies)|represent(?:s|ed)?|party|how many|count|between|until|elected|election)\b",
             question, re.IGNORECASE,
         ):
             raise UnsupportedComposableRequest(
@@ -696,6 +760,8 @@ def _validate_member_relationship_draft(
     question: str,
 ) -> dict[str, Any]:
     """Validate only the two closed relationship projections using v2 edges."""
+    if re.search(r"\b(?:senators?|seanad|panels?)\b", question, re.I):
+        raise UnsupportedComposableRequest("The Dáil relationship compiler cannot substitute for a Seanad relationship.")
     referents = value["referents"]
     if isinstance(referents, dict) and any(
         isinstance(item, dict) and item.get("type") == "PartyMembershipEpisode"
@@ -877,6 +943,8 @@ def _validate_member_relationship_draft(
 def complete_v2_plan(draft_plan: dict[str, Any], *, as_of: date) -> dict[str, Any]:
     """Add only deterministic composable-v2 envelope metadata to a draft."""
     plan = {"version": 2, "asOf": as_of.isoformat(), **draft_plan}
+    if "interpretation" in plan:
+        plan["interpretation"] = {**plan["interpretation"], "date": as_of.isoformat()}
     if plan.get("family") == "government_party_members":
         from .government import government_plan
         plan["constraints"] = government_plan(plan["referents"]["affiliation"]["mention"], as_of=as_of)["constraints"]

@@ -20,7 +20,7 @@ from .composable_plan import (
     _reviewed_predicate, _reviewed_predicate_for_qname,
 )
 from .contract import load_query_contract
-from .errors import NLQError
+from .errors import NLQError, QueryExecutionFailure
 from .results import QueryResult
 from .safety import validate_sparql
 
@@ -174,7 +174,12 @@ def validate_stage_c_plan(plan: dict[str, Any]) -> dict[str, Any]:
     refs = plan.get("referents")
     if not isinstance(refs, dict) or set(refs) != set(ref_types) or any(refs[key].get("type") != kind for key, kind in ref_types.items()):
         raise PlanError(f"{family} referents do not match the reviewed typed path.")
-    if plan["answer"] != {"kind": "family_result", "referent": answer_ref, "projection": projection}:
+    answer = {"kind": "family_result", "referent": answer_ref, "projection": projection}
+    if family == "dail_parties_and_groups" and "includeGroups" in plan["answer"]:
+        if type(plan["answer"]["includeGroups"]) is not bool:
+            raise PlanError("Party/group scope must be Boolean.")
+        answer["includeGroups"] = plan["answer"]["includeGroups"]
+    if plan["answer"] != answer:
         raise PlanError(f"{family} answer projection is not the reviewed projection.")
     from .composable_plan import _PLAN_CONTRACT
     contract = _PLAN_CONTRACT
@@ -391,7 +396,15 @@ def handle_stage_c(question: str, *, as_of: date, fuseki, supported_predicates) 
         return PlanOutcome("unsupported_mapping", diagnostic=str(error), request_family=request_family)
     if plan is None:
         return PlanOutcome("unsupported_capability", diagnostic="The recognized Stage C request could not be planned.", request_family=request_family)
+    return execute_stage_c(plan, as_of=as_of, fuseki=fuseki, supported_predicates=supported_predicates)
+
+
+def execute_stage_c(plan: dict, *, as_of: date, fuseki, supported_predicates) -> PlanOutcome:
+    plan = validate_stage_c_plan(plan)
     family = plan["family"]
+    request_family = family
+    # The original family asks for both; semantic dispatch may ask only parties.
+    groups_gap = _GROUPS_GAP if plan["answer"].get("includeGroups", True) else ""
     try:
         if family == "dail_seats":
             ordinal = plan["referents"]["term"]["selector"]["number"]
@@ -447,25 +460,25 @@ def handle_stage_c(question: str, *, as_of: date, fuseki, supported_predicates) 
                                    diagnostic="Fuseki returned an unexpected response kind while resolving the Dáil term.")
             if len(terms.rows) >= 100:
                 return PlanOutcome("source_data_unavailable", plan=plan, sparql=term_query,
-                                   diagnostic=f"The typed HouseTerm identity lookup for {_ordinal_label(ordinal)} reached the 100-row cap; no term was selected. {_GROUPS_GAP}")
+                                   diagnostic=f"The typed HouseTerm identity lookup for {_ordinal_label(ordinal)} reached the 100-row cap; no term was selected. {groups_gap}")
             term_ids: set[str] = set()
             for row in terms.rows:
                 if not row or row[0] == "—" or not row[0].startswith("https://data.oireachtas.ie/") or any(ch.isspace() for ch in row[0]):
                     return PlanOutcome("source_data_unavailable", plan=plan, sparql=term_query,
-                                       diagnostic=f"The Houses graph returned a malformed local HouseTerm identity; no party join was run. {_GROUPS_GAP}")
+                                       diagnostic=f"The Houses graph returned a malformed local HouseTerm identity; no party join was run. {groups_gap}")
                 term_ids.add(row[0])
             if not term_ids:
                 return PlanOutcome("source_data_unavailable", plan=plan, sparql=term_query,
-                                   diagnostic=f"No typed HouseTerm with ordinal {_ordinal_label(ordinal)} is available in the local Houses graph; no party list was inferred. {_GROUPS_GAP}")
+                                   diagnostic=f"No typed HouseTerm with ordinal {_ordinal_label(ordinal)} is available in the local Houses graph; no party list was inferred. {groups_gap}")
             if len(term_ids) != 1:
                 return PlanOutcome("source_data_unavailable", plan=plan, sparql=term_query,
-                                   diagnostic=f"More than one typed HouseTerm has ordinal {_ordinal_label(ordinal)}; no party identity join was run. {_GROUPS_GAP}")
+                                   diagnostic=f"More than one typed HouseTerm has ordinal {_ordinal_label(ordinal)}; no party identity join was run. {groups_gap}")
             term_iri = next(iter(term_ids))
             try:
                 _require_local_iri(term_iri, "DailTerm")
             except NLQError:
                 return PlanOutcome("source_data_unavailable", plan=plan, sparql=term_query,
-                                   diagnostic=f"The exact Dáil term is not a safe local resource IRI; no party join was run. {_GROUPS_GAP}")
+                                   diagnostic=f"The exact Dáil term is not a safe local resource IRI; no party join was run. {groups_gap}")
             query = _parties_query(term_iri, supported_predicates=supported_predicates)
             result = fuseki.query(query)
             if result.kind != "select":
@@ -473,14 +486,14 @@ def handle_stage_c(question: str, *, as_of: date, fuseki, supported_predicates) 
                                    diagnostic="Fuseki returned an unexpected response kind for the term-scoped party lookup.")
             if any(len(row) < 2 or row[0] == "—" or not row[0].startswith("https://data.oireachtas.ie/") or any(ch.isspace() for ch in row[0]) for row in result.rows):
                 return PlanOutcome("source_data_unavailable", plan=plan, sparql=query,
-                                   diagnostic=f"A term-scoped party row has no valid local ParliamentaryParty identity; no identity was discarded. {_GROUPS_GAP}")
+                                   diagnostic=f"A term-scoped party row has no valid local ParliamentaryParty identity; no identity was discarded. {groups_gap}")
             display_rows = tuple((row[1].removesuffix("@en") if row[1] != "—" else "Label unavailable", row[0])
                                  for row in result.rows)
             display_result = QueryResult("select", ("Party", "Identity"), display_rows,
                                          raw_json=result.raw_json)
             if len(result.rows) >= 100:
                 return PlanOutcome("source_data_unavailable", plan=plan, sparql=query, result=display_result,
-                                   diagnostic=f"Party results for the {_ordinal_label(ordinal)} reached the 100-row safety cap and may be incomplete. ParliamentaryGroup data is not populated in the current queryable dataset.")
+                                   diagnostic=f"Party results for the {_ordinal_label(ordinal)} reached the 100-row safety cap and may be incomplete. {groups_gap}")
             if not result.rows:
                 presence_query = _parties_presence_query(supported_predicates=supported_predicates)
                 presence = fuseki.query(presence_query)
@@ -492,12 +505,12 @@ def handle_stage_c(question: str, *, as_of: date, fuseki, supported_predicates) 
                 else:
                     reason = f"No ParliamentaryParty records linked to the exact {_ordinal_label(ordinal)} HouseTerm were found in the local Parties graph."
                 return PlanOutcome("source_data_unavailable", plan=plan, sparql=presence_query,
-                                   diagnostic=f"{reason} This does not prove that no parties existed. {_GROUPS_GAP}")
+                                   diagnostic=f"{reason} This does not prove that no parties existed. {groups_gap}")
             if any(row[1] == "—" for row in result.rows):
                 return PlanOutcome("source_data_unavailable", plan=plan, sparql=query, result=display_result,
-                                   diagnostic=f"Some ParliamentaryParty rows for the {_ordinal_label(ordinal)} have no readable label; their exact IRIs remain listed. {_GROUPS_GAP}")
+                                   diagnostic=f"Some ParliamentaryParty rows for the {_ordinal_label(ordinal)} have no readable label; their exact IRIs remain listed. {groups_gap}")
             return PlanOutcome("success", plan=plan, sparql=query, result=display_result,
-                               diagnostic=f"Term-scoped ParliamentaryParty records for the {_ordinal_label(ordinal)} are listed separately. {_GROUPS_GAP}")
+                               diagnostic=f"Term-scoped ParliamentaryParty records for the {_ordinal_label(ordinal)} are listed separately. {groups_gap}")
         if family == "bill_quarantine":
             query = _bill_exists_query(2024, "48", supported_predicates=supported_predicates)
             exists = fuseki.query(query)
@@ -543,6 +556,11 @@ def handle_stage_c(question: str, *, as_of: date, fuseki, supported_predicates) 
                                diagnostic="Debate transcript speech text is not queryable and no approved transcript retrieval path exists. Debate metadata or an official record link cannot establish what speakers said.")
     except PlanError as error:
         return PlanOutcome("unsupported_mapping", plan=plan, diagnostic=str(error), request_family=request_family)
+    except QueryExecutionFailure as error:
+        return PlanOutcome("query_execution_failed", plan=plan, sparql=error.query,
+                           diagnostic=f"The local read-only query could not be executed: {error}",
+                           request_family=request_family, debug_source="Fuseki",
+                           debug_output=getattr(error.__cause__, "debug_output", None))
     except NLQError as error:
         return PlanOutcome("query_execution_failed", plan=plan, diagnostic=f"The local query could not be executed or its response could not be parsed: {error}", request_family=request_family)
     return PlanOutcome("unsupported_capability", plan=plan, diagnostic="No reviewed Stage C execution path exists for this request.")

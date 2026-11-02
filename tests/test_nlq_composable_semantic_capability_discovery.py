@@ -106,7 +106,7 @@ class CapabilityFixture:
 def test_dispatch_capabilities_are_contract_grounded_and_part_of_planner_context():
     contract = json.loads((ROOT / "poc/specs/composable-query-plan-contract.json").read_text())
     capabilities = {item["id"]: item for item in contract["semanticDispatch"]["capabilities"]}
-    assert set(capabilities) == {"bill_lookup", "seanad_entry"}
+    assert set(capabilities) == {"bill_lookup", "seanad_entry", "member_lookup", "dail_parties_and_groups", "office_holding_evidence"}
     assert capabilities["seanad_entry"]["handler"] == "stage_a"
     assert capabilities["bill_lookup"]["handler"] == "stage_b"
     from poc.nlq.composable_semantic_planner import build_composable_planner_instructions

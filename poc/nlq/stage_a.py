@@ -16,7 +16,7 @@ from rdflib import Literal, URIRef
 
 from .composable_plan import PlanOutcome, _PREFIXES, _query, _require_local_iri
 from .contract import load_query_contract
-from .errors import NLQError
+from .errors import NLQError, QueryLimitError
 from .results import QueryResult
 
 
@@ -437,7 +437,7 @@ def _resolve_member(mention: str, fuseki, supported_predicates, *, allow_qualifi
     raw = fuseki.query(_member_lookup_query(search_mention, supported_predicates=supported_predicates))
     rows = _values(raw, ("member", "name"))
     if len(rows) >= 100:
-        raise NLQError("Member-name resolution reached the 100-row safety cap; no identity was selected.")
+        raise QueryLimitError("Member-name resolution reached the 100-row safety cap; no identity was selected.")
     tokens = [token for token in re.findall(r"[^\W_]+", search_mention, re.UNICODE)
               if token.casefold() not in {"deputy", "td", "senator", "the", "who", "is"}]
     if len(tokens) < 2 and not (qualified_partial and len(tokens) == 1):
@@ -449,9 +449,20 @@ def _resolve_member(mention: str, fuseki, supported_predicates, *, allow_qualifi
             continue
         _require_local_iri(iri, "Member")
         name_tokens = [token.casefold() for token in re.findall(r"[^\W_]+", name, re.UNICODE)]
-        if ((qualified_partial and all(token.casefold() in name.casefold() for token in tokens))
+        if ((qualified_partial and all(token.casefold() in name_tokens for token in tokens))
                 or (not qualified_partial and name_tokens == [token.casefold() for token in tokens])):
             candidates[iri] = name.removesuffix("@en")
+    if not candidates and len(tokens) >= 2:
+        # Reuse the exact source-identifier alias rule, never a nickname guess.
+        from .composable_plan import member_resolution_query, resolve_member, AmbiguousMember
+        from .errors import IdentityNotFound
+        try:
+            iri, label = resolve_member(fuseki.query(member_resolution_query(search_mention, supported_predicates=supported_predicates)), search_mention)
+            candidates[iri] = label
+        except AmbiguousMember as error:
+            candidates = {item["iri"]: item["label"] for item in error.candidates}
+        except IdentityNotFound:
+            pass
     return candidates
 
 
@@ -502,7 +513,7 @@ def _member_context(member_iri: str, house: str, fuseki, supported_predicates):
     result = fuseki.query(_member_service_query(member_iri, house, supported_predicates=supported_predicates))
     rows = _values(result, ("member", "name", "membership", "term", "termLabel", "termStart", "termEnd", "membershipStart", "membershipEnd", "representation", "representationLabel"))
     if len(rows) >= 100:
-        raise NLQError("Membership evidence reached the 100-row query cap; the result is incomplete and no exact count or duration is reported.")
+        raise QueryLimitError("Membership evidence reached the 100-row query cap; the result is incomplete and no exact count or duration is reported.")
     representations = sorted({row["representation"] for row in rows if row["representation"]})
     labels = {}
     if representations:
@@ -526,7 +537,8 @@ def _compile_direct_query(query: str, supported_predicates) -> str:
     return _query(query, supported_predicates)
 
 
-def execute_stage_a(request: StageARequest, *, as_of: date, fuseki, supported_predicates) -> PlanOutcome:
+def execute_stage_a(request: StageARequest, *, as_of: date, fuseki, supported_predicates,
+                    selected_member_iri: str | None = None) -> PlanOutcome:
     """Run a shared typed family primitive and return a readable v2 route result."""
     try:
         _reviewed_stage_a_family(request.family)
@@ -626,28 +638,57 @@ def execute_stage_a(request: StageARequest, *, as_of: date, fuseki, supported_pr
         # remaining name tokens; duplicate identities remain a candidate set.
         mention = request.mention.strip()
         try:
-            candidates = _resolve_member(mention, fuseki, supported_predicates, allow_qualified_partial=True)
+            resolution_mention = (("Deputy " if request.house == "Dail" else "Senator ") + mention
+                                  if request.house and not re.match(r"^(?:Deputy|TD|Senator)\s+", mention, re.I) else mention)
+            candidates = _resolve_member(resolution_mention, fuseki, supported_predicates, allow_qualified_partial=True)
             grounded_mention = re.sub(r"^(?:Deputy|TD|Senator)\s+", "", mention, flags=re.IGNORECASE).strip()
+            house = request.house
+            if house is None and re.match(r"^(?:Deputy|TD)\s+", mention, re.I):
+                house = "Dail"
+            elif house is None and re.match(r"^Senator\s+", mention, re.I):
+                house = "Seanad"
+            if house:
+                qualified = {}
+                for iri, label in candidates.items():
+                    if house == "Dail":
+                        rows = _values(fuseki.query(_member_term_count_query(iri, supported_predicates=supported_predicates)), ("term",))
+                        if len(rows) >= 100:
+                            raise QueryLimitError("Dáil service qualification reached its safety cap.")
+                        if rows:
+                            qualified[iri] = label
+                    elif _member_context(iri, house, fuseki, supported_predicates):
+                        qualified[iri] = label
+                candidates = qualified
+            if selected_member_iri is not None:
+                if selected_member_iri not in candidates:
+                    return PlanOutcome("validation_failure", diagnostic="The selected candidate is no longer a grounded match; ask again.")
+                candidates = {selected_member_iri: candidates[selected_member_iri]}
             plan = _member_outcome_plan(grounded_mention, as_of, candidates, family=request.family)
             if not candidates:
                 return PlanOutcome("not_found", plan=plan, diagnostic=f"No local Member matches the grounded name reference {grounded_mention!r}.")
             if len(candidates) > 1:
                 context = []
+                choices = []
                 for iri, name in sorted(candidates.items()):
                     records = _member_context(iri, "Dail", fuseki, supported_predicates)
                     senate_records = _member_context(iri, "Seanad", fuseki, supported_predicates)
-                    evidence = records + senate_records
+                    evidence = records if house == "Dail" else senate_records if house == "Seanad" else records + senate_records
                     terms = sorted({(row["termLabel"] or "").removesuffix("@en") for row in evidence})
                     dates = sorted({f"{_date(row['membershipStart']) or 'start missing'}–{_date(row['membershipEnd']) or 'end missing/open'}" for row in evidence})
                     context.append((name, "; ".join(terms + dates)))
-                return PlanOutcome("ambiguous", plan=plan, candidates=tuple({"iri": iri, "label": label} for iri, label in sorted(candidates.items())),
-                                    diagnostic="Several distinct local Member identities match; no candidate was selected. House service and membership dates are shown for disambiguation.",
-                                    result=QueryResult("select", ("Member candidate", "House service and dates"), tuple(context)))
+                    choices.append({"iri": iri, "label": name, "context": "; ".join(terms + dates)})
+                from dataclasses import asdict
+                return PlanOutcome("ambiguous", plan=plan, candidates=tuple(choices),
+                                     diagnostic="Several distinct local Member identities match; no candidate was selected. House service and membership dates are shown for disambiguation.",
+                                     clarification={"request": asdict(request), "candidates": choices},
+                                     result=QueryResult("select", ("Member candidate", "House service and dates"), tuple(context)))
             iri, label = next(iter(candidates.items()))
-            return PlanOutcome("success", plan=plan, result=QueryResult("select", ("Full name",), ((label,),)),
+            return PlanOutcome("success", plan=plan,
+                               result=(QueryResult("select", ("Full name", "Source identity"), ((label, iri),))
+                                       if selected_member_iri else QueryResult("select", ("Full name",), ((label,),))),
                                diagnostic="Resolved from local Member name evidence; no external identity matching was used.")
         except NLQError as error:
-            return PlanOutcome("source_data_unavailable", diagnostic=str(error))
+            return PlanOutcome("validation_failure" if isinstance(error, QueryLimitError) else "source_data_unavailable", diagnostic=str(error))
 
     if request.mention is None:
         return PlanOutcome("unsupported_capability", diagnostic="The question does not identify a supported Stage A query family.")
@@ -655,7 +696,7 @@ def execute_stage_a(request: StageARequest, *, as_of: date, fuseki, supported_pr
     try:
         candidates = _resolve_member(request.mention, fuseki, supported_predicates)
     except NLQError as error:
-        return PlanOutcome("source_data_unavailable", diagnostic=str(error))
+        return PlanOutcome("validation_failure" if isinstance(error, QueryLimitError) else "source_data_unavailable", diagnostic=str(error))
     plan = _member_outcome_plan(request.mention, as_of, candidates, family=request.family)
     if selected_committee is not None and request.family == "committee_boolean":
         term_type = "SeanadTerm" if "/house/seanad/" in (selected_committee["term"] or "") else "DailTerm"

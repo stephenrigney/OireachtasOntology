@@ -2,9 +2,17 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "contractId": "https://data.oireachtas.ie/specs/composable-query-plan-contract",
   "schemaVersion": 1,
-  "contractVersion": "2.16.0",
+  "contractVersion": "2.17.0",
   "planVersion": 2,
   "scope": "Local Oireachtas query planning; Stage A, Stage B and Stage C plans use one shared typed v2 envelope with closed family-specific semantic projections.",
+  "interpretationPolicy": {
+    "id": "present_constituency_as_of",
+    "scope": "Unqualified present-tense TD representation of a grounded named constituency, optionally filtered by a named party. Not historical, future/conditional, election, Seanad or unrelated intent.",
+    "planEvidence": "Optional top-level interpretation object with exactly policy, original question and date equal to asOf. Deterministic code creates and revalidates this evidence, never the model. Explicit term/date takes precedence; unsupported extra date filters are refused rather than defaulted.",
+    "execution": "Current term must be selected uniquely from House-owned dating evidence. Both representation and any political-affiliation episode independently contain asOf; historical overlap alone is insufficient.",
+    "partyListingScope": "dail_parties_and_groups family_result may carry includeGroups Boolean; omitted means true for legacy plans. False suppresses irrelevant group-coverage warnings, not party evidence safeguards.",
+    "memberAliasEvidence": "Exact NFC/case-insensitive local foaf:name or exact source agents:pId spelling after removing user whitespace only. No nickname dictionary, accent folding, approximate name merge or manufactured IRI. Duplicate identities remain ambiguous. SPARQL LCASE is a prefilter; Python rechecks NFC/casefold equality."
+  },
   "resolutionOutcomes": ["unresolved", "resolved", "ambiguous", "not_found", "source_data_unavailable", "unsupported_mapping"],
   "entityTypes": ["Member", "CabinetMembership", "Government", "DailMembership", "SeanadMembership", "CommitteeMembership", "DailTerm", "SeanadTerm", "DailConstituency", "SeanadPanel", "SeanadRepresentation", "Committee", "ParliamentaryCollectionMembership", "ParliamentaryMemberCollection", "IndependentMemberCollection", "PartyMembershipEpisode", "ParliamentaryParty", "PoliticalAffiliationIdentity", "OfficeHolding", "NamedOffice", "DebateRecord", "DebateSitting", "BillParticipation", "Bill", "BillProcess", "BillActivity", "ExplanatoryMemoWork"],
   "entityTypeRdfTypes": {"CabinetMembership": "members:CabinetMembership", "Government": "agents:Government", "Member": "agents:Member", "DailMembership": "members:DailMembership", "SeanadMembership": "members:SeanadMembership", "CommitteeMembership": "members:CommitteeMembership", "DailTerm": "agents:DailTerm", "SeanadTerm": "agents:SeanadTerm", "DailConstituency": "members:DailConstituency", "SeanadPanel": "members:SeanadPanel", "SeanadRepresentation": "members:Constituencies", "Committee": "members:Committee", "ParliamentaryCollectionMembership": "members:ParliamentaryCollectionMembership", "ParliamentaryMemberCollection": "members:ParliamentaryMemberCollection", "IndependentMemberCollection": "members:IndependentMemberCollection", "PartyMembershipEpisode": "members:PartyMembership", "ParliamentaryParty": "members:ParliamentaryParty", "PoliticalAffiliationIdentity": "members:PoliticalAffiliationIdentity", "OfficeHolding": "members:OfficeHolding", "NamedOffice": "members:NamedOffice", "DebateRecord": "agents:DebateRecord", "DebateSitting": "agents:DebateSitting", "BillParticipation": "eli-dl:Participation", "Bill": "eli-dl:DraftLegislationWork", "BillProcess": "eli-dl:LegislativeProcess", "BillActivity": "eli-dl:LegislativeActivity", "ExplanatoryMemoWork": "eli:Work"},
@@ -43,6 +51,9 @@
   "semanticDispatch": {
     "version": 1,
     "capabilities": [
+      {"id": "member_lookup", "handler": "stage_a", "input": "member_and_house", "semantics": "Ground exact full-name or whole-name-token partial mentions without assuming a full name. Deputy/TD requires recorded DailMembership; Senator requires Seanad service. Distinct people remain candidates. An opaque choice resumes this same validated lookup after rechecking source identities."},
+      {"id": "dail_parties_and_groups", "handler": "stage_c", "input": "term_number_and_group_scope", "semantics": "List recorded ParliamentaryParty identities in exactly one explicitly numbered Dáil using the existing term-scoped compiler. Only report missing ParliamentaryGroup data if groups were requested."},
+      {"id": "office_holding_evidence", "handler": "evidence_boundary", "input": "member_and_office", "semantics": "Check exact Member and accepted NamedOffice identity evidence for a tenure request. An absent accepted office registry identity is missing/unaccepted evidence, not an invented tenure. Registry presence alone does not implement a complete-career tenure projection. Unreviewed observations are not OfficeHolding evidence."},
       {
         "id": "seanad_entry",
         "handler": "stage_a",
