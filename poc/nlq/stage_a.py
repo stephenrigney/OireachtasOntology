@@ -8,13 +8,14 @@ is checked against the query-schema contract before compilation.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import calendar
 from datetime import date, datetime, timedelta
 import re
 import unicodedata
 
 from rdflib import Literal, URIRef
 
-from .composable_plan import PlanOutcome, _PREFIXES, _query, _require_local_iri
+from .composable_plan import PlanError, PlanOutcome, _PREFIXES, _query, _require_local_iri
 from .contract import load_query_contract
 from .errors import NLQError, QueryLimitError
 from .results import QueryResult
@@ -27,6 +28,7 @@ class StageARequest:
     house: str | None = None
     term: str | None = None
     detail: str | None = None
+    temporal_scope: dict | None = None
 
 
 def parse_stage_a_question(question: str) -> StageARequest | None:
@@ -34,6 +36,29 @@ def parse_stage_a_question(question: str) -> StageARequest | None:
     text = question.strip().rstrip("?.! ")
     if re.match(r"^who is (?:the )?(?:current |present )?(?:chair|minister|taoiseach|tanaiste|president|secretary|leader)\b", text, re.IGNORECASE):
         return None
+    term_scope = re.fullmatch(
+        r"(?:which|what) d[áa]il(?: term)? (?:was|is) "
+        r"(?:in office|in force|in effect|active) (?:during|in|on) (?P<scope>.+)",
+        text, re.IGNORECASE,
+    )
+    if term_scope:
+        raw_scope = term_scope["scope"].strip()
+        from .composable_plan import _MONTHS, _question_calendar_dates
+        month_match = re.fullmatch(r"(?P<month>[A-Za-z]+)\s+(?P<year>[0-9]{4})", raw_scope)
+        if month_match and month_match["month"].casefold() in _MONTHS:
+            month = _MONTHS[month_match["month"].casefold()]
+            year = int(month_match["year"])
+            if not 1 <= year <= 9998:
+                scope = {"kind": "invalid", "value": raw_scope}
+            else:
+                scope = {"kind": "duringMonth", "year": year, "month": month}
+        else:
+            dates, invalid_date = _question_calendar_dates(raw_scope)
+            if invalid_date is not None or len(dates) != 1:
+                scope = {"kind": "invalid", "value": invalid_date or raw_scope}
+            else:
+                scope = {"kind": "onDate", "date": dates[0].isoformat()}
+        return StageARequest("house_terms", temporal_scope=scope)
     patterns = (
         ("house_terms", r"when did each dáil start and finish|dates? of (?:the )?dáil terms"),
         ("term_count", r"how many dáil terms are listed in the houses data"),
@@ -366,6 +391,29 @@ def _term_query(house: str, *, supported_predicates) -> str:
 }} ORDER BY ?start''', supported_predicates)
 
 
+def _dail_temporal_selection_query(*, supported_predicates) -> str:
+    """Read typed DailTerm identity and its House-owned period without dropping gaps."""
+    graph = _graph("houses")
+    term_type = _type("agents:DailTerm")
+    term_no = _predicate("agents:termNo")
+    temporal = _predicate("dct:temporal")
+    start = _predicate("dcat:startDate")
+    end = _predicate("dcat:endDate")
+    return _query(_PREFIXES + f'''SELECT DISTINCT ?term ?label ?number ?period ?periodType ?start ?end WHERE {{
+  GRAPH <{graph}> {{
+    ?term a {term_type} .
+    OPTIONAL {{ ?term skos:prefLabel ?label . FILTER(LANG(?label) = "en") }}
+    OPTIONAL {{ ?term {term_no} ?number . }}
+    OPTIONAL {{
+      ?term {temporal} ?period .
+      OPTIONAL {{ ?period a ?periodType . }}
+      OPTIONAL {{ ?period {start} ?start . }}
+      OPTIONAL {{ ?period {end} ?end . }}
+    }}
+  }}
+}} ORDER BY ?term ?period ?start ?end LIMIT 100''', supported_predicates)
+
+
 def _term_identity_count_query(house: str, *, supported_predicates) -> str:
     graph = _graph("houses")
     term_type = _type(f"agents:{house}Term")
@@ -576,6 +624,131 @@ def execute_stage_a(request: StageARequest, *, as_of: date, fuseki, supported_pr
             selected_committee = current[0]
         except NLQError as error:
             return PlanOutcome("source_data_unavailable", diagnostic=str(error))
+    if request.family == "house_terms" and request.temporal_scope is not None:
+        scope = request.temporal_scope
+        if scope.get("kind") == "invalid":
+            return PlanOutcome(
+                "clarification_required",
+                diagnostic=f"{scope.get('value', 'The requested time')} is not one valid calendar date or complete named month; no RDF query was run.",
+                request_family="house_terms",
+            )
+        if scope.get("kind") == "onDate":
+            lower = upper = date.fromisoformat(scope["date"])
+        else:
+            lower = date(scope["year"], scope["month"], 1)
+            upper = date(scope["year"], scope["month"], calendar.monthrange(scope["year"], scope["month"])[1])
+        if upper > as_of:
+            return PlanOutcome(
+                "clarification_required",
+                diagnostic=(f"The requested calendar scope ends after the configured as-of date {as_of.isoformat()}; "
+                            "clarify whether you mean a future period or only elapsed time. No RDF query was run."),
+                request_family="house_terms",
+            )
+        try:
+            selector = dict(scope)
+            plan = _validated_simple_plan({
+                "version": 2, "asOf": as_of.isoformat(), "family": "house_terms",
+                "referents": {"term": {"type": "DailTerm", "answer": True, "selector": selector}},
+                "relations": [], "answer": {"kind": "values", "referent": "term"},
+            })
+            raw = fuseki.query(_dail_temporal_selection_query(supported_predicates=supported_predicates))
+            rows = _values(raw, ("term", "label", "number", "period", "periodType", "start", "end"))
+            if len(rows) >= 100:
+                return PlanOutcome("source_data_unavailable", plan=plan,
+                                   diagnostic="The typed Dáil term catalogue reached the 100-row bound; no date selection was returned.")
+            if not rows:
+                return PlanOutcome("source_data_unavailable", plan=plan,
+                                   diagnostic="No typed Dáil term records are available to check against House-owned dates.")
+
+            grouped: dict[str, set[tuple[str | None, str | None, str | None, str | None, str | None, str | None]]] = {}
+            for row in rows:
+                term_iri = _require_local_iri(row["term"], "Dáil term")
+                grouped.setdefault(term_iri, set()).add(tuple(row[key] for key in
+                    ("label", "number", "period", "periodType", "start", "end")))
+
+            matches = []
+            term_periods: dict[str, tuple[date, date | None]] = {}
+            period_type = "http://purl.org/dc/terms/PeriodOfTime"
+            for term_iri, evidence_rows in grouped.items():
+                labels = {item[0] for item in evidence_rows if item[0] not in {None, ""}}
+                numbers = {item[1] for item in evidence_rows if item[1] not in {None, ""}}
+                periods = {item[2] for item in evidence_rows if item[2] not in {None, ""}}
+                period_types = {item[3] for item in evidence_rows if item[3] not in {None, ""}}
+                starts = {item[4] for item in evidence_rows if item[4] not in {None, ""}}
+                ends = {item[5] for item in evidence_rows}
+                if (len(labels) != 1 or len(numbers) != 1 or len(periods) != 1
+                        or len(period_types) != 1
+                        or period_type not in {value.split("^^", 1)[0] for value in period_types}
+                        or len(starts) != 1 or len(ends) != 1):
+                    return PlanOutcome("source_data_unavailable", plan=plan,
+                                       diagnostic=(f"Dáil term {term_iri} has missing or conflicting House-owned label, ordinal, "
+                                                   "period, start, or end evidence; temporal selection failed closed."))
+                start_date = _date(next(iter(starts)))
+                end_text = next(iter(ends))
+                end_date = None if end_text in {None, ""} else _date(end_text)
+                if start_date is None or (end_date is not None and end_date < start_date):
+                    return PlanOutcome("source_data_unavailable", plan=plan,
+                                       diagnostic=f"Dáil term {term_iri} has incomplete or reversed House-owned dates.")
+                term_periods[term_iri] = (start_date, end_date)
+                if start_date <= upper and (end_date is None or end_date >= lower):
+                    matches.append({"iri": term_iri, "label": next(iter(labels)).removesuffix("@en"),
+                                    "start": start_date.isoformat(),
+                                    "end": end_date.isoformat() if end_date is not None else None})
+
+            if (scope["kind"] == "duringMonth" and len(matches) == 1
+                    and (date.fromisoformat(matches[0]["start"]) > lower
+                         or matches[0]["end"] is not None
+                         and date.fromisoformat(matches[0]["end"]) < upper)):
+                return PlanOutcome(
+                    "source_data_unavailable", plan=plan,
+                    diagnostic=("One Dáil term overlaps only part of the requested calendar month; "
+                                "no single term covers the full interval and no multiple-term transition is evidenced."),
+                    request_family="house_terms",
+                )
+
+            open_terms = [(term_iri, start) for term_iri, (start, end) in term_periods.items()
+                          if end is None]
+            current_candidates = [(term_iri, start) for term_iri, start in open_terms if start <= as_of]
+            current_open = None
+            if len(current_candidates) == 1:
+                candidate_iri, candidate_start = current_candidates[0]
+                if all(
+                    other_iri == candidate_iri
+                    or other_end is not None and other_end < candidate_start
+                    for other_iri, (_other_start, other_end) in term_periods.items()
+                ):
+                    current_open = candidate_iri
+            if any(term_iri != current_open for term_iri, _start in open_terms):
+                return PlanOutcome("source_data_unavailable", plan=plan,
+                                   diagnostic="A Dáil term has no end date and cannot be established as the unique current open term; temporal selection failed closed.")
+
+            matches.sort(key=lambda item: (item["start"], item["iri"]))
+            term_ref = plan["referents"]["term"]
+            term_ref.update({"resolution": "resolved" if matches else "not_found", "matches": matches})
+            plan = _validated_simple_plan(plan)
+            if not matches:
+                return PlanOutcome("source_data_unavailable", plan=plan,
+                                   sparql=_dail_temporal_selection_query(supported_predicates=supported_predicates),
+                                   diagnostic=("No recorded Dáil term overlaps the requested calendar scope. "
+                                               "House-term absence is not evidence of an actual sitting or complete service history."))
+            display_rows = tuple((item["label"], item["start"],
+                                  item["end"] or "Open-ended (no end date recorded)", item["iri"])
+                                 for item in matches)
+            scope_text = (scope["date"] if scope["kind"] == "onDate"
+                          else f"{calendar.month_name[scope['month']]} {scope['year']} "
+                               f"({lower.isoformat()} through {upper.isoformat()})")
+            return PlanOutcome(
+                "success", plan=plan,
+                sparql=_dail_temporal_selection_query(supported_predicates=supported_predicates),
+                result=QueryResult("select", ("Dáil term", "House start", "House end", "Term identity"), display_rows, raw.raw_json),
+                diagnostic=(f"Selected exact DailTerm identities whose House-owned date intervals overlap {scope_text}. "
+                            "A term-date match does not establish that a parliamentary sitting occurred."),
+                request_family="house_terms",
+            )
+        except (NLQError, PlanError, TypeError, KeyError, ValueError) as error:
+            return PlanOutcome("source_data_unavailable", diagnostic=f"House-owned Dáil term dates could not be resolved safely: {error}",
+                               request_family="house_terms")
+
     if request.family in {"house_terms", "term_count"} and request.family == "house_terms":
         try:
             raw = fuseki.query(_term_query("Dail", supported_predicates=supported_predicates))

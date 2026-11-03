@@ -245,9 +245,9 @@ def _validate_office_plan(plan: dict[str, Any]) -> dict[str, Any]:
             or constraint.get("operator") != "overlaps"):
         raise PlanError("Q35 constraint must apply inclusive overlap to the OfficeHolding interval.")
     interval = constraint.get("value")
-    if (not isinstance(interval, dict) or set(interval) != {"start", "end", "inclusive"}
+    if (not isinstance(interval, dict) or set(interval) != {"start", "end", "inclusive", "scope"}
             or interval.get("inclusive") is not True):
-        raise PlanError("Q35 requires an explicitly inclusive calendar-date interval.")
+        raise PlanError("Q35 requires an explicitly scoped inclusive calendar-date interval.")
     try:
         if (not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", interval["start"])
                 or not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", interval["end"])):
@@ -258,6 +258,23 @@ def _validate_office_plan(plan: dict[str, Any]) -> dict[str, Any]:
         raise PlanError("Q35 interval boundaries must be valid ISO calendar dates.") from error
     if start > end:
         raise PlanError("Q35 interval start must be on or before its end.")
+    scope = interval["scope"]
+    if scope == "calendarDate":
+        if start != end:
+            raise PlanError("A Q35 calendar-date point must have identical start and end dates.")
+    elif scope == "calendarMonth":
+        if (start.day != 1
+                or end.day != calendar.monthrange(end.year, end.month)[1]
+                or (start.year, start.month) != (end.year, end.month)):
+            raise PlanError("A Q35 calendar-month scope must preserve the complete same-month interval.")
+    elif scope == "calendarYear":
+        if (start.month, start.day, end.month, end.day) != (1, 1, 12, 31) or start.year != end.year:
+            raise PlanError("A Q35 calendar-year scope must preserve January 1 through December 31.")
+    elif scope == "calendarWindow":
+        if (start.day != 1 or end.day != calendar.monthrange(end.year, end.month)[1]):
+            raise PlanError("A Q35 calendar window must preserve complete first and last months.")
+    else:
+        raise PlanError("Q35 interval scope must be a date point, month, year, or complete month window.")
     if member_bound:
         identity = identity_constraints[0]
         definition = _CONSTRAINT_MAPPINGS.get("memberIdentity", {})
@@ -781,8 +798,10 @@ def _validate_member_relationship_composition_plan(plan: dict[str, Any]) -> dict
     }
     if frozenset(plan) not in allowed_fields:
         raise PlanError("Member relationship composition does not accept extra constraints or plan fields.")
-    if "constraints" in plan and plan["constraints"] != []:
-        raise PlanError("Non-party Member relationship composition does not accept extra constraints.")
+    if "constraints" in plan and not isinstance(plan["constraints"], list):
+        raise PlanError("Member relationship composition constraints must be a list.")
+    if "constraints" in plan and len(plan["constraints"]) > 1:
+        raise PlanError("Member relationship composition supports at most one bounded membership-date constraint.")
     if plan.get("family") != "member_relationship_composition":
         raise PlanError("Unsupported Member relationship composition family.")
     refs = plan.get("referents")
@@ -931,11 +950,47 @@ def _validate_member_relationship_composition_plan(plan: dict[str, Any]) -> dict
         raise PlanError("The Member relationship graph is disconnected, incomplete, or contains extra edges.")
 
     answer = plan.get("answer")
-    if answer != {
+    list_answer = {
         "kind": "entities", "referent": member_id,
         "distinctBy": "identity", "display": ["name"],
-    }:
-        raise PlanError("The composition must return distinct Member identities with their local names.")
+    }
+    detailed_list_answer = {
+        **list_answer, "details": [], "preserveEvidence": False,
+    }
+    count_answer = {"kind": "count", "referent": member_id, "distinctBy": "identity"}
+    is_single_representation = len(terms) == 1 and len(memberships) == 1 and len(constituencies) == 1
+    if (answer not in (list_answer, detailed_list_answer)
+            and not (is_single_representation and answer == count_answer)):
+        raise PlanError("The composition must return distinct Member identities or their bounded identity count.")
+    if "constraints" in plan and plan["constraints"]:
+        constraint = plan["constraints"][0]
+        if not is_single_representation:
+            raise PlanError("A membership-date selector is limited to one term-scoped constituency selection.")
+        if (not isinstance(constraint, dict)
+                or set(constraint) != {"referent", "field", "operator", "value"}
+                or constraint.get("referent") != memberships[0]
+                or constraint.get("field") != "membershipInterval"
+                or constraint.get("operator") != "on"):
+            raise PlanError("Only one calendar-date point on the selected DailMembership is supported.")
+        if not isinstance(constraint.get("value"), str):
+            raise PlanError("The membership calendar-date selector must be an ISO date string.")
+        try:
+            parsed_date = date.fromisoformat(constraint["value"])
+        except ValueError as error:
+            raise PlanError("The membership calendar-date selector is not a valid calendar date.") from error
+        if parsed_date.isoformat() != constraint["value"]:
+            raise PlanError("The membership calendar-date selector must use canonical ISO date spelling.")
+        date_mapping = next((item for item in _PLAN_CONTRACT.get("constraints", [])
+                             if item.get("field") == "membershipInterval"), None)
+        if (date_mapping is None or date_mapping.get("referentType") != "DailMembership"
+                or date_mapping.get("operator") != "on"
+                or date_mapping.get("valueKind") != "calendar_date"
+                or date_mapping.get("dateDatatype") != "xsd:dateTime"
+                or date_mapping.get("startRequiredByMapping") is not True
+                or date_mapping.get("endAbsentMeans") != "open-ended"
+                or date_mapping.get("rangeOrStartAbsentMeans") != "uncertain"
+                or date_mapping.get("boundary") != "inclusive_calendar_day"):
+            raise PlanError("The reviewed DailMembership calendar-date mapping is incomplete or unsupported.")
 
     resolved_term_iris = [refs[term_id].get("iri") for term_id in terms
                           if refs[term_id].get("resolution") == "resolved"]
@@ -956,6 +1011,86 @@ def _require_local_iri(value: str, what: str) -> str:
 def _normalise_label(value: str) -> str:
     value = unicodedata.normalize("NFC", value).casefold()
     return " ".join("".join(ch if ch.isalnum() else " " for ch in value).split())
+
+
+def _office_interval_plan(*, as_of: date, office: str, start: date, end: date, scope: str):
+    office = re.sub(r"^(?:the\s+)?office\s+of\s+", "", office.strip(), flags=re.I)
+    office = re.sub(r"^the\s+", "", office, flags=re.I)
+    if not office or start > end:
+        raise PlanError("A reviewed office name and ordered calendar interval are required.")
+    return validate_plan({
+        "version": PLAN_VERSION,
+        "asOf": as_of.isoformat(),
+        "referents": {
+            "member": {"type": "Member", "answer": True},
+            "holding": {"type": "OfficeHolding"},
+            "office": {"type": "NamedOffice", "mention": office, "resolution": "unresolved"},
+        },
+        "relations": [
+            {"id": "member-holding", "fact": "member_has_office_holding", "from": "member", "to": "holding"},
+            {"id": "holding-office", "fact": "office_holding_of_office", "from": "holding", "to": "office"},
+        ],
+        "constraints": [{
+            "referent": "holding", "field": "interval", "operator": "overlaps",
+            "value": {"start": start.isoformat(), "end": end.isoformat(),
+                      "inclusive": True, "scope": scope},
+        }],
+        "answer": {
+            "kind": "entities", "referent": "member", "distinctBy": "identity",
+            "display": ["name"],
+            "details": [{"referent": "holding", "display": ["start", "end"]}],
+            "preserveEpisodes": True,
+        },
+    })
+
+
+def plan_office_calendar_question(question: str, *, as_of: date) -> dict[str, Any] | None:
+    """Prepare date/month/year windows for semantic capability dispatch only."""
+    office_point = re.search(
+        r"\bwho\s+(?:was|held)\s+(?P<office>.+?)\s+(?:on|at)\s+"
+        r"(?P<when>(?:[0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{1,2}(?:st|nd|rd|th)?\s+[a-z]+\s+[0-9]{4}|"
+        r"[a-z]+\s+[0-9]{1,2}(?:st|nd|rd|th)?,?\s+[0-9]{4}))\s*[?.!]*$",
+        question.strip(), re.IGNORECASE,
+    )
+    if office_point:
+        dates, invalid_date = _question_calendar_dates(question)
+        if invalid_date is not None or len(dates) != 1:
+            raise PlanError(f"{invalid_date or 'The requested office point'} is not one valid calendar date.")
+        point = dates[0]
+        if point.year > 9998:
+            raise PlanError("The requested office point is outside the supported calendar range.")
+        return _office_interval_plan(as_of=as_of, office=office_point["office"],
+                                     start=point, end=point, scope="calendarDate")
+
+    office_month = re.search(
+        r"\bwho\s+(?:was|held)\s+(?P<office>.+?)\s+(?:during|in)\s+"
+        r"(?P<month>[a-z]+)\s+(?P<year>[0-9]{4})\s*[?.!]*$",
+        question.strip(), re.IGNORECASE,
+    )
+    if office_month:
+        try:
+            month = datetime.strptime(office_month["month"], "%B").month
+            year = int(office_month["year"])
+            start = date(year, month, 1)
+            end = date(year, month, calendar.monthrange(year, month)[1])
+        except (ValueError, OverflowError) as error:
+            raise PlanError("The requested office month must use valid English month and year values.") from error
+        return _office_interval_plan(as_of=as_of, office=office_month["office"],
+                                     start=start, end=end, scope="calendarMonth")
+
+    office_year = re.search(
+        r"\bwho\s+(?:was|held)\s+(?P<office>.+?)\s+(?:during|in|throughout)\s+(?P<year>[0-9]{4})\s*[?.!]*$",
+        question.strip(), re.IGNORECASE,
+    )
+    if office_year:
+        try:
+            year = int(office_year["year"])
+            start, end = date(year, 1, 1), date(year, 12, 31)
+        except (ValueError, OverflowError) as error:
+            raise PlanError("The requested office year is outside the supported calendar range.") from error
+        return _office_interval_plan(as_of=as_of, office=office_year["office"],
+                                     start=start, end=end, scope="calendarYear")
+    return None
 
 
 def plan_question(question: str, *, as_of: date) -> dict[str, Any]:
@@ -1008,33 +1143,9 @@ def plan_question(question: str, *, as_of: date) -> dict[str, Any]:
             )
         except (ValueError, OverflowError) as error:
             raise PlanError("The requested office interval must use valid English month and year values.") from error
-        if not office:
-            raise PlanError("A reviewed office name is required.")
-        if start > end:
-            raise PlanError("The requested office interval must start on or before it ends.")
-        return validate_plan({
-            "version": PLAN_VERSION,
-            "asOf": as_of.isoformat(),
-            "referents": {
-                "member": {"type": "Member", "answer": True},
-                "holding": {"type": "OfficeHolding"},
-                "office": {"type": "NamedOffice", "mention": office, "resolution": "unresolved"},
-            },
-            "relations": [
-                {"id": "member-holding", "fact": "member_has_office_holding", "from": "member", "to": "holding"},
-                {"id": "holding-office", "fact": "office_holding_of_office", "from": "holding", "to": "office"},
-            ],
-            "constraints": [{
-                "referent": "holding", "field": "interval", "operator": "overlaps",
-                "value": {"start": start.isoformat(), "end": end.isoformat(), "inclusive": True},
-            }],
-            "answer": {
-                "kind": "entities", "referent": "member", "distinctBy": "identity",
-                "display": ["name"],
-                "details": [{"referent": "holding", "display": ["start", "end"]}],
-                "preserveEpisodes": True,
-            },
-        })
+        scope = "calendarMonth" if (start.year, start.month) == (end.year, end.month) else "calendarWindow"
+        return _office_interval_plan(as_of=as_of, office=office_window["office"],
+                                     start=start, end=end, scope=scope)
     debate = re.search(
         r"\b(?P<boolean>was\s+there\s+a\s+)?(?P<chamber>dáil|dail|seanad)\s+debate\s+(?:on|from)\s+(?P<date>[0-9]{1,2}\s+[a-z]+\s+[0-9]{4})\s*[?.!]*$",
         question.strip(), re.IGNORECASE,
@@ -1303,7 +1414,10 @@ def _validate_stage_a_plan(plan: dict[str, Any]) -> dict[str, Any]:
         raise PlanError("Stage A family referents do not match the exact reviewed path types.")
     primary_key = "member" if "member" in refs else "term"
     primary = refs[primary_key]
-    if set(primary) - {"type", "mention", "answer", "resolution", "iri", "label", "asOfEvidence", "candidates"}:
+    primary_fields = {"type", "mention", "answer", "resolution", "iri", "label", "asOfEvidence", "candidates"}
+    if family == "house_terms":
+        primary_fields.update({"selector", "matches"})
+    if set(primary) - primary_fields:
         raise PlanError("Stage A referent contains unsupported identity fields.")
     if primary.get("type") != ("Member" if term_count_member else required_type):
         raise PlanError("Stage A referent has the wrong reviewed entity type.")
@@ -1339,6 +1453,61 @@ def _validate_stage_a_plan(plan: dict[str, Any]) -> dict[str, Any]:
             raise PlanError("Ambiguous Stage A identity cannot carry a singular selected IRI.")
         if primary["resolution"] in {"not_found", "source_data_unavailable", "unsupported_mapping"} and (candidates or "iri" in primary):
             raise PlanError("Unresolved Stage A identity cannot carry a selected or candidate IRI.")
+    if family == "house_terms":
+        selector = primary.get("selector")
+        if selector is None:
+            if "matches" in primary or "resolution" in primary:
+                raise PlanError("An unfiltered House-term listing cannot carry temporal selection results.")
+        else:
+            if not isinstance(selector, dict):
+                raise PlanError("House-term temporal selector must be an object.")
+            if selector.get("kind") == "onDate" and set(selector) == {"kind", "date"}:
+                try:
+                    if date.fromisoformat(selector["date"]).isoformat() != selector["date"]:
+                        raise ValueError
+                except (TypeError, ValueError) as error:
+                    raise PlanError("House-term date selection requires one valid ISO calendar date.") from error
+            elif selector.get("kind") == "duringMonth" and set(selector) == {"kind", "year", "month"}:
+                if (type(selector["year"]) is not int or not 1 <= selector["year"] <= 9998
+                        or type(selector["month"]) is not int or not 1 <= selector["month"] <= 12):
+                    raise PlanError("House-term month selection requires a valid numeric calendar month.")
+            else:
+                raise PlanError("House-term temporal selector must preserve one date point or one complete month.")
+            resolution = primary.get("resolution")
+            matches = primary.get("matches")
+            if resolution is None and matches is None:
+                pass  # The validated selector is ready for local evidence resolution.
+            elif resolution not in {"resolved", "not_found"} or not isinstance(matches, list):
+                raise PlanError("Resolved House-term selection must preserve its exact match set and outcome.")
+            else:
+                seen = set()
+                for item in matches:
+                    if (not isinstance(item, dict) or set(item) != {"iri", "label", "start", "end"}
+                            or not isinstance(item.get("label"), str) or not item["label"].strip()):
+                        raise PlanError("House-term matches require exact local identity, label, start and end evidence.")
+                    _require_local_iri(item["iri"], "DailTerm match")
+                    if item["iri"] in seen:
+                        raise PlanError("House-term temporal selection cannot repeat one exact term identity.")
+                    seen.add(item["iri"])
+                    try:
+                        start = date.fromisoformat(item["start"])
+                        end = None if item["end"] is None else date.fromisoformat(item["end"])
+                    except (TypeError, ValueError) as error:
+                        raise PlanError("House-term match dates must be ISO calendar dates.") from error
+                    if (start.isoformat() != item["start"]
+                            or end is not None and end.isoformat() != item["end"]):
+                        raise PlanError("House-term match dates must use canonical ISO calendar spelling.")
+                    if end is not None and end < start:
+                        raise PlanError("House-term match has an end date before its start date.")
+                    if selector["kind"] == "onDate":
+                        lower = upper = date.fromisoformat(selector["date"])
+                    else:
+                        lower = date(selector["year"], selector["month"], 1)
+                        upper = date(selector["year"], selector["month"], calendar.monthrange(selector["year"], selector["month"])[1])
+                    if not (start <= upper and (end is None or end >= lower)):
+                        raise PlanError("House-term result identity does not overlap its preserved temporal selector.")
+                if (resolution == "resolved") != bool(matches):
+                    raise PlanError("House-term selection outcome disagrees with its exact match set.")
     if optional_committee:
         committee = refs["committee"]
         if set(committee) - {"type", "mention", "resolution", "iri", "label", "candidates"} or committee.get("type") != "Committee":
@@ -1659,7 +1828,7 @@ def previous_dail_term_query(as_of: date, *, supported_predicates) -> str:
     ?period {start_predicate} ?start .
     OPTIONAL {{ ?period {end_predicate} ?end . }}
   }}
-}}'''
+}} LIMIT 100'''
     return _query(query, supported_predicates)
 
 
@@ -1993,6 +2162,35 @@ def _member_relationship_composition_mapping(
                 or affiliation_label_language != "en"):
             raise PlanError("Reviewed interval types or affiliation labels disagree with the query-schema contract.")
 
+    membership_date_mapping = None
+    membership_date_range = membership_date_range_type = None
+    membership_date_start = membership_date_end = None
+    if any(item.get("field") == "membershipInterval" for item in plan.get("constraints", [])):
+        membership_date_mapping = next((item for item in _PLAN_CONTRACT.get("constraints", [])
+                                        if item.get("field") == "membershipInterval"), None)
+        membership_pattern = patterns["membership"]
+        membership_date_range = _pattern_predicate(membership_pattern, "?membership", "?dateRange")
+        membership_date_start = _pattern_predicate(membership_pattern, "?dateRange", "?startDate")
+        membership_date_end = _pattern_predicate(membership_pattern, "?dateRange", "?endDate (optional)")
+        membership_date_range_type = _pattern_rdf_type(membership_pattern, "?dateRange")
+        if (membership_date_mapping is None
+                or membership_date_mapping.get("referentType") != "DailMembership"
+                or membership_date_mapping.get("graphFamily") != "member-records"
+                or membership_date_mapping.get("dateRangePredicate") != membership_date_range
+                or membership_date_mapping.get("dateRangeType") != membership_date_range_type
+                or membership_date_mapping.get("startPredicate") != membership_date_start
+                or membership_date_mapping.get("endPredicate") != membership_date_end
+                or membership_date_mapping.get("dateDatatype") != "xsd:dateTime"
+                or membership_date_range_type != "members:DateRange"):
+            raise PlanError("Reviewed DailMembership date-range predicates disagree with the membership mapping.")
+        for predicate in (membership_date_range, membership_date_start, membership_date_end):
+            qname = predicate.split(":", 1)[0]
+            if qname not in query_contract["namespaces"] or predicate not in query_contract["queryableProperties"]:
+                raise PlanError(f"DailMembership date predicate {predicate!r} is not queryable.")
+            uri = URIRef(query_contract["namespaces"][qname] + predicate.split(":", 1)[1])
+            if uri not in set(supported_predicates):
+                raise PlanError(f"DailMembership date predicate {predicate!r} is not allowlisted.")
+
     office_mapping = None
     if "anchor" in plan["referents"]:
         # Mapping checks also run before resolution; no IRI is compiled here.
@@ -2031,6 +2229,11 @@ def _member_relationship_composition_mapping(
         "affiliation_label": affiliation_label if temporal else None,
         "affiliation_label_language": affiliation_label_language if temporal else None,
         "office_mapping": office_mapping,
+        "membership_date_mapping": membership_date_mapping,
+        "membership_date_range": membership_date_range,
+        "membership_date_range_type": membership_date_range_type,
+        "membership_date_start": membership_date_start,
+        "membership_date_end": membership_date_end,
     }
 
 
@@ -2091,6 +2294,16 @@ def compile_member_relationship_composition_query(
             f"?{relation['from']} {predicate} ?{relation['to']} ."
         )
 
+    date_constraint = next((item for item in plan.get("constraints", [])
+                            if item.get("field") == "membershipInterval"), None)
+    if date_constraint is not None:
+        graph_contents["member-records"].append(
+            f'''OPTIONAL {{ ?membership {mapping["membership_date_range"]} ?membershipRange .
+      ?membershipRange a {mapping["membership_date_range_type"]} .
+      OPTIONAL {{ ?membershipRange {mapping["membership_date_start"]} ?membershipStart . }}
+      OPTIONAL {{ ?membershipRange {mapping["membership_date_end"]} ?membershipEnd . }} }}'''
+        )
+
     member_body = "\n    ".join(graph_contents["member-records"])
     houses_body = "\n    ".join(graph_contents["houses"])
     constituency_body = "\n    ".join(graph_contents["constituencies"])
@@ -2119,9 +2332,11 @@ def compile_member_relationship_composition_query(
     )
     if distinct_memberships:
         blocks = f"{blocks}\n  {distinct_memberships}"
-    query = _PREFIXES + f'''SELECT DISTINCT ?{member_id} ?memberName WHERE {{
+    projection = (f"?{member_id} ?memberName ?membership ?membershipRange ?membershipStart ?membershipEnd"
+                  if date_constraint is not None else f"?{member_id} ?memberName")
+    query = _PREFIXES + f'''SELECT DISTINCT {projection} WHERE {{
   {blocks}
-}} ORDER BY ?memberName ?{member_id} LIMIT {MAX_RESULT_ROWS} OFFSET {offset}'''
+}} ORDER BY ?memberName ?{member_id} ?membership LIMIT {MAX_RESULT_ROWS} OFFSET {offset}'''
     return _query(query, supported_predicates)
 
 
@@ -3243,6 +3458,18 @@ def readable_affiliation_result(result: QueryResult) -> QueryResult:
 
 
 def _execute_office_question(plan: dict[str, Any], *, fuseki, supported_predicates) -> PlanOutcome:
+    interval = next((item for item in plan.get("constraints", [])
+                     if isinstance(item, dict) and item.get("field") == "interval"), None)
+    if isinstance(interval, dict) and isinstance(interval.get("value"), dict):
+        period_end = date.fromisoformat(interval["value"]["end"])
+        as_of = date.fromisoformat(plan["asOf"])
+        if period_end > as_of:
+            return PlanOutcome(
+                "clarification_required", plan=plan,
+                diagnostic=(f"The requested complete calendar scope ends after the configured as-of date {as_of.isoformat()}; "
+                            "clarify whether you mean a future period or only elapsed time. No OfficeHolding query was run."),
+                request_family="office_point" if interval["value"].get("scope") == "calendarDate" else "office_overlap",
+            )
     office_ref = plan["referents"]["office"]
     mention = office_ref["mention"]
     try:
@@ -4357,8 +4584,54 @@ def _execute_member_relationship_composition_plan(
     member_id = plan["answer"]["referent"]
     name_index = raw_result.columns.index("memberName")
     member_index = raw_result.columns.index(member_id)
+    selected_rows = raw_result.rows
+    date_constraint = next((item for item in plan.get("constraints", [])
+                            if item.get("field") == "membershipInterval"), None)
+    if date_constraint is not None:
+        required_date_columns = {"membership", "membershipRange", "membershipStart", "membershipEnd"}
+        if not required_date_columns.issubset(raw_result.columns):
+            return PlanOutcome(
+                "execution_failure", plan=plan, sparql=answer_query,
+                diagnostic="The dated Member selection query omitted reviewed DailMembership interval evidence.",
+                request_family="member_relationship_composition",
+            )
+        date_indexes = {name: raw_result.columns.index(name) for name in required_date_columns}
+        evidence_by_membership: dict[str, set[tuple[str, str, str]]] = {}
+        rows_by_membership: dict[str, list[tuple[str, ...]]] = {}
+        try:
+            for row in raw_result.rows:
+                if len(row) <= max(name_index, member_index, *date_indexes.values()):
+                    raise NLQError("A dated Member selection row was truncated; no count or list was returned.")
+                membership_iri = _require_local_iri(row[date_indexes["membership"]], "DailMembership")
+                member_iri = _require_local_iri(row[member_index], "Member")
+                range_iri = row[date_indexes["membershipRange"]]
+                start_value = row[date_indexes["membershipStart"]]
+                end_value = row[date_indexes["membershipEnd"]]
+                evidence_by_membership.setdefault(membership_iri, set()).add(
+                    (range_iri, start_value, end_value)
+                )
+                rows_by_membership.setdefault(membership_iri, []).append(row)
+            point = date.fromisoformat(date_constraint["value"])
+            active_memberships = set()
+            for membership_iri, evidence in evidence_by_membership.items():
+                start_value, end_value = _mapped_member_interval(
+                    evidence, label=f"DailMembership {membership_iri}",
+                )
+                if start_value.date() <= point and (end_value is None or point <= end_value.date()):
+                    active_memberships.add(membership_iri)
+            selected_rows = tuple(
+                row for membership_iri in sorted(active_memberships)
+                for row in rows_by_membership[membership_iri]
+            )
+        except (NLQError, ValueError, IndexError) as error:
+            return PlanOutcome(
+                "source_data_unavailable", plan=plan, sparql=answer_query,
+                diagnostic=f"The dated DailMembership evidence could not be evaluated safely: {error}",
+                request_family="member_relationship_composition",
+            )
+
     names_by_member: dict[str, set[str]] = {}
-    for row in raw_result.rows:
+    for row in selected_rows:
         if len(row) <= max(name_index, member_index):
             return PlanOutcome(
                 "source_data_unavailable", plan=plan, sparql=answer_query,
@@ -4381,7 +4654,7 @@ def _execute_member_relationship_composition_plan(
                 request_family="member_relationship_composition",
             )
         names_by_member.setdefault(member_iri, set()).add(label)
-    if not names_by_member:
+    if not names_by_member and date_constraint is None:
         return PlanOutcome(
             "source_data_unavailable", plan=plan, sparql=answer_query,
             diagnostic=("No matching Member relationship records were returned from the local dataset. "
@@ -4400,16 +4673,33 @@ def _execute_member_relationship_composition_plan(
             next(iter(names_by_member[item])).casefold(), item,
         ))
     )
-    result = QueryResult(
-        "select", ("Member", "Member identity"), rows, raw_json=raw_result.raw_json,
-    )
+    is_count = plan["answer"]["kind"] == "count"
+    if is_count:
+        result = QueryResult(
+            "select", ("Distinct recorded Members",), ((str(len(names_by_member)),),),
+            raw_json=raw_result.raw_json,
+        )
+    else:
+        result = QueryResult(
+            "select", ("Member", "Member identity"), rows, raw_json=raw_result.raw_json,
+        )
+    date_note = (f" Membership date ranges were evaluated inclusively for {date_constraint['value']}; "
+                 "unknown/conflicting intervals fail closed."
+                 if date_constraint is not None else "")
+    count_note = (f" The recorded count is {len(names_by_member)} distinct Member RDF identities, "
+                  "not seats or election events."
+                  if is_count else "")
+    empty_note = (" No matching membership interval is recorded for this date; this is not proof that no Member served, "
+                  "because local source completeness is not certified."
+                  if date_constraint is not None and not names_by_member else "")
     return PlanOutcome(
         "success", plan=plan, sparql=answer_query, result=result,
         diagnostic=((f"Complete matching results were retrieved in {len(page_offsets)} bounded pages "
                      f"(page size {MAX_RESULT_ROWS}); the displayed SPARQL is the first page. "
                      if len(page_offsets) > 1 else "")
                     + "Members are deduplicated by exact RDF identity and matched through the complete selected "
-                    "membership/term/constituency graph. Results reflect local records; historical source completeness is not certified."),
+                    "membership/term/constituency graph." + date_note + count_note + empty_note
+                    + " Results reflect local records; historical source completeness is not certified."),
         request_family="member_relationship_composition",
     )
 
@@ -4514,9 +4804,29 @@ def _execute_shared_dail_terms_question(
             from .interpretation import office_holding_boundary
             return office_holding_boundary(parameters, fuseki=fuseki, supported_predicates=supported_predicates)
         if capability == "office_holding_window":
-            canonical = (f"Who was {parameters['office']} from {calendar.month_name[parameters['startMonth']]} "
-                         f"{parameters['startYear']} to {calendar.month_name[parameters['endMonth']]} {parameters['endYear']}?")
-            plan = plan_question(canonical, as_of=as_of)
+            if "date" in parameters:
+                try:
+                    point = date.fromisoformat(parameters["date"])
+                except (TypeError, ValueError):
+                    return PlanOutcome("clarification_required", diagnostic="The requested OfficeHolding date is invalid; no holding query was run.", request_family="office_point")
+                plan = _office_interval_plan(
+                    as_of=as_of, office=parameters["office"], start=point, end=point,
+                    scope="calendarDate",
+                )
+            elif "year" in parameters:
+                try:
+                    year = int(parameters["year"])
+                    start, end = date(year, 1, 1), date(year, 12, 31)
+                except (TypeError, ValueError, OverflowError):
+                    return PlanOutcome("clarification_required", diagnostic="The requested OfficeHolding year is invalid; no holding query was run.", request_family="office_overlap")
+                plan = _office_interval_plan(
+                    as_of=as_of, office=parameters["office"], start=start, end=end,
+                    scope="calendarYear",
+                )
+            else:
+                canonical = (f"Who was {parameters['office']} from {calendar.month_name[parameters['startMonth']]} "
+                             f"{parameters['startYear']} to {calendar.month_name[parameters['endMonth']]} {parameters['endYear']}?")
+                plan = plan_question(canonical, as_of=as_of)
             return _execute_office_question(plan, fuseki=fuseki, supported_predicates=supported_predicates)
         if capability == "seanad_entry":
             from .stage_a import StageARequest, execute_stage_a
@@ -5096,6 +5406,18 @@ def _execute_question(
     if reason:
         return PlanOutcome("unsupported_request", diagnostic=reason, request_family="composable_semantic")
 
+    explicit_dates, invalid_date = _question_calendar_dates(question)
+    if invalid_date is None:
+        future_dates = sorted({item for item in explicit_dates if item > as_of})
+        if future_dates:
+            return PlanOutcome(
+                "clarification_required",
+                diagnostic=(f"The requested date {future_dates[0].isoformat()} is after the configured as-of date "
+                            f"{as_of.isoformat()}; clarify whether you intend a future period or an elapsed period. "
+                            "No answer query was run."),
+                request_family="composable_semantic",
+            )
+
     preflight = _composable_interpretation_preflight(question, as_of)
     if preflight is not None:
         return preflight
@@ -5140,6 +5462,26 @@ def _execute_question(
     )
     if stage_b_outcome is not None:
         return stage_b_outcome
+    try:
+        office_calendar_plan = plan_office_calendar_question(question, as_of=as_of)
+    except PlanError as error:
+        return PlanOutcome(
+            "clarification_required",
+            diagnostic=f"The requested OfficeHolding calendar scope is invalid: {error} No holding query was run.",
+            request_family="office_point",
+        )
+    if office_calendar_plan is not None:
+        if semantic_plan_generator_factory is None:
+            return PlanOutcome(
+                "unsupported_capability",
+                diagnostic="This historical OfficeHolding calendar scope requires validated semantic capability selection.",
+                request_family="composable_semantic",
+            )
+        return _execute_shared_dail_terms_question(
+            question, as_of=as_of, fuseki=fuseki,
+            supported_predicates=supported_predicates,
+            planner_generator_factory=semantic_plan_generator_factory,
+        )
     try:
         plan = plan_question(question, as_of=as_of)
     except UnrecognizedQuestion as error:
