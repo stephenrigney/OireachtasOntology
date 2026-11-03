@@ -254,6 +254,9 @@ def create_app(
                 q35_office = outcome.plan.get("referents", {}).get("office", {}) if is_q35 else {}
                 q35_interval = outcome.plan.get("constraints", [{}])[0].get("value", {}) if is_q35 else {}
                 q23_member = outcome.plan.get("referents", {}).get("member", {}).get("mention", "the named Member") if is_q23 else None
+                q23_count = bool(is_q23 and outcome.plan.get("answer", {}).get("kind") == "count")
+                q23_year = (outcome.plan.get("constraints", [{}])[0].get("value")
+                            if q23_count else None)
                 q35_summary = (
                     f"Find each locally evidenced accepted {q35_office.get('label', q35_office.get('mention', 'office'))} "
                     f"holding overlapping {q35_interval.get('start', 'the requested start')} through "
@@ -261,6 +264,8 @@ def create_app(
                     "The development dataset does not establish complete historical coverage."
                 ) if is_q35 else None
                 q23_summary = (
+                    f"Count distinct Bills sponsored by {q23_member} with a source-backed dated Published lifecycle activity in calendar year {q23_year}; do not use legislative year or document/version dates."
+                    if q23_count else
                     f"Find distinct Bills with a recorded sponsor Participation whose participant-person IRI "
                     f"exactly matches the resolved local Member identity for {q23_member}. Include every "
                     "recorded participation regardless of primary status and preserve its source evidence."
@@ -433,8 +438,9 @@ def create_app(
                                if is_debate else
                                "Member names with exact start/end dates for every separate accepted holding; open ends are identified explicitly."
                                if is_q35 else
-                                "One row per Bill identity with title and recorded sponsorship evidence."
-                                if is_q23 else
+                                 ("Distinct Bill identity count based on source-backed Published activity dates."
+                                  if q23_count else "One row per Bill identity with title and recorded sponsorship evidence.")
+                                 if is_q23 else
                                 ("Distinct reviewed political-affiliation identities are returned with each qualifying TD and "
                                  "established overlap episode retained; historical source completeness is not certified."
                                  if is_member_relationship_composition and is_q06 and any(
