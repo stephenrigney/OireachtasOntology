@@ -25,7 +25,9 @@ EDGES = {
 }
 
 
-def representation_plan(*, as_of, member=None, constituency=None, current=True):
+def representation_plan(*, as_of, member=None, constituency=None, current=True, latest_recorded=False):
+    if current and latest_recorded:
+        raise PlanError("Current and latest-recorded Dáil selection are distinct temporal scopes.")
     refs = {"member": {"type": "Member"}, "membership": {"type": "DailMembership"},
             "term": {"type": "DailTerm"}, "constituency": {"type": "DailConstituency"}}
     named = "member" if member else "constituency"
@@ -34,6 +36,10 @@ def representation_plan(*, as_of, member=None, constituency=None, current=True):
     refs[answer]["answer"] = True
     if current:
         refs["term"]["selector"] = {"kind": "currentTerm", "house": "Dail"}
+    elif latest_recorded:
+        if not member:
+            raise PlanError("Latest-recorded Dáil selection requires a named Member.")
+        refs["term"]["selector"] = {"kind": "latestRecorded"}
     plan = {"version": 2, "asOf": as_of.isoformat(), "family": "constituency_representation",
             "referents": refs,
             "relations": [{"id": fact, "fact": fact, "from": source, "to": target}
@@ -47,6 +53,30 @@ def representation_plan(*, as_of, member=None, constituency=None, current=True):
 
 def plan_representation_question(question, *, as_of):
     text = question.strip().rstrip("?.!")
+    latest = re.fullmatch(
+        r"(?:what|which)\s+(?:was\s+)?(?:the\s+)?(?:latest\s+recorded\s+d[áa]il\s+term\s+and\s+)?"
+        r"constituenc(?:y|ies)\s+(?:did\s+)?(?P<member>.+?)\s+(?:represent|represented|serve(?:d)?)\s+"
+        r"(?:in\s+(?:(?:his|her|their|the)\s+)?(?:latest\s+recorded|most\s+recent)\s+d[áa]il\s+term|"
+        r"(?:as\s+)?(?:their\s+)?latest\s+recorded\s+d[áa]il\s+term)", text, re.I,
+    )
+    if latest:
+        return representation_plan(as_of=as_of, member=latest["member"], current=False,
+                                   latest_recorded=True)
+    latest_for = re.fullmatch(
+        r"what\s+was\s+(?:the\s+)?(?:latest\s+recorded\s+)?d[áa]il\s+term\s+and\s+"
+        r"constituenc(?:y|ies)\s+(?:for|of)\s+(?P<member>.+?)\s*", text, re.I,
+    )
+    if latest_for and re.search(r"\b(?:latest|most recent)\b", text, re.I):
+        return representation_plan(as_of=as_of, member=latest_for["member"], current=False,
+                                   latest_recorded=True)
+    latest_served = re.fullmatch(
+        r"(?:which|what)\s+d[áa]il\s+term\s+and\s+constituenc(?:y|ies)\s+did\s+"
+        r"(?P<member>.+?)\s+serve\s+(?:most\s+recently|in\s+(?:their\s+)?latest\s+recorded\s+d[áa]il\s+term)",
+        text, re.I,
+    )
+    if latest_served:
+        return representation_plan(as_of=as_of, member=latest_served["member"], current=False,
+                                   latest_recorded=True)
     match = re.fullmatch(
         r"(?:who are (?:the )?(?:current )?(?:TDs|deputies)|which (?:TDs|deputies) represent)"
         r" (?:for )?(?P<constituency>.+?)(?: in the (?:current|present) D[áa]il)?", text, re.I)
@@ -74,7 +104,7 @@ def validate_representation_plan(plan):
     for key, ref in refs.items():
         if ref.get("type") != types[key]:
             raise PlanError("Invalid representation referent type.")
-        allowed = {"type", "answer", "mention", "resolution", "iri", "label", "candidates", "asOfEvidence"}
+        allowed = {"type", "answer", "mention", "resolution", "iri", "label", "candidates", "asOfEvidence", "termStart"}
         if key == "term":
             allowed.add("selector")
         if set(ref) - allowed:
@@ -84,15 +114,39 @@ def validate_representation_plan(plan):
     named = [key for key in ("member", "constituency") if refs[key].get("mention")]
     if len(named) != 1 or any(not isinstance(refs[key]["mention"], str) or not refs[key]["mention"].strip() for key in named):
         raise PlanError("Exactly one Member or constituency mention is required.")
-    current = "selector" in refs["term"]
+    selector = refs["term"].get("selector")
+    current = selector == {"kind": "currentTerm", "house": "Dail"}
+    latest_recorded = selector == {"kind": "latestRecorded"}
     from .interpretation import validate_default
     try:
         validate_default(plan, constituency=refs["constituency"].get("mention", ""), current=current)
     except ValueError as error:
         raise PlanError(str(error)) from error
-    if current and refs["term"]["selector"] != {"kind": "currentTerm", "house": "Dail"}:
-        raise PlanError("Representation supports only the current date-relative term selector.")
-    if not current and named != ["member"]:
+    if selector is not None and not (current or latest_recorded):
+        raise PlanError("Representation supports only current or latest-recorded Dáil term selectors.")
+    if latest_recorded and named != ["member"]:
+        raise PlanError("Latest-recorded term selection requires a named Member.")
+    if "termStart" in refs["term"]:
+        try:
+            recorded_start = date.fromisoformat(refs["term"]["termStart"])
+        except (TypeError, ValueError) as error:
+            raise PlanError("Latest-recorded term start must be a valid House-owned calendar date.") from error
+        if recorded_start.isoformat() != refs["term"]["termStart"]:
+            raise PlanError("Latest-recorded term start must use canonical ISO calendar spelling.")
+        if not latest_recorded or refs["term"].get("resolution") != "resolved" or "iri" not in refs["term"]:
+            raise PlanError("House-owned latest-term date evidence requires the exact resolved term identity.")
+    if current and "resolution" in refs["term"]:
+        if (refs["term"].get("resolution") != "resolved"
+                or set(refs["term"]) != {"type", "selector", "resolution", "iri", "asOfEvidence"}
+                or refs["term"].get("asOfEvidence") != plan["asOf"]):
+            raise PlanError("Resolved current-term selection must preserve its asOf evidence and exact identity.")
+    elif latest_recorded and "resolution" in refs["term"]:
+        if (set(refs["term"]) != {"type", "selector", "resolution", "iri", "termStart"}
+                or refs["term"].get("resolution") != "resolved"):
+            raise PlanError("Resolved latest-term selection must preserve House-owned chronology and exact identity.")
+    elif not (current or latest_recorded) and set(refs["term"]) != {"type"}:
+        raise PlanError("Career-wide representation cannot carry a selected term identity.")
+    if not current and not latest_recorded and named != ["member"]:
         raise PlanError("Career-wide representation requires a named Member.")
     expected = sorted((fact, source, target) for fact, (source, target) in EDGES.items())
     relations = plan["relations"]
@@ -156,12 +210,32 @@ def compile_representation_query(plan, *, supported_predicates):
 }} ORDER BY ?member ?membership ?constituency ?term ?name ?label ?termLabel ?range ?start ?end LIMIT 100''', supported_predicates)
 
 
+def compile_member_dail_terms_query(member_iri, *, supported_predicates):
+    """Read every recorded Member→DailMembership→DailTerm identity path."""
+    member = URIRef(_require_local_iri(member_iri, "Member")).n3()
+    graphs = {item["id"]: item["graph"] for item in load_query_contract()["graphFamilies"]}
+    member_prefix = graphs["member-records"]["iriTemplate"].split("{")[0]
+    houses_graph = graphs["houses"]["iri"]
+    member_link = _reviewed_predicate("member_has_membership")
+    term_link = _reviewed_predicate("membership_in_term")
+    return _query(_PREFIXES + f'''SELECT DISTINCT ?membership ?term WHERE {{
+  GRAPH ?memberGraph {{
+    {member} a agents:Member ; {member_link} ?membership .
+    ?membership a members:DailMembership ; {term_link} ?term .
+  }}
+  FILTER(STRSTARTS(STR(?memberGraph), {repr(member_prefix)}))
+  GRAPH <{houses_graph}> {{ ?term a agents:DailTerm . }}
+}} ORDER BY ?term ?membership LIMIT 100''', supported_predicates)
+
+
 def execute_representation(plan, *, fuseki, supported_predicates):
     refs = plan["referents"]
     as_of = date.fromisoformat(plan["asOf"])
     query = None
     try:
-        current = "selector" in refs["term"]
+        selector = refs["term"].get("selector")
+        current = selector == {"kind": "currentTerm", "house": "Dail"}
+        latest_recorded = selector == {"kind": "latestRecorded"}
         if current:
             term = resolve_current_dail(fuseki.query(previous_dail_term_query(as_of, supported_predicates=supported_predicates)), as_of)
             refs["term"].update(iri=term, resolution="resolved", asOfEvidence=as_of.isoformat())
@@ -169,7 +243,69 @@ def execute_representation(plan, *, fuseki, supported_predicates):
             mention = refs["member"]["mention"]
             iri, label = resolve_member(fuseki.query(member_resolution_query(mention, supported_predicates=supported_predicates)), mention)
             refs["member"].update(iri=iri, label=label, resolution="resolved")
-        else:
+        if latest_recorded:
+            member_iri = refs["member"]["iri"]
+            service_result = fuseki.query(
+                compile_member_dail_terms_query(member_iri, supported_predicates=supported_predicates),
+            )
+            if (service_result.kind != "select"
+                    or not {"membership", "term"}.issubset(service_result.columns)
+                    or len(service_result.rows) >= 100):
+                raise NLQError("The Member DailMembership-to-DailTerm evidence is incomplete; no latest recorded term was selected.")
+            service_indexes = {name: service_result.columns.index(name) for name in ("membership", "term")}
+            terms_by_membership = {}
+            service_terms = set()
+            for row in service_result.rows:
+                if len(row) <= max(service_indexes.values()):
+                    raise NLQError("The Member DailMembership query returned a truncated identity row.")
+                membership_iri = _require_local_iri(row[service_indexes["membership"]], "DailMembership")
+                term_iri = _require_local_iri(row[service_indexes["term"]], "DailTerm")
+                terms_by_membership.setdefault(membership_iri, set()).add(term_iri)
+                service_terms.add(term_iri)
+            if not service_terms:
+                raise NLQError("No accepted DailMembership-to-DailTerm path is recorded for this Member.")
+            if any(len(terms) != 1 for terms in terms_by_membership.values()):
+                raise NLQError("A recorded DailMembership links to conflicting DailTerm identities.")
+
+            timeline = fuseki.query(previous_dail_term_query(as_of, supported_predicates=supported_predicates))
+            if (timeline.kind != "select" or not {"term", "start", "end"}.issubset(timeline.columns)
+                    or len(timeline.rows) >= 100):
+                raise NLQError("House-term chronology is incomplete; no latest recorded Dáil was selected.")
+            timeline_indexes = {name: timeline.columns.index(name) for name in ("term", "start", "end")}
+            chronology_rows: dict[str, set[tuple[str, str]]] = {}
+            for row in timeline.rows:
+                if len(row) <= max(timeline_indexes.values()):
+                    raise NLQError("House-term chronology returned a truncated row.")
+                term_iri = _require_local_iri(row[timeline_indexes["term"]], "DailTerm")
+                if term_iri not in service_terms:
+                    continue
+                chronology_rows.setdefault(term_iri, set()).add(
+                    (row[timeline_indexes["start"]], row[timeline_indexes["end"]]),
+                )
+            missing_terms = service_terms - set(chronology_rows)
+            if missing_terms:
+                raise NLQError("A recorded Member DailTerm is missing House-owned chronology evidence; no latest term was guessed.")
+            chronology = {}
+            for term_iri in service_terms:
+                evidence = chronology_rows[term_iri]
+                if len(evidence) != 1:
+                    raise NLQError("Conflicting House-owned dates prevent latest-term selection.")
+                start_text, end_text = next(iter(evidence))
+                start = _date_binding(start_text)
+                end = None if end_text in {"—", ""} else _date_binding(end_text)
+                if end is not None and end < start:
+                    raise NLQError("House-term chronology contains an end date before its start.")
+                chronology[term_iri] = (start, end)
+            ordered = sorted((chronology[term][0], term) for term in service_terms)
+            if len({start for start, _term in ordered}) != len(ordered):
+                raise NLQError("Two recorded Member terms have tied House-owned start dates; latest-term selection is ambiguous.")
+            for (_previous_start, previous_term), (next_start, _next_term) in zip(ordered, ordered[1:]):
+                previous_end = chronology[previous_term][1]
+                if previous_end is None or previous_end >= next_start:
+                    raise NLQError("Recorded Member terms have conflicting or incomplete House-owned chronology.")
+            latest_start, latest_term = ordered[-1]
+            refs["term"].update(iri=latest_term, resolution="resolved", termStart=latest_start.isoformat())
+        elif refs["constituency"].get("mention"):
             mention = refs["constituency"]["mention"]
             raw = fuseki.query(constituency_resolution_query(mention, term, supported_predicates=supported_predicates))
             if len(raw.rows) >= 100:
@@ -181,6 +317,13 @@ def execute_representation(plan, *, fuseki, supported_predicates):
         if not raw.rows:
             raise NLQError("No matching representation evidence is available; local absence does not establish a historical negative.")
         records = [dict(zip(raw.columns, row)) for row in raw.rows]
+        latest_start = None
+        if latest_recorded:
+            latest_start = date.fromisoformat(refs["term"]["termStart"])
+            records = [row for row in records if row["term"] == latest_term]
+            representation_ids = {row["constituency"] for row in records}
+            if records and len(representation_ids) != 1:
+                raise NLQError("The latest recorded Member term has conflicting constituency identities.")
         if current:
             intervals = {}
             for row in records:
@@ -197,12 +340,17 @@ def execute_representation(plan, *, fuseki, supported_predicates):
         for row in records:
             for key in ("member", "membership", "term", "constituency"):
                 _require_local_iri(row[key], key)
-            rows.add((row["name"].removesuffix("@en"), row["label"].removesuffix("@en"),
-                      row["termLabel"].removesuffix("@en"), row["member"], row["constituency"], row["term"]))
-        result = QueryResult("select", ("Member", "Constituency", "Dáil term", "Member identity", "Constituency identity", "Term identity"),
-                             tuple(sorted(rows)), raw.raw_json)
+            base = (row["name"].removesuffix("@en"), row["label"].removesuffix("@en"),
+                    row["termLabel"].removesuffix("@en"), row["member"], row["constituency"], row["term"])
+            rows.add((*base[:3], latest_start.isoformat(), *base[3:]) if latest_recorded else base)
+        if latest_recorded:
+            columns = ("Member", "Constituency", "Dáil term", "Term start", "Member identity", "Constituency identity", "Term identity")
+        else:
+            columns = ("Member", "Constituency", "Dáil term", "Member identity", "Constituency identity", "Term identity")
+        result = QueryResult("select", columns, tuple(sorted(rows)), raw.raw_json)
         return PlanOutcome("success", plan=plan, sparql=query, result=result,
-                           diagnostic=f"Recorded representation evidence{' at ' + as_of.isoformat() if current else ' across recorded Dáil terms'}. Local source completeness is not certified.")
+                           diagnostic=(f"Recorded representation evidence{' at ' + as_of.isoformat() if current else ' in the latest House-dated Dáil term' if latest_recorded else ' across recorded Dáil terms'}. "
+                                       "The latest term is selected by exact HouseTerm identity and House-owned start dates; local source completeness is not certified."))
     except (AmbiguousMember, AmbiguousConstituency) as error:
         key = "member" if isinstance(error, AmbiguousMember) else "constituency"
         refs[key].update(resolution="ambiguous", candidates=list(error.candidates))

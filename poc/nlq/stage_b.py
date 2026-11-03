@@ -953,7 +953,9 @@ def handle_stage_b(question: str, *, as_of: date, fuseki, supported_predicates) 
             q35_question = f"Who was {office_mention} from {month} {parsed.year} to {month} {parsed.year}?"
         office_plan = plan_question(q35_question, as_of=as_of)
         if family == "office_point":
-            office_plan["constraints"][0]["value"].update({"start": parsed.isoformat(), "end": parsed.isoformat()})
+            office_plan["constraints"][0]["value"].update({
+                "start": parsed.isoformat(), "end": parsed.isoformat(), "scope": "calendarDate",
+            })
         else:
             member = _ref(plan, "member")
             office_plan["referents"]["member"] = {

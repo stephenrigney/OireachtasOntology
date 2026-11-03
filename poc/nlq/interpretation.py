@@ -12,8 +12,15 @@ def unsupported_whole_intent(question):
     if re.search(r"\b(?:elected|election|elections|re-elected)\b", question, re.I):
         return "Election-event evidence is not queryable; no membership start or partial compound answer was substituted."
     if (re.search(r"\b(?:constituenc(?:y|ies)|represent(?:ed|s|ing)?|TDs?)\b", question, re.I)
-            and re.search(r"\b(?:how many|count|average|rank|most|fewest|percentage)\b", question, re.I)):
-        return "This representation composition does not support the requested aggregation; no reduced list answer was run."
+            and re.search(r"\b(?:how many|count|average|rank|most|fewest|percentage)\b", question, re.I)
+            and re.search(r"\bseats?\b", question, re.I)):
+        return "Seat allocations are not derived from recorded Member identities; no seat or election-event count was run."
+    if (re.search(r"\b(?:which|what) d[áa]il\b", question, re.I)
+            and re.search(r"\b(?:actual\s+)?sittings?\b", question, re.I)):
+        return "House-term dates do not establish an actual sitting; no term was substituted for sitting evidence."
+    if (re.search(r"\b(?:office\s+of|taoiseach|minister|president|secretary|chair)\b", question, re.I)
+            and re.search(r"\b(?:throughout|the whole of|all of|the entire|for the full)\b", question, re.I)):
+        return "Accepted OfficeHolding evidence supports interval overlap, not uninterrupted service throughout the requested period."
     return None
 
 

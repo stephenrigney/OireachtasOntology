@@ -151,7 +151,7 @@ def test_q35_plan_is_typed_inclusive_and_uses_the_three_node_office_path():
     ]
     assert plan["constraints"] == [{
         "referent": "holding", "field": "interval", "operator": "overlaps",
-        "value": {"start": "2021-01-01", "end": "2022-12-31", "inclusive": True},
+        "value": {"start": "2021-01-01", "end": "2022-12-31", "inclusive": True, "scope": "calendarWindow"},
     }]
     assert plan["answer"]["distinctBy"] == "identity"
     assert plan["answer"]["preserveEpisodes"] is True

@@ -41,7 +41,7 @@
          "properties": {"member": {"anyOf": [{"$ref": "#/$defs/namedMemberReferent"}, {"$ref": "#/$defs/memberAnswerReferent"}]},
            "membership": {"$ref": "#/$defs/membershipReferent"},
            "term": {"type": "object", "additionalProperties": false, "required": ["type", "mention", "selector"],
-             "properties": {"type": {"type": "string", "const": "DailTerm"}, "mention": {"type": "null"}, "selector": {"type": ["string", "null"], "enum": ["currentTerm", null]}}},
+              "properties": {"type": {"type": "string", "const": "DailTerm"}, "mention": {"type": "null"}, "selector": {"type": ["string", "null"], "enum": ["currentTerm", "latestRecorded", null]}}},
            "constituency": {"type": "object", "additionalProperties": false, "required": ["type", "mention"], "properties": {"type": {"type": "string", "const": "DailConstituency"}, "mention": {"type": ["string", "null"]}}}}},
         {
           "type": "object",
@@ -101,6 +101,8 @@
             "parameters": {
                 "anyOf": [
                   {"type": "object", "additionalProperties": false, "required": ["office", "startMonth", "startYear", "endMonth", "endYear"], "properties": {"office": {"type": "string", "minLength": 1}, "startMonth": {"type": "integer", "minimum": 1, "maximum": 12}, "endMonth": {"type": "integer", "minimum": 1, "maximum": 12}, "startYear": {"type": "integer", "minimum": 1, "maximum": 9998}, "endYear": {"type": "integer", "minimum": 1, "maximum": 9998}}},
+                  {"type": "object", "additionalProperties": false, "required": ["office", "date"], "properties": {"office": {"type": "string", "minLength": 1}, "date": {"type": "string", "format": "date"}}},
+                  {"type": "object", "additionalProperties": false, "required": ["office", "year"], "properties": {"office": {"type": "string", "minLength": 1}, "year": {"type": "integer", "minimum": 1, "maximum": 9998}}},
                  {"type": "object", "additionalProperties": false, "required": ["member", "house"],
                   "properties": {"member": {"type": "string", "minLength": 1}, "house": {"type": ["string", "null"], "enum": ["Dail", "Seanad", null]}}},
                  {"type": "object", "additionalProperties": false, "required": ["termNumber", "includeGroups"],
@@ -124,6 +126,7 @@
     },
     "constraints": {"type": "array", "items": {"anyOf": [
       {"$ref": "#/$defs/referentIntervalOverlap"},
+      {"type": "object", "additionalProperties": false, "required": ["referent", "field", "operator", "value"], "properties": {"referent": {"$ref": "#/$defs/identifier"}, "field": {"type": "string", "const": "membershipInterval"}, "operator": {"type": "string", "const": "on"}, "value": {"type": "string", "format": "date"}}},
       {"type": "object", "additionalProperties": false, "required": ["referent", "field", "operator", "value"], "properties": {"referent": {"type": "string", "const": "member"}, "field": {"type": "string", "const": "identity"}, "operator": {"type": "string", "const": "distinctFrom"}, "value": {"type": "string", "const": "anchor"}}},
       {"type": "object", "additionalProperties": false, "required": ["referent", "field", "operator", "value"], "properties": {"referent": {"type": "string", "const": "holding"}, "field": {"type": "string", "const": "interval"}, "operator": {"type": "string", "const": "commonIntersection"}, "value": {"type": "array", "items": {"type": "string", "enum": ["holding", "anchor_membership", "membership", "episode"]}}}}
     ]}},
@@ -241,19 +244,14 @@
         "to": {"$ref": "#/$defs/identifier"}
       }
     },
-    "answer": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["kind", "referent", "distinctBy", "display", "details", "preserveEvidence"],
-      "properties": {
-        "kind": {"type": "string", "const": "entities"},
-        "referent": {"$ref": "#/$defs/identifier"},
-        "distinctBy": {"type": "string", "const": "identity"},
-        "display": {"type": "array", "items": {"type": "string", "enum": ["label", "name"]}},
-        "details": {"type": "array", "items": {"$ref": "#/$defs/answerDetail"}},
-        "preserveEvidence": {"type": "boolean"}
-      }
-    },
+    "answer": {"anyOf": [
+      {"type": "object", "additionalProperties": false, "required": ["kind", "referent", "distinctBy", "display", "details", "preserveEvidence"],
+       "properties": {"kind": {"type": "string", "const": "entities"}, "referent": {"$ref": "#/$defs/identifier"},
+         "distinctBy": {"type": "string", "const": "identity"}, "display": {"type": "array", "items": {"type": "string", "enum": ["label", "name"]}},
+         "details": {"type": "array", "items": {"$ref": "#/$defs/answerDetail"}}, "preserveEvidence": {"type": "boolean"}}},
+      {"type": "object", "additionalProperties": false, "required": ["kind", "referent", "distinctBy"],
+       "properties": {"kind": {"type": "string", "const": "count"}, "referent": {"$ref": "#/$defs/identifier"}, "distinctBy": {"type": "string", "const": "identity"}}}
+    ]},
     "answerDetail": {
       "type": "object", "additionalProperties": false,
       "required": ["referent", "display"],

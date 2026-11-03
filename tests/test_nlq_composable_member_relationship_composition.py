@@ -26,7 +26,7 @@ from poc.nlq.composable_semantic_planner import (
     build_composable_planner_instructions,
     load_composable_draft_schema,
 )
-from poc.nlq.safety import MAX_RESULT_OFFSET
+from poc.nlq.safety import MAX_RESULT_OFFSET, MAX_RESULT_ROWS
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -35,6 +35,8 @@ AGENTS = "https://data.oireachtas.ie/ontology#"
 MEMBERS = "https://data.oireachtas.ie/ontology/members#"
 FOAF = "http://xmlns.com/foaf/0.1/"
 SKOS = "http://www.w3.org/2004/02/skos/core#"
+DCT = "http://purl.org/dc/terms/"
+DCAT = "http://www.w3.org/ns/dcat#"
 HOUSE_GRAPH = "https://data.oireachtas.ie/graph/houses"
 CONSTITUENCY_GRAPH = "https://data.oireachtas.ie/graph/constituencies"
 QUESTION_TERMS = "Which Members served in both the 32nd and 33rd Dáil?"
@@ -219,6 +221,43 @@ def _representation_draft(ordinal: int = 31, constituency: str = "Dublin Central
     }
 
 
+def _member_count_draft(ordinal: int = 31, constituency: str = "Dublin Central", *, date_point: str | None = None) -> dict:
+    draft = _representation_draft(ordinal, constituency)
+    if date_point is not None:
+        draft["constraints"] = [{
+            "referent": "membership", "field": "membershipInterval",
+            "operator": "on", "value": date_point,
+        }]
+    draft["answer"] = {"kind": "count", "referent": "member", "distinctBy": "identity"}
+    return draft
+
+
+def _add_term_chronology(fixture: MemberRelationshipFixture, ordinal: int, start: str, end: str | None) -> None:
+    houses = fixture.dataset.graph(URIRef(HOUSE_GRAPH))
+    term = URIRef(fixture.terms[ordinal])
+    period = URIRef(f"{fixture.terms[ordinal]}#term-period")
+    houses.add((term, URIRef(DCT + "temporal"), period))
+    houses.add((period, RDF.type, URIRef(DCT + "PeriodOfTime")))
+    houses.add((period, URIRef(DCAT + "startDate"), Literal(start, datatype=XSD.dateTime)))
+    if end is not None:
+        houses.add((period, URIRef(DCAT + "endDate"), Literal(end, datatype=XSD.dateTime)))
+
+
+def _add_membership_interval(
+    fixture: MemberRelationshipFixture, member_iri: str, graph_key: str, ordinal: int,
+    start: str | None, end: str | None, *, extra_key: str = "dates",
+) -> None:
+    graph = fixture.dataset.graph(URIRef(f"https://data.oireachtas.ie/graph/member/{graph_key}"))
+    membership = URIRef(f"{member_iri}#dail-membership-{ordinal}")
+    period = URIRef(f"{membership}#{extra_key}")
+    graph.add((membership, URIRef(MEMBERS + "hasMembershipDateRange"), period))
+    graph.add((period, RDF.type, URIRef(MEMBERS + "DateRange")))
+    if start is not None:
+        graph.add((period, URIRef(MEMBERS + "StartDate"), Literal(start, datatype=XSD.dateTime)))
+    if end is not None:
+        graph.add((period, URIRef(MEMBERS + "EndDate"), Literal(end, datatype=XSD.dateTime)))
+
+
 class FixedPlanGenerator:
     def __init__(self, draft: dict | None = None):
         self.draft = draft
@@ -249,16 +288,22 @@ def test_v2_contract_and_strict_draft_schema_cover_both_relationship_projections
     draft_schema = load_composable_draft_schema()
     Draft202012Validator.check_schema(plan_schema)
     Draft202012Validator.check_schema(draft_schema)
-    assert contract["contractVersion"] == "2.18.0"
+    assert contract["contractVersion"] == "2.19.0"
     assert "member_relationship_composition" in plan_schema["properties"]["family"]["enum"]
     assert any(item["id"] == "member_relationship_composition" for item in contract["questionFamilies"])
     validator = Draft202012Validator(draft_schema)
     assert validator.is_valid(_intersection_draft())
     assert validator.is_valid(_representation_draft())
+    assert validator.is_valid(_member_count_draft())
+    assert validator.is_valid(_member_count_draft(date_point="1994-06-14"))
+    assert "oneOf" not in json.dumps(draft_schema)
+    assert len(draft_schema["$defs"]["answer"]["anyOf"]) == 2
     assert "Never output SPARQL" in build_composable_planner_instructions()
     instructions = build_composable_planner_instructions()
     assert "describe the missing capability actually requested" in instructions
     assert "do not describe every unsupported question as a member-relationship limitation" in instructions.casefold()
+    assert '"latestRecorded"' in instructions
+    assert "recorded Member RDF identities, not seats or election events" in instructions
 
 
 @pytest.mark.parametrize(("question", "draft", "expected"), [
@@ -307,6 +352,341 @@ def test_integrated_ask_executes_fresh_member_relationship_paraphrases(question,
         assert "FILTER(?membership_a != ?membership_b)" in answer_query
     assert "SERVICE" not in answer_query.upper()
     assert "FROM NAMED" not in answer_query.upper()
+
+
+def test_member_count_and_list_share_the_same_term_constituency_selection_and_distinct_identity_set():
+    fixture = MemberRelationshipFixture()
+    duplicate_label_iri = "https://data.oireachtas.ie/ie/oireachtas/member/id/Aoife-Byrne-duplicate"
+    future_iri = "https://data.oireachtas.ie/ie/oireachtas/member/id/After-Date"
+    fourth_iri = "https://data.oireachtas.ie/ie/oireachtas/member/id/Fourth-Recorded-Member"
+    fixture._add_member(duplicate_label_iri, "Aoife Byrne", "Aoife-Byrne-duplicate", {31: "Dublin Central"})
+    fixture._add_member(future_iri, "After Date Member", "After-Date", {31: "Dublin Central"})
+    fixture._add_member(fourth_iri, "Fourth Recorded Member", "Fourth-Recorded-Member", {31: "Dublin Central"})
+
+    list_question = "Who represented Dublin Central during the 31st Dáil?"
+    count_question = "How many TDs represented Dublin Central in the 31st Dáil?"
+    listed, _ = _run(fixture, list_question, _representation_draft())
+    counted, _ = _run(fixture, count_question, _member_count_draft())
+
+    assert listed.status == counted.status == "success"
+    listed_identities = {row[1] for row in listed.result.rows}
+    assert listed_identities == {
+        MEMBER_ALICE, duplicate_label_iri, future_iri,
+        fourth_iri,
+    }
+    assert counted.result.rows == (("4",),)
+    assert counted.result.columns == ("Distinct recorded Members",)
+    assert listed.sparql == counted.sparql
+    assert counted.plan["referents"] == listed.plan["referents"]
+    assert counted.plan["relations"] == listed.plan["relations"]
+    assert "not seats or election events" in counted.diagnostic
+
+
+def test_distinct_member_count_is_rendered_through_integrated_ask(monkeypatch):
+    from poc.nlq import app as app_module
+
+    fixture = MemberRelationshipFixture()
+    duplicate_label_iri = "https://data.oireachtas.ie/ie/oireachtas/member/id/Aoife-Byrne-duplicate"
+    fixture._add_member(duplicate_label_iri, "Aoife Byrne", "Aoife-Byrne-duplicate", {31: "Dublin Central"})
+    question = "How many TDs represented Dublin Central in the 31st Dáil?"
+    generator = FixedPlanGenerator(_member_count_draft())
+    monkeypatch.setenv("OIR_NLQ_AS_OF_DATE", AS_OF.isoformat())
+    monkeypatch.setattr(app_module, "FusekiQueryClient", lambda *args, **kwargs: fixture)
+    response = TestClient(app_module.create_app(
+        repository_root=ROOT, semantic_plan_generator_factory=lambda: generator,
+    )).post("/ask", data={"question": question, "mode": "phase2"})
+
+    assert response.status_code == 200
+    assert "Validated composable query plan" in response.text
+    assert "Distinct recorded Members" in response.text
+    assert ">2<" in response.text
+    assert "not seats or election events" in response.text
+    assert generator.calls == [question]
+    assert generator.closed
+
+
+def test_member_date_point_applies_inclusive_mapped_intervals_to_the_same_list_and_count_selection():
+    fixture = MemberRelationshipFixture()
+    duplicate_label_iri = "https://data.oireachtas.ie/ie/oireachtas/member/id/Aoife-Byrne-duplicate"
+    future_iri = "https://data.oireachtas.ie/ie/oireachtas/member/id/After-Date"
+    fixture._add_member(duplicate_label_iri, "Aoife Byrne", "Aoife-Byrne-duplicate", {31: "Dublin Central"})
+    fixture._add_member(future_iri, "After Date Member", "After-Date", {31: "Dublin Central"})
+    _add_membership_interval(fixture, MEMBER_ALICE, "Aoife-Byrne", 31,
+                             "1990-01-01T00:00:00", "1994-06-14T23:59:59")
+    _add_membership_interval(fixture, duplicate_label_iri, "Aoife-Byrne-duplicate", 31,
+                             "1994-06-14T00:00:00", "1995-01-01T00:00:00")
+    _add_membership_interval(fixture, future_iri, "After-Date", 31,
+                             "1994-06-15T00:00:00", None)
+
+    point = "1994-06-14"
+    question = "Which Members represented Dublin Central in the 31st Dáil on 14 June 1994?"
+    list_draft = _representation_draft()
+    list_draft["constraints"] = [{
+        "referent": "membership", "field": "membershipInterval", "operator": "on", "value": point,
+    }]
+    listed, _ = _run(fixture, question, list_draft)
+    counted, _ = _run(fixture, "How many Members represented Dublin Central in the 31st Dáil on 14 June 1994?",
+                       _member_count_draft(date_point=point))
+
+    assert listed.status == counted.status == "success"
+    assert {row[1] for row in listed.result.rows} == {MEMBER_ALICE, duplicate_label_iri}
+    assert counted.result.rows == (("2",),)
+    assert listed.plan["constraints"] == counted.plan["constraints"] == [{
+        "referent": "membership", "field": "membershipInterval", "operator": "on", "value": point,
+    }]
+    assert listed.sparql == counted.sparql
+    assert "evaluated inclusively for 1994-06-14" in counted.diagnostic
+
+
+def test_date_qualified_count_fails_closed_when_a_matching_membership_interval_is_missing():
+    fixture = MemberRelationshipFixture()
+    missing_iri = "https://data.oireachtas.ie/ie/oireachtas/member/id/Missing-Interval"
+    fixture._add_member(missing_iri, "Missing Interval Member", "Missing-Interval", {31: "Dublin Central"})
+    outcome, _ = _run(
+        fixture,
+        "How many Members represented Dublin Central in the 31st Dáil on 14 June 1994?",
+        _member_count_draft(date_point="1994-06-14"),
+    )
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert "has no mapped date-range/start" in outcome.diagnostic
+
+
+@pytest.mark.parametrize("question", [
+    "How many TDs were elected for Dublin Central in the 31st Dáil?",
+    "How many seats were represented by Dublin Central in the 31st Dáil?",
+])
+def test_election_event_or_seat_allocation_counts_are_never_substituted_by_member_counts(question):
+    fixture = MemberRelationshipFixture()
+    outcome = execute_question(
+        question, as_of=AS_OF, fuseki=fixture,
+        supported_predicates=supported_predicates(ROOT / "ontology"),
+        semantic_plan_generator_factory=lambda: FixedPlanGenerator(_member_count_draft()),
+    )
+
+    assert outcome.status == "unsupported_request"
+    assert outcome.result is None
+    assert fixture.queries == []
+
+
+def test_date_qualified_selection_fails_closed_on_conflicting_membership_intervals():
+    fixture = MemberRelationshipFixture()
+    _add_membership_interval(fixture, MEMBER_ALICE, "Aoife-Byrne", 31,
+                             "1990-01-01T00:00:00", "1994-06-14T23:59:59")
+    _add_membership_interval(fixture, MEMBER_ALICE, "Aoife-Byrne", 31,
+                             "1994-06-15T00:00:00", None, extra_key="conflicting-dates")
+    list_draft = _representation_draft()
+    list_draft["constraints"] = [{
+        "referent": "membership", "field": "membershipInterval", "operator": "on",
+        "value": "1994-06-14",
+    }]
+    outcome, _ = _run(
+        fixture, "Which Members represented Dublin Central in the 31st Dáil on 14 June 1994?",
+        list_draft,
+    )
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert "missing or conflicting date-range evidence" in outcome.diagnostic
+
+
+def test_empty_date_qualified_count_is_qualified_as_recorded_zero_not_a_complete_negative():
+    fixture = MemberRelationshipFixture()
+    _add_membership_interval(fixture, MEMBER_ALICE, "Aoife-Byrne", 31,
+                             "1990-01-01T00:00:00", "1994-06-14T23:59:59")
+    point = "1995-01-01"
+    outcome, _ = _run(
+        fixture,
+        "How many Members represented Dublin Central in the 31st Dáil on 1 January 1995?",
+        _member_count_draft(date_point=point),
+    )
+
+    assert outcome.status == "success"
+    assert outcome.result.rows == (("0",),)
+    assert "not proof that no Member served" in outcome.diagnostic
+    assert "historical source completeness is not certified" in outcome.diagnostic
+
+
+def _bertie_latest_term_fixture(*, latest_representation: bool = True, tied_start: bool = False):
+    fixture = MemberRelationshipFixture()
+    houses = fixture.dataset.graph(URIRef(HOUSE_GRAPH))
+    for ordinal in (29, 30):
+        term_iri = f"https://data.oireachtas.ie/ie/oireachtas/houseTerm/dail/{ordinal}"
+        fixture.terms[ordinal] = term_iri
+        term = URIRef(term_iri)
+        houses.add((term, RDF.type, URIRef(AGENTS + "DailTerm")))
+        houses.add((term, URIRef(AGENTS + "termNo"), Literal(ordinal, datatype=XSD.integer)))
+        houses.add((term, URIRef(SKOS + "prefLabel"), Literal(f"{_ordinal(ordinal)} Dáil", lang="en")))
+        fixture._add_constituency("Dublin Central", ordinal, f"Dublin-Central-{ordinal}")
+    _add_term_chronology(fixture, 29, "2002-06-06T00:00:00", "2007-05-23T00:00:00")
+    _add_term_chronology(fixture, 30, "2007-06-14T00:00:00", "2011-02-01T00:00:00")
+    if tied_start:
+        houses.remove((URIRef(fixture.terms[30] + "#term-period"), URIRef(DCAT + "startDate"), None))
+        houses.add((URIRef(fixture.terms[30] + "#term-period"), URIRef(DCAT + "startDate"),
+                    Literal("2002-06-06T00:00:00", datatype=XSD.dateTime)))
+    bertie = "https://data.oireachtas.ie/ie/oireachtas/member/id/Bertie-Ahern"
+    representations = {29: "Dublin Central"}
+    if latest_representation:
+        representations[30] = "Dublin Central"
+    fixture._add_member(bertie, "Bertie Ahern", "Bertie-Ahern", representations)
+    if not latest_representation:
+        graph = fixture.dataset.graph(URIRef("https://data.oireachtas.ie/graph/member/Bertie-Ahern"))
+        bertie_ref = URIRef(bertie)
+        latest_membership = URIRef(bertie + "#dail-membership-30")
+        graph.add((bertie_ref, URIRef(MEMBERS + "hasMembersMembership"), latest_membership))
+        graph.add((latest_membership, RDF.type, URIRef(MEMBERS + "OireachtasMembership")))
+        graph.add((latest_membership, RDF.type, URIRef(MEMBERS + "DailMembership")))
+        graph.add((latest_membership, URIRef(MEMBERS + "inHouseTerm"), URIRef(fixture.terms[30])))
+    return fixture, bertie
+
+
+def _latest_recorded_draft() -> dict:
+    return {
+        "version": 2,
+        "supported": True,
+        "family": "constituency_representation",
+        "unsupportedReason": None,
+        "intent": "Return the named Member's latest recorded Dáil term and its constituency.",
+        "referents": {
+            "member": {"type": "Member", "mention": "Bertie Ahern"},
+            "membership": {"type": "DailMembership", "mention": None},
+            "term": {"type": "DailTerm", "mention": None, "selector": "latestRecorded"},
+            "constituency": {"type": "DailConstituency", "mention": None},
+        },
+        "relations": [
+            {"id": "member-membership", "fact": "member_has_membership", "from": "member", "to": "membership"},
+            {"id": "membership-term", "fact": "membership_in_term", "from": "membership", "to": "term"},
+            {"id": "membership-constituency", "fact": "membership_represents", "from": "membership", "to": "constituency"},
+            {"id": "constituency-term", "fact": "constituency_in_term", "from": "constituency", "to": "term"},
+        ],
+        "constraints": [],
+        "answer": {
+            "kind": "entities", "referent": "constituency", "distinctBy": "identity",
+            "display": ["label"], "details": [{"referent": "term", "display": ["label"]}],
+            "preserveEvidence": True,
+        },
+    }
+
+
+def test_semantic_latest_recorded_term_and_constituency_selection_runs_through_integrated_ask(monkeypatch):
+    from poc.nlq import app as app_module
+
+    fixture, bertie = _bertie_latest_term_fixture()
+    question = "What was Bertie Ahern's latest recorded Dáil term and constituency?"
+    generator = FixedPlanGenerator(_latest_recorded_draft())
+    monkeypatch.setenv("OIR_NLQ_AS_OF_DATE", AS_OF.isoformat())
+    monkeypatch.setattr(app_module, "FusekiQueryClient", lambda *args, **kwargs: fixture)
+    response = TestClient(app_module.create_app(
+        repository_root=ROOT, semantic_plan_generator_factory=lambda: generator,
+    )).post("/ask", data={"question": question, "mode": "phase2"})
+
+    assert response.status_code == 200
+    assert "Validated composable query plan" in response.text
+    assert "Bertie Ahern" in response.text and "Dublin Central" in response.text
+    assert "30th Dáil" in response.text and "2007-06-14" in response.text
+    assert bertie in response.text
+    assert generator.calls == [question]
+    assert generator.closed
+
+
+def test_career_wide_constituency_lookup_remains_available_without_a_selected_term():
+    fixture, _bertie = _bertie_latest_term_fixture()
+    outcome = execute_question(
+        "What constituencies did Bertie Ahern represent?",
+        as_of=AS_OF, fuseki=fixture,
+        supported_predicates=supported_predicates(ROOT / "ontology"),
+    )
+
+    assert outcome.status == "success", outcome.diagnostic
+    assert {row[1] for row in outcome.result.rows} == {"Dublin Central"}
+    assert {row[2] for row in outcome.result.rows} == {"29th Dáil", "30th Dáil"}
+    assert outcome.plan["referents"]["term"] == {"type": "DailTerm"}
+
+
+def test_latest_recorded_member_term_uses_membership_paths_and_house_dates_then_projects_constituency(monkeypatch):
+    from poc.nlq import app as app_module
+
+    fixture, bertie = _bertie_latest_term_fixture()
+    question = "Which constituency did Bertie Ahern represent in his latest recorded Dáil term?"
+    monkeypatch.setenv("OIR_NLQ_AS_OF_DATE", AS_OF.isoformat())
+    monkeypatch.setattr(app_module, "FusekiQueryClient", lambda *args, **kwargs: fixture)
+    response = TestClient(app_module.create_app(repository_root=ROOT)).post(
+        "/ask", data={"question": question, "mode": "phase2"},
+    )
+    outcome = execute_question(question, as_of=AS_OF, fuseki=fixture,
+                               supported_predicates=supported_predicates(ROOT / "ontology"))
+
+    assert response.status_code == 200
+    assert "Validated composable query plan" in response.text
+    assert "Bertie Ahern" in response.text and "Dublin Central" in response.text
+    assert "30th Dáil" in response.text and "2007-06-14" in response.text
+    assert outcome.status == "success", outcome.diagnostic
+    assert outcome.result.rows[0][:4] == ("Bertie Ahern", "Dublin Central", "30th Dáil", "2007-06-14")
+    assert outcome.plan["referents"]["term"]["selector"] == {"kind": "latestRecorded"}
+    assert outcome.plan["referents"]["term"]["iri"] == fixture.terms[30]
+    assert bertie in outcome.sparql
+    assert "VALUES ?term" in outcome.sparql
+    assert any("members:hasMembersMembership" in query and "members:inHouseTerm" in query
+               for query in fixture.queries)
+
+
+def test_latest_recorded_term_does_not_fall_back_when_newest_membership_lacks_constituency_evidence():
+    fixture, _bertie = _bertie_latest_term_fixture(latest_representation=False)
+    outcome = execute_question(
+        "Which constituency did Bertie Ahern represent in his latest recorded Dáil term?",
+        as_of=AS_OF, fuseki=fixture,
+        supported_predicates=supported_predicates(ROOT / "ontology"),
+    )
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert "No matching representation evidence" in outcome.diagnostic
+
+
+def test_latest_recorded_term_tied_house_start_dates_fail_closed():
+    fixture, _bertie = _bertie_latest_term_fixture(tied_start=True)
+    question = "Which constituency did Bertie Ahern represent in his latest recorded Dáil term?"
+    draft = {
+        "version": 2, "supported": True, "family": "constituency_representation",
+        "unsupportedReason": None, "intent": "Find the latest recorded Dáil constituency.",
+        "referents": {"member": {"type": "Member", "mention": "Bertie Ahern"},
+                      "membership": {"type": "DailMembership", "mention": None},
+                      "term": {"type": "DailTerm", "mention": None, "selector": "latestRecorded"},
+                      "constituency": {"type": "DailConstituency", "mention": None}},
+        "relations": [{"id": fact, "fact": fact, "from": source, "to": target}
+                      for fact, (source, target) in {
+                          "member_has_membership": ("member", "membership"),
+                          "membership_in_term": ("membership", "term"),
+                          "membership_represents": ("membership", "constituency"),
+                          "constituency_in_term": ("constituency", "term"),
+                      }.items()],
+        "constraints": [],
+        "answer": {"kind": "entities", "referent": "constituency", "distinctBy": "identity",
+                   "display": ["label"], "details": [{"referent": "term", "display": ["label"]}],
+                   "preserveEvidence": True},
+    }
+    outcome, _ = _run(fixture, question, draft)
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert "tied House-owned start dates" in outcome.diagnostic
+
+
+def test_latest_recorded_term_missing_house_date_fails_closed_instead_of_using_labels_or_ordinal_order():
+    fixture, _bertie = _bertie_latest_term_fixture()
+    houses = fixture.dataset.graph(URIRef(HOUSE_GRAPH))
+    latest_period = URIRef(fixture.terms[30] + "#term-period")
+    houses.remove((URIRef(fixture.terms[30]), URIRef(DCT + "temporal"), latest_period))
+    question = "Which constituency did Bertie Ahern represent in his latest recorded Dáil term?"
+    outcome = execute_question(
+        question, as_of=AS_OF, fuseki=fixture,
+        supported_predicates=supported_predicates(ROOT / "ontology"),
+    )
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert "missing House-owned chronology evidence" in outcome.diagnostic
 
 
 def test_integrated_ask_paginates_complete_member_results_over_100(monkeypatch):
@@ -462,3 +842,49 @@ def test_member_relationship_pagination_limit_fails_closed_without_partial_answe
     assert outcome.result is None
     assert "no partial answer was returned" in outcome.diagnostic
     assert len(fixture.queries) == 3  # resolutions and first page only
+
+
+def _add_large_constituency_occurrence_members(fixture: MemberRelationshipFixture, ordinal: int) -> int:
+    occurrence = URIRef(fixture.constituencies[(f"Dublin-Central-{ordinal}", ordinal)])
+    count = 0
+    for graph in fixture.dataset.graphs():
+        for member, membership in graph.subject_objects(URIRef(MEMBERS + "hasMembersMembership")):
+            member_name = str(member).rsplit("/", 1)[-1]
+            if not member_name.startswith("Large-Result-Member-"):
+                continue
+            if (membership, URIRef(MEMBERS + "inHouseTerm"), URIRef(fixture.terms[ordinal])) in graph:
+                graph.add((membership, URIRef(MEMBERS + "isRepresentativeFrom"), occurrence))
+                count += 1
+    return count
+
+
+def test_distinct_member_count_retrieves_all_bounded_pages_like_the_list_projection():
+    fixture = MemberRelationshipFixture(extra_shared_members=MAX_RESULT_ROWS + 5)
+    selected_members = _add_large_constituency_occurrence_members(fixture, 32)
+    question = "How many Members represented Dublin Central in the 32nd Dáil?"
+    listed, _ = _run(fixture, "Who represented Dublin Central during the 32nd Dáil?",
+                     _representation_draft(32))
+    counted, _ = _run(fixture, question, _member_count_draft(32))
+
+    assert listed.status == counted.status == "success"
+    assert len(listed.result.rows) == selected_members + 2
+    assert counted.result.rows == ((str(len(listed.result.rows)),),)
+    assert "Complete matching results were retrieved in 2 bounded pages" in listed.diagnostic
+    assert "Complete matching results were retrieved in 2 bounded pages" in counted.diagnostic
+    assert listed.sparql == counted.sparql
+
+
+def test_distinct_member_count_never_returns_a_number_from_a_truncated_page(monkeypatch):
+    import poc.nlq.composable_plan as plan_module
+
+    monkeypatch.setattr(plan_module, "MAX_RESULT_OFFSET", 0)
+    fixture = MemberRelationshipFixture(extra_shared_members=MAX_RESULT_ROWS + 5)
+    _add_large_constituency_occurrence_members(fixture, 32)
+    outcome, _ = _run(
+        fixture, "How many Members represented Dublin Central in the 32nd Dáil?",
+        _member_count_draft(32),
+    )
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert "no partial answer was returned" in outcome.diagnostic

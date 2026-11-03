@@ -287,7 +287,97 @@ def test_calendar_month_selection_reuses_existing_office_plan_and_compiler(monke
     assert 'data-outcome="answer"' in response.text, response.text
     assert "Albert Reynolds" in response.text and "1994-06-30" in response.text
     outcome = execute(fixture, draft, question)
-    assert outcome.plan["constraints"][0]["value"] == {"start": "1994-06-01", "end": "1994-06-30", "inclusive": True}
+    assert outcome.plan["constraints"][0]["value"] == {
+        "start": "1994-06-01", "end": "1994-06-30", "inclusive": True,
+        "scope": "calendarMonth",
+    }
+
+
+def _taoiseach_transition_fixture():
+    fixture, albert, graph, _holding = anchor_fixture(
+        holding_interval=("1992-02-11T00:00:00", "1994-12-15T00:00:00"),
+        anchor_name="Albert Reynolds",
+    )
+    john = URIRef(BASE + "ie/oireachtas/member/id/John-Bruton")
+    john_graph = fixture.dataset.graph(URIRef(BASE + "graph/member/John-Bruton"))
+    john_graph.add((john, RDF.type, A.Member))
+    john_graph.add((john, F.name, Literal("John Bruton")))
+    holding = URIRef(str(john) + "#taoiseach-holding")
+    john_graph.add((john, M.hasOfficeHolding, holding))
+    john_graph.add((holding, RDF.type, M.OfficeHolding))
+    john_graph.add((holding, M.heldOffice, OFFICE))
+    add_interval(john_graph, holding, "1994-12-15T00:00:00", "1997-06-26T00:00:00")
+    return fixture
+
+
+@pytest.mark.parametrize(
+    ("question", "parameters", "expected_members", "expected_scope"),
+    [
+        ("Who held the office of Taoiseach on 30 June 1994?",
+         {"office": "Taoiseach", "date": "1994-06-30"}, {"Albert Reynolds"}, "calendarDate"),
+        ("Who held the office of Taoiseach during June 1994?",
+         {"office": "Taoiseach", "startMonth": 6, "startYear": 1994, "endMonth": 6, "endYear": 1994},
+         {"Albert Reynolds"}, "calendarMonth"),
+        ("Who held the office of Taoiseach during 1994?",
+         {"office": "Taoiseach", "year": 1994}, {"Albert Reynolds", "John Bruton"}, "calendarYear"),
+    ],
+)
+def test_office_point_and_calendar_year_selection_reuse_accepted_interval_evaluator(
+    monkeypatch, question, parameters, expected_members, expected_scope,
+):
+    fixture = _taoiseach_transition_fixture()
+    draft = _selection("office_holding_window", parameters)
+    outcome = execute(fixture, draft, question)
+
+    assert outcome.status == "success", outcome.diagnostic
+    assert {row[0] for row in outcome.result.rows} == expected_members
+    assert outcome.plan["constraints"][0]["value"]["scope"] == expected_scope
+    assert "historical completeness is not certified" in outcome.diagnostic
+    c, _ = client(monkeypatch, fixture, draft)
+    response = c.post("/ask", data={"question": question})
+    assert 'data-outcome="answer"' in response.text
+    assert all(member in response.text for member in expected_members)
+
+
+def test_calendar_year_office_query_does_not_invent_unrecorded_transition_holder():
+    fixture, _anchor, _graph, _holding = anchor_fixture(
+        holding_interval=("1992-02-11T00:00:00", "1994-12-15T00:00:00"),
+        anchor_name="Albert Reynolds",
+    )
+    question = "Who was Taoiseach during 1994?"
+    draft = _selection("office_holding_window", {"office": "Taoiseach", "year": 1994})
+    outcome = execute(fixture, draft, question)
+
+    assert outcome.status == "success", outcome.diagnostic
+    assert outcome.plan["constraints"][0]["value"]["scope"] == "calendarYear"
+    assert {row[0] for row in outcome.result.rows} == {"Albert Reynolds"}
+    assert "historical completeness is not certified" in outcome.diagnostic
+    assert "John Bruton" not in repr(outcome.result.rows)
+
+
+def test_office_overlap_is_not_misrepresented_as_service_throughout_a_year():
+    fixture, _, _, _ = anchor_fixture(
+        holding_interval=("1992-02-11T00:00:00", "1994-12-15T00:00:00"),
+        anchor_name="Albert Reynolds",
+    )
+    question = "Who held the office of Taoiseach throughout 1994?"
+    draft = _selection("office_holding_window", {"office": "Taoiseach", "year": 1994})
+    outcome = execute(fixture, draft, question)
+
+    assert outcome.status == "unsupported_request"
+    assert "overlap, not uninterrupted service throughout" in outcome.diagnostic
+    assert fixture.queries == []
+
+
+def test_future_complete_office_year_is_not_extrapolated_from_open_holding():
+    fixture, _, _, _ = anchor_fixture()
+    question = "Who held the office of Taoiseach during 2027?"
+    draft = _selection("office_holding_window", {"office": "Taoiseach", "year": 2027})
+    outcome = execute(fixture, draft, question)
+
+    assert outcome.status == "clarification_required"
+    assert "ends after the configured as-of date" in outcome.diagnostic
+    assert fixture.queries == []
 
 
 def test_implicit_geographic_set_clarifies_all_grounded_occurrences(monkeypatch):

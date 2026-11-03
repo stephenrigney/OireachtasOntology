@@ -503,6 +503,83 @@ def test_q15_distinguishes_current_open_term_from_missing_end_dates():
     )
 
 
+def test_temporal_house_term_selection_uses_house_owned_dates_and_preserves_full_month_scope():
+    fixture = StageAFixture()
+    term27 = fixture.add_term("Dail", 27, "1992-12-14T00:00:00", "1997-06-06T00:00:00")
+    outcome, _ = _run("Which Dáil was in office during June 1994?", fixture)
+
+    assert outcome.status == "success", outcome.diagnostic
+    assert outcome.result.rows == (("27th Dáil", "1992-12-14", "1997-06-06", str(term27)),)
+    assert outcome.plan["referents"]["term"]["selector"] == {
+        "kind": "duringMonth", "year": 1994, "month": 6,
+    }
+    assert "House-owned date intervals overlap" in outcome.diagnostic
+    assert "does not establish that a parliamentary sitting occurred" in outcome.diagnostic
+    assert "GRAPH <https://data.oireachtas.ie/graph/houses>" in outcome.sparql
+
+
+def test_temporal_house_term_month_can_return_multiple_exact_terms_across_a_transition():
+    fixture = StageAFixture()
+    first = fixture.add_term("Dail", 27, "1992-12-14T00:00:00", "1994-06-15T23:59:59")
+    second = fixture.add_term("Dail", 28, "1994-06-16T00:00:00", "1997-06-06T00:00:00")
+    outcome, _ = _run("What Dáil was in office in June 1994?", fixture)
+
+    assert outcome.status == "success", outcome.diagnostic
+    assert {row[3] for row in outcome.result.rows} == {str(first), str(second)}
+    assert {row[0] for row in outcome.result.rows} == {"27th Dáil", "28th Dáil"}
+    assert len(outcome.plan["referents"]["term"]["matches"]) == 2
+
+
+def test_temporal_house_term_month_does_not_select_one_term_that_covers_only_part_of_month():
+    fixture = StageAFixture()
+    fixture.add_term("Dail", 27, "1994-06-15T00:00:00", "1997-06-06T00:00:00")
+    outcome, _ = _run("Which Dáil was in office during June 1994?", fixture)
+
+    assert outcome.status == "source_data_unavailable"
+    assert "only part of the requested calendar month" in outcome.diagnostic
+    assert outcome.result is None
+
+
+def test_temporal_house_term_unknown_catalogue_dates_fail_closed_even_for_other_terms():
+    fixture = StageAFixture()
+    fixture.add_term("Dail", 27, "1992-12-14T00:00:00", "1997-06-06T00:00:00")
+    period = next(fixture.houses.objects(fixture.dail33, URIRef("http://purl.org/dc/terms/temporal")))
+    fixture.houses.remove((period, URIRef("http://www.w3.org/ns/dcat#startDate"), None))
+    outcome, _ = _run("Which Dáil was in office during June 1994?", fixture)
+
+    assert outcome.status == "source_data_unavailable"
+    assert "missing or conflicting House-owned" in outcome.diagnostic
+    assert outcome.result is None
+
+
+def test_temporal_house_term_does_not_treat_an_old_missing_end_as_an_open_current_term():
+    fixture = StageAFixture()
+    fixture.add_term("Dail", 27, "1992-12-14T00:00:00", None)
+    outcome, _ = _run("Which Dáil was in office during June 1994?", fixture)
+
+    assert outcome.status == "source_data_unavailable"
+    assert "cannot be established as the unique current open term" in outcome.diagnostic
+    assert outcome.result is None
+
+
+def test_future_house_term_calendar_scope_requires_clarification_before_query():
+    fixture = StageAFixture()
+    outcome, _ = _run("Which Dáil was in office on 2 November 2026?", fixture)
+
+    assert outcome.status == "clarification_required"
+    assert "after the configured as-of date" in outcome.diagnostic
+    assert fixture.queries == []
+
+
+def test_actual_sitting_question_never_substitutes_house_term_dates():
+    fixture = StageAFixture()
+    outcome, _ = _run("Which Dáil was actually sitting during June 1994?", fixture)
+
+    assert outcome.status == "unsupported_request"
+    assert "actual sitting" in outcome.diagnostic
+    assert fixture.queries == []
+
+
 def test_q32_candidates_have_distinct_house_and_membership_date_context():
     outcome, _ = _run("Who is Michael Collins?")
     assert outcome.status == "ambiguous"
