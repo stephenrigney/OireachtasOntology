@@ -296,6 +296,8 @@ def test_v2_contract_and_strict_draft_schema_cover_both_relationship_projections
     assert validator.is_valid(_representation_draft())
     assert validator.is_valid(_member_count_draft())
     assert validator.is_valid(_member_count_draft(date_point="1994-06-14"))
+    assert "oneOf" not in json.dumps(draft_schema)
+    assert len(draft_schema["$defs"]["answer"]["anyOf"]) == 2
     assert "Never output SPARQL" in build_composable_planner_instructions()
     instructions = build_composable_planner_instructions()
     assert "describe the missing capability actually requested" in instructions

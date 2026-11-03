@@ -244,7 +244,7 @@
         "to": {"$ref": "#/$defs/identifier"}
       }
     },
-    "answer": {"oneOf": [
+    "answer": {"anyOf": [
       {"type": "object", "additionalProperties": false, "required": ["kind", "referent", "distinctBy", "display", "details", "preserveEvidence"],
        "properties": {"kind": {"type": "string", "const": "entities"}, "referent": {"$ref": "#/$defs/identifier"},
          "distinctBy": {"type": "string", "const": "identity"}, "display": {"type": "array", "items": {"type": "string", "enum": ["label", "name"]}},
