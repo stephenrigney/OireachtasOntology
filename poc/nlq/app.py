@@ -12,8 +12,8 @@ from threading import Lock
 from time import monotonic
 from secrets import token_urlsafe
 
-from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from .config import load_local_environment
@@ -33,6 +33,7 @@ from .stage_b import plan_stage_b
 from .results import QueryResult, format_debug_payload
 from .schema import build_schema_context
 from .vocabulary import supported_predicates
+from .feedback import FeedbackError, FeedbackStore
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -49,10 +50,12 @@ def create_app(
     *,
     repository_root: Path = ROOT,
     semantic_plan_generator_factory=None,
+    feedback_directory: Path | None = None,
 ) -> FastAPI:
     load_local_environment(repository_root)
     app = FastAPI(title="Oireachtas NLQ POC", docs_url=None, redoc_url=None)
     templates = Jinja2Templates(directory=str(TEMPLATES))
+    feedback_store = FeedbackStore(feedback_directory or repository_root / "data/local/nlq-feedback")
     schema_context = build_schema_context(repository_root / "ontology")
     predicate_vocabulary = supported_predicates(repository_root / "ontology")
     # Short-lived, bounded candidate-choice state only; no chat or model memory.
@@ -98,9 +101,34 @@ def create_app(
                mode: str = "phase2", interaction_status: str | None = None,
                plan_json: str | None = None, plan_heading: str | None = None,
                entity_outcomes: tuple[dict, ...] = (), plan_explanation=None,
-               clarification=None):
+                clarification=None):
         if readiness is None:
             readiness = check_fuseki_readiness()
+        displayed_answer = []
+        if error:
+            displayed_answer.append(error)
+        if result is not None:
+            if result.kind == "ask":
+                displayed_answer.append("Yes" if result.boolean else "No")
+            elif result.rows:
+                displayed_answer.extend(
+                    " | ".join(f"{column}: {cell}" for column, cell in zip(result.columns, row))
+                    for row in result.rows
+                )
+            else:
+                displayed_answer.append(
+                    "No matching records were found in the local dataset. This result does not establish historical completeness."
+                )
+        if result_notice:
+            displayed_answer.append(result_notice)
+        if ambiguity:
+            displayed_answer.append("More than one local Member record matches; no identity was selected.")
+        feedback_actual = "\n".join(displayed_answer)
+        feedback_session_id = request.cookies.get("oireachtas_nlq_feedback_session", "")
+        try:
+            feedback_recording = bool(feedback_session_id and feedback_store.status(feedback_session_id))
+        except FeedbackError:
+            feedback_recording = False
         return templates.TemplateResponse(request, "index.html", {
             "question": question,
             "interpretation": interpretation,
@@ -121,7 +149,55 @@ def create_app(
             "plan_explanation": plan_explanation,
             "clarification": clarification,
             "outcome_kind": getattr(request.state, "query_outcome", None),
+            "feedback_actual": feedback_actual,
+            "feedback_available": bool(question and feedback_actual and feedback_recording),
         })
+
+    @app.post("/feedback/sessions")
+    def start_feedback_session():
+        try:
+            session_id = feedback_store.start()
+        except OSError:
+            logger.exception("Could not create NLQ feedback session")
+            raise HTTPException(status_code=500, detail="Could not create feedback session.")
+        return {"session_id": session_id, "active": True}
+
+    @app.get("/feedback/sessions/{session_id}")
+    def feedback_session_status(session_id: str):
+        try:
+            active = feedback_store.status(session_id)
+        except FeedbackError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        return {"session_id": session_id, "active": active}
+
+    @app.post("/feedback/sessions/{session_id}/stop")
+    def stop_feedback_session(session_id: str):
+        try:
+            feedback_store.stop(session_id)
+        except FeedbackError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        except OSError:
+            logger.exception("Could not stop NLQ feedback session")
+            raise HTTPException(status_code=500, detail="Could not stop feedback session.")
+        return {"session_id": session_id, "active": False}
+
+    @app.post("/feedback")
+    async def save_feedback(request: Request):
+        try:
+            payload = await request.json()
+            if not isinstance(payload, dict):
+                raise FeedbackError("Feedback payload must be an object.")
+            feedback_store.append(
+                payload.get("session_id"), question=payload.get("question"),
+                expected=payload.get("expected"), actual=payload.get("actual"),
+                correct=payload.get("correct"),
+            )
+        except (ValueError, TypeError) as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        except OSError:
+            logger.exception("Could not persist NLQ feedback")
+            raise HTTPException(status_code=500, detail="Could not save feedback. Your record was not confirmed saved.")
+        return JSONResponse({"saved": True}, status_code=201)
 
     @app.get("/", response_class=HTMLResponse)
     def index(request: Request):
