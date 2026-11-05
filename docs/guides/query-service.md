@@ -212,6 +212,17 @@ easier query. See the [bounded composition implementation
 report](../reports/query-service/bounded-composition-reuse.md), including its
 untuned holdout failure and limits; this is not arbitrary graph traversal.
 
+Composable contract `2.21.0` adds a date-less present/current named-office
+holder point lookup by reusing the accepted OfficeHolding date-window path.
+The planner supplies only the exact office mention; local code injects the
+configured `asOf` as a one-day inclusive interval. Office resolution still uses
+the reviewed NamedOffice identity, and the answer preserves accepted holding
+start/end dates. Returned rows are only locally evidenced holdings—not a
+complete current-office roster. Missing, conflicting or uncertain evidence
+fails closed, and no match does not establish that the office has no holder.
+Date-less past-tense requests, tenure durations and election-event questions
+are not converted into current-point queries.
+
 ### Other launcher commands
 
 ```bash

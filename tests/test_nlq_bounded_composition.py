@@ -15,9 +15,10 @@ from poc.nlq.composable_plan import (
     execute_question, validate_plan,
 )
 from poc.nlq.composable_semantic_planner import (
-    build_composable_planner_instructions, complete_v2_plan, load_composable_draft_schema,
+    InvalidComposableDraft, build_composable_planner_instructions, complete_v2_plan, load_composable_draft_schema,
     validate_composable_plan_draft,
 )
+from poc.nlq.interpretation import current_office_point_request
 from poc.nlq.vocabulary import supported_predicates
 from test_nlq_composable_party_temporal import (
     PartyRepresentationFixture, FixedPlanGenerator, _temporal_draft, _current_term_fixture,
@@ -140,15 +141,16 @@ def set_fixture():
 
 
 def anchor_fixture(*, anchor_interval=("2007-01-01T00:00:00", "2008-12-31T00:00:00"),
-                   holding_interval=("2007-06-14T00:00:00", "2008-05-07T00:00:00"), anchor_name="Bertie Ahern"):
+                   holding_interval=("2007-06-14T00:00:00", "2008-05-07T00:00:00"), anchor_name="Bertie Ahern",
+                   office_iri=OFFICE, office_label="Taoiseach"):
     fixture = _current_term_fixture()
     shared = add_constituency(fixture, "Dublin Central")
     anchor, graph = add_person(fixture, anchor_name, [shared], identity=FF, party_label="Fianna Fáil", membership=anchor_interval)
     holding = URIRef(str(anchor) + "#accepted-holding")
-    graph.add((anchor, M.hasOfficeHolding, holding)); graph.add((holding, RDF.type, M.OfficeHolding)); graph.add((holding, M.heldOffice, OFFICE))
+    graph.add((anchor, M.hasOfficeHolding, holding)); graph.add((holding, RDF.type, M.OfficeHolding)); graph.add((holding, M.heldOffice, office_iri))
     add_interval(graph, holding, *holding_interval, office=True)
     offices = fixture.dataset.graph(URIRef(BASE + "graph/offices"))
-    offices.add((OFFICE, RDF.type, M.NamedOffice)); offices.add((OFFICE, S.prefLabel, Literal("Taoiseach", lang="en")))
+    offices.add((office_iri, RDF.type, M.NamedOffice)); offices.add((office_iri, S.prefLabel, Literal(office_label, lang="en")))
     add_person(fixture, "Recorded Colleague", [shared], identity=FF, party_label="Fianna Fáil",
                membership=("2007-01-01T00:00:00", "2008-12-31T00:00:00"))
     add_person(fixture, "Later Colleague", [shared], identity=FF, party_label="Fianna Fáil",
@@ -322,6 +324,21 @@ def test_calendar_month_selection_reuses_existing_office_plan_and_compiler(monke
     }
 
 
+def test_current_office_point_is_documented_as_local_asof_injection_not_planner_date():
+    contract = json.loads((ROOT / "poc/specs/composable-query-plan-contract.json").read_text())
+    capability = next(
+        item for item in contract["semanticDispatch"]["capabilities"]
+        if item["id"] == "office_holding_window"
+    )
+    instructions = build_composable_planner_instructions()
+
+    assert contract["contractVersion"] == "2.21.0"
+    assert "local executor injects configured asOf" in capability["semantics"]
+    assert 'parameters exactly {"office":"exact office mention from the question"}' in instructions
+    assert "Do not put a date or period in the proposal" in instructions
+    assert "date-less past-tense question is not current" in instructions
+
+
 def _taoiseach_transition_fixture():
     fixture, albert, graph, _holding = anchor_fixture(
         holding_interval=("1992-02-11T00:00:00", "1994-12-15T00:00:00"),
@@ -407,6 +424,144 @@ def test_future_complete_office_year_is_not_extrapolated_from_open_holding():
     assert outcome.status == "clarification_required"
     assert "ends after the configured as-of date" in outcome.diagnostic
     assert fixture.queries == []
+
+
+@pytest.mark.parametrize("question", [
+    "Who is the Taoiseach?",
+    "Who is the current Taoiseach?",
+    "Who currently is the Taoiseach?",
+    "Who is currently the Tánaiste?",
+    "Who is the current Minister for Finance?",
+])
+def test_date_less_current_office_point_uses_validated_office_only_selection(question):
+    assert current_office_point_request(question)
+    office = next(name for name in ("Taoiseach", "Tánaiste", "Minister for Finance") if name in question)
+    draft = _selection("office_holding_window", {"office": office})
+    Draft202012Validator(load_composable_draft_schema()).validate(draft)
+    normalized, unsupported = validate_composable_plan_draft(draft, question=question)
+
+    assert unsupported is None
+    assert normalized["parameters"] == {"office": office}
+
+
+@pytest.mark.parametrize("question", [
+    "Who was the Taoiseach?",
+    "Who is the Taoiseach on 23 January 2025?",
+    "Who is the Taoiseach in 1994?",
+    "Who is the Taoiseach and Minister for Finance?",
+    "Who is the sponsor of the AI Companion Services Bill?",
+    "Who is the Chair of the Committee on Transport?",
+])
+def test_current_office_only_selection_rejects_past_dated_or_compound_scope(question):
+    assert not current_office_point_request(question)
+    with pytest.raises(InvalidComposableDraft):
+        validate_composable_plan_draft(
+            _selection("office_holding_window", {"office": "Taoiseach"}), question=question,
+        )
+
+
+def test_date_less_current_office_selection_cannot_invent_a_calendar_date():
+    with pytest.raises(InvalidComposableDraft, match="Preserve exactly one explicit calendar-date point"):
+        validate_composable_plan_draft(
+            _selection("office_holding_window", {"office": "Taoiseach", "date": "2025-01-23"}),
+            question="Who is the Taoiseach?",
+        )
+
+
+def test_explicit_office_date_remains_the_requested_point_not_the_configured_asof():
+    fixture, _member, _graph, _holding = anchor_fixture(
+        holding_interval=("2021-06-01T00:00:00", "2021-07-02T00:00:00"),
+        anchor_name="Micheál Martin",
+    )
+    question = "Who is the Taoiseach on 1 July 2021?"
+    draft = _selection("office_holding_window", {"office": "Taoiseach", "date": "2021-07-01"})
+    normalized, unsupported = validate_composable_plan_draft(draft, question=question)
+    assert unsupported is None
+    assert normalized["parameters"] == {"office": "Taoiseach", "date": "2021-07-01"}
+
+    outcome = execute(fixture, draft, question)
+    assert outcome.status == "success", outcome.diagnostic
+    assert outcome.plan["asOf"] == AS_OF.isoformat()
+    assert outcome.plan["constraints"][0]["value"] == {
+        "start": "2021-07-01", "end": "2021-07-01", "inclusive": True,
+        "scope": "calendarDate",
+    }
+    assert outcome.result.rows == (("Micheál Martin", "2021-06-01", "2021-07-02"),)
+
+
+@pytest.mark.parametrize("question", ["Who is the Taoiseach?", "Who is the current Taoiseach?"])
+def test_current_taoiseach_point_injects_local_asof_and_reuses_exact_interval_evidence(monkeypatch, question):
+    fixture, _member, _graph, _holding = anchor_fixture(
+        holding_interval=("2025-01-23T00:00:00", None), anchor_name="Micheál Martin",
+    )
+    draft = _selection("office_holding_window", {"office": "Taoiseach"})
+    outcome = execute(fixture, draft, question)
+
+    assert outcome.status == "success", outcome.diagnostic
+    assert outcome.plan["asOf"] == AS_OF.isoformat()
+    assert outcome.plan["constraints"] == [{
+        "referent": "holding", "field": "interval", "operator": "overlaps",
+        "value": {
+            "start": AS_OF.isoformat(), "end": AS_OF.isoformat(),
+            "inclusive": True, "scope": "calendarDate",
+        },
+    }]
+    assert outcome.result.rows == (("Micheál Martin", "2025-01-23", "Open-ended (no end date recorded)"),)
+    assert "complete current-office coverage is not certified" in outcome.diagnostic
+    assert any(AS_OF.isoformat() in query for query in fixture.queries)
+
+    c, generator = client(monkeypatch, fixture, draft)
+    response = c.post("/ask", data={"question": question})
+    assert 'data-outcome="answer"' in response.text
+    assert "Micheál Martin" in response.text
+    assert AS_OF.isoformat() in response.text
+    assert "complete current-office coverage is not certified" in response.text
+    assert "not a complete current-office roster" in response.text
+    assert generator.calls == [question]
+
+
+@pytest.mark.parametrize(("office_iri", "office_label", "holder", "interval"), [
+    (URIRef(BASE + "ie/oireachtas/office/tanaiste"), "Tánaiste", "Mary Harney",
+     ("2002-06-06T00:00:00", "2006-09-13T00:00:00")),
+    (URIRef(BASE + "ie/oireachtas/office/minister-for-finance"), "Minister for Finance", "Paschal Donohoe",
+     ("2020-06-27T00:00:00", "2022-12-17T00:00:00")),
+])
+def test_ended_other_office_evidence_is_not_a_current_holder_or_vacancy(
+    office_iri, office_label, holder, interval,
+):
+    fixture, _member, _graph, _holding = anchor_fixture(
+        holding_interval=interval, anchor_name=holder,
+        office_iri=office_iri, office_label=office_label,
+    )
+    question = f"Who is the current {office_label}?"
+    draft = _selection("office_holding_window", {"office": office_label})
+    outcome = execute(fixture, draft, question)
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert holder not in outcome.diagnostic
+    assert "no conclusion that the office has no holder can be drawn" in outcome.diagnostic
+    assert "current-office coverage is not certified" in outcome.diagnostic
+
+
+@pytest.mark.parametrize("evidence_issue", ["missing_start", "conflicting_ranges"])
+def test_uncertain_current_office_evidence_fails_closed_without_partial_holder_list(evidence_issue):
+    fixture, member, graph, holding = anchor_fixture(
+        holding_interval=("2025-01-23T00:00:00", None), anchor_name="Micheál Martin",
+    )
+    if evidence_issue == "missing_start":
+        date_range = URIRef(str(holding) + "#dates")
+        graph.remove((date_range, M.StartDate, None))
+    else:
+        add_interval(graph, holding, "2025-02-01T00:00:00", None, office=True, key="conflicting-dates")
+    question = "Who is the Taoiseach?"
+    outcome = execute(fixture, _selection("office_holding_window", {"office": "Taoiseach"}), question)
+
+    assert outcome.status == "insufficient_holding_evidence"
+    assert outcome.result is None
+    assert "No holder list was returned" in outcome.diagnostic
+    assert "no vacancy/no-holder conclusion can be drawn" in outcome.diagnostic
+    assert outcome.sparql == fixture.queries[-1]
 
 
 def test_implicit_geographic_set_clarifies_all_grounded_occurrences(monkeypatch):

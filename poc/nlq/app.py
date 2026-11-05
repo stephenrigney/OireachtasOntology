@@ -245,20 +245,33 @@ def create_app(
                     "committee_topic_latest", "bill_votes", "debate_transcript",
                 }
                 parsed_stage_b = plan_stage_b(question, as_of=as_of)
-                is_stage_b = not is_stage_c and (parsed_stage_b is not None or bool(outcome.plan and outcome.plan.get("family") in {
-                    "bill_lookup", "bills_published", "non_enacted_bills", "bill_status_history", "bill_sponsors", "bill_title_search",
-                    "committee_chair", "committee_conflict", "office_current_coverage",
-                    "office_overlap", "office_point",
-                }))
+                stage_b_families = {
+                    "bill_lookup", "bills_published", "non_enacted_bills", "bill_status_history",
+                    "bill_sponsors", "bill_title_search", "committee_chair", "committee_conflict",
+                    "office_current_coverage", "office_overlap", "office_point",
+                }
+                is_stage_b = not is_stage_c and (
+                    (outcome.plan is None and parsed_stage_b is not None)
+                    or bool(outcome.plan and outcome.plan.get("family") in stage_b_families)
+                )
                 member_mention = outcome.plan.get("referents", {}).get("member", {}).get("mention", "the named Member") if is_q06 else None
                 q35_office = outcome.plan.get("referents", {}).get("office", {}) if is_q35 else {}
                 q35_interval = outcome.plan.get("constraints", [{}])[0].get("value", {}) if is_q35 else {}
+                q35_is_current_as_of = bool(
+                    is_q35 and q35_interval.get("scope") == "calendarDate"
+                    and q35_interval.get("start") == as_of.isoformat()
+                    and q35_interval.get("end") == as_of.isoformat()
+                )
                 q23_member = outcome.plan.get("referents", {}).get("member", {}).get("mention", "the named Member") if is_q23 else None
                 q35_summary = (
-                    f"Find each locally evidenced accepted {q35_office.get('label', q35_office.get('mention', 'office'))} "
-                    f"holding overlapping {q35_interval.get('start', 'the requested start')} through "
-                    f"{q35_interval.get('end', 'the requested end')}, preserving separate holding episodes. "
-                    "The development dataset does not establish complete historical coverage."
+                    (f"Find locally evidenced accepted {q35_office.get('label', q35_office.get('mention', 'office'))} "
+                     f"holdings containing the configured reference date {as_of.isoformat()}, preserving each exact interval. "
+                     "This does not certify complete current-office coverage.")
+                    if q35_is_current_as_of else
+                    (f"Find each locally evidenced accepted {q35_office.get('label', q35_office.get('mention', 'office'))} "
+                     f"holding overlapping {q35_interval.get('start', 'the requested start')} through "
+                     f"{q35_interval.get('end', 'the requested end')}, preserving separate holding episodes. "
+                     "The development dataset does not establish complete historical coverage.")
                 ) if is_q35 else None
                 q23_summary = (
                     f"Find distinct Bills with a recorded sponsor Participation whose participant-person IRI "
@@ -431,8 +444,11 @@ def create_app(
                                if is_debate and outcome.result and outcome.result.kind == "ask" else
                                "Readable sitting date and official debate record link."
                                if is_debate else
-                               "Member names with exact start/end dates for every separate accepted holding; open ends are identified explicitly."
-                               if is_q35 else
+                                (f"Locally recorded Members with exact accepted holding intervals at {as_of.isoformat()}; "
+                                 "this is not a complete current-office roster and local coverage is not certified."
+                                 if q35_is_current_as_of else
+                                 "Member names with exact start/end dates for every separate accepted holding; open ends are identified explicitly.")
+                                if is_q35 else
                                 "One row per Bill identity with title and recorded sponsorship evidence."
                                 if is_q23 else
                                 ("Distinct reviewed political-affiliation identities are returned with each qualifying TD and "
@@ -478,7 +494,7 @@ def create_app(
                                    plan_heading="Validated composable query plan" if plan_is_validated else None,
                                    plan_explanation={"summary": summary, "validated": plan_is_validated, "answer_text": answer_text},
                                    sparql=outcome.sparql, result=outcome.result,
-                                   result_notice=(outcome.diagnostic if is_stage_a or is_stage_b or is_stage_c else
+                                   result_notice=(outcome.diagnostic if is_stage_a or is_stage_b or is_stage_c or is_q35 else
                                                     "Bill graphs are optional. These rows show recorded local sponsorship evidence; the dataset does not certify complete historical coverage."
                                                     if is_q23 else
                                                      outcome.diagnostic if is_composable_semantic else None),
@@ -622,7 +638,12 @@ def create_app(
                 elif outcome.status == "source_data_unavailable" and is_debate:
                     message = "No matching actual sitting was found. The local dataset does not certify complete coverage for this date, so absence cannot be reported as a confirmed No."
                 elif outcome.status == "source_data_unavailable" and is_q35:
-                    if (outcome.sparql and outcome.diagnostic
+                    if q35_is_current_as_of:
+                        message = outcome.diagnostic or (
+                            "The local accepted holdings do not establish a current office holder; "
+                            "current-office coverage is not certified, so absence is not a no-holder conclusion."
+                        )
+                    elif (outcome.sparql and outcome.diagnostic
                             and "No accepted local holding is recorded overlapping" in outcome.diagnostic):
                         message = ("No accepted dated holding in the local dataset overlaps the requested interval. "
                                    "This development capture is incomplete, so absence is not a confirmed historical negative.")
@@ -633,7 +654,7 @@ def create_app(
                     else:
                         message = "The local office registry or accepted holding evidence could not be read well enough to answer."
                 elif outcome.status == "insufficient_holding_evidence" and is_q35:
-                    message = messages["insufficient_holding_evidence"]
+                    message = (outcome.diagnostic or messages["insufficient_holding_evidence"])
                 elif outcome.status == "not_found" and is_q35:
                     message = "The office name could not be matched to a reviewed local NamedOffice identity."
                 elif outcome.status == "ambiguous" and is_q35:

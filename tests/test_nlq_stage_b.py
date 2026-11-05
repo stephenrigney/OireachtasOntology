@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import date
 from pathlib import Path
 import unicodedata
@@ -274,11 +275,13 @@ def _run(fixture, question):
                            supported_predicates=supported_predicates(ROOT / "ontology"))
 
 
-def _ask(monkeypatch, fixture, question):
+def _ask(monkeypatch, fixture, question, *, semantic_plan_generator_factory=None):
     from poc.nlq import app as app_module
     monkeypatch.setenv("OIR_NLQ_AS_OF_DATE", AS_OF.isoformat())
     monkeypatch.setattr(app_module, "FusekiQueryClient", lambda *args, **kwargs: fixture)
-    return TestClient(app_module.create_app(repository_root=ROOT)).post("/ask", data={
+    return TestClient(app_module.create_app(
+        repository_root=ROOT, semantic_plan_generator_factory=semantic_plan_generator_factory,
+    )).post("/ask", data={
         "question": question, "mode": "phase2",
     })
 
@@ -823,9 +826,29 @@ def test_q25_and_q27_adversarial_office_outcomes_are_visible_through_ask(monkeyp
 
     q26 = TinyDataset()
     q26.add_office_tenure("Finance Holder", "Minister for Finance", "2020-01-01T00:00:00")
-    response = _ask(monkeypatch, q26, "Who is Minister for Finance?")
-    assert "incomplete 22-holding sample" in response.text
-    assert "Finance Holder" not in response.text
+    current_office_draft = {
+        "version": 2, "supported": True, "family": "capability_selection",
+        "unsupportedReason": None, "intent": "Find recorded current-point office holding evidence.",
+        "referents": {"capability": "office_holding_window", "parameters": {"office": "Minister for Finance"}},
+        "relations": [], "constraints": [], "answer": None,
+    }
+
+    class CurrentOfficeGenerator:
+        def generate(self, question):
+            return json.dumps(current_office_draft)
+
+        def close(self):
+            pass
+
+    response = _ask(
+        monkeypatch, q26, "Who is Minister for Finance?",
+        semantic_plan_generator_factory=CurrentOfficeGenerator,
+    )
+    assert 'data-outcome="answer"' in response.text
+    assert "Finance Holder" in response.text
+    assert "2020-01-01" in response.text and AS_OF.isoformat() in response.text
+    assert "complete current-office coverage is not certified" in response.text
+    assert "not a complete current-office roster" in response.text
 
 
 def test_q25_conflicting_holding_is_visible_as_unavailable_not_boolean(monkeypatch):

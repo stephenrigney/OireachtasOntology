@@ -33,6 +33,51 @@ def semantic_composition_scope(question):
                 and re.search(r"\b(?:and|or|while|same|shared)\b", question, re.I))
 
 
+def current_office_point_mention(question: str) -> str | None:
+    """Extract a candidate office mention from a date-less current-holder form.
+
+    This is only a lexical scope gate. Callers still require exact local
+    NamedOffice identity resolution, the semantic planner must preserve the
+    mention, and execution supplies ``asOf``; no identity or date is inferred.
+    """
+    text = re.sub(r"[?.!]+$", "", question.strip())
+    match = re.fullmatch(
+        r"who\s+(?:(?:currently|now|today)\s+)?(?:is|are)"
+        r"(?:\s+(?:currently|now|today))?\s+(?P<office>.+)",
+        text, re.IGNORECASE,
+    )
+    if match is None:
+        return None
+    office = match["office"].strip()
+    office = re.sub(
+        r"^(?:(?:the|a|an)\s+)?(?:(?:current|currently|present|now|today)\s+)?"
+        r"(?:(?:the|a|an)\s+)?",
+        "", office, flags=re.IGNORECASE,
+    )
+    office = re.sub(
+        r"\s+(?:(?:currently|now|today|present)|as\s+of\s+(?:now|today|the\s+current\s+date))$",
+        "", office, flags=re.IGNORECASE,
+    ).strip()
+    if not office:
+        return None
+    # No explicit/historical period or additional relationship may be
+    # smuggled into the unqualified current-point shape.
+    if re.search(
+        r"[0-9]|\b(?:on|in|during|before|after|since|until|between|throughout|from|to|"
+        r"as\s+of|elected|election|and|while|whose|members?|tds?|constituenc(?:y|ies)|"
+        r"party|parties|how\s+many|count)\b|"
+        r"\b(?:sponsor|author|chair(?:person|man)?|member|holder)\s+of\b",
+        office, re.IGNORECASE,
+    ):
+        return None
+    return office
+
+
+def current_office_point_request(question: str) -> bool:
+    """Whether the question has the surface form of a date-less current lookup."""
+    return current_office_point_mention(question) is not None
+
+
 def present_constituency_default(question: str, constituency: str) -> bool:
     """Only unqualified present-tense constituency representation is defaulted.
 

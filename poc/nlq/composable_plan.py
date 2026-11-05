@@ -3535,6 +3535,14 @@ def readable_affiliation_result(result: QueryResult) -> QueryResult:
 def _execute_office_question(plan: dict[str, Any], *, fuseki, supported_predicates) -> PlanOutcome:
     interval = next((item for item in plan.get("constraints", [])
                      if isinstance(item, dict) and item.get("field") == "interval"), None)
+    interval_value = interval.get("value", {}) if isinstance(interval, dict) else {}
+    reference_date = plan.get("asOf")
+    current_as_of_point = bool(
+        isinstance(interval_value, dict)
+        and interval_value.get("scope") == "calendarDate"
+        and interval_value.get("start") == reference_date
+        and interval_value.get("end") == reference_date
+    )
     if isinstance(interval, dict) and isinstance(interval.get("value"), dict):
         period_end = date.fromisoformat(interval["value"]["end"])
         as_of = date.fromisoformat(plan["asOf"])
@@ -3604,9 +3612,20 @@ def _execute_office_question(plan: dict[str, Any], *, fuseki, supported_predicat
             "source_data_unavailable", plan=plan,
             diagnostic=f"Accepted local holding evidence could not be checked: {error}",
         )
+    if current_as_of_point and evidence_issues:
+        return PlanOutcome(
+            "insufficient_holding_evidence", plan=plan, sparql=evidence_query,
+            diagnostic=("Accepted current-point OfficeHolding evidence is missing, conflicting, or uncertain "
+                        f"({'; '.join(evidence_issues)}). No holder list was returned; local current-office "
+                        "coverage is not certified, so no vacancy/no-holder conclusion can be drawn."),
+        )
     if not has_evidence:
         member_bound = any(item.get("field") == "memberIdentity" for item in plan["constraints"])
-        if member_bound:
+        if current_as_of_point:
+            diagnostic = ("No accepted Member-owned OfficeHolding evidence is available for this reviewed office "
+                          f"at the reference date {reference_date}. Local current-office coverage is not certified; "
+                          "no conclusion that the office has no holder can be drawn.")
+        elif member_bound:
             diagnostic = ("No accepted Member-owned OfficeHolding record for this reviewed office is present "
                           "for the exact resolved Member in the local dataset; historical tenure cannot be determined.")
         else:
@@ -3684,14 +3703,24 @@ def _execute_office_question(plan: dict[str, Any], *, fuseki, supported_predicat
             )
         return PlanOutcome(
             "source_data_unavailable", plan=plan, sparql=answer_query,
-            diagnostic=(f"No accepted local holding is recorded overlapping {start} through {end}. "
-                        "The dataset does not certify complete historical office coverage, so this is not "
-                        "a confirmed historical negative."), result=negative_evidence,
+            diagnostic=(
+                (f"No accepted local holding was evidenced overlapping the reference date {reference_date}. "
+                 "Local current-office coverage is not certified, so no conclusion that the office has no holder can be drawn.")
+                if current_as_of_point else
+                (f"No accepted local holding is recorded overlapping {start} through {end}. "
+                 "The dataset does not certify complete historical office coverage, so this is not "
+                 "a confirmed historical negative.")
+            ), result=negative_evidence,
         )
     return PlanOutcome(
         "success", plan=plan, sparql=answer_query, result=result,
-        diagnostic=(f"Displayed every locally evidenced accepted holding overlapping {start} through {end}; "
-                    "historical completeness is not certified."),
+        diagnostic=(
+            (f"Displayed every locally evidenced accepted holding overlapping the reference date {reference_date}; "
+             "complete current-office coverage is not certified.")
+            if current_as_of_point else
+            (f"Displayed every locally evidenced accepted holding overlapping {start} through {end}; "
+             "historical completeness is not certified.")
+        ),
     )
 
 
@@ -4967,7 +4996,15 @@ def _execute_shared_dail_terms_question(
             from .interpretation import office_holding_boundary
             return office_holding_boundary(parameters, fuseki=fuseki, supported_predicates=supported_predicates)
         if capability == "office_holding_window":
-            if "date" in parameters:
+            if set(parameters) == {"office"}:
+                # A date-less present/current office question has been
+                # validated separately. The planner names the office only;
+                # local code, never model output, supplies the as-of point.
+                plan = _office_interval_plan(
+                    as_of=as_of, office=parameters["office"], start=as_of,
+                    end=as_of, scope="calendarDate",
+                )
+            elif "date" in parameters:
                 try:
                     point = date.fromisoformat(parameters["date"])
                 except (TypeError, ValueError):
@@ -5557,6 +5594,63 @@ def _clarify_constituency_set(question, area, *, as_of, fuseki, supported_predic
         return PlanOutcome("source_data_unavailable", diagnostic=str(error), request_family="composable_semantic")
 
 
+def _execute_current_office_point_request(
+    question: str,
+    *,
+    as_of: date,
+    fuseki,
+    supported_predicates,
+    planner_generator_factory,
+) -> PlanOutcome | None:
+    """Dispatch only a current-point question grounded to a local office label."""
+    from .interpretation import current_office_point_mention
+
+    mention = current_office_point_mention(question)
+    if mention is None:
+        return None
+    try:
+        resolution = resolve_local_entity_label(
+            "NamedOffice", mention, fuseki, supported_predicates=supported_predicates,
+        )
+    except UnsupportedLocalEntityType as error:
+        return PlanOutcome("unsupported_mapping", diagnostic=str(error), request_family="composable_semantic")
+    except NLQError as error:
+        return PlanOutcome(
+            "source_data_unavailable",
+            diagnostic=f"The reviewed local office registry could not be checked: {error}",
+            request_family="composable_semantic",
+        )
+    if resolution.state == "unresolved":
+        # A syntactically similar question is not an office lookup without one
+        # of the reviewed local identities; leave normal Member/other routes in
+        # charge of its interpretation.
+        return None
+    if resolution.state == "ambiguous":
+        candidates = tuple({"iri": item.iri, "label": item.label} for item in resolution.candidates)
+        return PlanOutcome(
+            "ambiguous", candidates=candidates,
+            diagnostic=f'Several reviewed local NamedOffice records match “{mention}”; none was selected.',
+            request_family="composable_semantic",
+        )
+    if resolution.state != "resolved" or len(resolution.candidates) != 1:
+        return PlanOutcome(
+            "source_data_unavailable",
+            diagnostic="The local office resolver did not return one usable reviewed identity.",
+            request_family="composable_semantic",
+        )
+    if planner_generator_factory is None:
+        return PlanOutcome(
+            "unsupported_capability",
+            diagnostic="A current office-holder request requires validated named-office selection and accepted dated holding evidence.",
+            request_family="composable_semantic",
+        )
+    return _execute_shared_dail_terms_question(
+        question, as_of=as_of, fuseki=fuseki,
+        supported_predicates=supported_predicates,
+        planner_generator_factory=planner_generator_factory,
+    )
+
+
 def _execute_question(
     question: str, *, as_of: date, fuseki, supported_predicates,
     semantic_plan_generator_factory=None,
@@ -5584,6 +5678,14 @@ def _execute_question(
     preflight = _composable_interpretation_preflight(question, as_of)
     if preflight is not None:
         return preflight
+
+    current_office_outcome = _execute_current_office_point_request(
+        question, as_of=as_of, fuseki=fuseki,
+        supported_predicates=supported_predicates,
+        planner_generator_factory=semantic_plan_generator_factory,
+    )
+    if current_office_outcome is not None:
+        return current_office_outcome
 
     implicit_set = re.search(r"\b(?:two|three|four|[2-4])\s+(?P<area>[\w -]+?)\s+constituencies\b", question, re.I)
     if implicit_set:

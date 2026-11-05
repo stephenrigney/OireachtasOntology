@@ -77,8 +77,8 @@ evidence, not a completeness-certified roster.
 | 7 | `When was Bertie Ahern the Taoiseach?` | Taoiseach tenure period | Unsupported: service has no complete-career Member/office tenure projection; dated office-overlap queries remain available. | **FAIL** — capability and accepted historical office-evidence coverage do not support a complete tenure timeline. | **FAIL carried forward** — not rerun 2026-11-05. |
 | 8 | `When was Bertie Ahern elected Taoiseach` | Start dates of Taoiseach terms, or clarification | Unsupported: election-event evidence is not queryable; no membership/service start substituted. | **FAIL** — election-event capability gap. | **FAIL carried forward** — not rerun 2026-11-05. |
 | 9 | `Who were the other Fianna Fáil TDs in the same constituency as Bertie Ahern while he was Taoiseach?` | Other Fianna Fáil TDs sharing his constituency during Taoiseach service | Cyprian Brady, with 14 plan relations and exact identity/time evidence joining party affiliation, Dáil representation, Bertie Ahern's Taoiseach holding, and shared Dublin Central constituency; common overlap 2007-06-14–2008-05-07. | **PASS** — final clarified prompt produced the valid plan; an initial draft omitted a required edge, so planner variability remains a caveat. | **PASS** — live recheck passed 2026-11-05. |
-| 10 | `Who is the Taoiseach?` | Micheál Martin as of the report date | Unsupported: current office-holder lookup is not supported; office query requires a dated window. | **FAIL** — current office-holder capability gap; no unsafe answer inferred. | **FAIL carried forward** — not rerun 2026-11-05. |
-| 11 | `Who is the current Taoiseach?` | Micheál Martin as of the report date | Unsupported: no current Taoiseach query without explicit date/period. | **FAIL** — current office-holder capability gap. | **FAIL carried forward** — not rerun 2026-11-05. |
+| 10 | `Who is the Taoiseach?` | Micheál Martin as of the report date | Unsupported: current office-holder lookup is not supported; office query requires a dated window. | **FAIL** — current office-holder capability gap; no unsafe answer inferred. | **PASS** — live Phase 2 `/ask` returned Micheál Martin's accepted holding (2025-01-23–open) at configured `asOf` 2026-11-05; current-office completeness is not certified. |
+| 11 | `Who is the current Taoiseach?` | Micheál Martin as of the report date | Unsupported: no current Taoiseach query without explicit date/period. | **FAIL** — current office-holder capability gap. | **PASS** — live Phase 2 `/ask` returned the same accepted holding at configured `asOf` 2026-11-05; current-office completeness is not certified. |
 | 12 | `Who was the Taoiseach in 1994?` | Albert Reynolds and John Bruton | Albert Reynolds, holding 1992-12-14–1994-12-15; response says local data does not establish complete historical coverage. | **PARTIAL** — accepted local evidence for John Bruton is missing/incomplete. | **PARTIAL carried forward** — not rerun 2026-11-05. |
 | 13 | `Who was the Taoiseach in June 1994?` | Albert Reynolds | Albert Reynolds, holding 1992-12-14–1994-12-15, overlapping the full June window. | **PASS** — calendar-month office overlap is compiled and executed. | **PASS** — live recheck passed 2026-11-05. |
 | 14 | `Who were the Senators on the Agriculture Panel in June 1994?` | Agriculture Panel Senators in Seanad during June 1994 | Unsupported: Seanad panel membership for a specified period is not supported. | **FAIL** — no panel-membership answer query was compiled. | **FAIL carried forward** — not rerun 2026-11-05. |
@@ -137,11 +137,11 @@ consolidated results table above.
 
 ## Current unresolved classifications and root causes (2026-11-05)
 
-1. **Capability/evidence gaps — 12 FAIL** (Q4, Q5, Q7, Q8, Q10, Q11, Q14,
-   Q17, Q19, Q20, Q23, Q24). These comprise election-event dates and a compound
-   election request, complete/current office-holder projections, Seanad panel
+1. **Capability/evidence gaps — 10 FAIL** (Q4, Q5, Q7, Q8, Q14, Q17, Q19,
+   Q20, Q23, Q24). These comprise office-tenure duration and complete-career
+   history, election-event dates and a compound election request, Seanad panel
    and party counts, cross-house histories, and Q24's anchored shared-constituency
-   aggregate. Q24 is the only one selected here for a bounded design diagnosis.
+   aggregate. Q24 is retained as the next bounded design candidate.
 2. **Interpretation/scope — 2 FAIL** (Q15, Q21a): a Dáil term's dates do not
    prove an actual sitting, and “the two Galway constituencies” does not
    identify a unique grounded set.
@@ -155,7 +155,7 @@ consolidated results table above.
 Counts use mutually exclusive current scorecard statuses; root-cause notes
 describe those cases and do not add extra cases.
 
-## Next bounded tranche candidate — Q24 diagnosis only
+## Prior bounded design diagnosis — Q24 (iteration 1)
 
 Q24 appears feasible as a **low-to-medium complexity, bounded projection**
 using the existing typed identity joins, but it is not an already supported
@@ -176,8 +176,8 @@ co-membership plan/query branch, with count/list parity and fail-closed
 resolution/pagination tests, is the likely minimum. This interpretation is
 term-wide recorded co-membership in the previous Dáil, not necessarily
 simultaneous service; a simultaneous-only reading would require a separate
-membership-interval intersection rule. No code or semantics were changed for
-this diagnosis.
+membership-interval intersection rule. No code or semantics were changed during
+this iteration-1 diagnosis.
 
 Iteration-1 verification note: the focused suite passed (84 tests). The broader
 NLQ suite timed out after 300 seconds at 78%; this was not a passing result.
@@ -288,22 +288,56 @@ are unscored. Raw HTML responses and parsed plan/result evidence are retained
 under `/tmp/opencode/query-service-user-coverage/post-audit-approved-config/`.
 No graph/data or container mutation was performed, and no commit was made.
 
-## Next recommended tranche — current Taoiseach lookup (Q10/Q11)
+## Iteration 3 — current named-office point lookup (2026-11-05)
 
-Recommend a bounded date-relative office-point extension: for date-less current
-questions, inject the service's configured `asOf` as the requested point into
-the existing `office_holding_window`/dated OfficeHolding resolver. Resolve the
-reviewed Taoiseach office identity and reuse the accepted interval evaluator;
-do not create a new tenure model or infer a holder from labels. Report only
-locally recorded accepted holding(s) overlapping that point. Do not claim that
-the returned records are exhaustive, and do not infer “no holder” from an
-empty or uncertain query.
+Q10/Q11 now use the existing accepted OfficeHolding date-window resolver. For a
+date-less present/current named-office question, validated planner selection
+contains only the exact office mention; deterministic local code injects the
+configured `asOf` as an inclusive one-day point. The answer retains exact
+accepted holding intervals and explicitly disclaims a complete current roster.
+Missing, conflicting, uncertain, or absent evidence does not produce a holder
+list or a no-holder/vacancy conclusion. This is not a complete tenure-history,
+tenure-duration, or election-event capability; Q7 remains unsupported.
 
-The supplied evidence audit found an accepted Micheál Martin Taoiseach holding
-in his member-owned graph starting `2025-01-23` with no recorded end. It also
-distinguishes Ahern's partial `2007–08` episode and Reynolds's `1992–94`
-evidence, with no accepted Bruton or Health holdings. This supports a positive
-local Q10/Q11 as-of candidate, not a complete office-history claim. Q7 must not
-present Ahern's partial local episode as his complete Taoiseach career; Q12
-remains partial on the stated evidence. No duplicate office/Seanad evidence
-investigation or Q10/Q11 implementation was performed here.
+The actual configured planner was exercised through Phase 2 `/ask` on the
+isolated loopback service at `127.0.0.1:8001`, using the approved runner and
+restart scripts. Both Q10 and Q11 returned HTTP 200 validated answers for
+Micheál Martin with the accepted interval `2025-01-23`–open-ended and a distinct
+plan scope of `2026-11-05` through `2026-11-05`; the planner did not supply that
+date. Supplementary actual `/ask` variants also returned Micheál Martin for
+“Who currently is the Taoiseach?”; the current Tánaiste lookup returned no
+overlapping holding without inferring a vacancy; and the current Minister for
+Finance lookup resolved its own registered identity and returned Simon Harris
+(2025-11-18–open). An explicit 2021 Taoiseach date remained a date-point query
+and did not borrow `asOf`; its absent match was qualified as incomplete
+historical evidence. “Who was the Taoiseach?” remained unsupported without a
+period. Deterministic fixtures containing only ended Mary Harney/Tánaiste and
+Paschal Donohoe/Finance holdings verify that past episodes do not become
+current holders; missing/conflicting interval cases also fail closed. The
+generic resolver does not hardcode Taoiseach as an office identity.
+
+All ten previously passing controls (Q1, Q3, Q6, Q9, Q13, Q16, Q18, Q21b, Q22,
+and Q25) were rechecked through the same actual planner and `/ask` service and
+returned validated answers; Q16, Q22, and Q25 remained 5, 4, and 45. The score
+is now **12 PASS, 2 PARTIAL, 12 FAIL, 0 BLOCKED**. Raw HTML and parsed plans and
+results are retained under
+`/tmp/opencode/query-service-user-coverage/iteration-3/`; readiness succeeded
+and Fuseki was read-only. No graph/data was mutated and no commit was made.
+
+Iteration-3 verification: **188 focused tests passed** across bounded office,
+planner, contract, and related Stage B/composition tests; the full NLQ suite
+reported **949 passed, 2 skipped**. The full repository suite reported
+**2,081 passed, 26 skipped, and 23 subtests passed**; ontology validation passed
+for 2,586 triples. JSON specification parsing and `git diff --check` passed.
+
+### Next credible bounded improvement
+
+Q24 remains a credible next capability: resolve the globally selected
+`previousTerm(asOf)`, bind Mary Lou McDonald's exact Member identity and
+independent answer-Member membership paths to the same exact term and
+constituency identities, exclude her by Member IRI, then count distinct other
+Members only after complete selection. Keep the result term-wide recorded
+co-membership; do not imply simultaneous service. This can be a narrow validated
+projection reusing the existing identity joins, not a generalized compiler
+redesign. A bounded, source-backed Seanad capability is an alternative if its
+temporal evidence is selected first.
