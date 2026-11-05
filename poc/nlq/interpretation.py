@@ -29,8 +29,20 @@ def semantic_composition_scope(question):
 
     This only selects the existing semantic path; it never constructs a plan.
     """
-    return bool(re.search(r"\b(?:constituenc(?:y|ies)|TDs?|represent(?:ed|s|ing)?)\b", question, re.I)
-                and re.search(r"\b(?:and|or|while|same|shared)\b", question, re.I))
+    ordinary_composition = (
+        re.search(r"\b(?:constituenc(?:y|ies)|TDs?|represent(?:ed|s|ing)?)\b", question, re.I)
+        and re.search(r"\b(?:and|or|while|same|shared)\b", question, re.I)
+    )
+    cross_house = (
+        re.search(r"\b(?:seanad|senators?)\b", question, re.I)
+        and re.search(r"\b(?:d[áa]il|deput(?:y|ies)|tds?)\b", question, re.I)
+    )
+    current_seanad_party = (
+        re.search(r"\b(?:seanad|senators?)\b", question, re.I)
+        and re.search(r"\b(?:current|currently|this|now|today)\b", question, re.I)
+        and re.search(r"\b(?:who|which|what|how\s+many|count|number\s+of)\b", question, re.I)
+    )
+    return bool(ordinary_composition or cross_house or current_seanad_party)
 
 
 def current_office_point_mention(question: str) -> str | None:

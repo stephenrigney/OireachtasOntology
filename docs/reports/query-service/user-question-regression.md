@@ -4,9 +4,9 @@
 
 | Classification | Count |
 |---|---:|
-| PASS | 13 |
+| PASS | 15 |
 | PARTIAL | 2 |
-| FAIL | 11 |
+| FAIL | 9 |
 | BLOCKED | 0 |
 | **Total** | **26** |
 
@@ -14,10 +14,11 @@ This is the running consolidated score as of **2026-11-05**. The iteration-1
 score was **7 PASS, 2 PARTIAL, 17 FAIL, 0 BLOCKED**; the earlier pre-iteration-1
 baseline was **5 PASS, 2 PARTIAL, 19 FAIL, 0 BLOCKED**. Iteration 2 raised the
 score to **10 PASS, 2 PARTIAL, 14 FAIL**; iteration 3 raised it to **12 PASS,
-2 PARTIAL, 12 FAIL**; iteration 4 adds Q24 for **13 PASS, 2 PARTIAL, 11 FAIL**.
-All twelve prior PASS controls were rechecked live in iteration 4. The other
-eleven cases retain their current scorecard classifications; this is a
-consolidated 26-question score, with the iteration-4 Q24 variants unscored. A
+2 PARTIAL, 12 FAIL**; iteration 4 adds Q24 for **13 PASS, 2 PARTIAL, 11 FAIL**;
+iteration 5 adds Q19 and Q23 for **15 PASS, 2 PARTIAL, 9 FAIL**. All thirteen
+prior PASS controls were rechecked live in iteration 5. The other nine cases
+retain their current scorecard classifications; this is a consolidated
+26-question score, with iteration-4/5 variants unscored. A
 controlled clarification or unsupported response is not a factual pass. The
 Galway alternatives remain separate cases 21a and 21b. Post-audit live checks
 used the approved campaign-service runner; no credential value was printed or
@@ -86,12 +87,12 @@ evidence, not a completeness-certified roster.
 | 16 | `How many TDs represented the Dublin Central constituency in this Dáil?` | Five TDs | Unsupported: distinct-member count required an explicitly numbered Dáil; “this Dáil” did not resolve to one. | **FAIL** — term ambiguity/aggregate capability boundary. | **PASS** — live count/list parity verified 2026-11-05: 5 distinct Member IRIs; current House-date-resolved Dáil, term-wide recorded memberships. |
 | 17 | `Who are the TDs for Dublin Central and when were they first elected?` | Current Dublin Central TDs and their first-election dates | Unsupported: election-event evidence is not queryable; no partial answer was returned. | **FAIL** — compound request includes unsupported election dates; whole request correctly fails closed. | **FAIL carried forward** — not rerun 2026-11-05. |
 | 18 | `What constituency did Bertie Ahern represent in his last term in the Dáil?` | Dublin Central | Dublin Central, 30th Dáil, start date 2007-06-14; `latestRecorded` selector. | **PASS** — latest-recorded term selection resolved the question; local chronology is not complete-history evidence. | **PASS** — live recheck passed 2026-11-05. |
-| 19 | `Who was a Senator in the current Seanad and a Deputy in the current Dáil?` | Seán Kyne | Unsupported: current cross-house service relationship is not supported. | **FAIL** — Seanad-to-Dáil membership intersection capability gap. | **FAIL carried forward** — not rerun 2026-11-05. |
+| 19 | `Who was a Senator in the current Seanad and a Deputy in the current Dáil?` | Seán Kyne | Unsupported: current cross-house service relationship is not supported. | **FAIL** — Seanad-to-Dáil membership intersection capability gap. | **PASS** — live actual-planner query returned Seán Kyne by exact Member IRI. His 27th-Seanad interval ended 2026-05-24 and 34th-Dáil interval began 2026-05-25; displayed separately as term-wide recorded membership, not simultaneous service. |
 | 20 | `What current Senators previously served in the Dáil?` | Current Senators with prior Deputy service | Unsupported: current Seanad membership combined with previous Dáil service is not supported. | **FAIL** — cross-house history capability gap. | **FAIL carried forward** — not rerun 2026-11-05. |
 | 21a | `Who are the Fine Gael TDs in the two Galway constituencies?` | Fine Gael TDs in Galway East and Galway West | Clarification requested exact constituency alternatives; suggestions included Galway East, Galway West and Roscommon-Galway. No Member answer query ran. | **FAIL** — safe clarification, not a factual answer; the intended set is ambiguous in local data. | **FAIL carried forward** — not rerun 2026-11-05. |
 | 21b | `Who are the Fine Gael TDs in Galway East and Galway West?` | Fine Gael TDs in Galway East and Galway West | Hildegarde Naughton, Peter Roche and Seán Kyne, with exact representation occurrences in Galway West/East and dated Fine Gael evidence. | **PASS** — explicit two-constituency set composition works. | **PASS** — live recheck passed 2026-11-05. |
 | 22 | `How many TDs currently represent Meath East constituency?` | Count of current Meath East TDs | Planner proposed `currentTerm`; validation rejected it because the baseline count shape required an explicitly numbered Dáil. | **FAIL** — current-term count was outside the baseline validator. | **PASS** — live count/list parity verified 2026-11-05: 4 distinct Member IRIs; exact current Dáil and membership intervals containing the reference date. |
-| 23 | `How many Fine Gael Senators are in the current Seanad?` | Count of Fine Gael Senators | Unsupported: counting current Seanad members by party is not supported. | **FAIL** — Seanad party-membership/aggregate capability gap. | **FAIL carried forward** — not rerun 2026-11-05. |
+| 23 | `How many Fine Gael Senators are in the current Seanad?` | Count of Fine Gael Senators | Unsupported: counting current Seanad members by party is not supported. | **FAIL** — Seanad party-membership/aggregate capability gap. | **PASS** — live exact-identity count/list parity returned 16 distinct Member IRIs; each typed PartyMembership and its linked SeanadMembership independently contains `asOf=2026-11-05`. Current roster completeness is not certified. |
 | 24 | `How many other TDs were in the same constituency as Mary Lou McDonald during the last Dáil?` | Count other TDs in her constituency during the previous Dáil | Unsupported: anchored shared-constituency count was not a supported query shape. | **FAIL** — anchored Member relationship aggregate was outside the bounded count compiler. | **PASS** — iteration-4 live `/ask` resolved the globally previous, House-dated 33rd Dáil at `asOf=2026-11-05` and returned 3 distinct other Member IRIs; a separate list variation returned Gary Gannon, Neasa Hourigan and Paschal Donohoe. A numbered 32nd-Dáil request with Paschal Donohoe as a different anchor returned Mary Lou McDonald and Maureen O'Sullivan. Party, simultaneity and office-filter variants were refused. |
 | 25 | `How many Fine Gael TDs were in the 27th Dáil?` | Count of Fine Gael TDs in the 27th Dáil | Unsupported: bounded party/representation composition could not preserve the aggregate condition; no simplified answer ran. | **FAIL** — party-filtered term aggregate was outside the baseline count capability. | **PASS** — live count/list parity verified 2026-11-05: 45 distinct Member IRIs; exact numbered term and validated party/representation evidence. |
 
@@ -137,10 +138,10 @@ consolidated results table above.
 
 ## Current unresolved classifications and root causes (2026-11-05)
 
-1. **Capability/evidence gaps — 9 FAIL** (Q4, Q5, Q7, Q8, Q14, Q17, Q19,
-   Q20, Q23). These comprise office-tenure duration and complete-career
-   history, election-event dates and a compound election request, Seanad panel
-   and party counts, and cross-house histories.
+1. **Capability/evidence gaps — 7 FAIL** (Q4, Q5, Q7, Q8, Q14, Q17, Q20).
+   These comprise office-tenure duration and complete-career history,
+   election-event dates and a compound election request, Seanad panel
+   membership, and cross-house recorded-history coverage.
 2. **Interpretation/scope — 2 FAIL** (Q15, Q21a): a Dáil term's dates do not
    prove an actual sitting, and “the two Galway constituencies” does not
    identify a unique grounded set.
@@ -388,3 +389,75 @@ relationship, previous-Dáil and Stage A suites. Final verification passed
 Q24 final-plan schema validation, and `git diff --check` passed. No ontology or
 mapping changes, protected source/golden fixture changes, production graph/data
 mutation or container mutation was performed; no commit or push was made.
+
+## Iteration 5 — current cross-house membership and Seanad party membership (2026-11-05)
+
+Q19 now resolves the current Dáil and current Seanad independently from typed
+House-owned date evidence, then intersects exact Member RDF identities across
+separate DailMembership and SeanadMembership paths. The result is term-wide
+recorded co-membership, not an overlap/current-service test. Each House interval
+is displayed separately; Seán Kyne's local records show Seanad service through
+2026-05-24 and Dáil service from 2026-05-25. Additional temporal, party,
+simultaneity and other filters are refused.
+
+Q23 now resolves the current Seanad term, the exact reviewed Fine Gael
+PoliticalAffiliationIdentity and its term-scoped ParliamentaryParty, then joins
+typed PartyMembership episodes to their exact SeanadMembership. Both independently
+owned intervals must contain `asOf`; missing/conflicting evidence or incomplete
+pagination fails closed. Count and list share the same paginated selection and
+the result explicitly does not certify a complete current roster.
+
+The live count/list returned **16** distinct Member identities. This corrects
+the earlier iteration-5 working diagnosis of 17: the exact local query found 18
+term-recorded Fine Gael membership paths, but only 16 satisfy both current-point
+interval tests. Seán Kyne's Seanad membership/party intervals ended on
+2026-05-24; Martin Conway's Fine Gael PartyMembership interval ended on
+2025-02-09. Neither qualifies for the requested exact current-point identity
+selection. This is a local interval-evidence result, not a completeness-certified
+claim about the current roster.
+
+The actual configured planner was exercised through Phase 2 `/ask` on the
+isolated loopback service at `127.0.0.1:8001`, using the approved campaign
+runner and the existing read-only Fuseki endpoint. Q19, Q23 count and Q23 list
+all returned HTTP 200 validated answers. All thirteen prior PASS controls (Q1,
+Q3, Q6, Q9, Q10, Q11, Q13, Q16, Q18, Q21b, Q22, Q24 and Q25) were rerun and
+returned their expected identities/rows/counts; Q16, Q22 and Q25 remained 5, 4
+and 45. The score is now **15 PASS, 2 PARTIAL, 9 FAIL, 0 BLOCKED**. Parsed
+responses, raw HTML and readiness evidence are retained under
+`/tmp/opencode/query-service-user-coverage/iteration-5/`. Fuseki was read-only;
+no graph/data or container mutation was performed, and no commit or push was
+made.
+
+Iteration-5 focused verification passed the NLQ suite (**985 passed, 2
+skipped**). Final repository verification passed `.venv/bin/python
+tests/validate.py` for **2,586 triples** and `.venv/bin/python -m pytest -q
+tests` (**2,117 passed, 26 skipped, 23 subtests passed**). `git diff --check`,
+Python compilation, and edited JSON/JSON-Schema checks passed. No ontology,
+mapping or protected source/golden fixture was changed.
+
+### Iteration-5 next prospect — Q20 recorded prior Dáil membership
+
+The bounded follow-on is Q20 only as “current Seanad Members with a recorded
+membership path to a prior Dáil term.” It should use exact current Seanad and
+typed DailMembership/DailTerm identities, with chronology selected from
+House-owned dates; it must not imply that local historical Member records are
+complete or answer a negative as proof that someone never served in the Dáil.
+
+### Iteration-5 independent-review disposition and follow-up
+
+The independent review completed with **no blockers** and accepted the bounded
+architecture. Its cheap denylist follow-up is implemented: Q19 current
+cross-house and Q23 current-Seanad-party drafts now refuse “past,” “formerly,”
+“former,” “used to,” and “no longer” contrasts rather than dropping them. The
+original Q19 “was a Senator” wording remains accepted. Focused acceptance
+passed (**28 passed**); the NLQ suite passed (**994 passed, 2 skipped**).
+
+Actual-planner Phase 2 `/ask` checks through the approved runner returned Q19's
+original answer (Seán Kyne, with separate intervals) and Q23 count/list parity
+(**16**). Five historical/current-contrast paraphrases (two Q19, three Q23)
+returned `unsupported_capability` with no answer rows. The responses are under
+`/tmp/opencode/query-service-user-coverage/iteration-5/denylist-review/`.
+The consolidated score remains **15 PASS, 2 PARTIAL, 9 FAIL, 0 BLOCKED**. Q20
+is unchanged and deferred to a separate tranche; the Q14 panel alias remains
+unmodified. No graph/data or container mutation was performed; no commit or
+push was made.

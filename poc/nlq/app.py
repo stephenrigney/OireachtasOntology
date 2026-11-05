@@ -231,6 +231,22 @@ def create_app(
                 plan_family = outcome.plan.get("family") if outcome.plan else outcome.request_family
                 is_shared_dail_terms = plan_family == "shared_dail_terms"
                 is_member_relationship_composition = plan_family == "member_relationship_composition"
+                composition_refs = (outcome.plan or {}).get("referents", {})
+                is_current_cross_house_membership = (
+                    is_member_relationship_composition
+                    and {"seanad_term", "dail_term", "seanad_membership", "dail_membership"}.issubset(composition_refs)
+                )
+                is_current_seanad_party = (
+                    is_member_relationship_composition
+                    and isinstance(composition_refs.get("membership"), dict)
+                    and isinstance(composition_refs.get("term"), dict)
+                    and isinstance(composition_refs.get("episode"), dict)
+                    and composition_refs.get("membership", {}).get("type") == "SeanadMembership"
+                    and composition_refs.get("term", {}).get("type") == "SeanadTerm"
+                    and isinstance(composition_refs.get("term", {}).get("selector"), dict)
+                    and composition_refs.get("term", {}).get("selector", {}).get("kind") == "currentTerm"
+                    and composition_refs.get("episode", {}).get("type") == "PartyMembershipEpisode"
+                )
                 is_representation = plan_family == "constituency_representation"
                 is_government = plan_family == "government_party_members"
                 is_composable_semantic = (
@@ -294,7 +310,6 @@ def create_app(
                     f"{shared_term_names[1]}, intersecting their DailMembership paths on the same "
                     "DailTerm RDF identity."
                 ) if is_shared_dail_terms and len(shared_term_names) == 2 else None
-                composition_refs = (outcome.plan or {}).get("referents", {})
                 composition_terms = sorted(
                     (
                         referent["selector"]["number"]
@@ -377,6 +392,19 @@ def create_app(
                             f"Find distinct local Members with separate recorded DailMembership paths "
                             f"in both {term_names[0]} and {term_names[1]}."
                         )
+                if is_current_cross_house_membership:
+                    member_relationship_summary = (
+                        "Find Members with recorded membership paths in both the current Dáil and current Seanad, "
+                        "joined by exact Member identity. This is term-wide co-membership, not simultaneous or current service."
+                    )
+                elif is_current_seanad_party:
+                    affiliation = composition_refs.get("affiliation", {})
+                    party_name = affiliation.get("label", affiliation.get("mention", "the selected party"))
+                    member_relationship_summary = (
+                        f"Find Members linked to the exact {party_name} identity through a typed PartyMembership episode "
+                        f"for the current Seanad, requiring both the SeanadMembership and PartyMembership intervals "
+                        f"to contain {as_of.isoformat()}. Local current-roster completeness is not certified."
+                    )
                 stage_a_summaries = {
                     "member_lookup": "Resolve the grounded Member name against local Member identities without guessing.",
                     "previous_service": "Check Dáil membership in the previous term selected from House date evidence at the supplied as-of date.",
@@ -483,6 +511,16 @@ def create_app(
                         f"Distinct Member identities are filtered to the exact party identity and returned only when both "
                         f"the PartyMembership and DailMembership intervals contain {as_of.isoformat()}; local current "
                         "source completeness is not certified."
+                    )
+                if is_current_cross_house_membership:
+                    answer_text = (
+                        "Distinct Member identities with recorded membership in both current House terms; "
+                        "separate mapped intervals are shown without asserting simultaneous service."
+                    )
+                elif is_current_seanad_party:
+                    answer_text = (
+                        f"Distinct Member identities whose exact party and Seanad membership paths are joined and whose "
+                        f"two independently owned intervals contain {as_of.isoformat()}; local current-roster completeness is not certified."
                     )
                 if is_representation:
                     answer_text = "Constituency and Dáil-term evidence is retained by exact RDF identity; local coverage is not certified complete."

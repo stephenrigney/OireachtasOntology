@@ -26,7 +26,7 @@
         "properties": {
           "type": {"enum": ["Member", "CabinetMembership", "Government", "DailMembership", "SeanadMembership", "CommitteeMembership", "DailTerm", "SeanadTerm", "DailConstituency", "SeanadPanel", "SeanadRepresentation", "Committee", "ParliamentaryCollectionMembership", "ParliamentaryMemberCollection", "IndependentMemberCollection", "PartyMembershipEpisode", "ParliamentaryParty", "PoliticalAffiliationIdentity", "OfficeHolding", "NamedOffice", "DebateRecord", "DebateSitting", "BillParticipation", "Bill", "BillProcess", "BillActivity", "ExplanatoryMemoWork"]},
           "selector": {"oneOf": [
-            {"type": "object", "additionalProperties": false, "required": ["kind", "house"], "properties": {"kind": {"enum": ["previousTerm", "currentTerm"]}, "house": {"const": "Dail"}}},
+            {"type": "object", "additionalProperties": false, "required": ["kind", "house"], "properties": {"kind": {"enum": ["previousTerm", "currentTerm"]}, "house": {"enum": ["Dail", "Seanad"]}}},
             {"type": "object", "additionalProperties": false, "required": ["kind", "year", "number"], "properties": {"kind": {"const": "numberYear"}, "year": {"type": "integer", "minimum": 1800, "maximum": 2200}, "number": {"type": "string", "pattern": "^[0-9]+$"}}},
             {"type": "object", "additionalProperties": false, "required": ["kind", "number"], "properties": {"kind": {"const": "termNumber"}, "number": {"type": "integer", "minimum": 1, "maximum": 999}}},
             {"type": "object", "additionalProperties": false, "required": ["kind", "date", "chamber"], "properties": {"kind": {"const": "sittingDate"}, "date": {"type": "string", "format": "date"}, "chamber": {"const": "dail"}}},
@@ -77,7 +77,7 @@
       "required": ["referent", "field", "operator", "value"],
       "properties": {
         "referent": {"type": "string", "minLength": 1},
-        "field": {"enum": ["identity", "interval", "partyEpisodeInterval", "membershipInterval", "date", "chamber", "legislativeYear", "activityTypeAndDate", "processStatus", "temporalOwner", "coverage", "memberIdentity"]},
+        "field": {"enum": ["identity", "interval", "partyEpisodeInterval", "partySeanadEpisodeInterval", "membershipInterval", "date", "chamber", "legislativeYear", "activityTypeAndDate", "processStatus", "temporalOwner", "coverage", "memberIdentity"]},
         "operator": {"enum": ["distinctFrom", "commonIntersection", "overlaps", "on", "equals", "publishedInCalendarYear", "knownExcept", "currentAt", "knownConflict", "requires"]},
         "value": {
           "oneOf": [

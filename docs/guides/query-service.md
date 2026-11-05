@@ -238,6 +238,20 @@ truncated evidence fails closed. Party, office, election, explicit-date,
 simultaneity and additional filters remain unsupported rather than being
 dropped.
 
+Composable contract `2.23.0` adds two House-date-resolved membership projections.
+The current cross-house intersection joins exact Member identities across
+independent DailMembership and SeanadMembership paths to the current Dáil and
+Seanad terms. It means term-wide recorded membership in both terms, not current
+or simultaneous service; separate mapped membership intervals are displayed.
+The current Seanad named-party list/count resolves the exact term from
+Houses-owned dates, joins typed PartyMembership episodes to the same exact
+SeanadMembership and reviewed political-affiliation identity, and requires both
+the membership and party intervals to contain `asOf` independently. List and
+count share the complete bounded paginated selection. Missing or conflicting
+identity/date evidence and incomplete pages fail closed. Both projections
+reflect local records and do not certify complete historical/current rosters;
+simultaneity or extra filters are refused rather than silently omitted.
+
 ### Other launcher commands
 
 ```bash

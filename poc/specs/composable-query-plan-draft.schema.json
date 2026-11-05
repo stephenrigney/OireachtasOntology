@@ -105,25 +105,50 @@
             "affiliation": {"$ref": "#/$defs/affiliationReferent"}
           }
         },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["member", "membership", "term", "episode", "party", "affiliation"],
+         {
+           "type": "object",
+           "additionalProperties": false,
+           "required": ["member", "membership", "term", "episode", "party", "affiliation"],
           "properties": {
             "member": {"$ref": "#/$defs/memberAnswerReferent"},
             "membership": {"$ref": "#/$defs/membershipReferent"},
             "term": {"$ref": "#/$defs/selectedTermReferent"},
             "episode": {"$ref": "#/$defs/partyEpisodeReferent"},
             "party": {"$ref": "#/$defs/parliamentaryPartyReferent"},
-            "affiliation": {"$ref": "#/$defs/affiliationReferent"}
-          }
-        },
+             "affiliation": {"$ref": "#/$defs/affiliationReferent"}
+           }
+         },
+         {
+           "type": "object",
+           "additionalProperties": false,
+           "required": ["member", "membership", "term", "episode", "party", "affiliation"],
+           "properties": {
+             "member": {"$ref": "#/$defs/memberAnswerReferent"},
+             "membership": {"type": "object", "additionalProperties": false, "required": ["type", "mention"], "properties": {"type": {"const": "SeanadMembership", "type": "string"}, "mention": {"type": "null"}}},
+             "term": {"$ref": "#/$defs/currentSeanadTermReferent"},
+             "episode": {"$ref": "#/$defs/partyEpisodeReferent"},
+             "party": {"$ref": "#/$defs/parliamentaryPartyReferent"},
+             "affiliation": {"$ref": "#/$defs/affiliationReferent"}
+           }
+         },
+         {
+           "type": "object",
+           "additionalProperties": false,
+           "required": ["member", "seanad_membership", "seanad_term", "dail_membership", "dail_term"],
+           "properties": {
+             "member": {"$ref": "#/$defs/memberAnswerReferent"},
+             "seanad_membership": {"type": "object", "additionalProperties": false, "required": ["type", "mention"], "properties": {"type": {"const": "SeanadMembership", "type": "string"}, "mention": {"type": "null"}}},
+             "seanad_term": {"$ref": "#/$defs/currentSeanadTermReferent"},
+             "dail_membership": {"$ref": "#/$defs/membershipReferent"},
+             "dail_term": {"$ref": "#/$defs/currentDailTermReferent"}
+           }
+         },
         {
           "type": "object",
           "additionalProperties": false,
           "required": ["capability", "parameters"],
           "properties": {
-             "capability": {"type": "string", "enum": ["seanad_entry", "bill_lookup", "member_lookup", "dail_parties_and_groups", "office_holding_evidence", "office_holding_window"]},
+         "capability": {"type": "string", "enum": ["seanad_entry", "bill_lookup", "member_lookup", "dail_parties_and_groups", "office_holding_evidence", "office_holding_window"]},
             "parameters": {
                 "anyOf": [
                   {"type": "object", "additionalProperties": false, "required": ["office"], "properties": {"office": {"type": "string", "minLength": 1}}},
@@ -153,6 +178,7 @@
     },
     "constraints": {"type": "array", "items": {"anyOf": [
       {"$ref": "#/$defs/referentIntervalOverlap"},
+      {"type": "object", "additionalProperties": false, "required": ["referent", "field", "operator", "value"], "properties": {"referent": {"type": "string", "const": "episode"}, "field": {"type": "string", "const": "partySeanadEpisodeInterval"}, "operator": {"type": "string", "const": "overlaps"}, "value": {"type": "string", "const": "membership"}}},
       {"type": "object", "additionalProperties": false, "required": ["referent", "field", "operator", "value"], "properties": {"referent": {"$ref": "#/$defs/identifier"}, "field": {"type": "string", "const": "membershipInterval"}, "operator": {"type": "string", "const": "on"}, "value": {"type": "string", "format": "date"}}},
       {"type": "object", "additionalProperties": false, "required": ["referent", "field", "operator", "value"], "properties": {"referent": {"type": "string", "const": "member"}, "field": {"type": "string", "const": "identity"}, "operator": {"type": "string", "const": "distinctFrom"}, "value": {"type": "string", "const": "anchor"}}},
       {"type": "object", "additionalProperties": false, "required": ["referent", "field", "operator", "value"], "properties": {"referent": {"type": "string", "const": "holding"}, "field": {"type": "string", "const": "interval"}, "operator": {"type": "string", "const": "commonIntersection"}, "value": {"type": "array", "items": {"type": "string", "enum": ["holding", "anchor_membership", "membership", "episode"]}}}}
@@ -220,6 +246,26 @@
          ]}
       }
     },
+    "currentSeanadTermReferent": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "mention", "selector"],
+      "properties": {
+        "type": {"type": "string", "const": "SeanadTerm"},
+        "mention": {"type": "null"},
+        "selector": {"type": "object", "additionalProperties": false, "required": ["kind"],
+          "properties": {"kind": {"type": "string", "const": "currentTerm"}}}
+      }
+    },
+    "currentDailTermReferent": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "mention", "selector"],
+      "properties": {
+        "type": {"type": "string", "const": "DailTerm"},
+        "mention": {"type": "null"},
+        "selector": {"type": "object", "additionalProperties": false, "required": ["kind"],
+          "properties": {"kind": {"type": "string", "const": "currentTerm"}}}
+      }
+    },
     "constituencyReferent": {
       "anyOf": [{"$ref": "#/$defs/namedConstituencyReferent"},
         {"type": "object", "additionalProperties": false, "required": ["type", "members"], "properties": {"type": {"type": "string", "const": "DailConstituency"}, "members": {"type": "array", "items": {"$ref": "#/$defs/namedConstituencyReferent"}}}}
@@ -268,7 +314,7 @@
       "required": ["id", "fact", "from", "to"],
       "properties": {
         "id": {"$ref": "#/$defs/identifier"},
-        "fact": {"type": "string", "enum": ["member_has_membership", "membership_in_term", "membership_represents", "constituency_in_term", "member_party_membership", "party_episode_in_membership", "episode_in_parliamentary_party", "party_active_during_term", "parliamentary_party_has_affiliation_identity", "bill_has_sponsor_participation", "participation_has_participant", "member_has_cabinet_membership", "cabinet_membership_of_government", "member_has_office_holding", "office_holding_of_office"]},
+      "fact": {"type": "string", "enum": ["member_has_membership", "membership_in_term", "membership_represents", "constituency_in_term", "member_party_membership", "party_episode_in_membership", "episode_in_parliamentary_party", "party_active_during_term", "parliamentary_party_has_affiliation_identity", "bill_has_sponsor_participation", "participation_has_participant", "member_has_cabinet_membership", "cabinet_membership_of_government", "member_has_office_holding", "office_holding_of_office", "member_has_seanad_membership", "seanad_membership_in_term", "party_episode_in_seanad_membership", "party_active_during_seanad_term"]},
         "from": {"$ref": "#/$defs/identifier"},
         "to": {"$ref": "#/$defs/identifier"}
       }

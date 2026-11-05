@@ -33,6 +33,10 @@ _LATEST_TERM_REFERENCE = re.compile(
     r"\b(?:latest\s+recorded|most\s+recent)\b|\blast(?:\s+recorded)?\s+(?:dáil\s+)?term\b",
     re.IGNORECASE,
 )
+_HISTORICAL_CURRENT_CONTRAST = re.compile(
+    r"\b(?:past|formerly|former)\b|\bused\s+to\b|\bno\s+longer\b",
+    re.IGNORECASE,
+)
 
 
 class InvalidComposableDraft(ValueError):
@@ -110,6 +114,10 @@ Existing shared-term capability: {shared_terms['semantics']}
 
 Reusable Member relationship capability: {member_composition['semantics']}
 
+For the exact question shape asking who was a Senator in the current Seanad and a Deputy in the current Dáil, use family "member_relationship_composition" with referents member, seanad_membership, seanad_term, dail_membership, and dail_term. Use independent Member→SeanadMembership→SeanadTerm and Member→DailMembership→DailTerm paths, with facts member_has_seanad_membership, seanad_membership_in_term, member_has_membership, and membership_in_term. Both term selectors are {{"kind":"currentTerm"}}; local code resolves each exact term independently from House-owned date evidence. Set constraints to [] and answer exactly {{"kind":"entities","referent":"member","distinctBy":"identity","display":["name"],"details":[],"preserveEvidence":false}}. This means term-wide recorded membership in both terms. Do not require intervals to overlap, do not describe a Member as currently serving in either House, and do not claim simultaneous service; the executor displays each House's separate mapped membership intervals. If the user asks for simultaneous/concurrent/current-point service, a historical period, a date, a party, or any additional filter, return unsupported for the whole request rather than dropping it.
+
+For a named-party Member count/list in the explicitly current Seanad, use the party-only shape with member, membership (SeanadMembership), term (SeanadTerm selector {{"kind":"currentTerm"}}), episode, party, and affiliation. Use member_has_seanad_membership, seanad_membership_in_term, member_party_membership, party_episode_in_seanad_membership, episode_in_parliamentary_party, party_active_during_seanad_term, and parliamentary_party_has_affiliation_identity. Preserve the exact party mention as the PoliticalAffiliationIdentity filter and require constraints exactly [{{"referent":"episode","field":"partySeanadEpisodeInterval","operator":"overlaps","value":"membership"}}]. Local code resolves the unique current SeanadTerm by Houses-owned dates and requires both each SeanadMembership interval and its PartyMembership interval independently to contain asOf; the overlap does not replace either active-point test. A count answer is {{"kind":"count","referent":"member","distinctBy":"identity"}}; a list uses the same Member selection and preserves separate identity/episode/membership evidence. Exact identities, typed PartyMembership records, and complete pagination are mandatory; missing/conflicting dates or identity evidence fail closed. State that results reflect local records and do not certify a complete current Seanad roster. Do not use current Seanad membership alone as a substitute for active party evidence or answer a generic unfiltered Senator count.
+
 Existing validated single-family capabilities:
 {dispatch_guidance}
 
@@ -128,7 +136,7 @@ Use distinct referent IDs for separate membership/term resources. Do not substit
 
 For a dated political-party/constituency composition, use family "member_relationship_composition" and exactly the referents member, membership, term, constituency, episode, party, and affiliation. Connect member→membership→term, membership→constituency, constituency→term, member→episode, episode→membership, episode→party, party→term, and party→affiliation using their exact reviewed fact IDs. The episode must point to the exact same DailMembership that represents the constituency in the selected term. Set "constraints" to exactly [{{"referent":"episode","field":"partyEpisodeInterval","operator":"overlaps","value":"membership"}}] (inclusive xsd:dateTime endpoints; an absent end is open-ended; missing interval/start means uncertain, never a positive or negative match). When selector is "currentTerm", the local executor additionally requires both the DailMembership and PartyMembership intervals independently to contain the supplied asOf date; the model must not substitute only term membership for current service. Only typed PartyMembership records count; Independent is not a party. For "which parties" questions, use a null affiliation mention and set "answer" to exactly {{"kind":"entities","referent":"affiliation","distinctBy":"identity","display":["label"],"details":[{{"referent":"member","display":["name"]}},{{"referent":"episode","display":["start","end"]}},{{"referent":"membership","display":["start","end"]}}],"preserveEvidence":true}}. For every named-party TD list, keep the exact named affiliation mention as a required identity filter and set "answer" to exactly {{"kind":"entities","referent":"member","distinctBy":"identity","display":["name"],"details":[{{"referent":"affiliation","display":["label"]}},{{"referent":"episode","display":["start","end"]}},{{"referent":"membership","display":["start","end"]}}],"preserveEvidence":true}}. Never use party-label equality or term context as a substitute for the dated episode and exact identity links.
 
-For a named-party TD list or count in one explicitly numbered Dáil when no constituency is requested, use the party-only term shape with exactly member, membership, term, episode, party, and affiliation referents and these seven edges: member→membership→term; member→episode→membership; episode→party→term; party→affiliation. Omit constituency and representation edges because they were not requested. Require the same exact PartyMembership/DailMembership identity join and inclusive interval-overlap constraint above. Resolve the named PoliticalAffiliationIdentity only among ParliamentaryParty identities active in the exact numbered term, using the existing term-scoped party listing path; count distinct Member IRIs only after the exact party filter and temporal validation. The list answer is exactly {{"kind":"entities","referent":"member","distinctBy":"identity","display":["name"],"details":[{{"referent":"affiliation","display":["label"]}},{{"referent":"episode","display":["start","end"]}},{{"referent":"membership","display":["start","end"]}}],"preserveEvidence":true}}; only an explicit count uses {{"kind":"count","referent":"member","distinctBy":"identity"}}. Do not count ParliamentaryParty records, seats, or elections; missing/conflicting intervals, identity links, or truncated evidence fail closed, and recorded counts do not imply a complete roster. This party-only shape does not support currentTerm, extra filters, or additional relationships.
+For a named-party TD list or count in one explicitly numbered Dáil when no constituency is requested, use the Dáil-only party shape with exactly member, membership, term, episode, party, and affiliation referents and these seven edges: member→membership→term; member→episode→membership; episode→party→term; party→affiliation. Omit constituency and representation edges because they were not requested. Require the same exact PartyMembership/DailMembership identity join and inclusive interval-overlap constraint above. Resolve the named PoliticalAffiliationIdentity only among ParliamentaryParty identities active in the exact numbered term, using the existing term-scoped party listing path; count distinct Member IRIs only after the exact party filter and temporal validation. The list answer is exactly {{"kind":"entities","referent":"member","distinctBy":"identity","display":["name"],"details":[{{"referent":"affiliation","display":["label"]}},{{"referent":"episode","display":["start","end"]}},{{"referent":"membership","display":["start","end"]}}],"preserveEvidence":true}}; only an explicit count uses {{"kind":"count","referent":"member","distinctBy":"identity"}}. Do not count ParliamentaryParty records, seats, or elections; missing/conflicting intervals, identity links, or truncated evidence fail closed, and recorded counts do not imply a complete roster. This numbered-Dáil party-only shape does not support currentTerm; current Seanad party selection is separate as described above.
 
 Additional implemented capabilities (do not declare these unsupported):
 - Party history, including ordinary 'join', 'belonged to' and 'member of' paraphrases, uses family "member_party_history", referents member (named Member), episode (PartyMembershipEpisode), party (ParliamentaryParty), affiliation (PoliticalAffiliationIdentity). Only member has a non-null mention. Edges are member_party_membership member→episode, episode_in_parliamentary_party episode→party, parliamentary_party_has_affiliation_identity party→affiliation. Answer affiliation with display ["label"], details [], preserveEvidence true. This asks about recorded party membership, not joining events; Independent is not a party.
@@ -491,19 +499,36 @@ def _validate_member_party_composition_draft(
     *,
     question: str,
 ) -> dict[str, Any]:
-    """Validate the one shared graph and temporal operator used by U06/U16."""
-    if re.search(r"\b(?:senators?|seanad|panels?)\b", question, re.I):
+    """Validate the shared dated party graph for Dáil and bounded Seanad party-only selection."""
+    if re.search(r"\b(?:senators?|seanad|panels?)\b", question, re.I) and not (
+        isinstance(value.get("referents"), dict)
+        and set(value["referents"]) == {"member", "membership", "term", "episode", "party", "affiliation"}
+        and isinstance(value["referents"].get("membership"), dict)
+        and value["referents"]["membership"].get("type") == "SeanadMembership"
+    ):
         raise UnsupportedComposableRequest("Dáil representation cannot substitute for a Seanad/panel relationship.")
     referents = value["referents"]
+    seanad_party_only = (
+        isinstance(referents, dict)
+        and set(referents) == {"member", "membership", "term", "episode", "party", "affiliation"}
+        and isinstance(referents.get("membership"), dict)
+        and referents["membership"].get("type") == "SeanadMembership"
+    )
+    membership_type = "SeanadMembership" if seanad_party_only else "DailMembership"
+    term_type = "SeanadTerm" if seanad_party_only else "DailTerm"
     core_types = {
         "member": "Member",
-        "membership": "DailMembership",
-        "term": "DailTerm",
+        "membership": membership_type,
+        "term": term_type,
         "episode": "PartyMembershipEpisode",
         "party": "ParliamentaryParty",
         "affiliation": "PoliticalAffiliationIdentity",
     }
     party_only = isinstance(referents, dict) and set(referents) == set(core_types)
+    if (not seanad_party_only and isinstance(referents, dict)
+            and isinstance(referents.get("membership"), dict)
+            and referents["membership"].get("type") == "SeanadMembership"):
+        raise UnsupportedComposableRequest("Seanad party selection requires the bounded current-term party-only shape.")
     expected_types = {**core_types, **({} if party_only else {"constituency": "DailConstituency"})}
     if not isinstance(referents, dict) or set(referents) != set(expected_types):
         raise InvalidComposableDraft(
@@ -522,8 +547,14 @@ def _validate_member_party_composition_draft(
         elif key == "term":
             selector = item.get("selector")
             if set(item) != {"type", "mention", "selector"} or item["mention"] is not None:
-                raise InvalidComposableDraft("The term must be one reviewed DailTerm selector.")
-            if (isinstance(selector, dict) and set(selector) == {"kind", "number"}
+                raise InvalidComposableDraft(f"The term must be one reviewed {term_type} selector.")
+            if seanad_party_only:
+                if (selector != {"kind": "currentTerm"}
+                        or not re.search(r"\b(?:current|this)\s+seanad\b", question, re.I)):
+                    raise UnsupportedComposableRequest("Seanad party-only selection requires the explicitly current Seanad term.")
+                normalized[key] = {"type": semantic_type,
+                                   "selector": {"kind": "currentTerm", "house": "Seanad"}}
+            elif (isinstance(selector, dict) and set(selector) == {"kind", "number"}
                     and selector.get("kind") == "termNumber"
                     and type(selector.get("number")) is int
                     and 1 <= selector["number"] <= 999):
@@ -574,8 +605,20 @@ def _validate_member_party_composition_draft(
             raise InvalidComposableDraft("The plan must preserve exactly one explicitly requested numeric Dáil term.")
     elif term_numbers:
         raise InvalidComposableDraft("A currentTerm selector cannot replace an explicitly numbered Dáil term.")
-    if party_only and term_selector["kind"] != "termNumber":
+    if party_only and not seanad_party_only and term_selector["kind"] != "termNumber":
         raise UnsupportedComposableRequest("Party-only Member selection is limited to one explicitly numbered Dáil term.")
+    if seanad_party_only and term_selector != {"kind": "currentTerm", "house": "Seanad"}:
+        raise InvalidComposableDraft("Seanad party selection must preserve the current Seanad term selector.")
+    if seanad_party_only:
+        from .composable_plan import _question_calendar_dates
+        dates, invalid_date = _question_calendar_dates(question)
+        if dates or invalid_date is not None or term_numbers:
+            raise UnsupportedComposableRequest("Current Seanad party selection accepts no extra date or numbered-term filter.")
+        if _HISTORICAL_CURRENT_CONTRAST.search(question) or re.search(
+            r"\b(?:simultaneous(?:ly)?|concurrent(?:ly)?|overlap(?:ping)?|previous(?:ly)?|historical|history|before|after|since|until|during|between|committees?|panels?|offices?|elections?|elected|votes?|bills?|seats?|represent(?:ed|s|ing)?|representation|TDs?|deput(?:y|ies))\b",
+            question, re.I,
+        ) or re.search(r"\b[0-9]{1,3}(?:st|nd|rd|th)\s+seanad\b", question, re.I):
+            raise UnsupportedComposableRequest("The current Seanad party selection cannot drop an additional temporal or relationship condition.")
 
     party_list_question = bool(re.search(
         r"\b(?:which|what)\s+(?:political\s+)?part(?:y|ies)\b", question, re.IGNORECASE,
@@ -590,13 +633,17 @@ def _validate_member_party_composition_draft(
 
     contract = _plan_contract()
     relation_defs = {item["id"]: item for item in contract["relations"]}
+    member_membership_fact = "member_has_seanad_membership" if seanad_party_only else "member_has_membership"
+    membership_term_fact = "seanad_membership_in_term" if seanad_party_only else "membership_in_term"
+    episode_membership_fact = "party_episode_in_seanad_membership" if seanad_party_only else "party_episode_in_membership"
+    party_term_fact = "party_active_during_seanad_term" if seanad_party_only else "party_active_during_term"
     expected_edges = {
-        "member_has_membership": ("member", "membership"),
-        "membership_in_term": ("membership", "term"),
+        member_membership_fact: ("member", "membership"),
+        membership_term_fact: ("membership", "term"),
         "member_party_membership": ("member", "episode"),
-        "party_episode_in_membership": ("episode", "membership"),
+        episode_membership_fact: ("episode", "membership"),
         "episode_in_parliamentary_party": ("episode", "party"),
-        "party_active_during_term": ("party", "term"),
+        party_term_fact: ("party", "term"),
         "parliamentary_party_has_affiliation_identity": ("party", "affiliation"),
     }
     if not party_only:
@@ -638,12 +685,13 @@ def _validate_member_party_composition_draft(
         if (expected_types[source], expected_types[target]) != (definition["subjectType"], definition["objectType"]):
             raise UnsupportedComposableRequest(f"Reviewed relationship {fact!r} has incompatible entity types.")
 
+    interval_field = "partySeanadEpisodeInterval" if seanad_party_only else "partyEpisodeInterval"
     interval_constraint = {
-        "referent": "episode", "field": "partyEpisodeInterval", "operator": "overlaps", "value": "membership",
+        "referent": "episode", "field": interval_field, "operator": "overlaps", "value": "membership",
     }
     if value["constraints"] != [interval_constraint]:
         raise InvalidComposableDraft(
-            "The plan must preserve the required PartyMembershipEpisode/DailMembership interval-overlap constraint and no extra constraints."
+            f"The plan must preserve the required PartyMembershipEpisode/{membership_type} interval-overlap constraint and no extra constraints."
         )
 
     if party_list_question:
@@ -1127,20 +1175,124 @@ def _question_dail_ordinals(question: str) -> list[int]:
     return values
 
 
+def _validate_current_cross_house_membership_draft(value: dict[str, Any], *, question: str) -> dict[str, Any]:
+    """Validate only term-wide recorded membership in the current Dáil and Seanad."""
+    from .composable_plan import PlanError, _question_calendar_dates, validate_plan
+
+    if value["constraints"]:
+        raise UnsupportedComposableRequest(
+            "The current cross-house intersection is term-wide; no simultaneity or extra temporal filter was dropped."
+        )
+    roles = {"member", "seanad_membership", "seanad_term", "dail_membership", "dail_term"}
+    referents = value["referents"]
+    if not isinstance(referents, dict) or set(referents) != roles:
+        raise InvalidComposableDraft("The cross-house intersection requires independent Seanad and Dáil membership paths.")
+    if referents["member"] != {"type": "Member", "mention": None}:
+        raise InvalidComposableDraft("The cross-house selection returns a set-valued Member identity answer.")
+    for key, semantic_type in (("seanad_membership", "SeanadMembership"),
+                               ("dail_membership", "DailMembership")):
+        if referents[key] != {"type": semantic_type, "mention": None}:
+            raise InvalidComposableDraft(f"Referent {key!r} must be a plain typed {semantic_type} path.")
+    for key, semantic_type in (("seanad_term", "SeanadTerm"), ("dail_term", "DailTerm")):
+        if referents[key] != {"type": semantic_type, "mention": None, "selector": {"kind": "currentTerm"}}:
+            raise InvalidComposableDraft(f"Referent {key!r} must preserve its current HouseTerm selector.")
+    if not (re.search(r"\b(?:seanad|senators?)\b", question, re.I)
+            and re.search(r"\b(?:d[áa]il|deput(?:y|ies)|tds?)\b", question, re.I)
+            and re.search(r"\b(?:current|this)\s+seanad\b", question, re.I)
+            and re.search(r"\b(?:current|this)\s+d[áa]il\b", question, re.I)):
+        raise UnsupportedComposableRequest(
+            "Cross-house history is not substituted for an intersection of both explicitly current House terms."
+        )
+    if _HISTORICAL_CURRENT_CONTRAST.search(question) or re.search(
+        r"\b(?:simultaneous(?:ly)?|concurrent(?:ly)?|overlap(?:ping)?|currently|now|today|still|at\s+the\s+same\s+time|"
+        r"same\s+period|while\s+(?:serving|a\s+member)|previous(?:ly)?|historical|history|before|after|since|until|during|between|"
+        r"party|parties|constituenc(?:y|ies)|panels?|offices?|minister|election|elected|committees?|bills?|votes?|"
+        r"how\s+many|count|number\s+of|seats?)\b",
+        question, re.I,
+    ):
+        raise UnsupportedComposableRequest(
+            "Simultaneity, historical-period and additional-filter requests are outside the term-wide cross-house intersection."
+        )
+    dates, invalid_date = _question_calendar_dates(question)
+    if invalid_date is not None or dates or _question_dail_ordinals(question):
+        raise UnsupportedComposableRequest("The current cross-house intersection accepts no extra date or ordinal filter.")
+    answer = {
+        "kind": "entities", "referent": "member", "distinctBy": "identity", "display": ["name"],
+        "details": [], "preserveEvidence": False,
+    }
+    if value["answer"] != answer:
+        raise InvalidComposableDraft("The current cross-house intersection returns distinct Member identities only.")
+
+    expected_edges = {
+        ("member_has_seanad_membership", "member", "seanad_membership"),
+        ("seanad_membership_in_term", "seanad_membership", "seanad_term"),
+        ("member_has_membership", "member", "dail_membership"),
+        ("membership_in_term", "dail_membership", "dail_term"),
+    }
+    relation_defs = {item["id"]: item for item in _plan_contract()["relations"]}
+    actual_edges = []
+    relation_ids = set()
+    if not isinstance(value["relations"], list) or len(value["relations"]) != len(expected_edges):
+        raise InvalidComposableDraft("Every exact current cross-house membership edge is required.")
+    for index, relation in enumerate(value["relations"]):
+        if not isinstance(relation, dict) or set(relation) != {"id", "fact", "from", "to"}:
+            raise InvalidComposableDraft(f"Cross-house relation {index} contains unsupported or missing fields.")
+        relation_id = _identifier(relation["id"], f"relations[{index}].id")
+        if relation_id in relation_ids:
+            raise InvalidComposableDraft("Cross-house relation IDs must be unique.")
+        relation_ids.add(relation_id)
+        fact = _identifier(relation["fact"], f"relations[{index}].fact")
+        source = _identifier(relation["from"], f"relations[{index}].from")
+        target = _identifier(relation["to"], f"relations[{index}].to")
+        edge = (fact, source, target)
+        definition = relation_defs.get(fact)
+        if edge not in expected_edges or definition is None:
+            raise UnsupportedComposableRequest(f"Relationship {fact!r} is outside the exact current cross-house graph.")
+        if ((referents[source]["type"], referents[target]["type"])
+                != (definition["subjectType"], definition["objectType"])):
+            raise UnsupportedComposableRequest(f"Reviewed relation {fact!r} has incompatible cross-house types.")
+        actual_edges.append(edge)
+    if set(actual_edges) != expected_edges:
+        raise InvalidComposableDraft("Both independent exact membership/term paths are required exactly once.")
+
+    plan = {
+        "version": 2, "asOf": "2000-01-01", "family": "member_relationship_composition",
+        "referents": {
+            "member": {"type": "Member", "answer": True},
+            "seanad_membership": {"type": "SeanadMembership"},
+            "seanad_term": {"type": "SeanadTerm", "selector": {"kind": "currentTerm", "house": "Seanad"}},
+            "dail_membership": {"type": "DailMembership"},
+            "dail_term": {"type": "DailTerm", "selector": {"kind": "currentTerm", "house": "Dail"}},
+        },
+        "relations": [dict(item) for item in value["relations"]],
+        "answer": answer,
+    }
+    try:
+        validate_plan(plan)
+    except (PlanError, KeyError, TypeError) as error:
+        raise InvalidComposableDraft(str(error)) from error
+    return {key: item for key, item in plan.items() if key not in {"version", "asOf"}}
+
+
 def _validate_member_relationship_draft(
     value: dict[str, Any],
     *,
     question: str,
 ) -> dict[str, Any]:
     """Validate only the two closed relationship projections using v2 edges."""
-    if re.search(r"\b(?:senators?|seanad|panels?)\b", question, re.I):
-        raise UnsupportedComposableRequest("The Dáil relationship compiler cannot substitute for a Seanad relationship.")
     referents = value["referents"]
     if isinstance(referents, dict) and any(
         isinstance(item, dict) and item.get("type") == "PartyMembershipEpisode"
-        for item in referents.values()
+    for item in referents.values()
     ):
         return _validate_member_party_composition_draft(value, question=question)
+    if isinstance(referents, dict) and any(
+        isinstance(item, dict) and item.get("type") in {"SeanadMembership", "SeanadTerm"}
+        for item in referents.values()
+    ):
+        return _validate_current_cross_house_membership_draft(value, question=question)
+    if re.search(r"\b(?:senators?|seanad|panels?)\b", question, re.I):
+        raise UnsupportedComposableRequest("The Dáil relationship compiler cannot substitute for a Seanad relationship.")
     if not isinstance(value["constraints"], list) or len(value["constraints"]) > 1:
         raise InvalidComposableDraft("The non-party Member composition accepts at most one reviewed calendar-date constraint.")
     if re.search(r"\b(?:party|political affiliation|Sinn Féin|Fianna Fáil|Fine Gael|Labour|Green Party)\b", question, re.IGNORECASE):

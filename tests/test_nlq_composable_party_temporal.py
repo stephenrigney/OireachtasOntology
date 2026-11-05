@@ -739,18 +739,19 @@ def test_party_only_count_fails_closed_on_missing_membership_interval():
     assert "no mapped date-range/start" in outcome.diagnostic
 
 
-def test_party_only_count_fails_closed_at_temporal_evidence_cap():
+def test_party_only_count_paginates_complete_temporal_evidence_past_first_page():
     episodes = [{
         "key": "fine-gael", "party_label": "Fine Gael, 27th Dáil",
         "identity": FG_IDENTITY, "identity_label": "Fine Gael",
         "interval": ("1981-01-01T00:00:00", "1981-06-30T00:00:00"),
-    } for _ in range(100)]
+    } for _ in range(101)]
     fixture = _party_count_fixture(episodes=episodes)
     outcome, _ = _run(fixture, QUESTION_PARTY_COUNT, _party_only_draft())
 
-    assert outcome.status == "source_data_unavailable"
-    assert outcome.result is None
-    assert "100-row cap" in outcome.diagnostic
+    assert outcome.status == "success", outcome.diagnostic
+    assert outcome.result.rows == (("2",),)
+    assert "ORDER BY" in fixture.queries[-2]
+    assert "OFFSET 100" in fixture.queries[-1]
 
 
 def test_planner_instructions_include_exact_temporal_answer_and_constraint_shapes():

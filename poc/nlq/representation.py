@@ -188,6 +188,39 @@ def resolve_current_dail(result, as_of):
     return active[0]
 
 
+def resolve_current_house_term(result, as_of, *, term_type):
+    """Resolve one typed current HouseTerm from its House-owned date interval."""
+    if term_type not in {"DailTerm", "SeanadTerm"}:
+        raise NLQError("Current HouseTerm selection requires an exact reviewed Dáil or Seanad type.")
+    required_columns = {"term", "start", "end"}
+    house = "Dáil" if term_type == "DailTerm" else "Seanad"
+    if (result.kind != "select" or not required_columns.issubset(result.columns)
+            or len(result.rows) >= 100):
+        raise NLQError(f"House-term date lookup is incomplete; no current {house} was selected.")
+    indexes = {name: result.columns.index(name) for name in required_columns}
+    intervals = {}
+    for row in result.rows:
+        if len(row) <= max(indexes.values()):
+            raise NLQError(f"House-term date lookup returned a truncated row; no current {house} was selected.")
+        iri, start, end = (row[indexes[name]] for name in ("term", "start", "end"))
+        if not all(isinstance(value, str) for value in (iri, start, end)):
+            raise NLQError(f"House-term date lookup returned malformed values; no current {house} was selected.")
+        _require_local_iri(iri, term_type)
+        if start in {"—", ""}:
+            raise NLQError(f"A typed {house} term has no recorded House-owned start date.")
+        interval = (_date_binding(start), None if end in {"—", ""} else _date_binding(end))
+        if interval[1] is not None and interval[1] < interval[0]:
+            raise NLQError("House-term end precedes its start.")
+        if iri in intervals and intervals[iri] != interval:
+            raise NLQError("Conflicting House-term date evidence.")
+        intervals[iri] = interval
+    active = [iri for iri, (start, end) in intervals.items()
+              if start <= as_of and (end is None or as_of <= end)]
+    if len(active) != 1:
+        raise NLQError(f"Source data does not identify exactly one current {house} at the reference date.")
+    return active[0]
+
+
 def compile_representation_query(plan, *, supported_predicates):
     validate_representation_plan(plan)
     refs = plan["referents"]
