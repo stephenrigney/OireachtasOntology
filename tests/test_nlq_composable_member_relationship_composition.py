@@ -303,6 +303,8 @@ def test_v2_contract_and_strict_draft_schema_cover_both_relationship_projections
     assert "describe the missing capability actually requested" in instructions
     assert "do not describe every unsupported question as a member-relationship limitation" in instructions.casefold()
     assert '"latestRecorded"' in instructions
+    assert "latest recorded term, the most recent term, or the last term" in instructions
+    assert '"last term in the Dáil"' in instructions
     assert "recorded Member RDF identities, not seats or election events" in instructions
 
 
@@ -629,6 +631,33 @@ def test_latest_recorded_member_term_uses_membership_paths_and_house_dates_then_
     assert "VALUES ?term" in outcome.sparql
     assert any("members:hasMembersMembership" in query and "members:inHouseTerm" in query
                for query in fixture.queries)
+
+
+@pytest.mark.parametrize("question", [
+    "What constituency did Bertie Ahern represent in his last term in the Dáil?",
+    "Which constituency did Bertie Ahern represent in his latest recorded Dáil term?",
+    "Which constituency did Bertie Ahern represent in his most recent Dáil term?",
+])
+def test_latest_recorded_term_scope_accepts_last_and_existing_latest_synonyms(question):
+    fixture, _bertie = _bertie_latest_term_fixture()
+    outcome, _generator = _run(fixture, question, _latest_recorded_draft())
+
+    assert outcome.status == "success", outcome.diagnostic
+    assert outcome.result.rows[0][1:3] == ("Dublin Central", "30th Dáil")
+    assert outcome.plan["referents"]["term"]["selector"] == {"kind": "latestRecorded"}
+
+
+def test_last_term_request_cannot_be_converted_to_career_wide_representation():
+    fixture, _bertie = _bertie_latest_term_fixture()
+    draft = _latest_recorded_draft()
+    draft["referents"]["term"].pop("selector")
+    question = "What constituency did Bertie Ahern represent in his last term in the Dáil?"
+
+    outcome, _generator = _run(fixture, question, draft)
+
+    assert outcome.status == "validation_failure"
+    assert outcome.result is None and outcome.sparql is None
+    assert fixture.queries == []
 
 
 def test_latest_recorded_term_does_not_fall_back_when_newest_membership_lacks_constituency_evidence():

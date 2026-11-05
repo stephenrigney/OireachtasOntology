@@ -1,26 +1,37 @@
-# Query Service — Regression Test Original User Questions
+# Query Service — User-Question Regression Campaign Scorecard
 
 ## Summary
 
 | Classification | Count |
 |---|---:|
-| PASS | 5 |
+| PASS | 7 |
 | PARTIAL | 2 |
-| FAIL | 19 |
+| FAIL | 17 |
 | BLOCKED | 0 |
 | **Total** | **26** |
 
-All 26 scored requests reached the live local Phase 2 `POST /ask` service and
-Fuseki was ready. A controlled clarification or unsupported response is not
-counted as a factual pass. The Galway report entry contains two alternative
-verbatim questions; these were scored separately (21a and 21b). The combined
+This is the consolidated iteration-1 campaign scorecard. The original baseline
+was **5 PASS, 2 PARTIAL, 19 FAIL, 0 BLOCKED**; it remains a distinct historical
+snapshot, not the current score. The two changed classifications are Q9 and
+Q18, now PASS in the post-change live evaluation. All 26 scored requests reached
+the live local Phase 2 `POST /ask` service and Fuseki was ready in the original
+baseline run. A controlled clarification or unsupported response is not counted
+as a factual pass. The Galway report entry contains two alternative verbatim
+questions; these were scored separately (21a and 21b). The combined
 slash-separated line was also tried once as an additional diagnostic, not
 scored as a separate test.
 
 ## Protocol and environment
 
-- Repository commit tested: `4a64367dc2f1584d996b2ded8a25fda6fc7ed171`
-  (`master`, 2026-11-04).
+- Baseline run: repository commit `4a64367dc2f1584d996b2ded8a25fda6fc7ed171`
+  (`master`, 2026-11-04), service port 8000, reference date `2026-11-04`.
+- Iteration-1 recheck: current campaign checkout, live service at
+  `http://127.0.0.1:8001/ask`, existing read-only local Fuseki at
+  `http://localhost:3030/houses/query`, reference date `2026-11-05`; actual
+  configured planner and service path, with no test double, manual plan repair,
+  or answer-query substitution. Assessment:
+  `/tmp/opencode/query-service-user-coverage/iteration-1/postchange-live-evaluation-assessment.json`;
+  raw JSON and rendered HTML responses are alongside it in that directory.
 - Original reports: `/var/home/stephen/Documents/Scratch/questions-2.md`,
   `questions-3.md`, and `question-report.md`. The prompt's first filename,
   `question-report(1).md`, is not present; the similarly named `question-report.md`
@@ -60,7 +71,7 @@ coverage is not certified complete.
 | 6 | `What constituencies did Jack Lynch represent?` | Jack Lynch's represented constituencies | Nine term-scoped occurrences for the exact local identity `John-Lynch.D.1948-02-18`: Cork Borough (13th–18th Dáil), Cork City North-West (19th–20th), Cork City (21st). | **PASS** — career representation projection works; exact source identity/alias is preserved and local historical completeness is not certified. |
 | 7 | `When was Bertie Ahern the Taoiseach?` | Taoiseach tenure period | Unsupported: service has no complete-career Member/office tenure projection; dated office-overlap queries remain available. | **FAIL** — capability and accepted historical office-evidence coverage do not support a complete tenure timeline. |
 | 8 | `When was Bertie Ahern elected Taoiseach` | Start dates of Taoiseach terms, or clarification | Unsupported: election-event evidence is not queryable; no membership/service start substituted. | **FAIL** — election-event capability gap. |
-| 9 | `Who were the other Fianna Fáil TDs in the same constituency as Bertie Ahern while he was Taoiseach?` | Other Fianna Fáil TDs sharing his constituency during Taoiseach service | No answer query. Planner draft selected the relationship-composition family but omitted its independent Member/shared-constituency operator; validation rejected it. | **FAIL** — planner selection/plan-construction defect. The bounded capability exists and returned Cyprian Brady in an earlier integrated acceptance, but this current run did not answer. |
+| 9 | `Who were the other Fianna Fáil TDs in the same constituency as Bertie Ahern while he was Taoiseach?` | Other Fianna Fáil TDs sharing his constituency during Taoiseach service | Cyprian Brady, with 14 plan relations and exact identity/time evidence joining party affiliation, Dáil representation, Bertie Ahern's Taoiseach holding, and shared Dublin Central constituency; common overlap 2007-06-14–2008-05-07. | **PASS (iteration 1)** — final prompt clarification produced the valid relationship-composition plan and answer. An initial post-change draft still failed by omitting the required edge; model/planner variability remains explicit. |
 | 10 | `Who is the Taoiseach?` | Micheál Martin as of the report date | Unsupported: current office-holder lookup is not supported; office query requires a dated window. | **FAIL** — current office-holder capability gap; no unsafe answer inferred. |
 | 11 | `Who is the current Taoiseach?` | Micheál Martin as of the report date | Unsupported: no current Taoiseach query without explicit date/period. | **FAIL** — current office-holder capability gap. |
 | 12 | `Who was the Taoiseach in 1994?` | Albert Reynolds and John Bruton | Albert Reynolds, holding 1992-12-14–1994-12-15; response says the local dataset does not establish complete historical coverage. | **PARTIAL** — year-overlap query runs, but accepted local evidence for John Bruton is missing/incomplete. This is data/evidence coverage, not a query compilation failure. |
@@ -69,7 +80,7 @@ coverage is not certified complete.
 | 15 | `What was the start date of the Dáil which was sitting in June 1994?` | 14 December 1992 | Unsupported: service does not identify a Dáil sitting on a calendar date and return its start. | **FAIL** — no sitting-event evidence is queryable. Term dates alone do not establish that the Dáil actually sat in June; the safe refusal is not a factual pass. |
 | 16 | `How many TDs represented the Dublin Central constituency in this Dáil?` | Five TDs | Unsupported: distinct-member count requires an explicitly numbered Dáil; “this Dáil” did not resolve to one. | **FAIL** — term ambiguity/aggregate capability boundary. |
 | 17 | `Who are the TDs for Dublin Central and when were they first elected?` | Current Dublin Central TDs and their first-election dates | Unsupported: election-event evidence is not queryable; no partial answer was returned. | **FAIL** — compound request includes unsupported election dates; whole request correctly fails closed. |
-| 18 | `What constituency did Bertie Ahern represent in his last term in the Dáil?` | Dublin Central | No answer query. Planner emitted `latestRecorded`; the validator's lexical gate did not recognize “last term” as an explicit latest-recorded scope. | **FAIL** — planner/validation intent-phrase mismatch. Latest-recorded term capability is implemented, but this wording did not reach the compiler. |
+| 18 | `What constituency did Bertie Ahern represent in his last term in the Dáil?` | Dublin Central | Dublin Central, 30th Dáil, start date 2007-06-14; `latestRecorded` selector. | **PASS (iteration 1)** — latest-recorded term selection resolved the question; local recorded chronology, not a claim of complete history beyond the available record. |
 | 19 | `Who was a Senator in the current Seanad and a Deputy in the current Dáil?` | Seán Kyne | Unsupported: current cross-house service relationship is not supported. | **FAIL** — capability gap (Seanad-to-Dáil membership intersection). |
 | 20 | `What current Senators previously served in the Dáil?` | Current Senators with prior Deputy service | Unsupported: current Seanad membership combined with previous Dáil service is not supported. | **FAIL** — capability gap (cross-house history). |
 | 21a | `Who are the Fine Gael TDs in the two Galway constituencies?` | Fine Gael TDs in Galway East and Galway West | Clarification requested exact constituency alternatives; suggestions included Galway East, Galway West and Roscommon-Galway. No Member answer query ran. | **FAIL** — safe clarification, not a factual answer; “two Galway constituencies” does not identify an unambiguous set in the local data. |
@@ -79,9 +90,9 @@ coverage is not certified complete.
 | 24 | `How many other TDs were in the same constituency as Mary Lou McDonald during the last Dáil?` | Count other TDs in her constituency during the previous Dáil | Unsupported: anchored shared-constituency count is not a supported query shape. | **FAIL** — aggregate over an anchored Member relationship is outside the bounded count compiler. |
 | 25 | `How many Fine Gael TDs were in the 27th Dáil?` | Count of Fine Gael TDs in the 27th Dáil | Unsupported: bounded party/representation composition cannot preserve the aggregate condition; no simplified answer ran. | **FAIL** — party-filtered term aggregate is not covered by the count capability. |
 
-## Comparison with the original failures
+## Comparison with the original baseline
 
-### Resolved in this run
+### Passes retained and gained in iteration 1
 
 - **Sinn Féin / Dublin Central:** now returns Mary Lou McDonald for the
   reference date rather than requiring an explicitly numbered term.
@@ -92,6 +103,13 @@ coverage is not certified complete.
 - **Taoiseach in June 1994:** full-month office overlap returns Albert Reynolds.
 - **Fine Gael in Galway East and Galway West:** the explicit two-name version
   returns the three local TD identities.
+- **Ahern shared-constituency party query (Q9):** final prompt clarification
+  returned Cyprian Brady with exact identity and temporal joins. The initial
+  post-change draft still omitted a required edge; model/planner variability
+  remains explicit, and one successful generation does not establish
+  deterministic robustness.
+- **Ahern last Dáil term (Q18):** exact original wording returned Dublin Central
+  in the 30th Dáil using latest-recorded local chronology.
 
 ### Improved, but not fully resolved
 
@@ -103,31 +121,21 @@ coverage is not certified complete.
 - **“Two Galway constituencies”:** the vague variant produces a safe grounded
   clarification; only the explicit Galway East/West variant is answered.
 
-### Capability added, but current planner/validation still fails
-
-- **Ahern's shared-constituency party query:** bounded independent-member
-  composition was implemented and prior live acceptance returned Cyprian Brady;
-  this run's planner omitted the required operator and validation prevented
-  execution.
-- **Ahern's last Dáil term:** latest-recorded term selection is implemented,
-  but this run's “last term” wording failed the validator's latest-recorded
-  lexical gate before query compilation.
-
 The remaining original failures in current live execution are not evidence that
 the relevant records are necessarily absent. Unsupported requests (for example
 current office-holder, Seanad cross-house history, election dates and compound
 counts) stop before an answer query. The year-1994 gap is explicitly a local
-accepted-evidence completeness limitation. The Ahern and latest-term failures
-are planner/validation defects despite their controlled or earlier live
-capability evidence.
+accepted-evidence completeness limitation. The Q9 initial draft demonstrates
+residual prompt/model variability despite the final successful attempt. All five
+original passes were rechecked and passed; three unseen variants in the
+assessment also passed. These checks do not imply unrelated cases were retested.
 
 ## Remaining failures grouped by root cause
 
-1. **Planner selection / plan validation — 2 failures (9, 18).** The planner
-   omitted the shared-member operator for the accepted Ahern composition, and
-   the validator did not accept “last term” as the explicit latest-recorded
-   scope for a supported selector. These should be addressed before adding new
-   query families.
+1. **Planner robustness — 0 current failures, residual risk at Q9.** Q9 now
+   passes after prompt clarification, but its initial post-change draft omitted
+   a required edge. Preserve this variability as a regression concern; Q18's
+   exact wording also remains in the regression set.
 2. **Capability/evidence limitations — 15 failures (4, 5, 7, 8, 10, 11, 14,
    16, 17, 19, 20, 22, 23, 24, 25).** These include
    election-event dates, current office-holder lookup, Seanad panel/party and
@@ -149,12 +157,10 @@ a numbered Dáil.
 
 ## Recommended next bounded implementation tranche
 
-1. **Repair planner/validator interoperability for existing operators (highest
-   immediate return: 2 original answers).** Accept “last term” only as a
-   validated synonym for the already-supported `latestRecorded` scope, and
-   improve plan selection for the already-accepted independent-member/shared-
-   constituency operator. Add exact-question regressions for Q9 and Q18; retain
-   fail-closed behavior.
+1. **Harden planner consistency for Q9.** Keep exact-question regression
+   coverage for both the successful clarified prompt and failed initial draft;
+   retain fail-closed behavior and assess variability across runs. Q18 passes
+   its exact wording and should remain in regression coverage.
 2. **Add a narrowly defined numbered-term party count (potentially 1 direct
    case, Q25).** Reuse the existing exact Dáil/party/representation selection
    and identity deduplication; only count if existing contracts and evidence
@@ -173,5 +179,8 @@ a numbered Dáil.
    sitting evidence or continue clarifying that term dates do not prove a
    sitting; do not answer the sitting question from term dates alone.
 
-No Query Service implementation was changed for this evaluation. The report is
-the sole repository deliverable.
+Verification note: the focused suite passed (84 tests). The broader NLQ suite
+timed out after 300 seconds at 78%; this is not a passing result. No claim is
+made that cases beyond the explicitly listed original passes and unseen
+variants were retested. This document is the sole report deliverable;
+implementation changes are outside this report's scope.

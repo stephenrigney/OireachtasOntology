@@ -29,6 +29,10 @@ DRAFT_SCHEMA_PATH = _ROOT / "specs" / "composable-query-plan-draft.schema.json"
 _PLAN_CONTRACT_PATH = _ROOT / "specs" / "composable-query-plan-contract.json"
 _IDENTIFIER = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
 _DAIL_ORDINAL = re.compile(r"\b(?P<number>[0-9]{1,3})(?P<suffix>st|nd|rd|th)\b", re.IGNORECASE)
+_LATEST_TERM_REFERENCE = re.compile(
+    r"\b(?:latest\s+recorded|most\s+recent)\b|\blast(?:\s+recorded)?\s+(?:dáil\s+)?term\b",
+    re.IGNORECASE,
+)
 
 
 class InvalidComposableDraft(ValueError):
@@ -49,6 +53,11 @@ def _plan_contract() -> dict[str, Any]:
 
 def load_composable_draft_schema() -> dict[str, Any]:
     return json.loads(DRAFT_SCHEMA_PATH.read_text(encoding="utf-8"))
+
+
+def _explicit_latest_term_reference(question: str) -> bool:
+    """Recognize explicit wording for the existing latest-recorded selector."""
+    return _LATEST_TERM_REFERENCE.search(question) is not None
 
 
 def build_composable_planner_instructions() -> str:
@@ -80,14 +89,14 @@ def build_composable_planner_instructions() -> str:
     )
     return f"""Interpret one user question as a semantic proposal for composable query plan v2.
 
-Interpretation contract: an unqualified present-tense request for TDs representing a named constituency, including a named-party filter, means representation as of the query date. Use currentTerm for this scoped default as well as explicit current/now wording. Never default historical, term-wide or election questions. Explicit numbered terms remain exact. The plain term-scoped constituency Member projection supports one explicit membership calendar-date point; preserve it as a membershipInterval constraint, never as a HouseTerm date or election event. For a Member's latest recorded Dáil term and constituency, use the constituency_representation family with selector "latestRecorded" only when the question explicitly asks for the latest/most recent recorded term; local code selects from that Member's accepted DailMembership identities and House-owned chronology, and fails closed on missing/tied/conflicting dates or representation evidence. This is not an election-date answer.
+Interpretation contract: an unqualified present-tense request for TDs representing a named constituency, including a named-party filter, means representation as of the query date. Use currentTerm for this scoped default as well as explicit current/now wording. Never default historical, term-wide or election questions. Explicit numbered terms remain exact. The plain term-scoped constituency Member projection supports one explicit membership calendar-date point; preserve it as a membershipInterval constraint, never as a HouseTerm date or election event. For a Member's latest recorded Dáil term and constituency, use the constituency_representation family with selector "latestRecorded" when the question explicitly asks for the latest recorded term, the most recent term, or the last term (including "last term in the Dáil"). Local code selects from that Member's accepted DailMembership identities and House-owned chronology, and fails closed on missing/tied/conflicting dates or representation evidence. This is not an election-date answer.
 For partial-name person lookup use capability_selection member_lookup with parameters {{"member":"exact name mention","house":"Dail"}} for Deputy/TD, "Seanad" for Senator, or null for unqualified Member. Local code offers grounded alternatives; never expand a surname to an assumed full name.
 For a numbered-Dáil party listing use capability_selection dail_parties_and_groups with parameters {{"termNumber":N,"includeGroups":false}}; true only if groups are also requested. This reuses the existing party compiler, not the constituency composition.
 For a named person's office tenure use capability_selection office_holding_evidence with parameters {{"member":"exact mention","office":"exact office mention"}}. This checks accepted local OfficeHolding evidence only; unreviewed observations cannot answer tenure. A first-election date is unsupported: election-event evidence is not queryable, and a membership start is not an election date. Never substitute service entry for election.
 
 For who held a named office on a calendar date, during a complete month/year, or over an explicit month-to-month window, use capability_selection office_holding_window with exactly one of {{"office":"exact mention","date":"1994-06-01"}}, {{"office":"exact mention","year":1994}}, or {{"office":"exact mention","startMonth":6,"startYear":1994,"endMonth":6,"endYear":1994}}. Preserve date-point vs full-window semantics. Local code reuses the accepted dated OfficeHolding compiler and incomplete-coverage qualification; an overlap does not mean service throughout the window.
 
-Bounded operators extend the SAME member_relationship_composition graph below, not new families:
+Bounded operators extend the SAME member_relationship_composition graph below, not new families. Dispatch priority: when the question asks for other/another named-party TDs or Deputies sharing the same constituency as a named Member while/when/during that Member held a named office, use the independent anchor/answer shared-constituency operator below, not the ordinary single-member party/representation shape. Keep separate membership paths for the anchor and answer Member and join them to the same exact constituency and term identities. Preserve all nine edges in the base party/representation graph below, including constituency_in_term, then append the five anchor/office edges in the anchor operator for fourteen relations total; do not drop or replace any base edge. The named office episode anchors the common time intersection; do not invent or require a numbered-term selector.
 - For one explicitly numbered Dáil and one named constituency, a distinct-Member count uses the exact same referents, relationships and optional membership-date point as the entity-list projection. Use answer {{"kind":"count","referent":"member","distinctBy":"identity"}} only when asked for a count; count recorded Member RDF identities, not seats or election events. Never count a partial/truncated page or drop the date/constituency/term condition to return a number.
 - For an explicitly named OR set of two to four constituencies, replace constituency with {{"type":"DailConstituency","members":[{{"type":"DailConstituency","mention":"exact first mention"}},{{"type":"DailConstituency","mention":"exact second mention"}}]}}. All existing edges and the party/membership overlap constraint and Member evidence answer remain unchanged. Local code resolves each occurrence in the same selected term and compiles one VALUES identity set; never merge string results. Never infer a set from 'the two Galway constituencies'; that is ambiguous (Roscommon-Galway may also be relevant).
 - For other named-party TDs sharing a constituency with a named anchor Member while that anchor held a named office, keep member, membership, episode, party, affiliation and their edges as below; term is {{"type":"DailTerm","mention":null}} and constituency is {{"type":"DailConstituency","mention":null}} (unselected shared resource identities). Add anchor (Member, exact named mention), anchor_membership (DailMembership, null mention), holding (OfficeHolding, null mention), office (NamedOffice, exact office mention). Add edges member_has_membership anchor→anchor_membership, membership_in_term anchor_membership→term, membership_represents anchor_membership→constituency, member_has_office_holding anchor→holding, office_holding_of_office holding→office. Keep both independent membership paths to the SAME exact constituency and term. No numbered-term clarification is needed: the accepted office episode anchors time. Constraints are exactly [{{"referent":"episode","field":"partyEpisodeInterval","operator":"overlaps","value":"membership"}},{{"referent":"member","field":"identity","operator":"distinctFrom","value":"anchor"}},{{"referent":"holding","field":"interval","operator":"commonIntersection","value":["holding","anchor_membership","membership","episode"]}}]. Use the existing Member evidence answer below and append details holding [start,end], anchor_membership [start,end], constituency [label]. Local code requires one common inclusive intersection of ALL four independently owned intervals, not merely pairwise overlaps, and reports partial accepted-evidence coverage, never a complete roster. Additional filters or projections remain unsupported as a whole.
@@ -409,7 +418,7 @@ def _validate_existing_capability_draft(value, *, question):
             raise InvalidComposableDraft("Exactly one representation participant must be named.")
         if selector is None and re.search(r"\b(?:current|currently|now|does|are|latest|most recent)\b", condition_text, re.I):
             raise InvalidComposableDraft("A current question cannot be converted into career-wide representation.")
-        latest_requested = bool(re.search(r"\b(?:latest\s+recorded|most\s+recent)\b", question, re.I))
+        latest_requested = _explicit_latest_term_reference(question)
         if selector == "latestRecorded":
             if not member or constituency or not latest_requested:
                 raise InvalidComposableDraft("Latest-recorded Dáil selection requires a named Member and an explicit latest-term reference.")

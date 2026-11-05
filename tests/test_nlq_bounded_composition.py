@@ -15,7 +15,8 @@ from poc.nlq.composable_plan import (
     execute_question, validate_plan,
 )
 from poc.nlq.composable_semantic_planner import (
-    complete_v2_plan, load_composable_draft_schema, validate_composable_plan_draft,
+    build_composable_planner_instructions, complete_v2_plan, load_composable_draft_schema,
+    validate_composable_plan_draft,
 )
 from poc.nlq.vocabulary import supported_predicates
 from test_nlq_composable_party_temporal import (
@@ -170,6 +171,34 @@ def test_operator_schemas_and_deterministic_validation(draft, question):
     final = complete_v2_plan(plan, as_of=AS_OF)
     validate_plan(final)
     Draft202012Validator(json.loads((ROOT / "poc/specs/composable-query-plan.schema.json").read_text())).validate(final)
+
+
+def test_shared_constituency_prompt_prioritizes_the_independent_anchor_operator():
+    instructions = build_composable_planner_instructions()
+    assert "Dispatch priority" in instructions
+    assert "other/another named-party TDs or Deputies" in instructions
+    assert "not the ordinary single-member party/representation shape" in instructions
+    assert "all nine edges in the base party/representation graph" in instructions
+    assert "five anchor/office edges" in instructions and "fourteen relations total" in instructions
+    assert "do not invent or require a numbered-term selector" in instructions
+
+
+@pytest.mark.parametrize("question", [
+    Q3,
+    "Which other Fianna Fáil Deputies shared the same constituency as Bertie Ahern while he served as Taoiseach?",
+    "Who were the other Fianna Fáil TDs in the same constituency as Bertie Ahern when he served as Taoiseach?",
+])
+def test_anchor_operator_validates_across_user_wording_without_losing_either_member_path(question):
+    draft = anchor_draft()
+    plan, unsupported = validate_composable_plan_draft(draft, question=question)
+    assert unsupported is None
+    final = complete_v2_plan(plan, as_of=AS_OF)
+    validate_plan(final)
+    assert "anchor" in final["referents"] and "anchor_membership" in final["referents"]
+    assert len([edge for edge in final["relations"] if edge["fact"] == "member_has_membership"]) == 2
+    assert len(final["relations"]) == 14
+    assert any(edge["fact"] == "constituency_in_term" for edge in final["relations"])
+    assert final["referents"]["term"] == {"type": "DailTerm"}
 
 
 def test_q15_one_identity_union_query_and_member_deduplication(monkeypatch):
