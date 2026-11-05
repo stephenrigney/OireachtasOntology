@@ -8,6 +8,11 @@
     body { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; font: 1rem/1.5 system-ui, sans-serif; color: #202124; }
     textarea { box-sizing: border-box; width: 100%; min-height: 6rem; padding: .7rem; font: inherit; }
     button { margin-top: .5rem; padding: .55rem 1rem; font: inherit; cursor: pointer; }
+    button.session-start { color: #fff; background: #18733b; border: 1px solid #125d30; border-radius: .35rem; }
+    button.session-start:hover { background: #125d30; }
+    button.session-stop { color: #fff; background: #b4232e; border: 1px solid #8f1d25; border-radius: .35rem; }
+    button.session-stop:hover { background: #8f1d25; }
+    button:disabled { cursor: wait; opacity: .65; }
     section { margin-top: 1.5rem; }
     pre { overflow-x: auto; padding: 1rem; background: #f2f4f7; border: 1px solid #d5d9df; white-space: pre-wrap; }
     .error { padding: .75rem; color: #8b1111; background: #fff0f0; border: 1px solid #e5bcbc; }
@@ -18,6 +23,14 @@
     .readiness.partial { background: #fff8e6; border-color: #d6b65d; }
     .readiness.empty, .readiness.unavailable { background: #fff0f0; border-color: #e5bcbc; }
     .feedback { padding: .75rem; border: 1px solid #c8ccd0; background: #f8f9fa; }
+    .adequacy-toggle { display: flex; gap: .35rem; width: fit-content; margin: .35rem 0 1rem; padding: .25rem; border: 1px solid #aeb4bc; border-radius: .5rem; background: #edf0f3; }
+    .adequacy-toggle label { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 5rem; padding: .45rem .8rem; border-radius: .35rem; cursor: pointer; font-weight: 600; }
+    .adequacy-toggle input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .adequacy-toggle label:has(input:checked) { color: #fff; background: #46505b; }
+    .adequacy-toggle label:has(input[value="yes"]:checked) { background: #18733b; }
+    .adequacy-toggle label:has(input[value="no"]:checked) { background: #b4232e; }
+    .adequacy-toggle label:has(input:focus-visible) { outline: 3px solid #155eef; outline-offset: 2px; }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     details { margin-top: 1.5rem; }
     summary { cursor: pointer; }
     table { width: 100%; border-collapse: collapse; }
@@ -30,8 +43,8 @@
   <p><a href="/capabilities">Browse the query capability catalogue</a></p>
   <section aria-label="Optional evidence collection">
     <h2>Optional evidence session</h2>
-    <button type="button" id="start-evidence">Start Evidence Session</button>
-    <button type="button" id="stop-evidence" hidden>Stop Evidence Session</button>
+    <button type="button" class="session-start" id="start-evidence">Start Evidence Session</button>
+    <button type="button" class="session-stop" id="stop-evidence" hidden>Stop Evidence Session</button>
     <p id="evidence-status" role="status" aria-live="polite">Feedback collection is off.</p>
   </section>
   {% if readiness %}
@@ -214,12 +227,11 @@
     <form id="feedback-form">
       <input type="hidden" name="question" value="{{ question }}">
       <input type="hidden" name="actual" value="{{ feedback_actual }}">
-      <label for="feedback-correct">Adequate?</label>
-      <select id="feedback-correct" required>
-        <option value="">Choose Yes or No</option>
-        <option value="yes">Yes</option>
-        <option value="no">No</option>
-      </select>
+      <fieldset class="adequacy-toggle">
+        <legend class="visually-hidden">Was this response adequate?</legend>
+        <label><input type="radio" name="correct" value="yes" required>Yes</label>
+        <label><input type="radio" name="correct" value="no" required>No</label>
+      </fieldset>
       <div id="expected-answer-wrap" hidden>
         <label for="expected-answer">Expected Answer</label>
         <textarea id="expected-answer" maxlength="10000"></textarea>
@@ -237,7 +249,7 @@
       const status = document.getElementById("evidence-status");
       const feedback = document.getElementById("answer-feedback");
       const form = document.getElementById("feedback-form");
-      const correct = document.getElementById("feedback-correct");
+      const adequacyChoices = form ? form.querySelectorAll('input[name="correct"]') : [];
       const expectedWrap = document.getElementById("expected-answer-wrap");
       const expected = document.getElementById("expected-answer");
       let sessionId = null;
@@ -284,11 +296,11 @@
         } catch (error) { showError(`${error.message} Previously saved feedback is unchanged.`); }
         finally { stop.disabled = false; }
       });
-      if (correct) correct.addEventListener("change", () => {
-        const needsExpected = correct.value === "no";
+      adequacyChoices.forEach(choice => choice.addEventListener("change", () => {
+        const needsExpected = form.elements.correct.value === "no";
         expectedWrap.hidden = !needsExpected;
         expected.required = needsExpected;
-      });
+      }));
       if (form) form.addEventListener("submit", async event => {
         event.preventDefault();
         const message = form.querySelector(".feedback-message");
@@ -298,8 +310,8 @@
         try {
           const response = await fetch("/feedback", {method: "POST", headers: {"Content-Type": "application/json"},
             body: JSON.stringify({session_id: sessionId, question: form.elements.question.value,
-              actual: form.elements.actual.value, correct: correct.value === "yes",
-              expected: correct.value === "no" ? expected.value : ""})});
+              actual: form.elements.actual.value, correct: form.elements.correct.value === "yes",
+              expected: form.elements.correct.value === "no" ? expected.value : ""})});
           const data = await response.json();
           if (!response.ok) throw new Error(data.detail || "Feedback could not be saved.");
           message.textContent = "Feedback saved immediately.";

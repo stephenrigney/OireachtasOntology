@@ -95,6 +95,7 @@ def test_feedback_controls_are_opt_in_and_form_carries_rendered_answer(tmp_path,
         page = client.get("/")
         assert page.status_code == 200
         assert "Start Evidence Session" in page.text
+        assert 'class="session-start"' in page.text and 'class="session-stop"' in page.text
         assert 'id="answer-feedback"' not in page.text
 
         session_id = client.post("/feedback/sessions").json()["session_id"]
@@ -109,3 +110,5 @@ def test_feedback_controls_are_opt_in_and_form_carries_rendered_answer(tmp_path,
         assert 'id="answer-feedback"' in response.text
         assert "This question is unsupported." in response.text
         assert 'name="actual" value="This question is unsupported."' in response.text
+        assert 'type="radio" name="correct" value="yes"' in response.text
+        assert 'type="radio" name="correct" value="no"' in response.text
