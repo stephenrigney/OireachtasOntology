@@ -303,10 +303,12 @@
       }));
       if (form) form.addEventListener("submit", async event => {
         event.preventDefault();
+        if (form.dataset.saved === "true") return;
         const message = form.querySelector(".feedback-message");
         if (!sessionId) { message.textContent = "No active evidence session; feedback was not saved."; return; }
         const submit = form.querySelector("button[type=submit]");
         submit.disabled = true;
+        let saved = false;
         try {
           const response = await fetch("/feedback", {method: "POST", headers: {"Content-Type": "application/json"},
             body: JSON.stringify({session_id: sessionId, question: form.elements.question.value,
@@ -315,9 +317,12 @@
           const data = await response.json();
           if (!response.ok) throw new Error(data.detail || "Feedback could not be saved.");
           message.textContent = "Feedback saved immediately.";
-          form.reset(); expectedWrap.hidden = true; expected.required = false;
+          saved = true;
+          form.dataset.saved = "true";
+          form.querySelectorAll("input, textarea, button").forEach(control => { control.disabled = true; });
+          submit.textContent = "Feedback saved";
         } catch (error) { message.textContent = `${error.message} Please retry; the record was not confirmed saved.`; }
-        finally { submit.disabled = false; }
+        finally { if (!saved) submit.disabled = false; }
       });
     })();
   </script>

@@ -8,6 +8,9 @@ from fastapi.testclient import TestClient
 
 from poc.nlq import app as app_module
 from poc.nlq import feedback as feedback_module
+from poc.nlq.app import _displayed_answer_text
+from poc.nlq.member_resolution import MemberAmbiguity, MemberCandidate
+from poc.nlq.results import QueryResult
 
 
 ROOT = app_module.ROOT
@@ -15,6 +18,41 @@ ROOT = app_module.ROOT
 
 def _app(directory):
     return app_module.create_app(repository_root=ROOT, feedback_directory=directory)
+
+
+def test_actual_feedback_includes_ambiguity_candidates_and_warnings_without_debug_output():
+    ambiguity = MemberAmbiguity(
+        entity_reference="Alex Murphy",
+        candidates=(
+            MemberCandidate("urn:member:1", "Alex Murphy", house_terms=("33rd Dáil",),
+                            representations=("Dublin Central",)),
+            MemberCandidate("urn:member:2", "Alex Murphy", house_terms=("34th Dáil",)),
+        ),
+    )
+    actual = _displayed_answer_text(
+        error="The request is ambiguous.", ambiguity=ambiguity,
+        result=QueryResult("select", columns=("Member",), rows=(("Alex Murphy",),)),
+        result_notice="The local source coverage is incomplete.",
+        entity_outcomes=({"resolution": "ambiguous", "candidates": [
+            {"label": "Candidate A", "iri": "urn:candidate:a"},
+        ]},),
+    )
+    assert "The request is ambiguous." in actual
+    assert "Alex Murphy" in actual
+    assert "33rd Dáil" in actual and "Dublin Central" in actual
+    assert "34th Dáil" in actual
+    assert "Candidate A — urn:candidate:a" in actual
+    assert "The local source coverage is incomplete." in actual
+
+
+def test_feedback_form_locks_after_success_and_keeps_values_on_failure():
+    template = (app_module.TEMPLATES / "index.html").read_text(encoding="utf-8")
+    assert 'if (form.dataset.saved === "true") return;' in template
+    assert 'form.dataset.saved = "true";' in template
+    assert 'form.querySelectorAll("input, textarea, button").forEach(control => { control.disabled = true; });' in template
+    assert 'finally { if (!saved) submit.disabled = false; }' in template
+    assert 'catch (error) { message.textContent = `${error.message} Please retry; the record was not confirmed saved.`; }' in template
+    assert "form.reset()" not in template
 
 
 def test_feedback_session_lifecycle_persists_records_across_app_restart(tmp_path):
@@ -109,6 +147,9 @@ def test_feedback_controls_are_opt_in_and_form_carries_rendered_answer(tmp_path,
         response = client.post("/ask", data={"question": "Unsupported question", "mode": "phase2"})
         assert 'id="answer-feedback"' in response.text
         assert "This question is unsupported." in response.text
-        assert 'name="actual" value="This question is unsupported."' in response.text
+        assert "No answer query was executed after this resolution failure." in response.text
+        actual_value = response.text.split('name="actual" value="', 1)[1].split('"', 1)[0]
+        assert actual_value == "This question is unsupported."
+        assert "No answer query was executed after this resolution failure." not in actual_value
         assert 'type="radio" name="correct" value="yes"' in response.text
         assert 'type="radio" name="correct" value="no"' in response.text
