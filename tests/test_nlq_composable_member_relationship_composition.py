@@ -23,8 +23,12 @@ from poc.nlq.fuseki import FusekiReadiness
 from poc.nlq.results import QueryResult
 from poc.nlq.vocabulary import supported_predicates
 from poc.nlq.composable_semantic_planner import (
+    InvalidComposableDraft,
+    UnsupportedComposableRequest,
     build_composable_planner_instructions,
+    complete_v2_plan,
     load_composable_draft_schema,
+    validate_composable_plan_draft,
 )
 from poc.nlq.safety import MAX_RESULT_OFFSET, MAX_RESULT_ROWS
 
@@ -232,6 +236,51 @@ def _member_count_draft(ordinal: int = 31, constituency: str = "Dublin Central",
     return draft
 
 
+def _anchored_shared_constituency_draft(
+    *,
+    anchor: str = "Aoife Byrne",
+    ordinal: int | None = None,
+    previous: bool = False,
+    count: bool = False,
+) -> dict:
+    if previous:
+        selector = {"kind": "previousTerm"}
+    else:
+        selector = {"kind": "termNumber", "number": ordinal or 32}
+    return {
+        "version": 2,
+        "supported": True,
+        "family": "member_relationship_composition",
+        "unsupportedReason": None,
+        "intent": "Find other Members recorded in the anchor's exact constituency and term.",
+        "referents": {
+            "member": {"type": "Member", "mention": None},
+            "membership": {"type": "DailMembership", "mention": None},
+            "term": {"type": "DailTerm", "mention": None, "selector": selector},
+            "constituency": {"type": "DailConstituency", "mention": None},
+            "anchorMember": {"type": "Member", "mention": anchor},
+            "anchorMembership": {"type": "DailMembership", "mention": None},
+        },
+        "relations": [
+            {"id": "anchor-member-membership", "fact": "member_has_membership", "from": "anchorMember", "to": "anchorMembership"},
+            {"id": "anchor-membership-term", "fact": "membership_in_term", "from": "anchorMembership", "to": "term"},
+            {"id": "anchor-membership-constituency", "fact": "membership_represents", "from": "anchorMembership", "to": "constituency"},
+            {"id": "answer-member-membership", "fact": "member_has_membership", "from": "member", "to": "membership"},
+            {"id": "answer-membership-term", "fact": "membership_in_term", "from": "membership", "to": "term"},
+            {"id": "answer-membership-constituency", "fact": "membership_represents", "from": "membership", "to": "constituency"},
+            {"id": "constituency-term", "fact": "constituency_in_term", "from": "constituency", "to": "term"},
+        ],
+        "constraints": [],
+        "answer": (
+            {"kind": "count", "referent": "member", "distinctBy": "identity"}
+            if count else {
+                "kind": "entities", "referent": "member", "distinctBy": "identity",
+                "display": ["name"], "details": [], "preserveEvidence": False,
+            }
+        ),
+    }
+
+
 def _add_term_chronology(fixture: MemberRelationshipFixture, ordinal: int, start: str, end: str | None) -> None:
     houses = fixture.dataset.graph(URIRef(HOUSE_GRAPH))
     term = URIRef(fixture.terms[ordinal])
@@ -288,7 +337,7 @@ def test_v2_contract_and_strict_draft_schema_cover_both_relationship_projections
     draft_schema = load_composable_draft_schema()
     Draft202012Validator.check_schema(plan_schema)
     Draft202012Validator.check_schema(draft_schema)
-    assert contract["contractVersion"] == "2.21.0"
+    assert contract["contractVersion"] == "2.22.0"
     count_contract = contract["memberCountProjections"]["member_relationship_composition"]["semantics"]
     assert "Stage C term-scoped ParliamentaryParty listing" in count_contract
     assert "not seats/election totals" in count_contract
@@ -299,6 +348,7 @@ def test_v2_contract_and_strict_draft_schema_cover_both_relationship_projections
     assert validator.is_valid(_representation_draft())
     assert validator.is_valid(_member_count_draft())
     assert validator.is_valid(_member_count_draft(date_point="1994-06-14"))
+    assert validator.is_valid(_anchored_shared_constituency_draft(previous=True, count=True))
     assert "oneOf" not in json.dumps(draft_schema)
     assert len(draft_schema["$defs"]["answer"]["anyOf"]) == 2
     assert "Never output SPARQL" in build_composable_planner_instructions()
@@ -309,6 +359,8 @@ def test_v2_contract_and_strict_draft_schema_cover_both_relationship_projections
     assert "latest recorded term, the most recent term, or the last term" in instructions
     assert '"last term in the Dáil"' in instructions
     assert "recorded Member RDF identities, not seats or election events" in instructions
+    assert "globally previous Dáil" in instructions
+    assert "term-wide recorded co-membership, not simultaneous service" in instructions
 
 
 @pytest.mark.parametrize(("question", "draft", "expected"), [
@@ -920,3 +972,246 @@ def test_distinct_member_count_never_returns_a_number_from_a_truncated_page(monk
     assert outcome.status == "source_data_unavailable"
     assert outcome.result is None
     assert "no partial answer was returned" in outcome.diagnostic
+
+
+def _add_q24_term_chronology(fixture: MemberRelationshipFixture, *, missing: int | None = None) -> None:
+    chronology = {
+        31: ("2011-03-09T00:00:00", "2016-02-03T00:00:00"),
+        32: ("2016-04-06T00:00:00", "2020-01-14T00:00:00"),
+        33: ("2020-02-08T00:00:00", None),
+    }
+    for ordinal, (start, end) in chronology.items():
+        if ordinal != missing:
+            _add_term_chronology(fixture, ordinal, start, end)
+
+
+Q24_PREVIOUS = "How many other TDs were in the same constituency as Aoife Byrne during the last Dáil?"
+Q24_NUMBERED = "Who were the other TDs sharing the same constituency as Eimear Walsh in the 32nd Dáil?"
+Q24_NUMBERED_AOIFE = "Which other TDs shared the same constituency as Aoife Byrne in the 32nd Dáil?"
+Q24_NUMBERED_AOIFE_COUNT = "How many other TDs shared the same constituency as Aoife Byrne in the 32nd Dáil?"
+
+
+def test_anchored_shared_constituency_draft_preserves_previous_and_numbered_term_scopes():
+    previous, unsupported = validate_composable_plan_draft(
+        _anchored_shared_constituency_draft(previous=True, count=True), question=Q24_PREVIOUS,
+    )
+    assert unsupported is None
+    previous_plan = complete_v2_plan(previous, as_of=AS_OF)
+    assert previous_plan["referents"]["term"]["selector"] == {"kind": "previousTerm", "house": "Dail"}
+    assert previous_plan["constraints"] == []
+    assert len(previous_plan["relations"]) == 7
+
+    numbered, unsupported = validate_composable_plan_draft(
+        _anchored_shared_constituency_draft(anchor="Eimear Walsh", ordinal=32), question=Q24_NUMBERED,
+    )
+    assert unsupported is None
+    assert numbered["referents"]["term"]["selector"] == {"kind": "termNumber", "number": 32}
+
+
+def test_anchored_shared_constituency_previous_term_count_and_list_share_one_complete_selection():
+    count_fixture = MemberRelationshipFixture()
+    list_fixture = MemberRelationshipFixture()
+    _add_q24_term_chronology(count_fixture)
+    _add_q24_term_chronology(list_fixture)
+
+    counted, _ = _run(count_fixture, Q24_PREVIOUS, _anchored_shared_constituency_draft(previous=True, count=True))
+    listed, _ = _run(
+        list_fixture,
+        "Which other Members shared a constituency with Aoife Byrne during the previous Dáil?",
+        _anchored_shared_constituency_draft(previous=True),
+    )
+
+    assert counted.status == listed.status == "success"
+    assert counted.result.rows == (("1",),)
+    assert listed.result.rows == (("Eimear Walsh", MEMBER_CARA),)
+    assert counted.sparql == listed.sparql
+    assert counted.plan["referents"]["term"]["iri"] == list_fixture.terms[32]
+    assert counted.plan["referents"]["term"]["asOfEvidence"] == AS_OF.isoformat()
+    assert counted.plan["referents"]["constituency"]["iri"] == count_fixture.constituencies[("Dublin-Central-32", 32)]
+    assert "FILTER(?member != ?anchorMember)" in counted.sparql
+    assert "FILTER(?anchorMembership != ?membership)" in counted.sparql
+    assert "term-wide recorded co-membership, not evidence of simultaneous service" in counted.diagnostic
+    assert "latestRecorded" not in counted.sparql
+
+
+def test_anchored_shared_constituency_numbered_term_accepts_a_different_anchor_and_returns_other_members():
+    fixture = MemberRelationshipFixture()
+    outcome, _ = _run(fixture, Q24_NUMBERED, _anchored_shared_constituency_draft(anchor="Eimear Walsh", ordinal=32))
+
+    assert outcome.status == "success"
+    assert outcome.result.rows == (("Aoife Byrne", MEMBER_ALICE),)
+    assert outcome.plan["referents"]["anchorMember"]["iri"] == MEMBER_CARA
+    assert outcome.plan["referents"]["term"]["iri"] == fixture.terms[32]
+    assert "agents:termNo \"32\"^^xsd:integer" in outcome.sparql
+
+
+@pytest.mark.parametrize(("question", "draft"), [
+    (
+        "How many other Fine Gael TDs shared the same constituency as Aoife Byrne in the 32nd Dáil?",
+        _anchored_shared_constituency_draft(ordinal=32, count=True),
+    ),
+    (
+        "Which other TDs were in the same constituency as Aoife Byrne at the same time in the 32nd Dáil?",
+        _anchored_shared_constituency_draft(ordinal=32),
+    ),
+    (
+        "Who were the other TDs in the same constituency as Aoife Byrne on 14 June 1994?",
+        _anchored_shared_constituency_draft(ordinal=32),
+    ),
+    (
+        "Who were the other TDs in the same constituency as Aoife Byrne during the 32nd Dáil when she was elected?",
+        _anchored_shared_constituency_draft(ordinal=32),
+    ),
+    (
+        "Who were the other TDs in the same constituency as Aoife Byrne during the 32nd term?",
+        _anchored_shared_constituency_draft(ordinal=32),
+    ),
+])
+def test_anchored_shared_constituency_does_not_drop_party_simultaneity_or_date_filters(question, draft):
+    with pytest.raises((InvalidComposableDraft, UnsupportedComposableRequest)):
+        validate_composable_plan_draft(draft, question=question)
+
+
+@pytest.mark.parametrize("failure", ["missing", "tied", "conflicting", "overlap"])
+def test_previous_term_anchored_composition_fails_closed_on_incomplete_or_tied_global_chronology(failure):
+    fixture = MemberRelationshipFixture()
+    if failure == "missing":
+        _add_q24_term_chronology(fixture, missing=31)
+    elif failure == "tied":
+        _add_term_chronology(fixture, 31, "2016-04-06T00:00:00", "2019-01-01T00:00:00")
+        _add_term_chronology(fixture, 32, "2016-04-06T00:00:00", "2020-01-14T00:00:00")
+        _add_term_chronology(fixture, 33, "2020-02-08T00:00:00", None)
+    elif failure == "conflicting":
+        _add_q24_term_chronology(fixture)
+        houses = fixture.dataset.graph(URIRef(HOUSE_GRAPH))
+        term_32 = URIRef(fixture.terms[32])
+        conflicting_period = URIRef(f"{fixture.terms[32]}#conflicting-term-period")
+        houses.add((term_32, URIRef(DCT + "temporal"), conflicting_period))
+        houses.add((conflicting_period, URIRef(DCAT + "startDate"), Literal("2016-04-07T00:00:00", datatype=XSD.dateTime)))
+        houses.add((conflicting_period, URIRef(DCAT + "endDate"), Literal("2020-01-14T00:00:00", datatype=XSD.dateTime)))
+    else:
+        _add_term_chronology(fixture, 31, "2011-03-09T00:00:00", "2016-05-06T00:00:00")
+        _add_term_chronology(fixture, 32, "2016-04-06T00:00:00", "2020-01-14T00:00:00")
+        _add_term_chronology(fixture, 33, "2020-02-08T00:00:00", "2024-11-08T00:00:00")
+
+    outcome, _ = _run(fixture, Q24_PREVIOUS, _anchored_shared_constituency_draft(previous=True, count=True))
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert not any("FILTER(?member != ?anchorMember)" in query for query in fixture.queries)
+
+
+def test_anchored_shared_constituency_fails_closed_on_ambiguous_anchor_or_representation():
+    ambiguous_anchor = MemberRelationshipFixture()
+    duplicate_member = "https://data.oireachtas.ie/ie/oireachtas/member/id/Aoife-Byrne-duplicate"
+    ambiguous_anchor._add_member(duplicate_member, "Aoife Byrne", "Aoife-Byrne-duplicate", {32: "Dublin Central"})
+    anchor_outcome, _ = _run(
+        ambiguous_anchor, Q24_NUMBERED_AOIFE, _anchored_shared_constituency_draft(ordinal=32),
+    )
+    assert anchor_outcome.status == "ambiguous"
+    assert not any("FILTER(?member != ?anchorMember)" in query for query in ambiguous_anchor.queries)
+
+    ambiguous_representation = MemberRelationshipFixture()
+    other = "https://data.oireachtas.ie/ie/oireachtas/constituency/dail/Dublin-South-32"
+    constituency_graph = ambiguous_representation.dataset.graph(URIRef(CONSTITUENCY_GRAPH))
+    other_ref = URIRef(other)
+    constituency_graph.add((other_ref, RDF.type, URIRef(MEMBERS + "DailConstituency")))
+    constituency_graph.add((other_ref, URIRef(SKOS + "prefLabel"), Literal("Dublin South", lang="en")))
+    constituency_graph.add((other_ref, URIRef(MEMBERS + "constituencyInHouseTerm"), URIRef(ambiguous_representation.terms[32])))
+    anchor_graph = ambiguous_representation.dataset.graph(URIRef("https://data.oireachtas.ie/graph/member/Aoife-Byrne"))
+    anchor_membership = URIRef(f"{MEMBER_ALICE}#dail-membership-32")
+    anchor_graph.add((anchor_membership, URIRef(MEMBERS + "isRepresentativeFrom"), other_ref))
+    representation_outcome, _ = _run(
+        ambiguous_representation, Q24_NUMBERED_AOIFE, _anchored_shared_constituency_draft(ordinal=32),
+    )
+    assert representation_outcome.status == "ambiguous"
+    assert representation_outcome.result is None
+    assert not any("FILTER(?member != ?anchorMember)" in query for query in ambiguous_representation.queries)
+
+
+def test_anchored_shared_constituency_fails_closed_when_an_anchor_membership_has_no_representation():
+    fixture = MemberRelationshipFixture()
+    graph = fixture.dataset.graph(URIRef("https://data.oireachtas.ie/graph/member/Aoife-Byrne"))
+    missing_representation = URIRef(f"{MEMBER_ALICE}#unrepresented-dail-membership-32")
+    graph.add((URIRef(MEMBER_ALICE), URIRef(MEMBERS + "hasMembersMembership"), missing_representation))
+    graph.add((missing_representation, RDF.type, URIRef(MEMBERS + "DailMembership")))
+    graph.add((missing_representation, URIRef(MEMBERS + "inHouseTerm"), URIRef(fixture.terms[32])))
+
+    outcome, _ = _run(fixture, Q24_NUMBERED_AOIFE, _anchored_shared_constituency_draft(ordinal=32))
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert not any("FILTER(?member != ?anchorMember)" in query for query in fixture.queries)
+
+
+def test_anchored_shared_constituency_fails_closed_when_numbered_term_identity_is_ambiguous():
+    fixture = MemberRelationshipFixture()
+    houses = fixture.dataset.graph(URIRef(HOUSE_GRAPH))
+    duplicate = URIRef("https://data.oireachtas.ie/ie/oireachtas/houseTerm/dail/32-duplicate")
+    houses.add((duplicate, RDF.type, URIRef(AGENTS + "DailTerm")))
+    houses.add((duplicate, URIRef(AGENTS + "termNo"), Literal(32, datatype=XSD.integer)))
+
+    outcome, _ = _run(fixture, Q24_NUMBERED_AOIFE, _anchored_shared_constituency_draft(ordinal=32))
+
+    assert outcome.status == "ambiguous"
+    assert outcome.result is None
+    assert not any("FILTER(?member != ?anchorMember)" in query for query in fixture.queries)
+
+
+def test_anchored_shared_constituency_pagination_limit_never_returns_a_partial_count(monkeypatch):
+    import re
+    import poc.nlq.composable_plan as plan_module
+
+    monkeypatch.setattr(plan_module, "MAX_RESULT_OFFSET", 0)
+
+    class OneFullPageFixture(MemberRelationshipFixture):
+        def query(self, query: str) -> QueryResult:
+            if "FILTER(?member != ?anchorMember)" in query:
+                self.queries.append(query)
+                rows = tuple(
+                    (f"https://data.oireachtas.ie/ie/oireachtas/member/id/Member-{index:03d}", f"Member {index:03d}@en")
+                    for index in range(MAX_RESULT_ROWS)
+                )
+                return QueryResult("select", ("member", "memberName"), rows)
+            return super().query(query)
+
+    fixture = OneFullPageFixture()
+    outcome, _ = _run(
+        fixture, Q24_NUMBERED_AOIFE_COUNT, _anchored_shared_constituency_draft(ordinal=32, count=True),
+    )
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert "no partial answer was returned" in outcome.diagnostic
+    assert sum("FILTER(?member != ?anchorMember)" in query for query in fixture.queries) == 1
+
+
+def test_anchored_shared_constituency_list_and_count_retrieve_all_bounded_pages():
+    count_fixture = MemberRelationshipFixture(extra_shared_members=MAX_RESULT_ROWS + 5)
+    list_fixture = MemberRelationshipFixture(extra_shared_members=MAX_RESULT_ROWS + 5)
+    _add_q24_term_chronology(count_fixture)
+    _add_q24_term_chronology(list_fixture)
+    count_extra = _add_large_constituency_occurrence_members(count_fixture, 32)
+    list_extra = _add_large_constituency_occurrence_members(list_fixture, 32)
+
+    counted, _ = _run(
+        count_fixture, Q24_PREVIOUS, _anchored_shared_constituency_draft(previous=True, count=True),
+    )
+    listed, _ = _run(
+        list_fixture,
+        "Who were other Members in the same constituency as Aoife Byrne in the last Dáil?",
+        _anchored_shared_constituency_draft(previous=True),
+    )
+
+    expected = count_extra + 1  # every large member plus Eimear Walsh, excluding the anchor
+    assert counted.status == listed.status == "success"
+    assert len(listed.result.rows) == expected
+    assert counted.result.rows == ((str(expected),),)
+    assert counted.sparql == listed.sparql
+    assert "Complete matching results were retrieved in 2 bounded pages" in counted.diagnostic
+    assert "Complete matching results were retrieved in 2 bounded pages" in listed.diagnostic
+    assert count_extra == list_extra
+    answer_queries = [query for query in count_fixture.queries if "FILTER(?member != ?anchorMember)" in query]
+    assert len(answer_queries) == 2
+    assert "LIMIT 100 OFFSET 0" in answer_queries[0]
+    assert "LIMIT 100 OFFSET 100" in answer_queries[1]

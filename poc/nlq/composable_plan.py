@@ -817,8 +817,145 @@ def _validate_named_composition_ref(ref, *, semantic_type=None):
         raise PlanError("Named composition role requires exact mention and resolution fields.")
 
 
+def _validate_anchored_shared_constituency_plan(plan: dict[str, Any]) -> dict[str, Any]:
+    """Validate a term-wide exact-identity co-membership list/count."""
+    expected_fields = {
+        "version", "asOf", "family", "referents", "relations", "constraints", "answer",
+    }
+    if set(plan) != expected_fields or plan.get("family") != "member_relationship_composition":
+        raise PlanError("Anchored shared-constituency plans accept no extra fields or interpretation defaults.")
+    if plan["constraints"] != []:
+        raise PlanError("Term-wide shared-constituency selection does not accept temporal or additional constraints.")
+
+    refs = plan["referents"]
+    required_roles = {"member", "membership", "term", "constituency", "anchorMember", "anchorMembership"}
+    if not isinstance(refs, dict) or set(refs) != required_roles:
+        raise PlanError("Shared-constituency selection requires one anchor, one answer Member and two independent membership paths.")
+
+    if refs["member"] != {"type": "Member", "answer": True}:
+        raise PlanError("The shared-constituency answer must be the distinct Member identity set.")
+    if refs["membership"] != {"type": "DailMembership"} or refs["anchorMembership"] != {"type": "DailMembership"}:
+        raise PlanError("The anchor and answer require independent typed DailMembership evidence roles.")
+    _validate_named_composition_ref(refs["anchorMember"], semantic_type="Member")
+
+    term = refs["term"]
+    if not isinstance(term, dict) or term.get("type") != "DailTerm":
+        raise PlanError("The shared-constituency selection requires one exact DailTerm identity.")
+    selector = term.get("selector")
+    numbered_term = (
+        isinstance(selector, dict)
+        and selector == {"kind": "termNumber", "number": selector.get("number")}
+        and type(selector.get("number")) is int
+        and 1 <= selector["number"] <= 999
+    )
+    previous_term = selector == {"kind": "previousTerm", "house": "Dail"}
+    if not (numbered_term or previous_term):
+        raise PlanError("The shared-constituency term must be an exact numbered Dáil or globally previous Dáil.")
+    term_state = term.get("resolution")
+    if term_state is None:
+        if set(term) != {"type", "selector"}:
+            raise PlanError("An unresolved shared-constituency DailTerm has unsupported fields.")
+    elif term_state == "resolved":
+        term_fields = {"type", "selector", "resolution", "iri"}
+        if previous_term:
+            term_fields.add("asOfEvidence")
+            if term.get("asOfEvidence") != plan["asOf"]:
+                raise PlanError("A globally previous Dáil must preserve the exact reference-date evidence.")
+        if set(term) != term_fields:
+            raise PlanError("A resolved shared-constituency term requires its exact selector and local identity evidence.")
+        _require_local_iri(term["iri"], "DailTerm")
+    elif term_state == "ambiguous":
+        if set(term) != {"type", "selector", "resolution", "candidates"}:
+            raise PlanError("An ambiguous numbered Dáil requires explicit local identity candidates.")
+        candidates = term["candidates"]
+        if not isinstance(candidates, list) or len(candidates) < 2:
+            raise PlanError("An ambiguous numbered Dáil requires at least two local identities.")
+        for candidate in candidates:
+            if not isinstance(candidate, dict) or set(candidate) != {"iri", "label"}:
+                raise PlanError("Dáil-term candidates must preserve their local identity and label.")
+            _require_local_iri(candidate["iri"], "DailTerm candidate")
+    elif term_state in {"not_found", "source_data_unavailable", "unsupported_mapping"}:
+        if set(term) != {"type", "selector", "resolution"}:
+            raise PlanError("An unavailable shared-constituency term contains unsupported identity fields.")
+    else:
+        raise PlanError("DailTerm resolution state is outside the reviewed outcomes.")
+
+    constituency = refs["constituency"]
+    if not isinstance(constituency, dict) or constituency.get("type") != "DailConstituency":
+        raise PlanError("The shared constituency must be a typed local DailConstituency identity.")
+    constituency_state = constituency.get("resolution")
+    if constituency_state is None:
+        if set(constituency) != {"type"}:
+            raise PlanError("An unresolved shared constituency has unsupported identity fields.")
+    elif constituency_state == "resolved":
+        if set(constituency) != {"type", "resolution", "iri", "label"}:
+            raise PlanError("A resolved shared constituency requires its exact identity and local label.")
+        _require_local_iri(constituency["iri"], "DailConstituency")
+        if not isinstance(constituency["label"], str) or not constituency["label"].strip():
+            raise PlanError("A resolved shared constituency requires a readable local label.")
+    elif constituency_state == "ambiguous":
+        if set(constituency) != {"type", "resolution", "candidates"}:
+            raise PlanError("An ambiguous shared constituency requires explicit local candidates.")
+        candidates = constituency["candidates"]
+        if not isinstance(candidates, list) or len(candidates) < 2:
+            raise PlanError("An ambiguous shared constituency requires at least two identities.")
+        for candidate in candidates:
+            if not isinstance(candidate, dict) or set(candidate) != {"iri", "label"}:
+                raise PlanError("Constituency candidates must preserve their local identity and label.")
+            _require_local_iri(candidate["iri"], "DailConstituency candidate")
+            if not isinstance(candidate["label"], str) or not candidate["label"].strip():
+                raise PlanError("Constituency candidates require local labels.")
+    elif constituency_state in {"not_found", "source_data_unavailable", "unsupported_mapping"}:
+        if set(constituency) != {"type", "resolution"}:
+            raise PlanError("An unavailable shared constituency contains unsupported identity fields.")
+    else:
+        raise PlanError("DailConstituency resolution state is outside the reviewed outcomes.")
+
+    expected_edges = {
+        ("member_has_membership", "anchorMember", "anchorMembership"),
+        ("membership_in_term", "anchorMembership", "term"),
+        ("membership_represents", "anchorMembership", "constituency"),
+        ("member_has_membership", "member", "membership"),
+        ("membership_in_term", "membership", "term"),
+        ("membership_represents", "membership", "constituency"),
+        ("constituency_in_term", "constituency", "term"),
+    }
+    relations = plan["relations"]
+    if not isinstance(relations, list) or len(relations) != len(expected_edges):
+        raise PlanError("Both Members require independent paths to the same exact DailTerm and DailConstituency identities.")
+    relation_ids: set[str] = set()
+    actual_edges = []
+    for relation in relations:
+        if (not isinstance(relation, dict) or set(relation) != {"id", "fact", "from", "to"}
+                or any(not isinstance(relation.get(field), str) or not relation[field]
+                       for field in ("id", "fact", "from", "to"))):
+            raise PlanError("Shared-constituency relations require controlled IDs and typed endpoints.")
+        if relation["id"] in relation_ids:
+            raise PlanError("Shared-constituency relation IDs must be unique.")
+        relation_ids.add(relation["id"])
+        edge = (relation["fact"], relation["from"], relation["to"])
+        if edge not in expected_edges:
+            raise PlanError("The shared-constituency graph contains an unsupported relationship.")
+        if (refs[edge[1]]["type"], refs[edge[2]]["type"]) != _RELATION_TYPES.get(edge[0]):
+            raise PlanError("A shared-constituency relationship has incompatible typed referents.")
+        actual_edges.append(edge)
+    if set(actual_edges) != expected_edges or len(actual_edges) != len(expected_edges):
+        raise PlanError("The shared-constituency graph is disconnected, incomplete, or contains repeated edges.")
+
+    list_answer = {
+        "kind": "entities", "referent": "member", "distinctBy": "identity", "display": ["name"],
+        "details": [], "preserveEvidence": False,
+    }
+    count_answer = {"kind": "count", "referent": "member", "distinctBy": "identity"}
+    if plan.get("answer") not in (list_answer, count_answer):
+        raise PlanError("The shared-constituency projection returns a Member identity list or its distinct count.")
+    return plan
+
+
 def _validate_member_relationship_composition_plan(plan: dict[str, Any]) -> dict[str, Any]:
     """Validate the bounded Member–membership–Dáil-term graph projections."""
+    if isinstance(plan.get("referents"), dict) and "anchorMember" in plan["referents"]:
+        return _validate_anchored_shared_constituency_plan(plan)
     if "constraints" in plan and any(
         isinstance(ref, dict) and ref.get("type") == "PartyMembershipEpisode"
         for ref in (plan.get("referents", {}).values() if isinstance(plan.get("referents"), dict) else ())
@@ -1877,8 +2014,18 @@ def compile_bill_sponsorship_coverage_query(plan: dict[str, Any], *, supported_p
     return _query(query, supported_predicates)
 
 
-def previous_dail_term_query(as_of: date, *, supported_predicates) -> str:
-    """Select term/date evidence; ordering and previous-term selection are Python semantics."""
+def previous_dail_term_query(
+    as_of: date,
+    *,
+    supported_predicates,
+    include_undated: bool = False,
+) -> str:
+    """Select House-term date evidence; relative-term ordering is Python semantics.
+
+    The strict form includes every typed DailTerm, even when its date evidence
+    is missing, so a relative previous-term selection can fail closed instead
+    of silently omitting an undated term from the global chronology.
+    """
     contract = load_query_contract()
     temporal = _PLAN_CONTRACT["relativeTerm"]["dateMapping"]
     graph = next(item["graph"]["iri"] for item in contract["graphFamilies"]
@@ -1886,11 +2033,20 @@ def previous_dail_term_query(as_of: date, *, supported_predicates) -> str:
     period_link = _reviewed_predicate_for_qname(temporal["periodLinkPredicate"])
     start_predicate = _reviewed_predicate_for_qname(temporal["startPredicate"])
     end_predicate = _reviewed_predicate_for_qname(temporal["endPredicate"])
+    if include_undated:
+        chronology = f'''?term a agents:DailTerm .
+    OPTIONAL {{
+      ?term {period_link} ?period .
+      OPTIONAL {{ ?period {start_predicate} ?start . }}
+      OPTIONAL {{ ?period {end_predicate} ?end . }}
+    }}'''
+    else:
+        chronology = f'''?term a agents:DailTerm ; {period_link} ?period .
+    ?period {start_predicate} ?start .
+    OPTIONAL {{ ?period {end_predicate} ?end . }}'''
     query = _PREFIXES + f'''SELECT ?term ?start ?end WHERE {{
   GRAPH <{graph}> {{
-    ?term a agents:DailTerm ; {period_link} ?period .
-    ?period {start_predicate} ?start .
-    OPTIONAL {{ ?period {end_predicate} ?end . }}
+    {chronology}
   }}
 }} LIMIT 100'''
     return _query(query, supported_predicates)
@@ -1915,8 +2071,12 @@ def resolve_previous_dail(result: QueryResult, as_of: date) -> tuple[str, str]:
             raise NLQError("House-term query returned malformed date evidence.")
         iri, start_text, end_text = row[:3]
         _require_local_iri(iri, "HouseTerm")
+        if start_text in {"—", ""}:
+            raise NLQError("House-term chronology is incomplete; a Dáil term has no recorded start date.")
         start = _date_binding(start_text)
         end = _date_binding(end_text) if end_text not in {"—", ""} else None
+        if end is not None and end < start:
+            raise NLQError("House-term end precedes its start; no previous Dáil was selected.")
         if iri in rows and rows[iri] != (start, end):
             raise NLQError("Conflicting House-term date evidence; no term was selected.")
         rows[iri] = (start, end)
@@ -1927,9 +2087,22 @@ def resolve_previous_dail(result: QueryResult, as_of: date) -> tuple[str, str]:
     earlier = [(start, iri, end) for iri, (start, end) in rows.items() if start < current_start]
     if not earlier:
         raise NLQError("Source data does not include a previous Dáil term.")
-    start, iri, end = max(earlier, key=lambda item: (item[0], item[1]))
+    latest_start = max(start for start, _iri, _end in earlier)
+    latest = [item for item in earlier if item[0] == latest_start]
+    if len(latest) != 1:
+        raise NLQError("House-term chronology ties for the immediately previous Dáil; no term was selected.")
+    start, iri, end = latest[0]
     if end is None or end >= current_start:
         raise NLQError("House-term dates overlap or are incomplete; previous Dáil cannot be determined safely.")
+    chronological = sorted(
+        ((start, iri, end) for iri, (start, end) in rows.items()),
+        key=lambda item: (item[0], item[1]),
+    )
+    for (_left_start, _left_iri, left_end), (right_start, _right_iri, _right_end) in zip(
+        chronological, chronological[1:],
+    ):
+        if left_end is None or left_end >= right_start:
+            raise NLQError("House-term chronology contains overlapping or open-ended terms; no previous Dáil was selected.")
     return iri, active[0]
 
 
@@ -2320,6 +2493,10 @@ def compile_member_relationship_composition_query(
             plan, mapping, supported_predicates=supported_predicates,
         )
     refs = plan["referents"]
+    if "anchorMember" in refs:
+        return _compile_anchored_shared_constituency_query(
+            plan, mapping, supported_predicates=supported_predicates, offset=offset,
+        )
     member_id = plan["answer"]["referent"]
     graph_contents: dict[str, list[str]] = {
         "member-records": [], "houses": [], "constituencies": [],
@@ -2403,6 +2580,184 @@ def compile_member_relationship_composition_query(
   {blocks}
 }} ORDER BY ?memberName ?{member_id} ?membership LIMIT {MAX_RESULT_ROWS} OFFSET {offset}'''
     return _query(query, supported_predicates)
+
+
+def _compile_anchored_shared_constituency_query(
+    plan: dict[str, Any],
+    mapping: dict[str, Any],
+    *,
+    supported_predicates,
+    offset: int,
+) -> str:
+    """Compile the closed two-Member, shared-term/shared-constituency graph."""
+    refs = plan["referents"]
+    graph_contents: dict[str, list[str]] = {
+        "member-records": [], "anchor": [], "houses": [], "constituencies": [],
+    }
+    for referent_id, referent in refs.items():
+        semantic_type = referent["type"]
+        variable = f"?{referent_id}"
+        graph_family = (
+            "anchor" if referent_id in {"anchorMember", "anchorMembership"}
+            else mapping["type_graph"][semantic_type]
+        )
+        graph_contents[graph_family].append(f"{variable} a {mapping['rdf_types'][semantic_type]} .")
+        if semantic_type == "Member":
+            if referent_id == "anchorMember":
+                if referent.get("resolution") != "resolved":
+                    raise PlanError("The named anchor Member must resolve uniquely before compilation.")
+                identity = URIRef(_require_local_iri(referent.get("iri"), "Member")).n3()
+                graph_contents[graph_family].append(f"VALUES {variable} {{ {identity} }}")
+            else:
+                graph_contents[graph_family].append(
+                    f"OPTIONAL {{ {variable} {mapping['member_name']} ?memberName . }}"
+                )
+        elif semantic_type == "DailTerm":
+            if referent.get("resolution") != "resolved":
+                raise PlanError("The selected DailTerm must resolve uniquely before compilation.")
+            term_iri = URIRef(_require_local_iri(referent.get("iri"), "DailTerm")).n3()
+            graph_contents[graph_family].append(f"VALUES {variable} {{ {term_iri} }}")
+            if referent["selector"]["kind"] == "termNumber":
+                number = referent["selector"]["number"]
+                graph_contents[graph_family].append(
+                    f'{variable} {mapping["term_number"]} "{number}"^^xsd:integer .'
+                )
+        elif semantic_type == "DailConstituency":
+            if referent.get("resolution") != "resolved":
+                raise PlanError("The anchor constituency must resolve from accepted Member evidence before compilation.")
+            constituency_iri = URIRef(
+                _require_local_iri(referent.get("iri"), "DailConstituency")
+            ).n3()
+            graph_contents[graph_family].append(f"VALUES {variable} {{ {constituency_iri} }}")
+
+    for relation in plan["relations"]:
+        definition = mapping["relations"][relation["fact"]]
+        predicate = _reviewed_predicate(relation["fact"])
+        graph_family = "anchor" if relation["from"] in {"anchorMember", "anchorMembership"} else definition["subjectGraph"]
+        graph_contents[graph_family].append(
+            f"?{relation['from']} {predicate} ?{relation['to']} ."
+        )
+
+    member_body = "\n    ".join(graph_contents["member-records"])
+    anchor_body = "\n    ".join(graph_contents["anchor"])
+    houses_body = "\n    ".join(graph_contents["houses"])
+    constituency_body = "\n    ".join(graph_contents["constituencies"])
+    member_graph = f'''GRAPH ?memberGraph {{
+    {member_body}
+  }}
+  FILTER(STRSTARTS(STR(?memberGraph), {json.dumps(mapping['member_prefix'])}))'''
+    anchor_graph = f'''GRAPH ?anchorGraph {{
+    {anchor_body}
+  }}
+  FILTER(STRSTARTS(STR(?anchorGraph), {json.dumps(mapping['member_prefix'])}))'''
+    houses = f'''GRAPH <{mapping["houses_graph"]}> {{
+    {houses_body}
+  }}'''
+    constituencies = f'''GRAPH <{mapping["constituency_graph"]}> {{
+    {constituency_body}
+  }}'''
+    query = _PREFIXES + f'''SELECT DISTINCT ?member ?memberName WHERE {{
+  {member_graph}
+  {anchor_graph}
+  {houses}
+  {constituencies}
+  FILTER(?member != ?anchorMember)
+  FILTER(?anchorMembership != ?membership)
+}} ORDER BY ?memberName ?member LIMIT {MAX_RESULT_ROWS} OFFSET {offset}'''
+    return _query(query, supported_predicates)
+
+
+def compile_anchor_constituency_evidence_query(
+    plan: dict[str, Any],
+    mapping: dict[str, Any],
+    *,
+    supported_predicates,
+) -> str:
+    """Read every anchor representation path in the already selected term."""
+    refs = plan["referents"]
+    anchor_iri = URIRef(_require_local_iri(refs["anchorMember"].get("iri"), "Member")).n3()
+    term_iri = URIRef(_require_local_iri(refs["term"].get("iri"), "DailTerm")).n3()
+    contract = load_query_contract()
+    label = contract["labelsByEntityType"].get("DailConstituency", {})
+    label_predicate = label.get("predicate")
+    if (not isinstance(label_predicate, str)
+            or label.get("language") != "en"
+            or label_predicate not in contract["queryableProperties"]):
+        raise PlanError("The reviewed English DailConstituency label is unavailable.")
+    label_predicate = _reviewed_predicate_for_qname(label_predicate)
+    query = _PREFIXES + f'''SELECT DISTINCT ?anchorMembership ?constituency ?occurrenceTerm ?constituencyLabel WHERE {{
+  GRAPH ?anchorGraph {{
+    {anchor_iri} a {mapping["rdf_types"]["Member"]} ;
+      {_reviewed_predicate("member_has_membership")} ?anchorMembership .
+    ?anchorMembership a {mapping["rdf_types"]["DailMembership"]} ;
+      {_reviewed_predicate("membership_in_term")} {term_iri} .
+    OPTIONAL {{
+      ?anchorMembership {_reviewed_predicate("membership_represents")} ?constituency .
+      OPTIONAL {{
+        FILTER(BOUND(?constituency))
+        GRAPH <{mapping["constituency_graph"]}> {{
+          ?constituency a {mapping["rdf_types"]["DailConstituency"]} ;
+            {_reviewed_predicate("constituency_in_term")} ?occurrenceTerm .
+          OPTIONAL {{ ?constituency {label_predicate} ?constituencyLabel . FILTER(LANG(?constituencyLabel) = "en") }}
+        }}
+      }}
+    }}
+  }}
+  FILTER(STRSTARTS(STR(?anchorGraph), {json.dumps(mapping["member_prefix"])}))
+}} LIMIT 100'''
+    return _query(query, supported_predicates)
+
+
+def resolve_anchor_constituency_evidence(
+    result: QueryResult,
+    *,
+    selected_term_iri: str,
+) -> tuple[str | None, str | None, tuple[dict[str, str], ...]]:
+    """Accept one unambiguous constituency shared by all anchor term paths."""
+    required = {"anchorMembership", "constituency", "occurrenceTerm", "constituencyLabel"}
+    if result.kind != "select" or not required.issubset(result.columns) or len(result.rows) >= 100:
+        raise NLQError("The anchor's term-scoped constituency evidence is incomplete; no answer was selected.")
+    indexes = {name: result.columns.index(name) for name in required}
+    constituencies_by_membership: dict[str, set[str]] = {}
+    labels_by_constituency: dict[str, set[str]] = {}
+    incomplete_evidence = False
+    for row in result.rows:
+        if len(row) <= max(indexes.values()):
+            raise NLQError("The anchor's constituency evidence row was truncated.")
+        membership = _require_local_iri(row[indexes["anchorMembership"]], "DailMembership")
+        constituency = row[indexes["constituency"]]
+        occurrence_term = row[indexes["occurrenceTerm"]]
+        raw_label = row[indexes["constituencyLabel"]]
+        if constituency in {"—", ""} or occurrence_term in {"—", ""} or raw_label in {"—", ""}:
+            incomplete_evidence = True
+            continue
+        constituency = _require_local_iri(constituency, "DailConstituency")
+        occurrence_term = _require_local_iri(occurrence_term, "DailTerm")
+        if occurrence_term != selected_term_iri:
+            incomplete_evidence = True
+            continue
+        label = raw_label.removesuffix("@en").strip()
+        if not label:
+            incomplete_evidence = True
+            continue
+        constituencies_by_membership.setdefault(membership, set()).add(constituency)
+        labels_by_constituency.setdefault(constituency, set()).add(label)
+    if not result.rows:
+        raise NLQError("No accepted anchor DailMembership represents a constituency in the selected term.")
+    if incomplete_evidence or not constituencies_by_membership:
+        raise NLQError("The anchor's selected-term representation is missing or conflicts with its constituency occurrence.")
+
+    identities = set().union(*constituencies_by_membership.values())
+    if any(len(labels_by_constituency.get(iri, set())) != 1 for iri in identities):
+        raise NLQError("An anchor constituency has missing or conflicting English label evidence.")
+    candidates = tuple(
+        {"iri": iri, "label": next(iter(labels_by_constituency[iri]))}
+        for iri in sorted(identities)
+    )
+    if len(identities) != 1 or any(len(values) != 1 for values in constituencies_by_membership.values()):
+        return None, None, candidates
+    only_iri = next(iter(identities))
+    return only_iri, candidates[0]["label"], ()
 
 
 def _compile_member_party_temporal_query(plan: dict[str, Any], mapping: dict[str, Any], *, supported_predicates) -> str:
@@ -4440,6 +4795,39 @@ def _execute_member_relationship_composition_plan(
             "unsupported_mapping", plan=plan, diagnostic=str(error),
             request_family="member_relationship_composition",
         )
+    if "anchorMember" in plan["referents"]:
+        ref = plan["referents"]["anchorMember"]
+        try:
+            resolution = resolve_local_entity_label(
+                "Member", ref["mention"], fuseki,
+                supported_predicates=supported_predicates,
+            )
+        except NLQError as error:
+            ref["resolution"] = "source_data_unavailable"
+            plan = validate_plan(plan)
+            return PlanOutcome(
+                "source_data_unavailable", plan=plan,
+                diagnostic=f"The named anchor Member could not be resolved from accepted local identity evidence: {error}",
+                request_family="member_relationship_composition",
+            )
+        if resolution.state != "resolved" or len(resolution.candidates) != 1:
+            candidates = tuple({"iri": item.iri, "label": item.label} for item in resolution.candidates)
+            if resolution.state == "ambiguous":
+                ref.update(resolution="ambiguous", candidates=list(candidates))
+                status = "ambiguous"
+            else:
+                ref["resolution"] = "not_found"
+                status = "not_found"
+            plan = validate_plan(plan)
+            return PlanOutcome(
+                status, plan=plan, candidates=candidates,
+                diagnostic=(f"No unique accepted local Member identity matches {ref['mention']}; "
+                            "no relationship answer query was run."),
+                request_family="member_relationship_composition",
+            )
+        candidate = resolution.candidates[0]
+        ref.update(resolution="resolved", iri=candidate.iri, label=candidate.label)
+
     if "anchor" in plan["referents"]:
         for key in ("anchor", "office"):
             ref = plan["referents"][key]
@@ -4479,22 +4867,28 @@ def _execute_member_relationship_composition_plan(
     resolution_failures: list[tuple[str, str]] = []
     for _referent_id, referent in term_referents:
         selector = referent["selector"]
-        if selector["kind"] == "currentTerm":
+        if selector["kind"] in {"currentTerm", "previousTerm"}:
             try:
-                query = previous_dail_term_query(as_of, supported_predicates=supported_predicates)
+                query = previous_dail_term_query(
+                    as_of, supported_predicates=supported_predicates,
+                    include_undated=selector["kind"] == "previousTerm",
+                )
                 result = fuseki.query(query)
                 if (result.kind != "select"
                         or not {"term", "start", "end"}.issubset(result.columns)
                         or len(result.rows) >= 100):
-                    raise NLQError("House-term date evidence is incomplete; no current Dáil was selected.")
-                from .representation import resolve_current_dail
-                current_term = resolve_current_dail(result, as_of)
+                    raise NLQError("House-term chronology is incomplete; no relative Dáil term was selected.")
+                if selector["kind"] == "previousTerm":
+                    selected_term, _current_term = resolve_previous_dail(result, as_of)
+                else:
+                    from .representation import resolve_current_dail
+                    selected_term = resolve_current_dail(result, as_of)
             except (PlanError, NLQError) as error:
                 referent["resolution"] = "source_data_unavailable"
                 resolution_failures.append(("source_data_unavailable", str(error)))
                 continue
             referent.update({
-                "resolution": "resolved", "iri": current_term,
+                "resolution": "resolved", "iri": selected_term,
                 "asOfEvidence": as_of.isoformat(),
             })
             continue
@@ -4605,10 +4999,48 @@ def _execute_member_relationship_composition_plan(
             request_family="member_relationship_composition",
         )
 
+    if "anchorMember" in plan["referents"]:
+        constituency_ref = plan["referents"]["constituency"]
+        evidence_query = None
+        try:
+            evidence_query = compile_anchor_constituency_evidence_query(
+                plan, mapping, supported_predicates=supported_predicates,
+            )
+            evidence_result = fuseki.query(evidence_query)
+            constituency_iri, constituency_label, candidates = resolve_anchor_constituency_evidence(
+                evidence_result, selected_term_iri=plan["referents"]["term"]["iri"],
+            )
+        except (NLQError, IndexError, KeyError, TypeError) as error:
+            constituency_ref.update(resolution="source_data_unavailable")
+            plan = validate_plan(plan)
+            return PlanOutcome(
+                "source_data_unavailable", plan=plan, sparql=evidence_query,
+                diagnostic=f"The anchor's exact constituency in the selected Dáil could not be established: {error}",
+                request_family="member_relationship_composition",
+            )
+        except PlanError as error:
+            return PlanOutcome(
+                "unsupported_mapping", plan=plan, sparql=evidence_query,
+                diagnostic=f"The anchor constituency evidence query could not be compiled safely: {error}",
+                request_family="member_relationship_composition",
+            )
+        if candidates:
+            constituency_ref.update(resolution="ambiguous", candidates=list(candidates))
+            plan = validate_plan(plan)
+            return PlanOutcome(
+                "ambiguous", plan=plan, sparql=evidence_query, candidates=candidates,
+                diagnostic="The anchor has multiple distinct accepted constituency identities in the selected Dáil; no answer query was run.",
+                request_family="member_relationship_composition",
+            )
+        constituency_ref.update({
+            "resolution": "resolved", "iri": constituency_iri,
+            "label": constituency_label,
+        })
+
     constituency_refs = [
         (referent_id, referent)
         for referent_id, referent in plan["referents"].items()
-        if referent["type"] == "DailConstituency"
+        if referent["type"] == "DailConstituency" and "anchorMember" not in plan["referents"]
     ]
     for constituency_id, constituency in (
         (ref_id, item) for ref_id, scope in constituency_refs for item in scope.get("members", [scope])
@@ -4884,13 +5316,20 @@ def _execute_member_relationship_composition_plan(
     empty_note = (" No matching membership interval is recorded for this date; this is not proof that no Member served, "
                   "because local source completeness is not certified."
                   if date_constraint is not None and not names_by_member else "")
+    composition_note = (
+        " Other Members are selected by independent membership paths to the anchor's exact term and constituency, "
+        "and the anchor is excluded by exact Member IRI. This is term-wide recorded co-membership, not evidence of "
+        "simultaneous service."
+        if "anchorMember" in plan["referents"] else
+        " Members are matched through the complete selected membership/term/constituency graph."
+    )
     return PlanOutcome(
         "success", plan=plan, sparql=answer_query, result=result,
         diagnostic=((f"Complete matching results were retrieved in {len(page_offsets)} bounded pages "
-                     f"(page size {MAX_RESULT_ROWS}); the displayed SPARQL is the first page. "
-                     if len(page_offsets) > 1 else "")
-                    + "Members are deduplicated by exact RDF identity and matched through the complete selected "
-                    "membership/term/constituency graph." + date_note + count_note + empty_note
+                      f"(page size {MAX_RESULT_ROWS}); the displayed SPARQL is the first page. "
+                      if len(page_offsets) > 1 else "")
+                    + "Members are deduplicated by exact RDF identity." + composition_note
+                    + date_note + count_note + empty_note
                     + " Results reflect local records; historical source completeness is not certified."),
         request_family="member_relationship_composition",
     )

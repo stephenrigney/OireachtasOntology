@@ -223,6 +223,21 @@ fails closed, and no match does not establish that the office has no holder.
 Date-less past-tense requests, tenure durations and election-event questions
 are not converted into current-point queries.
 
+Composable contract `2.22.0` adds a bounded anchored shared-constituency list/count
+within the existing Member relationship composition. It accepts one exact
+numbered Dáil or the globally previous Dáil selected from House-owned chronology
+relative to `asOf`; it never substitutes the named Member's latest-recorded term
+or a fixed ordinal. The anchor and answer Members must have independent recorded
+DailMembership paths to the exact same term and constituency occurrence. The
+anchor's local identity and its single constituency in that term are resolved
+before the answer query, and the anchor is excluded by Member IRI. Count and
+list use the same fully paginated bounded selection. The result means term-wide
+recorded co-membership, not necessarily simultaneous service, and does not
+certify roster completeness. Missing, tied, conflicting, ambiguous, capped or
+truncated evidence fails closed. Party, office, election, explicit-date,
+simultaneity and additional filters remain unsupported rather than being
+dropped.
+
 ### Other launcher commands
 
 ```bash
