@@ -452,7 +452,13 @@ def create_app(
                                  "Stage A typed family result using reviewed RDF ownership, with identity and date qualifications preserved."
                                 if is_stage_a else
                                  "Distinct Dáil-term identities present in both independently resolved Member membership paths."
-                                  if is_shared_dail_terms else "Distinct Members, displayed by name.")
+                                 if is_shared_dail_terms else "Distinct Members, displayed by name.")
+                if (is_member_relationship_composition and outcome.plan
+                        and outcome.plan.get("answer", {}).get("kind") == "count"):
+                    answer_text = (
+                        "Count distinct recorded Member RDF identities from the validated selection, not seats or election totals; "
+                        "local source completeness is not certified."
+                    )
                 if is_member_relationship_composition and composition_current_term and composition_has_party_episode:
                     answer_text = (
                         f"Distinct reviewed affiliation identities are returned only when both the PartyMembership and "

@@ -177,25 +177,38 @@ explicitly partial accepted-evidence coverage, not complete historical rosters.
 An implicit geographic set prompts for exact alternatives; substring matches
 may suggest grounded occurrences but never choose the set. Semantic capability
 selection also exposes the existing full-calendar-month OfficeHolding window.
-The temporal-selection and bounded-aggregation extension (composable contract
-`2.19.0`) adds House-owned Dáil-term selection from one calendar date or a
-complete month, including exact term identity and recorded start date; term
-dates are not evidence of an actual sitting. A Member's latest recorded Dáil
-term is selected from that Member's exact DailMembership-to-DailTerm paths and
-House-owned chronology, then projected to its constituency; it is not an
-election-event answer. The accepted OfficeHolding overlap path also supports a
-calendar-date point and a complete calendar year. Overlap does not mean
-uninterrupted service, and missing historical holdings are not backfilled from
-observations or labels.
+The temporal-selection extension (composable contract `2.19.0`) adds
+House-owned Dáil-term selection from one calendar date or a complete month,
+including exact term identity and recorded start date; term dates are not
+evidence of an actual sitting. A Member's latest recorded Dáil term is selected
+from that Member's exact DailMembership-to-DailTerm paths and House-owned
+chronology, then projected to its constituency; it is not an election-event
+answer. The accepted OfficeHolding overlap path also supports a calendar-date
+point and a complete calendar year. Overlap does not mean uninterrupted service,
+and missing historical holdings are not backfilled from observations or labels.
 
-For one explicitly numbered Dáil and one exact constituency occurrence, the
-Member list may optionally be filtered by one inclusive DailMembership
-calendar-date point and projected as a count of distinct Member RDF identities.
-List and count use the same validated selection and bounded pages. These are
-recorded-people counts, never seat allocations or election-event totals; missing,
-conflicting or truncated evidence fails closed, and a local zero is not a
-complete historical negative. Other compound election or aggregate requests
-remain unsupported as a whole, not reduced to an easier query. See the [bounded composition implementation
+Composable contract `2.20.0` adds bounded distinct-Member counts. For one exact
+constituency occurrence in an explicitly numbered or uniquely date-resolved
+current Dáil, the Member list may be projected as a count of distinct Member
+RDF identities. In this non-party Member/constituency projection, unqualified
+“in this Dáil” selects the exact House-date-resolved term and uses its recorded
+memberships term-wide, regardless of whether the question says “represent” or
+“represented”; it overrides only the implicit present-tense as-of default.
+Explicit “currently”/“now”/“today” or “as of now/today” still requires the
+DailMembership interval to contain the query date, while a literal date remains
+its exact membership-date point. Numbered, other dated, election, and
+party-filtered requests retain their existing scopes. A bounded membership-date
+query may report 0 recorded Member identities only after complete valid
+execution with no uncertain or conflicting interval evidence; that is not a
+certified historical negative. A named-party count without a constituency is
+supported for one explicitly numbered Dáil: it reuses
+the Stage C term-scoped party listing and requires exact PartyMembership/
+DailMembership and party-identity joins with validated interval overlap. List
+and count use the same selection; counts are never seat allocations or
+election-event totals. Missing, conflicting, capped or truncated evidence fails
+closed, and recorded counts do not certify complete rosters. Other compound
+election or aggregate requests remain unsupported as a whole, not reduced to an
+easier query. See the [bounded composition implementation
 report](../reports/query-service/bounded-composition-reuse.md), including its
 untuned holdout failure and limits; this is not arbitrary graph traversal.
 

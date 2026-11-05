@@ -17,11 +17,15 @@ from poc.nlq.composable_plan import (
     PlanError,
     compile_member_relationship_composition_query,
     execute_question,
+    validate_plan,
 )
 from poc.nlq.composable_semantic_planner import (
     build_composable_planner_instructions,
+    complete_v2_plan,
     load_composable_draft_schema,
+    validate_composable_plan_draft,
 )
+from poc.nlq.interpretation import member_relationship_as_of_default
 from poc.nlq.fuseki import FusekiReadiness
 from poc.nlq.results import QueryResult
 from poc.nlq.vocabulary import supported_predicates
@@ -40,8 +44,10 @@ CURRENT_CONSTITUENCY = "https://data.oireachtas.ie/ie/oireachtas/constituency/da
 MEMBER = "https://data.oireachtas.ie/ie/oireachtas/member/id/Aoife-Byrne"
 SF_IDENTITY = "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein"
 FF_IDENTITY = "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail"
+FG_IDENTITY = "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fine-gael"
 QUESTION_U06 = "Which political parties were represented by TDs for Galway West during the 33rd Dáil?"
 QUESTION_U16 = "Which Sinn Féin TDs represented Galway West during the 33rd Dáil?"
+QUESTION_PARTY_COUNT = "How many Fine Gael TDs were in the 27th Dáil?"
 
 
 def _binding(value) -> str:
@@ -69,6 +75,7 @@ class PartyRepresentationFixture:
         term_iri=TERM,
         term_number=33,
         constituency_iri=CONSTITUENCY,
+        constituency_label="Galway West",
         term_dates=None,
     ):
         if episodes is None:
@@ -89,6 +96,7 @@ class PartyRepresentationFixture:
         self.term_iri = term_iri
         self.term_number = term_number
         self.constituency_iri = constituency_iri
+        self.constituency_label = constituency_label
         self.term_dates = term_dates
         self._add_shared_occurrences()
         self._add_member(
@@ -111,7 +119,7 @@ class PartyRepresentationFixture:
         constituencies = self.dataset.graph(URIRef("https://data.oireachtas.ie/graph/constituencies"))
         constituency = URIRef(self.constituency_iri)
         constituencies.add((constituency, RDF.type, URIRef(MEMBERS + "DailConstituency")))
-        constituencies.add((constituency, URIRef(SKOS + "prefLabel"), Literal("Galway West", lang="en")))
+        constituencies.add((constituency, URIRef(SKOS + "prefLabel"), Literal(self.constituency_label, lang="en")))
         constituencies.add((constituency, URIRef(MEMBERS + "constituencyInHouseTerm"), term))
 
     @staticmethod
@@ -281,11 +289,144 @@ def _temporal_draft(
     }
 
 
+def _party_only_draft(*, answer_kind="count", affiliation="Fine Gael", ordinal=27):
+    if answer_kind == "count":
+        answer = {"kind": "count", "referent": "member", "distinctBy": "identity"}
+    else:
+        answer = {
+            "kind": "entities", "referent": "member", "distinctBy": "identity", "display": ["name"],
+            "details": [
+                {"referent": "affiliation", "display": ["label"]},
+                {"referent": "episode", "display": ["start", "end"]},
+                {"referent": "membership", "display": ["start", "end"]},
+            ],
+            "preserveEvidence": True,
+        }
+    return {
+        "version": 2,
+        "supported": True,
+        "family": "member_relationship_composition",
+        "unsupportedReason": None,
+        "intent": "Count or list Members with the named party identity in one numbered Dáil term.",
+        "referents": {
+            "member": {"type": "Member", "mention": None},
+            "membership": {"type": "DailMembership", "mention": None},
+            "term": {"type": "DailTerm", "mention": None,
+                     "selector": {"kind": "termNumber", "number": ordinal}},
+            "episode": {"type": "PartyMembershipEpisode", "mention": None},
+            "party": {"type": "ParliamentaryParty", "mention": None},
+            "affiliation": {"type": "PoliticalAffiliationIdentity", "mention": affiliation},
+        },
+        "relations": [
+            {"id": "member-membership", "fact": "member_has_membership", "from": "member", "to": "membership"},
+            {"id": "membership-term", "fact": "membership_in_term", "from": "membership", "to": "term"},
+            {"id": "member-episode", "fact": "member_party_membership", "from": "member", "to": "episode"},
+            {"id": "episode-membership", "fact": "party_episode_in_membership", "from": "episode", "to": "membership"},
+            {"id": "episode-party", "fact": "episode_in_parliamentary_party", "from": "episode", "to": "party"},
+            {"id": "party-term", "fact": "party_active_during_term", "from": "party", "to": "term"},
+            {"id": "party-affiliation", "fact": "parliamentary_party_has_affiliation_identity", "from": "party", "to": "affiliation"},
+        ],
+        "constraints": [{
+            "referent": "episode", "field": "partyEpisodeInterval", "operator": "overlaps", "value": "membership",
+        }],
+        "answer": answer,
+    }
+
+
+def _add_party_only_member(fixture, *, slug, name, membership_interval, episode_intervals):
+    member_iri = f"https://data.oireachtas.ie/ie/oireachtas/member/id/{slug}"
+    member = URIRef(member_iri)
+    graph = fixture.dataset.graph(URIRef(f"https://data.oireachtas.ie/graph/member/{slug}"))
+    membership = URIRef(member_iri + "#dail-membership-" + str(fixture.term_number))
+    graph.add((member, RDF.type, URIRef(AGENTS + "Member")))
+    graph.add((member, URIRef(FOAF + "name"), Literal(name)))
+    graph.add((member, URIRef(MEMBERS + "hasMembersMembership"), membership))
+    graph.add((membership, RDF.type, URIRef(MEMBERS + "OireachtasMembership")))
+    graph.add((membership, RDF.type, URIRef(MEMBERS + "DailMembership")))
+    graph.add((membership, URIRef(MEMBERS + "inHouseTerm"), URIRef(fixture.term_iri)))
+    _add_test_date_range(graph, membership, member_iri + "#membership-range", membership_interval)
+
+    party = URIRef(f"https://data.oireachtas.ie/ie/oireachtas/party/dail/{fixture.term_number}/fine-gael")
+    parties = fixture.dataset.graph(URIRef("https://data.oireachtas.ie/graph/parties"))
+    parties.add((party, RDF.type, URIRef(MEMBERS + "ParliamentaryParty")))
+    parties.add((party, URIRef(SKOS + "prefLabel"), Literal(f"Fine Gael, {fixture.term_number}th Dáil", lang="en")))
+    parties.add((party, URIRef(MEMBERS + "activeDuringTerm"), URIRef(fixture.term_iri)))
+    identities = fixture.dataset.graph(URIRef("https://data.oireachtas.ie/graph/political-affiliations/identities"))
+    identity = URIRef(FG_IDENTITY)
+    identities.add((party, URIRef(MEMBERS + "hasPoliticalAffiliationIdentity"), identity))
+    identities.add((identity, RDF.type, URIRef(MEMBERS + "PoliticalAffiliationIdentity")))
+    identities.add((identity, URIRef(SKOS + "prefLabel"), Literal("Fine Gael", lang="en")))
+
+    for index, episode_interval in enumerate(episode_intervals):
+        episode = URIRef(member_iri + f"#party-membership-{index}")
+        graph.add((member, URIRef(MEMBERS + "hasMembersMembership"), episode))
+        graph.add((episode, RDF.type, URIRef(MEMBERS + "PartyMembership")))
+        graph.add((episode, URIRef(MEMBERS + "inOireachtasMembership"), membership))
+        graph.add((episode, URIRef(MEMBERS + "isPartyMembershipOf"), party))
+        _add_test_date_range(graph, episode, member_iri + f"#party-range-{index}", episode_interval)
+    return member_iri
+
+
+def _add_test_date_range(graph, owner, range_iri, interval):
+    date_range = URIRef(range_iri)
+    graph.add((owner, URIRef(MEMBERS + "hasMembershipDateRange"), date_range))
+    graph.add((date_range, RDF.type, URIRef(MEMBERS + "DateRange")))
+    graph.add((date_range, URIRef(MEMBERS + "StartDate"), Literal(interval[0], datatype=XSD.dateTime)))
+    if interval[1] is not None:
+        graph.add((date_range, URIRef(MEMBERS + "EndDate"), Literal(interval[1], datatype=XSD.dateTime)))
+
+
+def _representation_member_draft(*, constituency, answer_kind="count"):
+    answer = ({"kind": "count", "referent": "member", "distinctBy": "identity"}
+              if answer_kind == "count" else {
+                  "kind": "entities", "referent": "member", "distinctBy": "identity",
+                  "display": ["name"], "details": [], "preserveEvidence": False,
+              })
+    return {
+        "version": 2,
+        "supported": True,
+        "family": "member_relationship_composition",
+        "unsupportedReason": None,
+        "intent": "Count or list Members represented by one exact constituency occurrence in this selected Dáil.",
+        "referents": {
+            "member": {"type": "Member", "mention": None},
+            "membership": {"type": "DailMembership", "mention": None},
+            "term": {"type": "DailTerm", "mention": None, "selector": {"kind": "currentTerm"}},
+            "constituency": {"type": "DailConstituency", "mention": constituency},
+        },
+        "relations": [
+            {"id": "member-membership", "fact": "member_has_membership", "from": "member", "to": "membership"},
+            {"id": "membership-term", "fact": "membership_in_term", "from": "membership", "to": "term"},
+            {"id": "membership-constituency", "fact": "membership_represents", "from": "membership", "to": "constituency"},
+            {"id": "constituency-term", "fact": "constituency_in_term", "from": "constituency", "to": "term"},
+        ],
+        "constraints": [],
+        "answer": answer,
+    }
+
+
+def _add_current_term_member(fixture, *, slug, name, interval):
+    member_iri = f"https://data.oireachtas.ie/ie/oireachtas/member/id/{slug}"
+    member = URIRef(member_iri)
+    graph = fixture.dataset.graph(URIRef(f"https://data.oireachtas.ie/graph/member/{slug}"))
+    membership = URIRef(member_iri + "#dail-membership-34")
+    graph.add((member, RDF.type, URIRef(AGENTS + "Member")))
+    graph.add((member, URIRef(FOAF + "name"), Literal(name)))
+    graph.add((member, URIRef(MEMBERS + "hasMembersMembership"), membership))
+    graph.add((membership, RDF.type, URIRef(MEMBERS + "OireachtasMembership")))
+    graph.add((membership, RDF.type, URIRef(MEMBERS + "DailMembership")))
+    graph.add((membership, URIRef(MEMBERS + "inHouseTerm"), URIRef(CURRENT_TERM)))
+    graph.add((membership, URIRef(MEMBERS + "isRepresentativeFrom"), URIRef(CURRENT_CONSTITUENCY)))
+    _add_test_date_range(graph, membership, member_iri + "#membership-range", interval)
+    return member_iri
+
+
 def _current_term_fixture(
     *,
     membership_interval=("2024-11-29T00:00:00", None),
     party_interval=("2024-11-29T00:00:00", None),
     term_dates=("2024-11-29", None),
+    constituency_label="Galway West",
 ):
     return PartyRepresentationFixture(
         membership_interval=membership_interval,
@@ -296,6 +437,7 @@ def _current_term_fixture(
         term_iri=CURRENT_TERM,
         term_number=34,
         constituency_iri=CURRENT_CONSTITUENCY,
+        constituency_label=constituency_label,
         term_dates=term_dates,
     )
 
@@ -308,6 +450,170 @@ def _run(fixture: PartyRepresentationFixture, question: str, draft: dict):
         semantic_plan_generator_factory=lambda: generator,
     )
     return outcome, generator
+
+
+def test_current_constituency_count_applies_asof_membership_interval_and_matches_list():
+    question = "How many TDs currently represent Meath East constituency?"
+    count_fixture = _current_term_fixture(constituency_label="Meath East")
+    former = _add_current_term_member(
+        count_fixture, slug="Former-TD", name="Former TD",
+        interval=("2024-11-29T00:00:00", "2025-12-31T00:00:00"),
+    )
+    counted, _ = _run(count_fixture, question, _representation_member_draft(constituency="Meath East"))
+
+    list_question = "Which TDs currently represent Meath East constituency?"
+    list_fixture = _current_term_fixture(constituency_label="Meath East")
+    _add_current_term_member(
+        list_fixture, slug="Former-TD", name="Former TD",
+        interval=("2024-11-29T00:00:00", "2025-12-31T00:00:00"),
+    )
+    listed, _ = _run(list_fixture, list_question,
+                     _representation_member_draft(constituency="Meath East", answer_kind="entities"))
+
+    assert counted.status == "success", counted.diagnostic
+    assert counted.result.rows == (("1",),)
+    assert counted.plan["constraints"] == [{
+        "referent": "membership", "field": "membershipInterval", "operator": "on",
+        "value": AS_OF.isoformat(),
+    }]
+    assert counted.plan["interpretation"]["date"] == AS_OF.isoformat()
+    assert listed.status == "success", listed.diagnostic
+    assert {row[1] for row in listed.result.rows} == {MEMBER}
+    assert former not in {row[1] for row in listed.result.rows}
+    assert counted.result.rows[0][0] == str(len(listed.result.rows))
+
+
+def test_this_dail_constituency_count_is_term_wide_not_active_only_and_matches_list():
+    question = "How many TDs represented the Dublin Central constituency in this Dáil?"
+    count_fixture = _current_term_fixture(constituency_label="Dublin Central")
+    _add_current_term_member(
+        count_fixture, slug="Former-TD", name="Former TD",
+        interval=("2024-11-29T00:00:00", "2025-12-31T00:00:00"),
+    )
+    counted, _ = _run(
+        count_fixture, question,
+        _representation_member_draft(constituency="Dublin Central"),
+    )
+
+    list_question = "Who represented the Dublin Central constituency in this Dáil?"
+    list_fixture = _current_term_fixture(constituency_label="Dublin Central")
+    _add_current_term_member(
+        list_fixture, slug="Former-TD", name="Former TD",
+        interval=("2024-11-29T00:00:00", "2025-12-31T00:00:00"),
+    )
+    listed, _ = _run(
+        list_fixture, list_question,
+        _representation_member_draft(constituency="Dublin Central", answer_kind="entities"),
+    )
+
+    assert counted.status == "success", counted.diagnostic
+    assert counted.result.rows == (("2",),)
+    assert counted.plan.get("interpretation") is None
+    assert counted.plan["constraints"] == []
+    assert "membershipRange" not in counted.sparql
+    assert listed.status == "success", listed.diagnostic
+    assert len({row[1] for row in listed.result.rows}) == 2
+    assert counted.result.rows[0][0] == str(len(listed.result.rows))
+
+
+def test_present_tense_in_this_dail_is_term_wide_and_matches_list():
+    question = "How many TDs represent Meath East in this Dáil?"
+    count_fixture = _current_term_fixture(constituency_label="Meath East")
+    _add_current_term_member(
+        count_fixture, slug="Former-TD", name="Former TD",
+        interval=("2024-11-29T00:00:00", "2025-12-31T00:00:00"),
+    )
+    counted, _ = _run(count_fixture, question, _representation_member_draft(constituency="Meath East"))
+
+    list_question = "Who represented the Meath East constituency in this Dáil?"
+    list_fixture = _current_term_fixture(constituency_label="Meath East")
+    _add_current_term_member(
+        list_fixture, slug="Former-TD", name="Former TD",
+        interval=("2024-11-29T00:00:00", "2025-12-31T00:00:00"),
+    )
+    listed, _ = _run(
+        list_fixture, list_question,
+        _representation_member_draft(constituency="Meath East", answer_kind="entities"),
+    )
+
+    assert counted.status == "success", counted.diagnostic
+    assert counted.result.rows == (("2",),)
+    assert counted.plan["constraints"] == []
+    assert counted.plan.get("interpretation") is None
+    assert "membershipRange" not in counted.sparql
+    assert listed.status == "success", listed.diagnostic
+    assert len({row[1] for row in listed.result.rows}) == 2
+    assert counted.result.rows[0][0] == str(len(listed.result.rows))
+
+
+def test_explicit_current_representation_in_this_dail_requires_asof_interval():
+    question = "How many TDs currently represent Meath East in this Dáil?"
+    count_fixture = _current_term_fixture(constituency_label="Meath East")
+    _add_current_term_member(
+        count_fixture, slug="Former-TD", name="Former TD",
+        interval=("2024-11-29T00:00:00", "2025-12-31T00:00:00"),
+    )
+    counted, _ = _run(count_fixture, question, _representation_member_draft(constituency="Meath East"))
+
+    list_question = "Which TDs currently represent Meath East in this Dáil?"
+    list_fixture = _current_term_fixture(constituency_label="Meath East")
+    _add_current_term_member(
+        list_fixture, slug="Former-TD", name="Former TD",
+        interval=("2024-11-29T00:00:00", "2025-12-31T00:00:00"),
+    )
+    listed, _ = _run(
+        list_fixture, list_question,
+        _representation_member_draft(constituency="Meath East", answer_kind="entities"),
+    )
+
+    assert counted.status == "success", counted.diagnostic
+    assert counted.result.rows == (("1",),)
+    assert counted.plan["constraints"] == [{
+        "referent": "membership", "field": "membershipInterval", "operator": "on",
+        "value": AS_OF.isoformat(),
+    }]
+    assert counted.plan["interpretation"]["date"] == AS_OF.isoformat()
+    assert "membershipRange" in counted.sparql
+    assert listed.status == "success", listed.diagnostic
+    assert len(listed.result.rows) == 1
+    assert counted.result.rows[0][0] == str(len(listed.result.rows))
+
+
+def test_explicit_date_membership_filter_can_return_only_a_recorded_zero():
+    fixture = _current_term_fixture(
+        constituency_label="Meath East",
+        membership_interval=("2024-11-29T00:00:00", "2025-12-31T00:00:00"),
+    )
+    question = "How many TDs represented Meath East in this Dáil on 2026-10-28?"
+    draft = _representation_member_draft(constituency="Meath East")
+    draft["constraints"] = [{
+        "referent": "membership", "field": "membershipInterval", "operator": "on",
+        "value": AS_OF.isoformat(),
+    }]
+    outcome, _ = _run(
+        fixture, question, draft,
+    )
+
+    assert outcome.status == "success", outcome.diagnostic
+    assert outcome.result.rows == (("0",),)
+    assert outcome.plan["constraints"][0]["value"] == "2026-10-28"
+    assert "No matching membership interval is recorded for this date" in outcome.diagnostic
+    assert "not proof that no Member served" in outcome.diagnostic
+    assert "historical source completeness is not certified" in outcome.diagnostic
+
+
+@pytest.mark.parametrize(("question", "requires_as_of"), [
+    ("How many TDs represent Meath East in this Dáil?", False),
+    ("How many TDs represented Meath East in this Dáil?", False),
+    ("How many TDs currently represent Meath East in this Dáil?", True),
+    ("How many TDs now represent Meath East in this Dáil?", True),
+    ("How many TDs represent Meath East today in this Dáil?", True),
+    ("How many TDs represented Meath East as of now in this Dáil?", True),
+    ("How many TDs represented Meath East as of today in this Dáil?", True),
+    ("How many TDs represented Meath East as of 2026-10-28 in this Dáil?", False),
+])
+def test_this_dail_scope_precedence_is_independent_of_verb_tense(question, requires_as_of):
+    assert member_relationship_as_of_default(question, "Meath East") is requires_as_of
 
 
 def _ask(monkeypatch, fixture, question, draft):
@@ -327,11 +633,124 @@ def test_temporal_draft_schema_contract_and_exact_evidence_constraints():
     draft = _temporal_draft(affiliation_mention="Sinn Féin")
     errors = list(Draft202012Validator(load_composable_draft_schema()).iter_errors(draft))
     assert not errors
+    assert Draft202012Validator(load_composable_draft_schema()).is_valid(_party_only_draft())
     contract = json.loads((ROOT / "poc/specs/composable-query-plan-contract.json").read_text())
     definition = next(item for item in contract["constraints"] if item["field"] == "partyEpisodeInterval")
+    empty_count = contract["temporalSelectionAndAggregation"]["memberCount"]["empty"]
     assert definition["dateDatatype"] == "xsd:dateTime"
     assert definition["endAbsentMeans"] == "open-ended"
     assert definition["rangeOrStartAbsentMeans"] == "uncertain"
+    assert "complete valid execution" in empty_count
+    assert "not a certified historical negative" in empty_count
+
+
+def test_final_validator_rejects_affiliation_projection_for_party_only_term_plan():
+    final_draft, unsupported = validate_composable_plan_draft(
+        _party_only_draft(), question=QUESTION_PARTY_COUNT,
+    )
+    assert unsupported is None
+    plan = complete_v2_plan(final_draft, as_of=AS_OF)
+    plan["referents"]["affiliation"] = {
+        "type": "PoliticalAffiliationIdentity", "answer": True,
+    }
+    plan["answer"] = {
+        "kind": "entities", "referent": "affiliation", "distinctBy": "identity",
+        "display": ["label"],
+        "details": [
+            {"referent": "member", "display": ["name"]},
+            {"referent": "episode", "display": ["start", "end"]},
+            {"referent": "membership", "display": ["start", "end"]},
+        ],
+        "preserveEvidence": True,
+    }
+
+    with pytest.raises(PlanError, match="Party-only term selections require a named-party Member answer"):
+        validate_plan(plan)
+
+
+def _party_count_fixture(*, omit_membership_range=False, episodes=None):
+    term_number = 27
+    if episodes is None:
+        episodes = [{
+            "key": "fine-gael", "party_label": "Fine Gael, 27th Dáil",
+            "identity": FG_IDENTITY, "identity_label": "Fine Gael",
+            "interval": ("1981-01-01T00:00:00", "1981-06-30T00:00:00"),
+        }]
+    fixture = PartyRepresentationFixture(
+        membership_interval=("1980-01-01T00:00:00", "1985-01-01T00:00:00"),
+        episodes=episodes,
+        omit_membership_range=omit_membership_range,
+        term_number=term_number,
+    )
+    if not omit_membership_range:
+        _add_party_only_member(
+            fixture, slug="Ciaran-O-Reilly", name="Ciarán O'Reilly",
+            membership_interval=("1980-01-01T00:00:00", "1985-01-01T00:00:00"),
+            episode_intervals=[
+                ("1981-03-01T00:00:00", "1981-06-30T00:00:00"),
+                ("1982-01-01T00:00:00", "1982-12-31T00:00:00"),
+            ],
+        )
+    return fixture
+
+
+def test_party_only_numbered_term_count_is_distinct_and_equivalent_to_member_list():
+    count_fixture = _party_count_fixture()
+    count, _ = _run(count_fixture, QUESTION_PARTY_COUNT, _party_only_draft())
+
+    list_question = "Which Fine Gael TDs were in the 27th Dáil?"
+    list_fixture = _party_count_fixture()
+    listed, _ = _run(list_fixture, list_question, _party_only_draft(answer_kind="entities"))
+
+    assert count.status == "success", count.diagnostic
+    assert count.result.columns == ("Distinct recorded Members",)
+    assert count.result.rows == (("2",),)
+    assert listed.status == "success", listed.diagnostic
+    member_iris = {row[1] for row in listed.result.rows}
+    assert len(member_iris) == 2
+    assert len(listed.result.rows) == 2
+    assert count.result.rows[0][0] == str(len(member_iris))
+    assert "VALUES ?party" in count.sparql
+    assert "activeDuringTerm" in count.sparql
+    assert "?constituency" not in count.sparql
+    assert len(count_fixture.queries) == 4  # term, affiliation, Stage C party gate, evidence query
+
+
+def test_party_only_distinct_member_count_is_rendered_through_ask(monkeypatch):
+    fixture = _party_count_fixture()
+    response, generator = _ask(monkeypatch, fixture, QUESTION_PARTY_COUNT, _party_only_draft())
+
+    assert response.status_code == 200
+    assert 'data-outcome="answer"' in response.text
+    assert "Distinct recorded Members" in response.text
+    assert ">2<" in response.text
+    assert "Count distinct recorded Member RDF identities" in response.text
+    assert "not seats or election totals" in response.text
+    assert generator.calls == [QUESTION_PARTY_COUNT]
+    assert generator.closed
+
+
+def test_party_only_count_fails_closed_on_missing_membership_interval():
+    fixture = _party_count_fixture(omit_membership_range=True)
+    outcome, _ = _run(fixture, QUESTION_PARTY_COUNT, _party_only_draft())
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert "no mapped date-range/start" in outcome.diagnostic
+
+
+def test_party_only_count_fails_closed_at_temporal_evidence_cap():
+    episodes = [{
+        "key": "fine-gael", "party_label": "Fine Gael, 27th Dáil",
+        "identity": FG_IDENTITY, "identity_label": "Fine Gael",
+        "interval": ("1981-01-01T00:00:00", "1981-06-30T00:00:00"),
+    } for _ in range(100)]
+    fixture = _party_count_fixture(episodes=episodes)
+    outcome, _ = _run(fixture, QUESTION_PARTY_COUNT, _party_only_draft())
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert "100-row cap" in outcome.diagnostic
 
 
 def test_planner_instructions_include_exact_temporal_answer_and_constraint_shapes():
@@ -343,6 +762,8 @@ def test_planner_instructions_include_exact_temporal_answer_and_constraint_shape
     assert '"referent":"member","distinctBy":"identity"' in instructions
     assert '"referent":"episode","display":["start","end"]' in instructions
     assert '"preserveEvidence":true' in instructions
+    assert 'unqualified "in this Dáil" is term-wide regardless of represent/represented' in instructions
+    assert 'Explicit "currently"/"now"/"today" or "as of now/today"' in instructions
 
 
 @pytest.mark.parametrize(("question", "draft"), [

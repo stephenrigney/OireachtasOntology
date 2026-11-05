@@ -521,22 +521,27 @@ def _validate_member_party_composition_plan(plan: dict[str, Any]) -> dict[str, A
     refs = plan.get("referents")
     expected_types = {
         "member": "Member", "membership": "DailMembership", "term": "DailTerm",
-        "constituency": "DailConstituency", "episode": "PartyMembershipEpisode",
-        "party": "ParliamentaryParty", "affiliation": "PoliticalAffiliationIdentity",
+        "episode": "PartyMembershipEpisode", "party": "ParliamentaryParty",
+        "affiliation": "PoliticalAffiliationIdentity",
     }
     anchored = isinstance(refs, dict) and "anchor" in refs
+    party_only = isinstance(refs, dict) and "constituency" not in refs and not anchored
+    if not party_only:
+        expected_types["constituency"] = "DailConstituency"
     if anchored:
         expected_types.update(anchor="Member", anchor_membership="DailMembership",
                               holding="OfficeHolding", office="NamedOffice")
     if not isinstance(refs, dict) or set(refs) != set(expected_types):
         raise PlanError("Dated party/representation composition requires exactly its reviewed referent roles.")
     answer = plan.get("answer")
-    if not isinstance(answer, dict) or answer.get("kind") != "entities":
-        raise PlanError("Dated party/representation composition requires an entity answer.")
+    if not isinstance(answer, dict) or answer.get("kind") not in {"entities", "count"}:
+        raise PlanError("Dated party composition requires a validated Member/identity list or Member count answer.")
     answer_ref = answer.get("referent")
     party_answer = answer_ref == "affiliation"
     if answer_ref not in {"member", "affiliation"}:
         raise PlanError("The composition must answer either Member identities or reviewed political-affiliation identities.")
+    if party_only and party_answer:
+        raise PlanError("Party-only term selections require a named-party Member answer, not an affiliation answer.")
 
     for key, semantic_type in expected_types.items():
         ref = refs[key]
@@ -546,7 +551,18 @@ def _validate_member_party_composition_plan(plan: dict[str, Any]) -> dict[str, A
     if refs["member"] != expected_member:
         raise PlanError("The Member answer role does not match the selected composition projection.")
     for key in ("membership", "episode", "party") + (("anchor_membership", "holding") if anchored else ()):
-        if refs[key] != {"type": expected_types[key]}:
+        if key == "party" and party_only and set(refs[key]) == {"type", "selectedIRIs"}:
+            selected_parties = refs[key]["selectedIRIs"]
+            if (not isinstance(selected_parties, list) or not selected_parties
+                    or any(not isinstance(iri, str) for iri in selected_parties)
+                    or selected_parties != sorted(set(selected_parties))):
+                raise PlanError("The term-scoped party selection must be a sorted, unique, nonempty identity list.")
+            for iri in selected_parties:
+                _require_local_iri(iri, "selected ParliamentaryParty")
+            if (not isinstance(refs["affiliation"], dict)
+                    or refs["affiliation"].get("resolution") != "resolved"):
+                raise PlanError("Selected ParliamentaryParty identities require one resolved PoliticalAffiliationIdentity.")
+        elif refs[key] != {"type": expected_types[key]}:
             raise PlanError(f"Referent {key!r} must be a plain typed evidence role.")
 
     term = refs["term"]
@@ -565,10 +581,13 @@ def _validate_member_party_composition_plan(plan: dict[str, Any]) -> dict[str, A
         and 1 <= selector["number"] <= 999
     )
     current_term = selector == {"kind": "currentTerm", "house": "Dail"}
+    if party_only and not numeric_term:
+        raise PlanError("Party-only Member selection requires one explicitly numbered DailTerm.")
     from .interpretation import validate_default
     try:
-        scope = refs["constituency"]
-        mentions = [item.get("mention", "") for item in scope["members"]] if "members" in scope else [scope.get("mention", "")]
+        scope = refs.get("constituency", {})
+        mentions = ([item.get("mention", "") for item in scope["members"]]
+                    if "members" in scope else [scope.get("mention", "")])
         for mention in mentions:
             validate_default(plan, constituency=mention, current=current_term)
     except ValueError as error:
@@ -580,8 +599,13 @@ def _validate_member_party_composition_plan(plan: dict[str, Any]) -> dict[str, A
         if set(term) != ({"type"} if anchored else {"type", "selector"}):
             raise PlanError("An unresolved DailTerm contains unsupported fields.")
     elif term_resolution == "resolved":
-        if set(term) != {"type", "selector", "resolution", "iri"}:
-            raise PlanError("A resolved DailTerm must carry its exact local identity only.")
+        expected_term_fields = {"type", "selector", "resolution", "iri"}
+        if current_term:
+            expected_term_fields.add("asOfEvidence")
+            if term.get("asOfEvidence") != plan.get("asOf"):
+                raise PlanError("A resolved current DailTerm must preserve its exact asOf date evidence.")
+        if set(term) != expected_term_fields:
+            raise PlanError("A resolved DailTerm must carry its exact local identity evidence only.")
         _require_local_iri(term["iri"], "DailTerm")
     elif term_resolution in {"ambiguous", "not_found", "source_data_unavailable", "unsupported_mapping"}:
         if term_resolution == "ambiguous":
@@ -596,41 +620,43 @@ def _validate_member_party_composition_plan(plan: dict[str, Any]) -> dict[str, A
     else:
         raise PlanError("DailTerm resolution state is outside the reviewed outcomes.")
 
-    constituency = refs["constituency"]
-    identity_set = "members" in constituency
-    if identity_set:
-        if anchored or set(constituency) != {"type", "members"} or not isinstance(constituency["members"], list) or not 2 <= len(constituency["members"]) <= 4:
-            raise PlanError("A grounded constituency OR set requires two to four explicit term-scoped identities.")
-        for item in constituency["members"]:
-            _validate_named_composition_ref(item, semantic_type="DailConstituency")
-        mentions = [_normalise_label(item["mention"]) for item in constituency["members"]]
-        iris = [item["iri"] for item in constituency["members"] if item.get("resolution") == "resolved"]
-        if len(set(mentions)) != len(mentions) or len(set(iris)) != len(iris):
-            raise PlanError("An identity set must preserve distinct constituency mentions and identities.")
-    constituency_states = {
-        "unresolved": {"type", "mention", "resolution"},
-        "resolved": {"type", "mention", "resolution", "iri", "label"},
-        "ambiguous": {"type", "mention", "resolution", "candidates"},
-        "not_found": {"type", "mention", "resolution"},
-        "source_data_unavailable": {"type", "mention", "resolution"},
-        "unsupported_mapping": {"type", "mention", "resolution"},
-    }
-    state = constituency.get("resolution")
-    if not (anchored or identity_set) and (state not in constituency_states or set(constituency) != constituency_states[state]
-            or not isinstance(constituency.get("mention"), str) or not constituency["mention"].strip()):
-        raise PlanError("DailConstituency resolution fields or exact mention are invalid.")
-    if state == "resolved":
-        _require_local_iri(constituency["iri"], "DailConstituency")
-        if not isinstance(constituency["label"], str) or not constituency["label"].strip():
-            raise PlanError("A resolved DailConstituency requires its local label.")
-    if state == "ambiguous":
-        candidates = constituency["candidates"]
-        if not isinstance(candidates, list) or len(candidates) < 2:
-            raise PlanError("Ambiguous constituency resolution requires distinct candidates.")
-        for candidate in candidates:
-            if not isinstance(candidate, dict) or set(candidate) != {"iri", "label"}:
-                raise PlanError("Constituency candidates must contain local identities and labels.")
-            _require_local_iri(candidate["iri"], "DailConstituency candidate")
+    identity_set = False
+    if not party_only:
+        constituency = refs["constituency"]
+        identity_set = "members" in constituency
+        if identity_set:
+            if anchored or set(constituency) != {"type", "members"} or not isinstance(constituency["members"], list) or not 2 <= len(constituency["members"]) <= 4:
+                raise PlanError("A grounded constituency OR set requires two to four explicit term-scoped identities.")
+            for item in constituency["members"]:
+                _validate_named_composition_ref(item, semantic_type="DailConstituency")
+            mentions = [_normalise_label(item["mention"]) for item in constituency["members"]]
+            iris = [item["iri"] for item in constituency["members"] if item.get("resolution") == "resolved"]
+            if len(set(mentions)) != len(mentions) or len(set(iris)) != len(iris):
+                raise PlanError("An identity set must preserve distinct constituency mentions and identities.")
+        constituency_states = {
+            "unresolved": {"type", "mention", "resolution"},
+            "resolved": {"type", "mention", "resolution", "iri", "label"},
+            "ambiguous": {"type", "mention", "resolution", "candidates"},
+            "not_found": {"type", "mention", "resolution"},
+            "source_data_unavailable": {"type", "mention", "resolution"},
+            "unsupported_mapping": {"type", "mention", "resolution"},
+        }
+        state = constituency.get("resolution")
+        if not (anchored or identity_set) and (state not in constituency_states or set(constituency) != constituency_states[state]
+                or not isinstance(constituency.get("mention"), str) or not constituency["mention"].strip()):
+            raise PlanError("DailConstituency resolution fields or exact mention are invalid.")
+        if state == "resolved":
+            _require_local_iri(constituency["iri"], "DailConstituency")
+            if not isinstance(constituency["label"], str) or not constituency["label"].strip():
+                raise PlanError("A resolved DailConstituency requires its local label.")
+        if state == "ambiguous":
+            candidates = constituency["candidates"]
+            if not isinstance(candidates, list) or len(candidates) < 2:
+                raise PlanError("Ambiguous constituency resolution requires distinct candidates.")
+            for candidate in candidates:
+                if not isinstance(candidate, dict) or set(candidate) != {"iri", "label"}:
+                    raise PlanError("Constituency candidates must contain local identities and labels.")
+                _require_local_iri(candidate["iri"], "DailConstituency candidate")
 
     affiliation = refs["affiliation"]
     if party_answer:
@@ -667,14 +693,17 @@ def _validate_member_party_composition_plan(plan: dict[str, Any]) -> dict[str, A
     expected_edges = {
         "member_has_membership": ("member", "membership"),
         "membership_in_term": ("membership", "term"),
-        "membership_represents": ("membership", "constituency"),
-        "constituency_in_term": ("constituency", "term"),
         "member_party_membership": ("member", "episode"),
         "party_episode_in_membership": ("episode", "membership"),
         "episode_in_parliamentary_party": ("episode", "party"),
         "party_active_during_term": ("party", "term"),
         "parliamentary_party_has_affiliation_identity": ("party", "affiliation"),
     }
+    if not party_only:
+        expected_edges.update({
+            "membership_represents": ("membership", "constituency"),
+            "constituency_in_term": ("constituency", "term"),
+        })
     edges = [(fact, source, target) for fact, (source, target) in expected_edges.items()]
     if anchored:
         edges.extend([
@@ -741,6 +770,9 @@ def _validate_member_party_composition_plan(plan: dict[str, Any]) -> dict[str, A
     }:
         if not party_answer:
             raise PlanError("Party-list answers must target PoliticalAffiliationIdentity.")
+    elif answer == {"kind": "count", "referent": "member", "distinctBy": "identity"}:
+        if not party_only or party_answer or anchored:
+            raise PlanError("Only the bounded numbered-term party-only Member projection supports a temporal count.")
     elif answer == {
         "kind": "entities", "referent": "member", "distinctBy": "identity", "display": ["name"],
         "details": [
@@ -796,7 +828,7 @@ def _validate_member_relationship_composition_plan(plan: dict[str, Any]) -> dict
         frozenset({"version", "asOf", "family", "referents", "relations", "answer"}),
         frozenset({"version", "asOf", "family", "referents", "relations", "constraints", "answer"}),
     }
-    if frozenset(plan) not in allowed_fields:
+    if frozenset(plan) - {"interpretation"} not in allowed_fields:
         raise PlanError("Member relationship composition does not accept extra constraints or plan fields.")
     if "constraints" in plan and not isinstance(plan["constraints"], list):
         raise PlanError("Member relationship composition constraints must be a list.")
@@ -827,18 +859,27 @@ def _validate_member_relationship_composition_plan(plan: dict[str, Any]) -> dict
             memberships.append(referent_id)
         elif semantic_type == "DailTerm":
             selector = ref.get("selector")
-            if (not isinstance(selector, dict)
-                    or selector != {"kind": "termNumber", "number": selector.get("number")}
-                    or type(selector.get("number")) is not int
-                    or not 1 <= selector["number"] <= 999):
-                raise PlanError("Each DailTerm must use one reviewed numeric term selector.")
+            numbered_term = (
+                isinstance(selector, dict)
+                and selector == {"kind": "termNumber", "number": selector.get("number")}
+                and type(selector.get("number")) is int
+                and 1 <= selector["number"] <= 999
+            )
+            current_term = selector == {"kind": "currentTerm", "house": "Dail"}
+            if not (numbered_term or current_term):
+                raise PlanError("Each DailTerm must use one reviewed numeric or House-date current-term selector.")
             resolution = ref.get("resolution")
             if resolution is None:
                 if set(ref) != {"type", "selector"}:
                     raise PlanError("An unresolved DailTerm contains unsupported fields.")
             elif resolution == "resolved":
-                if set(ref) != {"type", "selector", "resolution", "iri"}:
-                    raise PlanError("A resolved DailTerm requires only its exact selector and local IRI.")
+                expected_fields = {"type", "selector", "resolution", "iri"}
+                if current_term:
+                    expected_fields.add("asOfEvidence")
+                    if ref.get("asOfEvidence") != plan.get("asOf"):
+                        raise PlanError("A resolved current DailTerm must preserve its exact asOf date evidence.")
+                if set(ref) != expected_fields:
+                    raise PlanError("A resolved DailTerm requires its exact selector and local identity evidence.")
                 _require_local_iri(ref["iri"], "DailTerm")
             elif resolution in {"ambiguous", "not_found", "source_data_unavailable", "unsupported_mapping"}:
                 if resolution == "ambiguous":
@@ -890,7 +931,8 @@ def _validate_member_relationship_composition_plan(plan: dict[str, Any]) -> dict
 
     if len(members) != 1:
         raise PlanError("Member relationship composition requires exactly one Member answer referent.")
-    ordinals = [refs[term_id]["selector"]["number"] for term_id in terms]
+    ordinals = [refs[term_id]["selector"]["number"] for term_id in terms
+                if refs[term_id]["selector"]["kind"] == "termNumber"]
     if len(set(ordinals)) != len(ordinals):
         raise PlanError("Distinct DailTerm referents must select distinct term ordinals.")
     if not isinstance(plan.get("relations"), list):
@@ -922,7 +964,11 @@ def _validate_member_relationship_composition_plan(plan: dict[str, Any]) -> dict
 
     expected_edges: list[tuple[str, str, str]] = []
     member_id = members[0]
-    if len(terms) == 2 and len(memberships) == 2 and not constituencies:
+    current_terms = [term_id for term_id in terms
+                     if refs[term_id]["selector"]["kind"] == "currentTerm"]
+    if len(current_terms) > 1 or current_terms and ordinals:
+        raise PlanError("Current and explicitly numbered DailTerm selections cannot be combined.")
+    if len(terms) == 2 and len(memberships) == 2 and not constituencies and not current_terms:
         expected_edges.extend(
             ("member_has_membership", member_id, membership_id)
             for membership_id in memberships
@@ -991,6 +1037,24 @@ def _validate_member_relationship_composition_plan(plan: dict[str, Any]) -> dict
                 or date_mapping.get("rangeOrStartAbsentMeans") != "uncertain"
                 or date_mapping.get("boundary") != "inclusive_calendar_day"):
             raise PlanError("The reviewed DailMembership calendar-date mapping is incomplete or unsupported.")
+
+    if current_terms:
+        if len(terms) != 1 or len(memberships) != 1 or len(constituencies) != 1:
+            raise PlanError("House-date currentTerm selection is limited to one exact constituency Member path.")
+        from .interpretation import validate_default
+        try:
+            validate_default(plan, constituency=refs[constituencies[0]].get("mention", ""), current=True)
+        except ValueError as error:
+            raise PlanError(str(error)) from error
+        if "interpretation" in plan:
+            expected_as_of = {
+                "referent": memberships[0], "field": "membershipInterval",
+                "operator": "on", "value": plan["asOf"],
+            }
+            if plan.get("constraints") != [expected_as_of]:
+                raise PlanError("Current representation must evaluate the membership interval independently at asOf.")
+    elif "interpretation" in plan:
+        raise PlanError("A present-constituency interpretation requires a House-date currentTerm selector.")
 
     resolved_term_iris = [refs[term_id].get("iri") for term_id in terms
                           if refs[term_id].get("resolution") == "resolved"]
@@ -2274,11 +2338,12 @@ def compile_member_relationship_composition_query(
             if referent.get("resolution") != "resolved":
                 raise PlanError("Every selected DailTerm must resolve uniquely before compilation.")
             term_iri = URIRef(_require_local_iri(referent.get("iri"), "DailTerm")).n3()
-            number = referent["selector"]["number"]
             graph_contents[graph_family].append(f"VALUES {variable} {{ {term_iri} }}")
-            graph_contents[graph_family].append(
-                f'{variable} {mapping["term_number"]} "{number}"^^xsd:integer .'
-            )
+            if referent["selector"]["kind"] == "termNumber":
+                number = referent["selector"]["number"]
+                graph_contents[graph_family].append(
+                    f'{variable} {mapping["term_number"]} "{number}"^^xsd:integer .'
+                )
         elif semantic_type == "DailConstituency":
             if referent.get("resolution") != "resolved":
                 raise PlanError("The requested DailConstituency must resolve within its selected term.")
@@ -2344,12 +2409,18 @@ def _compile_member_party_temporal_query(plan: dict[str, Any], mapping: dict[str
     """Compile reviewed typed edges once, including bounded identity/path operators."""
     refs = plan["referents"]
     anchored = "anchor" in refs
+    party_only = "constituency" not in refs and not anchored
     if not anchored and plan["answer"].get("referent") == "member" and refs["affiliation"].get("resolution") != "resolved":
         raise PlanError("A named-party answer requires the exact resolved affiliation identity before compilation.")
+    selected_parties = refs["party"].get("selectedIRIs")
+    if party_only and (not isinstance(selected_parties, list) or not selected_parties):
+        raise PlanError("Party-only term compilation requires the exact Stage C term-scoped party identity set.")
     bodies = {key: [] for key in ("member-records", "anchor", "houses", "constituencies", "parties", "political-affiliations", "offices")}
     columns = ["member", "memberName", "membership", "membershipRange", "membershipStart", "membershipEnd",
-               "episode", "party", "partyLabel", "partyRange", "partyStart", "partyEnd", "affiliation", "affiliationLabel",
-               "constituency", "term"]
+               "episode", "party", "partyLabel", "partyRange", "partyStart", "partyEnd", "affiliation", "affiliationLabel"]
+    if "constituency" in refs:
+        columns.append("constituency")
+    columns.append("term")
     office = mapping["office_mapping"]
     anchor_roles = {"anchor", "anchor_membership", "holding"}
     for key, ref in refs.items():
@@ -2362,6 +2433,10 @@ def _compile_member_party_temporal_query(plan: dict[str, Any], mapping: dict[str
                 raise PlanError(f"Every selected {key} identity must resolve before compilation.")
             identities = " ".join(URIRef(_require_local_iri(item.get("iri"), ref["type"])).n3() for item in items)
             body.append(f"VALUES ?{key} {{ {identities} }}")
+        if key == "party" and party_only:
+            identities = " ".join(URIRef(_require_local_iri(iri, "ParliamentaryParty")).n3()
+                                   for iri in selected_parties)
+            body.append(f"VALUES ?party {{ {identities} }}")
         if ref["type"] == "DailTerm" and ref.get("selector", {}).get("kind") == "termNumber":
             body.append(f'?{key} {mapping["term_number"]} "{ref["selector"]["number"]}"^^xsd:integer .')
     for edge in plan["relations"]:
@@ -3822,6 +3897,45 @@ def _resolve_term_scoped_affiliation(
     )
 
 
+def _term_scoped_party_iris_for_identity(result: QueryResult, identity_iri: str) -> tuple[str, ...]:
+    """Retain the exact term-scoped ParliamentaryParty identities for one reviewed affiliation."""
+    required = {"party", "partyLabel", "affiliation", "affiliationLabel"}
+    if (result.kind != "select" or not required.issubset(result.columns)
+            or len(result.rows) >= 100):
+        raise NLQError("The term-scoped party identity evidence is incomplete or reached its 100-row cap.")
+    indexes = {name: result.columns.index(name) for name in required}
+    parties: set[str] = set()
+    for row in result.rows:
+        if len(row) <= max(indexes.values()):
+            raise NLQError("The term-scoped party identity evidence returned a truncated row.")
+        if row[indexes["affiliation"]] == identity_iri:
+            parties.add(_require_local_iri(row[indexes["party"]], "ParliamentaryParty"))
+    if not parties:
+        raise NLQError("The selected reviewed affiliation has no exact ParliamentaryParty identity in the chosen Dáil.")
+    return tuple(sorted(parties))
+
+
+def _stage_c_party_iris_for_term(term_iri: str, *, fuseki, supported_predicates) -> frozenset[str]:
+    """Reuse Stage C's accepted term-scoped party compiler as a party-only selection gate."""
+    from .stage_c import _parties_query
+
+    query = _parties_query(term_iri, supported_predicates=supported_predicates)
+    result = fuseki.query(query)
+    if (result.kind != "select" or not {"party", "label"}.issubset(result.columns)
+            or len(result.rows) >= 100):
+        raise NLQError("The Stage C term-scoped party listing is incomplete; no Member count was returned.")
+    party_index = result.columns.index("party")
+    label_index = result.columns.index("label")
+    party_iris: set[str] = set()
+    for row in result.rows:
+        if len(row) <= max(party_index, label_index):
+            raise NLQError("The Stage C term-scoped party listing returned a truncated identity row.")
+        party_iris.add(_require_local_iri(row[party_index], "ParliamentaryParty"))
+    if not party_iris:
+        raise NLQError("No term-scoped ParliamentaryParty identity is recorded for the selected Dáil.")
+    return frozenset(party_iris)
+
+
 def _parse_member_datetime(value: str, *, what: str) -> datetime:
     datatype = "http://www.w3.org/2001/XMLSchema#dateTime"
     lexical, marker, type_text = value.rpartition("^^<")
@@ -3898,17 +4012,19 @@ def _temporal_member_party_result(
     answer_query: str,
 ) -> PlanOutcome:
     anchored = "anchor" in plan["referents"]
-    identity_set = "members" in plan["referents"]["constituency"]
+    party_only = "constituency" not in plan["referents"] and not anchored
+    identity_set = (not party_only and
+                    "members" in plan["referents"]["constituency"])
     columns = (
         "member", "memberName", "membership", "membershipRange", "membershipStart", "membershipEnd",
         "episode", "party", "partyLabel", "partyRange", "partyStart", "partyEnd",
-        "affiliation", "affiliationLabel",
+        "affiliation", "affiliationLabel", "term",
     )
     if anchored:
         columns += ("anchor", "anchor_membership", "anchorMembershipRange", "anchorMembershipStart", "anchorMembershipEnd",
                     "holding", "holdingRange", "holdingStart", "holdingEnd", "constituency", "term")
-    elif identity_set:
-        columns += ("constituency", "term")
+    elif not party_only:
+        columns += ("constituency",)
     if raw_result.kind != "select" or not set(columns).issubset(raw_result.columns):
         return PlanOutcome("execution_failure", plan=plan, sparql=answer_query,
                            diagnostic="The temporal party/representation query returned an unexpected result shape.",
@@ -3968,6 +4084,12 @@ def _temporal_member_party_result(
         entry["party_ranges"].add((
             row[index["partyRange"]], row[index["partyStart"]], row[index["partyEnd"]],
         ))
+        term_iri = _require_local_iri(row[index["term"]], "DailTerm")
+        selected_term_iri = plan["referents"]["term"].get("iri")
+        if selected_term_iri is not None and term_iri != selected_term_iri:
+            return PlanOutcome("validation_failure", plan=plan, sparql=answer_query,
+                               diagnostic="The returned party evidence is outside the exact selected DailTerm identity.",
+                               request_family="member_relationship_composition")
         if anchored:
             if row[index["anchor"]] != plan["referents"]["anchor"]["iri"] or member_iri == row[index["anchor"]]:
                 return PlanOutcome("validation_failure", plan=plan, sparql=answer_query,
@@ -3976,19 +4098,22 @@ def _temporal_member_party_result(
                 _require_local_iri(row[index[resource]], resource)
             entry["anchor_ranges"].add(tuple(row[index[name]] for name in ("anchorMembershipRange", "anchorMembershipStart", "anchorMembershipEnd")))
             entry["holding_ranges"].add(tuple(row[index[name]] for name in ("holdingRange", "holdingStart", "holdingEnd")))
-        if identity_set:
+        if not anchored and not party_only:
             constituency = _require_local_iri(row[index["constituency"]], "DailConstituency")
-            term = _require_local_iri(row[index["term"]], "DailTerm")
-            if constituency not in {item.get("iri") for item in plan["referents"]["constituency"]["members"]} or term != plan["referents"]["term"].get("iri"):
+            scope = plan["referents"]["constituency"]
+            allowed_constituencies = ({item.get("iri") for item in scope["members"]}
+                                      if identity_set else {scope.get("iri")})
+            if constituency not in allowed_constituencies:
                 return PlanOutcome("validation_failure", plan=plan, sparql=answer_query,
                                    diagnostic="The returned evidence is outside the selected exact identity set/term.")
-            entry["scopes"].add((constituency, term))
+            entry["scopes"].add((constituency, term_iri))
 
     if not records:
         return PlanOutcome(
             "source_data_unavailable", plan=plan, sparql=answer_query,
-            diagnostic=("No local PartyMembership episode was joined to a DailMembership representing the selected "
-                        "constituency occurrence in the selected term. This absence does not establish complete coverage."),
+            diagnostic=("No local PartyMembership episode was joined to the selected exact DailMembership and "
+                        + ("constituency occurrence " if not party_only else "term-scoped party occurrence ")
+                        + "in the selected term. This absence does not establish complete coverage."),
             request_family="member_relationship_composition",
         )
 
@@ -4097,6 +4222,7 @@ def _temporal_member_party_result(
                                        request_family="member_relationship_composition")
                 record["evidence"].add(f"{identity_label}; {evidence}")
 
+    is_count = plan["answer"]["kind"] == "count"
     if party_answer and evidence_by_identity:
         result = QueryResult(
             "select", ("Political party", "Political-affiliation identity", "Established overlapping TD evidence"),
@@ -4104,6 +4230,11 @@ def _temporal_member_party_result(
                 (value["label"], identity, "; ".join(sorted(value["evidence"], key=lambda item: (item.casefold(), item))))
                 for identity, value in sorted(evidence_by_identity.items(), key=lambda item: (item[1]["label"].casefold(), item[0]))
             ), raw_json=raw_result.raw_json,
+        )
+    elif not party_answer and evidence_by_member and is_count:
+        result = QueryResult(
+            "select", ("Distinct recorded Members",),
+            ((str(len(evidence_by_member)),),), raw_json=raw_result.raw_json,
         )
     elif not party_answer and evidence_by_member:
         result = QueryResult(
@@ -4119,7 +4250,8 @@ def _temporal_member_party_result(
             "for the selected current-term constituency/affiliation evidence."
             if current_term else
             "No local PartyMembership interval has an established inclusive overlap with the selected "
-            "DailMembership interval for this term/constituency/identity."
+            + ("DailMembership interval for this term-scoped party identity."
+               if party_only else "DailMembership interval for this term/constituency/identity.")
         )
         return PlanOutcome(
             "source_data_unavailable", plan=plan, sparql=answer_query,
@@ -4129,13 +4261,18 @@ def _temporal_member_party_result(
             ),
             request_family="member_relationship_composition",
         )
+    count_note = (
+        f" The count is {len(evidence_by_member)} distinct recorded Member RDF identities, not seats or election totals."
+        if is_count else ""
+    )
     return PlanOutcome(
         "success", plan=plan, sparql=answer_query, result=result,
         diagnostic=(("Partial accepted-evidence coverage only, not a complete historical roster. " if anchored else "")
                     + "Only established inclusive endpoint overlaps are reported. An absent EndDate is preserved as open-ended; "
                     "missing date ranges/starts never count as overlap. PartyMembership and DailMembership retain their separate "
                     + (f"source intervals that both contain {as_of.isoformat()}; local current source completeness is not certified."
-                       if current_term else "source intervals; local historical source completeness is not certified.")),
+                       if current_term else "source intervals; local historical source completeness is not certified.")
+                    + count_note),
         request_family="member_relationship_composition",
     )
 
@@ -4148,6 +4285,7 @@ def _execute_member_party_temporal_composition(
 ) -> PlanOutcome:
     affiliation = plan["referents"]["affiliation"]
     anchored = "anchor" in plan["referents"]
+    party_only = "constituency" not in plan["referents"] and not anchored
     if "mention" in affiliation and not anchored:
         try:
             identity_query = compile_party_affiliation_resolution_query(
@@ -4175,6 +4313,28 @@ def _execute_member_party_temporal_composition(
             return PlanOutcome(status, plan=plan, diagnostic=str(error),
                                request_family="member_relationship_composition")
         affiliation.update({"resolution": "resolved", "iri": identity_iri, "label": identity_label})
+        if party_only:
+            try:
+                listed_parties = _stage_c_party_iris_for_term(
+                    plan["referents"]["term"]["iri"],
+                    fuseki=fuseki,
+                    supported_predicates=supported_predicates,
+                )
+                identity_parties = _term_scoped_party_iris_for_identity(
+                    identity_result, identity_iri,
+                )
+                selected_parties = sorted(listed_parties.intersection(identity_parties))
+                if not selected_parties:
+                    raise NLQError(
+                        "The reviewed party identity is not present in the accepted term-scoped party listing."
+                    )
+                plan["referents"]["party"]["selectedIRIs"] = selected_parties
+            except NLQError as error:
+                return PlanOutcome(
+                    "source_data_unavailable", plan=plan,
+                    diagnostic=f"The exact party selection could not be cross-checked against the Stage C term listing: {error}",
+                    request_family="member_relationship_composition",
+                )
 
     try:
         plan = validate_plan(plan)
@@ -4304,7 +4464,10 @@ def _execute_member_relationship_composition_plan(
                 referent["resolution"] = "source_data_unavailable"
                 resolution_failures.append(("source_data_unavailable", str(error)))
                 continue
-            referent.update({"resolution": "resolved", "iri": current_term})
+            referent.update({
+                "resolution": "resolved", "iri": current_term,
+                "asOfEvidence": as_of.isoformat(),
+            })
             continue
 
         ordinal = selector["number"]
@@ -5119,7 +5282,7 @@ _PARTY_REPRESENTATION_INTENT = re.compile(
 )
 _UNSUPPORTED_PARTY_COMPOSITION_CONDITIONS = re.compile(
     r"\b(?:currently|current|as of|before|after|since|until|between|throughout|"
-    r"last month|last year|next month|next year|never|ever|count|how many|at least|"
+    r"last month|last year|next month|next year|never|ever|at least|"
     r"more than|fewer than|except|excluding|also|committee|minister|office|bill|vote|"
     r"sponsor|independent|parliamentary group)\b"
     r"|\bfrom\s+(?:[0-9]{1,2}\s|(?:19|20)[0-9]{2}\b|January\b|February\b|March\b|April\b|May\b|June\b|July\b|August\b|September\b|October\b|November\b|December\b)"
@@ -5235,7 +5398,7 @@ def _composable_interpretation_preflight(question: str, as_of: date) -> PlanOutc
             request_family="composable_semantic",
         )
     current_term_request = bool(re.search(
-        r"\b(?:current|currently|now|today)\b", question, re.IGNORECASE,
+        r"\b(?:current|currently|now|today|this\s+d[áa]il)\b", question, re.IGNORECASE,
     ))
     from .interpretation import present_constituency_default
     # This preflight only blocks unsafe scope. The typed semantic draft must

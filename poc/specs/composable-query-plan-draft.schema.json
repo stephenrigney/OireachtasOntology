@@ -95,6 +95,19 @@
         {
           "type": "object",
           "additionalProperties": false,
+          "required": ["member", "membership", "term", "episode", "party", "affiliation"],
+          "properties": {
+            "member": {"$ref": "#/$defs/memberAnswerReferent"},
+            "membership": {"$ref": "#/$defs/membershipReferent"},
+            "term": {"$ref": "#/$defs/selectedTermReferent"},
+            "episode": {"$ref": "#/$defs/partyEpisodeReferent"},
+            "party": {"$ref": "#/$defs/parliamentaryPartyReferent"},
+            "affiliation": {"$ref": "#/$defs/affiliationReferent"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
           "required": ["capability", "parameters"],
           "properties": {
              "capability": {"type": "string", "enum": ["seanad_entry", "bill_lookup", "member_lookup", "dail_parties_and_groups", "office_holding_evidence", "office_holding_window"]},

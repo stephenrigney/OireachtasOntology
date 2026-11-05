@@ -45,6 +45,38 @@ def present_constituency_default(question: str, constituency: str) -> bool:
     return bool(re.search(r"\b(?:are|is|represent|represents|representing)\b", text, re.I))
 
 
+def member_relationship_as_of_default(question: str, constituency: str) -> bool:
+    """Resolve the one-term Member projection's term-vs-active wording.
+
+    In this bounded projection, an unqualified ``in this Dáil`` explicitly
+    selects the House-date-resolved term and is term-wide, regardless of verb
+    tense. Explicit current-point qualifiers retain the as-of membership test;
+    explicit calendar dates remain governed by their exact date constraint.
+    """
+    if re.search(r"\bin\s+this\s+d[áa]il\b", question, re.I) and not re.search(
+        r"\b(?:current(?:ly)?|now|today)\b|\bas\s+of\b", question, re.I,
+    ):
+        return False
+
+    text = re.sub(re.escape(constituency), " ", question, flags=re.I) if constituency else question
+    explicit_current_point = bool(re.search(
+        r"\b(?:current(?:ly)?|now|today)\b|\bas\s+of\s+(?:now|today|the\s+current\s+date|the\s+query\s+date|the\s+reference\s+date)\b",
+        text, re.I,
+    ))
+    if explicit_current_point:
+        text = re.sub(
+            r"\bas\s+of\s+(?:now|today|the\s+current\s+date|the\s+query\s+date|the\s+reference\s+date)\b",
+            " ", text, flags=re.I,
+        )
+        if re.search(
+            r"\b(?:did|were|was|had|will|would|should|could|might|may|can|shall|planned|planning|expected|future|next|tomorrow|historical|history|ever|previous|last|elected|election|during|throughout|before|after|since|until|between|on|senators?|seanad|panels?)\b|[0-9]",
+            text, re.I,
+        ):
+            return False
+        return True
+    return present_constituency_default(question, constituency)
+
+
 def default_evidence(question: str, as_of: date) -> dict:
     return {"policy": POLICY, "question": question, "date": as_of.isoformat()}
 
@@ -53,12 +85,19 @@ def validate_default(plan: dict, *, constituency: str, current: bool) -> None:
     evidence = plan.get("interpretation")
     if evidence is None:
         return
+    checker = present_constituency_default
+    if (plan.get("family") == "member_relationship_composition"
+            and not any(
+                isinstance(ref, dict) and ref.get("type") == "PartyMembershipEpisode"
+                for ref in plan.get("referents", {}).values()
+            )):
+        checker = member_relationship_as_of_default
     if (not current or not isinstance(evidence, dict)
             or set(evidence) != {"policy", "question", "date"}
             or evidence["policy"] != POLICY or evidence["date"] != plan["asOf"]
             or not isinstance(evidence["question"], str)
             or not constituency or not re.search(re.escape(constituency), evidence["question"], re.I)
-            or not present_constituency_default(evidence["question"], constituency)):
+            or not checker(evidence["question"], constituency)):
         raise ValueError("Current representation default lacks approved scoped interpretation evidence.")
 
 
