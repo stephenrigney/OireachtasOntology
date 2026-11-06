@@ -360,7 +360,7 @@ def validate_composable_plan_draft(
 
 
 def _validate_existing_capability_draft(value, *, question):
-    """Accept only exact, grounded graphs for already implemented compilers."""
+    """Validate a narrow semantic draft, then return its complete canonical plan."""
     from .composable_plan import plan_question
     from .representation import representation_plan
 
@@ -457,14 +457,19 @@ def _validate_existing_capability_draft(value, *, question):
         plan = plan_question(canonical, as_of=placeholder)
         expected_answer = {"kind": "entities", "referent": "affiliation" if family == "member_party_history" else "bill",
                            "distinctBy": "identity", "display": ["label"], "details": [], "preserveEvidence": True}
-    expected_refs = {}
-    for key, ref in plan["referents"].items():
-        expected_refs[key] = {"type": ref["type"], "mention": ref.get("mention")}
-        if key == "term":
-            expected_refs[key]["selector"] = selector
-    expected_constraints = plan.get("constraints", [])
-    if refs != expected_refs or value["answer"] != expected_answer or value["constraints"] != expected_constraints:
-        raise InvalidComposableDraft("The proposed referents or answer differ from the complete supported projection.")
+    # Drafts express answer intent, not the compiler's display/evidence
+    # projection. Compare against this explicit schema-compatible view while
+    # retaining ``plan`` unchanged for execution.
+    expected_refs = {
+        key: {"type": ref["type"], "mention": ref.get("mention")}
+        for key, ref in plan["referents"].items()
+    }
+    if "term" in expected_refs:
+        expected_refs["term"]["selector"] = refs["term"].get("selector")
+    expected_constraints = [] if family == "government_party_members" else plan.get("constraints", [])
+    expected_draft_answer = _semantic_draft_answer(expected_answer, family=family)
+    if refs != expected_refs or value["answer"] != expected_draft_answer or value["constraints"] != expected_constraints:
+        raise InvalidComposableDraft("The proposed referents, constraints or answer intent differ from the supported draft projection.")
     edges = lambda relations: sorted((item["fact"], item["from"], item["to"]) for item in relations)
     if (any(set(item) != {"id", "fact", "from", "to"} for item in value["relations"])
             or len({item["id"] for item in value["relations"]}) != len(value["relations"])
@@ -475,6 +480,20 @@ def _validate_existing_capability_draft(value, *, question):
         # The real date is supplied only by complete_v2_plan, not the model.
         final.pop("constraints")
     return final
+
+
+def _semantic_draft_answer(answer, *, family):
+    """Project an executable answer to the model-authorised intent fields."""
+    if family in {"government_party_members", "constituency_representation"}:
+        return answer
+    kind = answer.get("kind")
+    if kind == "entities":
+        return {"kind": kind, "referent": answer["referent"],
+                "distinctBy": answer["distinctBy"], "display": ["label"],
+                "details": [], "preserveEvidence": True}
+    if kind in {"boolean", "count", "values", "family_result"}:
+        return {key: answer[key] for key in ("kind", "referent", "distinctBy") if key in answer}
+    raise InvalidComposableDraft("The canonical answer has no supported semantic draft projection.")
 
 
 def _ordinal_suffix(number: int) -> str:

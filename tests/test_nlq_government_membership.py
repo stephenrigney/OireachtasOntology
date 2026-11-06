@@ -236,6 +236,7 @@ def test_government_semantic_fallback_is_grounded_closed_and_executable(monkeypa
     generator = FixedGenerator(draft)
     outcome = run(fixture, question, generator=generator)
     assert outcome.status == "success", outcome.diagnostic
+    assert outcome.plan["answer"] == plan["answer"]
     assert outcome.result.rows == run(fixture, QUESTION).result.rows
     assert "not a complete Government roster" in ask(monkeypatch, fixture, question, generator=generator).text
     bad = copy.deepcopy(draft)
