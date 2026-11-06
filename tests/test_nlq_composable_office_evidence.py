@@ -291,6 +291,7 @@ def test_uncertain_or_conflicting_episode_fails_closed_without_partial_rows(monk
 
 @pytest.mark.parametrize("question,member,office", [
     ("How long was Bertie Ahern the Taoiseach?", "Bertie Ahern", "Taoiseach"),
+    ("How many years was Bertie Ahern the Taoiseach?", "Bertie Ahern", "Taoiseach"),
     ("When was Bertie Ahern first elected Taoiseach?", "Bertie Ahern", "Taoiseach"),
     ("When was Bertie Ahern elected Taoiseach?", "Bertie Ahern", "Taoiseach"),
     ("When was Bertie Ahern the Taoiseach in 2007?", "Bertie Ahern", "Taoiseach"),

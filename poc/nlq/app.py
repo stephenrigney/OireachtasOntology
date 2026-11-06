@@ -12,8 +12,8 @@ from threading import Lock
 from time import monotonic
 from secrets import token_urlsafe
 
-from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from .config import load_local_environment
@@ -33,6 +33,7 @@ from .stage_b import plan_stage_b
 from .results import QueryResult, format_debug_payload
 from .schema import build_schema_context
 from .vocabulary import supported_predicates
+from .feedback import FeedbackError, FeedbackStore
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -45,14 +46,70 @@ def _dail_ordinal_label(number: int) -> str:
     return f"{number}{suffix} Dáil"
 
 
+def _displayed_answer_text(*, error=None, result=None, result_notice=None,
+                           ambiguity=None, entity_outcomes=(), clarification=None,
+                           interpretation=None, plan_explanation=None) -> str:
+    """Capture the user-facing answer and qualifications, not debug panels."""
+    parts = []
+    if error:
+        parts.append(str(error))
+    if ambiguity:
+        parts.append(
+            f"I found {len(ambiguity.candidates)} local Member records named "
+            f"{ambiguity.entity_reference}. The question does not distinguish them, "
+            "so no identity was selected."
+        )
+        for candidate in ambiguity.candidates:
+            line = candidate.name
+            if candidate.house_terms:
+                line += " — served in " + ", ".join(candidate.house_terms)
+            if candidate.representations:
+                line += "; represented " + ", ".join(candidate.representations)
+            if not candidate.house_terms and not candidate.representations:
+                line += " — no additional local chamber/term/representation context is available"
+            parts.append(line)
+    for entity in entity_outcomes:
+        if entity.get("resolution") != "ambiguous":
+            continue
+        for candidate in entity.get("candidates", ()):
+            parts.append(" — ".join(value for value in (candidate.get("label"), candidate.get("iri")) if value))
+    if clarification:
+        for candidate in clarification.get("candidates", ()):
+            parts.append(" — ".join(value for value in (candidate.get("label"), candidate.get("context"), candidate.get("iri")) if value))
+    if interpretation:
+        parts.append(f"Interpreted as: {interpretation}")
+    if result is not None:
+        if result.kind == "ask":
+            parts.append("Yes" if result.boolean else "No")
+        elif result.rows:
+            parts.extend(
+                " | ".join(f"{column}: {cell}" for column, cell in zip(result.columns, row))
+                for row in result.rows
+            )
+        else:
+            parts.append(
+                "No matching records were found in the local dataset. This result does not establish historical completeness."
+            )
+    if result_notice:
+        parts.append(str(result_notice))
+    if plan_explanation:
+        for key in ("summary", "answer_text", "failure", "blocked_reason"):
+            value = plan_explanation.get(key)
+            if value:
+                parts.append(str(value))
+    return "\n".join(parts)
+
+
 def create_app(
     *,
     repository_root: Path = ROOT,
     semantic_plan_generator_factory=None,
+    feedback_directory: Path | None = None,
 ) -> FastAPI:
     load_local_environment(repository_root)
     app = FastAPI(title="Oireachtas NLQ POC", docs_url=None, redoc_url=None)
     templates = Jinja2Templates(directory=str(TEMPLATES))
+    feedback_store = FeedbackStore(feedback_directory or repository_root / "data/local/nlq-feedback")
     schema_context = build_schema_context(repository_root / "ontology")
     predicate_vocabulary = supported_predicates(repository_root / "ontology")
     # Short-lived, bounded candidate-choice state only; no chat or model memory.
@@ -98,9 +155,20 @@ def create_app(
                mode: str = "phase2", interaction_status: str | None = None,
                plan_json: str | None = None, plan_heading: str | None = None,
                entity_outcomes: tuple[dict, ...] = (), plan_explanation=None,
-               clarification=None):
+                clarification=None):
         if readiness is None:
             readiness = check_fuseki_readiness()
+        feedback_actual = _displayed_answer_text(
+            error=error, result=result, result_notice=result_notice,
+            ambiguity=ambiguity, entity_outcomes=entity_outcomes,
+            clarification=clarification, interpretation=interpretation,
+            plan_explanation=plan_explanation,
+        )
+        feedback_session_id = request.cookies.get("oireachtas_nlq_feedback_session", "")
+        try:
+            feedback_recording = bool(feedback_session_id and feedback_store.status(feedback_session_id))
+        except FeedbackError:
+            feedback_recording = False
         return templates.TemplateResponse(request, "index.html", {
             "question": question,
             "interpretation": interpretation,
@@ -121,7 +189,55 @@ def create_app(
             "plan_explanation": plan_explanation,
             "clarification": clarification,
             "outcome_kind": getattr(request.state, "query_outcome", None),
+            "feedback_actual": feedback_actual,
+            "feedback_available": bool(question and feedback_actual and feedback_recording),
         })
+
+    @app.post("/feedback/sessions")
+    def start_feedback_session():
+        try:
+            session_id = feedback_store.start()
+        except OSError:
+            logger.exception("Could not create NLQ feedback session")
+            raise HTTPException(status_code=500, detail="Could not create feedback session.")
+        return {"session_id": session_id, "active": True}
+
+    @app.get("/feedback/sessions/{session_id}")
+    def feedback_session_status(session_id: str):
+        try:
+            active = feedback_store.status(session_id)
+        except FeedbackError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        return {"session_id": session_id, "active": active}
+
+    @app.post("/feedback/sessions/{session_id}/stop")
+    def stop_feedback_session(session_id: str):
+        try:
+            feedback_store.stop(session_id)
+        except FeedbackError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        except OSError:
+            logger.exception("Could not stop NLQ feedback session")
+            raise HTTPException(status_code=500, detail="Could not stop feedback session.")
+        return {"session_id": session_id, "active": False}
+
+    @app.post("/feedback")
+    async def save_feedback(request: Request):
+        try:
+            payload = await request.json()
+            if not isinstance(payload, dict):
+                raise FeedbackError("Feedback payload must be an object.")
+            feedback_store.append(
+                payload.get("session_id"), question=payload.get("question"),
+                expected=payload.get("expected"), actual=payload.get("actual"),
+                correct=payload.get("correct"),
+            )
+        except (ValueError, TypeError) as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        except OSError:
+            logger.exception("Could not persist NLQ feedback")
+            raise HTTPException(status_code=500, detail="Could not save feedback. Your record was not confirmed saved.")
+        return JSONResponse({"saved": True}, status_code=201)
 
     @app.get("/", response_class=HTMLResponse)
     def index(request: Request):
@@ -291,6 +407,9 @@ def create_app(
                     and q35_interval.get("end") == as_of.isoformat()
                 )
                 q23_member = outcome.plan.get("referents", {}).get("member", {}).get("mention", "the named Member") if is_q23 else None
+                q23_count = bool(is_q23 and outcome.plan.get("answer", {}).get("kind") == "count")
+                q23_year = (outcome.plan.get("constraints", [{}])[0].get("value")
+                            if q23_count else None)
                 q35_summary = (
                     (f"Find locally evidenced accepted {q35_office.get('label', q35_office.get('mention', 'office'))} "
                      f"holdings containing the configured reference date {as_of.isoformat()}, preserving each exact interval. "
@@ -302,6 +421,8 @@ def create_app(
                      "The development dataset does not establish complete historical coverage.")
                 ) if is_q35 else None
                 q23_summary = (
+                    f"Count distinct Bills sponsored by {q23_member} with a source-backed dated Published lifecycle activity in calendar year {q23_year}; do not use legislative year or document/version dates."
+                    if q23_count else
                     f"Find distinct Bills with a recorded sponsor Participation whose participant-person IRI "
                     f"exactly matches the resolved local Member identity for {q23_member}. Include every "
                     "recorded participation regardless of primary status and preserve its source evidence."
@@ -399,6 +520,27 @@ def create_app(
                             f"{composition_constituencies[0]} in {term_names[0]}, with the constituency "
                             "occurrence and membership joined to the same DailTerm identity."
                         )
+                    elif composition_constituencies and composition_current_term:
+                        current_term_date_filter = next((
+                            constraint.get("value")
+                            for constraint in (outcome.plan or {}).get("constraints", [])
+                            if constraint.get("referent") == "membership"
+                            and constraint.get("field") == "membershipInterval"
+                            and constraint.get("operator") == "on"
+                        ), None)
+                        if current_term_date_filter:
+                            member_relationship_summary = (
+                                f"Find distinct local Members representing {composition_constituencies[0]} in the "
+                                f"House-date-resolved current Dáil as of {as_of.isoformat()}, requiring the exact "
+                                f"DailMembership interval to contain {current_term_date_filter}."
+                            )
+                        else:
+                            member_relationship_summary = (
+                                f"Find distinct local Members with recorded DailMemberships representing "
+                                f"{composition_constituencies[0]} in the House-date-resolved current Dáil as of "
+                                f"{as_of.isoformat()}. The term-wide ‘in this Dáil’ scope does not require a "
+                                "membership interval to contain the reference date."
+                            )
                     elif len(term_names) == 2:
                         member_relationship_summary = (
                             f"Find distinct local Members with separate recorded DailMembership paths "
@@ -502,9 +644,10 @@ def create_app(
                                  if q35_is_current_as_of else
                                  "Member names with exact start/end dates for every separate accepted holding; open ends are identified explicitly.")
                                 if is_q35 else
-                                "One row per Bill identity with title and recorded sponsorship evidence."
+                                ("Distinct Bill identity count based on source-backed Published activity dates."
+                                 if q23_count else "One row per Bill identity with title and recorded sponsorship evidence.")
                                 if is_q23 else
-                                ("Distinct reviewed political-affiliation identities are returned with each qualifying TD and "
+                                 ("Distinct reviewed political-affiliation identities are returned with each qualifying TD and "
                                  "established overlap episode retained; historical source completeness is not certified."
                                  if is_member_relationship_composition and is_q06 and any(
                                      ref.get("type") == "PartyMembershipEpisode"

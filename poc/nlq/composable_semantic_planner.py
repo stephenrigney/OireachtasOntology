@@ -142,7 +142,7 @@ For a named-party TD list or count in one explicitly numbered Dáil when no cons
 
 Additional implemented capabilities (do not declare these unsupported):
 - Party history, including ordinary 'join', 'belonged to' and 'member of' paraphrases, uses family "member_party_history", referents member (named Member), episode (PartyMembershipEpisode), party (ParliamentaryParty), affiliation (PoliticalAffiliationIdentity). Only member has a non-null mention. Edges are member_party_membership member→episode, episode_in_parliamentary_party episode→party, parliamentary_party_has_affiliation_identity party→affiliation. Answer affiliation with display ["label"], details [], preserveEvidence true. This asks about recorded party membership, not joining events; Independent is not a party.
-- Bills sponsored by a named Member uses family "member_bill_sponsorship", referents member (named Member), bill (Bill), participation (BillParticipation). Only member has a non-null mention. Edges are bill_has_sponsor_participation bill→participation and participation_has_participant participation→member. Answer bill with display ["label"], details [], preserveEvidence true. Local projection supplies Bill titles/numbers/links and primary, supporting or unknown-primary evidence; never restrict to primary sponsorship.
+- Bills sponsored by a named Member uses family "member_bill_sponsorship", referents member (named Member), bill (Bill), participation (BillParticipation). Only member has a non-null mention. Edges are bill_has_sponsor_participation bill→participation and participation_has_participant participation→member. Answer bill with display ["label"], details [], preserveEvidence true. Local projection supplies Bill titles/numbers/links and primary, supporting or unknown-primary evidence; never restrict to primary sponsorship. For the exact bounded request "How many Bills did [Member] sponsor that were published in [calendar year]?", use referents member, bill, participation, process, activity; edges bill_process_cocontained bill→process, process_has_participation process→participation, participation_has_participant participation→member, and activity_forms_part_of_process activity→process. Add exactly one constraint {{"referent":"activity","field":"publishedDate","operator":"inCalendarYear","value":YEAR}}, answer {{"kind":"count","referent":"bill","distinctBy":"identity"}}. Never use legislative year or document/version dates; missing or malformed Published dates make the aggregate unavailable, not zero.
  - Constituency representation uses family "constituency_representation", referents member, membership (DailMembership), term (DailTerm), constituency (DailConstituency). Exactly one of member/constituency has a user-mentioned label; all others have null mentions. term may use selector "currentTerm" for present-tense/current questions, "latestRecorded" only for a named Member's latest House-dated Dáil term, or null for a named Member's career-wide/historical constituencies. Connect member_has_membership member→membership, membership_in_term membership→term, membership_represents membership→constituency, constituency_in_term constituency→term. Answer the unmentioned member (display ["name"]) or constituency (display ["label"]), details [{{"referent":"term","display":["label"]}}], preserveEvidence true. Current is date-relative, never a guessed ordinal.
 For the three additional entity-history capabilities, constraints is []. Constituency representation supports only the explicit membership date point stated above; the bounded Member count is the only aggregate allowed for that same one-term, one-constituency selection. Preserve all other conditions; extra party, office, temporal-window or aggregate projections are not supported by these slices.
 
@@ -228,7 +228,7 @@ def validate_composable_plan_draft(
         raise UnsupportedComposableRequest(
             "Seat allocations are not recorded Member identities; no seat or election-event count was substituted."
         )
-    if count_intent and (value["family"] != "member_relationship_composition"
+    if count_intent and (value["family"] not in {"member_relationship_composition", "member_bill_sponsorship"}
                          or not isinstance(value.get("answer"), dict)
                          or value["answer"].get("kind") != "count"):
         raise UnsupportedComposableRequest(
@@ -390,12 +390,17 @@ def validate_composable_plan_draft(
 
 
 def _validate_existing_capability_draft(value, *, question):
-    """Accept only exact, grounded graphs for already implemented compilers."""
+    """Validate a narrow semantic draft, then return its complete canonical plan."""
     from .composable_plan import plan_question
     from .representation import representation_plan
 
     refs = value["referents"]
-    if not isinstance(refs, dict) or value["constraints"]:
+    bill_temporal = (value["family"] == "member_bill_sponsorship"
+                     and bool(re.fullmatch(
+                         r"(?is)\s*how\s+many\s+bills?\s+did\s+.+?\s+sponsor\s+(?:that\s+were\s+)?published\s+in\s+[0-9]{4}\s*[?.!]*\s*",
+                         question,
+                     )))
+    if not isinstance(refs, dict) or value["constraints"] and not bill_temporal:
         raise InvalidComposableDraft("This capability does not support extra constraints.")
     for ref in refs.values():
         if not isinstance(ref, dict):
@@ -409,7 +414,7 @@ def _validate_existing_capability_draft(value, *, question):
     for ref in refs.values():
         if ref.get("mention"):
             condition_text = re.sub(re.escape(ref["mention"]), " ", condition_text, flags=re.I)
-    if re.search(r"\b(?:not|never|except|excluding|only|before|after|since|until|between|while|count|how many|primary|supporting|elected|election|tenure)\b|[0-9]{4}", condition_text, re.I):
+    if re.search(r"\b(?:not|never|except|excluding|only|before|after|since|until|between|while|count|how many|primary|supporting|elected|election|tenure)\b|[0-9]{4}", condition_text, re.I) and not bill_temporal:
         raise UnsupportedComposableRequest("This slice cannot preserve the question's additional constraint.")
     placeholder = date(2000, 1, 1)  # discarded; complete_v2_plan supplies the actual reference date
     family = value["family"]
@@ -460,6 +465,17 @@ def _validate_existing_capability_draft(value, *, question):
         if inferred_current and not explicit_current:
             plan["interpretation"] = {"policy": "present_constituency_as_of", "question": question}
         expected_answer = plan["answer"]
+    elif family == "member_bill_sponsorship":
+        mention = refs.get("member", {}).get("mention")
+        if not isinstance(mention, str) or not mention.strip():
+            raise InvalidComposableDraft("A Member name is required.")
+        if bill_temporal:
+            from .composable_plan import plan_question
+            plan = plan_question(question, as_of=placeholder)
+        else:
+            canonical = f"Which Bills did {mention} sponsor?"
+            plan = plan_question(canonical, as_of=placeholder)
+        expected_answer = plan["answer"]
     else:
         mention = refs.get("member", {}).get("mention")
         if not isinstance(mention, str) or not mention.strip():
@@ -471,13 +487,19 @@ def _validate_existing_capability_draft(value, *, question):
         plan = plan_question(canonical, as_of=placeholder)
         expected_answer = {"kind": "entities", "referent": "affiliation" if family == "member_party_history" else "bill",
                            "distinctBy": "identity", "display": ["label"], "details": [], "preserveEvidence": True}
-    expected_refs = {}
-    for key, ref in plan["referents"].items():
-        expected_refs[key] = {"type": ref["type"], "mention": ref.get("mention")}
-        if key == "term":
-            expected_refs[key]["selector"] = selector
-    if refs != expected_refs or value["answer"] != expected_answer:
-        raise InvalidComposableDraft("The proposed referents or answer differ from the complete supported projection.")
+    # Drafts express answer intent, not the compiler's display/evidence
+    # projection. Compare against this explicit schema-compatible view while
+    # retaining ``plan`` unchanged for execution.
+    expected_refs = {
+        key: {"type": ref["type"], "mention": ref.get("mention")}
+        for key, ref in plan["referents"].items()
+    }
+    if "term" in expected_refs:
+        expected_refs["term"]["selector"] = refs["term"].get("selector")
+    expected_constraints = [] if family == "government_party_members" else plan.get("constraints", [])
+    expected_draft_answer = _semantic_draft_answer(expected_answer, family=family)
+    if refs != expected_refs or value["answer"] != expected_draft_answer or value["constraints"] != expected_constraints:
+        raise InvalidComposableDraft("The proposed referents, constraints or answer intent differ from the supported draft projection.")
     edges = lambda relations: sorted((item["fact"], item["from"], item["to"]) for item in relations)
     if (any(set(item) != {"id", "fact", "from", "to"} for item in value["relations"])
             or len({item["id"] for item in value["relations"]}) != len(value["relations"])
@@ -488,6 +510,20 @@ def _validate_existing_capability_draft(value, *, question):
         # The real date is supplied only by complete_v2_plan, not the model.
         final.pop("constraints")
     return final
+
+
+def _semantic_draft_answer(answer, *, family):
+    """Project an executable answer to the model-authorised intent fields."""
+    if family in {"government_party_members", "constituency_representation"}:
+        return answer
+    kind = answer.get("kind")
+    if kind == "entities":
+        return {"kind": kind, "referent": answer["referent"],
+                "distinctBy": answer["distinctBy"], "display": ["label"],
+                "details": [], "preserveEvidence": True}
+    if kind in {"boolean", "count", "values", "family_result"}:
+        return {key: answer[key] for key in ("kind", "referent", "distinctBy") if key in answer}
+    raise InvalidComposableDraft("The canonical answer has no supported semantic draft projection.")
 
 
 def _ordinal_suffix(number: int) -> str:

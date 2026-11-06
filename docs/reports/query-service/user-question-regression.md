@@ -19,14 +19,14 @@ iteration 5 adds Q19 and Q23 for **15 PASS, 2 PARTIAL, 9 FAIL**; iteration 6
 adds Q20 for **16 PASS, 2 PARTIAL, 8 FAIL**. Iteration 7 changes Q7 from FAIL
 to PARTIAL: the original question and two date/period variants return one
 recorded 2007–08 episode with an explicit incomplete-local-evidence warning;
-the expected complete career history remains unestablished. All 16 prior PASS
-controls were rechecked live at `asOf=2026-11-06`. Q4/Q5/Q8/Q17 and additional
-Q7 election/date/filter requests remained unsupported, not factual passes. Q2,
-Q12, Q14, Q15, and Q21a were carried forward. Q2/Q12 remain PARTIAL for
-evidence reasons: Q2 needs a user choice among distinct source-identified
-Deputies; local accepted evidence does not establish John Bruton's 1994 service
-for Q12. These are conservative evidence/identity classifications, not
-preference-based downgrades. This is a consolidated
+the expected complete career history remains unestablished. On the integrated
+branch containing the latest fetched `origin/master`, all 26 original scorecard
+entries were rechecked through the actual `/ask` route at `asOf=2026-11-06`. Q2 and
+Q21a still require controlled clarification; Q12 returns Albert Reynolds but
+does not establish John Bruton's 1994 service. Q4/Q5/Q8/Q14/Q15/Q17 safely
+refused unsupported requests. The consolidated score remains **16 PASS, 3
+PARTIAL, 7 FAIL, 0 BLOCKED**. These are conservative evidence/identity
+classifications, not preference-based downgrades. This is a consolidated
 26-question score; added Q7 wording/member variants are unscored. A
 controlled clarification or unsupported response is not a factual pass. The
 Galway alternatives remain separate cases 21a and 21b. Post-audit live checks
@@ -72,15 +72,15 @@ copied.
 ## Consolidated results
 
 “Expected” condenses the report's expected answer without changing the test
-intent. “Iteration 1 actual/score” preserves that dated baseline. The current
-column records either a live recheck on 2026-11-06 or an explicit carry-forward;
-carried-forward cases were not rerun. Names and intervals are local recorded
-evidence, not a completeness-certified roster.
+intent. “Iteration 1 actual/score” preserves that dated baseline. Every original
+question in the current column was rechecked through the real service on
+2026-11-06; a clarification or unsupported outcome is not a factual pass. Names
+and intervals are local recorded evidence, not a completeness-certified roster.
 
 | # | Original question (verbatim) | Expected | Iteration 1 actual | Iteration 1 score / primary cause | Current score / verification (2026-11-06) |
 |---:|---|---|---|---|---|
 | 1 | `Who are the Sinn Féin TDs for Dublin Central?` | Mary Lou McDonald | Mary Lou McDonald; current 34th-Dáil representation and party intervals both contain 2026-11-04. | **PASS** — current party/constituency composition resolves the present term. | **PASS** — live recheck passed 2026-11-06 (`asOf=2026-11-06`). |
-| 2 | `Find a Deputy called Browne` | Noel Browne | Clarification offered ten distinct source-identified Deputy candidates, including **Noel C. Browne**, with service dates; no candidate was selected and no answer was asserted. | **PARTIAL** — multiple identities require user selection; candidate presence is not a factual answer. | **PARTIAL carried forward** — not rerun 2026-11-06. |
+| 2 | `Find a Deputy called Browne` | Noel Browne | Clarification offered ten distinct source-identified Deputy candidates, including **Noel C. Browne**, with service dates; no candidate was selected and no answer was asserted. | **PARTIAL** — multiple identities require user selection; candidate presence is not a factual answer. | **PARTIAL** — actual `/ask` returned `clarification_required`, showed **Noel C. Browne** among the distinct local identities, and selected no candidate. |
 | 3 | `What were the parties during the 12th Dáil?` | Parties of the 12th Dáil | Clann na Poblachta, Clann na Talmhan, Fianna Fáil, Fine Gael, Labour Party and National Labour Party. | **PASS** — term-scoped party query returns six local records. | **PASS** — live recheck passed 2026-11-06 (`asOf=2026-11-06`). |
 | 4 | `How long was Stephen Donnelly Minister for Health?` | Duration of tenure | Unsupported: no complete-career office-tenure-duration projection. | **FAIL** — accepted Minister for Health office identity/evidence is also absent, so no duration can safely be derived. | **FAIL** — actual `/ask` recheck returned `unsupported_capability`; no duration or partial tenure was inferred. |
 | 5 | `When was Jack Lynch first elected?` | First Dáil/Seanad election date | Unsupported: election-event evidence is not queryable; membership start was not substituted. | **FAIL** — election-event capability/source evidence gap. | **FAIL** — actual `/ask` recheck returned `unsupported_capability`; no election date or service-start proxy was returned. |
@@ -90,16 +90,16 @@ evidence, not a completeness-certified roster.
 | 9 | `Who were the other Fianna Fáil TDs in the same constituency as Bertie Ahern while he was Taoiseach?` | Other Fianna Fáil TDs sharing his constituency during Taoiseach service | Cyprian Brady, with 14 plan relations and exact identity/time evidence joining party affiliation, Dáil representation, Bertie Ahern's Taoiseach holding, and shared Dublin Central constituency; common overlap 2007-06-14–2008-05-07. | **PASS** — final clarified prompt produced the valid plan; an initial draft omitted a required edge, so planner variability remains a caveat. | **PASS** — live recheck passed 2026-11-06 (`asOf=2026-11-06`). |
 | 10 | `Who is the Taoiseach?` | Micheál Martin as of the report date | Unsupported: current office-holder lookup is not supported; office query requires a dated window. | **FAIL** — current office-holder capability gap; no unsafe answer inferred. | **PASS** — live Phase 2 `/ask` returned Micheál Martin's accepted holding (2025-01-23–open) at `asOf=2026-11-06`; current-office completeness is not certified. |
 | 11 | `Who is the current Taoiseach?` | Micheál Martin as of the report date | Unsupported: no current Taoiseach query without explicit date/period. | **FAIL** — current office-holder capability gap. | **PASS** — live Phase 2 `/ask` returned the same accepted holding at `asOf=2026-11-06`; current-office completeness is not certified. |
-| 12 | `Who was the Taoiseach in 1994?` | Albert Reynolds and John Bruton | Albert Reynolds, holding 1992-12-14–1994-12-15; response says local data does not establish complete historical coverage. | **PARTIAL** — accepted local evidence for John Bruton is missing/incomplete. | **PARTIAL carried forward** — not rerun 2026-11-06. |
+| 12 | `Who was the Taoiseach in 1994?` | Albert Reynolds and John Bruton | Albert Reynolds, holding 1992-12-14–1994-12-15; response says local data does not establish complete historical coverage. | **PARTIAL** — accepted local evidence for John Bruton is missing/incomplete. | **PARTIAL** — actual `/ask` returned Albert Reynolds (1992-12-14–1994-12-15) and explicitly disclaimed complete historical coverage; John Bruton remains unestablished. |
 | 13 | `Who was the Taoiseach in June 1994?` | Albert Reynolds | Albert Reynolds, holding 1992-12-14–1994-12-15, overlapping the full June window. | **PASS** — calendar-month office overlap is compiled and executed. | **PASS** — live recheck passed 2026-11-06 (`asOf=2026-11-06`). |
-| 14 | `Who were the Senators on the Agriculture Panel in June 1994?` | Agriculture Panel Senators in Seanad during June 1994 | Unsupported: Seanad panel membership for a specified period is not supported. | **FAIL** — no panel-membership answer query was compiled. | **FAIL carried forward** — not rerun 2026-11-06. |
-| 15 | `What was the start date of the Dáil which was sitting in June 1994?` | 14 December 1992 | Unsupported: service does not identify a Dáil sitting on a calendar date and return its start. | **FAIL** — term dates alone do not establish an actual sitting; safe refusal is not a factual pass. | **FAIL carried forward** — not rerun 2026-11-06. |
+| 14 | `Who were the Senators on the Agriculture Panel in June 1994?` | Agriculture Panel Senators in Seanad during June 1994 | Unsupported: Seanad panel membership for a specified period is not supported. | **FAIL** — no panel-membership answer query was compiled. | **FAIL** — actual `/ask` returned `unsupported_capability`: historical Seanad panel membership for a specified month is unsupported; no answer query ran. |
+| 15 | `What was the start date of the Dáil which was sitting in June 1994?` | 14 December 1992 | Unsupported: service does not identify a Dáil sitting on a calendar date and return its start. | **FAIL** — term dates alone do not establish an actual sitting; safe refusal is not a factual pass. | **FAIL** — actual `/ask` refused this sitting-to-term lookup as `unsupported_capability`; no answer query ran. |
 | 16 | `How many TDs represented the Dublin Central constituency in this Dáil?` | Five TDs | Unsupported: distinct-member count required an explicitly numbered Dáil; “this Dáil” did not resolve to one. | **FAIL** — term ambiguity/aggregate capability boundary. | **PASS** — 2026-11-06 live count recheck returned 5 at `asOf=2026-11-06`; the current Dáil is House-date-resolved, with term-wide recorded memberships. |
 | 17 | `Who are the TDs for Dublin Central and when were they first elected?` | Current Dublin Central TDs and their first-election dates | Unsupported: election-event evidence is not queryable; no partial answer was returned. | **FAIL** — compound request includes unsupported election dates; whole request correctly fails closed. | **FAIL** — live `/ask` recheck returned `unsupported_capability` for the whole compound request; no partial TD list or election date was returned. |
 | 18 | `What constituency did Bertie Ahern represent in his last term in the Dáil?` | Dublin Central | Dublin Central, 30th Dáil, start date 2007-06-14; `latestRecorded` selector. | **PASS** — latest-recorded term selection resolved the question; local chronology is not complete-history evidence. | **PASS** — live recheck passed 2026-11-06 (`asOf=2026-11-06`). |
 | 19 | `Who was a Senator in the current Seanad and a Deputy in the current Dáil?` | Seán Kyne | Unsupported: current cross-house service relationship is not supported. | **FAIL** — Seanad-to-Dáil membership intersection capability gap. | **PASS** — live actual-planner query rerun at `asOf=2026-11-06` returned Seán Kyne by exact Member IRI. His 27th-Seanad interval ended 2026-05-24 and 34th-Dáil interval began 2026-05-25; displayed separately as term-wide recorded membership, not simultaneous service. |
 | 20 | `What current Senators previously served in the Dáil?` | Current Senators with prior Deputy service | Unsupported: current Seanad membership combined with previous Dáil service is not supported. | **FAIL** — cross-house history capability gap. | **PASS** — live Q20 list/count at `asOf=2026-11-06` returned 11 distinct Member identities and 16 finite prior Dáil paths; each EndDate is strictly before that exact active SeanadMembership StartDate. Both membership/term identities and intervals are displayed; positive local evidence only, not a complete-history or negative claim. |
-| 21a | `Who are the Fine Gael TDs in the two Galway constituencies?` | Fine Gael TDs in Galway East and Galway West | Clarification requested exact constituency alternatives; suggestions included Galway East, Galway West and Roscommon-Galway. No Member answer query ran. | **FAIL** — safe clarification, not a factual answer; the intended set is ambiguous in local data. | **FAIL carried forward** — not rerun 2026-11-06. |
+| 21a | `Who are the Fine Gael TDs in the two Galway constituencies?` | Fine Gael TDs in Galway East and Galway West | Clarification requested exact constituency alternatives; suggestions included Galway East, Galway West and Roscommon-Galway. No Member answer query ran. | **FAIL** — safe clarification, not a factual answer; the intended set is ambiguous in local data. | **FAIL** — actual `/ask` returned `clarification_required`, named Galway East, Galway West and Roscommon-Galway as possible recorded occurrences, and inferred no set or Members. |
 | 21b | `Who are the Fine Gael TDs in Galway East and Galway West?` | Fine Gael TDs in Galway East and Galway West | Hildegarde Naughton, Peter Roche and Seán Kyne, with exact representation occurrences in Galway West/East and dated Fine Gael evidence. | **PASS** — explicit two-constituency set composition works. | **PASS** — live recheck passed 2026-11-06 (`asOf=2026-11-06`). |
 | 22 | `How many TDs currently represent Meath East constituency?` | Count of current Meath East TDs | Planner proposed `currentTerm`; validation rejected it because the baseline count shape required an explicitly numbered Dáil. | **FAIL** — current-term count was outside the baseline validator. | **PASS** — 2026-11-06 live count recheck returned 4 at `asOf=2026-11-06`; exact current Dáil and membership intervals contain the reference date. |
 | 23 | `How many Fine Gael Senators are in the current Seanad?` | Count of Fine Gael Senators | Unsupported: counting current Seanad members by party is not supported. | **FAIL** — Seanad party-membership/aggregate capability gap. | **PASS** — 2026-11-06 live count recheck returned 16 at `asOf=2026-11-06`; current roster completeness is not certified. The separately dated iteration-5 count/list check is recorded below. |
@@ -616,23 +616,59 @@ included in the final candidate.
   `Agriculture Panel` alias and no bounded month/panel compiler. Adding a new
   panel capability without resolving that original identity wording would not
   resolve the scored question; no alias was invented.
-- **Final verification:** completed NLQ suite 1,035 passed, 2 skipped; focused
-  post-review set 243 passed. Final live evidence includes all 16 PASS controls
-  and the qualified Q7 projection. A transient Q18 planner timeout required a
-  retry; these are successful dated observations, not a deterministic planner
-  reliability guarantee. Earlier full-suite and ontology-validation results
-  remain dated evidence, not claims of a fresh final full-repository run.
+- **Final verification:** the post-correction full NLQ run completed:
+  `.venv/bin/python -m pytest tests/test_nlq*.py -q` — **1,053 passed, 2
+  skipped** in 384.93 seconds. The earlier focused integration set passed (**476
+  passed, 1 skipped**); the Q7 office-evidence file passed (**23 passed**) and
+  the Member-composition file passed after the current-term explanation
+  correction (**57 passed**).
+  All 26 original questions were sent to actual `/ask`: 26/26 HTTP 200 with no
+  transport failures; 18 returned answers, two returned controlled
+  clarifications (Q2/Q21a), and six returned safe unsupported outcomes
+  (Q4/Q5/Q8/Q14/Q15/Q17). Outcome review preserves **16 PASS, 3 PARTIAL, 7
+  FAIL, 0 BLOCKED**; Q7/Q12 are partial answers, not factual passes. A
+  transient Q18 planner timeout occurred in an earlier follow-up and passed on
+  retry; live observations are not a deterministic planner reliability
+  guarantee. `git diff --check`, contract JSON parsing and Python compilation
+  passed. Ontology validation was not repeated because no ontology or mapping
+  files changed; the previously accepted validation remains 2,586 triples.
+  All 26 raw HTML responses and the parsed outcome/result summary
+  (`original-26-live-summary.json`) are retained under
+  `/tmp/opencode/query-service-user-coverage/integration-live-2026-11-06/`.
+  Live review caught a presentation mismatch on Q16/Q22: their validated plans
+  selected the current 34th Dáil, but a generic fallback described the previous
+  Dáil. The renderer now explains the validated selector and distinguishes
+  Q16's term-wide scope from Q22's `asOf` membership-date filter. A focused
+  regression test covers both; post-fix actual `/ask` retries returned Q16=5
+  and Q22=4 with the corresponding current-term scopes. The underlying validated
+  query selections were already current-term; this correction changes only the
+  explanation shown to users.
+  The separate upstream Bill-publication count smoke used the accepted
+  `How many Bills did Malcolm Byrne sponsor that were published in 2024?`
+  wording through actual `/ask`. It returned HTTP 200 with machine outcome
+  `missing_or_unaccepted_evidence` (UI: **Source evidence unavailable**) and
+  the diagnostic that at least one recorded sponsored Bill lacks a valid dated
+  Published activity; no count/zero was returned. This is the expected
+  fail-closed local-evidence outcome, not a planner/runtime failure or the
+  original scorecard Q23. Its raw response and summary are in the same scratch
+  directory as `bill-published-year-smoke.html` and
+  `bill-published-year-smoke-summary.json`.
 - **Scope:** no ontology, mapping, protected source/golden fixture, RDF
   ownership, identifier, named-graph, publication or Fuseki-data changes.
   Contract additions remain inside the existing bounded compiler architecture.
-- **Git/PR:** campaign started clean at `ec1745b`, then identical to local
-  `master`, on `feat/query-service-user-coverage`. Seven bounded implementation
-  commits record this campaign. No push, merge, rebase or PR creation was
-  performed; the PR lookup returned no campaign PR. During the campaign,
-  `master` independently advanced to `955e914` with Bill-query and feedback
-  work. That concurrent work was not absorbed or overwritten. The campaign's
-  verification applies to this branch; reintegration with the newer `master`
-  remains outstanding and requires the normal Git-operation approval.
+- **Integration/Git/PR:** `feat/query-service-user-coverage` incorporates the latest fetched
+  `origin/master` (`a824851`) and preserves both the seven-commit campaign and
+  upstream Bill-publication aggregation, opt-in feedback, and dashboard-design
+  work. The dashboard design files remain unchanged; the composable contract
+  version is integrated additively at **2.26.0**. A history-preserving merge
+  retains all seven campaign commits; no rebase or wholesale ours/theirs
+  selection was used. Upstream-only feedback and dashboard artifacts were
+  checked byte-for-byte against `origin/master`. The authorized draft PR targets
+  `master` in `stephenrigney/OireachtasOntology`, not the local `gh` default's
+  upstream repository; publication details are recorded below. Upstream's Bill temporal aggregation uses a legacy benchmark
+  capability ID `Q23`, not original scorecard Q23 (the current-Seanad Fine Gael
+  count).
 - **Human decisions:** no semantic approval is needed for the completed work.
-  New event/office evidence, panel-label clarification and any future
-  integration/push are separate follow-ups, not authority to infer missing facts.
+  New event/office evidence and panel-label clarification remain separate
+  follow-ups, not authority to infer missing facts. Integration, branch push and
+  draft-PR publication are explicitly authorized; the PR is not to be merged.

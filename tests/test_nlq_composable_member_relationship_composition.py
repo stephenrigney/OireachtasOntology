@@ -31,6 +31,7 @@ from poc.nlq.composable_semantic_planner import (
     validate_composable_plan_draft,
 )
 from poc.nlq.safety import MAX_RESULT_OFFSET, MAX_RESULT_ROWS
+from test_nlq_composable_party_temporal import _current_term_fixture
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -337,7 +338,7 @@ def test_v2_contract_and_strict_draft_schema_cover_both_relationship_projections
     draft_schema = load_composable_draft_schema()
     Draft202012Validator.check_schema(plan_schema)
     Draft202012Validator.check_schema(draft_schema)
-    assert contract["contractVersion"] == "2.25.0"
+    assert contract["contractVersion"] == "2.26.0"
     count_contract = contract["memberCountProjections"]["member_relationship_composition"]["semantics"]
     assert "Stage C term-scoped ParliamentaryParty listing" in count_contract
     assert "not seats/election totals" in count_contract
@@ -458,6 +459,41 @@ def test_distinct_member_count_is_rendered_through_integrated_ask(monkeypatch):
     assert "Distinct recorded Members" in response.text
     assert ">2<" in response.text
     assert "not seats or election events" in response.text
+    assert generator.calls == [question]
+    assert generator.closed
+
+
+@pytest.mark.parametrize(("question", "date_point", "expected_scope"), [
+    (
+        "How many TDs represented Galway West in this Dáil?", None,
+        "term-wide ‘in this Dáil’ scope does not require a membership interval",
+    ),
+    (
+        "How many TDs currently represent Galway West?", AS_OF.isoformat(),
+        f"DailMembership interval to contain {AS_OF.isoformat()}",
+    ),
+])
+def test_current_term_composition_explanation_matches_validated_scope(
+    monkeypatch, question, date_point, expected_scope,
+):
+    from poc.nlq import app as app_module
+
+    fixture = _current_term_fixture(constituency_label="Galway West")
+    draft = _member_count_draft(constituency="Galway West")
+    draft["referents"]["term"]["selector"] = {"kind": "currentTerm"}
+    generator = FixedPlanGenerator(draft)
+    monkeypatch.setenv("OIR_NLQ_AS_OF_DATE", AS_OF.isoformat())
+    monkeypatch.setattr(app_module, "FusekiQueryClient", lambda *args, **kwargs: fixture)
+    response = TestClient(app_module.create_app(
+        repository_root=ROOT, semantic_plan_generator_factory=lambda: generator,
+    )).post("/ask", data={"question": question, "mode": "phase2"})
+
+    assert response.status_code == 200
+    assert 'data-outcome="answer"' in response.text, response.text
+    assert "House-date-resolved current Dáil" in response.text
+    assert expected_scope in response.text
+    assert "previous Dáil" not in response.text
+    assert "currentTerm" in response.text
     assert generator.calls == [question]
     assert generator.closed
 

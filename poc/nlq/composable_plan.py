@@ -304,7 +304,11 @@ def _validate_office_plan(plan: dict[str, Any]) -> dict[str, Any]:
 def _validate_bill_sponsorship_plan(plan: dict[str, Any]) -> dict[str, Any]:
     """Validate only the approved Member → BillParticipation → Bill path."""
     refs = plan["referents"]
-    if set(refs) != {"member", "participation", "bill"}:
+    temporal = "constraints" in plan
+    expected_ref_ids = {"member", "participation", "bill", "process", "activity"} if temporal else {
+        "member", "participation", "bill",
+    }
+    if set(refs) != expected_ref_ids:
         raise PlanError("Q23 requires exactly Member, BillParticipation, and Bill referents.")
 
     member = refs["member"]
@@ -342,11 +346,19 @@ def _validate_bill_sponsorship_plan(plan: dict[str, Any]) -> dict[str, Any]:
         raise PlanError("Q23 requires a plain BillParticipation evidence referent.")
     if refs["bill"] != {"type": "Bill", "answer": True}:
         raise PlanError("Q23 must return Bill identities as its answer referent.")
+    if temporal and (refs["process"] != {"type": "BillProcess"}
+                     or refs["activity"] != {"type": "BillActivity"}):
+        raise PlanError("The temporal Q23 path requires explicit BillProcess and BillActivity evidence referents.")
 
-    expected_relations = {
+    expected_relations = ({
+        "bill_process_cocontained": ("bill", "process"),
+        "process_has_participation": ("process", "participation"),
+        "participation_has_participant": ("participation", "member"),
+        "activity_forms_part_of_process": ("activity", "process"),
+    } if temporal else {
         "bill_has_sponsor_participation": ("bill", "participation"),
         "participation_has_participant": ("participation", "member"),
-    }
+    })
     relations = plan["relations"]
     if not isinstance(relations, list) or len(relations) != len(expected_relations):
         raise PlanError("Q23 requires exactly the reviewed Bill sponsorship and participant relationships.")
@@ -371,16 +383,35 @@ def _validate_bill_sponsorship_plan(plan: dict[str, Any]) -> dict[str, Any]:
     if actual_relations != expected_relations:
         raise PlanError("Q23 relations must follow Bill → sponsor participation → Member.")
 
+    if temporal:
+        constraints = plan["constraints"]
+        if (not isinstance(constraints, list) or len(constraints) != 1
+                or not isinstance(constraints[0], dict)
+                or set(constraints[0]) != {"referent", "field", "operator", "value"}
+                or constraints[0].get("referent") != "activity"
+                or constraints[0].get("field") != "publishedDate"
+                or constraints[0].get("operator") != "inCalendarYear"
+                or type(constraints[0].get("value")) is not int
+                or not 1800 <= constraints[0]["value"] <= 2200):
+            raise PlanError("Bill sponsorship temporal aggregation requires one bounded Published-activity calendar-year constraint.")
+        definition = _CONSTRAINT_MAPPINGS.get("publishedDate", {})
+        if (definition.get("referentType") != "BillActivity"
+                or definition.get("operator") != "inCalendarYear"
+                or definition.get("valueKind") != "calendar_year"
+                or definition.get("graphFamily") != "bill-records"):
+            raise PlanError("The reviewed Bill Published-date constraint is missing or inconsistent.")
+
     expected_answer = {
         "kind": "entities", "referent": "bill", "distinctBy": "identity",
         "display": ["englishTitle", "billNumber", "year", "officialLink"],
         "details": [{"referent": "participation", "display": ["role", "primaryEvidence"]}],
         "order": ["year", "billNumber"], "preserveEvidence": True,
     }
-    if plan["answer"] != expected_answer:
+    count_answer = {"kind": "count", "referent": "bill", "distinctBy": "identity"}
+    if plan["answer"] != (count_answer if temporal else expected_answer):
         raise PlanError(
             "Q23 must return distinct Bills with English title and optional metadata, "
-            "preserving each participation's role and primary-status evidence."
+            "preserving participation evidence, or a bounded distinct Bill count."
         )
     return plan
 
@@ -1519,6 +1550,35 @@ def plan_office_calendar_question(question: str, *, as_of: date) -> dict[str, An
 
 def plan_question(question: str, *, as_of: date) -> dict[str, Any]:
     """Interpret the bounded composable query question families."""
+    bill_sponsorship_count = re.search(
+        r"^how\s+many\s+bills?\s+did\s+(?P<member>.+?)\s+sponsor\s+"
+        r"(?:that\s+were\s+)?published\s+in\s+(?P<year>[0-9]{4})\s*[?.!]*$",
+        question.strip(), re.IGNORECASE,
+    )
+    if bill_sponsorship_count:
+        member_name = bill_sponsorship_count.group("member").strip()
+        year = int(bill_sponsorship_count.group("year"))
+        if not member_name or not 1800 <= year <= 2200:
+            raise PlanError("A named Member and supported calendar year are required for this Bill count.")
+        return validate_plan({
+            "version": PLAN_VERSION, "asOf": as_of.isoformat(),
+            "referents": {
+                "member": {"type": "Member", "mention": member_name, "resolution": "unresolved"},
+                "participation": {"type": "BillParticipation"},
+                "bill": {"type": "Bill", "answer": True},
+                "process": {"type": "BillProcess"},
+                "activity": {"type": "BillActivity"},
+            },
+            "relations": [
+                {"id": "bill-process", "fact": "bill_process_cocontained", "from": "bill", "to": "process"},
+                {"id": "process-participation", "fact": "process_has_participation", "from": "process", "to": "participation"},
+                {"id": "participation-member", "fact": "participation_has_participant", "from": "participation", "to": "member"},
+                {"id": "activity-process", "fact": "activity_forms_part_of_process", "from": "activity", "to": "process"},
+            ],
+            "constraints": [{"referent": "activity", "field": "publishedDate", "operator": "inCalendarYear", "value": year}],
+            "answer": {"kind": "count", "referent": "bill", "distinctBy": "identity"},
+        })
+
     bill_sponsorship = re.search(
         r"^(?:what|which)\s+bills?\s+(?:did|has)\s+(?P<member>.+?)\s+(?:sponsor|sponsored)\s*[?.!]*$",
         question.strip(), re.IGNORECASE,
@@ -1694,10 +1754,10 @@ def validate_plan(plan: Any) -> dict[str, Any]:
         return _validate_stage_a_plan(plan)
     if any(ref.get("type") in {"DebateRecord", "DebateSitting"} for ref in refs.values()):
         return _validate_debate_plan(plan)
-    if "constraints" in plan:
-        return _validate_office_plan(plan)
     if any(ref.get("type") in {"Bill", "BillParticipation"} for ref in refs.values()):
         return _validate_bill_sponsorship_plan(plan)
+    if "constraints" in plan:
+        return _validate_office_plan(plan)
     term = refs.get("term", {})
     constituency = refs.get("constituency", {})
     is_q09 = "term" in refs or "constituency" in refs
@@ -2160,6 +2220,13 @@ def _bill_sponsorship_query_mapping(plan: dict[str, Any]) -> dict[str, str]:
     participant = _pattern_predicate(sponsor, "?participation", "?member")
     primary_status = _pattern_predicate(sponsor, "?participation", "?optionalBoolean")
     participation_role = _pattern_predicate(sponsor, "?participation", "?optionalRoleLabel")
+    lifecycle_triples = lifecycle.get("triples", [])
+    published_activity = next((triple[1] for triple in lifecycle_triples
+                               if triple[0] == "?activity" and triple[2] == "?process"), None)
+    published_date = next((triple[1] for triple in lifecycle_triples
+                           if triple[0] == "?activity" and triple[1] == "eli-dl:activity_date"), None)
+    activity_type = next((triple[1] for triple in lifecycle_triples
+                          if triple[0] == "?activity" and triple[2] == "?eventType"), None)
     if bill_kind != "eli:work_type" or primary_status != "agents:isPrimarySponsor":
         raise PlanError("Q23 Bill-kind or primary-sponsor mappings disagree with the emitted RDF contract.")
     if _reviewed_predicate("participation_has_participant") != participant:
@@ -2174,10 +2241,16 @@ def _bill_sponsorship_query_mapping(plan: dict[str, Any]) -> dict[str, str]:
         _reviewed_predicate_for_qname(predicate)
 
     query_relations = {item["fact"]: (item["from"], item["to"]) for item in plan["relations"]}
-    if query_relations != {
+    expected_query_relations = ({
+        "bill_process_cocontained": ("bill", "process"),
+        "process_has_participation": ("process", "participation"),
+        "participation_has_participant": ("participation", "member"),
+        "activity_forms_part_of_process": ("activity", "process"),
+    } if "constraints" in plan else {
         "bill_has_sponsor_participation": ("bill", "participation"),
         "participation_has_participant": ("participation", "member"),
-    }:
+    })
+    if query_relations != expected_query_relations:
         raise PlanError("Q23 compilation requires the complete Bill sponsorship path.")
     return {
         "member_iri": member_iri,
@@ -2196,6 +2269,10 @@ def _bill_sponsorship_query_mapping(plan: dict[str, Any]) -> dict[str, str]:
         "bill_number": process_number,
         "bill_year": bill_year,
         "bill_graph_route": route_pattern,
+        "published_activity": published_activity,
+        "published_date": published_date,
+        "activity_type": activity_type,
+        "published_values": lifecycle.get("controlledValues", []),
     }
 
 
@@ -2203,7 +2280,22 @@ def compile_bill_sponsorship_answer_query(plan: dict[str, Any], *, supported_pre
     """Compile the reviewed Bill-graph sponsorship evidence for one Member IRI."""
     mapping = _bill_sponsorship_query_mapping(plan)
     member_iri = URIRef(mapping["member_iri"]).n3()
-    query = _PREFIXES + f'''SELECT DISTINCT ?billGraph ?bill ?participation ?primaryEvidence ?participationRole ?englishTitle ?billNumber ?billYear WHERE {{
+    temporal = "constraints" in plan
+    projection = ""
+    activity = ""
+    if temporal:
+        if (mapping["published_activity"] != "eli-dl:forms_part_of"
+                or mapping["published_date"] != "eli-dl:activity_date"
+                or mapping["activity_type"] != "eli-dl:had_activity_type"):
+            raise PlanError("The reviewed Bill lifecycle activity mapping is unavailable for temporal sponsorship.")
+        if "agents:Published" not in mapping["published_values"]:
+            raise PlanError("The exact Published activity type is not queryable.")
+        activity = f'''\n    OPTIONAL {{
+      ?publishedActivity a eli-dl:LegislativeActivity ; {mapping["published_activity"]} ?process ; {mapping["activity_type"]} agents:Published .
+      OPTIONAL {{ ?publishedActivity {mapping["published_date"]} ?publishedDate . }}
+    }}'''
+        projection = " ?publishedActivity ?publishedDate"
+    query = _PREFIXES + f'''SELECT DISTINCT ?billGraph ?bill ?participation ?primaryEvidence ?participationRole ?englishTitle ?billNumber ?billYear{projection} WHERE {{
   GRAPH ?billGraph {{
     ?bill a {mapping["bill_type"]} ; {mapping["bill_kind"]} agents:Bill .
     ?delivery a {mapping["delivery_type"]} ; {mapping["delivery_work"]} ?bill ; {mapping["delivery_process"]} ?process .
@@ -2214,9 +2306,10 @@ def compile_bill_sponsorship_answer_query(plan: dict[str, Any], *, supported_pre
     OPTIONAL {{ ?bill {mapping["bill_title"]} ?englishTitle . FILTER(LANG(?englishTitle) = "en") }}
     OPTIONAL {{ ?process {mapping["bill_number"]} ?billNumber . }}
     OPTIONAL {{ ?bill {mapping["bill_year"]} ?billYear . }}
+    {activity}
   }}
   FILTER(REGEX(STR(?billGraph), {json.dumps(mapping["bill_graph_route"])}))
-}} ORDER BY ?billYear ?billNumber ?bill ?participation ?primaryEvidence ?participationRole ?englishTitle ?billGraph'''
+}} ORDER BY ?billYear ?billNumber ?bill ?participation ?primaryEvidence ?participationRole ?englishTitle ?billGraph{(' ?publishedDate ?publishedActivity' if temporal else '')} LIMIT {MAX_RESULT_ROWS}'''
     return _query(query, supported_predicates)
 
 
@@ -3991,6 +4084,7 @@ def readable_debate_result(result: QueryResult) -> QueryResult:
 _XSD_BOOLEAN_IRI = "http://www.w3.org/2001/XMLSchema#boolean"
 _XSD_INTEGER_IRI = "http://www.w3.org/2001/XMLSchema#integer"
 _XSD_STRING_IRI = "http://www.w3.org/2001/XMLSchema#string"
+_XSD_DATE_IRI = "http://www.w3.org/2001/XMLSchema#date"
 _CANONICAL_BILL_IRI = re.compile(
     r"^https://data\.oireachtas\.ie/ie/oireachtas/bill/(?P<year>[0-9]{4})/(?P<number>[^/?#]+)$"
 )
@@ -4658,6 +4752,44 @@ def _bill_sponsorship_coverage_counts(result: QueryResult) -> tuple[int, int]:
     return counts[0], counts[1]
 
 
+def _published_year_bill_identities(result: QueryResult, year: int) -> set[str]:
+    """Evaluate source-backed Published dates, failing closed on missing evidence."""
+    required = {"bill", "publishedActivity", "publishedDate"}
+    if result.kind != "select" or not required.issubset(result.columns):
+        raise NLQError("Temporal Bill sponsorship query omitted Published activity evidence.")
+    indexes = {name: result.columns.index(name) for name in required}
+    events: dict[str, dict[str, Any]] = {}
+    for row in result.rows:
+        if len(row) <= max(indexes.values()):
+            raise NLQError("Temporal Bill sponsorship query returned a truncated evidence row.")
+        bill = _require_local_iri(row[indexes["bill"]], "Bill")
+        evidence = events.setdefault(bill, {"dates": set(), "missing": False})
+        activity = row[indexes["publishedActivity"]]
+        date_value = row[indexes["publishedDate"]]
+        if activity == "—":
+            evidence["missing"] = True
+            continue
+        _require_local_iri(activity, "Published BillActivity")
+        lexical, _language, datatype = _rdf_literal_parts(date_value)
+        if (lexical is None or datatype != _XSD_DATE_IRI
+                or not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", lexical)):
+            evidence["missing"] = True
+            continue
+        try:
+            parsed = date.fromisoformat(lexical)
+        except ValueError:
+            evidence["missing"] = True
+            continue
+        evidence["dates"].add(parsed)
+    uncertain = [bill for bill, item in events.items() if item["missing"] or not item["dates"]]
+    if uncertain:
+        raise NLQError(
+            "At least one recorded sponsored Bill lacks a valid dated Published activity; "
+            "the requested year count cannot be established without treating missing evidence as a non-match."
+        )
+    return {bill for bill, item in events.items() if any(value.year == year for value in item["dates"])}
+
+
 def _execute_bill_sponsorship_question(
     plan: dict[str, Any], *, fuseki, supported_predicates,
 ) -> PlanOutcome:
@@ -4725,8 +4857,31 @@ def _execute_bill_sponsorship_question(
                         "resolved Member IRI. The loaded Bill data does not certify complete historical coverage."),
         )
 
+    temporal_year = (plan["constraints"][0]["value"] if "constraints" in plan else None)
+    selected_bills: set[str] | None = None
+    if temporal_year is not None:
+        try:
+            selected_bills = _published_year_bill_identities(raw_result, temporal_year)
+        except NLQError as error:
+            return PlanOutcome("source_data_unavailable", plan=plan, sparql=answer_query, diagnostic=str(error))
+
     try:
-        projection = readable_bill_sponsorship_result(raw_result)
+        if selected_bills is None:
+            projection = readable_bill_sponsorship_result(raw_result)
+        else:
+            columns = {name: raw_result.columns.index(name) for name in ("bill",)}
+            selected_rows = tuple(row for row in raw_result.rows if row[columns["bill"]] in selected_bills)
+            if plan["answer"]["kind"] == "count":
+                return PlanOutcome(
+                    "success", plan=plan, sparql=answer_query,
+                    result=QueryResult("select", ("Distinct Bills",), ((str(len(selected_bills)),),)),
+                    diagnostic=(f"Counted {len(selected_bills)} distinct Bill RDF identities with a source-backed "
+                                f"Published activity dated in {temporal_year}. The local dataset does not certify "
+                                "complete historical sponsorship or publication coverage."),
+                )
+            projection = readable_bill_sponsorship_result(
+                QueryResult(raw_result.kind, raw_result.columns, selected_rows, raw_result.raw_json),
+            )
     except NLQError as error:
         return PlanOutcome("source_data_unavailable", plan=plan, sparql=answer_query, diagnostic=str(error))
     diagnostics = list(projection.diagnostics)

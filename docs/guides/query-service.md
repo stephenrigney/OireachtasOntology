@@ -239,6 +239,17 @@ gaps. Unreviewed office observations are not queried as holdings. Election-event
 and tenure-duration questions, and requests with additional filters, remain
 unsupported.
 
+Composable contract `2.26.0` adds a bounded distinct-Bill count for the exact
+request “How many Bills did [member] sponsor that were published in [calendar
+year]?” It joins the exact Member identity through Bill-owned sponsorship
+Participation and process evidence to typed Published activities, then counts
+distinct Bill IRIs by the activity's valid `xsd:date` calendar year. It never
+uses legislative year or document/version dates. Missing, malformed, or
+conflicting Published-date evidence makes the aggregate unavailable rather
+than zero; an observed zero is only a complete valid result over the loaded
+local slice, not a completeness claim. This narrow projection does not create a
+general Bill query framework.
+
 Composable contract `2.22.0` adds a bounded anchored shared-constituency list/count
 within the existing Member relationship composition. It accepts one exact
 numbered Dáil or the globally previous Dáil selected from House-owned chronology

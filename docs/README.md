@@ -15,6 +15,10 @@ authoritative where applicable; historical prose does not supersede them.
 - [Direct graph exploration](guides/graph-exploration.md)
 - [Semantic-enrichment evaluation workflow](guides/semantic-enrichment-evaluation.md)
 
+## User-interface design
+
+- [NLQ dashboard UI design contract](../poc/specs/nlq-dashboard-ui.md) and [visual styling reference](../poc/specs/nlq-dashboard-visual.svg) (implementation pending)
+
 ## Current architecture
 
 - [ETL architecture and publication boundaries](architecture/etl.md)

@@ -219,6 +219,7 @@ pip-log.txt
 data/cache/
 data/output/
 data/raw/
+data/local/nlq-feedback/
 
 #Translations
 *.mo

@@ -406,11 +406,24 @@ def test_semantic_fallback_reaches_existing_capabilities(monkeypatch, canonical,
     outcome = run(fixture, question, generator=generator)
     assert outcome.status == "success", outcome.diagnostic
     assert outcome.result.rows == run(fixture, canonical).result.rows
+    if family == "member_bill_sponsorship":
+        canonical_plan = run(fixture, canonical).plan
+        assert outcome.plan["answer"] == canonical_plan["answer"]
+        assert outcome.plan["answer"]["display"] == ["englishTitle", "billNumber", "year", "officialLink"]
+        assert outcome.plan["answer"]["details"] == [{"referent": "participation", "display": ["role", "primaryEvidence"]}]
     assert generator.calls == 1
     response = ask(monkeypatch, fixture, question, generator=generator)
     assert "Validated composable query plan" in response.text
     bad = copy.deepcopy(draft)
     bad["relations"].pop()
+    rejected = run(fixture, question, generator=FixedGenerator(bad))
+    assert rejected.status == "validation_failure" and rejected.result is None
+    bad = copy.deepcopy(draft)
+    bad["constraints"] = [{"referent": "member", "field": "identity", "operator": "equals", "value": "unrequested"}]
+    rejected = run(fixture, question, generator=FixedGenerator(bad))
+    assert rejected.status == "validation_failure" and rejected.result is None
+    bad = copy.deepcopy(draft)
+    bad["answer"]["referent"] = "participation"
     rejected = run(fixture, question, generator=FixedGenerator(bad))
     assert rejected.status == "validation_failure" and rejected.result is None
 
