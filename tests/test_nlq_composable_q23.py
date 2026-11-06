@@ -21,6 +21,7 @@ from poc.nlq.composable_plan import (
     plan_question,
     validate_plan,
 )
+from poc.nlq.composable_semantic_planner import validate_composable_plan_draft
 from poc.nlq.errors import NLQError
 from poc.nlq.fuseki import FusekiReadiness
 from poc.nlq.results import QueryResult
@@ -34,6 +35,7 @@ AGENTS = "https://data.oireachtas.ie/ontology#"
 ELI = "http://data.europa.eu/eli/ontology#"
 ELI_DL = "http://data.europa.eu/eli/eli-draft-legislation-ontology#"
 MEMBER_IRI = "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29"
+OTHER_MEMBER_IRI = "https://data.oireachtas.ie/ie/oireachtas/member/id/Aoife-Example.D.2020-01-01"
 
 
 def _serialize_binding(value) -> str:
@@ -80,6 +82,7 @@ class BillSponsorshipFixture:
         include_process: bool = True,
         include_number: bool = True,
         include_year: bool = True,
+        published_dates: tuple[str | None, ...] = (),
     ) -> str:
         bill_text = f"https://data.oireachtas.ie/ie/oireachtas/bill/{year}/{number}"
         bill = URIRef(bill_text)
@@ -115,6 +118,14 @@ class BillSponsorshipFixture:
                         graph.add((participation, URIRef(AGENTS + "isPrimarySponsor"), Literal(flag, datatype=XSD.boolean)))
                 if evidence.get("role"):
                     graph.add((participation, RDFS.label, Literal(evidence["role"])))
+            for index, event_date in enumerate(published_dates):
+                activity = URIRef(f"{bill_text}#published-{index}")
+                graph.add((activity, RDF.type, URIRef(ELI_DL + "LegislativeActivity")))
+                graph.add((activity, URIRef(ELI_DL + "forms_part_of"), process))
+                graph.add((activity, URIRef(ELI_DL + "had_activity_type"), URIRef(AGENTS + "Published")))
+                if event_date is not None:
+                    graph.add((activity, URIRef(ELI_DL + "activity_date"),
+                               Literal(event_date, datatype=XSD.date, normalize=False)))
         return bill_text
 
     def readiness(self):
@@ -439,3 +450,159 @@ def test_q23_ask_reports_unresolved_and_ambiguous_members_without_misleading_res
     })
     assert "Entity not found" in response.text
     assert "No matching local Member record" in response.text
+
+
+@pytest.mark.parametrize(("member", "year", "member_iri"), [
+    ("Malcolm Byrne", 2024, MEMBER_IRI),
+    ("Aoife Example", 2025, OTHER_MEMBER_IRI),
+])
+def test_bounded_bill_sponsorship_published_year_count_is_parameterized_and_identity_distinct(member, year, member_iri):
+    fixture = BillSponsorshipFixture()
+    if member_iri == OTHER_MEMBER_IRI:
+        fixture.add_member(OTHER_MEMBER_IRI, member, "Aoife-Example.D.2020-01-01")
+    fixture.add_bill(2026, "1", "Selected Bill", (
+        {"primary": True, "member": member_iri}, {"primary": False, "member": member_iri},
+    ), published_dates=(f"{year}-01-03", f"{year}-12-30"))
+    fixture.add_bill(2026, "2", "Other Year Bill", ({},), published_dates=("2023-06-01",))
+    fixture.add_bill(2026, "3", "Second Selected Bill", ({"role": "Member", "member": member_iri},),
+                     published_dates=(f"{year}-04-05", f"{year}-04-05"))
+    if member_iri != MEMBER_IRI:
+        # The unrelated Malcolm sponsorship is not part of Aoife's identity set.
+        fixture.add_bill(2026, "4", "Other Member Bill", ({"member": MEMBER_IRI},),
+                         published_dates=(f"{year}-06-01",))
+    plan = plan_question(f"How many Bills did {member} sponsor that were published in {year}?", as_of=AS_OF)
+    assert plan["constraints"][0]["value"] == year
+    assert plan["answer"] == {"kind": "count", "referent": "bill", "distinctBy": "identity"}
+    outcome = _run(fixture, f"How many Bills did {member} sponsor that were published in {year}?")
+    assert outcome.status == "success", outcome.diagnostic
+    assert outcome.result.columns == ("Distinct Bills",)
+    assert outcome.result.rows == (("2",),)
+    query = compile_bill_sponsorship_answer_query(plan | {"referents": {
+                **plan["referents"], "member": {"type": "Member", "mention": member,
+                "resolution": "resolved", "iri": member_iri, "label": member},
+    }}, supported_predicates=supported_predicates(ROOT / "ontology"))
+    assert query == compile_bill_sponsorship_answer_query(
+        plan | {"referents": {
+            **plan["referents"], "member": {"type": "Member", "mention": member,
+            "resolution": "resolved", "iri": member_iri, "label": member},
+        }}, supported_predicates=supported_predicates(ROOT / "ontology"),
+    )
+    assert "agents:Published" in query and "eli-dl:activity_date" in query
+    raw = fixture.query(query)
+    from poc.nlq.composable_plan import _published_year_bill_identities
+    assert len(_published_year_bill_identities(raw, year)) == int(outcome.result.rows[0][0])
+
+
+@pytest.mark.parametrize("published_dates", [(), (None,), ("bad-date",)])
+def test_temporal_bill_sponsorship_count_fails_closed_on_missing_or_malformed_published_dates(published_dates):
+    fixture = BillSponsorshipFixture()
+    fixture.add_bill(2024, "8", "Undated Bill", ({},), published_dates=published_dates)
+    outcome = _run(fixture, "How many Bills did Malcolm Byrne sponsor that were published in 2024?")
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert "lacks a valid dated Published activity" in outcome.diagnostic
+
+
+def test_temporal_bill_count_reports_verified_local_zero_and_missing_graph_is_not_zero():
+    question = "How many Bills did Malcolm Byrne sponsor that were published in 2024?"
+    fixture = BillSponsorshipFixture()
+    fixture.add_bill(2026, "9", "Different Publication Year", ({},), published_dates=("2023-06-01",))
+    outcome = _run(fixture, question)
+    assert outcome.status == "success"
+    assert outcome.result.rows == (("0",),)
+    assert "does not certify complete" in outcome.diagnostic
+
+    missing = _run(BillSponsorshipFixture(), question)
+    assert missing.status == "missing_sponsorship_evidence"
+    assert missing.result is None
+
+
+def test_temporal_bill_count_keeps_exact_member_ambiguity_fail_closed():
+    fixture = BillSponsorshipFixture(ambiguous_member=True)
+    fixture.add_bill(2024, "10", "Ambiguous Member Bill", ({},), published_dates=("2024-03-01",))
+    outcome = _run(fixture, "How many Bills did Malcolm Byrne sponsor that were published in 2024?")
+    assert outcome.status == "ambiguous"
+    assert outcome.result is None
+    assert len(fixture.queries) == 1
+
+
+def test_temporal_bill_count_is_available_through_integrated_ask(monkeypatch):
+    from poc.nlq import app as app_module
+
+    fixture = BillSponsorshipFixture()
+    fixture.add_bill(2024, "12", "Published Sponsor Bill", ({"primary": False},),
+                     published_dates=("2024-02-01",))
+    monkeypatch.setenv("OIR_NLQ_AS_OF_DATE", AS_OF.isoformat())
+    monkeypatch.setattr(app_module, "FusekiQueryClient", lambda *args, **kwargs: fixture)
+    response = TestClient(app_module.create_app(repository_root=ROOT)).post("/ask", data={
+        "question": "How many Bills did Malcolm Byrne sponsor that were published in 2024?",
+        "mode": "phase2",
+    })
+    assert response.status_code == 200
+    assert "Distinct Bill identity count" in response.text
+    assert "Published Sponsor Bill" not in response.text
+    assert "Distinct Bills" in response.text and ">1<" in response.text
+    assert "Published lifecycle activity in calendar year 2024" in response.text
+
+
+def test_bill_sponsorship_page_cap_never_returns_a_truncated_count_or_list():
+    from poc.nlq.safety import MAX_RESULT_OFFSET, MAX_RESULT_ROWS
+
+    class UnboundedBillFixture(BillSponsorshipFixture):
+        def query(self, query):
+            if "SELECT DISTINCT ?billGraph ?bill ?participation" in query:
+                row = (
+                    "https://data.oireachtas.ie/graph/bill/2024/1",
+                    "https://data.oireachtas.ie/ie/oireachtas/bill/2024/1",
+                    "https://data.oireachtas.ie/ie/oireachtas/bill/2024/1#participation",
+                    "true^^<http://www.w3.org/2001/XMLSchema#boolean>", "—",
+                    "Capped Bill@en", "1^^<http://www.w3.org/2001/XMLSchema#string>",
+                    "2024^^<http://www.w3.org/2001/XMLSchema#integer>",
+                )
+                return QueryResult("select", (
+                    "billGraph", "bill", "participation", "primaryEvidence", "participationRole",
+                    "englishTitle", "billNumber", "billYear",
+                ), tuple(row for _ in range(MAX_RESULT_ROWS)))
+            return super().query(query)
+
+    fixture = UnboundedBillFixture()
+    outcome = _run(fixture)
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert "exceeds the bounded pagination range" in outcome.diagnostic
+    assert MAX_RESULT_OFFSET >= MAX_RESULT_ROWS
+
+
+def test_semantic_planner_temporal_sponsorship_proposal_is_closed_and_exact():
+    question = "How many Bills did Malcolm Byrne sponsor that were published in 2024?"
+    draft = {
+        "version": 2, "supported": True, "family": "member_bill_sponsorship",
+        "unsupportedReason": None, "intent": "Count Bills with source-backed publication dates",
+        "referents": {
+            "member": {"type": "Member", "mention": "Malcolm Byrne"},
+            "bill": {"type": "Bill", "mention": None},
+            "participation": {"type": "BillParticipation", "mention": None},
+            "process": {"type": "BillProcess", "mention": None},
+            "activity": {"type": "BillActivity", "mention": None},
+        },
+        "relations": [
+            {"id": "bill-process", "fact": "bill_process_cocontained", "from": "bill", "to": "process"},
+            {"id": "process-participation", "fact": "process_has_participation", "from": "process", "to": "participation"},
+            {"id": "participation-member", "fact": "participation_has_participant", "from": "participation", "to": "member"},
+            {"id": "activity-process", "fact": "activity_forms_part_of_process", "from": "activity", "to": "process"},
+        ],
+        "constraints": [{"referent": "activity", "field": "publishedDate", "operator": "inCalendarYear", "value": 2024}],
+        "answer": {"kind": "count", "referent": "bill", "distinctBy": "identity"},
+    }
+    final, reason = validate_composable_plan_draft(draft, question=question)
+    assert reason is None
+    assert final["constraints"] == draft["constraints"]
+    assert final["answer"] == draft["answer"]
+    schema = json.loads((ROOT / "poc/specs/composable-query-plan-draft.schema.json").read_text())
+    Draft202012Validator.check_schema(schema)
+    assert Draft202012Validator(schema).is_valid(draft)
+
+    weakened = json.loads(json.dumps(draft))
+    weakened["constraints"] = []
+    with pytest.raises(ValueError):
+        validate_composable_plan_draft(weakened, question=question)

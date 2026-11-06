@@ -106,15 +106,17 @@ class CapabilityFixture:
 def test_dispatch_capabilities_are_contract_grounded_and_part_of_planner_context():
     contract = json.loads((ROOT / "poc/specs/composable-query-plan-contract.json").read_text())
     capabilities = {item["id"]: item for item in contract["semanticDispatch"]["capabilities"]}
-    assert set(capabilities) == {"bill_lookup", "seanad_entry", "member_lookup", "dail_parties_and_groups", "office_holding_evidence", "office_holding_window"}
+    assert set(capabilities) == {"bill_lookup", "seanad_entry", "member_lookup", "dail_parties_and_groups", "office_holding_evidence", "office_holding_window", "member_bill_sponsorship"}
     assert capabilities["office_holding_window"]["handler"] == "composable_office"
     assert capabilities["seanad_entry"]["handler"] == "stage_a"
     assert capabilities["bill_lookup"]["handler"] == "stage_b"
+    assert capabilities["member_bill_sponsorship"]["handler"] == "composable_bill_sponsorship"
     from poc.nlq.composable_semantic_planner import build_composable_planner_instructions
     instructions = build_composable_planner_instructions()
     assert 'family "capability_selection"' in instructions
     assert "every locally recorded typed dated activity" in instructions
     assert "earliest evidenced Seanad membership start date" in instructions
+    assert "publishedDate" in instructions
 
 
 @pytest.mark.parametrize(("question", "capability", "parameters", "deterministic"), [
