@@ -79,7 +79,10 @@ def plan_representation_question(question, *, as_of):
                                    latest_recorded=True)
     match = re.fullmatch(
         r"(?:who are (?:the )?(?:current )?(?:TDs|deputies)|which (?:TDs|deputies) represent)"
-        r" (?:for )?(?P<constituency>.+?)(?: in the (?:current|present) D[áa]il)?", text, re.I)
+        r" (?:for )?(?P<constituency>.+?)"
+        r"(?:\s+(?:right\s+now|now|currently|today|as\s+of\s+(?:now|today)))?"
+        r"(?: in the (?:current|present) D[áa]il)?"
+        r"(?:\s+(?:right\s+now|now|currently|today|as\s+of\s+(?:now|today)))?", text, re.I)
     if match:
         plan = representation_plan(as_of=as_of, constituency=match["constituency"])
         from .interpretation import default_evidence, present_constituency_default
