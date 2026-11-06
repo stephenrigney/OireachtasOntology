@@ -207,3 +207,35 @@ def test_feedback_retry_does_not_clear_user_answers():
     assert 'finally { if (!saved) submit.disabled = false; }' in template
     assert "form.reset()" not in template
     assert 'expected.value' in template
+
+
+def test_unexpected_pre_execution_failure_keeps_executed_stage_unavailable(tmp_path, monkeypatch):
+    from poc.nlq import app as app_module
+
+    def fail_before_execution(*_args, **_kwargs):
+        raise RuntimeError("planner failed before query dispatch")
+
+    monkeypatch.setattr(app_module, "execute_question", fail_before_execution)
+    with TestClient(_app(tmp_path / "feedback")) as client:
+        page = client.post("/ask", data={"question": "Count some records", "mode": "phase2"}).text
+    executed_tab = page.split('id="tab-executed"', 1)[1].split("</button>", 1)[0]
+    assert "disabled" in executed_tab
+    assert "Execution was not reached" in page
+
+
+def test_executed_stage_requires_recorded_database_attempt(tmp_path, monkeypatch):
+    from poc.nlq import app as app_module
+    from poc.nlq.composable_plan import PlanOutcome
+
+    cases = (
+        (PlanOutcome(status="success", sparql="SELECT * WHERE {}",
+                     result=QueryResult("select", columns=("item",), rows=(("one",),))), True),
+        (PlanOutcome(status="execution_failure", sparql="SELECT * WHERE {}",
+                     diagnostic="Fuseki query failed."), True),
+    )
+    for outcome, reached in cases:
+        monkeypatch.setattr(app_module, "execute_question", lambda *args, **kwargs: outcome)
+        with TestClient(_app(tmp_path / str(reached))) as client:
+            page = client.post("/ask", data={"question": "Count some records", "mode": "phase2"}).text
+        executed_tab = page.split('id="tab-executed"', 1)[1].split("</button>", 1)[0]
+        assert ("disabled" not in executed_tab) is reached

@@ -32,10 +32,11 @@
     .error { color:var(--failure); border-color:#A3272F; }
     .ambiguity { background:#fffaf0; border-color:var(--gold); }
   .debug-panel { padding: .75rem; border: 1px solid #c8ccd0; background: #f8f9fa; }
-    .readiness { padding: .75rem; border: 1px solid #c8ccd0; }
-    .readiness.ready { background: #eff8ef; border-color: #83b883; }
-    .readiness.partial { background: #fff8e6; border-color: #d6b65d; }
-    .readiness.empty, .readiness.unavailable { background: #fff0f0; border-color: #e5bcbc; }
+    .readiness { padding: .75rem; border: 1px solid var(--border); color:var(--ink); background:transparent; }
+    .readiness-warning { margin:0 0 16px; padding:12px 16px; color:var(--ink); background:var(--card); border:1px solid var(--border); border-left:4px solid var(--failure); border-radius:6px; }
+    .system-status { margin-top:24px; }
+    .system-status details { padding:16px 20px; background:var(--card); border:1px solid var(--border); border-radius:8px; }
+    .system-status summary { color:var(--ink); font-size:1.1rem; font-weight:700; }
     .feedback { border-color:var(--border); background:var(--card); }
     .adequacy-toggle { display: flex; gap: .35rem; width: fit-content; margin: .35rem 0 1rem; padding: .25rem; border: 1px solid #aeb4bc; border-radius: .5rem; background: #edf0f3; }
     .adequacy-toggle label { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 5rem; padding: .45rem .8rem; border-radius: .35rem; cursor: pointer; font-weight: 600; }
@@ -73,17 +74,8 @@
     <button type="button" class="session-stop" id="stop-evidence" hidden>Stop Evidence Session</button>
     <p id="evidence-status" role="status" aria-live="polite">Feedback collection is off.</p>
   </section>
-  {% if readiness %}
-  <section class="readiness {{ readiness.state }}" aria-live="polite">
-    <h2>Fuseki readiness <small>(read-only check)</small></h2>
-    <p><strong>{{ readiness.state|capitalize }}:</strong> {{ readiness.message }}</p>
-    <ul>
-    {% for source, present in readiness.sources %}
-      <li>{{ source }}: {% if readiness.state == "unavailable" %}unknown{% else %}{{ "present" if present else "not detected" }}{% endif %}{% if source in ["Committees", "Bills", "Offices", "Administrative Units", "Office Holdings", "Cabinet Memberships"] %} (optional for basic readiness){% endif %}</li>
-    {% endfor %}
-    </ul>
-    <p>This check only queries Fuseki. The POC never loads, clears, or rebuilds graphs.</p>
-  </section>
+  {% if readiness and readiness.state == "unavailable" %}
+  <p class="readiness-warning" role="alert"><strong>Fuseki is currently unavailable.</strong> Queries may not run. <a href="#system-status">View system status</a> for details.</p>
   {% endif %}
   <form method="post" action="/ask">
     <h2>Ask a question</h2>
@@ -192,7 +184,7 @@
     <h2>How this query was processed</h2>
     {% set interpreted_ready = interpretation or plan_explanation or error or ambiguity or clarification or entity_outcomes %}
     {% set compiled_ready = sparql or plan_json %}
-    {% set executed_ready = result or interaction_status in ["execution_failure", "query_execution_failed"] or (debug_message and ("query executed." in debug_message|lower or "query ran," in debug_message|lower or "query failed" in debug_message|lower)) %}
+    {% set executed_ready = execution_attempted %}
     {% set initial_stage = "interpreted" if interpreted_ready else ("compiled" if compiled_ready else ("executed" if executed_ready else "interpreted")) %}
     <div class="stage-tabs" role="tablist" aria-label="Query processing stages">
       <button type="button" role="tab" id="tab-interpreted" aria-controls="panel-interpreted" aria-selected="{{ 'true' if initial_stage == 'interpreted' else 'false' }}" tabindex="{{ '0' if initial_stage == 'interpreted' else '-1' }}" {% if not interpreted_ready %}disabled{% endif %}><span class="stage-num">01</span>Interpreted</button>
@@ -218,7 +210,7 @@
       {% if sparql %}<p>SPARQL was generated.</p><details><summary>Generated SPARQL</summary><pre><code>{{ sparql }}</code></pre></details>{% elif plan_json %}<p>SPARQL compilation did not produce a query; the validated plan alone does not establish generated SPARQL.</p>{% else %}<p>Compilation was not reached; no validated plan or SPARQL was produced.</p>{% endif %}
     </div>
     <div class="stage-panel" role="tabpanel" id="panel-executed" aria-labelledby="tab-executed" {% if initial_stage != 'executed' %}hidden{% endif %}>
-      {% if result %}<p>Query result is shown above.{% if result_notice %} {{ result_notice }}{% endif %}</p>{% if debug_message %}<p>{{ debug_message }}</p>{% endif %}{% elif interaction_status in ['execution_failure', 'query_execution_failed'] %}<p>{{ error or debug_message or "Execution was attempted but did not complete." }}</p>{% elif executed_ready %}<p>{{ debug_message }}</p>{% elif error %}<p>Execution was not reached: {{ error }}</p>{% else %}<p>Execution outcome is unavailable; no success is implied.</p>{% endif %}
+      {% if result %}<p>Query result is shown above.{% if result_notice %} {{ result_notice }}{% endif %}</p>{% if debug_message %}<p>{{ debug_message }}</p>{% endif %}{% elif interaction_status in ['execution_failure', 'query_execution_failed'] and execution_attempted %}<p>{{ error or debug_message or "Execution was attempted but did not complete." }}</p>{% elif executed_ready %}<p>{{ debug_message }}</p>{% elif error %}<p>Execution was not reached: {{ error }}</p>{% else %}<p>Execution outcome is unavailable; no success is implied.</p>{% endif %}
       {% if debug_output %}<details{% if executed_ready and (error or debug_message) %} open{% endif %}><summary>{% if debug_source == "Local Member resolution" %}Local Member resolution evidence{% else %}Query debugger: Raw {{ debug_source or "endpoint" }} response payload{% endif %}</summary><pre><code>{{ debug_output }}</code></pre></details>{% elif debug_message and error %}<details><summary>Developer diagnostics</summary><p>{{ debug_message }}</p><p>No response payload was received from {{ debug_source or "the endpoint" }}.</p></details>{% endif %}
     </div>
   </section>
@@ -242,6 +234,23 @@
       <button type="submit">Save feedback</button>
       <p class="feedback-message" role="status" aria-live="polite"></p>
     </form>
+  </section>
+  {% endif %}
+  {% if readiness %}
+  <section class="system-status" aria-label="System status">
+    <details id="system-status"{% if readiness.state == "unavailable" %} open{% endif %}>
+      <summary>System status</summary>
+      <div class="readiness">
+        <h2>Fuseki readiness <small>(read-only check)</small></h2>
+        <p><strong>{{ readiness.state|capitalize }}:</strong> {{ readiness.message }}</p>
+        <ul>
+        {% for source, present in readiness.sources %}
+          <li>{{ source }}: {% if readiness.state == "unavailable" %}unknown{% else %}{{ "present" if present else "not detected" }}{% endif %}{% if source in ["Committees", "Bills", "Offices", "Administrative Units", "Office Holdings", "Cabinet Memberships"] %} (optional for basic readiness){% endif %}</li>
+        {% endfor %}
+        </ul>
+        <p>This check only queries Fuseki. The POC never loads, clears, or rebuilds graphs.</p>
+      </div>
+    </details>
   </section>
   {% endif %}
   <script>
