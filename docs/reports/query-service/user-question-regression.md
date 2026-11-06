@@ -4,21 +4,23 @@
 
 | Classification | Count |
 |---|---:|
-| PASS | 15 |
+| PASS | 16 |
 | PARTIAL | 2 |
-| FAIL | 9 |
+| FAIL | 8 |
 | BLOCKED | 0 |
 | **Total** | **26** |
 
-This is the running consolidated score as of **2026-11-05**. The iteration-1
+This is the running consolidated score as of **2026-11-06**. The iteration-1
 score was **7 PASS, 2 PARTIAL, 17 FAIL, 0 BLOCKED**; the earlier pre-iteration-1
 baseline was **5 PASS, 2 PARTIAL, 19 FAIL, 0 BLOCKED**. Iteration 2 raised the
 score to **10 PASS, 2 PARTIAL, 14 FAIL**; iteration 3 raised it to **12 PASS,
 2 PARTIAL, 12 FAIL**; iteration 4 adds Q24 for **13 PASS, 2 PARTIAL, 11 FAIL**;
-iteration 5 adds Q19 and Q23 for **15 PASS, 2 PARTIAL, 9 FAIL**. All thirteen
-prior PASS controls were rechecked live in iteration 5. The other nine cases
-retain their current scorecard classifications; this is a consolidated
-26-question score, with iteration-4/5 variants unscored. A
+iteration 5 adds Q19 and Q23 for **15 PASS, 2 PARTIAL, 9 FAIL**; iteration 6
+adds Q20 for **16 PASS, 2 PARTIAL, 8 FAIL**. All fifteen prior PASS controls
+and Q20 were rechecked live in iteration 6 at `asOf=2026-11-06`; the two
+PARTIAL and eight remaining FAIL cases were carried forward without a fresh
+run. This is a consolidated 26-question score, with iteration-4/5/6 variants
+unscored. A
 controlled clarification or unsupported response is not a factual pass. The
 Galway alternatives remain separate cases 21a and 21b. Post-audit live checks
 used the approved campaign-service runner; no credential value was printed or
@@ -63,38 +65,38 @@ copied.
 
 “Expected” condenses the report's expected answer without changing the test
 intent. “Iteration 1 actual/score” preserves that dated baseline. The current
-column records either a live recheck on 2026-11-05 or an explicit carry-forward;
+column records either a live recheck on 2026-11-06 or an explicit carry-forward;
 carried-forward cases were not rerun. Names and intervals are local recorded
 evidence, not a completeness-certified roster.
 
-| # | Original question (verbatim) | Expected | Iteration 1 actual | Iteration 1 score / primary cause | Current score / verification (2026-11-05) |
+| # | Original question (verbatim) | Expected | Iteration 1 actual | Iteration 1 score / primary cause | Current score / verification (2026-11-06) |
 |---:|---|---|---|---|---|
-| 1 | `Who are the Sinn Féin TDs for Dublin Central?` | Mary Lou McDonald | Mary Lou McDonald; current 34th-Dáil representation and party intervals both contain 2026-11-04. | **PASS** — current party/constituency composition resolves the present term. | **PASS** — live recheck passed 2026-11-05. |
-| 2 | `Find a Deputy called Browne` | Noel Browne | Clarification offered ten distinct source-identified Deputy candidates, including **Noel C. Browne**, with service dates; no candidate was selected and no answer was asserted. | **PARTIAL** — multiple identities require user selection; candidate presence is not a factual answer. | **PARTIAL carried forward** — not rerun 2026-11-05. |
-| 3 | `What were the parties during the 12th Dáil?` | Parties of the 12th Dáil | Clann na Poblachta, Clann na Talmhan, Fianna Fáil, Fine Gael, Labour Party and National Labour Party. | **PASS** — term-scoped party query returns six local records. | **PASS** — live recheck passed 2026-11-05. |
-| 4 | `How long was Stephen Donnelly Minister for Health?` | Duration of tenure | Unsupported: no complete-career office-tenure-duration projection. | **FAIL** — accepted Minister for Health office identity/evidence is also absent, so no duration can safely be derived. | **FAIL carried forward** — not rerun 2026-11-05. |
-| 5 | `When was Jack Lynch first elected?` | First Dáil/Seanad election date | Unsupported: election-event evidence is not queryable; membership start was not substituted. | **FAIL** — election-event capability/source evidence gap. | **FAIL carried forward** — not rerun 2026-11-05. |
-| 6 | `What constituencies did Jack Lynch represent?` | Jack Lynch's represented constituencies | Nine term-scoped occurrences for the exact local identity `John-Lynch.D.1948-02-18`: Cork Borough (13th–18th Dáil), Cork City North-West (19th–20th), Cork City (21st). | **PASS** — exact source identity/alias is preserved; local historical completeness is not certified. | **PASS** — live recheck passed 2026-11-05. |
-| 7 | `When was Bertie Ahern the Taoiseach?` | Taoiseach tenure period | Unsupported: service has no complete-career Member/office tenure projection; dated office-overlap queries remain available. | **FAIL** — capability and accepted historical office-evidence coverage do not support a complete tenure timeline. | **FAIL carried forward** — not rerun 2026-11-05. |
-| 8 | `When was Bertie Ahern elected Taoiseach` | Start dates of Taoiseach terms, or clarification | Unsupported: election-event evidence is not queryable; no membership/service start substituted. | **FAIL** — election-event capability gap. | **FAIL carried forward** — not rerun 2026-11-05. |
-| 9 | `Who were the other Fianna Fáil TDs in the same constituency as Bertie Ahern while he was Taoiseach?` | Other Fianna Fáil TDs sharing his constituency during Taoiseach service | Cyprian Brady, with 14 plan relations and exact identity/time evidence joining party affiliation, Dáil representation, Bertie Ahern's Taoiseach holding, and shared Dublin Central constituency; common overlap 2007-06-14–2008-05-07. | **PASS** — final clarified prompt produced the valid plan; an initial draft omitted a required edge, so planner variability remains a caveat. | **PASS** — live recheck passed 2026-11-05. |
-| 10 | `Who is the Taoiseach?` | Micheál Martin as of the report date | Unsupported: current office-holder lookup is not supported; office query requires a dated window. | **FAIL** — current office-holder capability gap; no unsafe answer inferred. | **PASS** — live Phase 2 `/ask` returned Micheál Martin's accepted holding (2025-01-23–open) at configured `asOf` 2026-11-05; current-office completeness is not certified. |
-| 11 | `Who is the current Taoiseach?` | Micheál Martin as of the report date | Unsupported: no current Taoiseach query without explicit date/period. | **FAIL** — current office-holder capability gap. | **PASS** — live Phase 2 `/ask` returned the same accepted holding at configured `asOf` 2026-11-05; current-office completeness is not certified. |
-| 12 | `Who was the Taoiseach in 1994?` | Albert Reynolds and John Bruton | Albert Reynolds, holding 1992-12-14–1994-12-15; response says local data does not establish complete historical coverage. | **PARTIAL** — accepted local evidence for John Bruton is missing/incomplete. | **PARTIAL carried forward** — not rerun 2026-11-05. |
-| 13 | `Who was the Taoiseach in June 1994?` | Albert Reynolds | Albert Reynolds, holding 1992-12-14–1994-12-15, overlapping the full June window. | **PASS** — calendar-month office overlap is compiled and executed. | **PASS** — live recheck passed 2026-11-05. |
-| 14 | `Who were the Senators on the Agriculture Panel in June 1994?` | Agriculture Panel Senators in Seanad during June 1994 | Unsupported: Seanad panel membership for a specified period is not supported. | **FAIL** — no panel-membership answer query was compiled. | **FAIL carried forward** — not rerun 2026-11-05. |
-| 15 | `What was the start date of the Dáil which was sitting in June 1994?` | 14 December 1992 | Unsupported: service does not identify a Dáil sitting on a calendar date and return its start. | **FAIL** — term dates alone do not establish an actual sitting; safe refusal is not a factual pass. | **FAIL carried forward** — not rerun 2026-11-05. |
-| 16 | `How many TDs represented the Dublin Central constituency in this Dáil?` | Five TDs | Unsupported: distinct-member count required an explicitly numbered Dáil; “this Dáil” did not resolve to one. | **FAIL** — term ambiguity/aggregate capability boundary. | **PASS** — live count/list parity verified 2026-11-05: 5 distinct Member IRIs; current House-date-resolved Dáil, term-wide recorded memberships. |
-| 17 | `Who are the TDs for Dublin Central and when were they first elected?` | Current Dublin Central TDs and their first-election dates | Unsupported: election-event evidence is not queryable; no partial answer was returned. | **FAIL** — compound request includes unsupported election dates; whole request correctly fails closed. | **FAIL carried forward** — not rerun 2026-11-05. |
-| 18 | `What constituency did Bertie Ahern represent in his last term in the Dáil?` | Dublin Central | Dublin Central, 30th Dáil, start date 2007-06-14; `latestRecorded` selector. | **PASS** — latest-recorded term selection resolved the question; local chronology is not complete-history evidence. | **PASS** — live recheck passed 2026-11-05. |
-| 19 | `Who was a Senator in the current Seanad and a Deputy in the current Dáil?` | Seán Kyne | Unsupported: current cross-house service relationship is not supported. | **FAIL** — Seanad-to-Dáil membership intersection capability gap. | **PASS** — live actual-planner query returned Seán Kyne by exact Member IRI. His 27th-Seanad interval ended 2026-05-24 and 34th-Dáil interval began 2026-05-25; displayed separately as term-wide recorded membership, not simultaneous service. |
-| 20 | `What current Senators previously served in the Dáil?` | Current Senators with prior Deputy service | Unsupported: current Seanad membership combined with previous Dáil service is not supported. | **FAIL** — cross-house history capability gap. | **FAIL carried forward** — not rerun 2026-11-05. |
-| 21a | `Who are the Fine Gael TDs in the two Galway constituencies?` | Fine Gael TDs in Galway East and Galway West | Clarification requested exact constituency alternatives; suggestions included Galway East, Galway West and Roscommon-Galway. No Member answer query ran. | **FAIL** — safe clarification, not a factual answer; the intended set is ambiguous in local data. | **FAIL carried forward** — not rerun 2026-11-05. |
-| 21b | `Who are the Fine Gael TDs in Galway East and Galway West?` | Fine Gael TDs in Galway East and Galway West | Hildegarde Naughton, Peter Roche and Seán Kyne, with exact representation occurrences in Galway West/East and dated Fine Gael evidence. | **PASS** — explicit two-constituency set composition works. | **PASS** — live recheck passed 2026-11-05. |
-| 22 | `How many TDs currently represent Meath East constituency?` | Count of current Meath East TDs | Planner proposed `currentTerm`; validation rejected it because the baseline count shape required an explicitly numbered Dáil. | **FAIL** — current-term count was outside the baseline validator. | **PASS** — live count/list parity verified 2026-11-05: 4 distinct Member IRIs; exact current Dáil and membership intervals containing the reference date. |
-| 23 | `How many Fine Gael Senators are in the current Seanad?` | Count of Fine Gael Senators | Unsupported: counting current Seanad members by party is not supported. | **FAIL** — Seanad party-membership/aggregate capability gap. | **PASS** — live exact-identity count/list parity returned 16 distinct Member IRIs; each typed PartyMembership and its linked SeanadMembership independently contains `asOf=2026-11-05`. Current roster completeness is not certified. |
-| 24 | `How many other TDs were in the same constituency as Mary Lou McDonald during the last Dáil?` | Count other TDs in her constituency during the previous Dáil | Unsupported: anchored shared-constituency count was not a supported query shape. | **FAIL** — anchored Member relationship aggregate was outside the bounded count compiler. | **PASS** — iteration-4 live `/ask` resolved the globally previous, House-dated 33rd Dáil at `asOf=2026-11-05` and returned 3 distinct other Member IRIs; a separate list variation returned Gary Gannon, Neasa Hourigan and Paschal Donohoe. A numbered 32nd-Dáil request with Paschal Donohoe as a different anchor returned Mary Lou McDonald and Maureen O'Sullivan. Party, simultaneity and office-filter variants were refused. |
-| 25 | `How many Fine Gael TDs were in the 27th Dáil?` | Count of Fine Gael TDs in the 27th Dáil | Unsupported: bounded party/representation composition could not preserve the aggregate condition; no simplified answer ran. | **FAIL** — party-filtered term aggregate was outside the baseline count capability. | **PASS** — live count/list parity verified 2026-11-05: 45 distinct Member IRIs; exact numbered term and validated party/representation evidence. |
+| 1 | `Who are the Sinn Féin TDs for Dublin Central?` | Mary Lou McDonald | Mary Lou McDonald; current 34th-Dáil representation and party intervals both contain 2026-11-04. | **PASS** — current party/constituency composition resolves the present term. | **PASS** — live recheck passed 2026-11-06 (`asOf=2026-11-06`). |
+| 2 | `Find a Deputy called Browne` | Noel Browne | Clarification offered ten distinct source-identified Deputy candidates, including **Noel C. Browne**, with service dates; no candidate was selected and no answer was asserted. | **PARTIAL** — multiple identities require user selection; candidate presence is not a factual answer. | **PARTIAL carried forward** — not rerun 2026-11-06. |
+| 3 | `What were the parties during the 12th Dáil?` | Parties of the 12th Dáil | Clann na Poblachta, Clann na Talmhan, Fianna Fáil, Fine Gael, Labour Party and National Labour Party. | **PASS** — term-scoped party query returns six local records. | **PASS** — live recheck passed 2026-11-06 (`asOf=2026-11-06`). |
+| 4 | `How long was Stephen Donnelly Minister for Health?` | Duration of tenure | Unsupported: no complete-career office-tenure-duration projection. | **FAIL** — accepted Minister for Health office identity/evidence is also absent, so no duration can safely be derived. | **FAIL carried forward** — not rerun 2026-11-06. |
+| 5 | `When was Jack Lynch first elected?` | First Dáil/Seanad election date | Unsupported: election-event evidence is not queryable; membership start was not substituted. | **FAIL** — election-event capability/source evidence gap. | **FAIL carried forward** — not rerun 2026-11-06. |
+| 6 | `What constituencies did Jack Lynch represent?` | Jack Lynch's represented constituencies | Nine term-scoped occurrences for the exact local identity `John-Lynch.D.1948-02-18`: Cork Borough (13th–18th Dáil), Cork City North-West (19th–20th), Cork City (21st). | **PASS** — exact source identity/alias is preserved; local historical completeness is not certified. | **PASS** — live recheck passed 2026-11-06 (`asOf=2026-11-06`). |
+| 7 | `When was Bertie Ahern the Taoiseach?` | Taoiseach tenure period | Unsupported: service has no complete-career Member/office tenure projection; dated office-overlap queries remain available. | **FAIL** — capability and accepted historical office-evidence coverage do not support a complete tenure timeline. | **FAIL carried forward** — not rerun 2026-11-06. |
+| 8 | `When was Bertie Ahern elected Taoiseach` | Start dates of Taoiseach terms, or clarification | Unsupported: election-event evidence is not queryable; no membership/service start substituted. | **FAIL** — election-event capability gap. | **FAIL carried forward** — not rerun 2026-11-06. |
+| 9 | `Who were the other Fianna Fáil TDs in the same constituency as Bertie Ahern while he was Taoiseach?` | Other Fianna Fáil TDs sharing his constituency during Taoiseach service | Cyprian Brady, with 14 plan relations and exact identity/time evidence joining party affiliation, Dáil representation, Bertie Ahern's Taoiseach holding, and shared Dublin Central constituency; common overlap 2007-06-14–2008-05-07. | **PASS** — final clarified prompt produced the valid plan; an initial draft omitted a required edge, so planner variability remains a caveat. | **PASS** — live recheck passed 2026-11-06 (`asOf=2026-11-06`). |
+| 10 | `Who is the Taoiseach?` | Micheál Martin as of the report date | Unsupported: current office-holder lookup is not supported; office query requires a dated window. | **FAIL** — current office-holder capability gap; no unsafe answer inferred. | **PASS** — live Phase 2 `/ask` returned Micheál Martin's accepted holding (2025-01-23–open) at `asOf=2026-11-06`; current-office completeness is not certified. |
+| 11 | `Who is the current Taoiseach?` | Micheál Martin as of the report date | Unsupported: no current Taoiseach query without explicit date/period. | **FAIL** — current office-holder capability gap. | **PASS** — live Phase 2 `/ask` returned the same accepted holding at `asOf=2026-11-06`; current-office completeness is not certified. |
+| 12 | `Who was the Taoiseach in 1994?` | Albert Reynolds and John Bruton | Albert Reynolds, holding 1992-12-14–1994-12-15; response says local data does not establish complete historical coverage. | **PARTIAL** — accepted local evidence for John Bruton is missing/incomplete. | **PARTIAL carried forward** — not rerun 2026-11-06. |
+| 13 | `Who was the Taoiseach in June 1994?` | Albert Reynolds | Albert Reynolds, holding 1992-12-14–1994-12-15, overlapping the full June window. | **PASS** — calendar-month office overlap is compiled and executed. | **PASS** — live recheck passed 2026-11-06 (`asOf=2026-11-06`). |
+| 14 | `Who were the Senators on the Agriculture Panel in June 1994?` | Agriculture Panel Senators in Seanad during June 1994 | Unsupported: Seanad panel membership for a specified period is not supported. | **FAIL** — no panel-membership answer query was compiled. | **FAIL carried forward** — not rerun 2026-11-06. |
+| 15 | `What was the start date of the Dáil which was sitting in June 1994?` | 14 December 1992 | Unsupported: service does not identify a Dáil sitting on a calendar date and return its start. | **FAIL** — term dates alone do not establish an actual sitting; safe refusal is not a factual pass. | **FAIL carried forward** — not rerun 2026-11-06. |
+| 16 | `How many TDs represented the Dublin Central constituency in this Dáil?` | Five TDs | Unsupported: distinct-member count required an explicitly numbered Dáil; “this Dáil” did not resolve to one. | **FAIL** — term ambiguity/aggregate capability boundary. | **PASS** — 2026-11-06 live count recheck returned 5 at `asOf=2026-11-06`; the current Dáil is House-date-resolved, with term-wide recorded memberships. |
+| 17 | `Who are the TDs for Dublin Central and when were they first elected?` | Current Dublin Central TDs and their first-election dates | Unsupported: election-event evidence is not queryable; no partial answer was returned. | **FAIL** — compound request includes unsupported election dates; whole request correctly fails closed. | **FAIL carried forward** — not rerun 2026-11-06. |
+| 18 | `What constituency did Bertie Ahern represent in his last term in the Dáil?` | Dublin Central | Dublin Central, 30th Dáil, start date 2007-06-14; `latestRecorded` selector. | **PASS** — latest-recorded term selection resolved the question; local chronology is not complete-history evidence. | **PASS** — live recheck passed 2026-11-06 (`asOf=2026-11-06`). |
+| 19 | `Who was a Senator in the current Seanad and a Deputy in the current Dáil?` | Seán Kyne | Unsupported: current cross-house service relationship is not supported. | **FAIL** — Seanad-to-Dáil membership intersection capability gap. | **PASS** — live actual-planner query rerun at `asOf=2026-11-06` returned Seán Kyne by exact Member IRI. His 27th-Seanad interval ended 2026-05-24 and 34th-Dáil interval began 2026-05-25; displayed separately as term-wide recorded membership, not simultaneous service. |
+| 20 | `What current Senators previously served in the Dáil?` | Current Senators with prior Deputy service | Unsupported: current Seanad membership combined with previous Dáil service is not supported. | **FAIL** — cross-house history capability gap. | **PASS** — live Q20 list/count at `asOf=2026-11-06` returned 11 distinct Member identities and 16 finite prior Dáil paths; each EndDate is strictly before that exact active SeanadMembership StartDate. Both membership/term identities and intervals are displayed; positive local evidence only, not a complete-history or negative claim. |
+| 21a | `Who are the Fine Gael TDs in the two Galway constituencies?` | Fine Gael TDs in Galway East and Galway West | Clarification requested exact constituency alternatives; suggestions included Galway East, Galway West and Roscommon-Galway. No Member answer query ran. | **FAIL** — safe clarification, not a factual answer; the intended set is ambiguous in local data. | **FAIL carried forward** — not rerun 2026-11-06. |
+| 21b | `Who are the Fine Gael TDs in Galway East and Galway West?` | Fine Gael TDs in Galway East and Galway West | Hildegarde Naughton, Peter Roche and Seán Kyne, with exact representation occurrences in Galway West/East and dated Fine Gael evidence. | **PASS** — explicit two-constituency set composition works. | **PASS** — live recheck passed 2026-11-06 (`asOf=2026-11-06`). |
+| 22 | `How many TDs currently represent Meath East constituency?` | Count of current Meath East TDs | Planner proposed `currentTerm`; validation rejected it because the baseline count shape required an explicitly numbered Dáil. | **FAIL** — current-term count was outside the baseline validator. | **PASS** — 2026-11-06 live count recheck returned 4 at `asOf=2026-11-06`; exact current Dáil and membership intervals contain the reference date. |
+| 23 | `How many Fine Gael Senators are in the current Seanad?` | Count of Fine Gael Senators | Unsupported: counting current Seanad members by party is not supported. | **FAIL** — Seanad party-membership/aggregate capability gap. | **PASS** — 2026-11-06 live count recheck returned 16 at `asOf=2026-11-06`; current roster completeness is not certified. The separately dated iteration-5 count/list check is recorded below. |
+| 24 | `How many other TDs were in the same constituency as Mary Lou McDonald during the last Dáil?` | Count other TDs in her constituency during the previous Dáil | Unsupported: anchored shared-constituency count was not a supported query shape. | **FAIL** — anchored Member relationship aggregate was outside the bounded count compiler. | **PASS** — 2026-11-06 live count recheck at `asOf=2026-11-06` returned 3 other Member IRIs. Separately dated iteration-4 list, alternate-anchor and refusal checks (2026-11-05) are recorded below. |
+| 25 | `How many Fine Gael TDs were in the 27th Dáil?` | Count of Fine Gael TDs in the 27th Dáil | Unsupported: bounded party/representation composition could not preserve the aggregate condition; no simplified answer ran. | **FAIL** — party-filtered term aggregate was outside the baseline count capability. | **PASS** — 2026-11-06 live count recheck returned 45 at `asOf=2026-11-06`; exact numbered term and validated party/representation evidence. |
 
 ## Iteration 1 — comparison with the original baseline (historical)
 
@@ -136,12 +138,13 @@ planner/model variability despite its final successful attempt. These are
 historical iteration-1 observations; the current per-case state is in the
 consolidated results table above.
 
-## Current unresolved classifications and root causes (2026-11-05)
+## Current unresolved classifications and root causes (2026-11-06)
 
-1. **Capability/evidence gaps — 7 FAIL** (Q4, Q5, Q7, Q8, Q14, Q17, Q20).
+1. **Capability/evidence gaps — 6 FAIL** (Q4, Q5, Q7, Q8, Q14, Q17).
    These comprise office-tenure duration and complete-career history,
-   election-event dates and a compound election request, Seanad panel
-   membership, and cross-house recorded-history coverage.
+   election-event dates and a compound election request, and Seanad panel
+   membership. Q20's bounded positive cross-house prior-service projection is
+   now supported; its result does not assert complete-history coverage.
 2. **Interpretation/scope — 2 FAIL** (Q15, Q21a): a Dáil term's dates do not
    prove an actual sitting, and “the two Galway constituencies” does not
    identify a unique grounded set.
@@ -435,13 +438,13 @@ tests` (**2,117 passed, 26 skipped, 23 subtests passed**). `git diff --check`,
 Python compilation, and edited JSON/JSON-Schema checks passed. No ontology,
 mapping or protected source/golden fixture was changed.
 
-### Iteration-5 next prospect — Q20 recorded prior Dáil membership
+### Iteration-5 next prospect at that checkpoint — Q20 recorded prior Dáil membership
 
-The bounded follow-on is Q20 only as “current Seanad Members with a recorded
-membership path to a prior Dáil term.” It should use exact current Seanad and
-typed DailMembership/DailTerm identities, with chronology selected from
-House-owned dates; it must not imply that local historical Member records are
-complete or answer a negative as proof that someone never served in the Dáil.
+At the close of iteration 5, the bounded follow-on was Q20 only as “current
+Seanad Members with a recorded prior Dáil membership path.” The completed
+iteration-6 projection below implements that request using exact current
+Seanad and typed DailMembership/DailTerm identities without inferring a term
+ordinal or complete career history.
 
 ### Iteration-5 independent-review disposition and follow-up
 
@@ -457,7 +460,57 @@ original answer (Seán Kyne, with separate intervals) and Q23 count/list parity
 (**16**). Five historical/current-contrast paraphrases (two Q19, three Q23)
 returned `unsupported_capability` with no answer rows. The responses are under
 `/tmp/opencode/query-service-user-coverage/iteration-5/denylist-review/`.
-The consolidated score remains **15 PASS, 2 PARTIAL, 9 FAIL, 0 BLOCKED**. Q20
-is unchanged and deferred to a separate tranche; the Q14 panel alias remains
+At the close of iteration 5, the consolidated score was **15 PASS, 2 PARTIAL,
+9 FAIL, 0 BLOCKED**; Q20 was deferred and the Q14 panel alias remained
 unmodified. No graph/data or container mutation was performed; no commit or
 push was made.
+
+## Iteration 6 — current Seanad Members with prior Dáil membership (2026-11-06)
+
+Q20 now resolves one current SeanadTerm uniquely from Houses-owned dates, then
+joins exact Member identities through independent typed SeanadMembership and
+DailMembership paths. A SeanadMembership must contain `asOf` using inclusive
+calendar-day semantics. A Dáil membership qualifies only with a finite accepted
+EndDate strictly earlier than the StartDate of that same SeanadMembership;
+equal endpoints and open-ended Dáil intervals do not qualify. No Dáil-term
+ordinal or career-wide completeness assumption is used. The list retains both
+membership identities, both HouseTerm identities and both intervals; count
+and list share the same complete bounded paginated selection. Missing,
+conflicting or malformed evidence fails closed. Results are positive local
+matches only, not proof of complete history or that anyone else never served.
+
+Actual configured-planner Phase 2 `/ask` at `asOf=2026-11-06` returned **11
+distinct Members** and **16 qualifying DailMembership paths** for the exact Q20 question. Its count
+variant returned **11**, and two independently worded list variations plus a
+count variation returned the same 11-member selection. The read-only
+diagnostic finds 12 current Seanad-term-wide Members with a recorded Dáil
+path, without a current `asOf` membership filter. The actual Q19 current Dáil
+AND Seanad intersection returns one Member, Seán Kyne, whose Seanad interval
+expired. The as-of-active Q20 set has 11 Members and 16 strictly prior paths.
+In this local snapshot the diagnostic looser `EndDate < asOf` comparison also
+yields 11/16; Q20 still implements the strict corresponding-membership
+boundary. Party, simultaneity and dated-filter variations were refused with no
+result rows. The Q14 panel alias was not added.
+
+All fifteen prior PASS controls returned validated Phase 2 answers at
+`asOf=2026-11-06` on the approved isolated loopback runner; Q19 returned Seán
+Kyne, Q23 returned 16, and the established counts remained Q16=5, Q22=4,
+Q24=3 and Q25=45. The
+consolidated score is **16 PASS, 2 PARTIAL, 8 FAIL, 0 BLOCKED** (26 questions).
+The dated Q20 and prior-control responses are under
+`/tmp/opencode/query-service-user-coverage/iteration-6/live-checks-2026-11-06/`;
+Fuseki remained read-only, with no graph/data/container mutation or source
+fetch.
+
+Iteration-6 focused acceptance passed (**44 tests** in the current-house
+membership file). The related five-file contract/composition regression set was
+rerun on 2026-11-06 and passed (**197 passed**). A full NLQ
+run passed (**1,010 passed, 2 skipped**) before those last small refinements;
+the final full-suite retry exceeded its 420-second command timeout at about
+78%, so the final focused set is the completed post-refinement verification.
+Ontology validation passed for **2,586 triples**; JSON/JSON-Schema checks,
+Python compilation and `git diff --check` passed for the candidate. Independent
+review found no code blockers and reproduced the **197-test** focused
+regression set, **44-test** acceptance set, and **2,586-triple** ontology
+validation. This documentation correction is acknowledged; no additional full
+suite run was performed. No commit or push was made.

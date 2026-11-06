@@ -337,7 +337,7 @@ def test_v2_contract_and_strict_draft_schema_cover_both_relationship_projections
     draft_schema = load_composable_draft_schema()
     Draft202012Validator.check_schema(plan_schema)
     Draft202012Validator.check_schema(draft_schema)
-    assert contract["contractVersion"] == "2.23.0"
+    assert contract["contractVersion"] == "2.24.0"
     count_contract = contract["memberCountProjections"]["member_relationship_composition"]["semantics"]
     assert "Stage C term-scoped ParliamentaryParty listing" in count_contract
     assert "not seats/election totals" in count_contract

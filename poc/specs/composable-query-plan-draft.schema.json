@@ -131,20 +131,32 @@
              "affiliation": {"$ref": "#/$defs/affiliationReferent"}
            }
          },
-         {
-           "type": "object",
-           "additionalProperties": false,
-           "required": ["member", "seanad_membership", "seanad_term", "dail_membership", "dail_term"],
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["member", "seanad_membership", "seanad_term", "dail_membership", "dail_term"],
            "properties": {
              "member": {"$ref": "#/$defs/memberAnswerReferent"},
              "seanad_membership": {"type": "object", "additionalProperties": false, "required": ["type", "mention"], "properties": {"type": {"const": "SeanadMembership", "type": "string"}, "mention": {"type": "null"}}},
              "seanad_term": {"$ref": "#/$defs/currentSeanadTermReferent"},
              "dail_membership": {"$ref": "#/$defs/membershipReferent"},
-             "dail_term": {"$ref": "#/$defs/currentDailTermReferent"}
-           }
-         },
-        {
-          "type": "object",
+              "dail_term": {"$ref": "#/$defs/currentDailTermReferent"}
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["member", "seanad_membership", "seanad_term", "dail_membership", "dail_term"],
+            "properties": {
+              "member": {"$ref": "#/$defs/memberAnswerReferent"},
+              "seanad_membership": {"type": "object", "additionalProperties": false, "required": ["type", "mention"], "properties": {"type": {"const": "SeanadMembership", "type": "string"}, "mention": {"type": "null"}}},
+              "seanad_term": {"$ref": "#/$defs/currentSeanadTermReferent"},
+              "dail_membership": {"$ref": "#/$defs/membershipReferent"},
+              "dail_term": {"$ref": "#/$defs/unselectedTermReferent"}
+            }
+          },
+         {
+           "type": "object",
           "additionalProperties": false,
           "required": ["capability", "parameters"],
           "properties": {

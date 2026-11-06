@@ -235,6 +235,17 @@ def create_app(
                 is_current_cross_house_membership = (
                     is_member_relationship_composition
                     and {"seanad_term", "dail_term", "seanad_membership", "dail_membership"}.issubset(composition_refs)
+                    and isinstance(composition_refs.get("dail_term"), dict)
+                    and isinstance(composition_refs["dail_term"].get("selector"), dict)
+                    and composition_refs["dail_term"]["selector"].get("kind") == "currentTerm"
+                )
+                is_current_seanad_prior_dail_membership = (
+                    is_member_relationship_composition
+                    and {"seanad_term", "dail_term", "seanad_membership", "dail_membership"}.issubset(composition_refs)
+                    and isinstance(composition_refs.get("seanad_term", {}).get("selector"), dict)
+                    and composition_refs["seanad_term"]["selector"].get("kind") == "currentTerm"
+                    and isinstance(composition_refs.get("dail_term"), dict)
+                    and "selector" not in composition_refs.get("dail_term", {})
                 )
                 is_current_seanad_party = (
                     is_member_relationship_composition
@@ -397,6 +408,13 @@ def create_app(
                         "Find Members with recorded membership paths in both the current Dáil and current Seanad, "
                         "joined by exact Member identity. This is term-wide co-membership, not simultaneous or current service."
                     )
+                elif is_current_seanad_prior_dail_membership:
+                    member_relationship_summary = (
+                        f"Find Members whose exact current SeanadMembership contains {as_of.isoformat()} and whose finite, "
+                        "accepted DailMembership EndDate is strictly before that same SeanadMembership StartDate. "
+                        "Preserve both membership paths and term identities; this positive local-record list does not "
+                        "certify complete history or establish that anyone else never served."
+                    )
                 elif is_current_seanad_party:
                     affiliation = composition_refs.get("affiliation", {})
                     party_name = affiliation.get("label", affiliation.get("mention", "the selected party"))
@@ -516,6 +534,13 @@ def create_app(
                     answer_text = (
                         "Distinct Member identities with recorded membership in both current House terms; "
                         "separate mapped intervals are shown without asserting simultaneous service."
+                    )
+                elif is_current_seanad_prior_dail_membership:
+                    answer_text = (
+                        f"Positive local matches require current Seanad membership at {as_of.isoformat()} and a finite Dáil "
+                        "membership end strictly before that exact Seanad membership's start. Both exact membership and "
+                        "term identities and intervals are shown. Local records do not certify complete Dáil history; "
+                        "absence is not proof that anyone never served."
                     )
                 elif is_current_seanad_party:
                     answer_text = (

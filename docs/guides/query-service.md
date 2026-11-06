@@ -238,7 +238,7 @@ truncated evidence fails closed. Party, office, election, explicit-date,
 simultaneity and additional filters remain unsupported rather than being
 dropped.
 
-Composable contract `2.23.0` adds two House-date-resolved membership projections.
+Composable contract `2.24.0` adds three House-date-resolved membership projections.
 The current cross-house intersection joins exact Member identities across
 independent DailMembership and SeanadMembership paths to the current Dáil and
 Seanad terms. It means term-wide recorded membership in both terms, not current
@@ -248,9 +248,20 @@ Houses-owned dates, joins typed PartyMembership episodes to the same exact
 SeanadMembership and reviewed political-affiliation identity, and requires both
 the membership and party intervals to contain `asOf` independently. List and
 count share the complete bounded paginated selection. Missing or conflicting
-identity/date evidence and incomplete pages fail closed. Both projections
+identity/date evidence and incomplete pages fail closed. These projections
 reflect local records and do not certify complete historical/current rosters;
 simultaneity or extra filters are refused rather than silently omitted.
+The current-Senator/prior-Dáil projection independently resolves the current
+Seanad from Houses-owned dates, joins exact Member identities across separate
+SeanadMembership and DailMembership paths, requires the Seanad interval to
+contain `asOf`, and accepts a prior Dáil path only when its finite
+`DailMembership` EndDate is strictly earlier than that same
+`SeanadMembership` StartDate. Equal endpoints and open-ended Dáil intervals do
+not qualify; no term-ordinal shortcut is used. List and distinct-identity count
+share complete bounded pagination and retain both membership/term identities
+and intervals. Missing or conflicting interval evidence fails closed. Results
+are positive local records only: they do not certify complete Dáil history, and
+absence does not mean that someone never served.
 
 ### Other launcher commands
 

@@ -1,9 +1,10 @@
-"""Synthetic acceptance for current cross-house membership and Seanad party queries."""
+"""Synthetic acceptance for Q19, Q20, and Q23 House-membership queries."""
 
 from __future__ import annotations
 
 import copy
 import json
+import re
 from datetime import date
 from pathlib import Path
 
@@ -37,10 +38,13 @@ HOUSE_GRAPH = "https://data.oireachtas.ie/graph/houses"
 PARTY_GRAPH = "https://data.oireachtas.ie/graph/parties"
 IDENTITY_GRAPH = "https://data.oireachtas.ie/graph/political-affiliations/identities"
 DAIL_TERM = "https://data.oireachtas.ie/ie/oireachtas/houseTerm/dail/34"
+DAIL_TERM_33 = "https://data.oireachtas.ie/ie/oireachtas/houseTerm/dail/33"
 SEANAD_TERM = "https://data.oireachtas.ie/ie/oireachtas/houseTerm/seanad/27"
 FG_IDENTITY = "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fine-gael"
 
 Q19 = "Who was a Senator in the current Seanad and a Deputy in the current Dáil?"
+Q20 = "What current Senators previously served in the Dáil?"
+Q20_COUNT = "How many current Senators previously served in the Dáil?"
 Q23_COUNT = "How many Fine Gael Senators are in the current Seanad?"
 Q23_LIST = "Which Fine Gael Senators are in the current Seanad?"
 
@@ -66,6 +70,7 @@ class CurrentHouseFixture:
         self.queries: list[str] = []
         houses = self.dataset.graph(_u(HOUSE_GRAPH))
         self._add_term(houses, DAIL_TERM, AGENTS + "DailTerm", ("2024-11-29", None))
+        self._add_term(houses, DAIL_TERM_33, AGENTS + "DailTerm", ("2020-02-08", "2024-11-08"))
         self._add_term(houses, SEANAD_TERM, AGENTS + "SeanadTerm", ("2025-06-12", None))
         if duplicate_current_seanad:
             duplicate = SEANAD_TERM + "-overlap"
@@ -103,7 +108,7 @@ class CurrentHouseFixture:
         self, item, *, party=None, party_interval=None, party_identity=FG_IDENTITY,
         party_key="fine-gael", party_label="Fine Gael, 27th Seanad", omit_seanad_range=False,
         omit_dail_range=False, conflicting_membership_range=None,
-        conflicting_party_range=None,
+        conflicting_dail_range=None, conflicting_party_range=None,
     ):
         graph_iri = f"https://data.oireachtas.ie/graph/member/{item['slug']}"
         graph = self.dataset.graph(_u(graph_iri))
@@ -116,26 +121,35 @@ class CurrentHouseFixture:
             ("dail", DAIL_TERM, "DailMembership", omit_dail_range),
         ):
             interval = item.get(house_key)
-            if interval is None:
+            paths = item.get("dail_paths") if house_key == "dail" else None
+            if paths is None:
+                paths = [] if interval is None else [(term, interval)]
+            if not paths:
                 continue
-            key = f"{house_key}-membership"
-            resource = _u(str(member) + f"#{key}")
-            membership[house_key] = resource
-            graph.add((member, _u(MEMBERS + "hasMembersMembership"), resource))
-            graph.add((resource, RDF.type, _u(MEMBERS + "OireachtasMembership")))
-            graph.add((resource, RDF.type, _u(MEMBERS + specific_type)))
-            graph.add((resource, _u(MEMBERS + "inHouseTerm"), _u(term)))
-            if not omit_range:
-                ranges = [interval]
-                if house_key == "seanad" and conflicting_membership_range is not None:
-                    ranges.append(conflicting_membership_range)
-                for index, dates in enumerate(ranges):
-                    range_iri = _u(str(resource) + f"#range-{index}")
-                    graph.add((resource, _u(MEMBERS + "hasMembershipDateRange"), range_iri))
-                    graph.add((range_iri, RDF.type, _u(MEMBERS + "DateRange")))
-                    graph.add((range_iri, _u(MEMBERS + "StartDate"), Literal(dates[0], datatype=XSD.dateTime)))
-                    if dates[1] is not None:
-                        graph.add((range_iri, _u(MEMBERS + "EndDate"), Literal(dates[1], datatype=XSD.dateTime)))
+            for path_index, path in enumerate(paths):
+                path_term, path_interval = path
+                key = f"{house_key}-membership"
+                if len(paths) > 1:
+                    key += f"-{path_index}"
+                resource = _u(str(member) + f"#{key}")
+                membership.setdefault(house_key, resource)
+                graph.add((member, _u(MEMBERS + "hasMembersMembership"), resource))
+                graph.add((resource, RDF.type, _u(MEMBERS + "OireachtasMembership")))
+                graph.add((resource, RDF.type, _u(MEMBERS + specific_type)))
+                graph.add((resource, _u(MEMBERS + "inHouseTerm"), _u(path_term)))
+                if not omit_range:
+                    ranges = [path_interval]
+                    if house_key == "seanad" and conflicting_membership_range is not None:
+                        ranges.append(conflicting_membership_range)
+                    if house_key == "dail" and conflicting_dail_range is not None:
+                        ranges.append(conflicting_dail_range)
+                    for range_index, dates in enumerate(ranges):
+                        range_iri = _u(str(resource) + f"#range-{range_index}")
+                        graph.add((resource, _u(MEMBERS + "hasMembershipDateRange"), range_iri))
+                        graph.add((range_iri, RDF.type, _u(MEMBERS + "DateRange")))
+                        graph.add((range_iri, _u(MEMBERS + "StartDate"), Literal(dates[0], datatype=XSD.dateTime)))
+                        if dates[1] is not None:
+                            graph.add((range_iri, _u(MEMBERS + "EndDate"), Literal(dates[1], datatype=XSD.dateTime)))
 
         if party is not None:
             if "seanad" not in membership:
@@ -221,6 +235,39 @@ def _q19_draft():
             "kind": "entities", "referent": "member", "distinctBy": "identity", "display": ["name"],
             "details": [], "preserveEvidence": False,
         },
+    }
+
+
+def _q20_draft(*, count=False):
+    list_answer = {
+        "kind": "entities", "referent": "member", "distinctBy": "identity", "display": ["name"],
+        "details": [
+            {"referent": "seanad_membership", "display": ["start", "end"]},
+            {"referent": "seanad_term", "display": ["label"]},
+            {"referent": "dail_membership", "display": ["start", "end"]},
+            {"referent": "dail_term", "display": ["label"]},
+        ],
+        "preserveEvidence": True,
+    }
+    return {
+        "version": 2, "supported": True, "family": "member_relationship_composition",
+        "unsupportedReason": None, "intent": "Find current Senators with a recorded prior Dáil membership path.",
+        "referents": {
+            "member": {"type": "Member", "mention": None},
+            "seanad_membership": {"type": "SeanadMembership", "mention": None},
+            "seanad_term": {"type": "SeanadTerm", "mention": None, "selector": {"kind": "currentTerm"}},
+            "dail_membership": {"type": "DailMembership", "mention": None},
+            "dail_term": {"type": "DailTerm", "mention": None},
+        },
+        "relations": [
+            {"id": "member-seanad", "fact": "member_has_seanad_membership", "from": "member", "to": "seanad_membership"},
+            {"id": "seanad-term", "fact": "seanad_membership_in_term", "from": "seanad_membership", "to": "seanad_term"},
+            {"id": "member-dail", "fact": "member_has_membership", "from": "member", "to": "dail_membership"},
+            {"id": "dail-term", "fact": "membership_in_term", "from": "dail_membership", "to": "dail_term"},
+        ],
+        "constraints": [],
+        "answer": ({"kind": "count", "referent": "member", "distinctBy": "identity"}
+                   if count else list_answer),
     }
 
 
@@ -433,6 +480,233 @@ def test_q19_refuses_historical_current_contrast_instead_of_dropping_it(question
         validate_composable_plan_draft(_q19_draft(), question=question)
 
 
+def test_q20_requires_active_seanad_membership_and_strictly_earlier_finite_dail_end():
+    fixture = CurrentHouseFixture(members=[])
+    fixture.add_member({
+        "slug": "Prior-Service", "name": "Prior Service",
+        "seanad": ("2025-06-12T00:00:00", None),
+        "dail_paths": [(DAIL_TERM_33, ("2020-02-08T00:00:00", "2024-11-08T23:59:59"))],
+    })
+    outcome, _generator = _run(Q20, _q20_draft(), fixture)
+
+    assert outcome.status == "success", outcome.diagnostic
+    assert len(outcome.result.rows) == 1
+    row = outcome.result.rows[0]
+    assert row[:2] == (
+        "Prior Service", "https://data.oireachtas.ie/ie/oireachtas/member/id/Prior-Service",
+    )
+    assert "seanad-membership" in row[2] and SEANAD_TERM in row[2]
+    assert "2025-06-12T00:00:00" in row[2]
+    assert "dail-membership" in row[3] and DAIL_TERM_33 in row[3]
+    assert "2024-11-08T23:59:59" in row[3]
+    assert "strictly before" in outcome.diagnostic
+    assert "absence does not show" in outcome.diagnostic
+    assert "SELECT DISTINCT ?member" in outcome.sparql
+    assert "DailMembership" in outcome.sparql and "SeanadMembership" in outcome.sparql
+    assert "VALUES ?seanadTerm" in outcome.sparql
+
+
+def test_q20_inclusive_asof_strict_boundary_open_dail_and_currently_expired_seanad():
+    fixture = CurrentHouseFixture(members=[])
+    fixture.add_member({
+        "slug": "Inclusive-AsOf", "name": "Inclusive AsOf",
+        "seanad": ("2025-06-12T00:00:00", "2026-11-05T00:00:00"),
+        "dail_paths": [
+            (DAIL_TERM, ("2024-11-29T00:00:00", "2025-06-11T23:59:59")),
+            (DAIL_TERM_33, ("2020-02-08T00:00:00", "2024-11-08T23:59:59")),
+        ],
+    })
+    fixture.add_member({
+        "slug": "Equal-Endpoint", "name": "Equal Endpoint",
+        "seanad": ("2025-06-12T00:00:00", None),
+        "dail_paths": [(DAIL_TERM, ("2024-11-29T00:00:00", "2025-06-12T00:00:00"))],
+    })
+    fixture.add_member({
+        "slug": "Open-Dail", "name": "Open Dail",
+        "seanad": ("2025-06-12T00:00:00", None),
+        "dail_paths": [(DAIL_TERM, ("2024-11-29T00:00:00", None))],
+    })
+    fixture.add_member({
+        "slug": "Expired-Seanad", "name": "Expired Seanad",
+        "seanad": ("2025-06-12T00:00:00", "2026-11-04T23:59:59"),
+        "dail_paths": [(DAIL_TERM_33, ("2020-02-08T00:00:00", "2024-11-08T23:59:59"))],
+    })
+    fixture.add_member({
+        "slug": "End-After-Start", "name": "End After Start",
+        "seanad": ("2025-06-12T00:00:00", None),
+        "dail_paths": [(DAIL_TERM, ("2024-11-29T00:00:00", "2025-06-12T00:00:01"))],
+    })
+
+    outcome, _generator = _run(Q20, _q20_draft(), fixture)
+
+    assert outcome.status == "success", outcome.diagnostic
+    assert len(outcome.result.rows) == 1
+    name, member_iri, seanad_evidence, dail_evidence = outcome.result.rows[0]
+    assert name == "Inclusive AsOf"
+    assert member_iri.endswith("/Inclusive-AsOf")
+    assert "path 1:" in seanad_evidence and "path 2:" in seanad_evidence
+    assert "path 1:" in dail_evidence and "path 2:" in dail_evidence
+    assert DAIL_TERM in dail_evidence and DAIL_TERM_33 in dail_evidence
+    assert "Equal Endpoint" not in str(outcome.result.rows)
+    assert "Open Dail" not in str(outcome.result.rows)
+    assert "Expired Seanad" not in str(outcome.result.rows)
+    assert "End After Start" not in str(outcome.result.rows)
+
+
+def test_q20_never_cross_joins_different_member_identities():
+    fixture = CurrentHouseFixture(members=[])
+    fixture.add_member({
+        "slug": "Dail-Only-Prior", "name": "Dáil Only Prior",
+        "dail_paths": [(DAIL_TERM_33, ("2020-02-08T00:00:00", "2024-11-08T23:59:59"))],
+    })
+    fixture.add_member({
+        "slug": "Seanad-Only-Open-Dail", "name": "Seanad With Open Dáil",
+        "seanad": ("2025-06-12T00:00:00", None),
+        "dail_paths": [(DAIL_TERM, ("2024-11-29T00:00:00", None))],
+    })
+
+    outcome, _generator = _run(Q20, _q20_draft(), fixture)
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert "does not establish that nobody else served" in outcome.diagnostic
+
+
+def test_q20_does_not_answer_when_current_seanad_term_is_not_uniquely_date_resolved():
+    fixture = CurrentHouseFixture(members=[], duplicate_current_seanad=True)
+    fixture.add_member({
+        "slug": "Candidate", "name": "Candidate",
+        "seanad": ("2025-06-12T00:00:00", None),
+        "dail_paths": [(DAIL_TERM_33, ("2020-02-08T00:00:00", "2024-11-08T23:59:59"))],
+    })
+
+    outcome, _generator = _run(Q20, _q20_draft(), fixture)
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert "exactly one current Seanad" in outcome.diagnostic
+    assert not any("?seanad_membership" in query for query in fixture.queries)
+
+
+@pytest.mark.parametrize("uncertainty", [
+    "missing_seanad", "conflicting_seanad", "missing_dail", "conflicting_dail",
+])
+def test_q20_fails_closed_on_missing_or_conflicting_membership_intervals(uncertainty):
+    fixture = CurrentHouseFixture(members=[])
+    member = {
+        "slug": "Uncertain-Prior-Service", "name": "Uncertain Prior Service",
+        "seanad": ("2025-06-12T00:00:00", None),
+        "dail_paths": [(DAIL_TERM_33, ("2020-02-08T00:00:00", "2024-11-08T23:59:59"))],
+    }
+    options = {}
+    if uncertainty == "missing_seanad":
+        options["omit_seanad_range"] = True
+    elif uncertainty == "conflicting_seanad":
+        options["conflicting_membership_range"] = ("2026-01-01T00:00:00", None)
+    elif uncertainty == "missing_dail":
+        options["omit_dail_range"] = True
+    else:
+        options["conflicting_dail_range"] = ("2026-01-01T00:00:00", None)
+    fixture.add_member(member, **options)
+
+    outcome, _generator = _run(Q20, _q20_draft(), fixture)
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert "missing or conflicting date-range evidence" in outcome.diagnostic or "no mapped date-range/start" in outcome.diagnostic
+
+
+def test_q20_count_and_list_share_complete_bounded_paginated_selection():
+    count_fixture = CurrentHouseFixture(members=[])
+    list_fixture = CurrentHouseFixture(members=[])
+    for index in range(101):
+        item = {
+            "slug": f"Prior-Member-{index:03}", "name": f"Prior Member {index:03}",
+            "seanad": ("2025-06-12T00:00:00", None),
+            "dail_paths": [(DAIL_TERM_33, ("2020-02-08T00:00:00", "2024-11-08T23:59:59"))],
+        }
+        count_fixture.add_member(item)
+        list_fixture.add_member(item)
+
+    counted, _generator = _run(Q20_COUNT, _q20_draft(count=True), count_fixture)
+    listed, _generator = _run(Q20, _q20_draft(), list_fixture)
+
+    assert counted.status == listed.status == "success", (counted.diagnostic, listed.diagnostic)
+    assert counted.result.rows == (("101",),)
+    assert len(listed.result.rows) == 101
+    assert counted.result.rows[0][0] == str(len(listed.result.rows))
+    assert "OFFSET 100" in "\n".join(count_fixture.queries)
+    assert "OFFSET 100" in "\n".join(list_fixture.queries)
+    assert counted.sparql == listed.sparql
+    assert "completeness" in counted.diagnostic
+
+
+def test_q20_refuses_extra_filters_dates_ordinals_and_simultaneity():
+    questions = [
+        "How many current Fine Gael Senators previously served in the Dáil?",
+        "Which current Senators previously served in the Dáil and sat on a committee?",
+        "Which current Senators previously served in the Dáil and held ministerial office?",
+        "Which current Senators previously served in the Dáil during 2020?",
+        "How many prior Dáil terms did current Senators serve?",
+        "Which current Senators simultaneously served in the Dáil?",
+        "Which current Senators previously served in the 34th Dáil?",
+        "Which current Senators previously served in the current Dáil?",
+        "Which current Senators were elected in 2025 and previously served in the Dáil?",
+    ]
+    for question in questions:
+        with pytest.raises((InvalidComposableDraft, UnsupportedComposableRequest)):
+            validate_composable_plan_draft(_q20_draft(count="How many" in question), question=question)
+
+
+def test_q20_normalizes_evidence_detail_order_but_rejects_omitted_house_path():
+    reordered = _q20_draft()
+    reordered["answer"]["details"] = [
+        {"referent": "dail_term", "display": ["label"]},
+        {"referent": "dail_membership", "display": ["start", "end"]},
+        {"referent": "seanad_term", "display": ["label"]},
+        {"referent": "seanad_membership", "display": ["start", "end"]},
+    ]
+    final, unsupported = validate_composable_plan_draft(reordered, question=Q20)
+    assert unsupported is None
+    assert final["answer"]["details"][0]["referent"] == "seanad_membership"
+    assert final["answer"]["details"][-1]["referent"] == "dail_term"
+
+    incomplete = _q20_draft()
+    incomplete["answer"]["details"].pop()
+    with pytest.raises(InvalidComposableDraft):
+        validate_composable_plan_draft(incomplete, question=Q20)
+
+
+@pytest.mark.parametrize("question", [
+    Q20,
+    "Which present Senators have a recorded earlier Dáil membership?",
+    "Which Senators in the current Seanad have a Dáil membership that ended before their Seanad membership began?",
+    "How many currently serving Senators have prior recorded Dáil service?",
+])
+def test_q20_accepts_unseen_prior_service_wordings_without_changing_the_temporal_rule(question):
+    count = bool(re.search(r"\b(?:how many|count|number of)\b", question, re.I))
+    final, unsupported = validate_composable_plan_draft(_q20_draft(count=count), question=question)
+    assert unsupported is None
+    assert final["referents"]["seanad_term"]["selector"] == {"kind": "currentTerm", "house": "Seanad"}
+    assert final["referents"]["dail_term"] == {"type": "DailTerm"}
+
+
+def test_q20_user_facing_interpretation_preserves_positive_local_history_qualification(monkeypatch):
+    fixture = CurrentHouseFixture(members=[])
+    fixture.add_member({
+        "slug": "Prior-Service-UI", "name": "Prior Service UI",
+        "seanad": ("2025-06-12T00:00:00", None),
+        "dail_paths": [(DAIL_TERM_33, ("2020-02-08T00:00:00", "2024-11-08T23:59:59"))],
+    })
+    response, generator = _ask_client(monkeypatch, Q20, _q20_draft(), fixture)
+
+    assert response.status_code == 200
+    assert "strictly before" in response.text
+    assert "not proof that anyone never served" in response.text
+    assert DAIL_TERM_33 in response.text and SEANAD_TERM in response.text
+    assert generator.closed
+
+
 def test_q23_active_seanad_party_count_and_list_share_exact_interval_selection():
     count_fixture = CurrentHouseFixture(members=[])
     _add_party_evidence(count_fixture)
@@ -566,11 +840,11 @@ def test_current_house_term_resolver_rejects_missing_or_capped_evidence():
         resolve_current_house_term(capped, AS_OF, term_type="SeanadTerm")
 
 
-def test_q19_and_q23_drafts_match_reviewed_schemas_and_plans():
+def test_q19_q20_and_q23_drafts_match_reviewed_schemas_and_plans():
     draft_schema = load_composable_draft_schema()
     Draft202012Validator.check_schema(draft_schema)
     Draft202012Validator.check_schema(json.loads((ROOT / "poc/specs/composable-query-plan.schema.json").read_text()))
-    for question, draft in ((Q19, _q19_draft()), (Q23_COUNT, _q23_draft())):
+    for question, draft in ((Q19, _q19_draft()), (Q20, _q20_draft()), (Q23_COUNT, _q23_draft())):
         Draft202012Validator(draft_schema).validate(draft)
         final, unsupported = validate_composable_plan_draft(draft, question=question)
         assert unsupported is None
@@ -580,5 +854,14 @@ def test_q19_and_q23_drafts_match_reviewed_schemas_and_plans():
             assert plan["referents"]["seanad_term"]["selector"] == {
                 "kind": "currentTerm", "house": "Seanad",
             }
+            assert plan["referents"]["dail_term"]["selector"] == {
+                "kind": "currentTerm", "house": "Dail",
+            }
+        elif question == Q20:
+            assert plan["referents"]["seanad_term"]["selector"] == {
+                "kind": "currentTerm", "house": "Seanad",
+            }
+            assert plan["referents"]["dail_term"] == {"type": "DailTerm"}
+            assert plan["answer"]["preserveEvidence"] is True
         else:
             assert "partySeanadEpisodeInterval" in final["constraints"][0]["field"]

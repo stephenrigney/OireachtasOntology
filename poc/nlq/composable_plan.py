@@ -1067,6 +1067,103 @@ def _validate_current_cross_house_membership_plan(plan: dict[str, Any]) -> dict[
     return plan
 
 
+def _validate_current_seanad_prior_dail_membership_plan(plan: dict[str, Any]) -> dict[str, Any]:
+    """Validate current Seanad membership joined to strictly prior Dáil episodes."""
+    if set(plan) != {"version", "asOf", "family", "referents", "relations", "answer"}:
+        raise PlanError("Current Seanad/prior Dáil selection accepts no extra fields or temporal constraints.")
+    refs = plan.get("referents")
+    expected_types = {
+        "member": "Member",
+        "seanad_membership": "SeanadMembership",
+        "seanad_term": "SeanadTerm",
+        "dail_membership": "DailMembership",
+        "dail_term": "DailTerm",
+    }
+    if not isinstance(refs, dict) or set(refs) != set(expected_types):
+        raise PlanError("Prior-service selection requires independent typed Seanad and Dáil membership paths.")
+    if refs["member"] != {"type": "Member", "answer": True}:
+        raise PlanError("The prior-service projection returns a set-valued Member identity answer.")
+    for key in ("seanad_membership", "dail_membership"):
+        if refs[key] != {"type": expected_types[key]}:
+            raise PlanError(f"Referent {key!r} must be a plain typed membership evidence role.")
+
+    seanad_term = refs["seanad_term"]
+    if (not isinstance(seanad_term, dict) or seanad_term.get("type") != "SeanadTerm"
+            or seanad_term.get("selector") != {"kind": "currentTerm", "house": "Seanad"}):
+        raise PlanError("The current Seanad term must be selected from House-owned dates at asOf.")
+    resolution = seanad_term.get("resolution")
+    if resolution is None:
+        if set(seanad_term) != {"type", "selector"}:
+            raise PlanError("An unresolved current SeanadTerm contains unsupported fields.")
+    elif resolution == "resolved":
+        if set(seanad_term) != {"type", "selector", "resolution", "iri", "asOfEvidence"}:
+            raise PlanError("A resolved current SeanadTerm requires its exact identity and asOf evidence.")
+        _require_local_iri(seanad_term["iri"], "SeanadTerm")
+        if seanad_term["asOfEvidence"] != plan.get("asOf"):
+            raise PlanError("The selected current SeanadTerm must preserve the exact asOf date evidence.")
+    elif resolution in {"source_data_unavailable", "unsupported_mapping", "not_found"}:
+        if set(seanad_term) != {"type", "selector", "resolution"}:
+            raise PlanError("Unavailable current SeanadTerm resolution contains unsupported identity fields.")
+    elif resolution == "ambiguous":
+        candidates = seanad_term.get("candidates")
+        if (set(seanad_term) != {"type", "selector", "resolution", "candidates"}
+                or not isinstance(candidates, list) or len(candidates) < 2):
+            raise PlanError("An ambiguous current SeanadTerm requires distinct local identity candidates.")
+        for candidate in candidates:
+            if not isinstance(candidate, dict) or set(candidate) != {"iri", "label"}:
+                raise PlanError("Current SeanadTerm candidates require local identities and labels.")
+            _require_local_iri(candidate["iri"], "SeanadTerm")
+    else:
+        raise PlanError("Current SeanadTerm resolution is outside the reviewed outcomes.")
+
+    if refs["dail_term"] != {"type": "DailTerm"}:
+        raise PlanError("Prior Dáil membership is selected by accepted membership dates, not a term ordinal.")
+
+    expected_edges = {
+        ("member_has_seanad_membership", "member", "seanad_membership"),
+        ("seanad_membership_in_term", "seanad_membership", "seanad_term"),
+        ("member_has_membership", "member", "dail_membership"),
+        ("membership_in_term", "dail_membership", "dail_term"),
+    }
+    relations = plan.get("relations")
+    if not isinstance(relations, list) or len(relations) != len(expected_edges):
+        raise PlanError("Prior-service selection requires all four independent typed membership edges.")
+    actual_edges = []
+    relation_ids = set()
+    for relation in relations:
+        if (not isinstance(relation, dict) or set(relation) != {"id", "fact", "from", "to"}
+                or any(not isinstance(relation.get(field), str) or not relation[field]
+                       for field in ("id", "fact", "from", "to"))):
+            raise PlanError("Prior-service relations require non-empty IDs and typed endpoints.")
+        if relation["id"] in relation_ids:
+            raise PlanError("Prior-service relation IDs must be unique.")
+        relation_ids.add(relation["id"])
+        edge = (relation["fact"], relation["from"], relation["to"])
+        if edge not in expected_edges:
+            raise PlanError("A relationship is outside the exact current-Seanad/prior-Dáil projection.")
+        if (edge[0] not in _RELATION_TYPES
+                or (expected_types[edge[1]], expected_types[edge[2]]) != _RELATION_TYPES[edge[0]]):
+            raise PlanError(f"Relationship {edge[0]!r} has incompatible reviewed types.")
+        actual_edges.append(edge)
+    if set(actual_edges) != expected_edges:
+        raise PlanError("The prior-service projection is disconnected or missing an exact membership path.")
+
+    list_answer = {
+        "kind": "entities", "referent": "member", "distinctBy": "identity", "display": ["name"],
+        "details": [
+            {"referent": "seanad_membership", "display": ["start", "end"]},
+            {"referent": "seanad_term", "display": ["label"]},
+            {"referent": "dail_membership", "display": ["start", "end"]},
+            {"referent": "dail_term", "display": ["label"]},
+        ],
+        "preserveEvidence": True,
+    }
+    count_answer = {"kind": "count", "referent": "member", "distinctBy": "identity"}
+    if plan.get("answer") not in (list_answer, count_answer):
+        raise PlanError("Prior-service projection returns a Member identity list with evidence or its distinct count.")
+    return plan
+
+
 def _validate_member_relationship_composition_plan(plan: dict[str, Any]) -> dict[str, Any]:
     """Validate the bounded Member–membership–Dáil-term graph projections."""
     if isinstance(plan.get("referents"), dict) and "anchorMember" in plan["referents"]:
@@ -1078,6 +1175,9 @@ def _validate_member_relationship_composition_plan(plan: dict[str, Any]) -> dict
         ref.get("type") == "PartyMembershipEpisode"
         for ref in plan["referents"].values() if isinstance(ref, dict)
     ):
+        dail_term = plan["referents"].get("dail_term")
+        if isinstance(dail_term, dict) and dail_term.get("type") == "DailTerm" and "selector" not in dail_term:
+            return _validate_current_seanad_prior_dail_membership_plan(plan)
         return _validate_current_cross_house_membership_plan(plan)
     if "constraints" in plan and any(
         isinstance(ref, dict) and ref.get("type") == "PartyMembershipEpisode"
@@ -2686,7 +2786,7 @@ def _member_relationship_composition_mapping(
 
 
 def _current_cross_house_membership_mapping(plan: dict[str, Any], *, supported_predicates) -> dict[str, Any]:
-    """Validate reviewed graph ownership and mapped interval evidence for Q19."""
+    """Validate reviewed graph ownership and mapped interval evidence for Q19/Q20."""
     plan = validate_plan(plan)
     if (plan.get("family") != "member_relationship_composition"
             or "seanad_term" not in plan.get("referents", {})):
@@ -2818,6 +2918,41 @@ def compile_current_cross_house_membership_query(
     ?dailTerm a {types["DailTerm"]} .
   }}
 }} ORDER BY ?memberName ?member ?seanad_membership ?seanadRange ?dail_membership ?dailRange LIMIT 100'''
+    return _query(query, supported_predicates)
+
+
+def compile_current_seanad_prior_dail_membership_query(
+    plan: dict[str, Any], *, supported_predicates,
+) -> str:
+    """Select exact current-Seanad and recorded Dáil membership paths for date evaluation."""
+    mapping = _current_cross_house_membership_mapping(plan, supported_predicates=supported_predicates)
+    refs = plan["referents"]
+    seanad_term = URIRef(_require_local_iri(refs["seanad_term"].get("iri"), "SeanadTerm")).n3()
+    types = mapping["rdf_types"]
+    query = _PREFIXES + f'''SELECT DISTINCT ?member ?memberName ?seanad_membership ?seanadRange ?seanadStart ?seanadEnd ?seanadTerm ?dail_membership ?dailRange ?dailStart ?dailEnd ?dailTerm WHERE {{
+  GRAPH ?memberGraph {{
+    ?member a {types["Member"]} ; {mapping["member_name"]} ?memberName ;
+      {mapping["member_link"]} ?seanad_membership, ?dail_membership .
+    ?seanad_membership a {types["SeanadMembership"]}, members:OireachtasMembership ;
+      {mapping["term_link"]} ?seanadTerm .
+    ?dail_membership a {types["DailMembership"]}, members:OireachtasMembership ;
+      {mapping["term_link"]} ?dailTerm .
+    OPTIONAL {{ ?seanad_membership {mapping["range_link"]} ?seanadRange .
+      ?seanadRange a {mapping["range_type"]} .
+      OPTIONAL {{ ?seanadRange {mapping["start"]} ?seanadStart . }}
+      OPTIONAL {{ ?seanadRange {mapping["end"]} ?seanadEnd . }} }}
+    OPTIONAL {{ ?dail_membership {mapping["range_link"]} ?dailRange .
+      ?dailRange a {mapping["range_type"]} .
+      OPTIONAL {{ ?dailRange {mapping["start"]} ?dailStart . }}
+      OPTIONAL {{ ?dailRange {mapping["end"]} ?dailEnd . }} }}
+  }}
+  FILTER(STRSTARTS(STR(?memberGraph), {json.dumps(mapping["member_prefix"])}))
+  VALUES ?seanadTerm {{ {seanad_term} }}
+  GRAPH <{mapping["houses_graph"]}> {{
+    ?seanadTerm a {types["SeanadTerm"]} .
+    ?dailTerm a {types["DailTerm"]} .
+  }}
+}} ORDER BY ?memberName ?member ?seanad_membership ?seanadRange ?seanadStart ?seanadEnd ?dail_membership ?dailTerm ?dailRange ?dailStart ?dailEnd LIMIT 100'''
     return _query(query, supported_predicates)
 
 
@@ -5109,6 +5244,160 @@ def _current_cross_house_membership_result(
     )
 
 
+def _current_seanad_prior_dail_membership_result(
+    raw_result: QueryResult,
+    plan: dict[str, Any],
+    *,
+    answer_query: str,
+) -> PlanOutcome:
+    """Return only exact current-Seanad Members with finite, strictly earlier Dáil intervals."""
+    required = {
+        "member", "memberName", "seanad_membership", "seanadRange", "seanadStart", "seanadEnd",
+        "seanadTerm", "dail_membership", "dailRange", "dailStart", "dailEnd", "dailTerm",
+    }
+    if raw_result.kind != "select" or not required.issubset(raw_result.columns):
+        return PlanOutcome(
+            "execution_failure", plan=plan, sparql=answer_query,
+            diagnostic="The current Seanad/prior Dáil query returned an unexpected result shape.",
+            request_family="member_relationship_composition",
+        )
+    index = {name: raw_result.columns.index(name) for name in required}
+    expected_seanad = plan["referents"]["seanad_term"]["iri"]
+    as_of = date.fromisoformat(plan["asOf"])
+    records: dict[str, dict[str, Any]] = {}
+    membership_owners: dict[str, tuple[str, str]] = {}
+    try:
+        for row in raw_result.rows:
+            if len(row) <= max(index.values()):
+                raise NLQError("A prior-service row was truncated; no complete identity/path result was returned.")
+            member = _require_local_iri(row[index["member"]], "Member")
+            seanad_membership = _require_local_iri(row[index["seanad_membership"]], "SeanadMembership")
+            dail_membership = _require_local_iri(row[index["dail_membership"]], "DailMembership")
+            seanad_term = _require_local_iri(row[index["seanadTerm"]], "SeanadTerm")
+            dail_term = _require_local_iri(row[index["dailTerm"]], "DailTerm")
+            if seanad_term != expected_seanad:
+                raise NLQError("A Seanad membership path is outside the exact House-date-resolved current SeanadTerm.")
+            name = row[index["memberName"]].removesuffix("@en").strip()
+            if not name:
+                raise NLQError(f"Member {member} has missing display-name evidence.")
+            record = records.setdefault(member, {"names": set(), "seanad": {}, "dail": {}})
+            record["names"].add(name)
+            for role, iri in (("SeanadMembership", seanad_membership), ("DailMembership", dail_membership)):
+                owner = membership_owners.setdefault(iri, (role, member))
+                if owner != (role, member):
+                    raise NLQError(f"Membership identity {iri} has conflicting type or Member ownership.")
+            seanad_evidence = record["seanad"].setdefault(seanad_membership, {"terms": set(), "ranges": set()})
+            seanad_evidence["terms"].add(seanad_term)
+            seanad_evidence["ranges"].add((
+                row[index["seanadRange"]], row[index["seanadStart"]], row[index["seanadEnd"]],
+            ))
+            dail_evidence = record["dail"].setdefault(dail_membership, {"terms": set(), "ranges": set()})
+            dail_evidence["terms"].add(dail_term)
+            dail_evidence["ranges"].add((
+                row[index["dailRange"]], row[index["dailStart"]], row[index["dailEnd"]],
+            ))
+
+        if not records:
+            raise NLQError(
+                "No local Member has both a current-Seanad membership path and a recorded Dáil membership path; "
+                "local history is incomplete and absence does not establish that nobody served."
+            )
+
+        selected: dict[
+            str,
+            tuple[str, list[tuple[
+                str, str, tuple[datetime, datetime | None], tuple[datetime, datetime | None], str,
+            ]]],
+        ] = {}
+        for member, record in records.items():
+            if len(record["names"]) != 1:
+                raise NLQError(f"Member {member} has missing or conflicting name evidence.")
+            seanad_intervals = {}
+            for iri, evidence in record["seanad"].items():
+                if len(evidence["terms"]) != 1 or next(iter(evidence["terms"])) != expected_seanad:
+                    raise NLQError(f"SeanadMembership {iri} has conflicting or out-of-scope HouseTerm identity evidence.")
+                interval = _mapped_member_interval(evidence["ranges"], label=f"SeanadMembership {iri}")
+                seanad_intervals[iri] = interval
+            active_seanad = {
+                iri: interval for iri, interval in seanad_intervals.items()
+                if interval[0].date() <= as_of and (interval[1] is None or as_of <= interval[1].date())
+            }
+            if not active_seanad:
+                continue
+
+            qualifying_pairs = []
+            for dail_iri, evidence in record["dail"].items():
+                if len(evidence["terms"]) != 1:
+                    raise NLQError(f"DailMembership {dail_iri} has missing or conflicting DailTerm identity evidence.")
+                dail_term = next(iter(evidence["terms"]))
+                dail_interval = _mapped_member_interval(evidence["ranges"], label=f"DailMembership {dail_iri}")
+                dail_end = dail_interval[1]
+                if dail_end is None:
+                    # An open-ended Dáil episode is recorded service, not evidence of prior service.
+                    continue
+                for seanad_iri, seanad_interval in active_seanad.items():
+                    if dail_end < seanad_interval[0]:
+                        qualifying_pairs.append((seanad_iri, dail_iri, seanad_interval, dail_interval, dail_term))
+            if qualifying_pairs:
+                selected[member] = (next(iter(record["names"])), qualifying_pairs)
+
+        if not selected:
+            raise NLQError(
+                "No positive local path met both interval conditions: current Seanad membership contains asOf, "
+                "and a finite DailMembership EndDate is strictly before that SeanadMembership StartDate. "
+                "This does not establish that nobody else served in the Dáil."
+            )
+
+        display_rows = []
+        for member, (name, pairs) in selected.items():
+            seanad_details = []
+            dail_details = []
+            for path_number, (seanad_iri, dail_iri, seanad_interval, dail_interval, dail_term) in enumerate(
+                sorted(pairs, key=lambda item: (item[0], item[1], item[4])), start=1,
+            ):
+                seanad_details.append(
+                    f"path {path_number}: {seanad_iri} in {expected_seanad}: {_display_member_interval(seanad_interval)}"
+                )
+                dail_details.append(
+                    f"path {path_number}: {dail_iri} in {dail_term}: {_display_member_interval(dail_interval)}"
+                )
+            display_rows.append((name, member, "; ".join(seanad_details), "; ".join(dail_details)))
+    except (NLQError, IndexError, ValueError) as error:
+        return PlanOutcome(
+            "source_data_unavailable", plan=plan, sparql=answer_query,
+            diagnostic=f"The current Seanad/prior Dáil membership evidence is uncertain: {error}",
+            request_family="member_relationship_composition",
+        )
+
+    display_rows.sort(key=lambda row: (row[0].casefold(), row[1]))
+    if plan["answer"]["kind"] == "count":
+        result = QueryResult(
+            "select", ("Distinct recorded Member identities",), ((str(len(selected)),),),
+            raw_json=raw_result.raw_json,
+        )
+    else:
+        result = QueryResult(
+            "select",
+            ("Member", "Member identity", "Current Seanad membership / term / interval",
+             "Prior Dáil membership / term / interval"),
+            tuple(display_rows), raw_json=raw_result.raw_json,
+        )
+    count_note = (
+        f" The count is {len(selected)} distinct Member RDF identities from this same validated list selection, not seats or elections."
+        if plan["answer"]["kind"] == "count" else ""
+    )
+    return PlanOutcome(
+        "success", plan=plan, sparql=answer_query, result=result,
+        diagnostic=(f"Positive local matches require the exact current SeanadMembership interval to contain {as_of.isoformat()} "
+                    "using inclusive calendar-day semantics and a finite accepted DailMembership EndDate strictly before "
+                    "that same SeanadMembership StartDate. Exact Member identity, both membership identities, both HouseTerm "
+                    "identities and their intervals are retained; an open-ended Dáil interval is not prior-service evidence."
+                    + count_note
+                    + " This is a positive local-record list, not a completeness-certified history; absence does not show that anyone never served in the Dáil."),
+        request_family="member_relationship_composition",
+    )
+
+
 def _execute_member_party_temporal_composition(
     plan: dict[str, Any],
     *,
@@ -5257,6 +5546,11 @@ def _execute_member_relationship_composition_plan(
     """Resolve exact term/constituency identities, then execute one graph composition."""
     as_of = date.fromisoformat(plan["asOf"])
     cross_house = "seanad_term" in plan.get("referents", {})
+    current_seanad_prior_dail = (
+        cross_house
+        and isinstance(plan.get("referents", {}).get("dail_term"), dict)
+        and "selector" not in plan["referents"]["dail_term"]
+    )
     try:
         mapping = (
             _current_cross_house_membership_mapping(plan, supported_predicates=supported_predicates)
@@ -5334,7 +5628,7 @@ def _execute_member_relationship_composition_plan(
     term_referents = [
         (referent_id, referent)
         for referent_id, referent in plan["referents"].items()
-        if referent["type"] in {"DailTerm", "SeanadTerm"}
+        if referent["type"] in {"DailTerm", "SeanadTerm"} and "selector" in referent
     ]
     ambiguous_candidates: list[dict[str, str]] = []
     resolution_failures: list[tuple[str, str]] = []
@@ -5603,6 +5897,25 @@ def _execute_member_relationship_composition_plan(
                                request_family="member_relationship_composition")
         return _execute_member_party_temporal_composition(
             plan, fuseki=fuseki, supported_predicates=supported_predicates,
+        )
+
+    if current_seanad_prior_dail:
+        try:
+            answer_query = compile_current_seanad_prior_dail_membership_query(
+                plan, supported_predicates=supported_predicates,
+            )
+            from .pagination import select_pages
+            raw_result = select_pages(
+                answer_query, fuseki=fuseki, supported_predicates=supported_predicates,
+            )
+        except (NLQError, PlanError) as error:
+            return PlanOutcome(
+                "source_data_unavailable", plan=plan,
+                diagnostic=f"The complete current Seanad/prior Dáil selection could not be established: {error}",
+                request_family="member_relationship_composition",
+            )
+        return _current_seanad_prior_dail_membership_result(
+            raw_result, plan, answer_query=answer_query,
         )
 
     if cross_house:
