@@ -222,7 +222,7 @@ def test_dashboard_control_labels_colours_and_query_mode_toggle(tmp_path):
     assert page.index("Development Query Path") < page.index('type="submit">Ask')
     assert "background:#2E8B57" in template
     assert "background:#C0392B" in template
-    assert "th { background:var(--page); }" in template
+    assert "th { background:#6B5822; }" in template
     assert ".readiness { padding: .75rem; border:0;" in template
 
 
