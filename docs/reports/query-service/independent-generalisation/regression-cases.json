@@ -1,0 +1,18 @@
+[
+  {"id":"R01","question":"Who are the Sinn Féin TDs for Dublin Central?","expected_names":["Mary Lou McDonald"]},
+  {"id":"R03","question":"What were the parties during the 12th Dáil?","expected_names":["Clann na Poblachta","Clann na Talmhan","Fianna Fáil","Fine Gael","Labour Party","National Labour Party"]},
+  {"id":"R06","question":"What constituencies did Jack Lynch represent?","expected_properties":"Exact John-Lynch.D.1948-02-18 identity, nine term occurrences: Cork Borough 13-18, Cork City North-West 19-20, Cork City 21."},
+  {"id":"R09","question":"Who were the other Fianna Fáil TDs in the same constituency as Bertie Ahern while he was Taoiseach?","expected_names":["Cyprian Brady"]},
+  {"id":"R10","question":"Who is the Taoiseach?","expected_names":["Micheál Martin"]},
+  {"id":"R11","question":"Who is the current Taoiseach?","expected_names":["Micheál Martin"]},
+  {"id":"R13","question":"Who was the Taoiseach in June 1994?","expected_names":["Albert Reynolds"]},
+  {"id":"R16","question":"How many TDs represented the Dublin Central constituency in this Dáil?","expected_count":5},
+  {"id":"R18","question":"What constituency did Bertie Ahern represent in his last term in the Dáil?","expected_properties":"Dublin Central, 30th Dáil, House start 2007-06-14; latest recorded term not an election."},
+  {"id":"R19","question":"Who was a Senator in the current Seanad and a Deputy in the current Dáil?","expected_names":["Seán Kyne"]},
+  {"id":"R20","question":"What current Senators previously served in the Dáil?","expected_properties":"11 distinct Members, finite prior Dáil membership EndDate strictly before qualifying current Seanad membership StartDate."},
+  {"id":"R21b","question":"Who are the Fine Gael TDs in Galway East and Galway West?","expected_names":["Hildegarde Naughton","Peter Roche","Seán Kyne"]},
+  {"id":"R22","question":"How many TDs currently represent Meath East constituency?","expected_count":4},
+  {"id":"R23","question":"How many Fine Gael Senators are in the current Seanad?","expected_count":16},
+  {"id":"R24","question":"How many other TDs were in the same constituency as Mary Lou McDonald during the last Dáil?","expected_count":3},
+  {"id":"R25","question":"How many Fine Gael TDs were in the 27th Dáil?","expected_count":45}
+]

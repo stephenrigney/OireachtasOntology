@@ -1,0 +1,27 @@
+{
+  "protocol": "Selected after the one-shot baseline to span capabilities and observed failure types; no change to questions, expectations, planner, prompts or implementation. Three fresh verbatim /ask calls per selected question, excluding the baseline from the primary repeatability calculation. Two concurrent requests, as in the main holdout run.",
+  "ids": ["H04", "H06", "H09", "H11", "H13", "H17", "H19", "H21", "H25", "H27", "H30", "H32", "H35", "H39", "H43", "H44", "H46", "H47", "H53", "H55"],
+  "runs_each": 3,
+  "selection_rationale": {
+    "H04": "Latest-recorded selection success",
+    "H06": "Supported distinct-term count refused",
+    "H09": "Shared-term graph rejected for duplicate relation IDs",
+    "H11": "Two-term intersection success and larger exact identity set",
+    "H13": "Numeric term wording rejected despite termNumber selector",
+    "H17": "Current-term term-wide constituency count success",
+    "H19": "Deterministic entity extraction swallows temporal adverb",
+    "H21": "Exact-date membership validation failure",
+    "H25": "Named-party distinct count refused",
+    "H27": "Finite constituency identity OR + party refused",
+    "H30": "Previous-term anchor count refused",
+    "H32": "Accepted office calendar-year window success",
+    "H35": "Current office semantic selection rejected",
+    "H39": "Full-month term selection refused",
+    "H43": "Term-wide cross-house request explicitly disclaims simultaneity",
+    "H44": "Positive four-way temporal/party/anchor composition rejected",
+    "H46": "Current Seanad party count refused",
+    "H47": "Current Senator with strictly prior Dáil path success",
+    "H53": "Unsupported gender filter must not be dropped",
+    "H55": "Partial-surname grounded clarification"
+  }
+}

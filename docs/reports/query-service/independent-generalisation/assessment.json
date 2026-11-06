@@ -1,0 +1,876 @@
+{
+  "summary": {
+    "all60_scores": {
+      "PASS": 31,
+      "FAIL": 26,
+      "BLOCKED": 2,
+      "PARTIAL": 1
+    },
+    "frozen_factual": {
+      "correct": 22,
+      "eligible": 48
+    },
+    "contract_admissible_sensitivity": {
+      "correct": 22,
+      "eligible": 45
+    },
+    "repeated_outcomes": {
+      "unsupported_capability": 27,
+      "answer": 17,
+      "validation_failure": 10,
+      "unresolved_identity": 3,
+      "clarification_required": 3
+    },
+    "repeat_all_outcome_and_facts_consistent": 17,
+    "repeat_factual_content_and_availability_consistent": 19,
+    "repeat_agreeing_pairs": 54,
+    "repeat_all_four_outcomes_consistent": 16,
+    "repeat_all_four_facts_consistent": 18,
+    "regression_controls_matched": 16
+  },
+  "ledger": [
+    {
+      "id": "H01",
+      "score_against_frozen_expectation": "PASS",
+      "category": "simple",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H02",
+      "score_against_frozen_expectation": "PASS",
+      "category": "simple",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H03",
+      "score_against_frozen_expectation": "PASS",
+      "category": "entities-periods",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H04",
+      "score_against_frozen_expectation": "PASS",
+      "category": "paraphrase",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H05",
+      "score_against_frozen_expectation": "PASS",
+      "category": "paraphrase",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H06",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "aggregation",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H07",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "aggregation",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H08",
+      "score_against_frozen_expectation": "PASS",
+      "category": "novel-composition",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H09",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "novel-composition",
+      "actual_outcome": "validation_failure",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H10",
+      "score_against_frozen_expectation": "BLOCKED",
+      "category": "novel-composition",
+      "actual_outcome": "missing_or_unaccepted_evidence",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H11",
+      "score_against_frozen_expectation": "PASS",
+      "category": "novel-composition",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H12",
+      "score_against_frozen_expectation": "PASS",
+      "category": "novel-composition",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H13",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "entities-periods",
+      "actual_outcome": "validation_failure",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H14",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "entities-periods",
+      "actual_outcome": "validation_failure",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H15",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "entities-periods",
+      "actual_outcome": "validation_failure",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H16",
+      "score_against_frozen_expectation": "PASS",
+      "category": "aggregation",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H17",
+      "score_against_frozen_expectation": "PASS",
+      "category": "aggregation",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H18",
+      "score_against_frozen_expectation": "PASS",
+      "category": "aggregation",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H19",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "paraphrase",
+      "actual_outcome": "unresolved_identity",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H20",
+      "score_against_frozen_expectation": "PASS",
+      "category": "aggregation",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H21",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "entities-periods",
+      "actual_outcome": "validation_failure",
+      "scope_admissibility_caveat": true,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H22",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "aggregation",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": true,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H23",
+      "score_against_frozen_expectation": "PASS",
+      "category": "novel-composition",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H24",
+      "score_against_frozen_expectation": "PASS",
+      "category": "novel-composition",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H25",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "aggregation",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H26",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "aggregation",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H27",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "novel-composition",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H28",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "novel-composition",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H29",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "novel-composition",
+      "actual_outcome": "validation_failure",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H30",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "novel-composition",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H31",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "novel-composition",
+      "actual_outcome": "validation_failure",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H32",
+      "score_against_frozen_expectation": "PASS",
+      "category": "entities-periods",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H33",
+      "score_against_frozen_expectation": "PASS",
+      "category": "entities-periods",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H34",
+      "score_against_frozen_expectation": "PASS",
+      "category": "entities-periods",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H35",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "entities-periods",
+      "actual_outcome": "validation_failure",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H36",
+      "score_against_frozen_expectation": "PASS",
+      "category": "paraphrase",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H37",
+      "score_against_frozen_expectation": "PASS",
+      "category": "paraphrase",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H38",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "entities-periods",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H39",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "entities-periods",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H40",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "entities-periods",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H41",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "simple",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H42",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "simple",
+      "actual_outcome": "validation_failure",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H43",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "novel-composition",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H44",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "novel-composition",
+      "actual_outcome": "validation_failure",
+      "scope_admissibility_caveat": true,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H45",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "paraphrase",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H46",
+      "score_against_frozen_expectation": "FAIL",
+      "category": "aggregation",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H47",
+      "score_against_frozen_expectation": "PASS",
+      "category": "novel-composition",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H48",
+      "score_against_frozen_expectation": "PASS",
+      "category": "aggregation",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H49",
+      "score_against_frozen_expectation": "BLOCKED",
+      "category": "aggregation",
+      "actual_outcome": "missing_or_unaccepted_evidence",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H50",
+      "score_against_frozen_expectation": "PASS",
+      "category": "paraphrase",
+      "actual_outcome": "answer",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": true,
+      "constraints": "preserved_in_answer"
+    },
+    {
+      "id": "H51",
+      "score_against_frozen_expectation": "PASS",
+      "category": "unsupported",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H52",
+      "score_against_frozen_expectation": "PASS",
+      "category": "unsupported",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H53",
+      "score_against_frozen_expectation": "PASS",
+      "category": "unsupported",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H54",
+      "score_against_frozen_expectation": "PASS",
+      "category": "unsupported",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H55",
+      "score_against_frozen_expectation": "PASS",
+      "category": "ambiguous",
+      "actual_outcome": "clarification_required",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H56",
+      "score_against_frozen_expectation": "PARTIAL",
+      "category": "ambiguous",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H57",
+      "score_against_frozen_expectation": "PASS",
+      "category": "unsupported",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H58",
+      "score_against_frozen_expectation": "PASS",
+      "category": "unsupported",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H59",
+      "score_against_frozen_expectation": "PASS",
+      "category": "unsupported",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    },
+    {
+      "id": "H60",
+      "score_against_frozen_expectation": "PASS",
+      "category": "unsupported",
+      "actual_outcome": "unsupported_capability",
+      "scope_admissibility_caveat": false,
+      "factual_table_matches": false,
+      "constraints": "safely_no_final_answer"
+    }
+  ],
+  "variability": [
+    {
+      "id": "H04",
+      "outcomes": [
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": true,
+      "all_four_facts_consistent": true,
+      "factual_answers": 3
+    },
+    {
+      "id": "H06",
+      "outcomes": [
+        "unsupported_capability",
+        "unsupported_capability",
+        "unsupported_capability"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": true,
+      "all_four_facts_consistent": true,
+      "factual_answers": 0
+    },
+    {
+      "id": "H09",
+      "outcomes": [
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": false,
+      "all_four_facts_consistent": false,
+      "factual_answers": 3
+    },
+    {
+      "id": "H11",
+      "outcomes": [
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": true,
+      "all_four_facts_consistent": true,
+      "factual_answers": 3
+    },
+    {
+      "id": "H13",
+      "outcomes": [
+        "validation_failure",
+        "validation_failure",
+        "validation_failure"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": true,
+      "all_four_facts_consistent": true,
+      "factual_answers": 0
+    },
+    {
+      "id": "H17",
+      "outcomes": [
+        "answer",
+        "answer",
+        "validation_failure"
+      ],
+      "outcome_consistent": false,
+      "factual_content_and_availability_consistent": false,
+      "outcome_and_facts_consistent": false,
+      "agreeing_pairs": 1,
+      "all_four_outcomes_consistent": false,
+      "all_four_facts_consistent": false,
+      "factual_answers": 2
+    },
+    {
+      "id": "H19",
+      "outcomes": [
+        "unresolved_identity",
+        "unresolved_identity",
+        "unresolved_identity"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": true,
+      "all_four_facts_consistent": true,
+      "factual_answers": 0
+    },
+    {
+      "id": "H21",
+      "outcomes": [
+        "validation_failure",
+        "validation_failure",
+        "unsupported_capability"
+      ],
+      "outcome_consistent": false,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": false,
+      "agreeing_pairs": 1,
+      "all_four_outcomes_consistent": false,
+      "all_four_facts_consistent": true,
+      "factual_answers": 0
+    },
+    {
+      "id": "H25",
+      "outcomes": [
+        "unsupported_capability",
+        "unsupported_capability",
+        "unsupported_capability"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": true,
+      "all_four_facts_consistent": true,
+      "factual_answers": 0
+    },
+    {
+      "id": "H27",
+      "outcomes": [
+        "unsupported_capability",
+        "unsupported_capability",
+        "unsupported_capability"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": true,
+      "all_four_facts_consistent": true,
+      "factual_answers": 0
+    },
+    {
+      "id": "H30",
+      "outcomes": [
+        "unsupported_capability",
+        "unsupported_capability",
+        "unsupported_capability"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": true,
+      "all_four_facts_consistent": true,
+      "factual_answers": 0
+    },
+    {
+      "id": "H32",
+      "outcomes": [
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": true,
+      "all_four_facts_consistent": true,
+      "factual_answers": 3
+    },
+    {
+      "id": "H35",
+      "outcomes": [
+        "validation_failure",
+        "validation_failure",
+        "validation_failure"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": true,
+      "all_four_facts_consistent": true,
+      "factual_answers": 0
+    },
+    {
+      "id": "H39",
+      "outcomes": [
+        "unsupported_capability",
+        "unsupported_capability",
+        "unsupported_capability"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": true,
+      "all_four_facts_consistent": true,
+      "factual_answers": 0
+    },
+    {
+      "id": "H43",
+      "outcomes": [
+        "unsupported_capability",
+        "unsupported_capability",
+        "unsupported_capability"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": true,
+      "all_four_facts_consistent": true,
+      "factual_answers": 0
+    },
+    {
+      "id": "H44",
+      "outcomes": [
+        "unsupported_capability",
+        "unsupported_capability",
+        "validation_failure"
+      ],
+      "outcome_consistent": false,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": false,
+      "agreeing_pairs": 1,
+      "all_four_outcomes_consistent": false,
+      "all_four_facts_consistent": true,
+      "factual_answers": 0
+    },
+    {
+      "id": "H46",
+      "outcomes": [
+        "unsupported_capability",
+        "unsupported_capability",
+        "unsupported_capability"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": true,
+      "all_four_facts_consistent": true,
+      "factual_answers": 0
+    },
+    {
+      "id": "H47",
+      "outcomes": [
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": true,
+      "all_four_facts_consistent": true,
+      "factual_answers": 3
+    },
+    {
+      "id": "H53",
+      "outcomes": [
+        "unsupported_capability",
+        "unsupported_capability",
+        "unsupported_capability"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": true,
+      "all_four_facts_consistent": true,
+      "factual_answers": 0
+    },
+    {
+      "id": "H55",
+      "outcomes": [
+        "clarification_required",
+        "clarification_required",
+        "clarification_required"
+      ],
+      "outcome_consistent": true,
+      "factual_content_and_availability_consistent": true,
+      "outcome_and_facts_consistent": true,
+      "agreeing_pairs": 3,
+      "all_four_outcomes_consistent": true,
+      "all_four_facts_consistent": true,
+      "factual_answers": 0
+    }
+  ],
+  "manual_review": "Report documents qualifications, contract admissibility and preservation of requested filters. This script checks factual tables, not arbitrary prose semantics."
+}

@@ -1,0 +1,21 @@
+{
+  "utc": "2026-11-06T21:20:48.861722+00:00",
+  "checks": {
+    "chronology": {
+      "matched_frozen": true,
+      "row_count": 65,
+      "response_sha256": "4934bba366ff45557a52c3770697ad2332986500f3715bb12b5720ae046b9f57"
+    },
+    "graph_counts": {
+      "matched_frozen": true,
+      "row_count": 7982,
+      "response_sha256": "6cb4a32ab699865ce0eec15eb48e4ebd87550f531d35d29f2358bf86d2b40c40"
+    },
+    "ambiguity_murphy": {
+      "matched_frozen": true,
+      "row_count": 19,
+      "response_sha256": "3419bb2e4c42e1f21cfeeaaa343f59376d6dfdc1fb991204ea1720c723337125"
+    }
+  },
+  "limitation": "Graph/triple census and exact chronology match; not a full graph-content cryptographic digest."
+}

@@ -1,0 +1,334 @@
+{
+  "utc": "2026-11-06T21:26:21.680667+00:00",
+  "oracle_rechecks": [
+    {
+      "id": "H01",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "762638b00a68030738af4ae88db0a86b6c719509ba8487091e5c3c54e521ba1b"
+    },
+    {
+      "id": "H02",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "5fbfb1bdd05c71e5b837f70d7fa6d26e378e5f33e5ec94c0077d297df97e897c"
+    },
+    {
+      "id": "H03",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "bc0d1c4cce57ad425369789ddf15aaa40a35e346ea8dcd34cf2b1bc6dd692e17"
+    },
+    {
+      "id": "H04",
+      "matched_frozen_rows": true,
+      "rows": 6,
+      "canonical_values_sha256": "73845b05663dd1c36d1a3d99f415920cf1f2449c33841f205e623e69675c9c44"
+    },
+    {
+      "id": "H05",
+      "matched_frozen_rows": true,
+      "rows": 4,
+      "canonical_values_sha256": "998d3b240e9a85fcd4a312ea10d2094807543f2a0670a19aae1ffa926c895c4a"
+    },
+    {
+      "id": "H06",
+      "matched_frozen_rows": true,
+      "rows": 9,
+      "canonical_values_sha256": "122053646b1e60f97e33d2b1b8d66c492fa9318d9f056feeb34ae6b900f11e2b"
+    },
+    {
+      "id": "H07",
+      "matched_frozen_rows": true,
+      "rows": 3,
+      "canonical_values_sha256": "52c5671aedea8fbcee4416719b322beeb8649898ea8855fe87301c5eaeac3013"
+    },
+    {
+      "id": "H08",
+      "matched_frozen_rows": true,
+      "rows": 2,
+      "canonical_values_sha256": "58f079998bb15ed58d61832b1fe714b39759941a567a43ec8d39bedd1d020a35"
+    },
+    {
+      "id": "H09",
+      "matched_frozen_rows": true,
+      "rows": 4,
+      "canonical_values_sha256": "2ed383070f247e377838dde66fc75124a0ade49e5362e9318aecc771dc372d08"
+    },
+    {
+      "id": "H10",
+      "matched_frozen_rows": true,
+      "rows": 0,
+      "canonical_values_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "id": "H10-guard",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "9be6698e212930be7acf79018c27f7d1c367ea88200d414048e3ea6d7ed4fc04"
+    },
+    {
+      "id": "H11",
+      "matched_frozen_rows": true,
+      "rows": 88,
+      "canonical_values_sha256": "c30676039f64b9cc617a9246bfbf9aeec51ad5cb492482b6d697f65e37955c99"
+    },
+    {
+      "id": "H12",
+      "matched_frozen_rows": true,
+      "rows": 59,
+      "canonical_values_sha256": "bb697cf9a4446ab3ef6634c063834db356471d7b7436e80c7be4d28800876217"
+    },
+    {
+      "id": "H13",
+      "matched_frozen_rows": true,
+      "rows": 3,
+      "canonical_values_sha256": "a7736e50bcffbdb70cdbb454e9e9aace8de221f601f747e4684b2fdea300cdc7"
+    },
+    {
+      "id": "H14",
+      "matched_frozen_rows": true,
+      "rows": 5,
+      "canonical_values_sha256": "6aa6216880808073cce8004c432a9abf030b8094e6955b7d57f806f63fc993ab"
+    },
+    {
+      "id": "H15",
+      "matched_frozen_rows": true,
+      "rows": 5,
+      "canonical_values_sha256": "7893c42485284a91a2baf815a473ec8c88c36c205c37a706cc8f6114d34570b2"
+    },
+    {
+      "id": "H16",
+      "matched_frozen_rows": true,
+      "rows": 3,
+      "canonical_values_sha256": "edd89e88d0e575a969dbfba9f7d3bc8b3f45a2291ab748aeebb1d4883ca9e66d"
+    },
+    {
+      "id": "H17",
+      "matched_frozen_rows": true,
+      "rows": 6,
+      "canonical_values_sha256": "7ec9e7fe91718b7c16b176bf2de03164e4c63a34c36dcc161a7f63a774247c94"
+    },
+    {
+      "id": "H18",
+      "matched_frozen_rows": true,
+      "rows": 3,
+      "canonical_values_sha256": "a7736e50bcffbdb70cdbb454e9e9aace8de221f601f747e4684b2fdea300cdc7"
+    },
+    {
+      "id": "H19",
+      "matched_frozen_rows": true,
+      "rows": 5,
+      "canonical_values_sha256": "e7b98778bd6d0fd16334511d6edb3c671365b142e2f0fa7f6ffc41e3a5bebfe3"
+    },
+    {
+      "id": "H20",
+      "matched_frozen_rows": true,
+      "rows": 5,
+      "canonical_values_sha256": "e7b98778bd6d0fd16334511d6edb3c671365b142e2f0fa7f6ffc41e3a5bebfe3"
+    },
+    {
+      "id": "H21",
+      "matched_frozen_rows": true,
+      "rows": 5,
+      "canonical_values_sha256": "7404659093c70fe5ecc6ada02cf901a8ef0a41dc926f26b105fe7c8d49310cac"
+    },
+    {
+      "id": "H22",
+      "matched_frozen_rows": true,
+      "rows": 5,
+      "canonical_values_sha256": "7c75ef211dc7784f8b5f2606be082adb99664aedcb97f492d1ddd137e77ac1d1"
+    },
+    {
+      "id": "H23",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "9fd22cf416d30c3fd7d5b5aaa127c11a6a4a631331662d596279cc0dc914fdd2"
+    },
+    {
+      "id": "H24",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "06c66405c950822d5362b468c2b9a400e0463a127fae9f4388230acacd21c946"
+    },
+    {
+      "id": "H25",
+      "matched_frozen_rows": true,
+      "rows": 37,
+      "canonical_values_sha256": "57b645df3e70f84ff97a8848f6932889f999e4a565f4f8fadb0ed1daa690ec86"
+    },
+    {
+      "id": "H26",
+      "matched_frozen_rows": true,
+      "rows": 24,
+      "canonical_values_sha256": "2213b44bbe852d77a2137ed6b6351856865913757432562b3daaf2fb9e067c2e"
+    },
+    {
+      "id": "H27",
+      "matched_frozen_rows": true,
+      "rows": 4,
+      "canonical_values_sha256": "b4fcf142018e680c0e41c02b9d335b8ffff7b145fe25b0e35057be5ed1fb552a"
+    },
+    {
+      "id": "H28",
+      "matched_frozen_rows": true,
+      "rows": 2,
+      "canonical_values_sha256": "58b13f8e8a4e9a640e12c01a5f1f544e21397757d8fc1b1368b150a9a144e7fe"
+    },
+    {
+      "id": "H29",
+      "matched_frozen_rows": true,
+      "rows": 5,
+      "canonical_values_sha256": "dacc04fa806fd2b670806c1bc4f4c89fc73f158fd73aa7504104c736f35644eb"
+    },
+    {
+      "id": "H30",
+      "matched_frozen_rows": true,
+      "rows": 4,
+      "canonical_values_sha256": "9d11d3751f57b4d2ccab1a2603d9bfd7a7f846ca852be31d6d9dffdec1b78e0c"
+    },
+    {
+      "id": "H31",
+      "matched_frozen_rows": true,
+      "rows": 3,
+      "canonical_values_sha256": "59e4cc55aee928885ec21d7d403b708e51cf54960121f1fde4eb1a3ccc0fd91e"
+    },
+    {
+      "id": "H32",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "5cf001a65caffce9555c255fa4e755e9ccc0910f00e14530db73c001c3c7a6c2"
+    },
+    {
+      "id": "H33",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "e52194383baa4491d8ce8a935dd326e0e8137faa83b2c74b6633d95798580f79"
+    },
+    {
+      "id": "H34",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "850c3dbc4de86673db5f3b2c457c0aa43a56cf973449ec575568f7cd22a752ed"
+    },
+    {
+      "id": "H35",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "b778c799c0de34cb0e40f2ea535b7397ac689f4a9e6875f1b8d4dfaad863a752"
+    },
+    {
+      "id": "H36",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "b0a2aecdd2e633b78babf2ba3a9283a9262d1feb5d5b716cb7109d4ba88d8575"
+    },
+    {
+      "id": "H37",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "72b9433eb89286c06490981d68f15810121874e210ca915f3c13614697a70697"
+    },
+    {
+      "id": "H38",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "b460c10725da9db4e69abcf8da744b680341e940a01017efe0b07fb4abb2806e"
+    },
+    {
+      "id": "H39",
+      "matched_frozen_rows": true,
+      "rows": 2,
+      "canonical_values_sha256": "a1458ce3283bf6e63e184096142756cda123827ba344de0e8229445151b50aca"
+    },
+    {
+      "id": "H40",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "af25a7d4ca260a06ee5980123369b1acf7c3574294c7acc7909d32bcd8be545f"
+    },
+    {
+      "id": "H41",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "4cdef03dd5446f0fa62662ad2ff564d3c145ea7bf920ceffa321651b9ad61742"
+    },
+    {
+      "id": "H42",
+      "matched_frozen_rows": true,
+      "rows": 6,
+      "canonical_values_sha256": "0895f53ce5bc5fffbf29728a82fbd9ca3e0bea3d354fe1bb7a9a79fb73d339ae"
+    },
+    {
+      "id": "H43",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "7dbdbf18d1f8a100ab5067b95928e47a6c021ac1f5c5f8b8a8931d05a8382baf"
+    },
+    {
+      "id": "H44",
+      "matched_frozen_rows": true,
+      "rows": 1,
+      "canonical_values_sha256": "1a17844863abf4390fa4a3d8b01ce1332d92645c2342d10c01b854f9ee45c9c8"
+    },
+    {
+      "id": "H45",
+      "matched_frozen_rows": true,
+      "rows": 2,
+      "canonical_values_sha256": "983b4af3414250453a2ecff359fb9bbb41c51cb4c6594b95f71e8e2b21388f40"
+    },
+    {
+      "id": "H46",
+      "matched_frozen_rows": true,
+      "rows": 16,
+      "canonical_values_sha256": "2e7fb87a398f5a81f3ba2b0883317e7c1281bb928b47cc75718e39be6b3a2733"
+    },
+    {
+      "id": "H47",
+      "matched_frozen_rows": true,
+      "rows": 11,
+      "canonical_values_sha256": "f9dc61c3bdf14001b438e2b96c66c6393102d1b7d5c180d41a56e080eeee76be"
+    },
+    {
+      "id": "H48",
+      "matched_frozen_rows": true,
+      "rows": 11,
+      "canonical_values_sha256": "f9dc61c3bdf14001b438e2b96c66c6393102d1b7d5c180d41a56e080eeee76be"
+    },
+    {
+      "id": "H49",
+      "matched_frozen_rows": true,
+      "rows": 0,
+      "canonical_values_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "id": "H49-guard",
+      "matched_frozen_rows": true,
+      "rows": 20,
+      "canonical_values_sha256": "5d745584177a80688266896c5f929dd2c3ad0a2dd4e8afdcce82ede21648b96c"
+    },
+    {
+      "id": "H50",
+      "matched_frozen_rows": true,
+      "rows": 7,
+      "canonical_values_sha256": "a619a8f08487ac90bc69a7632329af25fda41891da57658f2944bbce43efa604"
+    }
+  ],
+  "context_rechecks": {
+    "chronology": {
+      "matched_frozen": true,
+      "rows": 65
+    },
+    "graph_counts": {
+      "matched_frozen": true,
+      "rows": 7982
+    },
+    "ambiguity_murphy": {
+      "matched_frozen": true,
+      "rows": 19
+    }
+  },
+  "source_hashes_unchanged": true,
+  "holdout_hash_unchanged": true,
+  "limitation": "Census/chronology and every frozen evidence query/guard match; not a cryptographic whole-RDF content digest."
+}

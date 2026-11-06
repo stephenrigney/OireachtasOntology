@@ -1,0 +1,95 @@
+{
+  "utc": "2026-11-06T21:31:42.575975+00:00",
+  "purpose": "Supplemental source verification of displayed H50 primary/role annotations; no change to frozen requested Bill set or expectations.",
+  "sparql": "PREFIX a: <https://data.oireachtas.ie/ontology#>\nPREFIX m: <https://data.oireachtas.ie/ontology/members#>\nPREFIX f: <http://xmlns.com/foaf/0.1/>\nPREFIX s: <http://www.w3.org/2004/02/skos/core#>\nPREFIX dct: <http://purl.org/dc/terms/>\nPREFIX dcat: <http://www.w3.org/ns/dcat#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>\nSELECT DISTINCT ?bill ?primary ?role WHERE { GRAPH ?g { ?person a a:Member; f:name \"Catherine Connolly\". } FILTER(STRSTARTS(STR(?g), \"https://data.oireachtas.ie/graph/member/\")) GRAPH ?bg {?bill a dl:DraftLegislationWork. ?delivery dl:created_a_realization_of ?bill; dl:forms_part_of ?process. ?process dl:had_participation ?participation. ?participation dl:had_participant_person ?person.} FILTER(STRSTARTS(STR(?bg), \"https://data.oireachtas.ie/graph/bill/\"))  OPTIONAL {GRAPH ?bg {?participation a:isPrimarySponsor ?primary.}} OPTIONAL {GRAPH ?bg {?participation <http://www.w3.org/2000/01/rdf-schema#label> ?role.}} } ORDER BY ?bill ?primary ?role",
+  "response": {
+    "head": {
+      "vars": [
+        "bill",
+        "primary",
+        "role"
+      ]
+    },
+    "results": {
+      "bindings": [
+        {
+          "bill": {
+            "type": "uri",
+            "value": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/31"
+          },
+          "primary": {
+            "type": "literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#boolean",
+            "value": "false"
+          }
+        },
+        {
+          "bill": {
+            "type": "uri",
+            "value": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/70"
+          },
+          "primary": {
+            "type": "literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#boolean",
+            "value": "false"
+          }
+        },
+        {
+          "bill": {
+            "type": "uri",
+            "value": "https://data.oireachtas.ie/ie/oireachtas/bill/2020/26"
+          },
+          "primary": {
+            "type": "literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#boolean",
+            "value": "false"
+          }
+        },
+        {
+          "bill": {
+            "type": "uri",
+            "value": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/35"
+          },
+          "primary": {
+            "type": "literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#boolean",
+            "value": "false"
+          }
+        },
+        {
+          "bill": {
+            "type": "uri",
+            "value": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/47"
+          },
+          "primary": {
+            "type": "literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#boolean",
+            "value": "false"
+          }
+        },
+        {
+          "bill": {
+            "type": "uri",
+            "value": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/33"
+          },
+          "primary": {
+            "type": "literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#boolean",
+            "value": "false"
+          }
+        },
+        {
+          "bill": {
+            "type": "uri",
+            "value": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/40"
+          },
+          "primary": {
+            "type": "literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#boolean",
+            "value": "false"
+          }
+        }
+      ]
+    }
+  }
+}
