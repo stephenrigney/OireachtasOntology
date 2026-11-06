@@ -167,6 +167,9 @@ def test_dashboard_initial_state_and_stage_accessibility(tmp_path):
     assert 'class="stage-tabs" role="tablist" aria-label="Query processing stages"' in template
     assert 'ArrowLeft' in template and 'ArrowRight' in template
     assert 'name="correct"' in template
+    assert "html { min-height:100%; background:var(--page); }" in template
+    assert "background:transparent;" in template
+    assert "{% set compiled_ready = sparql or plan_json %}" in template
 
 
 def test_blocked_query_stage_does_not_claim_compilation_or_execution(tmp_path, monkeypatch):
@@ -178,6 +181,29 @@ def test_blocked_query_stage_does_not_claim_compilation_or_execution(tmp_path, m
     with TestClient(app) as client:
         page = client.post("/ask", data={"question": "Unsupported question", "mode": "phase2"}).text
     assert 'id="tab-interpreted"' in page
-    assert 'id="tab-compiled" aria-controls="panel-compiled" aria-selected="false" disabled' in page
+    assert 'id="tab-compiled"' in page and 'aria-controls="panel-compiled"' in page and 'disabled><span class="stage-num">02' in page
+    assert 'id="tab-executed" aria-controls="panel-executed" aria-selected="false"' in page
     assert "Compilation was not reached; no validated plan or SPARQL was produced." in page
     assert "No answer query was executed after this resolution failure." in page
+    assert "Resolution diagnostics" in page or "No answer query was executed after this resolution failure." in page
+    assert "<details open>" not in page
+
+
+def test_stage_explanations_and_diagnostics_are_scoped_to_their_tab(tmp_path):
+    template = (app_module.TEMPLATES / "index.html").read_text(encoding="utf-8")
+    interpreted = template.split('id="panel-interpreted"', 1)[1].split('id="panel-compiled"', 1)[0]
+    compiled = template.split('id="panel-compiled"', 1)[1].split('id="panel-executed"', 1)[0]
+    executed = template.split('id="panel-executed"', 1)[1].split('</div>', 1)[0]
+    assert "plan_json" not in interpreted and "resolution diagnostics" in interpreted.lower()
+    assert "plan_json" in compiled and "SPARQL compilation did not produce a query" in compiled
+    assert "debug_output" in executed and "Raw {{ debug_source or \"endpoint\" }} response payload" in executed
+    assert "execution_failure" in executed and "Execution outcome is unavailable" in executed
+    assert '<details{% if executed_ready and (error or debug_message) %} open{% endif %}>' in executed
+
+
+def test_feedback_retry_does_not_clear_user_answers():
+    template = (app_module.TEMPLATES / "index.html").read_text(encoding="utf-8")
+    assert 'catch (error) { message.textContent = `${error.message} Please retry; the record was not confirmed saved.`; }' in template
+    assert 'finally { if (!saved) submit.disabled = false; }' in template
+    assert "form.reset()" not in template
+    assert 'expected.value' in template

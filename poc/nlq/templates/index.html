@@ -6,8 +6,9 @@
   <title>Oireachtas NLQ POC</title>
   <style>
     :root { color-scheme: light; --page:#F6F3EA; --card:#fff; --inset:#F7F6F2; --ink:#202124; --secondary:#4A463D; --gold:#6B5922; --gold-hover:#473A16; --border:#ABB0B6; --separator:#D4D7DB; --success:#146B37; --failure:#A3272F; --focus:#3F3414; }
+    html { min-height:100%; background:var(--page); }
     * { box-sizing:border-box; }
-    body { max-width: 1240px; margin: 0 auto; padding: 24px 30px 56px; font: 1rem/1.55 "IBM Plex Sans",system-ui,sans-serif; color:var(--ink); background:var(--page); }
+    body { max-width: 1240px; margin: 0 auto; padding: 24px 30px 56px; font: 1rem/1.55 "IBM Plex Sans",system-ui,sans-serif; color:var(--ink); background:transparent; }
     header { border-bottom:3px solid var(--gold); padding:0 12px 18px; margin-bottom:20px; }
     header .eyebrow { margin:0 0 2px; color:var(--gold); font-weight:700; letter-spacing:.04em; }
     header h1 { margin:0; font-size:clamp(2rem,4vw,2.5rem); line-height:1.2; }
@@ -167,13 +168,6 @@
   </section>
   {% endif %}
 
-  {% if interpretation %}
-  <section>
-    <h2>Interpreted as</h2>
-    <p>{{ interpretation }}</p>
-  </section>
-  {% endif %}
-
   {% if result %}
   <section aria-live="polite">
     <h2>Results</h2>
@@ -196,77 +190,37 @@
   {% if question %}
   <section id="query-processing">
     <h2>How this query was processed</h2>
-    {% set interpreted_ready = interpretation or plan_explanation or error or ambiguity or clarification %}
+    {% set interpreted_ready = interpretation or plan_explanation or error or ambiguity or clarification or entity_outcomes %}
     {% set compiled_ready = sparql or plan_json %}
-    {% set executed_ready = result or error or interaction_status or debug_message %}
+    {% set executed_ready = result or interaction_status in ["execution_failure", "query_execution_failed"] or (debug_message and ("query executed." in debug_message|lower or "query ran," in debug_message|lower or "query failed" in debug_message|lower)) %}
+    {% set initial_stage = "interpreted" if interpreted_ready else ("compiled" if compiled_ready else ("executed" if executed_ready else "interpreted")) %}
     <div class="stage-tabs" role="tablist" aria-label="Query processing stages">
-      <button type="button" role="tab" id="tab-interpreted" aria-controls="panel-interpreted" aria-selected="true" {% if not interpreted_ready %}disabled{% endif %}><span class="stage-num">01</span>Interpreted</button>
-      <button type="button" role="tab" id="tab-compiled" aria-controls="panel-compiled" aria-selected="false" {% if not compiled_ready %}disabled{% endif %}><span class="stage-num">02</span>Compiled</button>
-      <button type="button" role="tab" id="tab-executed" aria-controls="panel-executed" aria-selected="false" {% if not executed_ready %}disabled{% endif %}><span class="stage-num">03</span>Executed</button>
+      <button type="button" role="tab" id="tab-interpreted" aria-controls="panel-interpreted" aria-selected="{{ 'true' if initial_stage == 'interpreted' else 'false' }}" tabindex="{{ '0' if initial_stage == 'interpreted' else '-1' }}" {% if not interpreted_ready %}disabled{% endif %}><span class="stage-num">01</span>Interpreted</button>
+      <button type="button" role="tab" id="tab-compiled" aria-controls="panel-compiled" aria-selected="{{ 'true' if initial_stage == 'compiled' else 'false' }}" tabindex="{{ '0' if initial_stage == 'compiled' else '-1' }}" {% if not compiled_ready %}disabled{% endif %}><span class="stage-num">02</span>Compiled</button>
+      <button type="button" role="tab" id="tab-executed" aria-controls="panel-executed" aria-selected="{{ 'true' if initial_stage == 'executed' else 'false' }}" tabindex="{{ '0' if initial_stage == 'executed' else '-1' }}" {% if not executed_ready %}disabled{% endif %}><span class="stage-num">03</span>Executed</button>
     </div>
-    <div class="stage-panel" role="tabpanel" id="panel-interpreted" aria-labelledby="tab-interpreted">
+    <div class="stage-panel" role="tabpanel" id="panel-interpreted" aria-labelledby="tab-interpreted" {% if initial_stage != 'interpreted' %}hidden{% endif %}>
+      <h3>Interpreted as</h3>
       {% if plan_explanation %}<p><strong>{{ plan_explanation.summary }}</strong></p><p>{% if plan_explanation.validated %}Validated plan{% else %}Interpretation available; no validated plan was produced.{% endif %}</p>{% elif interpretation %}<p>{{ interpretation }}</p>{% elif error %}<p>Interpretation did not resolve to an executable request: {{ error }}</p>{% else %}<p>No interpretation output is available.</p>{% endif %}
       {% if entity_outcomes or clarification or ambiguity %}<p>Entity resolution or clarification evidence is shown in the result above.</p>{% endif %}
+      {% if plan_explanation %}
+      {% if plan_explanation.answer_text %}<h3>Expected answer shape</h3><p>{{ plan_explanation.answer_text }}</p>{% endif %}
+      {% if plan_explanation.entities %}<h3>Who or what it concerns</h3><ul>{% for entity in plan_explanation.entities %}<li>{{ entity.label }}: {{ entity.human_resolution }}{% if entity.candidates %}; possible matches: {% for candidate in entity.candidates %}{{ candidate.label }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</li>{% endfor %}</ul>{% endif %}
+      {% if plan_explanation.requirements %}<h3>Relationships</h3><ul>{% for req in plan_explanation.requirements %}<li>{% if req.subject_label %}{{ req.subject_label }}{% else %}Members{% endif %} — {{ req.description|replace("A Member's ", "")|replace("A Member's", "") }}{% if req.object_label %} with {{ req.object_label }}{% endif %}</li>{% endfor %}</ul>{% endif %}
+      {% if plan_explanation.filters or plan_explanation.temporal %}<h3>Conditions</h3><ul>{% for filter in plan_explanation.filters %}<li>{{ filter.plain }}</li>{% endfor %}{% for item in plan_explanation.temporal %}<li>{% if item.kind == 'on' %}On {{ item.date }}{% elif item.kind == 'before' %}Before {{ item.date }}{% elif item.kind == 'after' %}After {{ item.date }}{% elif item.kind == 'during' %}During the referenced parliamentary period{% elif item.kind == 'current' %}Currently{% elif item.kind == 'interval' %}Between {{ item.start }} and {{ item.end }}{% endif %}</li>{% endfor %}</ul>{% endif %}
+      {% if plan_explanation.failure %}<p><strong>Why it did not run:</strong> {{ plan_explanation.failure }}</p>{% elif plan_explanation.blocked_reason %}<p><strong>Why it did not run:</strong> {{ plan_explanation.blocked_reason }}</p>{% endif %}
+      {% endif %}
+      {% if plan_explanation and plan_explanation.requirements %}<details><summary>Detailed plan explanation</summary><ul>{% for req in plan_explanation.requirements %}<li>{{ req.description }} — {{ req.subject_label }}{% if req.object_label %} → {{ req.object_label }}{% endif %}</li>{% endfor %}</ul></details>{% endif %}
+      {% if not executed_ready and (debug_output or debug_message) %}<details><summary>{% if debug_source == "Local Member resolution" %}Local Member resolution evidence{% else %}Resolution diagnostics{% if debug_source %} — {{ debug_source }}{% endif %}{% endif %}</summary>{% if debug_message %}<p>{{ debug_message }}</p>{% endif %}{% if debug_output %}<pre><code>{{ debug_output }}</code></pre>{% endif %}</details>{% endif %}
     </div>
-    <div class="stage-panel" role="tabpanel" id="panel-compiled" aria-labelledby="tab-compiled" hidden>
-      {% if compiled_ready %}<p>Compiler output is available below in the technical details.</p>{% else %}<p>Compilation was not reached; no validated plan or SPARQL was produced.</p>{% endif %}
+    <div class="stage-panel" role="tabpanel" id="panel-compiled" aria-labelledby="tab-compiled" {% if initial_stage != 'compiled' %}hidden{% endif %}>
+      {% if plan_json %}<p>A validated plan was produced.</p><details><summary>{{ plan_heading or "Validated query plan" }}</summary><pre><code>{{ plan_json }}</code></pre></details>{% endif %}
+      {% if sparql %}<p>SPARQL was generated.</p><details><summary>Generated SPARQL</summary><pre><code>{{ sparql }}</code></pre></details>{% elif plan_json %}<p>SPARQL compilation did not produce a query; the validated plan alone does not establish generated SPARQL.</p>{% else %}<p>Compilation was not reached; no validated plan or SPARQL was produced.</p>{% endif %}
     </div>
-    <div class="stage-panel" role="tabpanel" id="panel-executed" aria-labelledby="tab-executed" hidden>
-      {% if result %}<p>Query result is shown above.{% if result_notice %} {{ result_notice }}{% endif %}</p>{% elif debug_message %}<p>{{ debug_message }}</p>{% elif error %}<p>{{ error }}</p>{% else %}<p>Execution outcome is unavailable; no success is implied.</p>{% endif %}
+    <div class="stage-panel" role="tabpanel" id="panel-executed" aria-labelledby="tab-executed" {% if initial_stage != 'executed' %}hidden{% endif %}>
+      {% if result %}<p>Query result is shown above.{% if result_notice %} {{ result_notice }}{% endif %}</p>{% if debug_message %}<p>{{ debug_message }}</p>{% endif %}{% elif interaction_status in ['execution_failure', 'query_execution_failed'] %}<p>{{ error or debug_message or "Execution was attempted but did not complete." }}</p>{% elif executed_ready %}<p>{{ debug_message }}</p>{% elif error %}<p>Execution was not reached: {{ error }}</p>{% else %}<p>Execution outcome is unavailable; no success is implied.</p>{% endif %}
+      {% if debug_output %}<details{% if executed_ready and (error or debug_message) %} open{% endif %}><summary>{% if debug_source == "Local Member resolution" %}Local Member resolution evidence{% else %}Query debugger: Raw {{ debug_source or "endpoint" }} response payload{% endif %}</summary><pre><code>{{ debug_output }}</code></pre></details>{% elif debug_message and error %}<details><summary>Developer diagnostics</summary><p>{{ debug_message }}</p><p>No response payload was received from {{ debug_source or "the endpoint" }}.</p></details>{% endif %}
     </div>
-  </section>
-  {% endif %}
-  {% if plan_explanation %}
-  <section>
-    <h2>Interpretation details</h2>
-    <p><strong>{{ plan_explanation.summary }}</strong></p>
-    <p>{% if plan_explanation.validated %}Validated plan{% else %}Draft plan — not validated; this is only the planner's proposal{% endif %}</p>
-    {% if plan_explanation.entities %}<h3>Who or what it concerns</h3><ul>{% for entity in plan_explanation.entities %}<li>{{ entity.label }}: {{ entity.human_resolution }}{% if entity.candidates %}; possible matches: {% for candidate in entity.candidates %}{{ candidate.label }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</li>{% endfor %}</ul>{% endif %}
-    {% if plan_explanation.requirements %}<h3>Relationships</h3><ul>{% for req in plan_explanation.requirements %}<li>{% if req.subject_label %}{{ req.subject_label }}{% else %}Members{% endif %} — {{ req.description|replace("A Member's ", "")|replace("A Member's", "") }}{% if req.object_label %} with {{ req.object_label }}{% endif %}</li>{% endfor %}</ul>{% endif %}
-    {% if plan_explanation.filters or plan_explanation.temporal %}<h3>Conditions</h3><ul>{% for filter in plan_explanation.filters %}<li>{{ filter.plain }}</li>{% endfor %}{% for item in plan_explanation.temporal %}<li>{% if item.kind == 'on' %}On {{ item.date }}{% elif item.kind == 'before' %}Before {{ item.date }}{% elif item.kind == 'after' %}After {{ item.date }}{% elif item.kind == 'during' %}During the referenced parliamentary period{% elif item.kind == 'current' %}Currently{% elif item.kind == 'interval' %}Between {{ item.start }} and {{ item.end }}{% endif %}</li>{% endfor %}</ul>{% endif %}
-    <h3>Expected answer</h3><p>{{ plan_explanation.answer_text }}</p>
-    {% if plan_explanation.failure %}<p><strong>Why it did not run:</strong> {{ plan_explanation.failure }}</p>{% elif plan_explanation.blocked_reason %}<p><strong>Why it did not run:</strong> {{ plan_explanation.blocked_reason }}</p>{% endif %}
-    <details><summary>Technical plan details</summary>
-      {% if plan_explanation.requirements %}<ul>{% for req in plan_explanation.requirements %}<li>{{ req.description }} — {{ req.subject_label }}{% if req.object_label %} → {{ req.object_label }}{% endif %}</li>{% endfor %}</ul>{% endif %}
-      {% if plan_explanation.filters %}<ul>{% for filter in plan_explanation.filters %}<li>{{ filter.description }} ({{ filter.operator }} {{ filter.value }})</li>{% endfor %}</ul>{% endif %}
-      {% if plan_explanation.blocked_reason %}<p>{{ plan_explanation.blocked_reason }}</p>{% endif %}
-    </details>
-  </section>
-  {% endif %}
-
-  {% if sparql %}
-    {% if mode == "phase2" %}
-    <details>
-      <summary>Generated SPARQL</summary>
-      <pre><code>{{ sparql }}</code></pre>
-    </details>
-    {% else %}
-  <section>
-    <h2>Generated SPARQL</h2>
-    <pre><code>{{ sparql }}</code></pre>
-  </section>
-    {% endif %}
-  {% endif %}
-
-  {% if plan_json %}
-  <details>
-    <summary>{{ plan_heading or "Interpreted query plan" }}</summary>
-    <pre><code>{{ plan_json }}</code></pre>
-  </details>
-  {% endif %}
-
-  {% if debug_message or debug_output %}
-  <section class="debug-panel" aria-live="polite">
-    <h2>Query debugger</h2>
-    {% if debug_message %}<p>{{ debug_message }}</p>{% endif %}
-    {% if debug_output %}
-    <details open>
-      <summary>{% if debug_source == "Local Member resolution" %}Local Member resolution evidence{% else %}Raw {{ debug_source or "endpoint" }} response payload{% endif %}</summary>
-      <pre><code>{{ debug_output }}</code></pre>
-    </details>
-    {% elif error %}
-    <p>No response payload was received from {{ debug_source or "the endpoint" }}.</p>
-    {% endif %}
   </section>
   {% endif %}
 

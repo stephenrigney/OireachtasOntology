@@ -587,6 +587,11 @@ def test_browser_renders_result_and_exact_sparql(monkeypatch):
     assert "<th scope=\"col\">name</th>" in response.text
     assert "A Member" in response.text
     assert "Generated SPARQL" in response.text
+    compiled_tab = response.text.split('id="tab-compiled"', 1)[1].split("</button>", 1)[0]
+    executed_tab = response.text.split('id="tab-executed"', 1)[1].split("</button>", 1)[0]
+    assert "disabled" not in compiled_tab and 'id="panel-compiled"' in response.text
+    assert "disabled" not in executed_tab and 'id="panel-executed"' in response.text
+    assert 'id="tab-interpreted"' in response.text and 'aria-selected="true"' in response.text
     assert (
         "PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n"
         "SELECT ?name WHERE { ?m foaf:name ?name }\nLIMIT 100"
