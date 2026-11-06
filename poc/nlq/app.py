@@ -229,6 +229,7 @@ def create_app(
                     "committee_boolean", "committee_count", "house_terms", "dail_all",
                 }
                 plan_family = outcome.plan.get("family") if outcome.plan else outcome.request_family
+                is_office_holding_evidence = plan_family == "office_holding_evidence"
                 is_shared_dail_terms = plan_family == "shared_dail_terms"
                 is_member_relationship_composition = plan_family == "member_relationship_composition"
                 composition_refs = (outcome.plan or {}).get("referents", {})
@@ -262,7 +263,7 @@ def create_app(
                 is_government = plan_family == "government_party_members"
                 is_composable_semantic = (
                     is_shared_dail_terms or is_member_relationship_composition or is_representation or is_government
-                    or plan_family == "composable_semantic"
+                    or is_office_holding_evidence or plan_family == "composable_semantic"
                 )
                 stage_a_family = (plan_family if plan_family in stage_a_family_ids else
                                   parsed_stage_a.family if parsed_stage_a else None)
@@ -467,7 +468,13 @@ def create_app(
                            if is_q06 else ("Find the requested actual DebateSitting and its official record link."
                                              if is_debate else
                                              (q35_summary if is_q35 else
-                                               (q23_summary if is_q23 else "Find distinct Members who represented this constituency in the previous Dáil."))))
+                                                (q23_summary if is_q23 else "Find distinct Members who represented this constituency in the previous Dáil."))))
+                if is_office_holding_evidence:
+                    summary = (
+                        "Resolve the exact local Member and reviewed NamedOffice identities, then return each separately "
+                        "recorded accepted OfficeHolding episode with its validated interval. This is incomplete local "
+                        "evidence, not a complete career timeline."
+                    )
                 if is_representation:
                     current_representation = "selector" in composition_refs.get("term", {})
                     summary = (
@@ -515,6 +522,11 @@ def create_app(
                                 if is_stage_a else
                                  "Distinct Dáil-term identities present in both independently resolved Member membership paths."
                                  if is_shared_dail_terms else "Distinct Members, displayed by name.")
+                if is_office_holding_evidence:
+                    answer_text = (
+                        "Each row is one distinct accepted OfficeHolding episode with its validated interval. Local records "
+                        "may be incomplete; separate episodes are not merged and gaps do not establish absence."
+                    )
                 if (is_member_relationship_composition and outcome.plan
                         and outcome.plan.get("answer", {}).get("kind") == "count"):
                     answer_text = (
@@ -615,6 +627,11 @@ def create_app(
                         query_message = "The validated read-only answer query executed."
                     elif outcome.status == "execution_failure":
                         query_message = "The validated answer query was sent, but execution did not complete."
+                    elif is_office_holding_evidence and outcome.sparql:
+                        query_message = (
+                            "The bounded OfficeHolding evidence query did not produce a complete validated result; "
+                            "no partial episode list was returned."
+                        )
                     elif outcome.sparql:
                         query_message = "The answer SPARQL was generated but not executed because an essential identity or source-evidence check failed."
                     else:

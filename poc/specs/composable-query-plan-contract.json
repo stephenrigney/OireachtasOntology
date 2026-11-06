@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "contractId": "https://data.oireachtas.ie/specs/composable-query-plan-contract",
   "schemaVersion": 1,
-  "contractVersion": "2.24.0",
+  "contractVersion": "2.25.0",
   "planVersion": 2,
   "scope": "Local Oireachtas query planning; Stage A, Stage B and Stage C plans use one shared typed v2 envelope with closed family-specific semantic projections.",
   "interpretationPolicy": {
@@ -55,7 +55,7 @@
     "capabilities": [
       {"id": "member_lookup", "handler": "stage_a", "input": "member_and_house", "semantics": "Ground exact full-name or whole-name-token partial mentions without assuming a full name. Deputy/TD requires recorded DailMembership; Senator requires Seanad service. Distinct people remain candidates. An opaque choice resumes this same validated lookup after rechecking source identities."},
       {"id": "dail_parties_and_groups", "handler": "stage_c", "input": "term_number_and_group_scope", "semantics": "List recorded ParliamentaryParty identities in exactly one explicitly numbered Dáil using the existing term-scoped compiler. Only report missing ParliamentaryGroup data if groups were requested."},
-      {"id": "office_holding_evidence", "handler": "evidence_boundary", "input": "member_and_office", "semantics": "Check exact Member and accepted NamedOffice identity evidence for a tenure request. An absent accepted office registry identity is missing/unaccepted evidence, not an invented tenure. Registry presence alone does not implement a complete-career tenure projection. Unreviewed observations are not OfficeHolding evidence."},
+      {"id": "office_holding_evidence", "handler": "composable_office_evidence", "input": "member_and_office", "semantics": "Resolve one exact Member and one reviewed NamedOffice identity, then return every locally recorded accepted OfficeHolding episode for that exact pair with its exact validated interval using complete bounded pagination. Accept only an unfiltered when/date/period question, 'When did [member] serve as [office]?', or 'During what period was [member] [office]?'. Missing, conflicting, malformed, or uncertain accepted interval evidence fails closed for the whole projection. The result is explicitly incomplete local-recorded episodes, not a complete career/tenure history; do not infer first start, final end, total duration, a single merged tenure, or absence from gaps. Unreviewed observations are not OfficeHolding evidence. Election-event and duration questions or extra filters remain unsupported."},
       {"id": "office_holding_window", "handler": "composable_office", "input": "office_and_calendar_period_or_current_office_point", "semantics": "Reuse accepted dated OfficeHolding overlap for an explicit calendar-date point, full calendar month, full calendar year, explicit month-to-month window, or a date-less present/current named-office question whose local executor injects configured asOf as one inclusive calendar-date point. The planner must not invent that date. Date and calendar-window semantics remain distinct; a partial-window match is not service throughout. Preserve exact accepted holding intervals and fail closed on missing/conflicting/uncertain evidence; absent matches do not imply no holder. A current-point result is only locally evidenced holdings and never certifies a complete current-office roster."},
       {
         "id": "seanad_entry",

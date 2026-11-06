@@ -113,7 +113,10 @@ The structured route exposes `answer`, `clarification_required`,
 `validation_failure`, and `execution_failure` as `data-outcome` on the response.
 Candidate lists and interpretations are not answers. Office-registry absence is
 reported as missing accepted evidence, not an invented tenure; first-election
-questions remain outside the queryable election-event capability. See the
+questions remain outside the queryable election-event capability. A narrow
+named-Member/office question can list all locally recorded accepted OfficeHolding
+episodes with validated intervals, but the result is explicitly incomplete local
+evidence, not a complete career history. See the
 [bounded acceptance report](../reports/query-service/interpretation-clarification.md).
 
 Phase 2 is complete. The accepted structured local-query path is:
@@ -222,6 +225,19 @@ complete current-office roster. Missing, conflicting or uncertain evidence
 fails closed, and no match does not establish that the office has no holder.
 Date-less past-tense requests, tenure durations and election-event questions
 are not converted into current-point queries.
+
+Composable contract `2.25.0` adds named-Member office-evidence episodes for one
+exact Member and one reviewed NamedOffice. It accepts the unfiltered forms
+“When was [member] [office]?”, “What dates/periods was [member] [office]?”,
+“When did [member] serve as [office]?”, and “During what period was [member]
+[office]?”. It preserves each accepted OfficeHolding identity and interval,
+fully paginates the bounded result, and fails closed if any returned episode has
+missing, malformed, or conflicting interval evidence. Results are labeled
+**incomplete local-recorded episodes**: they do not establish a complete tenure
+timeline, a first/final boundary, total duration, or absence of service during
+gaps. Unreviewed office observations are not queried as holdings. Election-event
+and tenure-duration questions, and requests with additional filters, remain
+unsupported.
 
 Composable contract `2.22.0` adds a bounded anchored shared-constituency list/count
 within the existing Member relationship composition. It accepts one exact

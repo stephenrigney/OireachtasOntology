@@ -3740,7 +3740,7 @@ def _compile_office_evidence(mapping, *, supported_predicates):
   }}
   FILTER(STRSTARTS(STR(?memberGraph), {member_prefix}))
   GRAPH <{mapping["office_graph"]}> {{ {office_iri} a {mapping["office_type"]} ; {mapping["office_label"]} ?officeLabel . }}
-}} ORDER BY ?memberName ?holding_holding ?holdingStart ?holdingEnd'''
+}} ORDER BY ?member_member ?memberName ?holding_holding ?holdingDateRange ?holdingStart ?holdingEnd LIMIT 100'''
     return _query(query, supported_predicates)
 
 
@@ -3867,6 +3867,80 @@ def inspect_office_holding_evidence(
         if end is None or end >= lower:
             overlapping.add(holding_iri)
     return bool(result.rows), frozenset(overlapping), tuple(sorted(issues))
+
+
+def readable_member_office_evidence_result(
+    result: QueryResult,
+    *,
+    member_iri: str,
+    member_label: str,
+    office_label: str,
+) -> QueryResult:
+    """Return each validated accepted holding episode without joining tenure gaps."""
+    if result.kind != "select":
+        raise NLQError("Office-holding evidence query returned an unexpected result kind.")
+    required = {
+        "member_member", "memberName", "holding_holding", "holdingDateRange",
+        "holdingStart", "holdingEnd",
+    }
+    if not required.issubset(result.columns):
+        raise NLQError("Office-holding evidence query omitted required identity or date bindings.")
+    indexes = {name: result.columns.index(name) for name in required}
+    expected_member = _require_local_iri(member_iri, "Member")
+    by_holding: dict[str, tuple[str, str, datetime, datetime | None]] = {}
+    for row in result.rows:
+        if len(row) <= max(indexes.values()):
+            raise NLQError("Office-holding evidence query returned a truncated row.")
+        row_member = _require_local_iri(row[indexes["member_member"]], "Member")
+        if row_member != expected_member:
+            raise NLQError("Office-holding evidence escaped the exact resolved Member identity.")
+        holding = _require_local_iri(row[indexes["holding_holding"]], "OfficeHolding")
+        range_iri = row[indexes["holdingDateRange"]]
+        if range_iri in {"—", ""}:
+            raise NLQError("An accepted OfficeHolding has no typed date range; no partial episode list was returned.")
+        _require_local_iri(range_iri, "DateRange")
+        start_text = row[indexes["holdingStart"]]
+        end_text = row[indexes["holdingEnd"]]
+        start, start_error = _office_datetime_binding(start_text)
+        if start_error or start is None:
+            raise NLQError(
+                "An accepted OfficeHolding has no valid start-date evidence; no partial episode list was returned."
+            )
+        end, end_error = _office_datetime_binding(end_text)
+        if end_error:
+            raise NLQError(
+                "An accepted OfficeHolding has invalid end-date evidence; no partial episode list was returned."
+            )
+        if end is not None and end < start:
+            raise NLQError(
+                "An accepted OfficeHolding ends before it starts; no partial episode list was returned."
+            )
+        evidence = (row_member, range_iri, start, end)
+        previous = by_holding.get(holding)
+        if previous is not None and previous != evidence:
+            raise NLQError(
+                "One accepted OfficeHolding has conflicting Member or interval evidence; no partial episode list was returned."
+            )
+        by_holding[holding] = evidence
+
+    rows = [
+        (
+            member_label,
+            office_label,
+            holding,
+            _display_office_datetime(evidence[2]),
+            (_display_office_datetime(evidence[3]) if evidence[3] is not None
+             else "Open-ended (no end date recorded)"),
+        )
+        for holding, evidence in by_holding.items()
+    ]
+    rows.sort(key=lambda row: (row[3], row[2]))
+    return QueryResult(
+        "select",
+        ("Member", "Reviewed office", "OfficeHolding identity", "Start date", "End date"),
+        tuple(rows),
+        result.raw_json,
+    )
 
 
 def readable_member_result(result: QueryResult) -> QueryResult:
@@ -5614,8 +5688,12 @@ def _execute_member_relationship_composition_plan(
         evidence = fuseki.query(evidence_query)
         try:
             required = {"holding_holding", "holdingDateRange", "holdingStart", "holdingEnd"}
-            if evidence.kind != "select" or not required.issubset(evidence.columns) or not evidence.rows or len(evidence.rows) >= 100:
+            if evidence.kind != "select" or not required.issubset(evidence.columns) or not evidence.rows:
                 raise NLQError("No bounded accepted OfficeHolding evidence is available; missing evidence is not a historical negative.")
+            if len(evidence.rows) >= 100:
+                raise NLQError(
+                    "The accepted anchor OfficeHolding evidence reached the 100-row safety cap; no answer query was run."
+                )
             ranges = {}
             for row in evidence.rows:
                 holding = row[evidence.columns.index("holding_holding")]

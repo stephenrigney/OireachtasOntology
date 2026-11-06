@@ -159,29 +159,89 @@ def validate_default(plan: dict, *, constituency: str, current: bool) -> None:
 
 
 def office_holding_boundary(parameters, *, fuseki, supported_predicates):
-    """Diagnose accepted-registry absence without inventing a tenure operation.
+    """Return bounded accepted office episodes for one exact Member and office.
 
-    Only the existing exact Member/NamedOffice resolver is used. Raw ministerial
-    observations and membership starts are deliberately not consulted.
+    These local episodes are not treated as a complete career timeline. Raw
+    ministerial observations and parliamentary-membership dates are deliberately
+    not consulted.
     """
-    from .composable_plan import PlanOutcome, member_resolution_query, resolve_member, AmbiguousMember
+    from .composable_plan import (
+        AmbiguousMember,
+        PlanError,
+        PlanOutcome,
+        _compile_office_evidence,
+        _reviewed_office_mapping,
+        member_resolution_query,
+        readable_member_office_evidence_result,
+        resolve_member,
+    )
     from .member_resolution import resolve_local_entity_label
     from .errors import NLQError, IdentityNotFound, QueryLimitError
     try:
-        resolve_member(fuseki.query(member_resolution_query(parameters["member"], supported_predicates=supported_predicates)), parameters["member"])
+        member_iri, member_label = resolve_member(
+            fuseki.query(member_resolution_query(parameters["member"], supported_predicates=supported_predicates)),
+            parameters["member"],
+        )
         office = resolve_local_entity_label("NamedOffice", parameters["office"], fuseki,
-                                           supported_predicates=supported_predicates)
+                                            supported_predicates=supported_predicates)
     except AmbiguousMember as error:
-        return PlanOutcome("ambiguous", diagnostic=str(error), candidates=error.candidates, request_family="composable_semantic")
+        return PlanOutcome("ambiguous", diagnostic=str(error), candidates=error.candidates,
+                           request_family="office_holding_evidence")
     except NLQError as error:
         status = "not_found" if isinstance(error, IdentityNotFound) else "validation_failure" if isinstance(error, QueryLimitError) else "source_data_unavailable"
-        return PlanOutcome(status, diagnostic=str(error), request_family="composable_semantic")
+        return PlanOutcome(status, diagnostic=str(error), request_family="office_holding_evidence")
     if office.state == "unresolved":
-        return PlanOutcome("source_data_unavailable", request_family="composable_semantic",
+        return PlanOutcome("source_data_unavailable", request_family="office_holding_evidence",
                            diagnostic=f"No accepted local NamedOffice identity is available for {parameters['office']}; accepted OfficeHolding evidence cannot establish this tenure. Unreviewed ministerial observations are not accepted holdings.")
     if office.state == "ambiguous":
-        return PlanOutcome("ambiguous", request_family="composable_semantic",
+        return PlanOutcome("ambiguous", request_family="office_holding_evidence",
                            candidates=tuple({"iri": c.iri, "label": c.label} for c in office.candidates),
                            diagnostic="Several accepted office identities match; none was selected.")
-    return PlanOutcome("unsupported_request", request_family="composable_semantic",
-                       diagnostic="The office identity is recorded, but this service has no complete-career Member/office tenure projection. Accepted dated office-overlap queries remain available; no tenure answer was inferred.")
+    if office.state != "resolved" or len(office.candidates) != 1:
+        return PlanOutcome("source_data_unavailable", request_family="office_holding_evidence",
+                           diagnostic="The local office resolver did not return one usable reviewed identity.")
+
+    office_candidate = office.candidates[0]
+    evidence_query = None
+    try:
+        from .pagination import select_pages
+
+        mapping = _reviewed_office_mapping()
+        mapping["member_iri"] = member_iri
+        mapping["office_iri"] = office_candidate.iri
+        evidence_query = _compile_office_evidence(mapping, supported_predicates=supported_predicates)
+        evidence = select_pages(
+            evidence_query, fuseki=fuseki, supported_predicates=supported_predicates,
+        )
+        if not evidence.rows:
+            return PlanOutcome(
+                "source_data_unavailable", sparql=evidence_query,
+                request_family="office_holding_evidence",
+                diagnostic=(f"No accepted local OfficeHolding episode for {member_label} as "
+                            f"{office_candidate.label} is recorded; tenure cannot be determined from local evidence."),
+            )
+        result = readable_member_office_evidence_result(
+            evidence,
+            member_iri=member_iri,
+            member_label=member_label,
+            office_label=office_candidate.label,
+        )
+    except PlanError as error:
+        return PlanOutcome("unsupported_mapping", request_family="office_holding_evidence",
+                           diagnostic=f"The reviewed office-holding mapping could not be used safely: {error}")
+    except NLQError as error:
+        return PlanOutcome(
+            "source_data_unavailable", sparql=evidence_query,
+            request_family="office_holding_evidence",
+            diagnostic=("Accepted local OfficeHolding episodes could not be read completely or their intervals "
+                        f"are missing, conflicting, or uncertain ({error}); no partial episode list was returned."),
+        )
+
+    return PlanOutcome(
+        "success", sparql=evidence_query, result=result,
+        request_family="office_holding_evidence",
+        diagnostic=(f"INCOMPLETE LOCAL-RECORDED EPISODES for {member_label} as {office_candidate.label}. "
+                    "Each row is a separate locally recorded accepted OfficeHolding with its mapped interval. "
+                    "This is not a complete career or tenure history; gaps in local records do not mean the "
+                    "Member was not in office."),
+    )

@@ -232,6 +232,23 @@ def test_q35_inclusive_overlap_returns_changes_boundaries_open_ends_and_distinct
     assert "historical completeness is not certified" in outcome.diagnostic
 
 
+def test_q35_100_row_office_evidence_cap_rejects_instead_of_returning_partial_holders():
+    fixture = Q35Fixture(with_holders=False)
+    for index in range(100):
+        fixture.add_member(
+            f"cap-holder-{index:03d}", f"Cap Holder {index:03d}",
+            [("2021-01-01T00:00:00", "2022-01-01T00:00:00")],
+        )
+
+    outcome = _run(fixture)
+
+    assert outcome.status == "insufficient_holding_evidence"
+    assert outcome.result is None
+    assert "100-row safety cap" in outcome.diagnostic
+    assert outcome.sparql == fixture.queries[-1]
+    assert len(fixture.queries) == 2  # office identity plus evidence; no answer query
+
+
 def test_q35_missing_or_wrong_start_evidence_is_excluded_and_reported_as_insufficient():
     fixture = Q35Fixture()
     fixture.add_member("missing-start", "Missing Start Holder", [(None, "2022-12-31T00:00:00")])

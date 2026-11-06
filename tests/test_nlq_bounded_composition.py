@@ -242,6 +242,27 @@ def test_q3_independent_paths_common_intersection_and_partial_coverage(monkeypat
     assert outcome.sparql == compile_member_relationship_composition_query(outcome.plan, supported_predicates=PREDICATES)
 
 
+def test_q3_anchor_office_evidence_100_row_cap_rejects_before_answer_query():
+    fixture, anchor, graph, _holding = anchor_fixture()
+    for index in range(99):
+        holding = URIRef(f"{anchor}#accepted-holding-cap-{index:03d}")
+        graph.add((anchor, M.hasOfficeHolding, holding))
+        graph.add((holding, RDF.type, M.OfficeHolding))
+        graph.add((holding, M.heldOffice, OFFICE))
+        add_interval(
+            graph, holding, "2007-06-14T00:00:00", "2008-05-07T00:00:00",
+            office=True, key="cap-dates",
+        )
+
+    outcome = execute(fixture, anchor_draft(), Q3)
+
+    assert outcome.status == "source_data_unavailable"
+    assert outcome.result is None
+    assert "100-row safety cap" in outcome.diagnostic
+    assert outcome.sparql == fixture.queries[-1]
+    assert not any("?episode" in query for query in fixture.queries)
+
+
 @pytest.mark.parametrize("fault", ["missing_start", "malformed_start", "conflicting_range", "unaccepted", "missing_party_link"])
 def test_q3_uncertain_or_unaccepted_evidence_never_answers(fault):
     fixture, anchor, graph, holding = anchor_fixture()
@@ -332,7 +353,7 @@ def test_current_office_point_is_documented_as_local_asof_injection_not_planner_
     )
     instructions = build_composable_planner_instructions()
 
-    assert contract["contractVersion"] == "2.24.0"
+    assert contract["contractVersion"] == "2.25.0"
     assert "local executor injects configured asOf" in capability["semantics"]
     assert 'parameters exactly {"office":"exact office mention from the question"}' in instructions
     assert "Do not put a date or period in the proposal" in instructions
