@@ -113,7 +113,10 @@ The structured route exposes `answer`, `clarification_required`,
 `validation_failure`, and `execution_failure` as `data-outcome` on the response.
 Candidate lists and interpretations are not answers. Office-registry absence is
 reported as missing accepted evidence, not an invented tenure; first-election
-questions remain outside the queryable election-event capability. See the
+questions remain outside the queryable election-event capability. A narrow
+named-Member/office question can list all locally recorded accepted OfficeHolding
+episodes with validated intervals, but the result is explicitly incomplete local
+evidence, not a complete career history. See the
 [bounded acceptance report](../reports/query-service/interpretation-clarification.md).
 
 Phase 2 is complete. The accepted structured local-query path is:
@@ -177,27 +180,115 @@ explicitly partial accepted-evidence coverage, not complete historical rosters.
 An implicit geographic set prompts for exact alternatives; substring matches
 may suggest grounded occurrences but never choose the set. Semantic capability
 selection also exposes the existing full-calendar-month OfficeHolding window.
-The temporal-selection and bounded-aggregation extension (composable contract
-`2.19.0`) adds House-owned Dáil-term selection from one calendar date or a
-complete month, including exact term identity and recorded start date; term
-dates are not evidence of an actual sitting. A Member's latest recorded Dáil
-term is selected from that Member's exact DailMembership-to-DailTerm paths and
-House-owned chronology, then projected to its constituency; it is not an
-election-event answer. The accepted OfficeHolding overlap path also supports a
-calendar-date point and a complete calendar year. Overlap does not mean
-uninterrupted service, and missing historical holdings are not backfilled from
-observations or labels.
+The temporal-selection extension (composable contract `2.19.0`) adds
+House-owned Dáil-term selection from one calendar date or a complete month,
+including exact term identity and recorded start date; term dates are not
+evidence of an actual sitting. A Member's latest recorded Dáil term is selected
+from that Member's exact DailMembership-to-DailTerm paths and House-owned
+chronology, then projected to its constituency; it is not an election-event
+answer. The accepted OfficeHolding overlap path also supports a calendar-date
+point and a complete calendar year. Overlap does not mean uninterrupted service,
+and missing historical holdings are not backfilled from observations or labels.
 
-For one explicitly numbered Dáil and one exact constituency occurrence, the
-Member list may optionally be filtered by one inclusive DailMembership
-calendar-date point and projected as a count of distinct Member RDF identities.
-List and count use the same validated selection and bounded pages. These are
-recorded-people counts, never seat allocations or election-event totals; missing,
-conflicting or truncated evidence fails closed, and a local zero is not a
-complete historical negative. Other compound election or aggregate requests
-remain unsupported as a whole, not reduced to an easier query. See the [bounded composition implementation
+Composable contract `2.20.0` adds bounded distinct-Member counts. For one exact
+constituency occurrence in an explicitly numbered or uniquely date-resolved
+current Dáil, the Member list may be projected as a count of distinct Member
+RDF identities. In this non-party Member/constituency projection, unqualified
+“in this Dáil” selects the exact House-date-resolved term and uses its recorded
+memberships term-wide, regardless of whether the question says “represent” or
+“represented”; it overrides only the implicit present-tense as-of default.
+Explicit “currently”/“now”/“today” or “as of now/today” still requires the
+DailMembership interval to contain the query date, while a literal date remains
+its exact membership-date point. Numbered, other dated, election, and
+party-filtered requests retain their existing scopes. A bounded membership-date
+query may report 0 recorded Member identities only after complete valid
+execution with no uncertain or conflicting interval evidence; that is not a
+certified historical negative. A named-party count without a constituency is
+supported for one explicitly numbered Dáil: it reuses
+the Stage C term-scoped party listing and requires exact PartyMembership/
+DailMembership and party-identity joins with validated interval overlap. List
+and count use the same selection; counts are never seat allocations or
+election-event totals. Missing, conflicting, capped or truncated evidence fails
+closed, and recorded counts do not certify complete rosters. Other compound
+election or aggregate requests remain unsupported as a whole, not reduced to an
+easier query. See the [bounded composition implementation
 report](../reports/query-service/bounded-composition-reuse.md), including its
 untuned holdout failure and limits; this is not arbitrary graph traversal.
+
+Composable contract `2.21.0` adds a date-less present/current named-office
+holder point lookup by reusing the accepted OfficeHolding date-window path.
+The planner supplies only the exact office mention; local code injects the
+configured `asOf` as a one-day inclusive interval. Office resolution still uses
+the reviewed NamedOffice identity, and the answer preserves accepted holding
+start/end dates. Returned rows are only locally evidenced holdings—not a
+complete current-office roster. Missing, conflicting or uncertain evidence
+fails closed, and no match does not establish that the office has no holder.
+Date-less past-tense requests, tenure durations and election-event questions
+are not converted into current-point queries.
+
+Composable contract `2.25.0` adds named-Member office-evidence episodes for one
+exact Member and one reviewed NamedOffice. It accepts the unfiltered forms
+“When was [member] [office]?”, “What dates/periods was [member] [office]?”,
+“When did [member] serve as [office]?”, and “During what period was [member]
+[office]?”. It preserves each accepted OfficeHolding identity and interval,
+fully paginates the bounded result, and fails closed if any returned episode has
+missing, malformed, or conflicting interval evidence. Results are labeled
+**incomplete local-recorded episodes**: they do not establish a complete tenure
+timeline, a first/final boundary, total duration, or absence of service during
+gaps. Unreviewed office observations are not queried as holdings. Election-event
+and tenure-duration questions, and requests with additional filters, remain
+unsupported.
+
+Composable contract `2.26.0` adds a bounded distinct-Bill count for the exact
+request “How many Bills did [member] sponsor that were published in [calendar
+year]?” It joins the exact Member identity through Bill-owned sponsorship
+Participation and process evidence to typed Published activities, then counts
+distinct Bill IRIs by the activity's valid `xsd:date` calendar year. It never
+uses legislative year or document/version dates. Missing, malformed, or
+conflicting Published-date evidence makes the aggregate unavailable rather
+than zero; an observed zero is only a complete valid result over the loaded
+local slice, not a completeness claim. This narrow projection does not create a
+general Bill query framework.
+
+Composable contract `2.22.0` adds a bounded anchored shared-constituency list/count
+within the existing Member relationship composition. It accepts one exact
+numbered Dáil or the globally previous Dáil selected from House-owned chronology
+relative to `asOf`; it never substitutes the named Member's latest-recorded term
+or a fixed ordinal. The anchor and answer Members must have independent recorded
+DailMembership paths to the exact same term and constituency occurrence. The
+anchor's local identity and its single constituency in that term are resolved
+before the answer query, and the anchor is excluded by Member IRI. Count and
+list use the same fully paginated bounded selection. The result means term-wide
+recorded co-membership, not necessarily simultaneous service, and does not
+certify roster completeness. Missing, tied, conflicting, ambiguous, capped or
+truncated evidence fails closed. Party, office, election, explicit-date,
+simultaneity and additional filters remain unsupported rather than being
+dropped.
+
+Composable contract `2.24.0` adds three House-date-resolved membership projections.
+The current cross-house intersection joins exact Member identities across
+independent DailMembership and SeanadMembership paths to the current Dáil and
+Seanad terms. It means term-wide recorded membership in both terms, not current
+or simultaneous service; separate mapped membership intervals are displayed.
+The current Seanad named-party list/count resolves the exact term from
+Houses-owned dates, joins typed PartyMembership episodes to the same exact
+SeanadMembership and reviewed political-affiliation identity, and requires both
+the membership and party intervals to contain `asOf` independently. List and
+count share the complete bounded paginated selection. Missing or conflicting
+identity/date evidence and incomplete pages fail closed. These projections
+reflect local records and do not certify complete historical/current rosters;
+simultaneity or extra filters are refused rather than silently omitted.
+The current-Senator/prior-Dáil projection independently resolves the current
+Seanad from Houses-owned dates, joins exact Member identities across separate
+SeanadMembership and DailMembership paths, requires the Seanad interval to
+contain `asOf`, and accepts a prior Dáil path only when its finite
+`DailMembership` EndDate is strictly earlier than that same
+`SeanadMembership` StartDate. Equal endpoints and open-ended Dáil intervals do
+not qualify; no term-ordinal shortcut is used. List and distinct-identity count
+share complete bounded pagination and retain both membership/term identities
+and intervals. Missing or conflicting interval evidence fails closed. Results
+are positive local records only: they do not certify complete Dáil history, and
+absence does not mean that someone never served.
 
 ### Other launcher commands
 

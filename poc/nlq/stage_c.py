@@ -15,7 +15,7 @@ from typing import Any
 from rdflib import URIRef
 
 from .composable_plan import (
-    PlanError, PlanOutcome, _PREFIXES, _pattern_predicate, _pattern_rdf_type,
+    PlanError, PlanOutcome, _PLAN_CONTRACT, _PREFIXES, _pattern_predicate, _pattern_rdf_type,
     _require_local_iri, _reviewed_cross_graph_join, _reviewed_pattern,
     _reviewed_predicate, _reviewed_predicate_for_qname,
 )
@@ -314,34 +314,52 @@ def _house_term_seats_query(ordinal: int, *, supported_predicates) -> str:
     return _safe_query(query, supported_predicates=supported_predicates)
 
 
-def _party_listing_gates(*, supported_predicates) -> tuple[str, str]:
+def _party_listing_gates(*, supported_predicates, term_type: str = "DailTerm") -> tuple[str, str]:
+    if term_type not in {"DailTerm", "SeanadTerm"}:
+        raise PlanError("Term-scoped party listing requires a reviewed DailTerm or SeanadTerm type.")
     houses_graph = _fixed_owner_graph("houses", "Houses ETL", "https://data.oireachtas.ie/graph/houses")
     parties_graph = _fixed_owner_graph("parties", "Parties ETL", "https://data.oireachtas.ie/graph/parties")
-    ordinal = _reviewed_pattern("house-term-ordinal", "houses")
+    term_pattern = _reviewed_pattern(
+        "house-term-ordinal" if term_type == "DailTerm" else "house-term-description", "houses",
+    )
     party = _reviewed_pattern("party-term-occurrence", "parties")
-    if (_pattern_rdf_type(ordinal, "?term") != "agents:DailTerm"
-            or _pattern_predicate(ordinal, "?term", "?ordinal") != "agents:termNo"):
-        raise PlanError("Reviewed Houses term-number pattern is incomplete.")
+    reviewed_type = _PLAN_CONTRACT["entityTypeRdfTypes"][term_type]
+    term_types = [triple[2].split(" or ") for triple in term_pattern.get("triples", [])
+                  if triple[0] == "?term" and triple[1] == "rdf:type"]
+    if (not any(reviewed_type in types for types in term_types)
+            or (term_type == "DailTerm"
+                and _pattern_predicate(term_pattern, "?term", "?ordinal") != "agents:termNo")):
+        raise PlanError(f"Reviewed Houses {term_type} party-listing pattern is incomplete.")
     if (_pattern_rdf_type(party, "?party") != "members:ParliamentaryParty"
             or _pattern_predicate(party, "?party", "?term") != "members:activeDuringTerm"
             or _pattern_predicate(party, "?party", "?englishLabel") != "skos:prefLabel"):
         raise PlanError("Reviewed term-scoped ParliamentaryParty pattern or display label is incomplete.")
     _reviewed_cross_graph_join("parties", "members:activeDuringTerm", "houses")
-    _reviewed_predicate("party_active_during_term")
+    _reviewed_predicate(
+        "party_active_during_term" if term_type == "DailTerm" else "party_active_during_seanad_term",
+    )
     _require_queryable_type("members:ParliamentaryParty")
-    _require_queryable_type("agents:DailTerm")
-    _require_queryable_predicates(("agents:termNo", "members:activeDuringTerm", "skos:prefLabel"), supported_predicates)
+    _require_queryable_type(reviewed_type)
+    predicates = ["members:activeDuringTerm", "skos:prefLabel"]
+    if term_type == "DailTerm":
+        predicates.append("agents:termNo")
+    _require_queryable_predicates(tuple(predicates), supported_predicates)
     return houses_graph, parties_graph
 
 
-def _parties_query(term_iri: str, *, supported_predicates) -> str:
-    _houses_graph, parties_graph = _party_listing_gates(supported_predicates=supported_predicates)
+def _parties_query(term_iri: str, *, supported_predicates, term_type: str = "DailTerm") -> str:
+    houses_graph, parties_graph = _party_listing_gates(
+        supported_predicates=supported_predicates, term_type=term_type,
+    )
+    term_iri = _require_local_iri(term_iri, term_type)
+    term_rdf_type = _PLAN_CONTRACT["entityTypeRdfTypes"][term_type]
     query = _PREFIXES + f'''SELECT DISTINCT ?party ?label WHERE {{
+  GRAPH <{houses_graph}> {{ <{term_iri}> a {term_rdf_type} . }}
   GRAPH <{parties_graph}> {{
     ?party a members:ParliamentaryParty ; members:activeDuringTerm <{term_iri}> .
     OPTIONAL {{ ?party skos:prefLabel ?label . }}
   }}
-}} ORDER BY ?party LIMIT 100'''
+}} ORDER BY ?party ?label LIMIT 100'''
     return _safe_query(query, supported_predicates=supported_predicates)
 
 

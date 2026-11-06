@@ -350,13 +350,41 @@ def create_app(
                     "committee_boolean", "committee_count", "house_terms", "dail_all",
                 }
                 plan_family = outcome.plan.get("family") if outcome.plan else outcome.request_family
+                is_office_holding_evidence = plan_family == "office_holding_evidence"
                 is_shared_dail_terms = plan_family == "shared_dail_terms"
                 is_member_relationship_composition = plan_family == "member_relationship_composition"
+                composition_refs = (outcome.plan or {}).get("referents", {})
+                is_current_cross_house_membership = (
+                    is_member_relationship_composition
+                    and {"seanad_term", "dail_term", "seanad_membership", "dail_membership"}.issubset(composition_refs)
+                    and isinstance(composition_refs.get("dail_term"), dict)
+                    and isinstance(composition_refs["dail_term"].get("selector"), dict)
+                    and composition_refs["dail_term"]["selector"].get("kind") == "currentTerm"
+                )
+                is_current_seanad_prior_dail_membership = (
+                    is_member_relationship_composition
+                    and {"seanad_term", "dail_term", "seanad_membership", "dail_membership"}.issubset(composition_refs)
+                    and isinstance(composition_refs.get("seanad_term", {}).get("selector"), dict)
+                    and composition_refs["seanad_term"]["selector"].get("kind") == "currentTerm"
+                    and isinstance(composition_refs.get("dail_term"), dict)
+                    and "selector" not in composition_refs.get("dail_term", {})
+                )
+                is_current_seanad_party = (
+                    is_member_relationship_composition
+                    and isinstance(composition_refs.get("membership"), dict)
+                    and isinstance(composition_refs.get("term"), dict)
+                    and isinstance(composition_refs.get("episode"), dict)
+                    and composition_refs.get("membership", {}).get("type") == "SeanadMembership"
+                    and composition_refs.get("term", {}).get("type") == "SeanadTerm"
+                    and isinstance(composition_refs.get("term", {}).get("selector"), dict)
+                    and composition_refs.get("term", {}).get("selector", {}).get("kind") == "currentTerm"
+                    and composition_refs.get("episode", {}).get("type") == "PartyMembershipEpisode"
+                )
                 is_representation = plan_family == "constituency_representation"
                 is_government = plan_family == "government_party_members"
                 is_composable_semantic = (
                     is_shared_dail_terms or is_member_relationship_composition or is_representation or is_government
-                    or plan_family == "composable_semantic"
+                    or is_office_holding_evidence or plan_family == "composable_semantic"
                 )
                 stage_a_family = (plan_family if plan_family in stage_a_family_ids else
                                   parsed_stage_a.family if parsed_stage_a else None)
@@ -366,23 +394,36 @@ def create_app(
                     "committee_topic_latest", "bill_votes", "debate_transcript",
                 }
                 parsed_stage_b = plan_stage_b(question, as_of=as_of)
-                is_stage_b = not is_stage_c and (parsed_stage_b is not None or bool(outcome.plan and outcome.plan.get("family") in {
-                    "bill_lookup", "bills_published", "non_enacted_bills", "bill_status_history", "bill_sponsors", "bill_title_search",
-                    "committee_chair", "committee_conflict", "office_current_coverage",
-                    "office_overlap", "office_point",
-                }))
+                stage_b_families = {
+                    "bill_lookup", "bills_published", "non_enacted_bills", "bill_status_history",
+                    "bill_sponsors", "bill_title_search", "committee_chair", "committee_conflict",
+                    "office_current_coverage", "office_overlap", "office_point",
+                }
+                is_stage_b = not is_stage_c and (
+                    (outcome.plan is None and parsed_stage_b is not None)
+                    or bool(outcome.plan and outcome.plan.get("family") in stage_b_families)
+                )
                 member_mention = outcome.plan.get("referents", {}).get("member", {}).get("mention", "the named Member") if is_q06 else None
                 q35_office = outcome.plan.get("referents", {}).get("office", {}) if is_q35 else {}
                 q35_interval = outcome.plan.get("constraints", [{}])[0].get("value", {}) if is_q35 else {}
+                q35_is_current_as_of = bool(
+                    is_q35 and q35_interval.get("scope") == "calendarDate"
+                    and q35_interval.get("start") == as_of.isoformat()
+                    and q35_interval.get("end") == as_of.isoformat()
+                )
                 q23_member = outcome.plan.get("referents", {}).get("member", {}).get("mention", "the named Member") if is_q23 else None
                 q23_count = bool(is_q23 and outcome.plan.get("answer", {}).get("kind") == "count")
                 q23_year = (outcome.plan.get("constraints", [{}])[0].get("value")
                             if q23_count else None)
                 q35_summary = (
-                    f"Find each locally evidenced accepted {q35_office.get('label', q35_office.get('mention', 'office'))} "
-                    f"holding overlapping {q35_interval.get('start', 'the requested start')} through "
-                    f"{q35_interval.get('end', 'the requested end')}, preserving separate holding episodes. "
-                    "The development dataset does not establish complete historical coverage."
+                    (f"Find locally evidenced accepted {q35_office.get('label', q35_office.get('mention', 'office'))} "
+                     f"holdings containing the configured reference date {as_of.isoformat()}, preserving each exact interval. "
+                     "This does not certify complete current-office coverage.")
+                    if q35_is_current_as_of else
+                    (f"Find each locally evidenced accepted {q35_office.get('label', q35_office.get('mention', 'office'))} "
+                     f"holding overlapping {q35_interval.get('start', 'the requested start')} through "
+                     f"{q35_interval.get('end', 'the requested end')}, preserving separate holding episodes. "
+                     "The development dataset does not establish complete historical coverage.")
                 ) if is_q35 else None
                 q23_summary = (
                     f"Count distinct Bills sponsored by {q23_member} with a source-backed dated Published lifecycle activity in calendar year {q23_year}; do not use legislative year or document/version dates."
@@ -407,7 +448,6 @@ def create_app(
                     f"{shared_term_names[1]}, intersecting their DailMembership paths on the same "
                     "DailTerm RDF identity."
                 ) if is_shared_dail_terms and len(shared_term_names) == 2 else None
-                composition_refs = (outcome.plan or {}).get("referents", {})
                 composition_terms = sorted(
                     (
                         referent["selector"]["number"]
@@ -485,11 +525,52 @@ def create_app(
                             f"{composition_constituencies[0]} in {term_names[0]}, with the constituency "
                             "occurrence and membership joined to the same DailTerm identity."
                         )
+                    elif composition_constituencies and composition_current_term:
+                        current_term_date_filter = next((
+                            constraint.get("value")
+                            for constraint in (outcome.plan or {}).get("constraints", [])
+                            if constraint.get("referent") == "membership"
+                            and constraint.get("field") == "membershipInterval"
+                            and constraint.get("operator") == "on"
+                        ), None)
+                        if current_term_date_filter:
+                            member_relationship_summary = (
+                                f"Find distinct local Members representing {composition_constituencies[0]} in the "
+                                f"House-date-resolved current Dáil as of {as_of.isoformat()}, requiring the exact "
+                                f"DailMembership interval to contain {current_term_date_filter}."
+                            )
+                        else:
+                            member_relationship_summary = (
+                                f"Find distinct local Members with recorded DailMemberships representing "
+                                f"{composition_constituencies[0]} in the House-date-resolved current Dáil as of "
+                                f"{as_of.isoformat()}. The term-wide ‘in this Dáil’ scope does not require a "
+                                "membership interval to contain the reference date."
+                            )
                     elif len(term_names) == 2:
                         member_relationship_summary = (
                             f"Find distinct local Members with separate recorded DailMembership paths "
                             f"in both {term_names[0]} and {term_names[1]}."
                         )
+                if is_current_cross_house_membership:
+                    member_relationship_summary = (
+                        "Find Members with recorded membership paths in both the current Dáil and current Seanad, "
+                        "joined by exact Member identity. This is term-wide co-membership, not simultaneous or current service."
+                    )
+                elif is_current_seanad_prior_dail_membership:
+                    member_relationship_summary = (
+                        f"Find Members whose exact current SeanadMembership contains {as_of.isoformat()} and whose finite, "
+                        "accepted DailMembership EndDate is strictly before that same SeanadMembership StartDate. "
+                        "Preserve both membership paths and term identities; this positive local-record list does not "
+                        "certify complete history or establish that anyone else never served."
+                    )
+                elif is_current_seanad_party:
+                    affiliation = composition_refs.get("affiliation", {})
+                    party_name = affiliation.get("label", affiliation.get("mention", "the selected party"))
+                    member_relationship_summary = (
+                        f"Find Members linked to the exact {party_name} identity through a typed PartyMembership episode "
+                        f"for the current Seanad, requiring both the SeanadMembership and PartyMembership intervals "
+                        f"to contain {as_of.isoformat()}. Local current-roster completeness is not certified."
+                    )
                 stage_a_summaries = {
                     "member_lookup": "Resolve the grounded Member name against local Member identities without guessing.",
                     "previous_service": "Check Dáil membership in the previous term selected from House date evidence at the supplied as-of date.",
@@ -534,7 +615,13 @@ def create_app(
                            if is_q06 else ("Find the requested actual DebateSitting and its official record link."
                                              if is_debate else
                                              (q35_summary if is_q35 else
-                                               (q23_summary if is_q23 else "Find distinct Members who represented this constituency in the previous Dáil."))))
+                                                (q23_summary if is_q23 else "Find distinct Members who represented this constituency in the previous Dáil."))))
+                if is_office_holding_evidence:
+                    summary = (
+                        "Resolve the exact local Member and reviewed NamedOffice identities, then return each separately "
+                        "recorded accepted OfficeHolding episode with its validated interval. This is incomplete local "
+                        "evidence, not a complete career timeline."
+                    )
                 if is_representation:
                     current_representation = "selector" in composition_refs.get("term", {})
                     summary = (
@@ -557,12 +644,15 @@ def create_app(
                                if is_debate and outcome.result and outcome.result.kind == "ask" else
                                "Readable sitting date and official debate record link."
                                if is_debate else
-                               "Member names with exact start/end dates for every separate accepted holding; open ends are identified explicitly."
-                               if is_q35 else
-                                 ("Distinct Bill identity count based on source-backed Published activity dates."
-                                  if q23_count else "One row per Bill identity with title and recorded sponsorship evidence.")
-                                 if is_q23 else
-                                ("Distinct reviewed political-affiliation identities are returned with each qualifying TD and "
+                                (f"Locally recorded Members with exact accepted holding intervals at {as_of.isoformat()}; "
+                                 "this is not a complete current-office roster and local coverage is not certified."
+                                 if q35_is_current_as_of else
+                                 "Member names with exact start/end dates for every separate accepted holding; open ends are identified explicitly.")
+                                if is_q35 else
+                                ("Distinct Bill identity count based on source-backed Published activity dates."
+                                 if q23_count else "One row per Bill identity with title and recorded sponsorship evidence.")
+                                if is_q23 else
+                                 ("Distinct reviewed political-affiliation identities are returned with each qualifying TD and "
                                  "established overlap episode retained; historical source completeness is not certified."
                                  if is_member_relationship_composition and is_q06 and any(
                                      ref.get("type") == "PartyMembershipEpisode"
@@ -579,7 +669,18 @@ def create_app(
                                  "Stage A typed family result using reviewed RDF ownership, with identity and date qualifications preserved."
                                 if is_stage_a else
                                  "Distinct Dáil-term identities present in both independently resolved Member membership paths."
-                                  if is_shared_dail_terms else "Distinct Members, displayed by name.")
+                                 if is_shared_dail_terms else "Distinct Members, displayed by name.")
+                if is_office_holding_evidence:
+                    answer_text = (
+                        "Each row is one distinct accepted OfficeHolding episode with its validated interval. Local records "
+                        "may be incomplete; separate episodes are not merged and gaps do not establish absence."
+                    )
+                if (is_member_relationship_composition and outcome.plan
+                        and outcome.plan.get("answer", {}).get("kind") == "count"):
+                    answer_text = (
+                        "Count distinct recorded Member RDF identities from the validated selection, not seats or election totals; "
+                        "local source completeness is not certified."
+                    )
                 if is_member_relationship_composition and composition_current_term and composition_has_party_episode:
                     answer_text = (
                         f"Distinct reviewed affiliation identities are returned only when both the PartyMembership and "
@@ -588,6 +689,23 @@ def create_app(
                         f"Distinct Member identities are filtered to the exact party identity and returned only when both "
                         f"the PartyMembership and DailMembership intervals contain {as_of.isoformat()}; local current "
                         "source completeness is not certified."
+                    )
+                if is_current_cross_house_membership:
+                    answer_text = (
+                        "Distinct Member identities with recorded membership in both current House terms; "
+                        "separate mapped intervals are shown without asserting simultaneous service."
+                    )
+                elif is_current_seanad_prior_dail_membership:
+                    answer_text = (
+                        f"Positive local matches require current Seanad membership at {as_of.isoformat()} and a finite Dáil "
+                        "membership end strictly before that exact Seanad membership's start. Both exact membership and "
+                        "term identities and intervals are shown. Local records do not certify complete Dáil history; "
+                        "absence is not proof that anyone never served."
+                    )
+                elif is_current_seanad_party:
+                    answer_text = (
+                        f"Distinct Member identities whose exact party and Seanad membership paths are joined and whose "
+                        f"two independently owned intervals contain {as_of.isoformat()}; local current-roster completeness is not certified."
                     )
                 if is_representation:
                     answer_text = "Constituency and Dáil-term evidence is retained by exact RDF identity; local coverage is not certified complete."
@@ -599,8 +717,8 @@ def create_app(
                                    plan_heading="Validated composable query plan" if plan_is_validated else None,
                                    plan_explanation={"summary": summary, "validated": plan_is_validated, "answer_text": answer_text},
                                    sparql=outcome.sparql, result=outcome.result,
-                                   execution_attempted=outcome.result is not None,
-                                   result_notice=(outcome.diagnostic if is_stage_a or is_stage_b or is_stage_c else
+                                   execution_attempted=execution_attempted,
+                                   result_notice=(outcome.diagnostic if is_stage_a or is_stage_b or is_stage_c or is_q35 else
                                                     "Bill graphs are optional. These rows show recorded local sponsorship evidence; the dataset does not certify complete historical coverage."
                                                     if is_q23 else
                                                      outcome.diagnostic if is_composable_semantic else None),
@@ -660,6 +778,11 @@ def create_app(
                         query_message = "The validated read-only answer query executed."
                     elif outcome.status == "execution_failure":
                         query_message = "The validated answer query was sent, but execution did not complete."
+                    elif is_office_holding_evidence and outcome.sparql:
+                        query_message = (
+                            "The bounded OfficeHolding evidence query did not produce a complete validated result; "
+                            "no partial episode list was returned."
+                        )
                     elif outcome.sparql:
                         query_message = "The answer SPARQL was generated but not executed because an essential identity or source-evidence check failed."
                     else:
@@ -748,7 +871,12 @@ def create_app(
                 elif outcome.status == "source_data_unavailable" and is_debate:
                     message = "No matching actual sitting was found. The local dataset does not certify complete coverage for this date, so absence cannot be reported as a confirmed No."
                 elif outcome.status == "source_data_unavailable" and is_q35:
-                    if (outcome.sparql and outcome.diagnostic
+                    if q35_is_current_as_of:
+                        message = outcome.diagnostic or (
+                            "The local accepted holdings do not establish a current office holder; "
+                            "current-office coverage is not certified, so absence is not a no-holder conclusion."
+                        )
+                    elif (outcome.sparql and outcome.diagnostic
                             and "No accepted local holding is recorded overlapping" in outcome.diagnostic):
                         message = ("No accepted dated holding in the local dataset overlaps the requested interval. "
                                    "This development capture is incomplete, so absence is not a confirmed historical negative.")
@@ -759,7 +887,7 @@ def create_app(
                     else:
                         message = "The local office registry or accepted holding evidence could not be read well enough to answer."
                 elif outcome.status == "insufficient_holding_evidence" and is_q35:
-                    message = messages["insufficient_holding_evidence"]
+                    message = (outcome.diagnostic or messages["insufficient_holding_evidence"])
                 elif outcome.status == "not_found" and is_q35:
                     message = "The office name could not be matched to a reviewed local NamedOffice identity."
                 elif outcome.status == "ambiguous" and is_q35:

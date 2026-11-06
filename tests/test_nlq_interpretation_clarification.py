@@ -251,10 +251,19 @@ def test_member_lookup_reuses_source_identifier_alias_rule(monkeypatch):
 def test_absent_accepted_office_is_evidence_boundary_not_tenure_answer(monkeypatch):
     draft = _selection("office_holding_evidence", {"member": "Stephen Donnelly", "office": "Minister for Health"})
     c, _ = client(monkeypatch, IdentityFixture(), draft)
-    response = c.post("/ask", data={"question": "How long was Stephen Donnelly Minister for Health?"})
+    response = c.post("/ask", data={"question": "When was Stephen Donnelly the Minister for Health?"})
     assert 'data-outcome="missing_or_unaccepted_evidence"' in response.text
     assert "Unreviewed ministerial observations" in response.text
     assert "<h2>Results</h2>" not in response.text
+
+
+def test_office_duration_remains_unsupported_as_a_whole(monkeypatch):
+    draft = _selection("office_holding_evidence", {"member": "Stephen Donnelly", "office": "Minister for Health"})
+    fixture = IdentityFixture()
+    c, _ = client(monkeypatch, fixture, draft)
+    response = c.post("/ask", data={"question": "How long was Stephen Donnelly the Minister for Health?"})
+    assert 'data-outcome="unsupported_capability"' in response.text
+    assert not fixture.queries
 
 
 @pytest.mark.parametrize(("question", "draft"), [

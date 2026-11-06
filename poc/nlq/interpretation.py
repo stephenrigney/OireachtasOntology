@@ -29,8 +29,65 @@ def semantic_composition_scope(question):
 
     This only selects the existing semantic path; it never constructs a plan.
     """
-    return bool(re.search(r"\b(?:constituenc(?:y|ies)|TDs?|represent(?:ed|s|ing)?)\b", question, re.I)
-                and re.search(r"\b(?:and|or|while|same|shared)\b", question, re.I))
+    ordinary_composition = (
+        re.search(r"\b(?:constituenc(?:y|ies)|TDs?|represent(?:ed|s|ing)?)\b", question, re.I)
+        and re.search(r"\b(?:and|or|while|same|shared)\b", question, re.I)
+    )
+    cross_house = (
+        re.search(r"\b(?:seanad|senators?)\b", question, re.I)
+        and re.search(r"\b(?:d[áa]il|deput(?:y|ies)|tds?)\b", question, re.I)
+    )
+    current_seanad_party = (
+        re.search(r"\b(?:seanad|senators?)\b", question, re.I)
+        and re.search(r"\b(?:current|currently|this|now|today)\b", question, re.I)
+        and re.search(r"\b(?:who|which|what|how\s+many|count|number\s+of)\b", question, re.I)
+    )
+    return bool(ordinary_composition or cross_house or current_seanad_party)
+
+
+def current_office_point_mention(question: str) -> str | None:
+    """Extract a candidate office mention from a date-less current-holder form.
+
+    This is only a lexical scope gate. Callers still require exact local
+    NamedOffice identity resolution, the semantic planner must preserve the
+    mention, and execution supplies ``asOf``; no identity or date is inferred.
+    """
+    text = re.sub(r"[?.!]+$", "", question.strip())
+    match = re.fullmatch(
+        r"who\s+(?:(?:currently|now|today)\s+)?(?:is|are)"
+        r"(?:\s+(?:currently|now|today))?\s+(?P<office>.+)",
+        text, re.IGNORECASE,
+    )
+    if match is None:
+        return None
+    office = match["office"].strip()
+    office = re.sub(
+        r"^(?:(?:the|a|an)\s+)?(?:(?:current|currently|present|now|today)\s+)?"
+        r"(?:(?:the|a|an)\s+)?",
+        "", office, flags=re.IGNORECASE,
+    )
+    office = re.sub(
+        r"\s+(?:(?:currently|now|today|present)|as\s+of\s+(?:now|today|the\s+current\s+date))$",
+        "", office, flags=re.IGNORECASE,
+    ).strip()
+    if not office:
+        return None
+    # No explicit/historical period or additional relationship may be
+    # smuggled into the unqualified current-point shape.
+    if re.search(
+        r"[0-9]|\b(?:on|in|during|before|after|since|until|between|throughout|from|to|"
+        r"as\s+of|elected|election|and|while|whose|members?|tds?|constituenc(?:y|ies)|"
+        r"party|parties|how\s+many|count)\b|"
+        r"\b(?:sponsor|author|chair(?:person|man)?|member|holder)\s+of\b",
+        office, re.IGNORECASE,
+    ):
+        return None
+    return office
+
+
+def current_office_point_request(question: str) -> bool:
+    """Whether the question has the surface form of a date-less current lookup."""
+    return current_office_point_mention(question) is not None
 
 
 def present_constituency_default(question: str, constituency: str) -> bool:
@@ -45,6 +102,38 @@ def present_constituency_default(question: str, constituency: str) -> bool:
     return bool(re.search(r"\b(?:are|is|represent|represents|representing)\b", text, re.I))
 
 
+def member_relationship_as_of_default(question: str, constituency: str) -> bool:
+    """Resolve the one-term Member projection's term-vs-active wording.
+
+    In this bounded projection, an unqualified ``in this Dáil`` explicitly
+    selects the House-date-resolved term and is term-wide, regardless of verb
+    tense. Explicit current-point qualifiers retain the as-of membership test;
+    explicit calendar dates remain governed by their exact date constraint.
+    """
+    if re.search(r"\bin\s+this\s+d[áa]il\b", question, re.I) and not re.search(
+        r"\b(?:current(?:ly)?|now|today)\b|\bas\s+of\b", question, re.I,
+    ):
+        return False
+
+    text = re.sub(re.escape(constituency), " ", question, flags=re.I) if constituency else question
+    explicit_current_point = bool(re.search(
+        r"\b(?:current(?:ly)?|now|today)\b|\bas\s+of\s+(?:now|today|the\s+current\s+date|the\s+query\s+date|the\s+reference\s+date)\b",
+        text, re.I,
+    ))
+    if explicit_current_point:
+        text = re.sub(
+            r"\bas\s+of\s+(?:now|today|the\s+current\s+date|the\s+query\s+date|the\s+reference\s+date)\b",
+            " ", text, flags=re.I,
+        )
+        if re.search(
+            r"\b(?:did|were|was|had|will|would|should|could|might|may|can|shall|planned|planning|expected|future|next|tomorrow|historical|history|ever|previous|last|elected|election|during|throughout|before|after|since|until|between|on|senators?|seanad|panels?)\b|[0-9]",
+            text, re.I,
+        ):
+            return False
+        return True
+    return present_constituency_default(question, constituency)
+
+
 def default_evidence(question: str, as_of: date) -> dict:
     return {"policy": POLICY, "question": question, "date": as_of.isoformat()}
 
@@ -53,39 +142,106 @@ def validate_default(plan: dict, *, constituency: str, current: bool) -> None:
     evidence = plan.get("interpretation")
     if evidence is None:
         return
+    checker = present_constituency_default
+    if (plan.get("family") == "member_relationship_composition"
+            and not any(
+                isinstance(ref, dict) and ref.get("type") == "PartyMembershipEpisode"
+                for ref in plan.get("referents", {}).values()
+            )):
+        checker = member_relationship_as_of_default
     if (not current or not isinstance(evidence, dict)
             or set(evidence) != {"policy", "question", "date"}
             or evidence["policy"] != POLICY or evidence["date"] != plan["asOf"]
             or not isinstance(evidence["question"], str)
             or not constituency or not re.search(re.escape(constituency), evidence["question"], re.I)
-            or not present_constituency_default(evidence["question"], constituency)):
+            or not checker(evidence["question"], constituency)):
         raise ValueError("Current representation default lacks approved scoped interpretation evidence.")
 
 
 def office_holding_boundary(parameters, *, fuseki, supported_predicates):
-    """Diagnose accepted-registry absence without inventing a tenure operation.
+    """Return bounded accepted office episodes for one exact Member and office.
 
-    Only the existing exact Member/NamedOffice resolver is used. Raw ministerial
-    observations and membership starts are deliberately not consulted.
+    These local episodes are not treated as a complete career timeline. Raw
+    ministerial observations and parliamentary-membership dates are deliberately
+    not consulted.
     """
-    from .composable_plan import PlanOutcome, member_resolution_query, resolve_member, AmbiguousMember
+    from .composable_plan import (
+        AmbiguousMember,
+        PlanError,
+        PlanOutcome,
+        _compile_office_evidence,
+        _reviewed_office_mapping,
+        member_resolution_query,
+        readable_member_office_evidence_result,
+        resolve_member,
+    )
     from .member_resolution import resolve_local_entity_label
     from .errors import NLQError, IdentityNotFound, QueryLimitError
     try:
-        resolve_member(fuseki.query(member_resolution_query(parameters["member"], supported_predicates=supported_predicates)), parameters["member"])
+        member_iri, member_label = resolve_member(
+            fuseki.query(member_resolution_query(parameters["member"], supported_predicates=supported_predicates)),
+            parameters["member"],
+        )
         office = resolve_local_entity_label("NamedOffice", parameters["office"], fuseki,
-                                           supported_predicates=supported_predicates)
+                                            supported_predicates=supported_predicates)
     except AmbiguousMember as error:
-        return PlanOutcome("ambiguous", diagnostic=str(error), candidates=error.candidates, request_family="composable_semantic")
+        return PlanOutcome("ambiguous", diagnostic=str(error), candidates=error.candidates,
+                           request_family="office_holding_evidence")
     except NLQError as error:
         status = "not_found" if isinstance(error, IdentityNotFound) else "validation_failure" if isinstance(error, QueryLimitError) else "source_data_unavailable"
-        return PlanOutcome(status, diagnostic=str(error), request_family="composable_semantic")
+        return PlanOutcome(status, diagnostic=str(error), request_family="office_holding_evidence")
     if office.state == "unresolved":
-        return PlanOutcome("source_data_unavailable", request_family="composable_semantic",
+        return PlanOutcome("source_data_unavailable", request_family="office_holding_evidence",
                            diagnostic=f"No accepted local NamedOffice identity is available for {parameters['office']}; accepted OfficeHolding evidence cannot establish this tenure. Unreviewed ministerial observations are not accepted holdings.")
     if office.state == "ambiguous":
-        return PlanOutcome("ambiguous", request_family="composable_semantic",
+        return PlanOutcome("ambiguous", request_family="office_holding_evidence",
                            candidates=tuple({"iri": c.iri, "label": c.label} for c in office.candidates),
                            diagnostic="Several accepted office identities match; none was selected.")
-    return PlanOutcome("unsupported_request", request_family="composable_semantic",
-                       diagnostic="The office identity is recorded, but this service has no complete-career Member/office tenure projection. Accepted dated office-overlap queries remain available; no tenure answer was inferred.")
+    if office.state != "resolved" or len(office.candidates) != 1:
+        return PlanOutcome("source_data_unavailable", request_family="office_holding_evidence",
+                           diagnostic="The local office resolver did not return one usable reviewed identity.")
+
+    office_candidate = office.candidates[0]
+    evidence_query = None
+    try:
+        from .pagination import select_pages
+
+        mapping = _reviewed_office_mapping()
+        mapping["member_iri"] = member_iri
+        mapping["office_iri"] = office_candidate.iri
+        evidence_query = _compile_office_evidence(mapping, supported_predicates=supported_predicates)
+        evidence = select_pages(
+            evidence_query, fuseki=fuseki, supported_predicates=supported_predicates,
+        )
+        if not evidence.rows:
+            return PlanOutcome(
+                "source_data_unavailable", sparql=evidence_query,
+                request_family="office_holding_evidence",
+                diagnostic=(f"No accepted local OfficeHolding episode for {member_label} as "
+                            f"{office_candidate.label} is recorded; tenure cannot be determined from local evidence."),
+            )
+        result = readable_member_office_evidence_result(
+            evidence,
+            member_iri=member_iri,
+            member_label=member_label,
+            office_label=office_candidate.label,
+        )
+    except PlanError as error:
+        return PlanOutcome("unsupported_mapping", request_family="office_holding_evidence",
+                           diagnostic=f"The reviewed office-holding mapping could not be used safely: {error}")
+    except NLQError as error:
+        return PlanOutcome(
+            "source_data_unavailable", sparql=evidence_query,
+            request_family="office_holding_evidence",
+            diagnostic=("Accepted local OfficeHolding episodes could not be read completely or their intervals "
+                        f"are missing, conflicting, or uncertain ({error}); no partial episode list was returned."),
+        )
+
+    return PlanOutcome(
+        "success", sparql=evidence_query, result=result,
+        request_family="office_holding_evidence",
+        diagnostic=(f"INCOMPLETE LOCAL-RECORDED EPISODES for {member_label} as {office_candidate.label}. "
+                    "Each row is a separate locally recorded accepted OfficeHolding with its mapped interval. "
+                    "This is not a complete career or tenure history; gaps in local records do not mean the "
+                    "Member was not in office."),
+    )

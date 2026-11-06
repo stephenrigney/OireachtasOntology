@@ -183,6 +183,8 @@ def test_blocked_query_stage_does_not_claim_compilation_or_execution(tmp_path, m
     assert 'id="tab-interpreted"' in page
     assert 'id="tab-compiled"' in page and 'aria-controls="panel-compiled"' in page and 'disabled><span class="stage-num">02' in page
     assert 'id="tab-executed" aria-controls="panel-executed" aria-selected="false"' in page
+    executed_tab = page.split('id="tab-executed"', 1)[1].split("</button>", 1)[0]
+    assert "disabled" in executed_tab
     assert "Compilation was not reached; no validated plan or SPARQL was produced." in page
     assert "No answer query was executed after this resolution failure." in page
     assert "Resolution diagnostics" in page or "No answer query was executed after this resolution failure." in page
@@ -246,13 +248,19 @@ def test_executed_stage_requires_recorded_database_attempt(tmp_path, monkeypatch
 
     cases = (
         (PlanOutcome(status="success", sparql="SELECT * WHERE {}",
-                     result=QueryResult("select", columns=("item",), rows=(("one",),))), True),
+                     result=QueryResult("select", columns=("item",), rows=(("one",),))), True, True),
         (PlanOutcome(status="execution_failure", sparql="SELECT * WHERE {}",
-                     diagnostic="Fuseki query failed."), True),
+                     request_family="composable_semantic",
+                     diagnostic="Fuseki query failed."), True, True),
+        (PlanOutcome(status="unsupported_mapping", sparql="SELECT * WHERE {}",
+                     request_family="composable_semantic",
+                     diagnostic="Validation blocked query execution."), False, True),
     )
-    for outcome, reached in cases:
+    for outcome, reached, compiled in cases:
         monkeypatch.setattr(app_module, "execute_question", lambda *args, **kwargs: outcome)
         with TestClient(_app(tmp_path / str(reached))) as client:
             page = client.post("/ask", data={"question": "Count some records", "mode": "phase2"}).text
         executed_tab = page.split('id="tab-executed"', 1)[1].split("</button>", 1)[0]
         assert ("disabled" not in executed_tab) is reached
+        compiled_tab = page.split('id="tab-compiled"', 1)[1].split("</button>", 1)[0]
+        assert ("disabled" not in compiled_tab) is compiled
