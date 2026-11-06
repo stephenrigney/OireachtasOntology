@@ -463,23 +463,27 @@ def test_distinct_member_count_is_rendered_through_integrated_ask(monkeypatch):
     assert generator.closed
 
 
-@pytest.mark.parametrize(("question", "date_point", "expected_scope"), [
+@pytest.mark.parametrize(("question", "constituency", "expected_scope"), [
     (
-        "How many TDs represented Galway West in this Dáil?", None,
+        "How many TDs represented the Dublin Central constituency in this Dáil?",
+        "Dublin Central",
         "term-wide ‘in this Dáil’ scope does not require a membership interval",
     ),
     (
-        "How many TDs currently represent Galway West?", AS_OF.isoformat(),
+        "How many TDs currently represent Meath East constituency?",
+        "Meath East",
         f"DailMembership interval to contain {AS_OF.isoformat()}",
     ),
 ])
 def test_current_term_composition_explanation_matches_validated_scope(
-    monkeypatch, question, date_point, expected_scope,
+    monkeypatch, question, constituency, expected_scope,
 ):
     from poc.nlq import app as app_module
 
-    fixture = _current_term_fixture(constituency_label="Galway West")
-    draft = _member_count_draft(constituency="Galway West")
+    fixture = _current_term_fixture(constituency_label=constituency)
+    # The current-point interval is supplied by the approved local as-of rule;
+    # the planner draft must not invent a date absent from the user's wording.
+    draft = _member_count_draft(constituency=constituency)
     draft["referents"]["term"]["selector"] = {"kind": "currentTerm"}
     generator = FixedPlanGenerator(draft)
     monkeypatch.setenv("OIR_NLQ_AS_OF_DATE", AS_OF.isoformat())
@@ -494,6 +498,10 @@ def test_current_term_composition_explanation_matches_validated_scope(
     assert expected_scope in response.text
     assert "previous Dáil" not in response.text
     assert "currentTerm" in response.text
+    assert "Query result is shown above." in response.text
+    for tab_id in ("tab-compiled", "tab-executed"):
+        tab = response.text.split(f'id="{tab_id}"', 1)[1].split("</button>", 1)[0]
+        assert "disabled" not in tab
     assert generator.calls == [question]
     assert generator.closed
 

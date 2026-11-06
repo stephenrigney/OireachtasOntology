@@ -331,6 +331,14 @@ def _ask_client(monkeypatch, question, draft, fixture):
     return client.post("/ask", data={"question": question, "mode": "phase2"}), generator
 
 
+def _assert_dashboard_answer_stages(page: str) -> None:
+    assert 'id="query-processing"' in page
+    assert "Query result is shown above." in page
+    for tab_id in ("tab-compiled", "tab-executed"):
+        tab = page.split(f'id="{tab_id}"', 1)[1].split("</button>", 1)[0]
+        assert "disabled" not in tab
+
+
 def _party_members():
     return [
         {
@@ -418,6 +426,7 @@ def test_q19_user_facing_interpretation_does_not_claim_a_dail_only_query(monkeyp
     assert "current Dáil and current Seanad" in response.text
     assert "term-wide co-membership" in response.text
     assert "previous Dáil" not in response.text
+    _assert_dashboard_answer_stages(response.text)
     assert generator.closed
 
 
@@ -735,6 +744,7 @@ def test_q23_user_facing_interpretation_names_seanad_party_and_two_active_interv
     assert "exact Fine Gael identity" in response.text
     assert "SeanadMembership and PartyMembership intervals" in response.text
     assert "previous Dáil" not in response.text
+    _assert_dashboard_answer_stages(response.text)
     assert generator.closed
 
 

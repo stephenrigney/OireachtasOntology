@@ -685,3 +685,52 @@ publication check; the completed local acceptance results above are independent
 of those pending checks. No semantic or architectural integration issue remains
 known. The documented planner variability and source/identity limitations remain
 unchanged.
+
+### PR #23 dashboard merge follow-up (2026-11-06)
+
+After PR #23 was merged to `master`, `origin/master` at `ba303b1` was integrated
+on branch `feat/query-service-user-coverage` from `5a3f1e5` using a
+history-preserving merge. The sole content conflict, `poc/nlq/app.py`, was
+reconciled: campaign office-episode and Q16/Q22 scope explanations remain,
+the Q35 result qualification is retained, and dashboard execution is marked
+reached only by a returned result or an explicit query-execution-failure status,
+not by SPARQL presence. Preflight/validation failures do not enable Executed.
+The feedback opt-in and dashboard template from PR #23 remain in the merge.
+
+Focused dashboard/campaign regressions passed (**136 passed**) across feedback,
+Q7 office evidence, current-term Q16/Q22 scope explanations, Q19, and scorecard
+Q23; the POC route suite passed (**45 passed**). Q7's result-without-plan case
+renders the real generated SPARQL and result without claiming a validated plan.
+No full scorecard rerun was needed, and the established 16/3/7/0 classifications
+are unchanged.
+
+**Superseded live-process observation; refreshed UI verification (2026-11-06):**
+The initial port-8001 process predated the app change and produced disabled
+Executed tabs on successful results; that stale-process observation is
+superseded. The approved campaign service was restarted on loopback port 8001
+using `iteration-1/restart-campaign-service.sh`, which launched
+`iteration-1/run-campaign-service.sh` with its approved planner configuration
+and read-only local Fuseki endpoint. The other checkout's port-8000 service was
+not loaded or restarted. All six actual `/ask` requests returned HTTP 200 and
+the refreshed dashboard checks passed: Q7 had no validated-plan claim but showed
+its actual generated SPARQL and result with Compiled and Executed enabled; Q16
+returned **5** with term-wide scope; Q22 returned **4** with the
+2026-11-06 membership-date scope; Q19 returned Seán Kyne with separate House
+intervals; Q23 returned **16**; Q14 remained `unsupported_capability` with no
+answer query and both Compiled and Executed disabled. Refreshed HTML and the
+small assertion summary are under
+`/tmp/opencode/query-service-user-coverage/pr23-followup-2026-11-06/` as
+`q7-dashboard-refreshed.html`, `q16-dashboard-refreshed.html`,
+`q22-dashboard-refreshed.html`, `q19-dashboard-refreshed.html`,
+`q23-dashboard-refreshed.html`, `q14-dashboard-refreshed.html`, and
+`summary-dashboard-refreshed.json`.
+
+The post-change full NLQ suite completed with **1,060 passed, 2 skipped** in
+376.99 seconds.
+
+No ontology, mapping, fixture, data, compiler, or Fuseki changes were made.
+The dashboard template and POC tests are unchanged from the merged PR #23;
+additional feedback/campaign tests verify the integration rather than replacing
+either branch's acceptance criteria. The existing draft PR #24 is updated on
+the same campaign branch; no replacement PR or history rewrite is needed.
+PR #24 must remain draft and unmerged.

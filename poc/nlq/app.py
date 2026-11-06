@@ -152,10 +152,10 @@ def create_app(
                error: str | None = None, debug_output: str | None = None,
                debug_message: str | None = None, debug_source: str | None = None,
                readiness: FusekiReadiness | None = None,
-               mode: str = "phase2", interaction_status: str | None = None,
-               plan_json: str | None = None, plan_heading: str | None = None,
-               entity_outcomes: tuple[dict, ...] = (), plan_explanation=None,
-                clarification=None):
+                mode: str = "phase2", interaction_status: str | None = None,
+                plan_json: str | None = None, plan_heading: str | None = None,
+                entity_outcomes: tuple[dict, ...] = (), plan_explanation=None,
+                clarification=None, execution_attempted: bool = False):
         if readiness is None:
             readiness = check_fuseki_readiness()
         feedback_actual = _displayed_answer_text(
@@ -189,6 +189,7 @@ def create_app(
             "plan_explanation": plan_explanation,
             "clarification": clarification,
             "outcome_kind": getattr(request.state, "query_outcome", None),
+            "execution_attempted": execution_attempted,
             "feedback_actual": feedback_actual,
             "feedback_available": bool(question and feedback_actual and feedback_recording),
         })
@@ -316,6 +317,10 @@ def create_app(
                     ),
                 )
                 request.state.query_outcome = outcome.interaction
+                execution_attempted = (
+                    outcome.result is not None
+                    or outcome.status in {"execution_failure", "query_execution_failed"}
+                )
                 if outcome.clarification is not None:
                     token = token_urlsafe(32)
                     with choice_lock:
@@ -712,6 +717,7 @@ def create_app(
                                    plan_heading="Validated composable query plan" if plan_is_validated else None,
                                    plan_explanation={"summary": summary, "validated": plan_is_validated, "answer_text": answer_text},
                                    sparql=outcome.sparql, result=outcome.result,
+                                   execution_attempted=execution_attempted,
                                    result_notice=(outcome.diagnostic if is_stage_a or is_stage_b or is_stage_c or is_q35 else
                                                     "Bill graphs are optional. These rows show recorded local sponsorship evidence; the dataset does not certify complete historical coverage."
                                                     if is_q23 else
@@ -733,6 +739,7 @@ def create_app(
                                    plan_heading="Validated composable query plan" if plan_is_validated else None,
                                    plan_explanation=({"summary": summary, "validated": plan_is_validated} if plan_is_validated else None),
                                   sparql=outcome.sparql, result=outcome.result,
+                                   execution_attempted=execution_attempted,
                                   entity_outcomes=entity_outcomes,
                                   debug_output=getattr(outcome, "debug_output", None) or (outcome.result.raw_json if outcome.result else None),
                                    debug_source=getattr(outcome, "debug_source", None) or ("Fuseki" if outcome.sparql else "Structured planner"))
@@ -745,6 +752,7 @@ def create_app(
                                   interaction_status=outcome.status, result=outcome.result,
                                   result_notice=outcome.diagnostic if outcome.result else None,
                                   sparql=outcome.sparql,
+                                  execution_attempted=execution_attempted,
                                   debug_output=format_debug_payload({"diagnostic": outcome.diagnostic}),
                                    debug_message="No answer query was executed." if outcome.sparql is None else "The reviewed read-only answer query executed.",
                                    debug_source="Validated Stage C plan" if plan_is_validated else "Rejected Stage C plan")
@@ -791,6 +799,7 @@ def create_app(
                         ),
                         error=outcome.diagnostic or "The semantic plan could not be executed safely.",
                         interaction_status=outcome.status,
+                        execution_attempted=execution_attempted,
                         entity_outcomes=ambiguous_members,
                         result=outcome.result,
                         result_notice=outcome.diagnostic if outcome.result else None,
@@ -827,6 +836,7 @@ def create_app(
                                    plan_heading="Validated composable query plan" if plan_is_validated else None,
                                    plan_explanation={"summary": summary, "validated": plan_is_validated},
                                   error=message, interaction_status=outcome.status,
+                                  execution_attempted=execution_attempted,
                                   result=outcome.result, result_notice=outcome.diagnostic if outcome.result else None,
                                   sparql=outcome.sparql,
                                   debug_output=format_debug_payload({"diagnostic": outcome.diagnostic}),
@@ -912,6 +922,7 @@ def create_app(
                                   "Proposed composable query plan") if outcome.plan else None,
                     error=message,
                     interaction_status=outcome.status,
+                    execution_attempted=execution_attempted,
                     entity_outcomes=entity_outcomes,
                     result=outcome.result,
                     result_notice=("Bill graphs are optional. These rows show recorded local sponsorship evidence; the dataset does not certify complete historical coverage."
@@ -1004,6 +1015,7 @@ def create_app(
             return render(request, question=question, mode=mode,
                           interpretation=translation.interpretation,
                           sparql=safe_sparql, result=result, debug_output=result.raw_json,
+                          execution_attempted=True,
                           debug_message=debug_message, debug_source="Fuseki")
         except NLQError as error:
             if phase == "Member name resolution":
@@ -1025,6 +1037,7 @@ def create_app(
                           interpretation=translation.interpretation if translation else None,
                           sparql=translation.sparql if translation else None,
                           error=str(error), debug_output=error.debug_output,
+                          execution_attempted=phase == "Fuseki query",
                           debug_message=debug_message, debug_source=debug_source)
         except Exception:
             logger.exception("Unexpected failure in NLQ POC")
@@ -1032,6 +1045,7 @@ def create_app(
                           interpretation=translation.interpretation if translation else None,
                           sparql=translation.sparql if translation else None,
                           error="An unexpected error prevented the question from being processed.",
+                          execution_attempted=phase == "Fuseki query",
                           debug_message=f"Unexpected failure during {phase}; see the server log for details.",
                           debug_source="LLM API" if phase == "LLM translation" else "Fuseki")
         finally:

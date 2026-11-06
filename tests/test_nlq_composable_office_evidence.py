@@ -153,6 +153,13 @@ def test_q7_returns_separate_exact_member_and_office_episodes_with_partial_quali
     assert "INCOMPLETE LOCAL-RECORDED EPISODES" in response.text
     assert "not a complete career or tenure history" in response.text
     assert "gaps in local records do not mean the Member was not in office" in response.text
+    assert "Interpretation available; no validated plan was produced." in response.text
+    assert "A validated plan was produced." not in response.text
+    compiled_tab = response.text.split('id="tab-compiled"', 1)[1].split("</button>", 1)[0]
+    executed_tab = response.text.split('id="tab-executed"', 1)[1].split("</button>", 1)[0]
+    assert "disabled" not in compiled_tab and "disabled" not in executed_tab
+    assert "SPARQL was generated." in response.text
+    assert "Query result is shown above." in response.text
     assert "2007-06-14" in response.text and "2008-05-07" in response.text
     assert "1997-06-26" in response.text and "2002-06-06" in response.text
     assert "Other Taoiseach" not in response.text
