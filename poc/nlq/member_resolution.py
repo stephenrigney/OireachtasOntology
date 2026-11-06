@@ -181,6 +181,21 @@ def _normalise_text(value: str) -> str:
     return unicodedata.normalize("NFC", value).casefold()
 
 
+def without_leading_entity_preposition(value: str) -> str | None:
+    """Return a conservative entity-label candidate without a leading relation word.
+
+    Structured planners occasionally include the grammatical connector in an
+    otherwise exact entity mention (for example, ``in Dublin Central``). Only
+    this finite set is eligible, and callers still require an exact local-label
+    match; this is not fuzzy matching or general stop-word removal.
+    """
+    match = re.match(r"^(?:in|for|from|representing)\s+(.+?)\s*$", value, re.I)
+    if not match:
+        return None
+    candidate = match.group(1).strip()
+    return candidate or None
+
+
 def _entity_label_predicate(entity_type: str) -> str:
     labels = _CONTRACT.get("labelsByEntityType", {}).get(entity_type)
     if not isinstance(labels, dict):
@@ -412,6 +427,18 @@ def resolve_local_entity_label(
         ):
             continue
         exact_by_iri.setdefault(iri, set()).add(actual_label)
+
+    # Prefer an exact match for the complete supplied label. Only when that
+    # fails, retry a known leading grammatical connector against exact local
+    # labels. This keeps legitimate labels intact and preserves ambiguity.
+    if not exact_by_iri:
+        shortened = without_leading_entity_preposition(label)
+        if shortened is not None:
+            return resolve_local_entity_label(
+                entity_type, shortened, fuseki,
+                supported_predicates=supported_predicates,
+                question_context=question_context,
+            )
 
     candidates = tuple(sorted(
         (

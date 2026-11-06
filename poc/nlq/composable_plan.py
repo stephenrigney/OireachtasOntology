@@ -22,7 +22,10 @@ from rdflib import Literal, URIRef
 
 from .contract import load_query_contract
 from .errors import NLQError
-from .member_resolution import UnsupportedLocalEntityType, resolve_local_entity_label
+from .member_resolution import (
+    UnsupportedLocalEntityType, resolve_local_entity_label,
+    without_leading_entity_preposition,
+)
 from .results import QueryResult, format_debug_payload
 from .safety import MAX_RESULT_OFFSET, MAX_RESULT_ROWS, validate_sparql
 
@@ -2499,6 +2502,21 @@ def resolve_constituency(
         label = label.removesuffix("@en")
         if _normalise_label(label) == wanted:
             candidates[iri] = label
+    # The term-scoped candidate set is already bounded and authoritative. If
+    # the complete mention is not a label, allow only a recognized leading
+    # preposition to be removed, then retain exact normalized label matching.
+    if not candidates:
+        shortened = without_leading_entity_preposition(mention)
+        if shortened is not None:
+            wanted = _normalise_label(shortened)
+            for row in result.rows:
+                if len(row) < 2:
+                    continue
+                iri, label = row[:2]
+                _require_local_iri(iri, "constituency")
+                label = label.removesuffix("@en")
+                if _normalise_label(label) == wanted:
+                    candidates[iri] = label
     if not candidates:
         raise IdentityNotFound(f"No matching constituency was found in {term_label} for “{mention}”.")
     if len(candidates) != 1:

@@ -720,6 +720,39 @@ def test_resolver_reuses_nfc_casefold_matching_without_accent_folding_or_fuzzy_m
     assert partial.state == "unresolved"
 
 
+@pytest.mark.parametrize("prefix", ["in", "for", "representing", "from"])
+@pytest.mark.parametrize(
+    "entity_type",
+    ["DailConstituency", "Member", "ParliamentaryMemberCollection", "NamedOffice"],
+)
+def test_general_entity_resolver_retries_connector_prefixed_exact_labels(prefix, entity_type):
+    iri = "https://data.oireachtas.ie/ie/oireachtas/reference/exact-label"
+    fuseki = LocalResolverFuseki(((iri, "Dublin Central@en"),))
+
+    result = resolve_local_entity_label(entity_type, f"{prefix} Dublin Central", fuseki)
+
+    assert result.state == "resolved"
+    assert result.candidates[0].iri == iri
+    assert result.candidates[0].label == "Dublin Central"
+    assert len(fuseki.queries) == 2
+
+
+def test_connector_fallback_does_not_turn_nonexistent_or_ambiguous_labels_into_unique_identity():
+    iri_a = "https://data.oireachtas.ie/ie/oireachtas/reference/a"
+    iri_b = "https://data.oireachtas.ie/ie/oireachtas/reference/b"
+    missing = resolve_local_entity_label(
+        "Member", "in Nobody", LocalResolverFuseki(()),
+    )
+    ambiguous = resolve_local_entity_label(
+        "Member", "for Alex Example",
+        LocalResolverFuseki(((iri_a, "Alex Example@en"), (iri_b, "Alex Example@en"))),
+    )
+
+    assert missing.state == "unresolved"
+    assert ambiguous.state == "ambiguous"
+    assert {candidate.iri for candidate in ambiguous.candidates} == {iri_a, iri_b}
+
+
 @pytest.mark.parametrize(
     "entity_type, class_name, graph",
     [
