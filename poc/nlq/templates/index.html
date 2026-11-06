@@ -5,9 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Oireachtas NLQ POC</title>
   <style>
-    body { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; font: 1rem/1.5 system-ui, sans-serif; color: #202124; }
-    textarea { box-sizing: border-box; width: 100%; min-height: 6rem; padding: .7rem; font: inherit; }
-    button { margin-top: .5rem; padding: .55rem 1rem; font: inherit; cursor: pointer; }
+    :root { color-scheme: light; --page:#F6F3EA; --card:#fff; --inset:#F7F6F2; --ink:#202124; --secondary:#4A463D; --gold:#6B5922; --gold-hover:#473A16; --border:#ABB0B6; --separator:#D4D7DB; --success:#146B37; --failure:#A3272F; --focus:#3F3414; }
+    * { box-sizing:border-box; }
+    body { max-width: 1240px; margin: 0 auto; padding: 24px 30px 56px; font: 1rem/1.55 "IBM Plex Sans",system-ui,sans-serif; color:var(--ink); background:var(--page); }
+    header { border-bottom:3px solid var(--gold); padding:0 12px 18px; margin-bottom:20px; }
+    header .eyebrow { margin:0 0 2px; color:var(--gold); font-weight:700; letter-spacing:.04em; }
+    header h1 { margin:0; font-size:clamp(2rem,4vw,2.5rem); line-height:1.2; }
+    header p { margin:7px 0 0; color:var(--secondary); font-size:1.15rem; }
+    body > section, body > form, main > section, main > form { margin:20px 0; padding:20px 24px; background:var(--card); border:1px solid var(--border); border-radius:8px; }
+    h2 { margin:.1rem 0 .8rem; font-size:1.35rem; }
+    a { color:#473A16; text-decoration-thickness:1px; text-underline-offset:2px; }
+    :focus-visible { outline:3px solid var(--focus); outline-offset:3px; }
+    textarea, select { font:inherit; color:var(--ink); background:var(--inset); border:1px solid var(--border); border-radius:6px; }
+    textarea { width: 100%; min-height: 5rem; padding: .8rem; }
+    button { margin-top: .5rem; padding: .65rem 1rem; font: inherit; cursor: pointer; border-radius:6px; }
+    form[action="/ask"] button[type="submit"] { color:#fff; background:var(--gold); border:1px solid var(--gold); font-weight:700; }
+    form[action="/ask"] button[type="submit"]:hover { background:var(--gold-hover); }
     button.session-start { color: #fff; background: #18733b; border: 1px solid #125d30; border-radius: .35rem; }
     button.session-start:hover { background: #125d30; }
     button.session-stop { color: #fff; background: #b4232e; border: 1px solid #8f1d25; border-radius: .35rem; }
@@ -15,14 +28,14 @@
     button:disabled { cursor: wait; opacity: .65; }
     section { margin-top: 1.5rem; }
     pre { overflow-x: auto; padding: 1rem; background: #f2f4f7; border: 1px solid #d5d9df; white-space: pre-wrap; }
-    .error { padding: .75rem; color: #8b1111; background: #fff0f0; border: 1px solid #e5bcbc; }
-    .ambiguity { padding: .75rem; background: #fff8e6; border: 1px solid #d6b65d; }
+    .error { color:var(--failure); border-color:#A3272F; }
+    .ambiguity { background:#fffaf0; border-color:var(--gold); }
   .debug-panel { padding: .75rem; border: 1px solid #c8ccd0; background: #f8f9fa; }
     .readiness { padding: .75rem; border: 1px solid #c8ccd0; }
     .readiness.ready { background: #eff8ef; border-color: #83b883; }
     .readiness.partial { background: #fff8e6; border-color: #d6b65d; }
     .readiness.empty, .readiness.unavailable { background: #fff0f0; border-color: #e5bcbc; }
-    .feedback { padding: .75rem; border: 1px solid #c8ccd0; background: #f8f9fa; }
+    .feedback { border-color:var(--border); background:var(--card); }
     .adequacy-toggle { display: flex; gap: .35rem; width: fit-content; margin: .35rem 0 1rem; padding: .25rem; border: 1px solid #aeb4bc; border-radius: .5rem; background: #edf0f3; }
     .adequacy-toggle label { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 5rem; padding: .45rem .8rem; border-radius: .35rem; cursor: pointer; font-weight: 600; }
     .adequacy-toggle input { position: absolute; width: 1px; height: 1px; opacity: 0; }
@@ -31,18 +44,30 @@
     .adequacy-toggle label:has(input[value="no"]:checked) { background: #b4232e; }
     .adequacy-toggle label:has(input:focus-visible) { outline: 3px solid #155eef; outline-offset: 2px; }
     .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-    details { margin-top: 1.5rem; }
+    details { margin-top: 1rem; }
     summary { cursor: pointer; }
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: .5rem; border: 1px solid #c8ccd0; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
     th { background: #f2f4f7; }
+    .mast-link { display:inline-block; margin:0 0 12px; }
+    .stage-tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:16px 0; }
+    .stage-tabs button { margin:0; text-align:left; color:var(--ink); background:var(--inset); border:1px solid var(--separator); }
+    .stage-tabs button[aria-selected="true"] { color:#fff; background:var(--gold); border-color:var(--gold); }
+    .stage-tabs button:disabled { opacity:.55; cursor:not-allowed; }
+    .stage-num { display:inline-grid; place-items:center; width:2rem; height:2rem; margin-right:.5rem; border-radius:50%; background:#e4e1d8; }
+    [aria-selected="true"] .stage-num { color:var(--gold); background:#fff; }
+    .stage-panel { min-height:4rem; }
+    .session-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .session-controls p { margin:0; }
+    @media(max-width:650px) { body { padding:16px 14px 36px; } body > section, body > form, main > section, main > form { padding:16px; margin:16px 0; } .stage-tabs { grid-template-columns:1fr; } table { display:block; overflow-x:auto; } }
+    @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; } }
   </style>
 </head>
 <body>
-    <h1>Oireachtas natural-language query POC</h1>
-  <p><a href="/capabilities">Browse the query capability catalogue</a></p>
-  <section aria-label="Optional evidence collection">
-    <h2>Optional evidence session</h2>
+  <header><p class="eyebrow">OIREACHTAS ONTOLOGY</p><h1>Natural language queries</h1><p>Explore Oireachtas data through ordinary language</p></header>
+  <p class="mast-link"><a href="/capabilities">Browse the query capability catalogue</a></p>
+  <section aria-label="Optional evidence collection" class="session-controls">
+    <h2>Evidence session</h2>
     <button type="button" class="session-start" id="start-evidence">Start Evidence Session</button>
     <button type="button" class="session-stop" id="stop-evidence" hidden>Stop Evidence Session</button>
     <p id="evidence-status" role="status" aria-live="polite">Feedback collection is off.</p>
@@ -60,7 +85,8 @@
   </section>
   {% endif %}
   <form method="post" action="/ask">
-    <label for="question"><strong>Ask a question about the loaded Oireachtas graph</strong></label>
+    <h2>Ask a question</h2>
+    <label for="question"><strong>Your Oireachtas question</strong></label>
     <textarea id="question" name="question" required maxlength="2000">{{ question }}</textarea>
     <label for="mode"><strong>Development query path</strong></label>
     <select id="mode" name="mode">
@@ -167,9 +193,32 @@
   </section>
   {% endif %}
 
+  {% if question %}
+  <section id="query-processing">
+    <h2>How this query was processed</h2>
+    {% set interpreted_ready = interpretation or plan_explanation or error or ambiguity or clarification %}
+    {% set compiled_ready = sparql or plan_json %}
+    {% set executed_ready = result or error or interaction_status or debug_message %}
+    <div class="stage-tabs" role="tablist" aria-label="Query processing stages">
+      <button type="button" role="tab" id="tab-interpreted" aria-controls="panel-interpreted" aria-selected="true" {% if not interpreted_ready %}disabled{% endif %}><span class="stage-num">01</span>Interpreted</button>
+      <button type="button" role="tab" id="tab-compiled" aria-controls="panel-compiled" aria-selected="false" {% if not compiled_ready %}disabled{% endif %}><span class="stage-num">02</span>Compiled</button>
+      <button type="button" role="tab" id="tab-executed" aria-controls="panel-executed" aria-selected="false" {% if not executed_ready %}disabled{% endif %}><span class="stage-num">03</span>Executed</button>
+    </div>
+    <div class="stage-panel" role="tabpanel" id="panel-interpreted" aria-labelledby="tab-interpreted">
+      {% if plan_explanation %}<p><strong>{{ plan_explanation.summary }}</strong></p><p>{% if plan_explanation.validated %}Validated plan{% else %}Interpretation available; no validated plan was produced.{% endif %}</p>{% elif interpretation %}<p>{{ interpretation }}</p>{% elif error %}<p>Interpretation did not resolve to an executable request: {{ error }}</p>{% else %}<p>No interpretation output is available.</p>{% endif %}
+      {% if entity_outcomes or clarification or ambiguity %}<p>Entity resolution or clarification evidence is shown in the result above.</p>{% endif %}
+    </div>
+    <div class="stage-panel" role="tabpanel" id="panel-compiled" aria-labelledby="tab-compiled" hidden>
+      {% if compiled_ready %}<p>Compiler output is available below in the technical details.</p>{% else %}<p>Compilation was not reached; no validated plan or SPARQL was produced.</p>{% endif %}
+    </div>
+    <div class="stage-panel" role="tabpanel" id="panel-executed" aria-labelledby="tab-executed" hidden>
+      {% if result %}<p>Query result is shown above.{% if result_notice %} {{ result_notice }}{% endif %}</p>{% elif debug_message %}<p>{{ debug_message }}</p>{% elif error %}<p>{{ error }}</p>{% else %}<p>Execution outcome is unavailable; no success is implied.</p>{% endif %}
+    </div>
+  </section>
+  {% endif %}
   {% if plan_explanation %}
   <section>
-    <h2>What the query plan means</h2>
+    <h2>Interpretation details</h2>
     <p><strong>{{ plan_explanation.summary }}</strong></p>
     <p>{% if plan_explanation.validated %}Validated plan{% else %}Draft plan — not validated; this is only the planner's proposal{% endif %}</p>
     {% if plan_explanation.entities %}<h3>Who or what it concerns</h3><ul>{% for entity in plan_explanation.entities %}<li>{{ entity.label }}: {{ entity.human_resolution }}{% if entity.candidates %}; possible matches: {% for candidate in entity.candidates %}{{ candidate.label }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</li>{% endfor %}</ul>{% endif %}
@@ -211,7 +260,7 @@
     <h2>Query debugger</h2>
     {% if debug_message %}<p>{{ debug_message }}</p>{% endif %}
     {% if debug_output %}
-    <details {% if debug_message or error %}open{% endif %}>
+    <details open>
       <summary>{% if debug_source == "Local Member resolution" %}Local Member resolution evidence{% else %}Raw {{ debug_source or "endpoint" }} response payload{% endif %}</summary>
       <pre><code>{{ debug_output }}</code></pre>
     </details>
@@ -243,6 +292,24 @@
   {% endif %}
   <script>
     (() => {
+      const stageTabs = [...document.querySelectorAll('[role="tab"]')];
+      stageTabs.forEach((tab, index) => tab.addEventListener("click", () => {
+        stageTabs.forEach((item, itemIndex) => {
+          const selected = itemIndex === index;
+          item.setAttribute("aria-selected", String(selected));
+          item.tabIndex = selected ? 0 : -1;
+          document.getElementById(item.getAttribute("aria-controls")).hidden = !selected;
+        });
+      }));
+      stageTabs.forEach((tab, index) => tab.addEventListener("keydown", event => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        event.preventDefault();
+        const enabled = stageTabs.filter(item => !item.disabled);
+        const current = enabled.indexOf(tab);
+        const next = event.key === "Home" ? 0 : event.key === "End" ? enabled.length - 1 :
+          (current + (event.key === "ArrowRight" ? 1 : enabled.length - 1)) % enabled.length;
+        enabled[next].focus(); enabled[next].click();
+      }));
       const sessionKey = "oireachtas-nlq-evidence-session";
       const start = document.getElementById("start-evidence");
       const stop = document.getElementById("stop-evidence");

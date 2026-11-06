@@ -153,3 +153,31 @@ def test_feedback_controls_are_opt_in_and_form_carries_rendered_answer(tmp_path,
         assert "No answer query was executed after this resolution failure." not in actual_value
         assert 'type="radio" name="correct" value="yes"' in response.text
         assert 'type="radio" name="correct" value="no"' in response.text
+
+
+def test_dashboard_initial_state_and_stage_accessibility(tmp_path):
+    with TestClient(_app(tmp_path / "feedback")) as client:
+        page = client.get("/").text
+    assert "Natural language queries" in page
+    assert "OIREACHTAS ONTOLOGY" in page
+    assert "#F6F3EA" in page and "--card:#fff" in page
+    assert "id=\"query-processing\"" not in page
+    assert "id=\"answer-feedback\"" not in page
+    template = (app_module.TEMPLATES / "index.html").read_text(encoding="utf-8")
+    assert 'class="stage-tabs" role="tablist" aria-label="Query processing stages"' in template
+    assert 'ArrowLeft' in template and 'ArrowRight' in template
+    assert 'name="correct"' in template
+
+
+def test_blocked_query_stage_does_not_claim_compilation_or_execution(tmp_path, monkeypatch):
+    app = _app(tmp_path / "feedback")
+    from poc.nlq.composable_plan import PlanOutcome
+    monkeypatch.setattr(app_module, "execute_question", lambda *args, **kwargs: PlanOutcome(
+        status="unsupported_request", diagnostic="This question is unsupported."
+    ))
+    with TestClient(app) as client:
+        page = client.post("/ask", data={"question": "Unsupported question", "mode": "phase2"}).text
+    assert 'id="tab-interpreted"' in page
+    assert 'id="tab-compiled" aria-controls="panel-compiled" aria-selected="false" disabled' in page
+    assert "Compilation was not reached; no validated plan or SPARQL was produced." in page
+    assert "No answer query was executed after this resolution failure." in page
