@@ -672,3 +672,16 @@ included in the final candidate.
   New event/office evidence and panel-label clarification remain separate
   follow-ups, not authority to infer missing facts. Integration, branch push and
   draft-PR publication are explicitly authorized; the PR is not to be merged.
+
+### Integration publication
+
+History-preserving merge commit: `ecc4516` (parents `bf979c3` and `a824851`).
+The branch was pushed without force to
+`origin/feat/query-service-user-coverage`. Draft PR:
+[stephenrigney/OireachtasOntology#24](https://github.com/stephenrigney/OireachtasOntology/pull/24),
+targeting `master`. GitHub confirmed it is open, draft and mergeable; it has
+**not** been merged. Hosted routine-validation checks were still running at the
+publication check; the completed local acceptance results above are independent
+of those pending checks. No semantic or architectural integration issue remains
+known. The documented planner variability and source/identity limitations remain
+unchanged.
