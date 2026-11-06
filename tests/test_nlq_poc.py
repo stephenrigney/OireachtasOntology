@@ -459,6 +459,12 @@ def test_home_page_displays_empty_readiness_and_says_loading_is_manual(monkeypat
     response = asyncio.run(get_home())
     assert response.status_code == 200
     assert "Fuseki readiness" in response.text
+    assert 'id="system-status"' in response.text
+    system_details = response.text.split('id="system-status"', 1)[1].split(">", 1)[0]
+    assert "open" not in system_details
+    assert response.text.index('<form method="post" action="/ask">') < response.text.index('id="system-status"')
+    assert ".readiness.ready" not in (app_module.TEMPLATES / "index.html").read_text()
+    assert "#eff8ef" not in (app_module.TEMPLATES / "index.html").read_text()
     assert "Empty:" in response.text
     assert "The POC does not load or rebuild data automatically" in response.text
     assert "Houses: not detected" in response.text
@@ -478,6 +484,9 @@ def test_home_page_reports_unavailable_fuseki_without_claiming_graphs_are_missin
 
     response = asyncio.run(get_home())
     assert response.status_code == 200
+    assert 'class="readiness-warning" role="alert"' in response.text
+    assert 'id="system-status" open' in response.text
+    assert response.text.index("Fuseki is currently unavailable") < response.text.index('<form method="post" action="/ask">')
     assert "Unavailable:" in response.text
     assert "Could not check Fuseki readiness: Fuseki query timed out." in response.text
     assert "Houses: unknown" in response.text
@@ -587,6 +596,11 @@ def test_browser_renders_result_and_exact_sparql(monkeypatch):
     assert "<th scope=\"col\">name</th>" in response.text
     assert "A Member" in response.text
     assert "Generated SPARQL" in response.text
+    compiled_tab = response.text.split('id="tab-compiled"', 1)[1].split("</button>", 1)[0]
+    executed_tab = response.text.split('id="tab-executed"', 1)[1].split("</button>", 1)[0]
+    assert "disabled" not in compiled_tab and 'id="panel-compiled"' in response.text
+    assert "disabled" not in executed_tab and 'id="panel-executed"' in response.text
+    assert 'id="tab-interpreted"' in response.text and 'aria-selected="true"' in response.text
     assert (
         "PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n"
         "SELECT ?name WHERE { ?m foaf:name ?name }\nLIMIT 100"
