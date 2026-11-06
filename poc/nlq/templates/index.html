@@ -20,19 +20,19 @@
     textarea, select { font:inherit; color:var(--ink); background:var(--inset); border:1px solid var(--border); border-radius:6px; }
     textarea { width: 100%; min-height: 5rem; padding: .8rem; }
     button { margin-top: .5rem; padding: .65rem 1rem; font: inherit; cursor: pointer; border-radius:6px; }
-    form[action="/ask"] button[type="submit"] { color:#fff; background:var(--gold); border:1px solid var(--gold); font-weight:700; }
-    form[action="/ask"] button[type="submit"]:hover { background:var(--gold-hover); }
-    button.session-start { color: #fff; background: #18733b; border: 1px solid #125d30; border-radius: .35rem; }
-    button.session-start:hover { background: #125d30; }
-    button.session-stop { color: #fff; background: #b4232e; border: 1px solid #8f1d25; border-radius: .35rem; }
-    button.session-stop:hover { background: #8f1d25; }
+    form[action="/ask"] button[type="submit"] { color:#fff; background:#2E8B57; border:1px solid #2E8B57; font-weight:700; }
+    form[action="/ask"] button[type="submit"]:hover { background:#247148; border-color:#247148; }
+    button.session-start { color:#fff; background:#2E8B57; border:1px solid #2E8B57; border-radius:.35rem; }
+    button.session-start:hover { background:#247148; border-color:#247148; }
+    button.session-stop { color:#fff; background:#C0392B; border:1px solid #C0392B; border-radius:.35rem; }
+    button.session-stop:hover { background:#A93226; border-color:#A93226; }
     button:disabled { cursor: wait; opacity: .65; }
     section { margin-top: 1.5rem; }
     pre { overflow-x: auto; padding: 1rem; background: #f2f4f7; border: 1px solid #d5d9df; white-space: pre-wrap; }
     .error { color:var(--failure); border-color:#A3272F; }
     .ambiguity { background:#fffaf0; border-color:var(--gold); }
   .debug-panel { padding: .75rem; border: 1px solid #c8ccd0; background: #f8f9fa; }
-    .readiness { padding: .75rem; border: 1px solid var(--border); color:var(--ink); background:transparent; }
+    .readiness { padding: .75rem; border:0; color:var(--ink); background:transparent; }
     .readiness-warning { margin:0 0 16px; padding:12px 16px; color:var(--ink); background:var(--card); border:1px solid var(--border); border-left:4px solid var(--failure); border-radius:6px; }
     .system-status { margin-top:24px; }
     .system-status details { padding:16px 20px; background:var(--card); border:1px solid var(--border); border-radius:8px; }
@@ -50,7 +50,7 @@
     summary { cursor: pointer; }
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: .5rem; border: 1px solid #c8ccd0; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
-    th { background: #f2f4f7; }
+    th { background:var(--page); }
     .mast-link { display:inline-block; margin:0 0 12px; }
     .stage-tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:16px 0; }
     .stage-tabs button { margin:0; text-align:left; color:var(--ink); background:var(--inset); border:1px solid var(--separator); }
@@ -61,6 +61,12 @@
     .stage-panel { min-height:4rem; }
     .session-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .session-controls p { margin:0; }
+    .session-controls { padding:14px 18px; }
+    .mode-toggle { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 0; padding:0; border:0; }
+    .mode-toggle legend { width:100%; margin-bottom:6px; font-weight:700; }
+    .mode-toggle label { position:relative; display:inline-flex; align-items:center; min-height:44px; padding:9px 14px; color:var(--ink); background:var(--inset); border:1px solid var(--border); border-radius:6px; cursor:pointer; }
+    .mode-toggle input { margin:0 8px 0 0; accent-color:var(--gold); }
+    .mode-toggle label:has(input:checked) { color:var(--gold-hover); background:#fff; border-color:var(--gold); box-shadow:inset 0 0 0 1px var(--gold); }
     @media(max-width:650px) { body { padding:16px 14px 36px; } body > section, body > form, main > section, main > form { padding:16px; margin:16px 0; } .stage-tabs { grid-template-columns:1fr; } table { display:block; overflow-x:auto; } }
     @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; } }
   </style>
@@ -69,7 +75,6 @@
   <header><p class="eyebrow">OIREACHTAS ONTOLOGY</p><h1>Natural language queries</h1><p>Explore Oireachtas data through ordinary language</p></header>
   <p class="mast-link"><a href="/capabilities">Browse the query capability catalogue</a></p>
   <section aria-label="Optional evidence collection" class="session-controls">
-    <h2>Evidence session</h2>
     <button type="button" class="session-start" id="start-evidence">Start Evidence Session</button>
     <button type="button" class="session-stop" id="stop-evidence" hidden>Stop Evidence Session</button>
     <p id="evidence-status" role="status" aria-live="polite">Feedback collection is off.</p>
@@ -79,13 +84,13 @@
   {% endif %}
   <form method="post" action="/ask">
     <h2>Ask a question</h2>
-    <label for="question"><strong>Your Oireachtas question</strong></label>
+    <label for="question"><strong>Your question</strong></label>
     <textarea id="question" name="question" required maxlength="2000">{{ question }}</textarea>
-    <label for="mode"><strong>Development query path</strong></label>
-    <select id="mode" name="mode">
-       <option value="phase2" {% if mode == "phase2" %}selected{% endif %}>Composable semantic query plan (default)</option>
-      <option value="phase1" {% if mode == "phase1" %}selected{% endif %}>Phase 1 direct NL→SPARQL (comparison)</option>
-    </select>
+    <fieldset id="mode-toggle" class="mode-toggle">
+      <legend>Development Query Path</legend>
+      <label><input type="radio" name="mode" value="phase2" {% if mode == "phase2" %}checked{% endif %}>Composable semantic query plan (default)</label>
+      <label><input type="radio" name="mode" value="phase1" {% if mode == "phase1" %}checked{% endif %}>Phase 1 direct NL→SPARQL (comparison)</label>
+    </fieldset>
     <button type="submit">Ask</button>
   </form>
 

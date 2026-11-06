@@ -209,6 +209,23 @@ def test_feedback_retry_does_not_clear_user_answers():
     assert 'expected.value' in template
 
 
+def test_dashboard_control_labels_colours_and_query_mode_toggle(tmp_path):
+    with TestClient(_app(tmp_path / "feedback")) as client:
+        page = client.get("/").text
+    template = (app_module.TEMPLATES / "index.html").read_text(encoding="utf-8")
+    assert "<h2>Evidence session</h2>" not in page
+    assert "Your Oireachtas question" not in page
+    assert 'id="question" name="question"' in page
+    assert 'type="radio" name="mode" value="phase2" checked' in page
+    assert 'type="radio" name="mode" value="phase1"' in page
+    assert '<select id="mode"' not in page
+    assert page.index("Development Query Path") < page.index('type="submit">Ask')
+    assert "background:#2E8B57" in template
+    assert "background:#C0392B" in template
+    assert "th { background:var(--page); }" in template
+    assert ".readiness { padding: .75rem; border:0;" in template
+
+
 def test_unexpected_pre_execution_failure_keeps_executed_stage_unavailable(tmp_path, monkeypatch):
     from poc.nlq import app as app_module
 
