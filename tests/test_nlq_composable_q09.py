@@ -134,6 +134,44 @@ def test_term_scoped_constituency_ambiguity_and_not_found_are_distinct():
         resolve_constituency(QueryResult("select", ("iri", "label"), ()), "Unknown")
 
 
+@pytest.mark.parametrize("prefix", ["in", "for", "representing", "from"])
+@pytest.mark.parametrize("label", ["Dublin Central", "Dublin South-Central"])
+def test_constituency_resolution_ignores_only_supported_leading_preposition(prefix, label):
+    iri = "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/one"
+    result = QueryResult("select", ("iri", "label"), ((iri, label + "@en"),))
+
+    assert resolve_constituency(result, f"{prefix} {label}") == (iri, label)
+
+
+def test_constituency_preposition_fallback_preserves_ambiguity_and_not_found():
+    ambiguous = QueryResult("select", ("iri", "label"), (
+        ("https://data.oireachtas.ie/ie/a", "Dublin Central@en"),
+        ("https://data.oireachtas.ie/ie/b", "Dublin Central@en"),
+    ))
+    with pytest.raises(AmbiguousConstituency):
+        resolve_constituency(ambiguous, "in Dublin Central")
+    with pytest.raises(Exception, match="No matching constituency.*in Nowhere"):
+        resolve_constituency(QueryResult("select", ("iri", "label"), ()), "in Nowhere")
+
+
+def test_equivalent_constituency_mentions_bind_same_identity_and_compile_compatible_queries():
+    iri = "https://data.oireachtas.ie/ie/oireachtas/house/dail/33/constituency/Dublin-Central"
+    rows = QueryResult("select", ("iri", "label"), ((iri, "Dublin Central@en"),))
+    resolved = [
+        resolve_constituency(rows, mention)
+        for mention in ("in Dublin Central", "for Dublin Central")
+    ]
+    plan = plan_question("Who represented Dublin Central in the previous Dáil?", as_of=AS_OF)
+    supported = supported_predicates(ROOT / "ontology")
+
+    assert resolved == [(iri, "Dublin Central"), (iri, "Dublin Central")]
+    assert compile_answer_query(
+        plan, TERM_33, resolved[0][0], supported_predicates=supported,
+    ) == compile_answer_query(
+        plan, TERM_33, resolved[1][0], supported_predicates=supported,
+    )
+
+
 def test_compile_requires_all_reviewed_relation_edges_and_passes_safety():
     supported = supported_predicates(ROOT / "ontology")
     plan = plan_question("Who represented Dublin Mid-West in the previous Dáil?", as_of=AS_OF)
