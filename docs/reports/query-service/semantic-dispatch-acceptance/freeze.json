@@ -1,0 +1,24 @@
+{
+  "aggregateAlgorithm": "SHA256(path UTF-8, NUL, exact bytes, NUL for holdout.json, oracle-context.json.gz, methodology.md in that order; freeze.json excluded)",
+  "aggregateFreezeSha256": "42309c5da7903f0d5a20cf0dca347eae8d89ac47bdb6f1eab7a1f270e21d60cd",
+  "ambiguityControlCount": 1,
+  "askCallsExecuted": false,
+  "datasetProfile": {
+    "authority": "task-supplied local profile; nonauthoritative and incomplete; not used as a completeness premise",
+    "namedGraphs": 7982,
+    "triples": 1119860
+  },
+  "endpoint": "http://localhost:3030/houses/query",
+  "factualCount": 38,
+  "formatVersion": 1,
+  "frozenAtUtc": "2026-11-07T00:17:50Z",
+  "questionCount": 44,
+  "referenceDate": "2026-11-06",
+  "sha256": {
+    "holdout.json": "2059007220719da7413ecf45a8576554761ba73bee07648c790d155e624a6235",
+    "methodology.md": "c34144774fb729e772f399f282c0f185657cc5412ca7b47f8f4893ef107201c9",
+    "oracle-context.json.gz": "2c3e9dcdbd1b20e95d02d70e2fb680b63d213b3e7ca1b0fbd76933292d3da7e6"
+  },
+  "status": "frozen_pending_orchestrator_commit_and_execution",
+  "unsupportedControlCount": 5
+}
