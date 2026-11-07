@@ -25,6 +25,7 @@ authoritative where applicable; historical prose does not supersede them.
 - [Debate identity contract](architecture/debate-identities.md)
 - [Parliamentary member collections](architecture/member-collections.md)
 - [Party identities](architecture/party-identities.md)
+- [NLQ semantic dispatch and canonical planning decision (proposed)](architecture/nlq-semantic-dispatch.md)
 
 ## Ontology references
 
