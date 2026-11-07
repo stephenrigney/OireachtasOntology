@@ -363,3 +363,18 @@ Implementation and all evaluation evidence are retained on campaign branch
 commits contain evidence/report closure only. The branch is supplied for draft
 review targeting **master**, with the independent acceptance failure explicit.
 No automatic merge is authorized and no further implementation is in scope.
+
+Draft PR: **[stephenrigney/OireachtasOntology#27](https://github.com/stephenrigney/OireachtasOntology/pull/27)**,
+targeting **master**, explicitly titled “acceptance failed”. The campaign
+branch and committed evidence have been pushed; the PR remains draft and
+unmerged. GitHub CLI's implicit repository initially selected the upstream
+repository and could not create a PR there; creation succeeded only with the
+explicit repository matching this worktree's `origin`. No upstream PR was
+created.
+
+The fork's target `master` advanced from campaign baseline **df35d44** to
+**a74883b** during this work, through the separate documentation-only proposed
+semantic-dispatch architecture PR (#26: `docs/README.md` and
+`docs/architecture/nlq-semantic-dispatch.md`). Those commits were not merged or
+rebased into the frozen implementation. Verification and acceptance results
+apply to **1e97ae4**, not an untested combined tree.
