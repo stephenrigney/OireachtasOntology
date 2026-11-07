@@ -1,4 +1,13 @@
 {
+  "candidate-1e97ae4-evidence.json": {
+    "sha256": "d7b45b82df41a6f7416ee7a53166a83cbddd2a3e99ebb5c9d59928ed064b722b",
+    "source_bytes_sha256": "d7b45b82df41a6f7416ee7a53166a83cbddd2a3e99ebb5c9d59928ed064b722b",
+    "note": "Contains individual compressed and source-byte hashes for all final primary, transfer, repeat and service-provenance evidence."
+  },
+  "implementation-freeze.json": {
+    "sha256": "2d4af52beab09302aad8b74f817181f5745f88900416d0703bd6f24dca5e7fcd",
+    "source_bytes_sha256": "2d4af52beab09302aad8b74f817181f5745f88900416d0703bd6f24dca5e7fcd"
+  },
   "candidate-5f7332c-manual-review.json.gz": {
     "sha256": "11cb769d2349a50953b8e9ec3c2747f90f86cf3bbe896d9478e16e47ed74f698",
     "source_bytes_sha256": "5660c0c327f28e818faa541f6758ad5f362444a06eb924c2fe707e2997e8dff7"

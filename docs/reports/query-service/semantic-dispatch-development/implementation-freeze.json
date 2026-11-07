@@ -1,0 +1,63 @@
+{
+  "frozen_utc": "2026-11-07T17:03:57.830225+00:00",
+  "source_commit": "1e97ae4848dad4b24538f60c5e6bb3700373e957",
+  "reference_date": "2026-11-06",
+  "planner": "gpt-6-luna",
+  "service_url": "http://127.0.0.1:8001",
+  "service_pid": 1875926,
+  "acceptance_question_freeze_commit": "a7bca64",
+  "acceptance_calls_executed_before_this_freeze": false,
+  "policy": "No further implementation tuning against independent acceptance results. Retain every first result; do not retry or replace failures.",
+  "development_factual": {
+    "correct": 38,
+    "eligible": 48
+  },
+  "original16_controls": {
+    "correct": 16,
+    "eligible": 16
+  },
+  "transfer": {
+    "factual_correct": 8,
+    "factual_eligible": 8,
+    "negative_controls_correct": 2,
+    "negative_controls_eligible": 2
+  },
+  "source_sha256": {
+    "poc/nlq/__init__.py": "54014edbb14afe0ee7fb75587542a3abecee1c49b56c76880bf0b4f47a98cd71",
+    "poc/nlq/app.py": "2d770a37001891bd13e89f162daa60e5f8ee3e7a9e6a73623d53631bbf17ee53",
+    "poc/nlq/benchmark.py": "9aea7a1fe7f36c7a4b3d6b5dcc6a1cbc0c587a44ac0838891a7c6e061388c475",
+    "poc/nlq/benchmark_isolation.py": "257e3e9ab60ecb32f8f27c225c7d38f365c9f7647d4f46e47cdc31173787dbd8",
+    "poc/nlq/composable_plan.py": "302688568be9d8bd889d0ada47a91c690d61481694fd1befd19192b4376a8ded",
+    "poc/nlq/composable_semantic_planner.py": "28f1551bd05bedd911d05b2341b8aeee95e9b959063fab324a25e69f4027a396",
+    "poc/nlq/config.py": "8da246a0d09498fd29dc1a640bc9360cc36d5991ed74992524df94a94ae2795c",
+    "poc/nlq/contract.py": "fc1f05b4ee6b41153eba80849162e4bffc2cad63fdf84b2a85e6cb6d9ea43ade",
+    "poc/nlq/errors.py": "9ca7816008c8d7aeff22b45c5f75a0d17a07eeb8ed63d820b6d2aea260491bb7",
+    "poc/nlq/feedback.py": "52f98ae5e42e1aaf08488785730921c624bcd10c8017aaa1bfb75bec5b1a2353",
+    "poc/nlq/fuseki.py": "267cd9a4c9a8fcc90b9b952ceb09ab89e7988161c58fbefb92f37f950df05752",
+    "poc/nlq/government.py": "54d6c473f60e325e982b29eabb1b164ddffd96e0964715ec3ebb3202ec983cbf",
+    "poc/nlq/graph_intent.py": "b91278c525c03983103c59f7c15cf2541c61ac96c330b063d0bf840cfb9349cc",
+    "poc/nlq/interpretation.py": "b9476f4196184946518c09039f5e1b63ac414f86e85a5ecc8c2780ffac755a23",
+    "poc/nlq/llm.py": "e48ffd8ce54576a32bb9e2ea7c07fea9ea00061cd22feb6c5663faa52e7eec58",
+    "poc/nlq/member_resolution.py": "2469e1ab01cfc475842d5d3b2b16f4edd2b2ae348ff5d53b18d8c582ec51d28d",
+    "poc/nlq/membership_intent.py": "9746b658415207d97d92a3afad5d0069e51b2512cb424088c75731c441682826",
+    "poc/nlq/pagination.py": "b02de58390b97f69e8f3c8be0ef028b014ea905ed9ebb8c430921dbaf49b9c14",
+    "poc/nlq/pipeline.py": "941727f48e5df65cea1070f62c61ef938c2438ff2da1b1577264baf83d274f92",
+    "poc/nlq/plan_benchmark.py": "ee6b7d9710f386b21b5efa8e4771873e45c513da2948c676d450b17ec93b5991",
+    "poc/nlq/plan_contract.py": "e2a84a037e18d3b90f4ee9b9ebeabae51dd5c298e00525abbc47eb77df06c169",
+    "poc/nlq/plan_pipeline.py": "b5692a6a491b97ca28d1b200225e52505e13694d4f54f7745c0048bfddab3acb",
+    "poc/nlq/plan_sparql.py": "fec6dd657c731edc0014c0999513fe390057b12fbc1d4ae87b09541d241e4764",
+    "poc/nlq/planner_benchmark.py": "c836bab23cf31db7e07ee2178db6a3c274bbcabfd9d14dd334ea95840c047d08",
+    "poc/nlq/presentation.py": "e43f52d6618d31f25c89c58eced5b05151f24e1a562b3d2fae6ae1ead24713b7",
+    "poc/nlq/question_intent.py": "1a234c13344bfea98d44d2e180ae5fbed827592beda676883ca100da096886eb",
+    "poc/nlq/representation.py": "7ee9b8a370ad63346aeb43d11f93034f9d24eb377bfcaae7fb1c8659b7e47734",
+    "poc/nlq/results.py": "9e16fcadcc8f9a14f51c56d1490a5b19ab21d72a1fe35c458c00b90c4b2afee2",
+    "poc/nlq/safety.py": "5cbd158c0e12205d1670e8345adb867a73009565f68d9b9c6b688529198d0872",
+    "poc/nlq/schema.py": "5ff9c133166904571753a940e427ca3f59cd82ca5e3c0377a2b0bd06125f4578",
+    "poc/nlq/semantic_graphs.py": "9899fac03f72d2a42c1b323c206dada3540230a70d8fcb6ab1e6c270dd5998bc",
+    "poc/nlq/stage_a.py": "700084ed861a006a05a00d69a19060defaa019d696eb6134b5bde084d0c50256",
+    "poc/nlq/stage_b.py": "444c1615e7d613e5c1e559ef3bc63d5bcb36749592eca3d73ac42024ff92b8b0",
+    "poc/nlq/stage_c.py": "0b59dea7f58fe88a7bd4d09001c4b1e93ab03f93713bff663f76e99821b934e8",
+    "poc/nlq/structured_planner.py": "cfd91cb018d2c53fb4b066ee5fa37e1fb53c34dd6b5e8e428133648bd4287e9f",
+    "poc/nlq/vocabulary.py": "b1168f9c0e89daaebb0ccfa76f5a5f31e93cfaf68e37ff3dcec068b12edb254a"
+  }
+}

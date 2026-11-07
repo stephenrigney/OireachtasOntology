@@ -1,0 +1,42 @@
+{
+  "candidate-1e97ae4-all86-responses.jsonl.gz": {
+    "sha256": "fe37b38eabcc41310ee98d23a2fe189d1b00f4fa235564447ffcd89ed0a5b16c",
+    "source_bytes_sha256": "37f34cd8106ca3dd4e5af29cb6247eb209a116bf676d60b5ef2e046aadbe4148"
+  },
+  "candidate-1e97ae4-all86-question-manifest.json.gz": {
+    "sha256": "1f1bafd923e6973c456a16980b09a77c996cc87a63b125e3466c73640e67080c",
+    "source_bytes_sha256": "155cd758a235d3e78770884460695237d01ef0b851e98264a28a43edfd9717ea"
+  },
+  "candidate-1e97ae4-all86-score.json.gz": {
+    "sha256": "5ee2349d12280f532ac52e574c15186983146d940bf15946f52a099e8ba8579f",
+    "source_bytes_sha256": "737f2654fb37046569e91d000569f2e989c3bd94b4d945ac4066e2c78826f894"
+  },
+  "candidate-1e97ae4-transfer-responses.jsonl.gz": {
+    "sha256": "d25215fb1336238a4fa073f2d6172bec0ae8f048ad0b701f605efa7f992b55cb",
+    "source_bytes_sha256": "f0e73740913b0bfb58df8c98a796c85ff2b34db57cb7a611efe3ca54ab156fb5"
+  },
+  "candidate-1e97ae4-transfer-question-manifest.json.gz": {
+    "sha256": "e0f522fdc0c5fb8c0b9b4e90cf599e19bd0a33e863a641aee4bbeebfca809381",
+    "source_bytes_sha256": "8b937dfa1196472d7dbfe62df643cc9063b32cefc3639eee23947529610d8d30"
+  },
+  "candidate-1e97ae4-transfer-assessment.json.gz": {
+    "sha256": "ca6754784879b35d758582cf3951573123f618ef73d76cd472f93554f5623a28",
+    "source_bytes_sha256": "db037b314cb402471ca0a9ba3e710e15decac62f90f376275f579d561939b454"
+  },
+  "candidate-1e97ae4-variability-responses.jsonl.gz": {
+    "sha256": "4cf853fdfaa27b0987e86ca4b46a7d83f36170ec767e5d8b7d63ec60ec7b450a",
+    "source_bytes_sha256": "3ff535f8596a949816b929495cb13e0bd422992b25f58939949a616e01473840"
+  },
+  "candidate-1e97ae4-variability-question-manifest.json.gz": {
+    "sha256": "2596f65053536fd39284d2768f66c236516029628cf1147aa335a0e73d127cea",
+    "source_bytes_sha256": "60825d6beb0000fbd45f2c15898cb0d1041b00035f74e399a7526412116721dd"
+  },
+  "candidate-1e97ae4-variability-assessment.json.gz": {
+    "sha256": "6748ec0d0051e5a969d258ae46058a8c9a6e2c8af4294344bac46c6c82f58d4f",
+    "source_bytes_sha256": "d403c4390bd0e1d2cebf111d043f22687e0c68d35cc2ed191ab08fdf17f10671"
+  },
+  "candidate-1e97ae4-service-provenance.json.gz": {
+    "sha256": "58126d72f0365143c7d0efe107624d4b80f7fc2590eb35d81fbfa0bcc7c581ba",
+    "source_bytes_sha256": "ab573e4cfae64ca630d587d4816384c3a3157021bb497f9b6d21b95dc03345c7"
+  }
+}

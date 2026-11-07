@@ -112,7 +112,7 @@ holdout and fresh direct-SPARQL oracles without access to remediation code,
 tests, published evaluation questions or failure reports. Its question/oracle
 artifacts were committed as **a7bca64** before any acceptance `/ask` execution;
 the implementation orchestrator committed them without reading their contents.
-Execution awaits implementation freeze. Until independent execution and scoring
+Implementation is frozen at **1e97ae4**; independent execution is next. Until independent execution and scoring
 finish, **campaign acceptance is not established**. No implementation will be
 tuned against its results.
 
@@ -212,6 +212,36 @@ has an explicit positive-measure conflict guard. Focused verification: **375
 passed**. Full suite: **2,555 passed, 26 skipped, 23 subtests passed** in 503.58
 seconds; `git diff --check` passed. No named-question route or expected answer
 was added to service code.
+
+### Final development replay — candidate `1e97ae4`
+
+| Population | First-result outcome |
+|---|---:|
+| Published 60: PASS / PARTIAL / FAIL / BLOCKED | **47 / 1 / 10 / 2** |
+| Factual, unchanged 48-case denominator | **38/48 (79.2%)** |
+| Contract-admissible sensitivity | **38/45 (84.4%)** |
+| Original 26: PASS / PARTIAL / FAIL | **16 / 3 / 7** |
+| Original 16 previously passing controls | **16/16** |
+| Returned-answer table mismatches | **0** |
+| Predeclared transfer factual / negative controls | **8/8 / 2/2** |
+
+All 86 primary cases returned with HTTP 200; all ten predeclared transfers were
+then executed once. The final replay restores the four guarded paraphrases.
+H06 instead failed safely during model-plan validation on its first call; it
+still scores FAIL despite both additional calls answering correctly.
+
+The predeclared 13-case variability sample made **26 additional requests**:
+**25** matched their frozen factual expectations. **11/13** case signatures
+were identical across the primary and both additional calls. H06 varied from
+validation failure to two answers; R18 answered in the primary run, failed
+validation on the first additional run and answered on the second. These
+repetitions do not replace primary scores or establish perfect planner
+reliability. All raw responses, source hashes, manifests and assessments are
+retained under `candidate-1e97ae4-*`.
+
+The implementation is now frozen at **1e97ae4** before independent acceptance
+execution, with a persisted reference-date/model/source-hash pin. Subsequent
+acceptance results will not be used to tune implementation.
 
 The existing single-partially-overlapping-month House-term guard is retained.
 H40's frozen factual expectation does not override the technical specification's
