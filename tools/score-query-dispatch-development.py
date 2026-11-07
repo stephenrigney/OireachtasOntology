@@ -12,6 +12,7 @@ import gzip
 import importlib.util
 import json
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 FROZEN = ROOT / "docs/reports/query-service/independent-generalisation"
@@ -50,8 +51,10 @@ def check_holdout(case, actual):
         assert rows[0][columns.index("Seats")] == expected[0]["seats"]
         assert "28th Dáil" in rows[0]
     elif id == "H42":
-        assert {r[0] for r in rows} == {r["label"] for r in expected}
-        assert {r[columns.index("Identity")] for r in rows} == {r["party"] for r in expected}
+        assert len(rows) == len(expected)
+        assert {(r[0], r[columns.index("Identity")]) for r in rows} == {
+            (r["label"], r["party"]) for r in expected
+        }
     else:
         old.assert_facts(case, actual)
         identity_columns = {"person": "Member identity", "constituency": "Constituency identity", "term": "Term identity"}
@@ -90,10 +93,18 @@ def check_control(case, actual, holdout):
             "https://data.oireachtas.ie/ie/oireachtas/house/dail/30",
         )
     if case["id"] == "R20":
+        assert len(rows) == len(holdout["H47"]["expected_rows"])
         assert {r[1] for r in rows} == {r["person"] for r in holdout["H47"]["expected_rows"]}
 
 
 def score(actuals):
+    actuals = list(actuals)
+    seen = set()
+    for actual in actuals:
+        key = (actual["id"], actual.get("run", 1))
+        if key in seen:
+            raise ValueError(f"Duplicate case/run record: {key}")
+        seen.add(key)
     cases = {c["id"]: c for c in json.loads((FROZEN / "holdout.json").read_text())["cases"]}
     controls = {c["id"]: c for c in json.loads((FROZEN / "regression-cases.json").read_text())}
     published = {r["id"]: r["score_against_frozen_expectation"] for r in json.loads((FROZEN / "assessment.json").read_text())["ledger"]}
@@ -141,23 +152,56 @@ def score(actuals):
                 assert id in {"R04", "R05", "R08", "R14", "R15", "R17"}
                 assert outcome == "unsupported_capability", "Unsupported original request changed outcome"
                 detail = "Original factual request still unsupported; safe refusal, not factual credit"
-        except (AssertionError, KeyError, ValueError, IndexError, TypeError) as error:
+        except (AssertionError, KeyError, ValueError, IndexError, TypeError, AttributeError) as error:
             detail = f"Mismatch requiring review: {type(error).__name__}: {error}"
+        row_integrity = []
+        for table in actual.get("tables", []):
+            if isinstance(table, list) and table:
+                rendered_rows = [json.dumps(row, ensure_ascii=False, sort_keys=True) for row in table[1:]]
+                row_integrity.append({"rows": len(rendered_rows), "distinct_rows": len(set(rendered_rows))})
+        prose = actual.get("rendered_answer", "").lower()
         ledger.append({"id": id, "run": actual.get("run", 1), "question": actual["question"],
                        "baseline": baseline, "score": result, "outcome": outcome,
                        "factual_match": facts, "returned_answer_mismatch": outcome == "answer" and result == "FAIL",
-                       "scope_caveat": id in CAVEATS, "detail": detail})
-    h = [r for r in ledger if r["id"] in cases]
+                       "scope_caveat": id in CAVEATS, "detail": detail,
+                       "row_integrity": row_integrity,
+                       "qualification_words": {
+                           word: len(re.findall(r"\b" + word + r"\b", prose))
+                           for word in ("complete", "incomplete")
+                       }})
+    primary = [r for r in ledger if r["run"] == 1]
+    h = [r for r in primary if r["id"] in cases]
     factual = [r for r in h if cases[r["id"]]["expected_outcome"] == "answer"]
     strict = [r for r in factual if r["id"] not in CAVEATS]
-    original = [r for r in ledger if r["id"].startswith("R")]
+    original = [r for r in primary if r["id"].startswith("R")]
+    manifest = load_module("development_manifest", ROOT / "tools/collect-query-dispatch-development.py").load_manifest()
+    expected_ids = {case["id"] for case in manifest}
+    primary_ids = {r["id"] for r in primary}
+    repeats = [r for r in ledger if r["run"] != 1]
+    signatures = {}
+    for actual in actuals:
+        signature = json.dumps({
+            "outcome": actual.get("outcome"),
+            "tables": [sorted(json.dumps(row, ensure_ascii=False) for row in table[1:])
+                       for table in actual.get("tables", []) if isinstance(table, list) and table],
+        }, sort_keys=True, ensure_ascii=False)
+        signatures.setdefault(actual["id"], set()).add(signature)
     return {"summary": {
         "holdout": dict(Counter(r["score"] for r in h)),
-        "factual": {"correct": sum(r["factual_match"] for r in factual), "eligible": len(factual)},
-        "sensitivity": {"correct": sum(r["factual_match"] for r in strict), "eligible": len(strict)},
+        "factual": {"correct": sum(r["factual_match"] for r in factual),
+                    "eligible": sum(c["expected_outcome"] == "answer" for c in cases.values())},
+        "sensitivity": {"correct": sum(r["factual_match"] for r in strict),
+                        "eligible": sum(c["expected_outcome"] == "answer" and id not in CAVEATS for id, c in cases.items())},
         "original26": dict(Counter(r["score"] for r in original)),
         "original16_matches": sum(r["factual_match"] for r in original if r["id"] in controls),
-        "returned_answer_mismatches": [r["id"] for r in ledger if r["returned_answer_mismatch"]]},
+        "returned_answer_mismatches": [r["id"] for r in primary if r["returned_answer_mismatch"]],
+        "population": {"cases_scored": len(primary), "expected": len(expected_ids),
+                       "missing_ids": sorted(expected_ids - primary_ids),
+                       "unexpected_ids": sorted(primary_ids - expected_ids)},
+        "baseline_drift": [{"id": r["id"], "baseline": r["baseline"], "score": r["score"]}
+                           for r in primary if r["baseline"] != r["score"]]},
+        "variability": {"additional_records": len(repeats), "ledger": repeats,
+                        "signature_consistent": {id: len(values) == 1 for id, values in signatures.items()}},
         "ledger": ledger,
         "limitations": "Machine table/outcome checks only. Review full intent, exact constraints, candidate sets and coverage qualifications independently; matches alone are not semantic acceptance."}
 

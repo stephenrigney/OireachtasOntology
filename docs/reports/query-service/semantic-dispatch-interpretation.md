@@ -65,6 +65,14 @@ the exact Member/constituency/term association; the scorer now rejects matching
 labels paired with incorrect resource identities. Scoring-tool tests: **12
 passed**, including reproduction of both published baselines.
 
+Independent scoring review subsequently challenged repeat-run mixing, party
+label/identity associations, distinct-row counts and interrupted populations.
+The scorer now keeps all raw ledger entries but separates repeat results from
+primary credit, rejects duplicate case/run records, preserves the fixed
+48-case factual denominator, reports missing cases, and checks H42 associations
+and R20's exact distinct roster size. Malformed numeric answers fail per case
+rather than crashing scoring. Updated focused checks: **16 passed**.
+
 ## Changes and verification (campaign in progress)
 
 ### Current-point entity spans

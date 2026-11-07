@@ -59,3 +59,39 @@ def test_original_latest_term_control_requires_exact_grounded_identities(column)
     result = SCORE.score([actual])
     assert result["ledger"][0]["score"] == "FAIL"
     assert result["ledger"][0]["returned_answer_mismatch"] is True
+
+
+def test_repeats_never_inflate_primary_factual_credit_and_duplicates_are_rejected():
+    actual = copy.deepcopy(next(r for r in SCORE.records(SCORE.FROZEN / "main.jsonl.gz") if r["id"] == "H05"))
+    repeat = copy.deepcopy(actual)
+    repeat["run"] = 2
+    result = SCORE.score([actual, repeat])
+    assert result["summary"]["factual"] == {"correct": 1, "eligible": 48}
+    assert result["summary"]["population"]["cases_scored"] == 1
+    assert len(result["summary"]["population"]["missing_ids"]) == 85
+    assert result["variability"]["additional_records"] == 1
+    with pytest.raises(ValueError, match="Duplicate case/run"):
+        SCORE.score([actual, copy.deepcopy(actual)])
+
+
+def test_party_catalogue_requires_label_identity_associations():
+    case = next(c for c in json.loads((SCORE.FROZEN / "holdout.json").read_text())["cases"] if c["id"] == "H42")
+    expected = case["expected_rows"]
+    actual = {"tables": [[["Name", "Identity"], *[[r["label"], r["party"]] for r in expected]]]}
+    SCORE.check_holdout(case, actual)
+    table = actual["tables"][0]
+    table[1][1], table[2][1] = table[2][1], table[1][1]
+    with pytest.raises(AssertionError):
+        SCORE.check_holdout(case, actual)
+
+
+def test_original_prior_service_control_rejects_duplicate_rows():
+    actual = copy.deepcopy(next(r for r in SCORE.records(SCORE.FROZEN / "regression.jsonl.gz") if r["id"] == "R20"))
+    actual["tables"][0].append(copy.deepcopy(actual["tables"][0][1]))
+    assert SCORE.score([actual])["ledger"][0]["score"] == "FAIL"
+
+
+def test_malformed_numeric_answer_is_a_per_case_failure_not_scoring_crash():
+    actual = copy.deepcopy(next(r for r in SCORE.records(SCORE.FROZEN / "main.jsonl.gz") if r["id"] == "H08"))
+    actual.update({"outcome": "answer", "tables": [[["Term"], ["Not a term number"]]]})
+    assert SCORE.score([actual])["ledger"][0]["score"] == "FAIL"
