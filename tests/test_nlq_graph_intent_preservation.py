@@ -150,6 +150,77 @@ def test_supported_named_member_representation_and_evidence_scopes_are_preserved
     assert draft["referents"]["member"]["mention"] == member
 
 
+@pytest.mark.parametrize(("question", "member", "selector"), [
+    (
+        "In Eamon Gilmore's latest recorded Dáil term, what was his constituency?",
+        "Eamon Gilmore", "latestRecorded",
+    ),
+    (
+        "In Mary Lou McDonald's latest recorded Dáil term, what was her constituency?",
+        "Mary Lou McDonald", "latestRecorded",
+    ),
+    (
+        "In Bertie Ahern's latest recorded Dáil term, what was their constituency?",
+        "Bertie Ahern", "latestRecorded",
+    ),
+    (
+        "List every constituency Frances Fitzgerald has represented in the Dáil, keeping the terms separate.",
+        "Frances Fitzgerald", None,
+    ),
+    (
+        "List every constituency Mary Lou McDonald has represented in the Dáil, keeping the terms separate.",
+        "Mary Lou McDonald", None,
+    ),
+])
+def test_existing_possessive_latest_and_preserved_career_wordings_validate_as_complete_graphs(
+    question, member, selector,
+):
+    draft = build_constituency_representation_draft(member, selector)
+    _legacy_validator_accepts(draft, question)
+    assert draft["answer"]["preserveEvidence"] is True
+    assert {detail["referent"] for detail in draft["answer"]["details"]} == {"term"}
+    validate_constituency_representation_intent(question, member=member, selector=selector)
+
+
+@pytest.mark.parametrize(("question", "member", "selector"), [
+    (
+        "In Eamon Gilmore's latest recorded Dáil term, what were his and Mary Lou McDonald's constituencies?",
+        "Eamon Gilmore", "latestRecorded",
+    ),
+    (
+        "In Eamon Gilmore's latest recorded Dáil term, what was his constituency and what office did he hold?",
+        "Eamon Gilmore", "latestRecorded",
+    ),
+    (
+        "In Eamon Gilmore's latest recorded Dáil term, what was his constituency, and was he a man?",
+        "Eamon Gilmore", "latestRecorded",
+    ),
+    (
+        "In Eamon Gilmore's latest recorded Dáil term, what was his constituency on 1 January 2014?",
+        "Eamon Gilmore", "latestRecorded",
+    ),
+    (
+        "List every constituency Frances Fitzgerald has represented in the Dáil, keeping the terms separate and listing the member names.",
+        "Frances Fitzgerald", None,
+    ),
+    (
+        "List every constituency Frances Fitzgerald has represented in the Dáil during 2014, keeping the terms separate.",
+        "Frances Fitzgerald", None,
+    ),
+    (
+        "List every constituency Frances Fitzgerald has represented in the Dáil, keeping the terms separate, and was she a woman?",
+        "Frances Fitzgerald", None,
+    ),
+])
+def test_added_person_output_gender_and_calendar_conditions_remain_unconsumed(
+    question, member, selector,
+):
+    with pytest.raises(ValueError):
+        validate_composable_plan_draft(
+            build_constituency_representation_draft(member, selector), question=question,
+        )
+
+
 @pytest.mark.parametrize("question", [
     "Which constituency did Micheál Martin represent in his latest recorded Dáil term, and what office did he hold?",
     "Which constituency did Micheál Martin represent in his latest recorded Dáil term, and was he a man?",

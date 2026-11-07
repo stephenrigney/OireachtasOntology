@@ -236,14 +236,22 @@ def requested_measures(question: str) -> RequestedMeasures:
     if positive_group:
         requested.add("groups")
     member_seat_alias = bool(MEMBER_SEAT_ALIAS.search(question)) and not re.search(r"\bseats?\b", question, re.I)
-    seat_word = positive_word(re.compile(r"\bseats?\b", re.I), "seats")
-    seat_requested = bool(_SEAT_COMPLEMENT.search(question)) or (seat_word and (bool(_COUNT_OPERATOR.search(question)) or member_seat_alias))
-    if seat_requested or member_seat_alias:
-        requested.add("seats")
     person_terms = re.compile(
         r"\b(?:members?|people|persons?|representatives?|senators?|tds?|deput(?:y|ies))\b", re.I,
     )
-    if positive_word(person_terms, "members") and not member_seat_alias:
+    member_requested = positive_word(person_terms, "members") and not member_seat_alias
+    seat_word = positive_word(re.compile(r"\bseats?\b", re.I), "seats")
+    plural_seat_measure = (
+        positive_word(re.compile(r"\bseats\b", re.I), "seats")
+        and member_requested
+        and bool(re.search(r"\b(?:and|or|plus|alongside)\b|&", question, re.I))
+    )
+    seat_requested = bool(_SEAT_COMPLEMENT.search(question)) or (
+        seat_word and (bool(_COUNT_OPERATOR.search(question)) or member_seat_alias or plural_seat_measure)
+    )
+    if seat_requested or member_seat_alias:
+        requested.add("seats")
+    if member_requested:
         requested.add("members")
     if re.search(r"\bd[áa]il\s+terms?\b", question, re.I):
         requested.add("dail_terms")

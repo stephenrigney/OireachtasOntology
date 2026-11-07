@@ -192,8 +192,26 @@ prior-service phrasings (H04/H05/H47/H48). Correct complete model drafts were
 rejected before execution; these are wording regressions, not missing RDF.
 Their first results, source manifest, service date/model pin and score remain
 archived under `candidate-5f7332c-*`. General semantic-component corrections
-are in progress before any independent acceptance execution. A later candidate
+were completed before any independent acceptance execution. A later candidate
 replay will be reported separately, never substituted for these first results.
+
+Independent manual review of this replay found no unsafe simplification,
+qualification overclaim or full-intent mismatch among the 35 factual matches,
+and confirmed the original controls and frozen boundary outcomes. Current
+representation lists and counts both use membership-interval containment at
+the reference date; term-wide co-membership and globally previous versus
+latest-recorded Member-term selection remain distinct. The reviewed evidence
+is archived as `candidate-5f7332c-manual-review.json.gz`.
+
+The corrective slice recognizes grounded possessive/anaphoric latest-term
+scope, normal subject–auxiliary representation grammar with separate-term
+evidence, and ordered TD/Dáil service-end before current Seanad membership-start
+components. It preserves unknown-filter, inverted-order, extra-person/output
+and count/list refusals. The predeclared mixed seats-and-Members transfer also
+has an explicit positive-measure conflict guard. Focused verification: **375
+passed**. Full suite: **2,555 passed, 26 skipped, 23 subtests passed** in 503.58
+seconds; `git diff --check` passed. No named-question route or expected answer
+was added to service code.
 
 The existing single-partially-overlapping-month House-term guard is retained.
 H40's frozen factual expectation does not override the technical specification's

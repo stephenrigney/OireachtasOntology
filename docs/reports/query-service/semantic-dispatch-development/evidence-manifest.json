@@ -1,4 +1,8 @@
 {
+  "candidate-5f7332c-manual-review.json.gz": {
+    "sha256": "11cb769d2349a50953b8e9ec3c2747f90f86cf3bbe896d9478e16e47ed74f698",
+    "source_bytes_sha256": "5660c0c327f28e818faa541f6758ad5f362444a06eb924c2fe707e2997e8dff7"
+  },
   "candidate-5f7332c-responses.jsonl.gz": {
     "sha256": "0da1d579a51f47fe18f0529e4e9fd95c376091cb26e9b126b2e7ef9ec520ac88",
     "source_bytes_sha256": "e52b2f6c4ea1d4f33f8ff28772a8800ff1624eeaa29a064eb654731fbe3d0366"

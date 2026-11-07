@@ -116,6 +116,10 @@ def test_requested_measure_extraction_distinguishes_groups_exclusion_and_member_
     assert "members" in people.requested and "seats" not in people.requested
     assert is_numeric_measure_request("What was the seat complement of the 28th Dáil?")
 
+    mixed = requested_measures("Give the seats and distinct Members for Clare in Dáil 33.")
+    assert mixed.requested == {"members", "seats"}
+    assert mixed.conflicts == frozenset()
+
 
 @pytest.mark.parametrize(("question", "consumed", "expected"), [
     ("What is not the seat complement?", (r"\bwhat\b", r"\bis\b", r"\bseat\s+complement\b"), ("not",)),

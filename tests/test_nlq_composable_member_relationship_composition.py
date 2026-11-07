@@ -237,6 +237,21 @@ def _member_count_draft(ordinal: int = 31, constituency: str = "Dublin Central",
     return draft
 
 
+@pytest.mark.parametrize(("question", "draft"), [
+    (
+        "Count the women who represented Clare in Dáil 33, rather than seats.",
+        _member_count_draft(ordinal=33, constituency="Clare"),
+    ),
+    (
+        "Give the seats and distinct Members for Clare in Dáil 33.",
+        _representation_draft(ordinal=33, constituency="Clare"),
+    ),
+])
+def test_development_transfer_unsupported_demographic_and_mixed_seat_requests_stay_closed(question, draft):
+    with pytest.raises((InvalidComposableDraft, UnsupportedComposableRequest, ValueError)):
+        validate_composable_plan_draft(draft, question=question)
+
+
 def _anchored_shared_constituency_draft(
     *,
     anchor: str = "Aoife Byrne",

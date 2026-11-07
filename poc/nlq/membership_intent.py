@@ -41,12 +41,15 @@ _CURRENT_SEANAD_SERVICE_POINT = re.compile(
 )
 _DAIL_SERVICE_PATH = re.compile(
     r"\b(?:d[áa]il\s+(?:service|membership)|"
+    r"td\s+service|"
     r"serv(?:e|ed|ing)\s+(?:in|as)\s+(?:the\s+)?d[áa]il)\b",
     re.IGNORECASE,
 )
 _ORDERED_MEMBERSHIP_PATH = re.compile(
-    r"\bd[áa]il\s+membership\s+(?:that\s+)?ended\s+before\s+"
-    r"(?:their|the)\s+(?:current\s+)?seanad\s+membership\s+(?:began|started)\b",
+    r"\b(?:d[áa]il\s+membership|td\s+service)\s+"
+    r"(?:(?:that|which)\s+)?(?:ended|ending|ends|finished|finishing)\s+"
+    r"(?:strictly\s+)?before\s+(?:their|the)\s+(?:current\s+)?"
+    r"seanad\s+membership\s+(?:began|started|beginning|starting)\b",
     re.IGNORECASE,
 )
 _PRIOR_SERVICE_WORDING = re.compile(
@@ -135,12 +138,18 @@ def unsupported_current_seanad_prior_dail_intent(
         return "The question must request a recorded prior Dáil membership or service path."
 
     consumed = (
+        # Consume the complete ordered path before its independently recognized
+        # current-House words; otherwise those component matches would erase a
+        # segment needed to validate the end-before-start relation.
+        _ORDERED_MEMBERSHIP_PATH.pattern,
         _CURRENT_SEANAD_SUBJECT.pattern,
         _CURRENT_SEANAD_SCOPE.pattern,
-        _ORDERED_MEMBERSHIP_PATH.pattern,
         _DAIL_SERVICE_PATH.pattern,
         _PRIOR_SERVICE_WORDING.pattern,
         r"\brecorded\b",
+        r"\bdistinct\b",
+        r"\bwhose\b",
+        r"^\s*(?:please\s+)?(?:name|list|show|give|identify|report|find)\b",
     )
     if count:
         consumed += _COUNT_CONSUMPTION

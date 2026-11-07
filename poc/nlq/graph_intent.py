@@ -50,7 +50,9 @@ _GENERIC_DAIL_CONTEXT = re.compile(r"\bin\s+the\s+dail\b")
 _CAREER_TERM_EVIDENCE = re.compile(
     r"\b(?:in|for)\s+each\s+(?:recorded\s+)?dail\s+terms?\b|"
     r"\b(?:by|per)\s+(?:the\s+)?dail\s+terms?\b|"
-    r"\bwith\s+(?:its|the)\s+(?:recorded\s+)?dail\s+terms?\b"
+    r"\bwith\s+(?:its|the)\s+(?:recorded\s+)?dail\s+terms?\b|"
+    r"\bkeeping\s+(?:(?:the|each|all)\s+)?(?:recorded\s+)?"
+    r"(?:dail\s+)?terms?\s+separate\b"
 )
 
 _PRESENT_WORDS = {"does", "is", "are", "represents", "representing"}
@@ -254,6 +256,10 @@ def _member_representation_patterns(entity: str) -> tuple[re.Pattern[str], ...]:
         re.compile(
             rf"(?:(?:is|are|was|were)\s+)?(?:represented|served)\s+by\s+{entity}"
         ),
+        re.compile(
+            rf"{entity}\s+(?:(?:has|have|had)\s+(?:represented|served)|"
+            rf"(?:do|does|did)\s+(?:represent|serve))\b"
+        ),
         re.compile(rf"{entity}\s+(?:(?:historical|recorded|{scope})\s+)?{target}"),
         re.compile(rf"{target}\s+(?:of|for)\s+{entity}"),
         re.compile(rf"{target}\s+(?:is\s+)?(?:recorded\s+)?for\s+{entity}"),
@@ -264,7 +270,7 @@ def _consume_member_relation(
     text: str, entity: str, *, family: str,
 ) -> tuple[str, bool, str | None]:
     patterns = _member_representation_patterns(entity)
-    for pattern in patterns[:2]:
+    for pattern in patterns[:3]:
         matches = list(pattern.finditer(text))
         if len(matches) > 1:
             raise _unsupported(family, "one Member-to-constituency relation is required")
@@ -281,9 +287,9 @@ def _consume_member_relation(
     # Possessive/member-noun forms (e.g. “List X's historical constituencies”)
     # and the latest-term-and-constituency form still have an explicit typed
     # Member/target relationship; consume only those structural subcomponents.
-    noun_matches = list(patterns[2].finditer(text))
-    target_of_matches = list(patterns[3].finditer(text))
-    target_for_matches = list(patterns[4].finditer(text))
+    noun_matches = list(patterns[3].finditer(text))
+    target_of_matches = list(patterns[4].finditer(text))
+    target_for_matches = list(patterns[5].finditer(text))
     all_matches = noun_matches + target_of_matches + target_for_matches
     # The final two patterns overlap on “target for entity”; de-duplicate by
     # source span before requiring one association.
@@ -374,6 +380,10 @@ def validate_constituency_representation_intent(
                 current_text, _CAREER_TERM_EVIDENCE, "housecontextcomponent",
                 "constituency_representation", "term-by-term historical evidence",
             )
+            current_text = re.sub(
+                r"\bevery\s+targetcomponent\b", "targetcomponent", current_text,
+                count=1,
+            )
         # An explicitly numbered term or calendar date is not a career-wide,
         # current-term or latest-recorded selector in this representation path.
         if re.search(r"\b[0-9]+(?:st|nd|rd|th)?\b", current_text):
@@ -402,11 +412,27 @@ def validate_constituency_representation_intent(
             current_text = current_text[:match.start()] + "relationcomponent" + current_text[match.end():]
             action_verb = None
         else:
-            current_text, has_action, action_verb = _consume_member_relation(
-                current_text, markers[0], family="constituency_representation",
+            possessive_mention = re.compile(
+                r"(?<!\w)" + re.escape(member) + r"(?!\w)['’]s\b", re.IGNORECASE,
             )
-            if not has_action:
-                raise _unsupported("constituency_representation", "the named Member must be linked to the requested constituency")
+            anaphoric_latest = re.fullmatch(
+                rf"in\s+{re.escape(markers[0])}\s+scopecomponent\s+"
+                r"(?:what|which)\s+(?:was|is)\s+(?:his|her|their)\s+targetcomponent",
+                current_text,
+            )
+            if (selector == "latestRecorded" and anaphoric_latest
+                    and len(list(possessive_mention.finditer(question))) == 1):
+                # The exact possessive named Member anchors the fronted latest
+                # term; only a single matching anaphoric constituency request
+                # is accepted, with no additional clause or projection.
+                current_text = "relationcomponent"
+                has_action, action_verb = True, None
+            else:
+                current_text, has_action, action_verb = _consume_member_relation(
+                    current_text, markers[0], family="constituency_representation",
+                )
+                if not has_action:
+                    raise _unsupported("constituency_representation", "the named Member must be linked to the requested constituency")
 
         if selector == "currentTerm":
             inferred_current = action_verb in _PRESENT_WORDS
