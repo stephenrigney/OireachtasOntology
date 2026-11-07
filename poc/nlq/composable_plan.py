@@ -6493,6 +6493,24 @@ def _execute_shared_dail_terms_question(
     if draft_plan.get("family") == "capability_selection":
         capability = draft_plan["capability"]
         parameters = draft_plan["parameters"]
+        if capability in {"term_count", "house_terms"}:
+            from .stage_a import StageARequest, execute_stage_a
+            if capability == "term_count":
+                request = StageARequest("term_count", mention=parameters.get("member"))
+            else:
+                if "date" in parameters:
+                    temporal_scope = {"kind": "onDate", "date": parameters["date"]}
+                else:
+                    temporal_scope = {"kind": "duringMonth", "year": parameters["year"],
+                                      "month": parameters["month"]}
+                request = StageARequest("house_terms", temporal_scope=temporal_scope)
+            return execute_stage_a(request, as_of=as_of, fuseki=fuseki,
+                                   supported_predicates=supported_predicates)
+        if capability == "dail_seats":
+            from .stage_c import _make_plan, execute_stage_c
+            plan = _make_plan(capability, as_of, ordinal=parameters["termNumber"])
+            return execute_stage_c(plan, as_of=as_of, fuseki=fuseki,
+                                   supported_predicates=supported_predicates)
         if capability == "member_lookup":
             from .stage_a import StageARequest, execute_stage_a
             return execute_stage_a(StageARequest("member_lookup", mention=parameters["member"], house=parameters["house"]),

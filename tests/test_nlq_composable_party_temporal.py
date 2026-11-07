@@ -48,6 +48,7 @@ FG_IDENTITY = "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fi
 QUESTION_U06 = "Which political parties were represented by TDs for Galway West during the 33rd Dáil?"
 QUESTION_U16 = "Which Sinn Féin TDs represented Galway West during the 33rd Dáil?"
 QUESTION_PARTY_COUNT = "How many Fine Gael TDs were in the 27th Dáil?"
+QUESTION_H26 = "Count distinct recorded Sinn Féin Members in Dáil 32, rather than seats."
 
 
 def _binding(value) -> str:
@@ -333,7 +334,10 @@ def _party_only_draft(*, answer_kind="count", affiliation="Fine Gael", ordinal=2
     }
 
 
-def _add_party_only_member(fixture, *, slug, name, membership_interval, episode_intervals):
+def _add_party_only_member(
+    fixture, *, slug, name, membership_interval, episode_intervals,
+    party_key="fine-gael", party_label="Fine Gael", identity=FG_IDENTITY,
+):
     member_iri = f"https://data.oireachtas.ie/ie/oireachtas/member/id/{slug}"
     member = URIRef(member_iri)
     graph = fixture.dataset.graph(URIRef(f"https://data.oireachtas.ie/graph/member/{slug}"))
@@ -346,16 +350,18 @@ def _add_party_only_member(fixture, *, slug, name, membership_interval, episode_
     graph.add((membership, URIRef(MEMBERS + "inHouseTerm"), URIRef(fixture.term_iri)))
     _add_test_date_range(graph, membership, member_iri + "#membership-range", membership_interval)
 
-    party = URIRef(f"https://data.oireachtas.ie/ie/oireachtas/party/dail/{fixture.term_number}/fine-gael")
+    party = URIRef(
+        f"https://data.oireachtas.ie/ie/oireachtas/party/dail/{fixture.term_number}/{party_key}"
+    )
     parties = fixture.dataset.graph(URIRef("https://data.oireachtas.ie/graph/parties"))
     parties.add((party, RDF.type, URIRef(MEMBERS + "ParliamentaryParty")))
-    parties.add((party, URIRef(SKOS + "prefLabel"), Literal(f"Fine Gael, {fixture.term_number}th Dáil", lang="en")))
+    parties.add((party, URIRef(SKOS + "prefLabel"), Literal(f"{party_label}, {fixture.term_number}th Dáil", lang="en")))
     parties.add((party, URIRef(MEMBERS + "activeDuringTerm"), URIRef(fixture.term_iri)))
     identities = fixture.dataset.graph(URIRef("https://data.oireachtas.ie/graph/political-affiliations/identities"))
-    identity = URIRef(FG_IDENTITY)
+    identity = URIRef(identity)
     identities.add((party, URIRef(MEMBERS + "hasPoliticalAffiliationIdentity"), identity))
     identities.add((identity, RDF.type, URIRef(MEMBERS + "PoliticalAffiliationIdentity")))
-    identities.add((identity, URIRef(SKOS + "prefLabel"), Literal("Fine Gael", lang="en")))
+    identities.add((identity, URIRef(SKOS + "prefLabel"), Literal(party_label, lang="en")))
 
     for index, episode_interval in enumerate(episode_intervals):
         episode = URIRef(member_iri + f"#party-membership-{index}")
@@ -448,6 +454,20 @@ def _run(fixture: PartyRepresentationFixture, question: str, draft: dict):
         question, as_of=AS_OF, fuseki=fixture,
         supported_predicates=supported_predicates(ROOT / "ontology"),
         semantic_plan_generator_factory=lambda: generator,
+    )
+    return outcome, generator
+
+
+def _run_composable_semantic(fixture: PartyRepresentationFixture, question: str, draft: dict):
+    from poc.nlq.composable_plan import _execute_shared_dail_terms_question
+
+    generator = FixedPlanGenerator(draft)
+    outcome = _execute_shared_dail_terms_question(
+        question,
+        as_of=AS_OF,
+        fuseki=fixture,
+        supported_predicates=supported_predicates(ROOT / "ontology"),
+        planner_generator_factory=lambda: generator,
     )
     return outcome, generator
 
@@ -714,6 +734,185 @@ def test_party_only_numbered_term_count_is_distinct_and_equivalent_to_member_lis
     assert "activeDuringTerm" in count.sparql
     assert "?constituency" not in count.sparql
     assert len(count_fixture.queries) == 4  # term, affiliation, Stage C party gate, evidence query
+
+
+def test_h26_excluded_seats_wording_validates_the_forced_party_only_count_draft():
+    selected, unsupported = validate_composable_plan_draft(
+        _party_only_draft(affiliation="Sinn Féin", ordinal=32),
+        question=QUESTION_H26,
+    )
+
+    assert unsupported is None
+    assert selected["answer"] == {
+        "kind": "count", "referent": "member", "distinctBy": "identity",
+    }
+    assert selected["referents"]["affiliation"]["mention"] == "Sinn Féin"
+    assert selected["referents"]["term"]["selector"] == {"kind": "termNumber", "number": 32}
+
+
+def test_h26_excluded_seats_scope_does_not_allow_a_mixed_positive_seat_measure():
+    question = "Count distinct recorded Sinn Féin Members and seats in Dáil 32, rather than seats."
+    with pytest.raises(ValueError):
+        validate_composable_plan_draft(
+            _party_only_draft(affiliation="Sinn Féin", ordinal=32),
+            question=question,
+        )
+
+
+def test_h26_excluded_seats_count_dispatches_distinct_sinn_fein_member_identities():
+    episodes = [{
+        "key": "sinn-fein-32", "party_label": "Sinn Féin, 32nd Dáil",
+        "identity": SF_IDENTITY, "identity_label": "Sinn Féin",
+        "interval": ("2016-04-06T00:00:00", "2018-12-31T00:00:00"),
+    }, {
+        "key": "sinn-fein-32", "party_label": "Sinn Féin, 32nd Dáil",
+        "identity": SF_IDENTITY, "identity_label": "Sinn Féin",
+        "interval": ("2019-01-01T00:00:00", "2020-01-14T00:00:00"),
+    }]
+    membership_interval = ("2016-04-06T00:00:00", "2020-01-14T00:00:00")
+    count_fixture = PartyRepresentationFixture(
+        membership_interval=membership_interval,
+        episodes=episodes,
+        term_number=32,
+    )
+    _add_party_only_member(
+        count_fixture, slug="Ciaran-O-Reilly", name="Ciarán O'Reilly",
+        membership_interval=membership_interval,
+        episode_intervals=[("2016-04-06T00:00:00", "2020-01-14T00:00:00")],
+        party_key="sinn-fein-32", party_label="Sinn Féin", identity=SF_IDENTITY,
+    )
+
+    counted, generator = _run(
+        count_fixture, QUESTION_H26,
+        _party_only_draft(affiliation="Sinn Féin", ordinal=32),
+    )
+
+    list_fixture = PartyRepresentationFixture(
+        membership_interval=membership_interval,
+        episodes=episodes,
+        term_number=32,
+    )
+    _add_party_only_member(
+        list_fixture, slug="Ciaran-O-Reilly", name="Ciarán O'Reilly",
+        membership_interval=membership_interval,
+        episode_intervals=[("2016-04-06T00:00:00", "2020-01-14T00:00:00")],
+        party_key="sinn-fein-32", party_label="Sinn Féin", identity=SF_IDENTITY,
+    )
+    listed, _ = _run(
+        list_fixture, "List the distinct recorded Sinn Féin Members in Dáil 32, rather than seats.",
+        _party_only_draft(answer_kind="entities", affiliation="Sinn Féin", ordinal=32),
+    )
+
+    assert counted.status == listed.status == "success"
+    assert counted.result.rows == (("2",),)
+    assert {row[0] for row in listed.result.rows} == {"Aoife Byrne", "Ciarán O'Reilly"}
+    assert len(listed.result.rows) == 2
+    assert generator.calls == [QUESTION_H26]
+    assert generator.closed
+    assert "VALUES ?party" in counted.sparql
+    assert "?seats" not in counted.sparql
+
+
+def _kerry_north_labour_fixture():
+    term_iri = "https://data.oireachtas.ie/ie/oireachtas/houseTerm/dail/31"
+    constituency_iri = "https://data.oireachtas.ie/ie/oireachtas/constituency/dail/Kerry-North-31"
+    labour_identity = "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/labour-party"
+    return PartyRepresentationFixture(
+        membership_interval=("2011-03-09T00:00:00", "2016-02-03T00:00:00"),
+        episodes=[{
+            "key": "labour-31", "party_label": "Labour Party, 31st Dáil",
+            "identity": labour_identity, "identity_label": "Labour Party",
+            "interval": ("2011-03-09T00:00:00", "2016-02-03T00:00:00"),
+        }],
+        term_iri=term_iri,
+        term_number=31,
+        constituency_iri=constituency_iri,
+        constituency_label="Kerry North",
+    )
+
+
+@pytest.mark.parametrize(("question", "answer_referent", "affiliation"), [
+    (
+        "List the distinct Labour Party Members for Kerry North in the 31st Dáil.",
+        "member", "Labour Party",
+    ),
+    (
+        "List the different recorded Labour Party Members for Kerry North in the 31st Dáil.",
+        "member", "Labour Party",
+    ),
+    (
+        "Which Labour Party Members were listed for Kerry North in the 31st Dáil?",
+        "member", "Labour Party",
+    ),
+    (
+        "Which parties did the members for Kerry North in the 31st Dáil belong to?",
+        "affiliation", None,
+    ),
+    (
+        "Which parties did the members for Kerry North in the 31st Dáil serve in?",
+        "affiliation", None,
+    ),
+])
+def test_party_representation_preserves_existing_member_and_party_relation_wordings(
+    question, answer_referent, affiliation,
+):
+    fixture = _kerry_north_labour_fixture()
+    outcome, _ = _run_composable_semantic(
+        fixture,
+        question,
+        _temporal_draft(
+            answer_referent=answer_referent,
+            affiliation_mention=affiliation,
+            constituency="Kerry North",
+            term_selector={"kind": "termNumber", "number": 31},
+        ),
+    )
+
+    assert outcome.status == "success", outcome.diagnostic
+    assert outcome.result.rows
+    assert outcome.result.rows[0][0] == ("Aoife Byrne" if answer_referent == "member" else "Labour Party")
+
+
+@pytest.mark.parametrize(("question", "answer_referent", "affiliation"), [
+    (
+        "List the distinct female Labour Party Members for Kerry North in the 31st Dáil.",
+        "member", "Labour Party",
+    ),
+    (
+        "List the distinct Labour Party Members for Kerry North in the 31st Dáil and their ages.",
+        "member", "Labour Party",
+    ),
+    (
+        "List the distinct Labour Party Members for Kerry North in the 31st Dáil on 1 January 2014.",
+        "member", "Labour Party",
+    ),
+    (
+        "List the Labour Party Members elected for Kerry North in the 31st Dáil.",
+        "member", "Labour Party",
+    ),
+    (
+        "List Labour Party Members who did not serve for Kerry North in the 31st Dáil.",
+        "member", "Labour Party",
+    ),
+])
+def test_party_representation_relation_wordings_do_not_absorb_extra_filters(
+    question, answer_referent, affiliation,
+):
+    fixture = _kerry_north_labour_fixture()
+    outcome, _ = _run_composable_semantic(
+        fixture,
+        question,
+        _temporal_draft(
+            answer_referent=answer_referent,
+            affiliation_mention=affiliation,
+            constituency="Kerry North",
+            term_selector={"kind": "termNumber", "number": 31},
+        ),
+    )
+
+    assert outcome.status in {"unsupported_request", "validation_failure"}
+    assert outcome.result is None
+    assert not fixture.queries
 
 
 def test_party_only_distinct_member_count_is_rendered_through_ask(monkeypatch):

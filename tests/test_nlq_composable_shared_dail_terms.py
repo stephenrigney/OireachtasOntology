@@ -39,6 +39,9 @@ SKOS = "http://www.w3.org/2004/02/skos/core#"
 MEMBER_A = "https://data.oireachtas.ie/ie/oireachtas/member/id/Micheal-Martin"
 MEMBER_B = "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald"
 QUESTION = "Which Dáil terms did Micheál Martin and Mary Lou McDonald both serve in?"
+QUESTION_H09 = "Show the Dáil terms common to the service records of Dick Spring and Brendan Howlin."
+MEMBER_DICK = "https://data.oireachtas.ie/ie/oireachtas/member/id/Dick-Spring"
+MEMBER_BRENDAN = "https://data.oireachtas.ie/ie/oireachtas/member/id/Brendan-Howlin"
 
 
 def _binding(value) -> str:
@@ -161,6 +164,15 @@ def _draft(member_a="Micheál Martin", member_b="Mary Lou McDonald"):
     }
 
 
+def _capability_selection(capability, parameters):
+    return {
+        "version": 2, "supported": True, "family": "capability_selection",
+        "unsupportedReason": None, "intent": "Select an existing graph capability.",
+        "referents": {"capability": capability, "parameters": parameters},
+        "relations": [], "constraints": [], "answer": None,
+    }
+
+
 class FixedPlanGenerator:
     def __init__(self, draft=None, error: Exception | None = None, raw_output: str | None = None):
         self.draft = _draft() if draft is None else draft
@@ -197,7 +209,7 @@ def test_v2_shared_dail_term_contract_and_draft_schema_are_synchronized():
     draft_schema = json.loads((ROOT / "poc/specs/composable-query-plan-draft.schema.json").read_text())
     Draft202012Validator.check_schema(plan_schema)
     Draft202012Validator.check_schema(draft_schema)
-    assert contract["contractVersion"] == "2.26.0"
+    assert contract["contractVersion"] == "2.28.0"
     assert contract["planVersion"] == plan_schema["properties"]["version"]["const"] == 2
     assert "shared_dail_terms" in plan_schema["properties"]["family"]["enum"]
     assert any(item["id"] == "shared_dail_terms" for item in contract["questionFamilies"])
@@ -257,6 +269,41 @@ def test_unseen_phrasings_compose_two_independent_member_paths_through_the_share
     assert "?membershipA" in answer_query and "?membershipB" in answer_query
     assert "VALUES ?memberA" in answer_query and "VALUES ?memberB" in answer_query
     assert "UNION" not in answer_query and "OPTIONAL" not in answer_query
+
+
+def test_h09_constructed_capability_dispatch_matches_legacy_graph_execution():
+    constructed_fixture = SharedDailTermsFixture()
+    constructed_fixture.add_member(MEMBER_DICK, "Dick Spring", "Dick-Spring", (32, 33))
+    constructed_fixture.add_member(MEMBER_BRENDAN, "Brendan Howlin", "Brendan-Howlin", (32, 33))
+    constructed, constructed_generator = _run(
+        constructed_fixture,
+        question=QUESTION_H09,
+        draft=_capability_selection(
+            "shared_dail_terms_graph",
+            {"memberA": "Dick Spring", "memberB": "Brendan Howlin"},
+        ),
+    )
+
+    legacy_fixture = SharedDailTermsFixture()
+    legacy_fixture.add_member(MEMBER_DICK, "Dick Spring", "Dick-Spring", (32, 33))
+    legacy_fixture.add_member(MEMBER_BRENDAN, "Brendan Howlin", "Brendan-Howlin", (32, 33))
+    legacy, legacy_generator = _run(
+        legacy_fixture, question=QUESTION_H09, draft=_draft("Dick Spring", "Brendan Howlin"),
+    )
+
+    assert constructed.status == legacy.status == "success"
+    assert {key: value for key, value in constructed.plan.items() if key != "relations"} == {
+        key: value for key, value in legacy.plan.items() if key != "relations"
+    }
+    assert [
+        (item["fact"], item["from"], item["to"]) for item in constructed.plan["relations"]
+    ] == [
+        (item["fact"], item["from"], item["to"]) for item in legacy.plan["relations"]
+    ]
+    assert constructed.result == legacy.result
+    assert constructed.sparql == legacy.sparql
+    assert {row[0] for row in constructed.result.rows} == {"32nd Dáil", "33rd Dáil"}
+    assert constructed_generator.closed and legacy_generator.closed
 
 
 @pytest.mark.parametrize("broken", [

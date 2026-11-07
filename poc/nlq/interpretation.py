@@ -9,11 +9,14 @@ POLICY = "present_constituency_as_of"
 
 def unsupported_whole_intent(question):
     """Unsupported projections invalidate the whole request before recognition."""
+    from .question_intent import member_measure_scope
+
+    measure_scope = member_measure_scope(question)
     if re.search(r"\b(?:elected|election|elections|re-elected)\b", question, re.I):
         return "Election-event evidence is not queryable; no membership start or partial compound answer was substituted."
     if (re.search(r"\b(?:constituenc(?:y|ies)|represent(?:ed|s|ing)?|TDs?)\b", question, re.I)
             and re.search(r"\b(?:how many|count|average|rank|most|fewest|percentage)\b", question, re.I)
-            and re.search(r"\bseats?\b", question, re.I)):
+            and re.search(r"\bseats?\b", measure_scope.positive_text, re.I)):
         return "Seat allocations are not derived from recorded Member identities; no seat or election-event count was run."
     if (re.search(r"\b(?:which|what) d[áa]il\b", question, re.I)
             and re.search(r"\b(?:actual\s+)?sittings?\b", question, re.I)):
@@ -54,8 +57,8 @@ def current_office_point_mention(question: str) -> str | None:
     """
     text = re.sub(r"[?.!]+$", "", question.strip())
     match = re.fullmatch(
-        r"who\s+(?:(?:currently|now|today)\s+)?(?:is|are)"
-        r"(?:\s+(?:currently|now|today))?\s+(?P<office>.+)",
+        r"who\s+(?:(?:currently|now|today)\s+)?(?:is|are|holds)"
+        r"(?:\s+(?:currently|now|today))?\s+(?:the\s+office\s+of\s+)?(?P<office>.+)",
         text, re.IGNORECASE,
     )
     if match is None:

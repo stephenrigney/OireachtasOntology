@@ -22,13 +22,22 @@ from .structured_planner import (
     _reject_model_ir_is,
     parse_draft_json,
 )
+from .question_intent import (
+    MEMBER_SEAT_ALIAS,
+    calendar_date_spans,
+    count_operator_matches,
+    is_numeric_measure_request,
+    month_year_mentions,
+    numbered_dail_terms,
+    requested_measures,
+    semantic_residual,
+)
 
 
 _ROOT = Path(__file__).resolve().parents[1]
 DRAFT_SCHEMA_PATH = _ROOT / "specs" / "composable-query-plan-draft.schema.json"
 _PLAN_CONTRACT_PATH = _ROOT / "specs" / "composable-query-plan-contract.json"
 _IDENTIFIER = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
-_DAIL_ORDINAL = re.compile(r"\b(?P<number>[0-9]{1,3})(?P<suffix>st|nd|rd|th)\b", re.IGNORECASE)
 _LATEST_TERM_REFERENCE = re.compile(
     r"\b(?:latest\s+recorded|most\s+recent)\b|\blast(?:\s+recorded)?\s+(?:dáil\s+)?term\b",
     re.IGNORECASE,
@@ -37,6 +46,19 @@ _HISTORICAL_CURRENT_CONTRAST = re.compile(
     r"\b(?:past|formerly|former)\b|\bused\s+to\b|\bno\s+longer\b",
     re.IGNORECASE,
 )
+CAPABILITY_SELECTION_HANDLER_INPUTS = {
+    "member_lookup": ("stage_a", "member_and_house"),
+    "dail_parties_and_groups": ("stage_c", "term_number_and_group_scope"),
+    "term_count": ("stage_a", "member_or_house_total"),
+    "house_terms": ("stage_a", "calendar_date_or_full_month"),
+    "dail_seats": ("stage_c", "numbered_dail"),
+    "shared_dail_terms_graph": ("composable_graph", "two_named_members"),
+    "anchored_shared_constituency_graph": ("composable_graph", "named_anchor"),
+    "office_holding_evidence": ("composable_office_evidence", "member_and_office"),
+    "office_holding_window": ("composable_office", "office_and_calendar_period_or_current_office_point"),
+    "seanad_entry": ("stage_a", "member_mention"),
+    "bill_lookup": ("stage_b", "bill_number_and_year"),
+}
 
 
 class InvalidComposableDraft(ValueError):
@@ -80,6 +102,7 @@ def build_composable_planner_instructions() -> str:
     dispatch_guidance = "\n".join(
         f'- Existing capability "{item["id"]}" ({item["handler"]}; input {item["input"]}): {item["semantics"]}'
         for item in dispatch_capabilities
+        if item.get("id") in CAPABILITY_SELECTION_HANDLER_INPUTS
     )
     relation_guidance = "\n".join(
         f"- {fact}: {relations[fact]['subjectType']} to {relations[fact]['objectType']}"
@@ -96,6 +119,11 @@ def build_composable_planner_instructions() -> str:
 Interpretation contract: for the one-term, one-constituency Member list/count, the explicit phrase "in this Dáil" selects the exact House-date-resolved current term and is term-wide, regardless of whether the question says "represent" or "represented". It overrides only the implicit present-tense-as-of default: do not require an asOf membership interval unless the user explicitly asks for current representation (for example, "currently", "now", "today", or "as of now/today"). A literal calendar date remains its exact membership-date point. Without the explicit "this Dáil" scope, an unqualified present-tense constituency request defaults to representation at the query date; an explicit current-point request also requires the DailMembership interval to contain asOf. Dated party/representation composition retains its separate rule that currentTerm requires both party and DailMembership intervals to contain asOf. Never default numbered-term, other dated, historical, or election questions. The plain term-scoped constituency Member projection supports one explicit membership calendar-date point; preserve it as a membershipInterval constraint, never as a HouseTerm date or election event. For a Member's latest recorded Dáil term and constituency, use the constituency_representation family with selector "latestRecorded" when the question explicitly asks for the latest recorded term, the most recent term, or the last term (including "last term in the Dáil"). Local code selects from that Member's accepted DailMembership identities and House-owned chronology, and fails closed on missing/tied/conflicting dates or representation evidence. This is not an election-date answer.
 For partial-name person lookup use capability_selection member_lookup with parameters {{"member":"exact name mention","house":"Dail"}} for Deputy/TD, "Seanad" for Senator, or null for unqualified Member. Local code offers grounded alternatives; never expand a surname to an assumed full name.
 For a numbered-Dáil party listing use capability_selection dail_parties_and_groups with parameters {{"termNumber":N,"includeGroups":false}}; true only if groups are also requested. This reuses the existing party compiler, not the constituency composition.
+For a simple count of one named Member's recorded Dáil terms, use capability_selection term_count with parameters {{"member":"exact Member mention"}}. For the total distinct Dáil-term resources recorded in the Houses data, use the same capability with parameters {{}}. Both reuse the existing Stage A count and never count membership rows; these counts do not certify historical completeness. A term-count request with a term/date/party filter or another projection is unsupported.
+For the Dáil term whose House-owned interval overlaps one calendar date or one complete named month, use capability_selection house_terms with exactly {{"date":"2020-03-01"}} or {{"month":3,"year":2020}}. Preserve date-point vs full-month scope. House-term dates are not evidence of an actual sitting; additional conditions and partial-month windows are unsupported.
+For the recorded seat complement of one explicitly numbered Dáil, use capability_selection dail_seats with parameters {{"termNumber":N}}. This reuses Stage C's typed HouseTerm seat lookup; never count people as seats. The approved "how many members were in the [N]th Dáil" wording has this seat meaning, but a request for distinct Members/TDs who served is a different, unsupported count here.
+
+For two named Members' common recorded Dáil-term identities, capability_selection may use "shared_dail_terms_graph" with exactly {{"memberA":"exact first mention","memberB":"exact second mention"}}. For other Members sharing one named anchor's constituency in one numbered or globally previous Dáil, use "anchored_shared_constituency_graph" with exactly {{"anchor":"exact mention"}}. Local code derives the one selector and list/count projection from the original question and validates the complete intent before using the pure existing-graph constructor. These are not repair paths for a rejected draft; extra dates, filters, measures, disjunctions, or unsupported scope remain unsupported.
 For an unfiltered question asking when/for what dates or periods one named person held one named office, also accepting "When did [member] serve as [office]?" and "During what period was [member] [office]?", use capability_selection office_holding_evidence with parameters {{"member":"exact mention","office":"exact office mention"}}. This returns each separately recorded accepted local OfficeHolding episode for the exact identities with its validated interval, explicitly labeled incomplete local-recorded evidence—not a complete career timeline. Do not merge episodes or infer first start, final end, total duration, election events, or absence from gaps; unreviewed observations cannot answer. Election, first/last-event, duration, and extra-filter requests remain unsupported.
 
 For who held a named office on a calendar date, during a complete month/year, or over an explicit month-to-month window, use capability_selection office_holding_window with exactly one of {{"office":"exact mention","date":"1994-06-01"}}, {{"office":"exact mention","year":1994}}, or {{"office":"exact mention","startMonth":6,"startYear":1994,"endMonth":6,"endYear":1994}}. Preserve date-point vs full-window semantics. Local code reuses the accepted dated OfficeHolding compiler and incomplete-coverage qualification; an overlap does not mean service throughout the window.
@@ -222,23 +250,45 @@ def validate_composable_plan_draft(
     reason = unsupported_whole_intent(question)
     if reason:
         raise InvalidComposableDraft(reason)
-    count_intent = bool(re.search(r"\b(?:how many|count|number of|total of)\b", question, re.I))
-    if (count_intent and re.search(r"\bseats?\b", question, re.I)
+    count_intent = is_numeric_measure_request(question)
+    measure_scope = requested_measures(question)
+    if (count_intent and "seats" in measure_scope.requested
             and value["family"] == "member_relationship_composition"):
         raise UnsupportedComposableRequest(
             "Seat allocations are not recorded Member identities; no seat or election-event count was substituted."
         )
-    if count_intent and (value["family"] not in {"member_relationship_composition", "member_bill_sponsorship"}
-                         or not isinstance(value.get("answer"), dict)
-                         or value["answer"].get("kind") != "count"):
-        raise UnsupportedComposableRequest(
-            "The requested count cannot be converted to a list or another aggregate; use only the validated Member identity count projection."
-        )
+    if count_intent:
+        selected_capability = (value.get("referents", {}).get("capability")
+                               if value["family"] == "capability_selection"
+                               and isinstance(value.get("referents"), dict) else None)
+        approved_capability_count = selected_capability in {
+            "term_count", "dail_seats", "anchored_shared_constituency_graph",
+        }
+        projected_count = (isinstance(value.get("answer"), dict)
+                           and value["answer"].get("kind") == "count")
+        if (value["family"] == "capability_selection" and
+                (not approved_capability_count or value.get("answer") is not None)):
+            raise UnsupportedComposableRequest(
+                "Only the reviewed term-count, seat-complement, and anchored distinct-Member count selections may use capability selection; no other aggregate or list projection was substituted."
+            )
+        if (value["family"] not in {"member_relationship_composition", "member_bill_sponsorship", "capability_selection"}
+                or value["family"] != "capability_selection" and not projected_count):
+            raise UnsupportedComposableRequest(
+                "The requested count cannot be converted to a list or another aggregate; use only a validated count projection."
+            )
 
     if re.search(r"\b(?:same|shared)\s+constituency\b", question, re.I):
-        if (value["family"] != "member_relationship_composition"
-                or not isinstance(value["referents"], dict)
-                or not ({"anchor", "anchorMember"} & set(value["referents"]))):
+        referents = value["referents"]
+        explicit_graph_capability = (
+            value["family"] == "capability_selection"
+            and isinstance(referents, dict)
+            and referents.get("capability") == "anchored_shared_constituency_graph"
+        )
+        if not explicit_graph_capability and (
+            value["family"] != "member_relationship_composition"
+            or not isinstance(referents, dict)
+            or not ({"anchor", "anchorMember"} & set(referents))
+        ):
             raise InvalidComposableDraft("The requested independent Member/shared-constituency operator is absent; no simplified plan is accepted.")
 
     if value["family"] == "capability_selection":
@@ -251,6 +301,11 @@ def validate_composable_plan_draft(
         refs = value.get("referents")
         if isinstance(refs, dict) and "anchorMember" in refs:
             return _validate_anchored_shared_constituency_draft(value, question=question), None
+        if isinstance(refs, dict) and "anchor" not in refs and any(
+            isinstance(item, dict) and item.get("type") == "PartyMembershipEpisode"
+            for item in refs.values()
+        ):
+            return _validate_member_relationship_draft(value, question=question), None
         if isinstance(refs, dict) and ("anchor" in refs or "members" in refs.get("constituency", {})):
             return _validate_bounded_composition_draft(value, question=question), None
         return _validate_member_relationship_draft(value, question=question), None
@@ -258,6 +313,8 @@ def validate_composable_plan_draft(
         raise UnsupportedComposableRequest(
             f"Composable semantic family {value['family']!r} is not supported."
         )
+
+    from .graph_intent import validate_shared_dail_terms_intent
 
     referent_roles = {
         "member_a": "Member",
@@ -310,6 +367,12 @@ def validate_composable_plan_draft(
         raise InvalidComposableDraft(
             "The two Member referents must be independently named, not repeated copies of one name."
         )
+    try:
+        validate_shared_dail_terms_intent(
+            question, referents["member_a"]["mention"], referents["member_b"]["mention"],
+        )
+    except ValueError as error:
+        raise UnsupportedComposableRequest(str(error)) from error
     if len(value["relations"]) != 4:
         raise InvalidComposableDraft(
             "Both Members require a complete Member → DailMembership → shared DailTerm path."
@@ -442,6 +505,15 @@ def _validate_existing_capability_draft(value, *, question):
         constituency = refs.get("constituency", {}).get("mention")
         if bool(member) == bool(constituency):
             raise InvalidComposableDraft("Exactly one representation participant must be named.")
+        from .graph_intent import validate_constituency_representation_intent
+        try:
+            validate_constituency_representation_intent(
+                question, member=member, constituency=constituency, selector=selector,
+            )
+        except ValueError as error:
+            if member is not None and selector is None and _LATEST_TERM_REFERENCE.search(question):
+                raise InvalidComposableDraft(str(error)) from error
+            raise UnsupportedComposableRequest(str(error)) from error
         if selector is None and re.search(r"\b(?:current|currently|now|does|are|latest|most recent)\b", condition_text, re.I):
             raise InvalidComposableDraft("A current question cannot be converted into career-wide representation.")
         latest_requested = _explicit_latest_term_reference(question)
@@ -538,6 +610,8 @@ def _validate_member_party_composition_draft(
     question: str,
 ) -> dict[str, Any]:
     """Validate the shared dated party graph for Dáil and bounded Seanad party-only selection."""
+    from .membership_intent import unsupported_current_seanad_party_membership_intent
+
     if re.search(r"\b(?:senators?|seanad|panels?)\b", question, re.I) and not (
         isinstance(value.get("referents"), dict)
         and set(value["referents"]) == {"member", "membership", "term", "episode", "party", "affiliation"}
@@ -587,9 +661,8 @@ def _validate_member_party_composition_draft(
             if set(item) != {"type", "mention", "selector"} or item["mention"] is not None:
                 raise InvalidComposableDraft(f"The term must be one reviewed {term_type} selector.")
             if seanad_party_only:
-                if (selector != {"kind": "currentTerm"}
-                        or not re.search(r"\b(?:current|this)\s+seanad\b", question, re.I)):
-                    raise UnsupportedComposableRequest("Seanad party-only selection requires the explicitly current Seanad term.")
+                if selector != {"kind": "currentTerm"}:
+                    raise UnsupportedComposableRequest("Seanad party-only selection requires the current Seanad term.")
                 normalized[key] = {"type": semantic_type,
                                    "selector": {"kind": "currentTerm", "house": "Seanad"}}
             elif (isinstance(selector, dict) and set(selector) == {"kind", "number"}
@@ -599,8 +672,17 @@ def _validate_member_party_composition_draft(
                 normalized[key] = {"type": semantic_type, "selector": selector}
             elif isinstance(selector, dict) and selector == {"kind": "currentTerm"}:
                 from .interpretation import present_constituency_default
-                constituency = referents.get("constituency", {}).get("mention")
-                inferred = isinstance(constituency, str) and present_constituency_default(question, constituency)
+                constituency_scope = referents.get("constituency", {})
+                constituency_mentions = (
+                    [item.get("mention") for item in constituency_scope.get("members", [])]
+                    if isinstance(constituency_scope, dict) and isinstance(constituency_scope.get("members"), list)
+                    else [constituency_scope.get("mention")]
+                    if isinstance(constituency_scope, dict) else []
+                )
+                inferred = bool(constituency_mentions) and all(
+                    isinstance(mention, str) and present_constituency_default(question, mention)
+                    for mention in constituency_mentions
+                )
                 if not re.search(r"\b(?:current|currently|now|today)\b", question, re.IGNORECASE) and not inferred:
                     raise InvalidComposableDraft("A currentTerm selector requires an explicit current/as-of request.")
                 normalized[key] = {
@@ -610,11 +692,31 @@ def _validate_member_party_composition_draft(
             else:
                 raise InvalidComposableDraft("The term must use a numeric termNumber or reviewed currentTerm selector.")
         elif key == "constituency":
-            mention = item.get("mention")
-            if (set(item) != {"type", "mention"} or not isinstance(mention, str)
-                    or not mention.strip() or _label_position(question, mention) is None):
-                raise InvalidComposableDraft("The DailConstituency must preserve an exact user-supplied name mention.")
-            normalized[key] = {"type": semantic_type, "mention": mention.strip()}
+            if set(item) == {"type", "members"}:
+                alternatives = item.get("members")
+                if not isinstance(alternatives, list) or not 2 <= len(alternatives) <= 4:
+                    raise InvalidComposableDraft("An explicit constituency identity set requires two to four named alternatives.")
+                converted = []
+                for alternative in alternatives:
+                    mention = alternative.get("mention") if isinstance(alternative, dict) else None
+                    if (not isinstance(alternative, dict) or set(alternative) != {"type", "mention"}
+                            or alternative.get("type") != "DailConstituency"
+                            or not isinstance(mention, str) or not mention.strip()
+                            or _label_position(question, mention) is None):
+                        raise InvalidComposableDraft("Every OR alternative must be an exact grounded constituency mention.")
+                    converted.append({"type": semantic_type, "mention": mention.strip()})
+                normalized_mentions = [
+                    unicodedata.normalize("NFC", item["mention"]).casefold() for item in converted
+                ]
+                if len(set(normalized_mentions)) != len(converted):
+                    raise InvalidComposableDraft("Constituency alternatives must name distinct exact mention slots.")
+                normalized[key] = {"type": semantic_type, "members": converted}
+            else:
+                mention = item.get("mention")
+                if (set(item) != {"type", "mention"} or not isinstance(mention, str)
+                        or not mention.strip() or _label_position(question, mention) is None):
+                    raise InvalidComposableDraft("The DailConstituency must preserve an exact user-supplied name mention.")
+                normalized[key] = {"type": semantic_type, "mention": mention.strip()}
         else:
             mention = item.get("mention")
             if set(item) != {"type", "mention"} or (mention is not None and (
@@ -625,18 +727,18 @@ def _validate_member_party_composition_draft(
             normalized[key] = {"type": semantic_type, "mention": mention.strip() if isinstance(mention, str) else None}
 
     term_selector = normalized["term"]["selector"]
-    residual = question
-    for item in normalized.values():
-        mention = item.get("mention")
-        if mention:
-            if re.search(r"\b(?:and|or|while|when|elected|election|before|after)\b", mention, re.I):
-                raise InvalidComposableDraft("An entity mention cannot consume another requested clause or identity.")
-            residual = re.sub(re.escape(mention), " ", residual, flags=re.I)
-    count_intent = bool(re.search(r"\b(?:how many|count|number of|total of)\b", question, re.I))
-    if count_intent:
-        residual = re.sub(r"\b(?:how many|count|number of|total of)\b", " ", residual, flags=re.I)
-    if re.search(r"\b(?:and|or|while|same|shared|other|another|election|elected)\b", residual, re.I):
-        raise InvalidComposableDraft("The proposed single-constituency graph omits a requested operator or projection.")
+    count_operators = count_operator_matches(question)
+    if len(count_operators) > 1:
+        raise UnsupportedComposableRequest("The party/representation projection requires one unambiguous count/list intent.")
+    count_intent = bool(count_operators)
+    if seanad_party_only:
+        reason = unsupported_current_seanad_party_membership_intent(
+            question,
+            party_mention=normalized["affiliation"].get("mention"),
+            count=count_intent,
+        )
+        if reason:
+            raise UnsupportedComposableRequest(reason)
     term_numbers = _question_dail_ordinals(question)
     if term_selector["kind"] == "termNumber":
         if len(term_numbers) != 1 or term_numbers[0] != term_selector["number"]:
@@ -650,7 +752,7 @@ def _validate_member_party_composition_draft(
     if seanad_party_only:
         from .composable_plan import _question_calendar_dates
         dates, invalid_date = _question_calendar_dates(question)
-        if dates or invalid_date is not None or term_numbers:
+        if dates or invalid_date is not None or term_numbers or month_year_mentions(question):
             raise UnsupportedComposableRequest("Current Seanad party selection accepts no extra date or numbered-term filter.")
         if _HISTORICAL_CURRENT_CONTRAST.search(question) or re.search(
             r"\b(?:simultaneous(?:ly)?|concurrent(?:ly)?|overlap(?:ping)?|previous(?:ly)?|historical|history|before|after|since|until|during|between|committees?|panels?|offices?|elections?|elected|votes?|bills?|seats?|represent(?:ed|s|ing)?|representation|TDs?|deput(?:y|ies))\b",
@@ -662,12 +764,95 @@ def _validate_member_party_composition_draft(
         r"\b(?:which|what)\s+(?:political\s+)?part(?:y|ies)\b", question, re.IGNORECASE,
     ))
     affiliation_mention = normalized["affiliation"]["mention"]
+    measures = requested_measures(question)
+    if measures.conflicts or measures.unclassified:
+        raise UnsupportedComposableRequest("The requested positive/excluded measure scope is ambiguous or unsupported.")
+    if party_list_question:
+        if "parties" not in measures.requested:
+            raise UnsupportedComposableRequest("The answer must preserve the requested party identities.")
+    elif ("members" not in measures.requested or "members" in measures.excluded
+          or "seats" in measures.requested):
+        raise UnsupportedComposableRequest("A named-party graph must preserve the requested Member projection, not seats.")
     if party_only and party_list_question:
         raise UnsupportedComposableRequest("The party-only term shape requires one named party and a Member answer.")
     if party_list_question and affiliation_mention is not None:
         raise InvalidComposableDraft("An all-parties answer cannot silently add a named affiliation filter.")
     if not party_list_question and affiliation_mention is None:
         raise InvalidComposableDraft("A named-party Member answer must retain its party identity filter.")
+
+    from .composable_plan import _question_calendar_dates
+    dates, invalid_date = _question_calendar_dates(question)
+    if invalid_date is not None or dates or month_year_mentions(question):
+        raise UnsupportedComposableRequest("The party/representation graph cannot replace an explicit calendar filter.")
+
+    constituency = normalized.get("constituency")
+    constituency_items = (
+        constituency.get("members", []) if isinstance(constituency, dict) and "members" in constituency
+        else [constituency] if isinstance(constituency, dict) else []
+    )
+    constituency_mentions = [item["mention"] for item in constituency_items if isinstance(item, dict)]
+    source_mentions = [
+        item["mention"] for key, item in normalized.items()
+        if key == "affiliation" and isinstance(item.get("mention"), str)
+    ] + constituency_mentions
+    if any(re.search(r"\b(?:and|or|while|when|elected|election|before|after)\b", mention, re.I)
+           for mention in source_mentions):
+        raise InvalidComposableDraft("An entity mention cannot consume another requested clause or identity.")
+
+    constituency_set = len(constituency_mentions) > 1
+    if constituency_set:
+        spans = []
+        for mention in constituency_mentions:
+            matches = list(re.finditer(r"(?<!\w)" + re.escape(mention) + r"(?!\w)", question, re.I))
+            if len(matches) != 1:
+                raise InvalidComposableDraft("Each constituency alternative must occupy one exact original-question span.")
+            spans.append((matches[0].start(), matches[0].end()))
+        if spans != sorted(spans):
+            raise InvalidComposableDraft("Constituency alternatives must retain the original question's order.")
+        gaps = [question[left[1]:right[0]] for left, right in zip(spans, spans[1:])]
+        connectors = [re.fullmatch(r"\s*(?:(?:,\s*)?(?:and|or))\s*", gap, re.I) for gap in gaps]
+        if not all(connectors):
+            raise UnsupportedComposableRequest("Named constituency alternatives require explicit and/or coordination.")
+        all_connectors = list(re.finditer(r"\b(?:and|or)\b", question, re.I))
+        if len(all_connectors) != len(gaps):
+            raise UnsupportedComposableRequest("The question contains an additional unpreserved disjunction or conjunction.")
+        either_matches = list(re.finditer(r"\beither\b", question, re.I))
+        if len(either_matches) > 1 or (either_matches and either_matches[0].end() > spans[0][0]):
+            raise UnsupportedComposableRequest("The either/or cue must scope only the named constituency alternatives.")
+    elif re.search(r"\b(?:and|or)\b", question, re.I):
+        raise UnsupportedComposableRequest("A single-constituency graph cannot drop another conjunction or disjunction.")
+
+    seanad_current_patterns = (
+        r"\b(?:the\s+)?(?:current|present)\s+seanad\b",
+        r"\b(?:current|present)\s+(?:seanad\s+)?senators?\b",
+        r"\bcurrently\s+(?:serving\s+)?senators?\b",
+        r"\b(?:senators?|members?)\s+(?:who\s+)?serv(?:e|es|ing)\s+(?:currently|now|today)\b",
+    ) if seanad_party_only else ()
+    current_dail_patterns = (
+        r"\b(?:current|currently|present|now|today)\b",
+    ) if (not seanad_party_only
+          and normalized.get("term", {}).get("selector") == {"kind": "currentTerm", "house": "Dail"}) else ()
+    residual_patterns = (
+        r"\b(?:please|could|can|you|tell|show|give|list|find|identify|name|report)\b",
+        *seanad_current_patterns,
+        r"\b(?:member|members|people|persons|representative|representatives|senators?|tds?|deput(?:y|ies))\b",
+        r"\b(?:party|parties|political|parliamentary)\b",
+        r"\b(?:which|what|who|the|were|was|are|is|have|has|had|represent|represents|represented|representing|in|for|during)\b",
+        r"\b(?:how\s+many|count(?:\s+of)?|number\s+of|total\s+(?:number\s+of|of))\b",
+        r"\b(?:distinct|different|recorded|listed)\b",
+        r"\b(?:belong(?:s|ed|ing)?|serv(?:e|es|ed|ing))\b",
+        r"\b(?:current|currently|present|now|today)\s+d[áa]il\b",
+        *current_dail_patterns,
+        *( (r"\b(?:and|or)\b", r"\beither\b") if constituency_set else () ),
+    )
+    if semantic_residual(
+        question,
+        consumed_patterns=residual_patterns,
+        mentions=tuple(source_mentions),
+        consume_dail_terms=True,
+        consume_seat_exclusions=True,
+    ):
+        raise UnsupportedComposableRequest("Unconsumed wording remains outside the validated party/representation graph.")
 
     contract = _plan_contract()
     relation_defs = {item["id"]: item for item in contract["relations"]}
@@ -772,7 +957,20 @@ def _validate_member_party_composition_draft(
         elif key == "term":
             final_referents[key] = {"type": semantic_type, "selector": dict(normalized[key]["selector"])}
         elif key == "constituency":
-            final_referents[key] = {"type": semantic_type, "mention": normalized[key]["mention"], "resolution": "unresolved"}
+            if "members" in normalized[key]:
+                final_referents[key] = {
+                    "type": semantic_type,
+                    "members": [
+                        {"type": semantic_type, "mention": item["mention"], "resolution": "unresolved"}
+                        for item in normalized[key]["members"]
+                    ],
+                }
+            else:
+                final_referents[key] = {
+                    "type": semantic_type,
+                    "mention": normalized[key]["mention"],
+                    "resolution": "unresolved",
+                }
         elif key == "affiliation" and party_list_question:
             final_referents[key] = {"type": semantic_type, "answer": True}
         elif key == "affiliation":
@@ -812,6 +1010,172 @@ def _bill_number_year_mentions(question: str) -> set[tuple[str, int]]:
     return pairs
 
 
+_DAIL_TERM_PHRASE = re.compile(
+    r"\b(?:d[áa]il\s+term(?:s)?(?:\s+or\s+terms?)?|terms?\s+of\s+(?:the\s+)?d[áa]il)\b",
+    re.IGNORECASE,
+)
+_HOUSE_TERM_REFERENT = re.compile(
+    r"\b(?:d[áa]il(?:\s+term(?:s)?(?:\s+or\s+terms?)?)?|terms?\s+of\s+(?:the\s+)?d[áa]il)\b",
+    re.IGNORECASE,
+)
+_COUNT_OPERATOR_WORDS = (
+    r"\b(?:how\s+many|count(?:\s+of)?|number\s+of|total\s+(?:(?:number|count)\s+of|of))\b"
+)
+_REQUEST_OPERATION_WORDS = (
+    r"\b(?:please|could|can|you|tell|show|identify|list|give|name|report|find|what|which|who)\b"
+)
+_HOUSE_TERM_STATE = (
+    r"\b(?:exist(?:s|ed|ing)?|in\s+existence|active|current|in\s+office|in\s+force|in\s+effect|"
+    r"overlap(?:s|ped|ping)?)\b"
+)
+_PARTY_GROUP_REQUEST = (
+    r"\b(?:part(?:y|ies)\s+(?:and|&)\s+(?:parliamentary\s+)?groups?|"
+    r"(?:parliamentary\s+)?groups?\s+(?:and|&)\s+(?:political\s+)?part(?:y|ies)|"
+    r"(?:include|including|plus|along\s+with|as\s+well\s+as|also)\s+"
+    r"(?:the\s+)?(?:parliamentary\s+)?groups?)\b"
+)
+_PARTY_MEASURE = r"\b(?:political\s+)?parties\b"
+_GROUP_MEASURE = r"\b(?:parliamentary\s+)?groups?\b"
+_MEMBERSHIP_RECORD = r"\b(?:membership|service)\s+(?:records?|paths?)\b|\b(?:recorded\s+)?memberships?\b"
+_MEMBER_TERM_RELATION = r"\b(?:serv(?:e|ed|es)|appear(?:s|ed)?|occur(?:s|red)?|link(?:s|ed)?|associate(?:s|d)?|include(?:s|d)?|contain(?:s|ed)?|record(?:s|ed)?|list(?:s|ed)?)\b"
+_HOUSE_CATALOGUE = r"\bHouses?\s+(?:data|dataset|graph|catalog(?:ue)?)\b"
+
+
+def _month_year_mentions(question: str) -> list[tuple[int, int]]:
+    return [(item.month, item.year) for item in month_year_mentions(question)]
+
+
+def _capability_residual(
+    question: str,
+    patterns: tuple[str, ...],
+    *,
+    mentions: tuple[str, ...] = (),
+    dail_terms: bool = False,
+    dates: bool = False,
+    months: bool = False,
+    group_exclusions: bool = False,
+    seat_exclusions: bool = False,
+    member_exclusions: bool = False,
+) -> tuple[str, ...]:
+    common_patterns = (
+        _REQUEST_OPERATION_WORDS,
+        r"\b(?:is|are|was|were|be|been|being|do|does|did|has|have|had|there|that)\b",
+        r"\b(?:distinct|different|recorded|listed|total)\b",
+    )
+    return semantic_residual(
+        question, consumed_patterns=(*common_patterns, *patterns), mentions=mentions,
+        consume_dail_terms=dail_terms,
+        consume_dates=dates, consume_months=months,
+        consume_group_exclusions=group_exclusions, consume_seat_exclusions=seat_exclusions,
+        consume_member_exclusions=member_exclusions,
+    )
+
+
+def _is_term_count_question(question: str, *, mention: str | None) -> bool:
+    measures = requested_measures(question)
+    terms = list(_DAIL_TERM_PHRASE.finditer(question))
+    if ("dail_terms" not in measures.requested or not measures.has_count_operator
+            or len(count_operator_matches(question)) != 1 or len(terms) != 1
+            or measures.conflicts or measures.unclassified):
+        return False
+    from .composable_plan import _question_calendar_dates
+    dates, invalid_date = _question_calendar_dates(question)
+    if invalid_date is not None or dates or _month_year_mentions(question) or numbered_dail_terms(question):
+        return False
+    if mention is None:
+        if not re.search(_HOUSE_CATALOGUE, question, re.I):
+            return False
+        return not _capability_residual(
+            question,
+            (_COUNT_OPERATOR_WORDS, _DAIL_TERM_PHRASE.pattern, _HOUSE_CATALOGUE,
+             r"\b(?:recorded|listed|distinct|different)\b"),
+        )
+
+    if _label_position(question, mention) is None:
+        return False
+    served_relation = bool(re.search(r"\bserv(?:e|ed|es)\b", question, re.I))
+    has_membership_record = bool(re.search(_MEMBERSHIP_RECORD, question, re.I))
+    record_relation = has_membership_record and bool(re.search(_MEMBER_TERM_RELATION, question, re.I))
+    if not (served_relation or record_relation):
+        return False
+    return not _capability_residual(
+        question,
+        (_COUNT_OPERATOR_WORDS, _DAIL_TERM_PHRASE.pattern, _MEMBER_TERM_RELATION,
+         _MEMBERSHIP_RECORD, r"\b(?:distinct|different|in\s+total)\b"),
+        mentions=(mention,),
+    )
+
+
+def _is_house_term_lookup_question(question: str) -> bool:
+    measures = requested_measures(question)
+    return (
+        len(list(_HOUSE_TERM_REFERENT.finditer(question))) == 1
+        and not numbered_dail_terms(question)
+        and not measures.has_count_operator
+        and not measures.conflicts
+        and not measures.unclassified
+        and bool(re.search(r"\b(?:what|which|identify|show|list|give)\b", question, re.I))
+        and bool(re.search(_HOUSE_TERM_STATE, question, re.I))
+        and not _capability_residual(
+            question,
+            (_HOUSE_TERM_REFERENT.pattern, _HOUSE_TERM_STATE,
+             r"\b(?:on|during|in|for)\b"),
+            dates=True, months=True,
+        )
+    )
+
+
+def _is_party_catalogue_question(question: str, *, include_groups: bool) -> bool:
+    measures = requested_measures(question)
+    group_only_request = (
+        include_groups
+        and measures.unclassified == {"groups"}
+        and "parties" not in measures.requested
+        and not (measures.requested & {"members", "seats", "dail_terms"})
+    )
+    if (("parties" not in measures.requested and not group_only_request)
+            or measures.conflicts
+            or measures.unclassified and not group_only_request
+            or "members" in measures.requested or "seats" in measures.requested
+            or measures.has_count_operator
+            or not re.search(r"\b(?:what|which|list|show|name|give|identify|report)\b", question, re.I)
+            or not re.search(_GROUP_MEASURE if group_only_request else _PARTY_MEASURE, question, re.I)):
+        return False
+    groups_requested = "groups" in measures.requested or group_only_request
+    if groups_requested != include_groups:
+        return False
+    if "groups" in measures.excluded and include_groups:
+        return False
+    return not _capability_residual(
+        question,
+        (_PARTY_MEASURE, _PARTY_GROUP_REQUEST, _GROUP_MEASURE,
+         r"\b(?:parliamentary|recorded)\b",
+         *( (r"\band\b",) if include_groups else () )),
+        dail_terms=True, dates=True, months=True, group_exclusions=True,
+    )
+
+
+def _is_dail_seat_measure(question: str) -> bool:
+    measures = requested_measures(question)
+    if ("seats" not in measures.requested or "members" in measures.requested
+            or measures.conflicts or measures.unclassified
+            or not re.search(r"\b(?:what|which|how\s+many|count|number\s+of|give|show|identify|report)\b", question, re.I)):
+        return False
+    from .composable_plan import _question_calendar_dates
+    dates, invalid_date = _question_calendar_dates(question)
+    if invalid_date is not None or dates or _month_year_mentions(question):
+        return False
+    measure_question = MEMBER_SEAT_ALIAS.sub(" ", question)
+    patterns = (
+        _COUNT_OPERATOR_WORDS, r"\bseats?\b",
+        r"\b(?:complement|total|count|allocation)\b", r"\bhouse[- ]owned\b",
+    )
+    return not _capability_residual(
+        measure_question, patterns, dail_terms=True, seat_exclusions=True,
+        member_exclusions="members" in measures.excluded,
+    )
+
+
 def _validate_capability_selection_draft(value: dict[str, Any], *, question: str) -> dict[str, Any]:
     """Select an existing closed handler without translating it into new RDF logic."""
     referents = value["referents"]
@@ -824,6 +1188,7 @@ def _validate_capability_selection_draft(value: dict[str, Any], *, question: str
         )
     capability = referents["capability"]
     parameters = referents["parameters"]
+    count_intent = is_numeric_measure_request(question)
     dispatch = _plan_contract().get("semanticDispatch", {})
     entries = {item.get("id"): item for item in dispatch.get("capabilities", [])
                if isinstance(item, dict)}
@@ -832,8 +1197,82 @@ def _validate_capability_selection_draft(value: dict[str, Any], *, question: str
         raise UnsupportedComposableRequest(
             f"Existing semantic capability {capability!r} is not exposed for semantic selection."
         )
+    expected_adapter = CAPABILITY_SELECTION_HANDLER_INPUTS.get(capability)
+    if expected_adapter is None:
+        raise UnsupportedComposableRequest(
+            f"Existing semantic capability {capability!r} has no reviewed validator/executor adapter."
+        )
+    if (entry.get("handler"), entry.get("input")) != expected_adapter:
+        raise InvalidComposableDraft(
+            f"Capability {capability!r} dispatch metadata does not match its reviewed handler/input adapter."
+        )
 
-    if capability == "member_lookup":
+    if capability == "shared_dail_terms_graph":
+        if (entry.get("handler") != "composable_graph" or not isinstance(parameters, dict)
+                or set(parameters) != {"memberA", "memberB"}
+                or any(not isinstance(parameters.get(key), str) or not parameters[key].strip()
+                       or _label_position(question, parameters[key]) is None
+                       for key in ("memberA", "memberB"))):
+            raise InvalidComposableDraft(
+                "Shared Dáil-term graph selection requires exactly two grounded named Member mentions."
+            )
+        from .semantic_graphs import build_shared_dail_terms_draft
+        try:
+            constructed = build_shared_dail_terms_draft(
+                parameters["memberA"], parameters["memberB"],
+            )
+            validated, unsupported = validate_composable_plan_draft(
+                constructed, question=question,
+            )
+        except ValueError as error:
+            if isinstance(error, (InvalidComposableDraft, UnsupportedComposableRequest)):
+                raise
+            raise InvalidComposableDraft(str(error)) from error
+        if unsupported is not None or validated is None:
+            raise UnsupportedComposableRequest(unsupported or "The shared-term graph request is unsupported.")
+        return validated
+    elif capability == "anchored_shared_constituency_graph":
+        if (entry.get("handler") != "composable_graph" or not isinstance(parameters, dict)
+                or set(parameters) != {"anchor"}
+                or not isinstance(parameters.get("anchor"), str)
+                or not parameters["anchor"].strip()
+                or _label_position(question, parameters["anchor"]) is None):
+            raise InvalidComposableDraft(
+                "Anchored constituency graph selection requires exactly one grounded anchor mention."
+            )
+        try:
+            term_mentions = numbered_dail_terms(question)
+        except ValueError as error:
+            raise InvalidComposableDraft(str(error)) from error
+        if len(term_mentions) == 1:
+            selector = {"kind": "termNumber", "number": term_mentions[0].number}
+        elif len(term_mentions) > 1:
+            raise UnsupportedComposableRequest("Anchored constituency selection requires exactly one Dáil term scope.")
+        elif len(re.findall(r"\b(?:last|previous)\s+d[áa]il(?:\s+term)?\b", question, re.I)) == 1:
+            selector = {"kind": "previousTerm"}
+        else:
+            raise UnsupportedComposableRequest(
+                "Anchored constituency selection requires one numbered or globally previous Dáil."
+            )
+        count_operators = count_operator_matches(question)
+        if len(count_operators) > 1:
+            raise UnsupportedComposableRequest("The anchored Member count requires one unambiguous count operator.")
+        from .semantic_graphs import build_anchored_shared_constituency_draft
+        try:
+            constructed = build_anchored_shared_constituency_draft(
+                parameters["anchor"], selector, count=bool(count_operators),
+            )
+            validated, unsupported = validate_composable_plan_draft(
+                constructed, question=question,
+            )
+        except ValueError as error:
+            if isinstance(error, (InvalidComposableDraft, UnsupportedComposableRequest)):
+                raise
+            raise InvalidComposableDraft(str(error)) from error
+        if unsupported is not None or validated is None:
+            raise UnsupportedComposableRequest(unsupported or "The anchored constituency graph request is unsupported.")
+        return validated
+    elif capability == "member_lookup":
         if (entry.get("handler") != "stage_a" or not isinstance(parameters, dict)
                 or set(parameters) != {"member", "house"}
                 or parameters.get("house") not in (None, "Dail", "Seanad")
@@ -854,14 +1293,97 @@ def _validate_capability_selection_draft(value: dict[str, Any], *, question: str
         if (entry.get("handler") != "stage_c" or not isinstance(parameters, dict)
                 or set(parameters) != {"termNumber", "includeGroups"}
                 or type(parameters.get("termNumber")) is not int
-                or _question_dail_ordinals(question) != [parameters["termNumber"]]
                 or type(parameters.get("includeGroups")) is not bool):
             raise InvalidComposableDraft("Party listing requires the exact numbered Dáil and requested group scope.")
-        if parameters["includeGroups"] != bool(re.search(r"\bgroups?\b", question, re.I)):
-            raise InvalidComposableDraft("Preserve party/group answer scope.")
-        if re.search(r"\b(?:represent|constituenc(?:y|ies)|TDs|members|minister|current|now|before|after|count|how many|except|excluding|only|without|bills?|sponsor(?:ed|s|ing)?|votes?|voted|committees?)\b|[0-9]{4}", question, re.I):
-            raise UnsupportedComposableRequest("Party listing cannot replace a Member relationship or additional condition.")
+        term_mentions = numbered_dail_terms(question)
+        if len(term_mentions) != 1 or term_mentions[0].number != parameters["termNumber"]:
+            raise InvalidComposableDraft("Party listing must preserve exactly one matching numbered Dáil scope.")
+        from .composable_plan import _question_calendar_dates
+        dates, invalid_date = _question_calendar_dates(question)
+        if invalid_date is not None or dates or _month_year_mentions(question):
+            raise UnsupportedComposableRequest("Party listing cannot replace a date or calendar-month filter.")
+        if not _is_party_catalogue_question(question, include_groups=parameters["includeGroups"]):
+            raise UnsupportedComposableRequest(
+                "Party listing cannot replace a Member relationship, temporal filter, or additional condition."
+            )
         normalized_parameters = dict(parameters)
+    elif capability == "term_count":
+        if (entry.get("handler") != "stage_a" or not isinstance(parameters, dict)
+                or not count_intent):
+            raise InvalidComposableDraft("Term-count selection requires the existing Stage A aggregate and a count question.")
+        if set(parameters) == {"member"}:
+            mention = parameters.get("member")
+            if (not isinstance(mention, str) or not mention.strip()
+                    or not _is_term_count_question(question, mention=mention)):
+                raise InvalidComposableDraft(
+                    "Member term count requires one exact grounded Member mention and an unfiltered Dáil-service count."
+                )
+            normalized_parameters = {"member": mention.strip()}
+        elif not parameters:
+            if not _is_term_count_question(question, mention=None):
+                raise UnsupportedComposableRequest(
+                    "The total term count is limited to the recorded Dáil-term catalogue in Houses data."
+                )
+            normalized_parameters = {}
+        else:
+            raise InvalidComposableDraft("Term-count selection accepts only one Member mention or the Houses total.")
+    elif capability == "house_terms":
+        if entry.get("handler") != "stage_a" or not isinstance(parameters, dict):
+            raise InvalidComposableDraft("House-term selection requires the existing Stage A temporal capability.")
+        from .composable_plan import _MONTHS, _question_calendar_dates
+        dates, invalid_date = _question_calendar_dates(question)
+        if not _is_house_term_lookup_question(question):
+            raise UnsupportedComposableRequest(
+                "House-term selection requires a complete Dáil-term lookup intent with one explicit calendar scope and no added condition."
+            )
+        if set(parameters) == {"date"}:
+            try:
+                selected_date = date.fromisoformat(parameters["date"])
+            except (TypeError, ValueError) as error:
+                raise InvalidComposableDraft("House-term date selection requires one valid ISO calendar date.") from error
+            month_slots = month_year_mentions(question)
+            date_spans = calendar_date_spans(question)
+            unbound_months = [item for item in month_slots if not any(
+                start <= item.start and item.end <= end for start, end in date_spans
+            )]
+            if (selected_date.isoformat() != parameters["date"] or invalid_date is not None
+                    or dates != [selected_date]
+                    or unbound_months):
+                raise InvalidComposableDraft(
+                    "Preserve exactly one calendar-date point for the House-owned Dáil-term selection."
+                )
+            normalized_parameters = {"date": selected_date.isoformat()}
+        elif set(parameters) == {"month", "year"}:
+            month, year = parameters.get("month"), parameters.get("year")
+            if (type(month) is not int or not 1 <= month <= 12
+                    or type(year) is not int or not 1 <= year <= 9998
+                    or invalid_date is not None or dates
+                    or _month_year_mentions(question) != [(month, year)]
+                    or len(re.findall(r"\b(?:" + "|".join(
+                        re.escape(name) for name in sorted(_MONTHS, key=len, reverse=True)
+                    ) + r")\b", question, re.I)) != 1
+                    or len(re.findall(r"(?<![0-9])[0-9]{4}(?![0-9])", question)) != 1
+                    ):
+                raise InvalidComposableDraft(
+                    "Preserve exactly one explicit complete calendar month for the House-owned Dáil-term selection."
+                )
+            normalized_parameters = {"month": month, "year": year}
+        else:
+            raise InvalidComposableDraft("House-term selection requires exactly one date point or full calendar month.")
+    elif capability == "dail_seats":
+        if (entry.get("handler") != "stage_c" or not isinstance(parameters, dict)
+                or set(parameters) != {"termNumber"}
+                or type(parameters.get("termNumber")) is not int
+                or not 1 <= parameters["termNumber"] <= 999):
+            raise InvalidComposableDraft("Seat-complement selection requires one bounded numbered Dáil.")
+        number = parameters["termNumber"]
+        term_mentions = numbered_dail_terms(question)
+        if (len(term_mentions) != 1 or term_mentions[0].number != number
+                or not _is_dail_seat_measure(question)):
+            raise UnsupportedComposableRequest(
+                "The seat-complement lookup requires one numbered Dáil; a count of distinct Members who served is not substituted."
+            )
+        normalized_parameters = {"termNumber": number}
     elif capability == "office_holding_window":
         if (not isinstance(parameters, dict) or "office" not in parameters
                 or not isinstance(parameters.get("office"), str)
@@ -1019,6 +1541,7 @@ def _question_month_window(question):
 def _validate_anchored_shared_constituency_draft(value, *, question):
     """Normalize the closed, term-wide shared-constituency operator."""
     from .composable_plan import _question_calendar_dates, validate_plan, PlanError
+    from .graph_intent import validate_anchored_shared_constituency_intent
     from .structured_planner import _label_position
 
     referents = value["referents"]
@@ -1034,7 +1557,8 @@ def _validate_anchored_shared_constituency_draft(value, *, question):
     if (not re.search(r"\bconstituenc(?:y|ies)\b", question, re.I)
             or not re.search(r"\b(?:same|shared|share|shares|sharing)\b", question, re.I)):
         raise InvalidComposableDraft("The question must explicitly ask for a shared or same constituency.")
-    if not re.search(r"\b(?:other|another|others|fellow)\b", question, re.I):
+    if (not re.search(r"\b(?:other|another|others|fellow)\b", question, re.I)
+            and not re.search(r"\bwho\s+else\b", question, re.I)):
         raise InvalidComposableDraft("The question must request other Members, excluding the named anchor.")
 
     anchor = referents["anchorMember"]
@@ -1080,7 +1604,8 @@ def _validate_anchored_shared_constituency_draft(value, *, question):
     if invalid_date is not None or dates:
         raise UnsupportedComposableRequest("This term-wide co-membership projection does not support explicit calendar dates.")
 
-    count_intent = bool(re.search(r"\b(?:how\s+many|count|number\s+of|total\s+of)\b", question, re.I))
+    count_operators = count_operator_matches(question)
+    count_intent = bool(count_operators)
     count_answer = {"kind": "count", "referent": "member", "distinctBy": "identity"}
     list_answer = {
         "kind": "entities", "referent": "member", "distinctBy": "identity", "display": ["name"],
@@ -1090,26 +1615,12 @@ def _validate_anchored_shared_constituency_draft(value, *, question):
     if value["answer"] != expected_answer:
         raise InvalidComposableDraft("Use a distinct Member count only for count intent; otherwise return the exact Member list.")
 
-    residual = question
-    residual = re.sub(re.escape(anchor["mention"]), " ", residual, flags=re.I)
-    residual = re.sub(r"\b[0-9]{1,3}(?:st|nd|rd|th)\b", " ", residual, flags=re.I)
-    allowed = set("""
-        who what which how many count number total of the a an other another others fellow
-        td tds deputy deputies member members in during for from with as same shared share shares
-        constituency constituencies were was are is did do does have has had represent represents sharing
-        represented representing serve served serving service term dáil dail previous last
-        there also list show name give me records local evidence evidenced identify find tell
-        can could you that those these whom alongside parliamentary
-    """.split())
-    words = set(re.findall(r"[^\W\d_]+", residual.casefold()))
-    if re.search(r"\d", residual) or words - allowed:
-        raise UnsupportedComposableRequest(
-            "The anchored co-membership projection cannot preserve an additional filter, temporal condition, or answer request."
+    try:
+        validate_anchored_shared_constituency_intent(
+            question, anchor=anchor["mention"], selector=normalized_selector, count=count_intent,
         )
-    if re.search(r"\b(?:party|parties|office|minister|taoiseach|election|elected|simultaneous|simultaneously|while|when|current|currently|now|today|before|after|since|until|between|except|excluding|only|seats?)\b", question, re.I):
-        raise UnsupportedComposableRequest(
-            "Party, office, election, simultaneity, current-point, and additional temporal filters are not supported by this term-wide projection."
-        )
+    except ValueError as error:
+        raise UnsupportedComposableRequest(str(error)) from error
 
     expected_edges = {
         ("member_has_membership", "anchorMember", "anchorMembership"),
@@ -1237,18 +1748,22 @@ def _validate_bounded_composition_draft(value, *, question):
 
 
 def _question_dail_ordinals(question: str) -> list[int]:
-    values: list[int] = []
-    for match in _DAIL_ORDINAL.finditer(question):
-        number = int(match.group("number"))
-        if match.group("suffix").casefold() != _ordinal_suffix(number):
-            raise InvalidComposableDraft("A Dáil term ordinal in the question is malformed.")
-        values.append(number)
-    return values
+    try:
+        return [item.number for item in numbered_dail_terms(question)]
+    except ValueError as error:
+        raise InvalidComposableDraft(str(error)) from error
 
 
 def _validate_current_cross_house_membership_draft(value: dict[str, Any], *, question: str) -> dict[str, Any]:
     """Validate only term-wide recorded membership in the current Dáil and Seanad."""
     from .composable_plan import PlanError, _question_calendar_dates, validate_plan
+    from .membership_intent import unsupported_current_cross_house_membership_intent
+
+    intent_reason = unsupported_current_cross_house_membership_intent(
+        question, count=bool(count_operator_matches(question)),
+    )
+    if intent_reason:
+        raise UnsupportedComposableRequest(intent_reason)
 
     if value["constraints"]:
         raise UnsupportedComposableRequest(
@@ -1275,7 +1790,7 @@ def _validate_current_cross_house_membership_draft(value: dict[str, Any], *, que
             "Cross-house history is not substituted for an intersection of both explicitly current House terms."
         )
     if _HISTORICAL_CURRENT_CONTRAST.search(question) or re.search(
-        r"\b(?:simultaneous(?:ly)?|concurrent(?:ly)?|overlap(?:ping)?|currently|now|today|still|at\s+the\s+same\s+time|"
+        r"\b(?:simultaneous(?:ly)?|concurrent(?:ly)?|currently|now|today|still|at\s+the\s+same\s+time|"
         r"same\s+period|while\s+(?:serving|a\s+member)|previous(?:ly)?|historical|history|before|after|since|until|during|between|"
         r"party|parties|constituenc(?:y|ies)|panels?|offices?|minister|election|elected|committees?|bills?|votes?|"
         r"how\s+many|count|number\s+of|seats?)\b",
@@ -1350,6 +1865,13 @@ def _validate_current_seanad_prior_dail_membership_draft(
 ) -> dict[str, Any]:
     """Accept only the positive current-Seanad/strictly-prior-Dáil projection."""
     from .composable_plan import PlanError, _question_calendar_dates, validate_plan
+    from .membership_intent import unsupported_current_seanad_prior_dail_intent
+
+    intent_reason = unsupported_current_seanad_prior_dail_intent(
+        question, count=bool(count_operator_matches(question)),
+    )
+    if intent_reason:
+        raise UnsupportedComposableRequest(intent_reason)
 
     if value["constraints"]:
         raise UnsupportedComposableRequest(
@@ -1459,6 +1981,10 @@ def _validate_current_seanad_prior_dail_membership_draft(
             canonical_answer = list_answer
     if canonical_answer is None:
         raise InvalidComposableDraft("Prior-service selection returns Member identities with both House paths or their distinct count.")
+    question_count = bool(count_operator_matches(question))
+    proposed_count = isinstance(proposed_answer, dict) and proposed_answer.get("kind") == "count"
+    if proposed_count != question_count:
+        raise InvalidComposableDraft("Prior-service count/list answer mode must match the original question.")
 
     expected_edges = {
         ("member_has_seanad_membership", "member", "seanad_membership"),

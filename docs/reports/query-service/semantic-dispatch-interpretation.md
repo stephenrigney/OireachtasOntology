@@ -147,7 +147,36 @@ gaps: shared-term and representation graphs could omit an extra requested
 condition/output, and the positive current-Seanad/prior-Dáil graph accepted
 negation, gender and age-output additions. These were validator-only probes,
 **not observed live factual errors**. They are retained as development evidence;
-graph construction remains unwired until the relevant guards are integrated.
+graph construction was deliberately left unwired until the relevant guards
+were integrated.
+
+The integrated design adds three adapters for existing Stage A/C operations
+(recorded Dáil-term counts, calendar-scoped House terms and seat complements)
+and two explicit graph-construction selectors (two named Members' shared Dáil
+terms, and other Members sharing a named anchor's term-scoped constituency).
+The selectors supply exact source spans, not IRIs or graph edges. Locally
+constructed drafts pass the same original-question and final graph validators
+as legacy drafts, then use the existing executors. Rejected legacy graphs are
+never repaired or retried through construction. Named-Member representation
+retains its existing canonical family path, now with original-question guards,
+rather than adding a redundant dispatch wrapper.
+
+Independent final review found additional interaction gaps despite green
+intermediate tests: an early shared-constituency gate blocked its explicit
+selector, excluded seats survived a different early gate, and a prior-service
+count/list helper was not checked against the proposed answer mode. Review also
+challenged previously accepted group-only catalogue wording and party-member
+relation/qualifier synonyms. These findings were corrected before the final
+service replay; intermediate test totals are not campaign acceptance.
+
+Integrated deterministic verification: **2,531 passed, 26 skipped, 23 subtests
+passed** in 498.23 seconds (`python -m pytest tests -q`). The 313-test focused
+integration tail also passed; Python compilation and `git diff --check` passed.
+Orchestrator probes confirmed the seven-edge previous-Dáil anchored count now
+validates through the final graph validator, while the earlier negative,
+demographic, extra-output and count/list-mismatch prior-service probes refuse.
+Public composable dispatch contract version: **2.28.0**. No ontology, mapping,
+source/golden-fixture or publication-contract material changed.
 
 The existing single-partially-overlapping-month House-term guard is retained.
 H40's frozen factual expectation does not override the technical specification's
