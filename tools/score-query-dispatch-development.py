@@ -54,6 +54,15 @@ def check_holdout(case, actual):
         assert {r[columns.index("Identity")] for r in rows} == {r["party"] for r in expected}
     else:
         old.assert_facts(case, actual)
+        identity_columns = {"person": "Member identity", "constituency": "Constituency identity", "term": "Term identity"}
+        keys = [key for key in identity_columns if expected and key in expected[0]]
+        if len(keys) > 1:
+            # Equal marginal sets must not hide incorrect person/term/place
+            # associations (especially career-wide projections).
+            indexes = [columns.index(identity_columns[key]) for key in keys]
+            assert {tuple(r[i] for i in indexes) for r in rows} == {
+                tuple(r[key] for key in keys) for r in expected
+            }
 
 
 def check_control(case, actual, holdout):

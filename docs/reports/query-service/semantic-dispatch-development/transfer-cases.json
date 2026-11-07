@@ -1,0 +1,681 @@
+{
+  "created_utc": "2026-11-06T23:15:55.727561+00:00",
+  "scope": "Development transfer checks, NOT independent acceptance; direct read-only SPARQL adapted from published evidence, never NLQ output.",
+  "reference_date": "2026-11-06",
+  "cases": [
+    {
+      "id": "T01",
+      "question": "How many Dáil terms are linked to Mary Lou McDonald's recorded memberships?",
+      "expected_outcome": "answer",
+      "evidence_query": "PREFIX a: <https://data.oireachtas.ie/ontology#>\nPREFIX m: <https://data.oireachtas.ie/ontology/members#>\nPREFIX f: <http://xmlns.com/foaf/0.1/>\nPREFIX s: <http://www.w3.org/2004/02/skos/core#>\nPREFIX dct: <http://purl.org/dc/terms/>\nPREFIX dcat: <http://www.w3.org/ns/dcat#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>\nSELECT DISTINCT ?term WHERE { GRAPH ?g { ?person a a:Member; f:name \"Mary Lou McDonald\". } FILTER(STRSTARTS(STR(?g), \"https://data.oireachtas.ie/graph/member/\")) GRAPH ?g {?person m:hasMembersMembership ?ms. ?ms a m:DailMembership; m:inHouseTerm ?term.} GRAPH <https://data.oireachtas.ie/graph/houses> {?term a a:DailTerm.} } ORDER BY ?term",
+      "evidence": {
+        "head": {
+          "vars": [
+            "term"
+          ]
+        },
+        "results": {
+          "bindings": [
+            {
+              "term": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/31"
+              }
+            },
+            {
+              "term": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/32"
+              }
+            },
+            {
+              "term": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33"
+              }
+            },
+            {
+              "term": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+              }
+            }
+          ]
+        }
+      },
+      "expected_count": 4,
+      "expected_rows": [
+        {
+          "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/31"
+        },
+        {
+          "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/32"
+        },
+        {
+          "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33"
+        },
+        {
+          "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+        }
+      ]
+    },
+    {
+      "id": "T02",
+      "question": "Give the House-owned seat total for Dáil number 33.",
+      "expected_outcome": "answer",
+      "evidence_query": "PREFIX a: <https://data.oireachtas.ie/ontology#>\nPREFIX m: <https://data.oireachtas.ie/ontology/members#>\nPREFIX f: <http://xmlns.com/foaf/0.1/>\nPREFIX s: <http://www.w3.org/2004/02/skos/core#>\nPREFIX dct: <http://purl.org/dc/terms/>\nPREFIX dcat: <http://www.w3.org/ns/dcat#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>\nSELECT DISTINCT ?seats WHERE { GRAPH <https://data.oireachtas.ie/graph/houses> {<https://data.oireachtas.ie/ie/oireachtas/house/dail/33> a a:DailTerm; a:seats ?seats.} } ORDER BY ?seats",
+      "evidence": {
+        "head": {
+          "vars": [
+            "seats"
+          ]
+        },
+        "results": {
+          "bindings": [
+            {
+              "seats": {
+                "type": "literal",
+                "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+                "value": "160"
+              }
+            }
+          ]
+        }
+      },
+      "expected_count": null,
+      "expected_rows": [
+        {
+          "seats": "160"
+        }
+      ]
+    },
+    {
+      "id": "T03",
+      "question": "Identify the Dáil terms that existed in July 2002.",
+      "expected_outcome": "answer",
+      "evidence_query": "PREFIX a: <https://data.oireachtas.ie/ontology#>\nPREFIX m: <https://data.oireachtas.ie/ontology/members#>\nPREFIX f: <http://xmlns.com/foaf/0.1/>\nPREFIX s: <http://www.w3.org/2004/02/skos/core#>\nPREFIX dct: <http://purl.org/dc/terms/>\nPREFIX dcat: <http://www.w3.org/ns/dcat#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>\nSELECT DISTINCT ?term ?label ?start ?end WHERE { GRAPH <https://data.oireachtas.ie/graph/houses> {?term a a:DailTerm; s:prefLabel ?label; dct:temporal ?period. ?period dcat:startDate ?start. OPTIONAL {?period dcat:endDate ?end.} } FILTER(SUBSTR(STR(?start),1,10) <= \"2002-07-31\" && (!BOUND(?end) || SUBSTR(STR(?end),1,10) >= \"2002-07-01\")) } ORDER BY ?term ?label ?start ?end",
+      "evidence": {
+        "head": {
+          "vars": [
+            "term",
+            "label",
+            "start",
+            "end"
+          ]
+        },
+        "results": {
+          "bindings": [
+            {
+              "term": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/29"
+              },
+              "label": {
+                "type": "literal",
+                "xml:lang": "en",
+                "value": "29th Dáil"
+              },
+              "start": {
+                "type": "literal",
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "value": "2002-06-06T00:00:00"
+              },
+              "end": {
+                "type": "literal",
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "value": "2007-04-30T00:00:00"
+              }
+            }
+          ]
+        }
+      },
+      "expected_count": null,
+      "expected_rows": [
+        {
+          "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/29",
+          "label": "29th Dáil",
+          "start": "2002-06-06T00:00:00",
+          "end": "2007-04-30T00:00:00"
+        }
+      ]
+    },
+    {
+      "id": "T04",
+      "question": "Give the recorded parties for Dáil number 29, excluding parliamentary groups.",
+      "expected_outcome": "answer",
+      "evidence_query": "PREFIX a: <https://data.oireachtas.ie/ontology#>\nPREFIX m: <https://data.oireachtas.ie/ontology/members#>\nPREFIX f: <http://xmlns.com/foaf/0.1/>\nPREFIX s: <http://www.w3.org/2004/02/skos/core#>\nPREFIX dct: <http://purl.org/dc/terms/>\nPREFIX dcat: <http://www.w3.org/ns/dcat#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>\nSELECT DISTINCT ?party ?label WHERE { GRAPH <https://data.oireachtas.ie/graph/parties> {?party a m:ParliamentaryParty; m:activeDuringTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/29>. OPTIONAL {?party s:prefLabel ?label.}} } ORDER BY ?party ?label",
+      "evidence": {
+        "head": {
+          "vars": [
+            "party",
+            "label"
+          ]
+        },
+        "results": {
+          "bindings": [
+            {
+              "party": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Fianna_Fáil"
+              },
+              "label": {
+                "type": "literal",
+                "xml:lang": "en",
+                "value": "Fianna Fáil"
+              }
+            },
+            {
+              "party": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Fine_Gael"
+              },
+              "label": {
+                "type": "literal",
+                "xml:lang": "en",
+                "value": "Fine Gael"
+              }
+            },
+            {
+              "party": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Green_Party"
+              },
+              "label": {
+                "type": "literal",
+                "xml:lang": "en",
+                "value": "Green Party"
+              }
+            },
+            {
+              "party": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Labour_Party"
+              },
+              "label": {
+                "type": "literal",
+                "xml:lang": "en",
+                "value": "Labour Party"
+              }
+            },
+            {
+              "party": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Progressive_Democrats"
+              },
+              "label": {
+                "type": "literal",
+                "xml:lang": "en",
+                "value": "Progressive Democrats"
+              }
+            },
+            {
+              "party": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Sinn_Féin"
+              },
+              "label": {
+                "type": "literal",
+                "xml:lang": "en",
+                "value": "Sinn Féin"
+              }
+            },
+            {
+              "party": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Socialist_Party"
+              },
+              "label": {
+                "type": "literal",
+                "xml:lang": "en",
+                "value": "Socialist Party"
+              }
+            }
+          ]
+        }
+      },
+      "expected_count": null,
+      "expected_rows": [
+        {
+          "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Fianna_Fáil",
+          "label": "Fianna Fáil"
+        },
+        {
+          "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Fine_Gael",
+          "label": "Fine Gael"
+        },
+        {
+          "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Green_Party",
+          "label": "Green Party"
+        },
+        {
+          "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Labour_Party",
+          "label": "Labour Party"
+        },
+        {
+          "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Progressive_Democrats",
+          "label": "Progressive Democrats"
+        },
+        {
+          "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Sinn_Féin",
+          "label": "Sinn Féin"
+        },
+        {
+          "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/29/Socialist_Party",
+          "label": "Socialist Party"
+        }
+      ]
+    },
+    {
+      "id": "T05",
+      "question": "Give Fine Gael representatives for either Clare or Carlow-Kilkenny in Dáil 33.",
+      "expected_outcome": "answer",
+      "evidence_query": "PREFIX a: <https://data.oireachtas.ie/ontology#>\nPREFIX m: <https://data.oireachtas.ie/ontology/members#>\nPREFIX f: <http://xmlns.com/foaf/0.1/>\nPREFIX s: <http://www.w3.org/2004/02/skos/core#>\nPREFIX dct: <http://purl.org/dc/terms/>\nPREFIX dcat: <http://www.w3.org/ns/dcat#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>\nSELECT DISTINCT ?person ?name WHERE { GRAPH ?g { ?person a a:Member; f:name ?name; m:hasMembersMembership ?membership. ?membership a m:DailMembership; m:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/33>; m:isRepresentativeFrom ?constituency. } FILTER(STRSTARTS(STR(?g), \"https://data.oireachtas.ie/graph/member/\")) GRAPH <https://data.oireachtas.ie/graph/constituencies> { ?constituency m:constituencyInHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/33>; s:prefLabel ?constituencyLabel. VALUES ?constituencyLabel { \"Clare\"@en \"Carlow-Kilkenny\"@en } } GRAPH ?g { ?person m:hasMembersMembership ?episode. ?episode a m:PartyMembership; m:inOireachtasMembership ?membership; m:isPartyMembershipOf ?party. } GRAPH <https://data.oireachtas.ie/graph/parties> {?party a m:ParliamentaryParty; m:activeDuringTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/33>.} GRAPH <https://data.oireachtas.ie/graph/political-affiliations/identities> { ?party m:hasPoliticalAffiliationIdentity ?affiliation. ?affiliation a m:PoliticalAffiliationIdentity; s:prefLabel \"Fine Gael\"@en. } GRAPH ?g { ?membership m:hasMembershipDateRange ?membershipRange. ?membershipRange m:StartDate ?ms. OPTIONAL { ?membershipRange m:EndDate ?me. } } GRAPH ?g { ?episode m:hasMembershipDateRange ?episodeRange. ?episodeRange m:StartDate ?ps. OPTIONAL { ?episodeRange m:EndDate ?pe. } } FILTER((!BOUND(?me) || ?ps <= ?me) && (!BOUND(?pe) || ?ms <= ?pe))  } ORDER BY ?person ?name",
+      "evidence": {
+        "head": {
+          "vars": [
+            "person",
+            "name"
+          ]
+        },
+        "results": {
+          "bindings": [
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Carey.D.2007-06-14"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Joe Carey"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Paul-Phelan.S.2002-09-12"
+              },
+              "name": {
+                "type": "literal",
+                "value": "John Paul Phelan"
+              }
+            }
+          ]
+        }
+      },
+      "expected_count": null,
+      "expected_rows": [
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Carey.D.2007-06-14",
+          "name": "Joe Carey"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Paul-Phelan.S.2002-09-12",
+          "name": "John Paul Phelan"
+        }
+      ]
+    },
+    {
+      "id": "T06",
+      "question": "Count the other deputies who shared Róisín Shortall's constituency in Dáil 31.",
+      "expected_outcome": "answer",
+      "evidence_query": "PREFIX a: <https://data.oireachtas.ie/ontology#>\nPREFIX m: <https://data.oireachtas.ie/ontology/members#>\nPREFIX f: <http://xmlns.com/foaf/0.1/>\nPREFIX s: <http://www.w3.org/2004/02/skos/core#>\nPREFIX dct: <http://purl.org/dc/terms/>\nPREFIX dcat: <http://www.w3.org/ns/dcat#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>\nSELECT DISTINCT ?person ?name WHERE { GRAPH ?ag { ?anchor a a:Member; f:name \"Róisín Shortall\". } FILTER(STRSTARTS(STR(?ag), \"https://data.oireachtas.ie/graph/member/\")) GRAPH ?ag { ?anchor m:hasMembersMembership ?am. ?am a m:DailMembership; m:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/31>. } GRAPH ?ag {?am m:isRepresentativeFrom ?constituency.} GRAPH ?g {?person a a:Member; f:name ?name; m:hasMembersMembership ?membership. ?membership a m:DailMembership; m:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/31>; m:isRepresentativeFrom ?constituency.} GRAPH <https://data.oireachtas.ie/graph/constituencies> {?constituency m:constituencyInHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/31>.} FILTER(?person != ?anchor)  } ORDER BY ?person ?name",
+      "evidence": {
+        "head": {
+          "vars": [
+            "person",
+            "name"
+          ]
+        },
+        "results": {
+          "bindings": [
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Dessie-Ellis.D.2011-03-09"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Dessie Ellis"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Lyons.D.2011-03-09"
+              },
+              "name": {
+                "type": "literal",
+                "value": "John Lyons"
+              }
+            }
+          ]
+        }
+      },
+      "expected_count": 2,
+      "expected_rows": [
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Dessie-Ellis.D.2011-03-09",
+          "name": "Dessie Ellis"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Lyons.D.2011-03-09",
+          "name": "John Lyons"
+        }
+      ]
+    },
+    {
+      "id": "T07",
+      "question": "Which Members have recorded service in both this Dáil and this Seanad? The membership periods need not overlap.",
+      "expected_outcome": "answer",
+      "evidence_query": "PREFIX a: <https://data.oireachtas.ie/ontology#>\nPREFIX m: <https://data.oireachtas.ie/ontology/members#>\nPREFIX f: <http://xmlns.com/foaf/0.1/>\nPREFIX s: <http://www.w3.org/2004/02/skos/core#>\nPREFIX dct: <http://purl.org/dc/terms/>\nPREFIX dcat: <http://www.w3.org/ns/dcat#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>\nSELECT DISTINCT ?person ?name ?ds ?de ?ss ?se WHERE { GRAPH ?g {?person a a:Member; f:name ?name.}GRAPH ?g { ?person m:hasMembersMembership ?dm. ?dm a m:DailMembership; m:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/dail/34>. } GRAPH ?g { ?person m:hasMembersMembership ?sm. ?sm a m:SeanadMembership; m:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/seanad/27>. } GRAPH ?g { ?dm m:hasMembershipDateRange ?dmRange. ?dmRange m:StartDate ?ds. OPTIONAL { ?dmRange m:EndDate ?de. } } GRAPH ?g { ?sm m:hasMembershipDateRange ?smRange. ?smRange m:StartDate ?ss. OPTIONAL { ?smRange m:EndDate ?se. } }  } ORDER BY ?person ?name ?ds ?de ?ss ?se",
+      "evidence": {
+        "head": {
+          "vars": [
+            "person",
+            "name",
+            "ds",
+            "de",
+            "ss",
+            "se"
+          ]
+        },
+        "results": {
+          "bindings": [
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Seán-Kyne.D.2011-03-09"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Seán Kyne"
+              },
+              "ds": {
+                "type": "literal",
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "value": "2026-05-25T00:00:00"
+              },
+              "ss": {
+                "type": "literal",
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "value": "2025-01-29T00:00:00"
+              },
+              "se": {
+                "type": "literal",
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "value": "2026-05-24T00:00:00"
+              }
+            }
+          ]
+        }
+      },
+      "expected_count": null,
+      "expected_rows": [
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Seán-Kyne.D.2011-03-09",
+          "name": "Seán Kyne",
+          "ds": "2026-05-25T00:00:00",
+          "ss": "2025-01-29T00:00:00",
+          "se": "2026-05-24T00:00:00"
+        }
+      ]
+    },
+    {
+      "id": "T08",
+      "question": "Show the Fine Gael Senators who serve now.",
+      "expected_outcome": "answer",
+      "evidence_query": "PREFIX a: <https://data.oireachtas.ie/ontology#>\nPREFIX m: <https://data.oireachtas.ie/ontology/members#>\nPREFIX f: <http://xmlns.com/foaf/0.1/>\nPREFIX s: <http://www.w3.org/2004/02/skos/core#>\nPREFIX dct: <http://purl.org/dc/terms/>\nPREFIX dcat: <http://www.w3.org/ns/dcat#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX dl: <http://data.europa.eu/eli/eli-draft-legislation-ontology#>\nSELECT DISTINCT ?person ?name WHERE { GRAPH ?g {?person a a:Member; f:name ?name.}GRAPH ?g { ?person m:hasMembersMembership ?membership. ?membership a m:SeanadMembership; m:inHouseTerm <https://data.oireachtas.ie/ie/oireachtas/house/seanad/27>. } GRAPH ?g { ?person m:hasMembersMembership ?episode. ?episode a m:PartyMembership; m:inOireachtasMembership ?membership; m:isPartyMembershipOf ?party. } GRAPH <https://data.oireachtas.ie/graph/parties> {?party a m:ParliamentaryParty; m:activeDuringTerm <https://data.oireachtas.ie/ie/oireachtas/house/seanad/27>.} GRAPH <https://data.oireachtas.ie/graph/political-affiliations/identities> { ?party m:hasPoliticalAffiliationIdentity ?affiliation. ?affiliation a m:PoliticalAffiliationIdentity; s:prefLabel \"Fine Gael\"@en. } GRAPH ?g { ?membership m:hasMembershipDateRange ?membershipRange. ?membershipRange m:StartDate ?ms. OPTIONAL { ?membershipRange m:EndDate ?me. } } GRAPH ?g { ?episode m:hasMembershipDateRange ?episodeRange. ?episodeRange m:StartDate ?ps. OPTIONAL { ?episodeRange m:EndDate ?pe. } } FILTER((!BOUND(?me) || ?ps <= ?me) && (!BOUND(?pe) || ?ms <= ?pe)) FILTER(SUBSTR(STR(?ms),1,10) <= \"2026-11-06\" && (!BOUND(?me) || SUBSTR(STR(?me),1,10) >= \"2026-11-06\")) FILTER(SUBSTR(STR(?ps),1,10) <= \"2026-11-06\" && (!BOUND(?pe) || SUBSTR(STR(?pe),1,10) >= \"2026-11-06\"))  } ORDER BY ?person ?name",
+      "evidence": {
+        "head": {
+          "vars": [
+            "person",
+            "name"
+          ]
+        },
+        "results": {
+          "bindings": [
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathal-Byrne.S.2025-01-29"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Cathal Byrne"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eileen-Lynch.S.2025-01-29"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Eileen Lynch"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Evanne-Ní-Chuilinn.S.2025-01-29"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Evanne Ní Chuilinn"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gareth-Scahill.S.2025-01-29"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Gareth Scahill"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Garret-Ahearn.S.2020-03-30"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Garret Ahearn"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Garret-Kelleher.S.2025-01-29"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Garret Kelleher"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-O'Reilly.S.1989-10-01"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Joe O'Reilly"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Linda-Nelson-Murray.S.2025-01-29"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Linda Nelson Murray"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Manus-Boyle.S.2025-01-29"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Manus Boyle"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Maria-Byrne.S.2016-04-25"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Maria Byrne"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mark-Duffy.S.2025-01-29"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Mark Duffy"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mike-Kennelly.S.2025-01-29"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Mike Kennelly"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Nikki-Bradley.S.2024-07-10"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Nikki Bradley"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Noel-O'Donovan.S.2025-01-29"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Noel O'Donovan"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/PJ-Murphy.S.2025-01-29"
+              },
+              "name": {
+                "type": "literal",
+                "value": "PJ Murphy"
+              }
+            },
+            {
+              "person": {
+                "type": "uri",
+                "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paraic-Brady.S.2025-01-29"
+              },
+              "name": {
+                "type": "literal",
+                "value": "Paraic Brady"
+              }
+            }
+          ]
+        }
+      },
+      "expected_count": null,
+      "expected_rows": [
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathal-Byrne.S.2025-01-29",
+          "name": "Cathal Byrne"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eileen-Lynch.S.2025-01-29",
+          "name": "Eileen Lynch"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Evanne-Ní-Chuilinn.S.2025-01-29",
+          "name": "Evanne Ní Chuilinn"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gareth-Scahill.S.2025-01-29",
+          "name": "Gareth Scahill"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Garret-Ahearn.S.2020-03-30",
+          "name": "Garret Ahearn"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Garret-Kelleher.S.2025-01-29",
+          "name": "Garret Kelleher"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-O'Reilly.S.1989-10-01",
+          "name": "Joe O'Reilly"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Linda-Nelson-Murray.S.2025-01-29",
+          "name": "Linda Nelson Murray"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Manus-Boyle.S.2025-01-29",
+          "name": "Manus Boyle"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Maria-Byrne.S.2016-04-25",
+          "name": "Maria Byrne"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mark-Duffy.S.2025-01-29",
+          "name": "Mark Duffy"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mike-Kennelly.S.2025-01-29",
+          "name": "Mike Kennelly"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Nikki-Bradley.S.2024-07-10",
+          "name": "Nikki Bradley"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Noel-O'Donovan.S.2025-01-29",
+          "name": "Noel O'Donovan"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/PJ-Murphy.S.2025-01-29",
+          "name": "PJ Murphy"
+        },
+        {
+          "person": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paraic-Brady.S.2025-01-29",
+          "name": "Paraic Brady"
+        }
+      ]
+    },
+    {
+      "id": "T09",
+      "question": "Count the women who represented Clare in Dáil 33, rather than seats.",
+      "expected_outcome": "unsupported_capability",
+      "authority": "No queryable gender filter in public query contracts; no simplified count permitted."
+    },
+    {
+      "id": "T10",
+      "question": "Give the seats and distinct Members for Clare in Dáil 33.",
+      "expected_outcome": "unsupported_capability",
+      "authority": "Constituency seat allocation and compound projection unsupported; do not substitute Member count."
+    }
+  ]
+}

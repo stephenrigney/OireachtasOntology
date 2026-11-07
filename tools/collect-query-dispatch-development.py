@@ -71,8 +71,13 @@ def collect(manifest, output, url, runs=1, workers=2, ids=None):
         selected = [case for case in manifest if case["id"] in wanted]
     output.mkdir(parents=True)
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    source_files = sorted({*ROOT.glob("poc/nlq/**/*.py"), *ROOT.glob("poc/nlq/templates/*.html"),
+                           *ROOT.glob("poc/specs/*contract.json"), *ROOT.glob("poc/specs/*schema.json")})
     provenance = {"collected_utc": dt.datetime.now(dt.timezone.utc).isoformat(), "source_commit": commit,
-                  "service_url": url, "runs": runs, "workers": workers}
+                  "service_url": url, "runs": runs, "workers": workers,
+                  "checkout_source_sha256": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
+                                             for p in source_files},
+                  "source_note": "Checkout hashes; refresh the non-reload owned service before collection to pin loaded code."}
     (output / "question-manifest.json").write_text(json.dumps(
         {"provenance": provenance, "cases": selected}, ensure_ascii=False, indent=2) + "\n")
     ask = _collector().ask

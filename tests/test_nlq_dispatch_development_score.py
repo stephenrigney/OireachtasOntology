@@ -1,6 +1,7 @@
 """Development scoring never upgrades nonanswers or incomplete source evidence."""
 
 import importlib.util
+import copy
 import json
 from pathlib import Path
 
@@ -38,3 +39,13 @@ def test_original_safe_refusal_is_not_factual_credit():
     result = SCORE.score([r])
     assert result["ledger"][0]["score"] == "FAIL"
     assert result["ledger"][0]["returned_answer_mismatch"] is False
+
+
+def test_equal_marginal_sets_do_not_hide_wrong_term_place_associations():
+    actual = copy.deepcopy(next(r for r in SCORE.records(SCORE.FROZEN / "main.jsonl.gz") if r["id"] == "H05"))
+    table = actual["tables"][0]
+    index = table[0].index("Term identity")
+    table[1][index], table[2][index] = table[2][index], table[1][index]
+    result = SCORE.score([actual])
+    assert result["ledger"][0]["returned_answer_mismatch"] is True
+    assert result["ledger"][0]["score"] == "FAIL"
