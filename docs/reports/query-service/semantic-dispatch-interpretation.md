@@ -178,6 +178,23 @@ demographic, extra-output and count/list-mismatch prior-service probes refuse.
 Public composable dispatch contract version: **2.28.0**. No ontology, mapping,
 source/golden-fixture or publication-contract material changed.
 
+### First integrated service replay — candidate `5f7332c`
+
+The refreshed, source-pinned actual-planner service returned all **86** first
+results with no transport failure. Published-60 scores: **44 PASS, 1 PARTIAL,
+13 FAIL, 2 BLOCKED**; factual **35/48 (72.9%)**, strict sensitivity **35/45**.
+Original-26: **16 PASS, 3 PARTIAL, 7 FAIL**; original-16 controls: **16/16**.
+There were **zero returned-answer table mismatches**. The factual target was
+not yet met, and four previously supported paraphrases were refused by the new
+guards: fronted possessive latest-term representation, subject–auxiliary
+career representation with separate-term evidence, and two explicit ordered
+prior-service phrasings (H04/H05/H47/H48). Correct complete model drafts were
+rejected before execution; these are wording regressions, not missing RDF.
+Their first results, source manifest, service date/model pin and score remain
+archived under `candidate-5f7332c-*`. General semantic-component corrections
+are in progress before any independent acceptance execution. A later candidate
+replay will be reported separately, never substituted for these first results.
+
 The existing single-partially-overlapping-month House-term guard is retained.
 H40's frozen factual expectation does not override the technical specification's
 full-interval/supported-transition restriction. It remains in the original

@@ -1,4 +1,20 @@
 {
+  "candidate-5f7332c-responses.jsonl.gz": {
+    "sha256": "0da1d579a51f47fe18f0529e4e9fd95c376091cb26e9b126b2e7ef9ec520ac88",
+    "source_bytes_sha256": "e52b2f6c4ea1d4f33f8ff28772a8800ff1624eeaa29a064eb654731fbe3d0366"
+  },
+  "candidate-5f7332c-score.json.gz": {
+    "sha256": "061e517d7ba7c377a7bd7da7094474106342c34e812e22a83fa4507779de3c3e",
+    "source_bytes_sha256": "ec4c439b825465707f772cf2a00a134a32aec4fb71686054c6331d2f55cd3a6a"
+  },
+  "candidate-5f7332c-manifest.json.gz": {
+    "sha256": "97fab5498c2914d467b0bba306264e90c462c65f43ca79999d77b59b0affa89f",
+    "source_bytes_sha256": "2581e520f439c9ddd47ae1277797ee0ddb4a979bb0cb7f2943cf131478e1c32b"
+  },
+  "candidate-5f7332c-service-provenance.json.gz": {
+    "sha256": "6ef0bfa5e8c6ec7ebd87a57f5a882caa06a6313468631741f52df48b5bfdfc14",
+    "source_bytes_sha256": "408402969dcc6327eb3d8a63e94137fad9e037839f1629bcdcbbc44e150f570a"
+  },
   "oracle-final-recheck.json.gz": {
     "sha256": "886f1103d02a34fa64aac4ccb8862c7e24fff0d89eccc58b6badab4967289650",
     "source_bytes_sha256": "e2d9b144814659c00c7dbf4124f64baaac61561e8849be3c57536cd20f767533"
