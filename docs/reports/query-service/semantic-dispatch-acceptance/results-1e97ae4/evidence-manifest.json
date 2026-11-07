@@ -1,0 +1,39 @@
+{
+  "archived_utc": "2026-11-07T17:29:21.106262+00:00",
+  "source_commit": "1e97ae4848dad4b24538f60c5e6bb3700373e957",
+  "policy": "All 44 first responses retained, zero retries; frozen question/oracle artifacts unchanged. Evaluation header-alignment limitations and manual evidence are reported separately.",
+  "files": {
+    "independent-score-audit.json.gz": {
+      "sha256": "0aecabc469ae748f57c3edd043920e070b4c28cb185dfc8d2eb310eaf277b096",
+      "source_bytes_sha256": "3b4c6c72c598513b03edf89f1be69e3099a6276c405baefd84cfe1cf32dc6bb7"
+    },
+    "final-integrity.json": {
+      "sha256": "e9ce3d100e53ef05b559d698fbbd83ada426464c3300454b946a2884f18a6cec",
+      "source_bytes_sha256": "e9ce3d100e53ef05b559d698fbbd83ada426464c3300454b946a2884f18a6cec"
+    },
+    "raw-first-results.tar.gz": {
+      "sha256": "3f1739c2f7266063de47b5c114d0c1d87ab57aa374f512d8c5df8b077d84e6dd",
+      "source_bytes_sha256": "e744fb904130a86d5cd161e2f9ab382fe32cbd07fbf323ad8fa6464cc9d2382a"
+    },
+    "automatic-score.json.gz": {
+      "sha256": "113c42ea0bf3d21bf034b7ea7aa65dd0eb1eece8038118df6480a49f64fb201f",
+      "source_bytes_sha256": "dc5f460fc7e24da1d7369b5e193d3f3c6b37d6798a0c8eb0901d6f9a03dd82de"
+    },
+    "reviewed-score.json.gz": {
+      "sha256": "b88dd08f6d8ead31c5c1aacc2458003b1163fb946e2e3ae4bbe58a2071e24397",
+      "source_bytes_sha256": "00a173be8f7658c54d757131ff9b103d9d50eb58bc19ab3cf7d770cb83da3982"
+    },
+    "review-completed.json.gz": {
+      "sha256": "de7350837270df79ad5363f3b110f48e85d91e9381f6a9b6a04fa27e1a36a367",
+      "source_bytes_sha256": "937cac062edf0bcc90027d38879181882458fbaed34bb1325bc55f2cc7d7daea"
+    },
+    "collection-manifest.json": {
+      "sha256": "094a77d92df99d7c1a6732bb7be28a078d1ea3083c11b9abd167414a0b541cbe",
+      "source_bytes_sha256": "094a77d92df99d7c1a6732bb7be28a078d1ea3083c11b9abd167414a0b541cbe"
+    },
+    "collection-completion.json": {
+      "sha256": "e8b2c56bb67ede61ea4676f62418d5b730c729c57031e25eec9449076635bf8b",
+      "source_bytes_sha256": "e8b2c56bb67ede61ea4676f62418d5b730c729c57031e25eec9449076635bf8b"
+    }
+  }
+}

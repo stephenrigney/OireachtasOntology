@@ -1,0 +1,23 @@
+{
+  "verified_utc": "2026-11-07T17:31:16.006474+00:00",
+  "source_commit": "1e97ae4848dad4b24538f60c5e6bb3700373e957",
+  "frozen_artifact_sha256": {
+    "holdout.json": "2059007220719da7413ecf45a8576554761ba73bee07648c790d155e624a6235",
+    "oracle-context.json.gz": "2c3e9dcdbd1b20e95d02d70e2fb680b63d213b3e7ca1b0fbd76933292d3da7e6",
+    "methodology.md": "c34144774fb729e772f399f282c0f185657cc5412ca7b47f8f4893ef107201c9",
+    "freeze.json": "10d27f536c496fefbba32e701e39bfee60fb32df6942c70b207ace9fa65c74f0"
+  },
+  "all_frozen_artifacts_unchanged": true,
+  "source_and_specs_unchanged_since_implementation_freeze": true,
+  "implementation_frozen_before_first_acceptance_request": true,
+  "first_results": 44,
+  "http_status_counts": {
+    "200": 44
+  },
+  "retries": 0,
+  "post_acceptance_census": {
+    "graphs": 7982,
+    "triples": 1119860,
+    "query": "SELECT (COUNT(DISTINCT ?g) AS ?graphs) (COUNT(*) AS ?triples) WHERE { GRAPH ?g {?s ?p ?o} }"
+  }
+}

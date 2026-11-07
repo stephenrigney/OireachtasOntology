@@ -1,4 +1,12 @@
 {
+  "candidate-1e97ae4-manual-review.json.gz": {
+    "sha256": "597863db832bf0fe4ee153fc3a8679735fc9f6600832a785c2cd9a110971757c",
+    "source_bytes_sha256": "0cb6834fbe22283038123e9664fd74f6ca80044bd1f8d07414b135b08ee7caf0"
+  },
+  "final-census.json.gz": {
+    "sha256": "cf87cc78d24834b35c52c27a6586fbae02521560fbc183a2d63bcc37c2e04b8b",
+    "source_bytes_sha256": "1743d4d272f4f0f3608598d256fe7154602d9bc989a4c9050870d59705e86b4c"
+  },
   "candidate-1e97ae4-evidence.json": {
     "sha256": "d7b45b82df41a6f7416ee7a53166a83cbddd2a3e99ebb5c9d59928ed064b722b",
     "source_bytes_sha256": "d7b45b82df41a6f7416ee7a53166a83cbddd2a3e99ebb5c9d59928ed064b722b",

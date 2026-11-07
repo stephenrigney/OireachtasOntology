@@ -1,5 +1,12 @@
 # Query Service — Generalise Semantic Dispatch and Query Interpretation
 
+**Campaign outcome: NOT ACCEPTED.** Development accuracy improved to **38/48
+(79.2%)**, preserving **16/16** original controls, but independent frozen-set
+factual accuracy was only **6/38 (15.8%)**. The ≥75% independent generalisation
+target was not met. Implementation remains frozen at **1e97ae4**; no acceptance
+result was used for implementation tuning. This work is for draft review, not
+merge or a claim of campaign success.
+
 ## Scope and baseline
 
 Campaign branch: `feat/query-service-generalisation`, dedicated worktree
@@ -73,7 +80,7 @@ primary credit, rejects duplicate case/run records, preserves the fixed
 and R20's exact distinct roster size. Malformed numeric answers fail per case
 rather than crashing scoring. Updated focused checks: **16 passed**.
 
-## Changes and verification (campaign in progress)
+## Changes and verification
 
 ### Current-point entity spans
 
@@ -112,15 +119,92 @@ holdout and fresh direct-SPARQL oracles without access to remediation code,
 tests, published evaluation questions or failure reports. Its question/oracle
 artifacts were committed as **a7bca64** before any acceptance `/ask` execution;
 the implementation orchestrator committed them without reading their contents.
-Implementation is frozen at **1e97ae4**; independent execution is next. Until independent execution and scoring
-finish, **campaign acceptance is not established**. No implementation will be
-tuned against its results.
+Implementation was frozen at **1e97ae4** before independent execution.
+Independent execution and complete manual scoring are now finished:
+**campaign acceptance failed**. No implementation was tuned against its
+results.
 
 The independent freeze contains **44 cases**: **38 factual**, one ambiguity
 control and five unsupported controls, all pinned to **2026-11-06**. Only these
 aggregate counts and artifact hashes were returned to implementation review.
 An exploratory candidate with unusable direct joined evidence was excluded
 before freeze, not replaced after observing a service result.
+
+### Independent results
+
+All **44** first requests returned HTTP 200, with **zero retries or transport
+failures**. Frozen questions, oracle bytes, 38-case factual denominator and
+reference date remained unchanged.
+
+| Frozen population | PASS | PARTIAL | FAIL |
+|---|---:|---:|---:|
+| Factual (38) | **6** | **1** | **31** |
+| Unsupported controls (5) | **5** | 0 | 0 |
+| Ambiguity control (1) | 0 | 0 | **1** |
+| Total (44) | **11** | **1** | **32** |
+
+These are evidence-reviewed results, not relaxed machine-table credit. The
+reviewed automatic scorer counted eight final passes; its strict header mapper
+incorrectly rejected exact identity columns in QD-03/QD-10/QD-11. The independent
+review records row-level evidence for those three additional passes without
+changing any frozen expectation. Even the reviewed **6/38** factual result is
+far below the target; this scoring limitation does not explain the campaign
+failure.
+
+A separate read-only score audit confirmed this accounting: the strict tool
+tier is **3/38 factual**, and three independently re-verified exact-IRI manual
+passes raise the evidence-reviewed tier to **6/38**. The header matcher bound
+identity fields to display-name columns instead of the separate identity
+columns; no automatic comparisons were edited. QD-28 genuinely omitted its
+identity IRIs and remains FAIL, not a matcher exception. One control (QD-37)
+used an `unresolved_identity` outcome rather than literal unsupported prose;
+its required no-nickname-inference boundary held, so the five-control total
+is unchanged.
+
+Most factual failures were unsupported nonanswers despite pre-frozen direct
+evidence: QD-05/06/08/13–16/19–22/25–27/29–33/38–39/42–44. QD-04/23/41 failed
+validation. QD-01/12/18/28 failed complete exact identity/projection criteria;
+notably QD-18 displayed **12** activity/date pairs against **13** frozen
+distinct-event rows, collapsing two distinct events. QD-02 remained PARTIAL:
+it exposed both expected identities and Dáil evidence but requested a choice
+instead of answering the requested identity set. QD-36 omitted part of the
+frozen ambiguity candidate set.
+
+The independent audit also confirmed QD-12 collapsed three distinct
+SeanadMembership episodes into one summary row. QD-01 and QD-28 lacked the
+required identity IRIs. These are genuine projection/identity failures, not
+transport errors or missing frozen evidence.
+
+Thus the strong reused-development results did **not** transfer to the clean
+contract-informed holdout. Fail-closed unsupported controls alone are not
+factual success, and passing deterministic tests did not establish general
+language reachability or complete projection/candidate preservation.
+
+Raw HTML, per-case first results/attempts, collection provenance, automatic and
+reviewed scores, and completed criterion-level review are archived in
+`semantic-dispatch-acceptance/results-1e97ae4/`. Original pre-execution freeze
+artifacts remain unchanged.
+
+Post-execution integrity verification confirms implementation freeze preceded
+the first acceptance request, all frozen question/oracle hashes remain exact,
+source/spec files remain unchanged, and the post-acceptance dataset census is
+still **7,982 graphs / 1,119,860 triples**. The independent score audit is
+included with the archived first-run evidence.
+
+### Acceptance escalation and safe stopping boundary
+
+- **Issue:** independent factual accuracy is 15.8%, with incomplete projection
+  and ambiguity-candidate failures as well as broad wording/dispatch gaps.
+- **Impact:** the phase cannot be accepted or represented as a successful
+  generalisation campaign; no merge is authorized.
+- **Evidence:** frozen question/oracle commit **a7bca64**, source **1e97ae4**,
+  implementation-freeze record **3150aba**, and all 44 retained first results.
+- **Options:** close this campaign as failed with its reviewable draft, or
+  separately authorize a follow-up campaign with explicit scope and a new,
+  untouched independent acceptance set.
+- **Recommendation:** preserve the failed draft and evidence for review. Stop
+  implementation here; do not tune against this now-observed holdout or silently
+  replace its failed cases. Further implementation requires new user direction.
 
 The first proposed author stopped before constructing any cases after reading
 an explicitly excluded prior-question corpus. Its work is not acceptance
@@ -193,7 +277,7 @@ rejected before execution; these are wording regressions, not missing RDF.
 Their first results, source manifest, service date/model pin and score remain
 archived under `candidate-5f7332c-*`. General semantic-component corrections
 were completed before any independent acceptance execution. A later candidate
-replay will be reported separately, never substituted for these first results.
+replay is reported separately below, never substituted for these first results.
 
 Independent manual review of this replay found no unsafe simplification,
 qualification overclaim or full-intent mismatch among the 35 factual matches,
@@ -227,21 +311,42 @@ was added to service code.
 
 All 86 primary cases returned with HTTP 200; all ten predeclared transfers were
 then executed once. The final replay restores the four guarded paraphrases.
-H06 instead failed safely during model-plan validation on its first call; it
-still scores FAIL despite both additional calls answering correctly.
+H06 instead failed safely during planning on its first call (the structured
+planner endpoint returned HTTP 400); it still scores FAIL despite both
+additional calls answering correctly.
 
 The predeclared 13-case variability sample made **26 additional requests**:
 **25** matched their frozen factual expectations. **11/13** case signatures
 were identical across the primary and both additional calls. H06 varied from
-validation failure to two answers; R18 answered in the primary run, failed
-validation on the first additional run and answered on the second. These
-repetitions do not replace primary scores or establish perfect planner
+an upstream planner error to two answers; R18 answered in the primary run, hit
+a planner-endpoint noncompletion on the first additional run and answered on
+the second. Both errors surfaced through the UI's `validation_failure`
+outcome, but diagnostics identify planner/provider failures, not rejected RDF
+graphs. These repetitions do not replace primary scores or establish perfect planner
 reliability. All raw responses, source hashes, manifests and assessments are
 retained under `candidate-1e97ae4-*`.
 
-The implementation is now frozen at **1e97ae4** before independent acceptance
-execution, with a persisted reference-date/model/source-hash pin. Subsequent
-acceptance results will not be used to tune implementation.
+The implementation was frozen at **1e97ae4** before independent acceptance
+execution, with a persisted reference-date/model/source-hash pin. It was not
+changed after observing acceptance results.
+
+The ten remaining primary factual failures are explicit: **five safe wording
+reachability gaps** (H29/H31's “Who else represented …”, H43's membership-record
+cross-house phrasing, H45/H46's current-Senator party wording), **four retained
+contract/evidence boundaries** (H21/H22 historical date-to-roster composition,
+H44 office-anchor plus numbered term, H40 partial-month coverage), and **one
+upstream planner failure** (H06). Thus the campaign improves generalisation but
+does not claim arbitrary-paraphrase coverage or perfect planner availability.
+
+Independent final manual review confirmed all **38** primary factual matches,
+all **8** factual transfers and both negative transfers preserved full original
+intent and coverage qualifications, with no material mismatch or unsafe
+simplification found. It verified the four restored paths and no semantic-plan
+drift among the other matched cases. Planner diagnostics, not the generic UI
+outcome alone, distinguish the two sampled upstream failures from actual graph
+validation. The final census remains **7,982 graphs / 1,119,860 triples** and
+source/spec files still match frozen **1e97ae4**. Final HermiT validation and the
+23 focused scoring/acceptance-tooling tests also passed.
 
 The existing single-partially-overlapping-month House-term guard is retained.
 H40's frozen factual expectation does not override the technical specification's
@@ -253,6 +358,8 @@ office-anchor-plus-numbered-term operator is being added.
 
 ## Integration status
 
-Work remains on the campaign branch; no automatic merge is authorized. Final
-results, remaining limitations, commits and draft-PR status will be recorded
-here at campaign closure.
+Implementation and all evaluation evidence are retained on campaign branch
+`feat/query-service-generalisation`. Source is frozen at **1e97ae4**; later
+commits contain evidence/report closure only. The branch is supplied for draft
+review targeting **master**, with the independent acceptance failure explicit.
+No automatic merge is authorized and no further implementation is in scope.
