@@ -49,3 +49,13 @@ def test_equal_marginal_sets_do_not_hide_wrong_term_place_associations():
     result = SCORE.score([actual])
     assert result["ledger"][0]["returned_answer_mismatch"] is True
     assert result["ledger"][0]["score"] == "FAIL"
+
+
+@pytest.mark.parametrize("column", ["Member identity", "Constituency identity", "Term identity"])
+def test_original_latest_term_control_requires_exact_grounded_identities(column):
+    actual = copy.deepcopy(next(r for r in SCORE.records(SCORE.FROZEN / "regression.jsonl.gz") if r["id"] == "R18"))
+    table = actual["tables"][0]
+    table[1][table[0].index(column)] = "https://example.invalid/wrong-identity"
+    result = SCORE.score([actual])
+    assert result["ledger"][0]["score"] == "FAIL"
+    assert result["ledger"][0]["returned_answer_mismatch"] is True

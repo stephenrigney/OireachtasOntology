@@ -1,4 +1,16 @@
 {
+  "oracle-final-recheck.json.gz": {
+    "sha256": "886f1103d02a34fa64aac4ccb8862c7e24fff0d89eccc58b6badab4967289650",
+    "source_bytes_sha256": "e2d9b144814659c00c7dbf4124f64baaac61561e8849be3c57536cd20f767533"
+  },
+  "original-r18-identity-evidence.json.gz": {
+    "sha256": "02ed588f8be5446b1e1ba8bdbe74fc477c743e02f5ea45adfdd78d822e97aa17",
+    "source_bytes_sha256": "1f4076e3dcdee6b82c8d8c2dd4911e13b057739b1e875225cd902fdd7200f68f"
+  },
+  "final-replay-protocol.json": {
+    "sha256": "cb9818d4d8083c79fead50a611b0528225ca688fb3d79c2b56e4038e73e0f39c",
+    "source_bytes_sha256": "cb9818d4d8083c79fead50a611b0528225ca688fb3d79c2b56e4038e73e0f39c"
+  },
   "baseline-responses.jsonl.gz": {
     "sha256": "f0a793e4eb15af08a127e5b2ecfb44205549985b447ef0980e2cd203d044bf61",
     "source_bytes_sha256": "543d43f0c09942da88f4ec19b67767d2c4e66b230e3fbfb5e0b731c1d74bcc9b"

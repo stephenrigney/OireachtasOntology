@@ -81,6 +81,14 @@ def check_control(case, actual, holdout):
         }
     if case["id"] == "R18":
         assert len(rows) == 1 and rows[0][1:4] == ["Dublin Central", "30th Dáil", "2007-06-14"]
+        assert rows[0][0] == "Bertie Ahern"
+        assert tuple(rows[0][columns.index(column)] for column in (
+            "Member identity", "Constituency identity", "Term identity",
+        )) == (
+            "https://data.oireachtas.ie/ie/oireachtas/member/id/Bertie-Ahern.D.1977-07-05",
+            "https://data.oireachtas.ie/ie/oireachtas/house/dail/30/constituency/Dublin-Central",
+            "https://data.oireachtas.ie/ie/oireachtas/house/dail/30",
+        )
     if case["id"] == "R20":
         assert {r[1] for r in rows} == {r["person"] for r in holdout["H47"]["expected_rows"]}
 

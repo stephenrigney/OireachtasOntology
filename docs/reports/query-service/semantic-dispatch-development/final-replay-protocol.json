@@ -1,0 +1,19 @@
+{
+  "scope": "Development verification only; not independent acceptance and never an implementation routing input.",
+  "reference_date": "2026-11-06",
+  "primary_replay": {
+    "population": "All 60 unchanged published holdout questions plus all 26 original questions",
+    "runs": 1,
+    "workers": 2,
+    "scoring": "Retain the first result of every case; factual denominator remains 48, including documented contract-admissibility caveats. Check all original 16 previously passing controls. Machine matches require subsequent full-intent and qualification review."
+  },
+  "variability_sample": {
+    "ids": ["H06", "H09", "H13", "H23", "H26", "H27", "H32", "H38", "H41", "H42", "H47", "R18", "R24"],
+    "additional_runs": 2,
+    "selection": "Declared before final service execution; samples reused dispatch, graph construction, party composition, temporal, office and original-control paths.",
+    "scoring": "Report repeated outcomes separately. Never replace primary-replay failures with a later success."
+  },
+  "transfer_checks": "Run all ten previously declared transfer-cases.json cases once; compare factual outputs to their pre-call direct-SPARQL evidence and preserve both negative-control refusals.",
+  "provenance": "Restart only the owned non-reload loopback service at the candidate commit with the reference-date pin; record source hashes, commit and configured planner. Do not mutate or reload Fuseki.",
+  "acceptance_boundary": "Independent acceptance questions/oracles were committed before any acceptance /ask call. Complete implementation and freeze the candidate before authorizing those calls; make no subsequent implementation changes against acceptance results."
+}

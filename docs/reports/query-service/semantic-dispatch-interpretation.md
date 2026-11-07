@@ -59,6 +59,12 @@ guard queries were rerun directly against the read-only endpoint during the
 campaign; all **52** returned unchanged value/identity sets. No expected answer
 was obtained from the Query Service itself.
 
+The same 52 direct queries were repeated during final integration and remained
+unchanged. A separate direct identity check for original control R18 also pins
+the exact Member/constituency/term association; the scorer now rejects matching
+labels paired with incorrect resource identities. Scoring-tool tests: **12
+passed**, including reproduction of both published baselines.
+
 ## Changes and verification (campaign in progress)
 
 ### Current-point entity spans
@@ -86,14 +92,27 @@ query implementation: **1,134 passed, 24 skipped, 23 subtests passed**
 integration checks are recorded separately; this subset is not described as a
 completed full-suite run.
 
+This subset was repeated during integration: the first 120-second execution
+timed out without a completed result; the longer-limit rerun passed with the
+same **1,134 passed, 24 skipped, 23 subtests passed** in 156.59 seconds. Ontology
+validation was repeated successfully with HermiT and **2,586 triples**.
+
 ## Independent acceptance
 
-A separately contextualized executor is constructing a new contract-informed
+A separately contextualized executor constructed a new contract-informed
 holdout and fresh direct-SPARQL oracles without access to remediation code,
-tests, published evaluation questions or failure reports. Questions and expected
-outcomes must be frozen and committed before any acceptance `/ask` execution.
-Until that process and independent scoring finish, **campaign acceptance is not
-established**. No implementation will be tuned against its results.
+tests, published evaluation questions or failure reports. Its question/oracle
+artifacts were committed as **a7bca64** before any acceptance `/ask` execution;
+the implementation orchestrator committed them without reading their contents.
+Execution awaits implementation freeze. Until independent execution and scoring
+finish, **campaign acceptance is not established**. No implementation will be
+tuned against its results.
+
+The independent freeze contains **44 cases**: **38 factual**, one ambiguity
+control and five unsupported controls, all pinned to **2026-11-06**. Only these
+aggregate counts and artifact hashes were returned to implementation review.
+An exploratory candidate with unusable direct joined evidence was excluded
+before freeze, not replaced after observing a service result.
 
 The first proposed author stopped before constructing any cases after reading
 an explicitly excluded prior-question corpus. Its work is not acceptance
