@@ -235,7 +235,7 @@
         "member": {"type": ["string", "null"], "minLength": 1},
         "scope": {"type": "string", "enum": ["member_service", "houses_catalogue"]},
         "answer": {"type": "string", "const": "count_distinct"},
-        "exclusions": {"type": "array", "maxItems": 1, "uniqueItems": true,
+        "exclusions": {"type": "array", "maxItems": 1,
           "items": {"type": "string", "enum": ["membership_records", "members", "seats"]}}
       }
     },

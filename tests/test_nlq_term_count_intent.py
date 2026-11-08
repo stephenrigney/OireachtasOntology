@@ -125,6 +125,10 @@ def test_explicit_catalogue_scope_has_same_canonical_operation():
 
 def test_schema_inventory_and_analyser_agree_without_another_plan_format():
     schema = json.loads((ROOT / "poc/specs/composable-query-plan-draft.schema.json").read_text())
+    # Responses strict JSON Schema rejects uniqueItems. maxItems=1 and the
+    # independent exact-intent comparison already prohibit duplicates.
+    assert schema["$defs"]["termCountIntent"]["properties"]["exclusions"]["maxItems"] == 1
+    assert "uniqueItems" not in schema["$defs"]["termCountIntent"]["properties"]["exclusions"]
     Draft202012Validator(schema).validate(_selection("term_count", proposal()))
     assert analyse_term_count(QD04, member=MEMBER).proposal() == proposal()
     contract = json.loads((ROOT / "poc/specs/composable-query-plan-contract.json").read_text())
