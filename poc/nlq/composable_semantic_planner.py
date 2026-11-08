@@ -119,7 +119,7 @@ def build_composable_planner_instructions() -> str:
 Interpretation contract: for the one-term, one-constituency Member list/count, the explicit phrase "in this Dáil" selects the exact House-date-resolved current term and is term-wide, regardless of whether the question says "represent" or "represented". It overrides only the implicit present-tense-as-of default: do not require an asOf membership interval unless the user explicitly asks for current representation (for example, "currently", "now", "today", or "as of now/today"). A literal calendar date remains its exact membership-date point. Without the explicit "this Dáil" scope, an unqualified present-tense constituency request defaults to representation at the query date; an explicit current-point request also requires the DailMembership interval to contain asOf. Dated party/representation composition retains its separate rule that currentTerm requires both party and DailMembership intervals to contain asOf. Never default numbered-term, other dated, historical, or election questions. The plain term-scoped constituency Member projection supports one explicit membership calendar-date point; preserve it as a membershipInterval constraint, never as a HouseTerm date or election event. For a Member's latest recorded Dáil term and constituency, use the constituency_representation family with selector "latestRecorded" when the question explicitly asks for the latest recorded term, the most recent term, or the last term (including "last term in the Dáil"). Local code selects from that Member's accepted DailMembership identities and House-owned chronology, and fails closed on missing/tied/conflicting dates or representation evidence. This is not an election-date answer.
 For partial-name person lookup use capability_selection member_lookup with parameters {{"member":"exact name mention","house":"Dail"}} for Deputy/TD, "Seanad" for Senator, or null for unqualified Member. Local code offers grounded alternatives; never expand a surname to an assumed full name.
 For a numbered-Dáil party listing use capability_selection dail_parties_and_groups with parameters {{"termNumber":N,"includeGroups":false}}; true only if groups are also requested. This reuses the existing party compiler, not the constituency composition.
-For a simple count of one named Member's recorded Dáil terms, use capability_selection term_count with parameters {{"member":"exact Member mention"}}. For the total distinct Dáil-term resources recorded in the Houses data, use the same capability with parameters {{}}. Both reuse the existing Stage A count and never count membership rows; these counts do not certify historical completeness. A term-count request with a term/date/party filter or another projection is unsupported.
+For a simple count of one named Member's recorded Dáil terms, use capability_selection term_count with parameters {{"countTarget":"DailTerm","member":"exact Member mention","scope":"member_service","answer":"count_distinct","exclusions":[]}}. For the total distinct Dáil-term resources recorded in the Houses data, use the same fields with member null and scope "houses_catalogue". Preserve any explicit terminal excluded count measure in exclusions ("membership_records", "members", or "seats"); these are measure contrasts, never filters on terms. Interpret the directed relationship, not a sentence template: a Member's service terms, terms appearing in their membership records, and terms their Member record links to have the same target. Local code independently checks the complete original question and all these roles, not your support assertion. Both reuse the existing Stage A count and never count membership rows; these counts do not certify historical completeness. A term-count request with a term/date/party filter, excluded terms, another relationship or another answer projection is unsupported.
 For the Dáil term whose House-owned interval overlaps one calendar date or one complete named month, use capability_selection house_terms with exactly {{"date":"2020-03-01"}} or {{"month":3,"year":2020}}. Preserve date-point vs full-month scope. House-term dates are not evidence of an actual sitting; additional conditions and partial-month windows are unsupported.
 For the recorded seat complement of one explicitly numbered Dáil, use capability_selection dail_seats with parameters {{"termNumber":N}}. This reuses Stage C's typed HouseTerm seat lookup; never count people as seats. The approved "how many members were in the [N]th Dáil" wording has this seat meaning, but a request for distinct Members/TDs who served is a different, unsupported count here.
 
@@ -1010,10 +1010,6 @@ def _bill_number_year_mentions(question: str) -> set[tuple[str, int]]:
     return pairs
 
 
-_DAIL_TERM_PHRASE = re.compile(
-    r"\b(?:d[áa]il\s+term(?:s)?(?:\s+or\s+terms?)?|terms?\s+of\s+(?:the\s+)?d[áa]il)\b",
-    re.IGNORECASE,
-)
 _HOUSE_TERM_REFERENT = re.compile(
     r"\b(?:d[áa]il(?:\s+term(?:s)?(?:\s+or\s+terms?)?)?|terms?\s+of\s+(?:the\s+)?d[áa]il)\b",
     re.IGNORECASE,
@@ -1036,9 +1032,6 @@ _PARTY_GROUP_REQUEST = (
 )
 _PARTY_MEASURE = r"\b(?:political\s+)?parties\b"
 _GROUP_MEASURE = r"\b(?:parliamentary\s+)?groups?\b"
-_MEMBERSHIP_RECORD = r"\b(?:membership|service)\s+(?:records?|paths?)\b|\b(?:recorded\s+)?memberships?\b"
-_MEMBER_TERM_RELATION = r"\b(?:serv(?:e|ed|es)|appear(?:s|ed)?|occur(?:s|red)?|link(?:s|ed)?|associate(?:s|d)?|include(?:s|d)?|contain(?:s|ed)?|record(?:s|ed)?|list(?:s|ed)?)\b"
-_HOUSE_CATALOGUE = r"\bHouses?\s+(?:data|dataset|graph|catalog(?:ue)?)\b"
 
 
 def _month_year_mentions(question: str) -> list[tuple[int, int]]:
@@ -1068,41 +1061,6 @@ def _capability_residual(
         consume_dates=dates, consume_months=months,
         consume_group_exclusions=group_exclusions, consume_seat_exclusions=seat_exclusions,
         consume_member_exclusions=member_exclusions,
-    )
-
-
-def _is_term_count_question(question: str, *, mention: str | None) -> bool:
-    measures = requested_measures(question)
-    terms = list(_DAIL_TERM_PHRASE.finditer(question))
-    if ("dail_terms" not in measures.requested or not measures.has_count_operator
-            or len(count_operator_matches(question)) != 1 or len(terms) != 1
-            or measures.conflicts or measures.unclassified):
-        return False
-    from .composable_plan import _question_calendar_dates
-    dates, invalid_date = _question_calendar_dates(question)
-    if invalid_date is not None or dates or _month_year_mentions(question) or numbered_dail_terms(question):
-        return False
-    if mention is None:
-        if not re.search(_HOUSE_CATALOGUE, question, re.I):
-            return False
-        return not _capability_residual(
-            question,
-            (_COUNT_OPERATOR_WORDS, _DAIL_TERM_PHRASE.pattern, _HOUSE_CATALOGUE,
-             r"\b(?:recorded|listed|distinct|different)\b"),
-        )
-
-    if _label_position(question, mention) is None:
-        return False
-    served_relation = bool(re.search(r"\bserv(?:e|ed|es)\b", question, re.I))
-    has_membership_record = bool(re.search(_MEMBERSHIP_RECORD, question, re.I))
-    record_relation = has_membership_record and bool(re.search(_MEMBER_TERM_RELATION, question, re.I))
-    if not (served_relation or record_relation):
-        return False
-    return not _capability_residual(
-        question,
-        (_COUNT_OPERATOR_WORDS, _DAIL_TERM_PHRASE.pattern, _MEMBER_TERM_RELATION,
-         _MEMBERSHIP_RECORD, r"\b(?:distinct|different|in\s+total)\b"),
-        mentions=(mention,),
     )
 
 
@@ -1308,25 +1266,11 @@ def _validate_capability_selection_draft(value: dict[str, Any], *, question: str
             )
         normalized_parameters = dict(parameters)
     elif capability == "term_count":
-        if (entry.get("handler") != "stage_a" or not isinstance(parameters, dict)
-                or not count_intent):
-            raise InvalidComposableDraft("Term-count selection requires the existing Stage A aggregate and a count question.")
-        if set(parameters) == {"member"}:
-            mention = parameters.get("member")
-            if (not isinstance(mention, str) or not mention.strip()
-                    or not _is_term_count_question(question, mention=mention)):
-                raise InvalidComposableDraft(
-                    "Member term count requires one exact grounded Member mention and an unfiltered Dáil-service count."
-                )
-            normalized_parameters = {"member": mention.strip()}
-        elif not parameters:
-            if not _is_term_count_question(question, mention=None):
-                raise UnsupportedComposableRequest(
-                    "The total term count is limited to the recorded Dáil-term catalogue in Houses data."
-                )
-            normalized_parameters = {}
-        else:
-            raise InvalidComposableDraft("Term-count selection accepts only one Member mention or the Houses total.")
+        from .term_count_intent import validate_term_count_parameters
+        try:
+            normalized_parameters = validate_term_count_parameters(question, parameters)
+        except ValueError as error:
+            raise UnsupportedComposableRequest(str(error)) from error
     elif capability == "house_terms":
         if entry.get("handler") != "stage_a" or not isinstance(parameters, dict):
             raise InvalidComposableDraft("House-term selection requires the existing Stage A temporal capability.")

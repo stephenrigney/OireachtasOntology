@@ -181,7 +181,8 @@
                    "properties": {"termNumber": {"type": "integer", "minimum": 1, "maximum": 999}}},
                   {"type": "object", "additionalProperties": false, "required": ["member"],
                    "properties": {"member": {"type": "string", "minLength": 1}}},
-                  {"type": "object", "additionalProperties": false},
+                  {"$ref": "#/$defs/termCountIntent"},
+                   {"type": "object", "additionalProperties": false},
                   {"type": "object", "additionalProperties": false, "required": ["date"],
                    "properties": {"date": {"type": "string", "format": "date"}}},
                   {"type": "object", "additionalProperties": false, "required": ["month", "year"],
@@ -225,6 +226,19 @@
     }
   },
   "$defs": {
+    "termCountIntent": {
+      "type": "object", "additionalProperties": false,
+      "description": "IRI-free semantic inputs for the existing term_count adapter, not a canonical plan. Local code independently checks complete original-question compatibility before lowering to existing Stage A slots.",
+      "required": ["countTarget", "member", "scope", "answer", "exclusions"],
+      "properties": {
+        "countTarget": {"type": "string", "const": "DailTerm"},
+        "member": {"type": ["string", "null"], "minLength": 1},
+        "scope": {"type": "string", "enum": ["member_service", "houses_catalogue"]},
+        "answer": {"type": "string", "const": "count_distinct"},
+        "exclusions": {"type": "array", "maxItems": 1, "uniqueItems": true,
+          "items": {"type": "string", "enum": ["membership_records", "members", "seats"]}}
+      }
+    },
     "identifier": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
     "namedMemberReferent": {
       "type": "object",
