@@ -1,0 +1,29 @@
+{
+  "kind": "pilot_evidence_inventory_not_acceptance_freeze",
+  "created_utc": "2026-11-08T10:19:07.664673+00:00",
+  "source_checkpoint": "293ab74",
+  "pilot_exit_criteria_met": false,
+  "original_campaign_status": "NOT ACCEPTED, unchanged",
+  "sha256": {
+    "README.md": "6ea7d54f17661f9688122ccf2c12ab087253e3fa3acbdf72e55c0275429b517f",
+    "admission-comparison.json": "c4871fc90bf8c801d3a48a19223dbfc77017d33385ce6205370f12cd2f5328a8",
+    "ambiguity-oracle.json": "ce9ab0d84b1b5a66fe071c8db0d04a79b4a16de40aa448cbdda9ccb2c6ea4148",
+    "control-plan-parity.json": "55a4f874c05c416221703930fd2ba8645f07fabcd5fa37a879979a6f926e7496",
+    "development-cases.json": "3e1b80e31136681a636bc2a3d598e5013f35de3f05c437a47dda36791216f239",
+    "fresh-transfer.json": "f97e26614c38301f325b0badd1059a4aa140f1f2f5a11631642def0459943023",
+    "frozen-integrity.json": "9be59681c2a8d2fbb3f6eb4eab1a1b6dad7b998c455bd46f8d91155c317102e7",
+    "p01-diagnostic-repeat.json": "ce6770fb1b9f511766ac7bcabf5a6f9f0df5403ea1924aa88e4f71443daf1931",
+    "provider-transport-diagnostics.json": "fa77f5d2386e8ba78b554c8b594b63469b8d823e3453ab7a9fde602755a29203",
+    "results-293ab74/assessment.json": "e498d19924c9241fe959bc553983e2e2c8dd5deb7e587ef8b6f673229855a4ca",
+    "results-293ab74/collection-provenance.json": "dcf7711e3bbdebdb57478202337317555c96d20bcb7bb8a582c7895beb35e5e2",
+    "results-293ab74/question-manifest.json": "be9dbbc1927d64fc6be5fc0ad791c8cabab6f5b2be77f4f0f6c871690e9003f0",
+    "results-293ab74/responses.jsonl": "ce711d1d206cc78c7737ff4733dd4c97cb06e79ec662790c7cd20e35cfea0692",
+    "results-6eb109e/assessment.json": "f27f11fc8c74b85ff4f0b5173c174f896d775bd158aefa9b530a167e2dc9e135",
+    "results-6eb109e/collection-provenance.json": "362cd6877279d6f0aa78c4218e828dd1a31c579bd8dd1ed0dade7bb2bd1f8d77",
+    "results-6eb109e/question-manifest.json": "615c8aaf8fbe54b9ed2a6e6b3b779bedd0b353331d3a2da66b8f274880f4cfa0",
+    "results-6eb109e/responses.jsonl": "cf5cb097ed67e41471cb794b046a949bd11bf4b0450be8f6423774b3e22a7b8e",
+    "review.md": "71a251ac531039b3139b3a6b4c89fd0fc9b3216b8e8415838e8e91c1edef435a",
+    "service-provenance.json": "19841d43cea32d5e8ab76a055740263aa941c538ebce27ce72320cb30e8578c5",
+    "verification.json": "4ae43740347f71b5ddc17e6ca8bf6b1a3c5b9cd55ee91108c3e6487e339a838b"
+  }
+}

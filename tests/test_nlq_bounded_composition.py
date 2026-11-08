@@ -395,7 +395,7 @@ def test_current_office_point_is_documented_as_local_asof_injection_not_planner_
     )
     instructions = build_composable_planner_instructions()
 
-    assert contract["contractVersion"] == "2.28.0"
+    assert contract["contractVersion"] == "2.29.0"
     assert "local executor injects configured asOf" in capability["semantics"]
     assert 'parameters exactly {"office":"exact office mention from the question"}' in instructions
     assert "Do not put a date or period in the proposal" in instructions

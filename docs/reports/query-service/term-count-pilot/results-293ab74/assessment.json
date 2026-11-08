@@ -1,0 +1,210 @@
+{
+  "source_commit": "293ab74",
+  "not_acceptance": true,
+  "primary_case_count": 31,
+  "http_200": 31,
+  "original_controls_pass": 16,
+  "original_control_tables_equal_baseline": 16,
+  "fresh_positives_pass": 1,
+  "fresh_positives_total": 4,
+  "fresh_negatives_pass": 2,
+  "fresh_negatives_total": 2,
+  "primary_QD04": "provider HTTP 400, remains failure",
+  "diagnostic_repeat_QD04": "count 9, exact Member identity and identical canonical plan to P02/P08/P09; not primary credit",
+  "pilot_exit_criteria_met": false,
+  "reason": "Fresh named-Member paraphrases all refused despite complete correct model proposals; catalogue transfer already passed old admission. Broad wording independence not demonstrated.",
+  "results": [
+    {
+      "id": "R01",
+      "pass": true,
+      "table_equal_to_final_development_baseline": true,
+      "error": null
+    },
+    {
+      "id": "R03",
+      "pass": true,
+      "table_equal_to_final_development_baseline": true,
+      "error": null
+    },
+    {
+      "id": "R06",
+      "pass": true,
+      "table_equal_to_final_development_baseline": true,
+      "error": null
+    },
+    {
+      "id": "R09",
+      "pass": true,
+      "table_equal_to_final_development_baseline": true,
+      "error": null
+    },
+    {
+      "id": "R10",
+      "pass": true,
+      "table_equal_to_final_development_baseline": true,
+      "error": null
+    },
+    {
+      "id": "R11",
+      "pass": true,
+      "table_equal_to_final_development_baseline": true,
+      "error": null
+    },
+    {
+      "id": "R13",
+      "pass": true,
+      "table_equal_to_final_development_baseline": true,
+      "error": null
+    },
+    {
+      "id": "R16",
+      "pass": true,
+      "table_equal_to_final_development_baseline": true,
+      "error": null
+    },
+    {
+      "id": "R18",
+      "pass": true,
+      "table_equal_to_final_development_baseline": true,
+      "error": null
+    },
+    {
+      "id": "R19",
+      "pass": true,
+      "table_equal_to_final_development_baseline": true,
+      "error": null
+    },
+    {
+      "id": "R20",
+      "pass": true,
+      "table_equal_to_final_development_baseline": true,
+      "error": null
+    },
+    {
+      "id": "R21b",
+      "pass": true,
+      "table_equal_to_final_development_baseline": true,
+      "error": null
+    },
+    {
+      "id": "R22",
+      "pass": true,
+      "table_equal_to_final_development_baseline": true,
+      "error": null
+    },
+    {
+      "id": "R23",
+      "pass": true,
+      "table_equal_to_final_development_baseline": true,
+      "error": null
+    },
+    {
+      "id": "R24",
+      "pass": true,
+      "table_equal_to_final_development_baseline": true,
+      "error": null
+    },
+    {
+      "id": "R25",
+      "pass": true,
+      "table_equal_to_final_development_baseline": true,
+      "error": null
+    },
+    {
+      "id": "P01",
+      "pass": false,
+      "outcome": "validation_failure",
+      "error": "validation_failure"
+    },
+    {
+      "id": "P02",
+      "pass": true,
+      "outcome": "answer",
+      "error": null
+    },
+    {
+      "id": "P03",
+      "pass": true,
+      "outcome": "clarification_required",
+      "error": null
+    },
+    {
+      "id": "P04",
+      "pass": true,
+      "outcome": "unsupported_capability",
+      "error": null
+    },
+    {
+      "id": "P05",
+      "pass": true,
+      "outcome": "unsupported_capability",
+      "error": null
+    },
+    {
+      "id": "P06",
+      "pass": true,
+      "outcome": "unsupported_capability",
+      "error": null
+    },
+    {
+      "id": "P07",
+      "pass": true,
+      "outcome": "clarification_required",
+      "error": null
+    },
+    {
+      "id": "P08",
+      "pass": true,
+      "outcome": "answer",
+      "error": null
+    },
+    {
+      "id": "P09",
+      "pass": true,
+      "outcome": "answer",
+      "error": null
+    },
+    {
+      "id": "fresh-member-martin",
+      "kind": "positive",
+      "pass": false,
+      "outcome": "unsupported_capability",
+      "error": "unsupported_capability"
+    },
+    {
+      "id": "fresh-member-howlin",
+      "kind": "positive",
+      "pass": false,
+      "outcome": "unsupported_capability",
+      "error": "unsupported_capability"
+    },
+    {
+      "id": "fresh-member-mcdonald",
+      "kind": "positive",
+      "pass": false,
+      "outcome": "unsupported_capability",
+      "error": "unsupported_capability"
+    },
+    {
+      "id": "fresh-houses-catalogue",
+      "kind": "positive",
+      "pass": true,
+      "outcome": "answer",
+      "error": null
+    },
+    {
+      "id": "fresh-negative-party-filter",
+      "kind": "negative_mutation",
+      "pass": true,
+      "outcome": "unsupported_capability",
+      "error": null
+    },
+    {
+      "id": "fresh-negative-conflicting-count-target",
+      "kind": "negative_mutation",
+      "pass": true,
+      "outcome": "unsupported_capability",
+      "error": null
+    }
+  ]
+}

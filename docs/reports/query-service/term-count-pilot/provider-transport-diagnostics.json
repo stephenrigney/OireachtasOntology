@@ -1,0 +1,38 @@
+{
+  "purpose": "Retain the separately executed mechanical schema diagnostics, not factual /ask requests or acceptance credit",
+  "capture_kind": "Sanitised diagnostic tool-output transcription from this execution session; not a retained raw HTTP response",
+  "diagnostic_input": "Transport diagnostic only: do not answer a parliamentary question.",
+  "model": "gpt-6-luna",
+  "endpoint": "https://opencode.ai/inference/openai/v1/responses",
+  "credentials": "Not recorded; generator debug redaction applies",
+  "diagnostics": [
+    {
+      "sequence": 1,
+      "schema_state": "Initial pilot schema containing uniqueItems=true on exclusions",
+      "exception_type": "PlannerModelError",
+      "exception": "The structured planner endpoint returned HTTP 400.",
+      "sanitised_debug_output": {
+        "model": "gpt-6-luna",
+        "error": {
+          "message": "Invalid schema for response_format 'composable_query_plan_v2_draft': In context=('properties', 'exclusions'), 'uniqueItems' is not permitted.",
+          "type": "invalid_request_error",
+          "param": "text.format.schema",
+          "code": "invalid_json_schema"
+        }
+      }
+    },
+    {
+      "sequence": 2,
+      "schema_state": "Same working-tree schema after removing uniqueItems only, subsequently committed as 293ab74",
+      "generator_completed_successfully": true,
+      "tool_output": "Provider accepted strict schema; returned structured response.",
+      "response_payload_retained": false
+    }
+  ],
+  "limitations": [
+    "The original diagnostics were printed to the tool conversation; this file explicitly transcribes that observed sanitised output during evidence packaging.",
+    "Raw HTTP bodies, headers and exact diagnostic timestamps were not archived. The successful response payload was not printed or retained.",
+    "The later primary P01 HTTP 400 has no retained underlying provider error reason; it is not assumed to be the same schema error.",
+    "Neither diagnostic answers a factual question or contributes factual or semantic-refusal credit. No additional inference calls were made to construct this transcription."
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "purpose": "Bounded pilot verification; not original or new production-grade acceptance",
+  "completed_utc": "2026-11-08T10:17:35.427193+00:00",
+  "runtime_source_commit": "293ab74fa0f389217a31368a523b9c21e424cef2",
+  "all_runtime_source_and_spec_hashes_match_corrected_live_replay": true,
+  "full_suite_tree_note": "Runtime source/specs exactly match 293ab74; only four stale exact contract-version test pins changed after that source checkpoint, from 2.28.0 to 2.29.0. Semantic assertions unchanged. New pilot evidence is separate.",
+  "checks": [
+    {
+      "command": ".venv/bin/python -m pytest -q tests/test_nlq_term_count_intent.py tests/test_nlq_composable_semantic_capability_discovery.py tests/test_nlq_composable_stage_a.py tests/test_nlq_plan_sparql.py",
+      "passed": 329,
+      "seconds": 111.64,
+      "source": "6eb109e runtime, before redundant schema keyword removal"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -q tests/test_nlq_term_count_intent.py tests/test_nlq_composable_semantic_capability_discovery.py",
+      "passed": 209,
+      "seconds": 49.94,
+      "source": "293ab74"
+    },
+    {
+      "command": ".venv/bin/python tests/validate.py",
+      "outcome": "passed",
+      "reasoner": "HermiT",
+      "triples": 2586
+    },
+    {
+      "command": ".venv/bin/python -m pytest tests -q",
+      "stage": "initial",
+      "passed": 2693,
+      "failed": 4,
+      "skipped": 26,
+      "subtests_passed": 23,
+      "seconds": 643.95,
+      "failures": "Four stale exact contractVersion assertions only; fixed by metadata-only pins, not relaxed assertions."
+    },
+    {
+      "command": ".venv/bin/python -m pytest tests -q",
+      "stage": "final",
+      "passed": 2697,
+      "failed": 0,
+      "skipped": 26,
+      "subtests_passed": 23,
+      "seconds": 582.29,
+      "log_sha256": "2253ccac543feba9a27135acba51b719a48e877a5e05b5dfb27af5070072087b"
+    },
+    {
+      "command": "Focused rerun of the four formerly failing contract-version checks",
+      "passed": 4,
+      "seconds": 0.82
+    },
+    {
+      "command": ".venv/bin/python -m compileall -q poc/nlq/term_count_intent.py poc/nlq/composable_semantic_planner.py",
+      "outcome": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "outcome": "passed"
+    }
+  ],
+  "frozen_original_artifacts_rechecked": 92,
+  "frozen_original_artifacts_unchanged": true,
+  "compiler_and_term_count_executor_unchanged_from_1e97ae4": true,
+  "live_evidence": {
+    "unique_cases": 31,
+    "ask_requests": 63,
+    "provider_transport_diagnostics": 2,
+    "original_controls": {
+      "passed": 16,
+      "total": 16,
+      "all_rendered_answer_text_equal": true,
+      "all_rendered_tables_equal": true,
+      "semantic_parity_available_v2_plans": 13
+    },
+    "fresh_positive": {
+      "passed": 1,
+      "total": 4
+    },
+    "fresh_negative": {
+      "passed": 2,
+      "total": 2
+    },
+    "qd04_primary": "provider HTTP 400, remains primary failure",
+    "qd04_explicit_diagnostic_repeat": "count 9; not substituted for primary",
+    "ambiguity": "Both exact Brendan Griffin identities match independent direct oracle",
+    "first_replay_retained": true
+  },
+  "production_grade_acceptance_rerun": false,
+  "original_acceptance_repaired_or_passed": false,
+  "pilot_exit_criteria_met": false,
+  "stop_reason": "Fresh named-Member transfer fails despite correct complete model proposals; do not widen grammar or repair projections without human review.",
+  "owned_pilot_service_stopped": true,
+  "independent_accounting_review": "All counts reconciled; no acceptance or transfer overclaim. Pending final-suite artifact and unretained provider diagnostic findings resolved during finalisation; see review.md and provider-transport-diagnostics.json.",
+  "provider_diagnostic_capture_limit": "Observed sanitised tool-output transcription, not raw HTTP responses; successful payload and exact diagnostic timestamps not retained."
+}

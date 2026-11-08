@@ -1,0 +1,125 @@
+{
+  "basis": "Read-only frozen admission function at 1e97ae4 vs pilot analyser at 293ab74. No /ask calls or source modifications. Does not override service outcomes.",
+  "cases": [
+    {
+      "id": "P01",
+      "question": "How many distinct Dáil terms does the Member record for Micheál Martin link to?",
+      "member": "Micheál Martin",
+      "frozen_admission": false,
+      "pilot_admission": true,
+      "pilot_refusal": null
+    },
+    {
+      "id": "P02",
+      "question": "How many distinct Dáil terms appear in Micheál Martin's membership record?",
+      "member": "Micheál Martin",
+      "frozen_admission": true,
+      "pilot_admission": true,
+      "pilot_refusal": null
+    },
+    {
+      "id": "P03",
+      "question": "How many distinct Dáil terms does the Member record for Micheál Martin link to as a Fianna Fáil TD?",
+      "member": "Micheál Martin",
+      "frozen_admission": false,
+      "pilot_admission": false,
+      "pilot_refusal": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped."
+    },
+    {
+      "id": "P04",
+      "question": "How many distinct Dáil terms does the Member record for Micheál Martin link to after 2000?",
+      "member": "Micheál Martin",
+      "frozen_admission": false,
+      "pilot_admission": false,
+      "pilot_refusal": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped."
+    },
+    {
+      "id": "P05",
+      "question": "How many distinct Dáil terms does the Member record for Micheál Martin link to and list their start dates?",
+      "member": "Micheál Martin",
+      "frozen_admission": false,
+      "pilot_admission": false,
+      "pilot_refusal": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped."
+    },
+    {
+      "id": "P06",
+      "question": "How many membership records link Micheál Martin to Dáil terms?",
+      "member": "Micheál Martin",
+      "frozen_admission": true,
+      "pilot_admission": false,
+      "pilot_refusal": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped."
+    },
+    {
+      "id": "P07",
+      "question": "How many distinct Dáil terms does the Member record for Brendan Griffin link to?",
+      "member": "Brendan Griffin",
+      "frozen_admission": false,
+      "pilot_admission": true,
+      "pilot_refusal": null
+    },
+    {
+      "id": "P08",
+      "question": "How many distinct Dáil terms does the Member record for Micheál Martin link to, rather than membership rows?",
+      "member": "Micheál Martin",
+      "frozen_admission": false,
+      "pilot_admission": true,
+      "pilot_refusal": null
+    },
+    {
+      "id": "P09",
+      "question": "How many distinct Dáil terms has Micheál Martin served in?",
+      "member": "Micheál Martin",
+      "frozen_admission": true,
+      "pilot_admission": true,
+      "pilot_refusal": null
+    },
+    {
+      "id": "fresh-member-martin",
+      "question": "From the records here, how many Dáil terms has Micheál Martin served in?",
+      "member": "Micheál Martin",
+      "frozen_admission": false,
+      "pilot_admission": false,
+      "pilot_refusal": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped."
+    },
+    {
+      "id": "fresh-member-howlin",
+      "question": "How many different Dáil terms does the local data record for Brendan Howlin's service?",
+      "member": "Brendan Howlin",
+      "frozen_admission": false,
+      "pilot_admission": false,
+      "pilot_refusal": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped."
+    },
+    {
+      "id": "fresh-member-mcdonald",
+      "question": "For Mary Lou McDonald, what's the total number of Dáil terms represented in her recorded service?",
+      "member": "Mary Lou McDonald",
+      "frozen_admission": false,
+      "pilot_admission": false,
+      "pilot_refusal": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped."
+    },
+    {
+      "id": "fresh-houses-catalogue",
+      "question": "How many Dáil terms are recorded in the Houses catalogue?",
+      "member": null,
+      "frozen_admission": true,
+      "pilot_admission": true,
+      "pilot_refusal": null
+    },
+    {
+      "id": "fresh-negative-party-filter",
+      "question": "How many different Dáil terms does the local data record for Brendan Howlin's service while he was a Labour Party member?",
+      "member": "Brendan Howlin",
+      "frozen_admission": false,
+      "pilot_admission": false,
+      "pilot_refusal": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped."
+    },
+    {
+      "id": "fresh-negative-conflicting-count-target",
+      "question": "For Mary Lou McDonald, what's the total number of Dáil terms represented in her recorded service, and how many membership records are there?",
+      "member": "Mary Lou McDonald",
+      "frozen_admission": false,
+      "pilot_admission": false,
+      "pilot_refusal": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped."
+    }
+  ]
+}
