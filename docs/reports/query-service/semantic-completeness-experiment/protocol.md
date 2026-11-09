@@ -45,7 +45,7 @@ replay PR #27's independent acceptance population.
 > and emit structured discrepancies. Ambiguity or uncertainty must refuse. A
 > support assertion, confidence or prose summary is not evidence of completeness.
 
-**B2, independent fresh call using the same configured model:**
+**B2, fresh-context same-model reconstruction / consistency arm:**
 
 > Independently extract the complete intent of this question under the supplied
 > term_count contract into the same typed roles and obligation ledger. You have
@@ -56,7 +56,7 @@ replay PR #27's independent acceptance population.
 > IRIs, SPARQL, graph edges, identity choices or assertions of historical
 > completeness. Unknown or unrepresentable parts must not disappear.
 
-B2 is blind reconstruction followed by deterministic role/obligation comparison,
+B2 is blind-to-proposal reconstruction followed by proposed deterministic role/obligation comparison,
 not merely asking a second call to endorse the first draft. Passing requires
 agreement on all material roles, no unsupported/unknown obligation, and all
 local compatibility/identity/plan checks. Do not compare only the common
@@ -64,6 +64,20 @@ intersection of the two ledgers; a missing obligation on either side refuses.
 Use typed attachment/polarity keys, not equality of free-text summaries. Span
 segmentation differences need a predefined bounded comparison rule; unresolved
 differences refuse, not a third adjudicating model or retry.
+
+"Blind" describes access to the other proposal, not statistical independence.
+Shared model weights, provider behaviour and possible caching can produce
+correlated omissions. Agreement is consistency evidence, never completeness
+proof. Record realised temperature/seed if the provider exposes them; otherwise
+record them as unavailable rather than claiming independent stochastic trials.
+
+**Pre-live prerequisite:** this document is not yet an executable gate spec.
+Freeze a concrete strict obligation-ledger schema and a total comparison-function
+specification, including bindings, materiality, polarity, attachment, span
+segmentation and all refusal cases. Resolve those design details before calls;
+do not silently replace them with reviewer judgement or tune them after results.
+Any residual human-adjudicated measurement must be reported separately, not as
+an automatic gate decision.
 
 An alternative direct verifier can receive the question and candidate and emit
 structured `omitted` / `altered` / `unresolved` discrepancies with source spans.
@@ -99,7 +113,7 @@ would change the assurance basis, not preserve a deterministic proof.
 
 ## Smallest next live experiment
 
-Use the 21 frozen diagnostic questions, not an acceptance set. Run three
+After the schema/comparison prerequisite above, use the 21 frozen diagnostic questions, not an acceptance set. Run three
 predeclared repetitions per question with fixed prompts: one B1 call plus one
 blind B2 call, same configured Responses model, fresh context, no retries.
 Maximum **126 calls**, at most two concurrent, no `/ask` or SPARQL execution.
@@ -123,5 +137,6 @@ each omitted/altered role detected or missed; transport failures; per-case
 stability; calls, tokens and latency distributions. Repeated trials are not
 independent samples of language and do not replace primary outcomes. Any unsafe
 shadow admission blocks a claim of preserved safeguards. Even zero in this tiny
-set is not a safety guarantee. This experiment can establish whether B2 adds
-incremental diagnostic value over B1; it cannot authorise production deployment.
+set is not a safety guarantee. This experiment can measure whether B2 adds
+incremental diagnostic value over B1 in this sample; it cannot establish
+statistical independence or authorise production deployment.

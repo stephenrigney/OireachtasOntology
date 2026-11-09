@@ -57,7 +57,7 @@ use their existing mocked in-process service clients.
 | Recorded pilot development | **1/4** | **3/4** | **0/2** | Not sampled |
 | Canonical sanity controls | **2/2** | **0/2** | Not sampled | 1 grammar admission; identity decision still required |
 
-Three offline runs were byte-identical: **90 question-validator evaluations**.
+Three executor offline runs were byte-identical: **90 question-validator evaluations**.
 That establishes deterministic replay, not model or end-to-end consistency.
 **No unsafe admission by A was observed in these unsupported samples.** No
 answer accuracy or runtime ambiguity-candidate completeness was newly tested.
@@ -72,6 +72,11 @@ necessary checks and fail A. Five deliberately incompatible field alterations
 **5/5** by necessary checks. Exact mention presence is **not exact RDF identity
 grounding**, and these easy alteration probes are not semantic-verifier results.
 The experiment demonstrates the omission gap, not that B would fill it.
+The necessary-check passes are **guaranteed by construction**, not a measured
+semantic-verifier failure rate. The small authored corpus is directional
+coverage evidence, not a population estimate. A's generic refusal diagnostic
+does not identify which semantic role failed. In particular, NEW-TC-21 does not
+isolate exclusion handling: its otherwise unfamiliar clause also fails grammar.
 
 **B reachability, unsafe admissions and incremental independent-verifier value:
 NOT MEASURED**, not zero. No generalisation improvement is established.
@@ -116,7 +121,7 @@ cannot substitute for that check. See `protocol.md` for a bounded proposal.
 |---|---|
 | Same-call model self-check | Cheapest; useful diagnostics, but interpreter and checker share the same blind spots and framing. No independent evidence. |
 | Fresh call, same model, sees proposed plan | More opportunity to detect mistakes; still candidate anchoring and correlated model errors. A separate call is not statistical independence. |
-| Blind independent reconstruction + local comparison | Preferred experimental arm: no first-call rationale/verdict exposure; exact role/discrepancy checks. Can increase false refusals from differing segmentation/attachment; two calls can still omit the same demand. |
+| Fresh-context same-model reconstruction + local comparison | Preferred experimental arm, blind to the first proposal, not statistically independent. Agreement is consistency evidence. Differing segmentation/attachment can increase false refusals; both calls can omit the same demand. |
 | Different model family | Potential error diversity, not assured independence; unconfigured and unmeasured here. Not justified as mandatory infrastructure. |
 | Hybrid | Retain deterministic type, grounding, inventory, compiler and fail-closed vetoes; add bounded source-grounded semantic verification only in shadow pending review. Known-risk lexical vetoes can help, but absence of flagged words cannot prove completeness. |
 
@@ -163,12 +168,15 @@ evidence; cross-capability transfer is untested. The obligation comparison itsel
 could become a new hidden grammar unless kept typed and explicitly bounded.
 
 **Smallest additional experiment:** after architectural review and provider
-availability, freeze strict schemas/prompts for these 21 questions, make three
+availability, freeze strict schemas/prompts **and a total role/obligation comparison
+specification** (including materiality and segmentation rules) for these 21 questions, make three
 repetitions of B1 and blind B2 (**126 calls**, no execution/retries), and test
 forced omissions/alterations against the independent extraction. Compare safety,
 false refusals, per-role fidelity, variability, tokens and latency separately;
 any unsafe shadow admission blocks the preservation claim. No production
 implementation, acceptance campaign or PR merge is authorised by this report.
+The current protocol deliberately does not define that executable comparison;
+completing and reviewing it is a prerequisite, not a live-run implementation detail.
 
 ## Reproduction and preservation
 
@@ -185,3 +193,5 @@ parity and the baseline tracked-file integrity check: **209 tests passed**, thre
 byte-identical static runs, all **586 original tracked files unchanged**. Only this new report
 directory is added; application, contracts, ontology, ETL, mappings, fixtures,
 frozen implementation/evaluation evidence and pilot artifacts remain unchanged.
+`review.md` records independent static reproduction, caveats and factual
+corrections to the review; no experimental outcomes were tuned or replaced.
