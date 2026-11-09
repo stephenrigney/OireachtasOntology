@@ -1,0 +1,1909 @@
+{
+  "purpose": "Post-run attribution, not relaxed-gate admission credit",
+  "populations": {
+    "natural_supported": {
+      "n": 16,
+      "compatibility": {
+        "admit": 15,
+        "reject": 1
+      },
+      "self_semantic_all_clear": 16,
+      "self_invalid_quote_rows": 13,
+      "verifier_semantic_all_clear": 15,
+      "verifier_flagged_rows": 1,
+      "verifier_invalid_quote_rows": 16
+    },
+    "natural_unsupported": {
+      "n": 20,
+      "compatibility": {
+        "reject": 20
+      },
+      "self_semantic_all_clear": 20,
+      "self_invalid_quote_rows": 12,
+      "verifier_semantic_all_clear": 12,
+      "verifier_flagged_rows": 8,
+      "verifier_invalid_quote_rows": 20
+    },
+    "natural_ambiguity": {
+      "n": 4,
+      "compatibility": {
+        "clarify": 4
+      },
+      "self_semantic_all_clear": 4,
+      "self_invalid_quote_rows": 3,
+      "verifier_semantic_all_clear": 4,
+      "verifier_flagged_rows": 0,
+      "verifier_invalid_quote_rows": 4
+    },
+    "injected": {
+      "n": 20,
+      "compatibility": {
+        "not recorded": 20
+      },
+      "self_semantic_all_clear": 0,
+      "self_invalid_quote_rows": 0,
+      "verifier_semantic_all_clear": 0,
+      "verifier_flagged_rows": 20,
+      "verifier_invalid_quote_rows": 20
+    }
+  },
+  "provider": {
+    "proposal": {
+      "n": 40,
+      "reported_usage_cost_sum": "0.01419136",
+      "cost_currency": "not labelled in payload; not independently reconciled billing",
+      "cached_input_tokens": 44958,
+      "reported_temperature": {
+        "1": 40
+      },
+      "reported_top_p": {
+        "0.98": 40
+      },
+      "reported_reasoning_effort": {
+        "medium": 40
+      }
+    },
+    "verification": {
+      "n": 60,
+      "reported_usage_cost_sum": "0.0244960",
+      "cost_currency": "not labelled in payload; not independently reconciled billing",
+      "cached_input_tokens": 0,
+      "reported_temperature": {
+        "1": 60
+      },
+      "reported_top_p": {
+        "0.98": 60
+      },
+      "reported_reasoning_effort": {
+        "medium": 60
+      }
+    },
+    "preflight": {
+      "n": 2,
+      "reported_usage_cost_sum": "0.00075023",
+      "cost_currency": "not labelled in payload; not independently reconciled billing",
+      "cached_input_tokens": 0,
+      "reported_temperature": {
+        "1": 2
+      },
+      "reported_top_p": {
+        "0.98": 2
+      },
+      "reported_reasoning_effort": {
+        "medium": 2
+      }
+    },
+    "all": {
+      "n": 102,
+      "reported_usage_cost_sum": "0.03943759",
+      "cost_currency": "not labelled in payload; not independently reconciled billing",
+      "cached_input_tokens": 44958,
+      "reported_temperature": {
+        "1": 102
+      },
+      "reported_top_p": {
+        "0.98": 102
+      },
+      "reported_reasoning_effort": {
+        "medium": 102
+      }
+    }
+  },
+  "detail": [
+    {
+      "id": "HC01",
+      "repeat": 1,
+      "injection": false,
+      "expected": "admit",
+      "B1": "admit",
+      "B2": "reject",
+      "compatibility": "admit",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {}
+      },
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "conditions": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "“how many” requests a count.",
+          "target": "“different Dáil terms” is represented by DailTerm.",
+          "entities": "“Micheál Martin” is represented as the Member mention.",
+          "relationship": "“in Micheál Martin's service” is represented as member_recorded_dail_service.",
+          "temporal": "No date or other temporal restriction is requested; the candidate specifies “unfiltered”.",
+          "aggregation": "“different” requires distinct terms, represented by count_distinct.",
+          "conditions": "The question says “Looking only at what is recorded locally”; the candidate represents recorded service but does not preserve the local-only limitation.",
+          "outputs": "“how many” requests a count, and the candidate outputs only “count”."
+        }
+      }
+    },
+    {
+      "id": "HC01",
+      "repeat": 2,
+      "injection": false,
+      "expected": "admit",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "admit",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“how many”",
+          "target": "“different Dáil terms”",
+          "entities": "“Micheál Martin”",
+          "relationship": "“in Micheál Martin's service”",
+          "aggregation": "“different”",
+          "outputs": "“how many”"
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“how many” requests a count; the candidate uses term_count.",
+          "target": "“Dáil terms” matches the DailTerm target.",
+          "entities": "“Micheál Martin” is retained as the exact Member mention.",
+          "relationship": "“in Micheál Martin's service” is represented as member_recorded_dail_service.",
+          "temporal": "No time restriction is requested; the candidate specifies “unfiltered”.",
+          "aggregation": "“different Dáil terms” requests distinct terms; the candidate uses count_distinct.",
+          "conditions": "“Looking only at what is recorded locally” is consistent with the locally recorded term_count operation.",
+          "outputs": "“how many” requests a count, and the candidate returns only “count”."
+        }
+      }
+    },
+    {
+      "id": "HC02",
+      "repeat": 1,
+      "injection": false,
+      "expected": "admit",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "admit",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“how many distinct Dáil term resources”",
+          "target": "“Dáil term resources”",
+          "entities": "“Micheál Martin”",
+          "relationship": "“reached through his recorded Dáil memberships”",
+          "aggregation": "“distinct”",
+          "outputs": "“a single number is wanted”"
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“how many” requests a count.",
+          "target": "“distinct Dáil term resources”",
+          "entities": "“For Micheál Martin”",
+          "relationship": "“reached through his recorded Dáil memberships”",
+          "temporal": "No time-period restriction is specified; the candidate uses an unfiltered scope.",
+          "aggregation": "“a single number” and “how many distinct Dáil term resources”",
+          "outputs": "“a single number”"
+        }
+      }
+    },
+    {
+      "id": "HC02",
+      "repeat": 2,
+      "injection": false,
+      "expected": "admit",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "admit",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“how many”",
+          "target": "“Dáil term resources”",
+          "entities": "“Micheál Martin”",
+          "relationship": "“reached through his recorded Dáil memberships”",
+          "temporal": "“his recorded Dáil memberships”",
+          "aggregation": "“distinct”",
+          "outputs": "“a single number”"
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“how many” requests a count.",
+          "target": "“distinct Dáil term resources”",
+          "entities": "“For Micheál Martin”",
+          "relationship": "“reached through his recorded Dáil memberships”",
+          "temporal": "“recorded Dáil memberships” is represented as unfiltered recorded service.",
+          "aggregation": "“how many distinct Dáil term resources”",
+          "outputs": "“a single number is wanted”"
+        }
+      }
+    },
+    {
+      "id": "HC03",
+      "repeat": 1,
+      "injection": false,
+      "expected": "admit",
+      "B1": "admit",
+      "B2": "reject",
+      "compatibility": "admit",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {}
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“distinct recorded Dáil terms” identifies the terms being counted.",
+          "entities": "“the member Micheál Martin” is represented as the Member mention “Micheál Martin”.",
+          "relationship": "“does the service record link to” is represented as the member’s recorded Dáil service relationship.",
+          "temporal": "No temporal restriction is requested; the candidate specifies an unfiltered scope.",
+          "aggregation": "“How many distinct” is represented as a distinct count.",
+          "exclusions": "“not a list” requests count-only output, not exclusion of any terms.",
+          "outputs": "“How many …—not a list” requests only a count."
+        }
+      }
+    },
+    {
+      "id": "HC03",
+      "repeat": 2,
+      "injection": false,
+      "expected": "admit",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "admit",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "outputs": "How many; not a list"
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“distinct recorded Dáil terms” identifies the target.",
+          "entities": "“the member Micheál Martin” identifies the member.",
+          "relationship": "“does the service record link to” specifies the recorded service relationship.",
+          "temporal": "“recorded” is represented without an added time filter.",
+          "aggregation": "“How many distinct” requests a distinct count.",
+          "exclusions": "“not a list” requests count-only output, not exclusion of any terms.",
+          "outputs": "“not a list” supports outputting only the count."
+        }
+      }
+    },
+    {
+      "id": "HC04",
+      "repeat": 1,
+      "injection": false,
+      "expected": "admit",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "admit",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "\"how many distinct term resources\"",
+          "target": "\"term resources\"",
+          "entities": "\"Micheál Martin\"",
+          "relationship": "\"his recorded Dáil service\"",
+          "temporal": "\"Across all his recorded Dáil service\"",
+          "aggregation": "\"distinct term resources\"",
+          "outputs": "\"how many\""
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“how many distinct term resources” requests a term count.",
+          "target": "“distinct term resources” matches the DailTerm target.",
+          "entities": "“Micheál Martin” is preserved as the member entity.",
+          "relationship": "“his recorded Dáil service” is represented as member recorded Dáil service.",
+          "temporal": "“Across all his recorded Dáil service” requests the full recorded service, without a time filter.",
+          "aggregation": "“how many distinct term resources” requests a distinct count.",
+          "outputs": "“how many” requests the count as the output."
+        }
+      }
+    },
+    {
+      "id": "HC04",
+      "repeat": 2,
+      "injection": false,
+      "expected": "admit",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "admit",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“how many”",
+          "target": "“term resources”",
+          "entities": "“Micheál Martin”",
+          "relationship": "“his recorded Dáil service”",
+          "temporal": "“Across all his recorded Dáil service”",
+          "aggregation": "“distinct term resources”",
+          "outputs": "“how many distinct term resources”"
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“how many” requests a count.",
+          "target": "“distinct term resources”",
+          "entities": "“The member I mean is Micheál Martin.”",
+          "relationship": "“his recorded Dáil service”",
+          "temporal": "“Across all his recorded Dáil service”",
+          "aggregation": "“how many distinct term resources”",
+          "outputs": "“how many distinct term resources does he have?” requests the count only."
+        }
+      }
+    },
+    {
+      "id": "HC05",
+      "repeat": 1,
+      "injection": false,
+      "expected": "admit",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "admit",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "temporal": "No temporal restriction is stated."
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“Give the number” requests a count.",
+          "target": "“distinct Dáil terms” identifies Dáil terms as the target.",
+          "entities": "“Micheál Martin's” identifies Micheál Martin.",
+          "relationship": "“in Micheál Martin's recorded service” requests his recorded Dáil service.",
+          "temporal": "No temporal restriction is stated.",
+          "aggregation": "“number of distinct Dáil terms” requests a distinct count.",
+          "exclusions": "“not membership records” is a contrast of measures, not an exclusion of Dáil terms.",
+          "outputs": "“Give the number” requests the count only."
+        }
+      }
+    },
+    {
+      "id": "HC05",
+      "repeat": 2,
+      "injection": false,
+      "expected": "admit",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "admit",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "temporal": "No temporal restriction stated; “recorded service” does not restrict the terms by date."
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“Give the number” requests a count.",
+          "target": "“distinct Dáil terms” identifies the target as Dáil terms.",
+          "entities": "“Micheál Martin's” identifies the Member.",
+          "relationship": "“in Micheál Martin's recorded service” requests his recorded service relationship to the terms.",
+          "temporal": "“recorded service” specifies recorded evidence; no date or period filter is requested.",
+          "aggregation": "“number of distinct Dáil terms” requests a distinct count.",
+          "exclusions": "“not membership records” contrasts the requested measure with membership records.",
+          "outputs": "“Give the number” requests the count only."
+        }
+      }
+    },
+    {
+      "id": "HC06",
+      "repeat": 1,
+      "injection": false,
+      "expected": "admit",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "admit",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "\"Count\"",
+          "target": "\"Dáil term resource\"",
+          "entities": "\"Micheál Martin\"",
+          "relationship": "\"across Micheál Martin's full recorded membership service\"",
+          "temporal": "\"full recorded membership service\"",
+          "aggregation": "\"each Dáil term resource only once\"",
+          "outputs": "\"return just that number\""
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“Count each Dáil term resource only once” requests a term count.",
+          "target": "“Dáil term resource” matches the DailTerm target.",
+          "entities": "“Micheál Martin” is represented as the Member entity.",
+          "relationship": "“across Micheál Martin's full recorded membership service” specifies the member’s recorded Dáil service.",
+          "temporal": "“full recorded membership service” is represented as unfiltered recorded service.",
+          "aggregation": "“each Dáil term resource only once” specifies distinct counting.",
+          "outputs": "“return just that number” requests only the count."
+        }
+      }
+    },
+    {
+      "id": "HC06",
+      "repeat": 2,
+      "injection": false,
+      "expected": "admit",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "admit",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "\"Count\"",
+          "target": "\"Dáil term resource\"",
+          "entities": "\"Micheál Martin\"",
+          "relationship": "\"across Micheál Martin's full recorded membership service\"",
+          "temporal": "\"full recorded membership service\"",
+          "aggregation": "\"only once wherever it occurs\"",
+          "outputs": "\"return just that number\""
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“Count each Dáil term resource only once” requests a count.",
+          "target": "“Dáil term resource” is represented by the target DailTerm.",
+          "entities": "The exact member mention “Micheál Martin” is retained.",
+          "relationship": "“across Micheál Martin's full recorded membership service” is represented as member_recorded_dail_service.",
+          "temporal": "“full recorded membership service” is represented with an unfiltered scope.",
+          "aggregation": "“each Dáil term resource only once” requests a distinct count.",
+          "conditions": "No additional conditions are requested.",
+          "exclusions": "No terms or services are excluded.",
+          "outputs": "“return just that number” requests only the count."
+        }
+      }
+    },
+    {
+      "id": "HC07",
+      "repeat": 1,
+      "injection": false,
+      "expected": "admit",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "admit",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "\"How many\"",
+          "target": "\"distinct recorded Dáil term resources\"",
+          "entities": "\"Micheál Martin\"",
+          "relationship": "\"linked to Micheál Martin through his Dáil memberships\"",
+          "aggregation": "\"distinct\"",
+          "outputs": "\"How many\""
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“distinct recorded Dáil term resources” identifies the target resources.",
+          "entities": "“Micheál Martin” is represented as the Member entity.",
+          "relationship": "“linked to Micheál Martin through his Dáil memberships” is represented by the member’s recorded Dáil service.",
+          "temporal": "No date or temporal restriction is stated; the candidate specifies “unfiltered”.",
+          "aggregation": "“How many distinct” requests a distinct count.",
+          "conditions": "No additional conditions are stated; the candidate has no conditions.",
+          "exclusions": "No exclusions are stated; the candidate has none.",
+          "outputs": "“How many” requests a count, with no additional output requested."
+        }
+      }
+    },
+    {
+      "id": "HC07",
+      "repeat": 2,
+      "injection": false,
+      "expected": "admit",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "admit",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "temporal": "No temporal restriction is stated."
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“How many distinct recorded Dáil term resources” requests a count.",
+          "target": "“Dáil term resources” is represented as DailTerm.",
+          "entities": "“Micheál Martin” is represented as the Member.",
+          "relationship": "“linked to Micheál Martin through his Dáil memberships” is represented as member-recorded Dáil service.",
+          "temporal": "No temporal restriction is requested; the candidate specifies an unfiltered scope.",
+          "aggregation": "“distinct” is represented by count_distinct.",
+          "outputs": "“How many” requests the count only."
+        }
+      }
+    },
+    {
+      "id": "HC08",
+      "repeat": 1,
+      "injection": false,
+      "expected": "admit",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {}
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“what is the total number” requests a count.",
+          "target": "“distinct Dáil term resources” identifies the target.",
+          "entities": "“Houses catalogue” is the only named entity.",
+          "relationship": "“Taking the Houses catalogue as a whole” requests the catalogue-wide set of Dáil terms.",
+          "temporal": "No temporal restriction is stated; “as a whole” indicates the full catalogue scope.",
+          "aggregation": "“total number of distinct Dáil term resources” requests a distinct count.",
+          "outputs": "“what is the total number” requests only the count."
+        }
+      }
+    },
+    {
+      "id": "HC08",
+      "repeat": 2,
+      "injection": false,
+      "expected": "admit",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "admit",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“what is the total number”",
+          "target": "“Dáil term resources”",
+          "relationship": "“Taking the Houses catalogue as a whole”",
+          "temporal": "“as a whole”",
+          "aggregation": "“distinct”",
+          "outputs": "“what is the total number”"
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“what is the total number” requests a count.",
+          "target": "“distinct Dáil term resources” identifies DailTerm as the counted target.",
+          "entities": "“the Houses catalogue” is represented by the candidate scope houses_catalogue; no individual entity is specified.",
+          "relationship": "“Taking the Houses catalogue as a whole” requests the catalogue-wide set of Dáil term resources, represented by houses_typed_dail_terms.",
+          "temporal": "No date or time restriction is stated; the candidate uses unfiltered scope.",
+          "aggregation": "“total number of distinct” requests a distinct count.",
+          "outputs": "The question requests only the “total number”; the candidate outputs count only."
+        }
+      }
+    },
+    {
+      "id": "HC09",
+      "repeat": 1,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "temporal": "altered",
+          "conditions": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "The question asks “How many,” and the candidate uses term_count.",
+          "target": "The question asks for “Dáil terms,” and the candidate targets DailTerm.",
+          "entities": "The candidate identifies the exact mentioned person, “Micheál Martin.”",
+          "relationship": "“recorded for Micheál Martin” is represented as the member’s recorded Dáil service.",
+          "temporal": "“while he represented Fianna Fáil” restricts the count to that period; the candidate specifies “unfiltered.”",
+          "aggregation": "“distinct” is represented by count_distinct.",
+          "conditions": "The condition “while he represented Fianna Fáil” is absent from the candidate’s empty conditions list.",
+          "outputs": "The question requests a count, and the candidate outputs only “count.”"
+        }
+      }
+    },
+    {
+      "id": "HC09",
+      "repeat": 1,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "entities": "Micheál Martin; Fianna Fáil"
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“Dáil terms” is represented as the DailTerm target.",
+          "entities": "“Micheál Martin” and “Fianna Fáil” are both represented.",
+          "relationship": "“recorded for Micheál Martin” is represented as member-recorded Dáil service.",
+          "temporal": "“while he represented Fianna Fáil” is retained as a restriction.",
+          "aggregation": "“distinct” is represented by count_distinct.",
+          "conditions": "The condition “while he represented Fianna Fáil” is explicitly retained.",
+          "outputs": "“How many” requests a count, and the candidate outputs only “count”."
+        }
+      }
+    },
+    {
+      "id": "HC09",
+      "repeat": 2,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "conditions": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“Dáil terms” matches the candidate target DailTerm.",
+          "entities": "“Micheál Martin” is represented as the Member entity.",
+          "relationship": "“terms are recorded for Micheál Martin” is represented as recorded member service.",
+          "temporal": "The candidate specifies “unfiltered”; the question gives no date range.",
+          "aggregation": "“distinct” is represented by count_distinct.",
+          "conditions": "The question requires the terms to be counted “while he represented Fianna Fáil”; the candidate has no party condition.",
+          "outputs": "“How many” requests a count, and the candidate outputs only “count”."
+        }
+      }
+    },
+    {
+      "id": "HC09",
+      "repeat": 2,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "entities": "Micheál Martin; Fianna Fáil"
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“How many”",
+          "target": "“Dáil terms”",
+          "entities": "“Micheál Martin” and “Fianna Fáil”",
+          "relationship": "“recorded for Micheál Martin”",
+          "temporal": "“while he represented Fianna Fáil”",
+          "aggregation": "“distinct Dáil terms”",
+          "conditions": "“while he represented Fianna Fáil”",
+          "outputs": "“How many”"
+        }
+      }
+    },
+    {
+      "id": "HC10",
+      "repeat": 1,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "temporal": "altered",
+          "conditions": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“Dáil terms”",
+          "entities": "“Micheál Martin”",
+          "relationship": "“in Micheál Martin's recorded service”",
+          "temporal": "“began after 2000” is replaced by the candidate's “unfiltered” temporal scope.",
+          "aggregation": "“distinct Dáil terms” requests a distinct count of terms.",
+          "conditions": "“began after 2000”",
+          "outputs": "“How many” requests a count, and the candidate returns only “count”."
+        }
+      }
+    },
+    {
+      "id": "HC10",
+      "repeat": 1,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {}
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“distinct Dáil terms”",
+          "entities": "“Micheál Martin”",
+          "relationship": "“in Micheál Martin's recorded service”",
+          "temporal": "“began after 2000”",
+          "aggregation": "“distinct”",
+          "conditions": "“began after 2000”",
+          "outputs": "“How many” requests a count."
+        }
+      }
+    },
+    {
+      "id": "HC10",
+      "repeat": 2,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "temporal": "altered",
+          "conditions": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "The candidate specifies \"term_count\".",
+          "target": "The question asks for \"Dáil terms\" and the candidate target is \"DailTerm\".",
+          "entities": "The question names \"Micheál Martin\" and the candidate uses that exact mention.",
+          "relationship": "The question asks about terms \"in Micheál Martin's recorded service\"; the candidate specifies \"member_recorded_dail_service\".",
+          "temporal": "The question says \"began after 2000\", but the candidate specifies \"unfiltered\".",
+          "aggregation": "The question asks \"How many distinct\" terms; the candidate specifies \"count_distinct\".",
+          "conditions": "The condition \"began after 2000\" is absent from the candidate's empty conditions list.",
+          "outputs": "The question asks \"How many\" and the candidate requests only \"count\"."
+        }
+      }
+    },
+    {
+      "id": "HC10",
+      "repeat": 2,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {}
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“Dáil terms”",
+          "entities": "“Micheál Martin”",
+          "relationship": "“in Micheál Martin's recorded service”",
+          "temporal": "“began after 2000”",
+          "aggregation": "“distinct”",
+          "conditions": "“began after 2000”",
+          "outputs": "“How many” requests a count."
+        }
+      }
+    },
+    {
+      "id": "HC11",
+      "repeat": 1,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "conditions": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "The question asks to “Count”.",
+          "target": "The requested objects are “Dáil terms”.",
+          "entities": "The question names “Micheál Martin,” and the candidate uses that exact entity mention.",
+          "relationship": "“terms in which Micheál Martin's recorded constituency was Cork South-Central” connects the named Member to the requested terms through recorded service.",
+          "temporal": "The question specifies no date or other temporal restriction.",
+          "aggregation": "“distinct Dáil terms” is represented by count_distinct.",
+          "conditions": "The question requires that the Member's “recorded constituency was Cork South-Central”; the candidate has no conditions.",
+          "exclusions": "The question specifies no exclusions.",
+          "outputs": "The question requests a count, and the candidate outputs only “count”."
+        }
+      }
+    },
+    {
+      "id": "HC11",
+      "repeat": 1,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "entities": "Micheál Martin; Cork South-Central"
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“Count” is represented as term_count.",
+          "target": "“Dáil terms” is represented by target DailTerm.",
+          "entities": "“Micheál Martin” and “Cork South-Central” are both represented.",
+          "relationship": "“Micheál Martin's recorded constituency was Cork South-Central” is represented by the member service relationship and the recorded-constituency condition.",
+          "temporal": "“in which” limits the terms to those matching the recorded-constituency condition; the candidate marks the scope as restricted.",
+          "aggregation": "“distinct” is represented by count_distinct.",
+          "conditions": "“recorded constituency was Cork South-Central” is represented as a constituency condition.",
+          "outputs": "“Count” requests a count, and the candidate outputs only count."
+        }
+      }
+    },
+    {
+      "id": "HC11",
+      "repeat": 2,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "conditions": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "“Count” requests a count.",
+          "target": "“Dáil terms” matches the DailTerm target.",
+          "entities": "“Micheál Martin” is represented as the Member.",
+          "relationship": "“in which Micheál Martin's recorded constituency was Cork South-Central” places the terms in his recorded Dáil service; the candidate uses the member recorded Dáil service relationship.",
+          "temporal": "No date or other temporal restriction is requested.",
+          "aggregation": "“distinct Dáil terms” requests a distinct count.",
+          "conditions": "The candidate has no conditions, omitting “recorded constituency was Cork South-Central.”",
+          "outputs": "The question requests a count, and the candidate outputs only “count”."
+        }
+      }
+    },
+    {
+      "id": "HC11",
+      "repeat": 2,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "entities": "Micheál Martin; Cork South-Central"
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“Count” requests a count.",
+          "target": "“Dáil terms” identifies the target.",
+          "entities": "“Micheál Martin” and “Cork South-Central” are both represented.",
+          "relationship": "“in which Micheál Martin's recorded constituency was Cork South-Central” is represented by the member service relationship and constituency condition.",
+          "temporal": "“terms in which” scopes the count to terms satisfying the stated condition; no separate date restriction is requested.",
+          "aggregation": "“distinct” is represented by count_distinct.",
+          "conditions": "“Micheál Martin's recorded constituency was Cork South-Central” is retained as a condition.",
+          "outputs": "“Count” requests only the count."
+        }
+      }
+    },
+    {
+      "id": "HC12",
+      "repeat": 1,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "entities": "omitted",
+          "relationship": "altered",
+          "conditions": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“Dáil terms” matches the DailTerm target.",
+          "entities": "The question names “Micheál Martin” and “Leo Varadkar”; the candidate includes only Micheál Martin.",
+          "relationship": "The question asks for terms in Micheál Martin’s record that “also contain recorded service by Leo Varadkar”; the candidate represents only Micheál Martin’s recorded service.",
+          "temporal": "No temporal restriction is stated; the candidate’s scope is unfiltered.",
+          "aggregation": "“distinct” is represented by count_distinct.",
+          "conditions": "“also contain recorded service by Leo Varadkar” requires a second recorded-service condition, absent from the candidate.",
+          "outputs": "“How many” requests a count, and the candidate outputs only count."
+        }
+      }
+    },
+    {
+      "id": "HC12",
+      "repeat": 1,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "entities": "Micheál Martin; Leo Varadkar",
+          "relationship": "Micheál Martin's record; recorded service by Leo Varadkar"
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“Dáil terms” identifies the target.",
+          "entities": "The question names “Micheál Martin” and “Leo Varadkar”; both are represented as Member mentions.",
+          "relationship": "“in Micheál Martin's record also contain recorded service by Leo Varadkar” links Martin's recorded terms to terms with Varadkar's recorded service.",
+          "aggregation": "“distinct” requests distinct-term counting.",
+          "conditions": "“also contain recorded service by Leo Varadkar” is represented as an additional-person condition.",
+          "outputs": "“How many” requests the count as the answer."
+        }
+      }
+    },
+    {
+      "id": "HC12",
+      "repeat": 2,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "entities": "omitted",
+          "relationship": "altered"
+        },
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“distinct Dáil terms” matches DailTerm.",
+          "entities": "The question names “Micheál Martin” and “Leo Varadkar”; the candidate includes only Micheál Martin.",
+          "relationship": "“in Micheál Martin's record also contain recorded service by Leo Varadkar” requires terms linked to both members' recorded service, but the candidate represents only Micheál Martin's service.",
+          "temporal": "No temporal restriction is requested.",
+          "aggregation": "“distinct” requires a distinct count.",
+          "outputs": "“How many” requests a count only."
+        }
+      }
+    },
+    {
+      "id": "HC12",
+      "repeat": 2,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "entities": "Micheál Martin; Leo Varadkar"
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“Dáil terms”",
+          "entities": "“Micheál Martin” and “Leo Varadkar”",
+          "relationship": "“in Micheál Martin's record also contain recorded service by Leo Varadkar”",
+          "aggregation": "“distinct”",
+          "conditions": "“also contain recorded service by Leo Varadkar”",
+          "outputs": "“How many” requests a count only."
+        }
+      }
+    },
+    {
+      "id": "HC13",
+      "repeat": 1,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "temporal": "altered",
+          "conditions": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "The question asks to “count” distinct recorded term resources.",
+          "target": "The target is “term resources,” matching DailTerm.",
+          "entities": "The question names “Micheál Martin,” matching the candidate member.",
+          "relationship": "“For Micheál Martin” indicates the member’s recorded service, represented by the candidate relationship.",
+          "temporal": "“drawn only from the 32nd and 33rd Dála” restricts the terms, but the candidate specifies “unfiltered”.",
+          "aggregation": "“count distinct” matches count_distinct.",
+          "conditions": "The condition “drawn only from the 32nd and 33rd Dála” is absent from the candidate’s conditions.",
+          "outputs": "The question requests a count, and the candidate outputs only “count”."
+        }
+      }
+    },
+    {
+      "id": "HC13",
+      "repeat": 1,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "\"count distinct recorded term resources\"",
+          "target": "\"term resources\"",
+          "entities": "\"Micheál Martin\"; \"32nd and 33rd Dála\"",
+          "relationship": "\"For Micheál Martin\"",
+          "temporal": "\"drawn only from the 32nd and 33rd Dála\"",
+          "aggregation": "\"distinct\"",
+          "conditions": "\"drawn only from the 32nd and 33rd Dála\"",
+          "exclusions": "\"only from the 32nd and 33rd Dála\"",
+          "outputs": "\"count\""
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“count distinct recorded term resources” is represented as term_count.",
+          "target": "“term resources” is represented as DailTerm.",
+          "entities": "“Micheál Martin,” “32nd,” and “33rd Dála” are represented in the candidate.",
+          "relationship": "“For Micheál Martin” and “drawn only from the 32nd and 33rd Dála” are represented with the member recorded Dáil service relationship.",
+          "temporal": "“drawn only from the 32nd and 33rd Dála” preserves the requested restriction to those terms.",
+          "aggregation": "“count distinct” is represented as count_distinct.",
+          "conditions": "“drawn only from the 32nd and 33rd Dála” is retained as a condition.",
+          "exclusions": "“drawn only from the 32nd and 33rd Dála” preserves the restriction excluding other Dála terms from the count.",
+          "outputs": "“count” is the requested output."
+        }
+      }
+    },
+    {
+      "id": "HC13",
+      "repeat": 2,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "temporal": "altered",
+          "conditions": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "“count distinct recorded term resources” requests a term count.",
+          "target": "“term resources” matches the DailTerm target.",
+          "entities": "“Micheál Martin” is represented as the member entity.",
+          "relationship": "“For Micheál Martin” is represented as a member-service relationship.",
+          "temporal": "“drawn only from the 32nd and 33rd Dála” restricts which terms to count, but the candidate specifies “unfiltered”.",
+          "aggregation": "“count distinct” matches count_distinct.",
+          "conditions": "“drawn only from the 32nd and 33rd Dála” is a required term-selection condition; the candidate has no conditions.",
+          "outputs": "The request asks for a count, and the candidate outputs only “count”."
+        }
+      }
+    },
+    {
+      "id": "HC13",
+      "repeat": 2,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {}
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“count distinct recorded term resources” is represented as term_count.",
+          "target": "“term resources” is represented with target DailTerm.",
+          "entities": "“For Micheál Martin” is represented as the exact Member mention.",
+          "relationship": "The request for Micheál Martin’s recorded terms is represented by the member_recorded_dail_service relationship.",
+          "temporal": "“drawn only from the 32nd and 33rd Dála” is represented as restricted temporal scope.",
+          "aggregation": "“count distinct” is represented as count_distinct.",
+          "conditions": "“drawn only from the 32nd and 33rd Dála” is retained as a condition.",
+          "exclusions": "The limiting word “only” excludes terms outside the named Dála, and that restriction is retained in the candidate condition.",
+          "outputs": "“count” requests only the count, represented as the sole output."
+        }
+      }
+    },
+    {
+      "id": "HC14",
+      "repeat": 1,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "exclusions": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“distinct Dáil terms”",
+          "entities": "“Micheál Martin”",
+          "relationship": "“Micheál Martin's recorded service”",
+          "temporal": "“recorded service”",
+          "aggregation": "“distinct Dáil terms”",
+          "exclusions": "“if the 33rd Dáil is left out”",
+          "outputs": "“How many”"
+        }
+      }
+    },
+    {
+      "id": "HC14",
+      "repeat": 1,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {}
+      },
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "exclusions": "altered"
+        },
+        "invalid_quotes": {
+          "operation": "The question asks “How many,” and the candidate uses term_count.",
+          "target": "The requested target is “distinct Dáil terms,” represented as DailTerm.",
+          "entities": "The question names “Micheál Martin,” which the candidate retains exactly.",
+          "relationship": "“in Micheál Martin's recorded service” is represented as member_recorded_dail_service.",
+          "temporal": "No separate date range or time-based condition is requested; the 33rd Dáil is represented as an exclusion.",
+          "aggregation": "“How many distinct” is represented as count_distinct.",
+          "conditions": "The candidate retains “the 33rd Dáil is left out” as a condition.",
+          "exclusions": "The question excludes the 33rd Dáil itself: “if the 33rd Dáil is left out.” The candidate marks this as a filter but classifies its measure as “other,” rather than representing the excluded item as a Dáil term.",
+          "outputs": "The question requests only a count, and the candidate outputs count only."
+        }
+      }
+    },
+    {
+      "id": "HC14",
+      "repeat": 2,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "conditions": "omitted",
+          "exclusions": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“distinct Dáil terms”",
+          "entities": "“Micheál Martin”",
+          "relationship": "“in Micheál Martin's recorded service”",
+          "temporal": "No date range or temporal boundary is requested.",
+          "aggregation": "“How many distinct” requests a distinct count.",
+          "conditions": "“if the 33rd Dáil is left out”",
+          "exclusions": "“the 33rd Dáil is left out”",
+          "outputs": "The question asks only “How many”."
+        }
+      }
+    },
+    {
+      "id": "HC14",
+      "repeat": 2,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {}
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“distinct Dáil terms”",
+          "entities": "“Micheál Martin”",
+          "relationship": "“Micheál Martin's recorded service”",
+          "aggregation": "“distinct Dáil terms”",
+          "conditions": "“if the 33rd Dáil is left out”",
+          "exclusions": "“the 33rd Dáil is left out”",
+          "outputs": "“How many” requests only a count."
+        }
+      }
+    },
+    {
+      "id": "HC15",
+      "repeat": 1,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "relationship": "altered",
+          "exclusions": "altered"
+        },
+        "invalid_quotes": {
+          "operation": "“How many distinct Dáil terms” requests a count.",
+          "target": "The requested target is “Dáil terms”.",
+          "entities": "The question names “Micheál Martin,” and the candidate uses that exact entity mention.",
+          "relationship": "The question requests terms connected “through bills he sponsored”; the candidate instead uses “member_recorded_dail_service”.",
+          "aggregation": "“How many distinct Dáil terms” requests a distinct count.",
+          "exclusions": "“rather than through his memberships” rules out membership as the requested connection, but the candidate selects a member service scope.",
+          "outputs": "“How many” requests a count, and the candidate outputs only “count”."
+        }
+      }
+    },
+    {
+      "id": "HC15",
+      "repeat": 1,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {}
+      },
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "relationship": "altered",
+          "exclusions": "altered"
+        },
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“Dáil terms”.",
+          "entities": "“Micheál Martin”.",
+          "relationship": "The question specifies terms connected “through bills he sponsored”; the candidate uses the generic relationship “other”.",
+          "aggregation": "“How many distinct Dáil terms” requests a distinct count.",
+          "exclusions": "“rather than through his memberships” excludes the membership connection as a way terms are connected, not membership records as a measure.",
+          "outputs": "“How many” requests only a count."
+        }
+      }
+    },
+    {
+      "id": "HC15",
+      "repeat": 2,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "relationship": "altered",
+          "exclusions": "altered"
+        },
+        "invalid_quotes": {
+          "operation": "“How many” requests a count; the candidate uses term_count.",
+          "target": "“Dáil terms” is the target; the candidate targets DailTerm.",
+          "entities": "“Micheál Martin” is the exact named entity in the question and candidate.",
+          "relationship": "The question requires terms connected “through bills he sponsored”; the candidate instead uses “member_recorded_dail_service”.",
+          "temporal": "No temporal restriction is requested; the candidate specifies “unfiltered”.",
+          "aggregation": "“distinct” terms requires a distinct count; the candidate uses count_distinct.",
+          "exclusions": "“rather than through his memberships” rejects the membership route, but the candidate selects member service.",
+          "outputs": "“How many” requests a count, and the candidate outputs only “count”."
+        }
+      }
+    },
+    {
+      "id": "HC15",
+      "repeat": 2,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“How many”",
+          "target": "“distinct Dáil terms”",
+          "entities": "“Micheál Martin”",
+          "relationship": "“connected to Micheál Martin through bills he sponsored”",
+          "aggregation": "“distinct”",
+          "conditions": "“through bills he sponsored”; “rather than through his memberships”",
+          "exclusions": "“rather than through his memberships”",
+          "outputs": "“How many”"
+        }
+      },
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "exclusions": "altered"
+        },
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“Dáil terms” is the requested target.",
+          "entities": "“Micheál Martin” is the exact named entity.",
+          "relationship": "The candidate records the requested route: “through bills he sponsored”.",
+          "aggregation": "“distinct” requires distinct counting.",
+          "conditions": "The candidate includes both “through bills he sponsored” and “rather than through his memberships” as conditions.",
+          "exclusions": "“rather than through his memberships” contrasts routes; the candidate additionally classifies it as a “filter” exclusion, which changes its scope.",
+          "outputs": "“How many” requests a count only."
+        }
+      }
+    },
+    {
+      "id": "HC16",
+      "repeat": 1,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "outputs": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "“Give the distinct recorded Dáil term count” requests a term-count operation.",
+          "target": "“Dáil term count” identifies Dáil terms as the target.",
+          "entities": "“for Micheál Martin” is represented as the Member entity mention “Micheál Martin”.",
+          "relationship": "“recorded Dáil term count for Micheál Martin” is represented as the member’s recorded Dáil service.",
+          "temporal": "The question specifies no date or other temporal restriction.",
+          "aggregation": "“distinct recorded Dáil term count” is represented as a distinct count.",
+          "outputs": "“together with each counted term's IRI and start date” requests the IRI and start date of each counted term; the candidate outputs only “count”."
+        }
+      }
+    },
+    {
+      "id": "HC16",
+      "repeat": 1,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "\"distinct recorded Dáil term count\"",
+          "target": "\"Dáil term count\"",
+          "entities": "\"Micheál Martin\"",
+          "relationship": "\"for Micheál Martin\" and \"recorded Dáil term count\"",
+          "aggregation": "\"distinct\"",
+          "outputs": "\"count\" and \"each counted term's IRI and start date\""
+        }
+      },
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "outputs": "altered"
+        },
+        "invalid_quotes": {
+          "operation": "“Give the distinct recorded Dáil term count” requests a count.",
+          "target": "“Dáil term count” identifies Dáil terms as the target.",
+          "entities": "“Micheál Martin” is represented as the Member.",
+          "relationship": "“for Micheál Martin” ties the counted terms to the named Member’s service.",
+          "temporal": "“recorded” is represented with an unfiltered recorded-service scope.",
+          "aggregation": "“distinct recorded Dáil term count” requests a distinct count.",
+          "outputs": "“together with each counted term's IRI and start date” requests those specific per-term outputs. The candidate's generic “identity” and “date” do not establish that they mean each term's IRI and start date; moreover, this term_count interpretation permits count-only output."
+        }
+      }
+    },
+    {
+      "id": "HC16",
+      "repeat": 2,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "outputs": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "“Give the distinct recorded Dáil term count” requests a term count.",
+          "target": "“Dáil term count” identifies Dáil terms as the target.",
+          "entities": "“for Micheál Martin” identifies the member.",
+          "relationship": "“recorded Dáil term count for Micheál Martin” is represented as the member’s recorded Dáil service.",
+          "temporal": "“recorded” imposes no date restriction; the candidate specifies “unfiltered”.",
+          "aggregation": "“distinct recorded Dáil term count” requests a distinct count.",
+          "outputs": "“together with each counted term's IRI and start date” requests additional outputs beyond the count."
+        }
+      }
+    },
+    {
+      "id": "HC16",
+      "repeat": 2,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "\"term count\"",
+          "target": "\"Dáil term\"",
+          "entities": "\"Micheál Martin\"",
+          "relationship": "\"for Micheál Martin\"",
+          "temporal": "\"recorded\"",
+          "aggregation": "\"distinct\"",
+          "outputs": "\"count\"; \"each counted term's IRI and start date\""
+        }
+      },
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "outputs": "altered"
+        },
+        "invalid_quotes": {
+          "operation": "The candidate specifies \"term_count,\" matching the requested \"count.\"",
+          "target": "The requested target is a Dáil term, represented as \"DailTerm.\"",
+          "entities": "The question names \"Micheál Martin,\" and the candidate uses that exact member mention.",
+          "relationship": "The question asks for the term count \"for Micheál Martin\"; the candidate specifies \"member_recorded_dail_service.\"",
+          "temporal": "No time filter is requested; the candidate specifies \"unfiltered.\"",
+          "aggregation": "The question requests the \"distinct recorded Dáil term count,\" matching \"count_distinct.\"",
+          "outputs": "The question requests \"each counted term's IRI and start date.\" The candidate instead names the outputs \"identity\" and \"date,\" without specifying IRI or start date."
+        }
+      }
+    },
+    {
+      "id": "HC17",
+      "repeat": 1,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "operation": "altered",
+          "target": "altered",
+          "relationship": "altered",
+          "aggregation": "altered",
+          "outputs": "altered"
+        },
+        "invalid_quotes": {
+          "operation": "The request asks for a number that represents both a term count and election wins: “both his distinct recorded Dáil term count and his number of election wins.” The candidate performs only term_count.",
+          "target": "The requested measures concern “Dáil term count” and “number of election wins”; the candidate targets only DailTerm.",
+          "entities": "The candidate names Micheál Martin, matching “for Micheál Martin.”",
+          "relationship": "The candidate represents recorded Member-to-Dáil-term service, but the request also requires election wins: “his number of election wins.”",
+          "temporal": "No temporal restriction is stated; the candidate specifies an unfiltered scope.",
+          "aggregation": "The request requires both a “distinct recorded Dáil term count” and a “number of election wins”; the candidate aggregates only distinct DailTerm resources.",
+          "outputs": "The request asks for “one number” that is “both” measures. The candidate returns only the term count, without representing the required election-win count."
+        }
+      }
+    },
+    {
+      "id": "HC17",
+      "repeat": 1,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "\"distinct recorded Dáil term count\"",
+          "target": "\"Dáil term count\"",
+          "entities": "\"Micheál Martin\"",
+          "relationship": "\"his distinct recorded Dáil term count\"",
+          "temporal": "\"recorded\"",
+          "aggregation": "\"distinct\"",
+          "outputs": "\"Return one number\"; \"his number of election wins\""
+        }
+      },
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "operation": "omitted",
+          "target": "altered",
+          "relationship": "omitted",
+          "aggregation": "altered",
+          "outputs": "altered"
+        },
+        "invalid_quotes": {
+          "operation": "The question requests both a distinct recorded Dáil term count and an election-win count; the candidate specifies only term_count.",
+          "target": "The question targets “his distinct recorded Dáil term count and his number of election wins,” while the candidate targets only DailTerm.",
+          "entities": "The candidate names “Micheál Martin,” matching the question.",
+          "relationship": "The question asks for a term count and “his number of election wins”; the candidate represents only member-recorded Dáil service, not an election-win relationship.",
+          "temporal": "No temporal restriction is requested; the candidate specifies “unfiltered.”",
+          "aggregation": "The question asks for a distinct term count and a separate number of election wins; the candidate specifies only count_distinct for terms.",
+          "outputs": "The question requests “one number,” while the candidate lists outputs “count” and “other” and does not represent the election-win count."
+        }
+      }
+    },
+    {
+      "id": "HC17",
+      "repeat": 2,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "operation": "altered",
+          "target": "altered",
+          "relationship": "omitted",
+          "aggregation": "omitted",
+          "outputs": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "The requested number must be “both his distinct recorded Dáil term count and his number of election wins”; the candidate performs only a term count.",
+          "target": "The requested target is “his distinct recorded Dáil term count and his number of election wins”; the candidate targets only DailTerm.",
+          "entities": "The question specifies “Micheál Martin,” and the candidate names that exact entity.",
+          "relationship": "The question also requires “his number of election wins”; the candidate includes only the recorded Member-to-Dáil-term service relationship.",
+          "temporal": "“recorded” is represented by recorded service, and the question adds no time restriction; the candidate specifies “unfiltered.”",
+          "aggregation": "The question requires both a “distinct recorded Dáil term count” and a “number of election wins”; the candidate counts distinct terms only.",
+          "conditions": "The question gives no additional conditions, and the candidate has no conditions.",
+          "exclusions": "The question specifies no exclusions, and the candidate has none.",
+          "outputs": "The question requests “one number” that is “both” measures; the candidate outputs only the term count, not a number representing election wins as well."
+        }
+      }
+    },
+    {
+      "id": "HC17",
+      "repeat": 2,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“distinct recorded Dáil term count”",
+          "target": "“Dáil term count”",
+          "entities": "“Micheál Martin”",
+          "relationship": "“for Micheál Martin”",
+          "aggregation": "“distinct recorded”",
+          "outputs": "“Return one number for Micheál Martin that is both his distinct recorded Dáil term count and his number of election wins.”"
+        }
+      },
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "operation": "altered",
+          "target": "altered",
+          "relationship": "altered",
+          "aggregation": "altered",
+          "outputs": "altered"
+        },
+        "invalid_quotes": {
+          "operation": "The question requests a number that is both a “distinct recorded Dáil term count” and a “number of election wins”; the candidate specifies only `term_count`.",
+          "target": "The candidate targets `DailTerm`, but the question also requires the number to be a “number of election wins.”",
+          "entities": "The candidate names “Micheál Martin,” matching the question.",
+          "relationship": "The candidate represents recorded Member-to-Dáil-term service, but the question also requires election wins.",
+          "temporal": "The question specifies a “recorded” term count without a date restriction, and the candidate uses an unfiltered scope.",
+          "aggregation": "`count_distinct` represents the distinct term count, but the question also requires the number to be the “number of election wins.”",
+          "outputs": "The question asks to “Return one number” that satisfies both measures; the candidate lists `count` and an unspecified `other`, without representing that requirement."
+        }
+      }
+    },
+    {
+      "id": "HC18",
+      "repeat": 1,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "conditions": "omitted",
+          "exclusions": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "The question asks “how many,” and the candidate uses term_count.",
+          "target": "The requested target is “distinct Dáil terms,” represented as DailTerm.",
+          "entities": "The question names “Micheál Martin,” which the candidate preserves.",
+          "relationship": "“recorded for him” is represented by the candidate’s member_recorded_dail_service.",
+          "aggregation": "“how many distinct Dáil terms” is represented as count_distinct.",
+          "conditions": "“This comparison leaves out every term in which Micheál Martin held ministerial office.”",
+          "exclusions": "“leaves out every term in which Micheál Martin held ministerial office”",
+          "outputs": "The question asks for a count, and the candidate requests only “count.”"
+        }
+      }
+    },
+    {
+      "id": "HC18",
+      "repeat": 1,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {}
+      },
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "exclusions": "altered"
+        },
+        "invalid_quotes": {
+          "operation": "The question asks “how many,” and the candidate specifies term_count.",
+          "target": "The requested target is “distinct Dáil terms,” represented as DailTerm.",
+          "entities": "The question names “Micheál Martin,” matching the candidate’s member mention.",
+          "relationship": "The question asks for terms “recorded for him,” represented as recorded Dáil service for the named member.",
+          "temporal": "“Within that comparison” sets the scope, and the candidate marks the scope as restricted.",
+          "aggregation": "“How many distinct Dáil terms” is represented as count_distinct.",
+          "exclusions": "The question says “leaves out every term in which Micheál Martin held ministerial office.” The candidate records this as a filter on “other” rather than as an exclusion of those terms.",
+          "outputs": "The question requests only “how many,” represented by the count output."
+        }
+      }
+    },
+    {
+      "id": "HC18",
+      "repeat": 2,
+      "injection": true,
+      "expected": "reject",
+      "B1": "admit",
+      "B2": "reject",
+      "verify": {
+        "semantic_all_clear": false,
+        "flags": {
+          "conditions": "omitted",
+          "exclusions": "omitted"
+        },
+        "invalid_quotes": {
+          "operation": "“how many” requests a count.",
+          "target": "“distinct Dáil terms” specifies the target.",
+          "entities": "“for him” refers to Micheál Martin, named in the question.",
+          "relationship": "“recorded for him” requests his recorded service relationship to the terms.",
+          "aggregation": "“distinct Dáil terms” requests a distinct count.",
+          "conditions": "“every term in which Micheál Martin held ministerial office” specifies which terms to leave out.",
+          "exclusions": "“This comparison leaves out every term in which Micheál Martin held ministerial office.”",
+          "outputs": "“how many” asks for a count, with no additional output requested."
+        }
+      }
+    },
+    {
+      "id": "HC18",
+      "repeat": 2,
+      "injection": false,
+      "expected": "reject",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "reject",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {}
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“how many distinct Dáil terms” requests a count.",
+          "target": "“distinct Dáil terms” identifies DailTerm as the target.",
+          "entities": "“for him” refers to “Micheál Martin”.",
+          "relationship": "“terms are recorded for him” requests his recorded Dáil service.",
+          "temporal": "“This comparison leaves out every term in which Micheál Martin held ministerial office” restricts the terms counted.",
+          "aggregation": "“how many distinct Dáil terms” requests a distinct count.",
+          "conditions": "“every term in which Micheál Martin held ministerial office” supplies the condition.",
+          "exclusions": "“This comparison leaves out every term in which Micheál Martin held ministerial office.”",
+          "outputs": "“how many” requests the count as the output."
+        }
+      }
+    },
+    {
+      "id": "HC19",
+      "repeat": 1,
+      "injection": false,
+      "expected": "clarify",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "clarify",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "\"How many distinct\"",
+          "target": "\"Dáil terms\"",
+          "entities": "\"Brendan Griffin\"",
+          "relationship": "\"linked through memberships\"",
+          "temporal": "\"recorded\"",
+          "aggregation": "\"distinct\"",
+          "outputs": "\"How many\""
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“Dáil terms”",
+          "entities": "“Brendan Griffin”",
+          "relationship": "“linked through memberships to Brendan Griffin”",
+          "temporal": "“recorded Dáil terms”; no time restriction is specified.",
+          "aggregation": "“distinct”",
+          "outputs": "“How many” requests the count only."
+        }
+      }
+    },
+    {
+      "id": "HC19",
+      "repeat": 2,
+      "injection": false,
+      "expected": "clarify",
+      "B1": "clarify",
+      "B2": "reject",
+      "compatibility": "clarify",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {}
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“How many” requests a count.",
+          "target": "“distinct recorded Dáil terms”",
+          "entities": "“Brendan Griffin”",
+          "relationship": "“linked through memberships to Brendan Griffin”",
+          "temporal": "“recorded”",
+          "aggregation": "“How many distinct”",
+          "outputs": "“How many” requests a count as the answer."
+        }
+      }
+    },
+    {
+      "id": "HC20",
+      "repeat": 1,
+      "injection": false,
+      "expected": "clarify",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "clarify",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "\"Please count\"",
+          "target": "\"each Dáil term in his local service record\"",
+          "entities": "\"The member is Brendan Griffin.\"",
+          "relationship": "\"Dáil term in his local service record\"",
+          "aggregation": "\"each Dáil term ... once\"",
+          "outputs": "\"give only the total\""
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“Please count”",
+          "target": "“each Dáil term”",
+          "entities": "“The member is Brendan Griffin.”",
+          "relationship": "“in his local service record”",
+          "temporal": "“in his local service record”",
+          "aggregation": "“each Dáil term … once”",
+          "outputs": "“give only the total”"
+        }
+      }
+    },
+    {
+      "id": "HC20",
+      "repeat": 2,
+      "injection": false,
+      "expected": "clarify",
+      "B1": "reject",
+      "B2": "reject",
+      "compatibility": "clarify",
+      "self": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "aggregation": "each Dáil term ... once"
+        }
+      },
+      "verify": {
+        "semantic_all_clear": true,
+        "flags": {},
+        "invalid_quotes": {
+          "operation": "“Please count” requests a count.",
+          "target": "“each Dáil term” identifies the terms to count.",
+          "entities": "“The member is Brendan Griffin” is represented as the Member entity “Brendan Griffin”.",
+          "relationship": "“in his local service record” specifies Brendan Griffin’s recorded Dáil service.",
+          "temporal": "“local service record” is represented as recorded service, without a date restriction.",
+          "aggregation": "“each Dáil term … once” requests distinct term counting.",
+          "conditions": "No additional conditions are requested; “local service record” is represented by the recorded-service scope.",
+          "outputs": "“give only the total” requests the count alone."
+        }
+      }
+    }
+  ],
+  "natural_sequential_pair_seconds": {
+    "n": 40,
+    "min": 7.435,
+    "median": 10.8735,
+    "max": 28.326999999999998
+  }
+}
