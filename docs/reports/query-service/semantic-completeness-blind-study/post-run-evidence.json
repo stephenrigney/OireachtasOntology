@@ -1,0 +1,7 @@
+{
+  "observed_at": "2026-11-09T17:01:32.119723+00:00",
+  "query": "SELECT (COUNT(*) AS ?triples) (COUNT(DISTINCT ?g) AS ?graphs) WHERE { GRAPH ?g { ?s ?p ?o } }",
+  "result": "{\n  \"head\": {\n    \"vars\": [\n      \"triples\",\n      \"graphs\"\n    ]\n  },\n  \"results\": {\n    \"bindings\": [\n      {\n        \"triples\": {\n          \"type\": \"literal\",\n          \"datatype\": \"http://www.w3.org/2001/XMLSchema#integer\",\n          \"value\": \"1119860\"\n        },\n        \"graphs\": {\n          \"type\": \"literal\",\n          \"datatype\": \"http://www.w3.org/2001/XMLSchema#integer\",\n          \"value\": \"7982\"\n        }\n      }\n    ]\n  }\n}",
+  "same_census_as_pre_execution": true,
+  "access": "read-only SELECT; no count/answer execution from model plans"
+}

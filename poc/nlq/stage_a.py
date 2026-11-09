@@ -44,6 +44,7 @@ def parse_stage_a_question(question: str) -> StageARequest | None:
     if term_scope:
         raw_scope = term_scope["scope"].strip()
         from .composable_plan import _MONTHS, _question_calendar_dates
+        from .question_intent import calendar_date_spans, month_year_mentions
         month_match = re.fullmatch(r"(?P<month>[A-Za-z]+)\s+(?P<year>[0-9]{4})", raw_scope)
         if month_match and month_match["month"].casefold() in _MONTHS:
             month = _MONTHS[month_match["month"].casefold()]
@@ -54,7 +55,11 @@ def parse_stage_a_question(question: str) -> StageARequest | None:
                 scope = {"kind": "duringMonth", "year": year, "month": month}
         else:
             dates, invalid_date = _question_calendar_dates(raw_scope)
-            if invalid_date is not None or len(dates) != 1:
+            date_spans = calendar_date_spans(raw_scope)
+            unbound_months = [item for item in month_year_mentions(raw_scope) if not any(
+                start <= item.start and item.end <= end for start, end in date_spans
+            )]
+            if invalid_date is not None or len(dates) != 1 or unbound_months:
                 scope = {"kind": "invalid", "value": invalid_date or raw_scope}
             else:
                 scope = {"kind": "onDate", "date": dates[0].isoformat()}

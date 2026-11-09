@@ -1,0 +1,3556 @@
+{
+  "repetitions": {
+    "1": {
+      "B1": {
+        "supported_admitted": 4,
+        "supported_denominator": 6,
+        "false_refusals": 2,
+        "unsafe_admissions": 0,
+        "adversarial_denominator": 6
+      },
+      "B2": {
+        "supported_admitted": 3,
+        "supported_denominator": 6,
+        "false_refusals": 3,
+        "unsafe_admissions": 0,
+        "adversarial_denominator": 6
+      }
+    },
+    "2": {
+      "B1": {
+        "supported_admitted": 4,
+        "supported_denominator": 6,
+        "false_refusals": 2,
+        "unsafe_admissions": 0,
+        "adversarial_denominator": 6
+      },
+      "B2": {
+        "supported_admitted": 4,
+        "supported_denominator": 6,
+        "false_refusals": 2,
+        "unsafe_admissions": 0,
+        "adversarial_denominator": 6
+      }
+    },
+    "3": {
+      "B1": {
+        "supported_admitted": 3,
+        "supported_denominator": 6,
+        "false_refusals": 3,
+        "unsafe_admissions": 0,
+        "adversarial_denominator": 6
+      },
+      "B2": {
+        "supported_admitted": 3,
+        "supported_denominator": 6,
+        "false_refusals": 3,
+        "unsafe_admissions": 0,
+        "adversarial_denominator": 6
+      }
+    }
+  },
+  "natural": [
+    {
+      "id": "S1",
+      "repeat": 1,
+      "B1": "admit",
+      "B2": "admit",
+      "expected": "supported",
+      "comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "primary_valid_offsets_and_structure": true,
+      "primary_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "blind_valid_offsets_and_structure": true,
+      "blind_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      }
+    },
+    {
+      "id": "S1",
+      "repeat": 2,
+      "B1": "admit",
+      "B2": "admit",
+      "expected": "supported",
+      "comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "primary_valid_offsets_and_structure": true,
+      "primary_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "blind_valid_offsets_and_structure": true,
+      "blind_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      }
+    },
+    {
+      "id": "S1",
+      "repeat": 3,
+      "B1": "admit",
+      "B2": "admit",
+      "expected": "supported",
+      "comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "primary_valid_offsets_and_structure": true,
+      "primary_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "blind_valid_offsets_and_structure": true,
+      "blind_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      }
+    },
+    {
+      "id": "S2",
+      "repeat": 1,
+      "B1": "admit",
+      "B2": "admit",
+      "expected": "supported",
+      "comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "primary_valid_offsets_and_structure": true,
+      "primary_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "blind_valid_offsets_and_structure": true,
+      "blind_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      }
+    },
+    {
+      "id": "S2",
+      "repeat": 2,
+      "B1": "admit",
+      "B2": "admit",
+      "expected": "supported",
+      "comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "primary_valid_offsets_and_structure": true,
+      "primary_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "blind_valid_offsets_and_structure": true,
+      "blind_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      }
+    },
+    {
+      "id": "S2",
+      "repeat": 3,
+      "B1": "admit",
+      "B2": "admit",
+      "expected": "supported",
+      "comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "primary_valid_offsets_and_structure": true,
+      "primary_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "blind_valid_offsets_and_structure": true,
+      "blind_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      }
+    },
+    {
+      "id": "S3",
+      "repeat": 1,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "supported",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "primary_valid_offsets_and_structure": false,
+      "primary_validation_error": "role_value_mismatch",
+      "blind_valid_offsets_and_structure": false,
+      "blind_validation_error": "role_value_mismatch"
+    },
+    {
+      "id": "S3",
+      "repeat": 2,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "supported",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "primary_valid_offsets_and_structure": false,
+      "primary_validation_error": "role_value_mismatch",
+      "blind_valid_offsets_and_structure": true,
+      "blind_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      }
+    },
+    {
+      "id": "S3",
+      "repeat": 3,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "supported",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "primary_valid_offsets_and_structure": false,
+      "primary_validation_error": "role_value_mismatch",
+      "blind_valid_offsets_and_structure": false,
+      "blind_validation_error": "role_value_mismatch"
+    },
+    {
+      "id": "S4",
+      "repeat": 1,
+      "B1": "admit",
+      "B2": "admit",
+      "expected": "supported",
+      "comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "primary_valid_offsets_and_structure": true,
+      "primary_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "blind_valid_offsets_and_structure": true,
+      "blind_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      }
+    },
+    {
+      "id": "S4",
+      "repeat": 2,
+      "B1": "admit",
+      "B2": "admit",
+      "expected": "supported",
+      "comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "primary_valid_offsets_and_structure": true,
+      "primary_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "blind_valid_offsets_and_structure": true,
+      "blind_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      }
+    },
+    {
+      "id": "S4",
+      "repeat": 3,
+      "B1": "admit",
+      "B2": "admit",
+      "expected": "supported",
+      "comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "primary_valid_offsets_and_structure": true,
+      "primary_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "blind_valid_offsets_and_structure": true,
+      "blind_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      }
+    },
+    {
+      "id": "S5",
+      "repeat": 1,
+      "B1": "admit",
+      "B2": "reject",
+      "expected": "supported",
+      "comparison": {
+        "equal": false,
+        "error": "offset_whitespace_boundary"
+      },
+      "primary_valid_offsets_and_structure": true,
+      "primary_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "blind_valid_offsets_and_structure": false,
+      "blind_validation_error": "offset_whitespace_boundary"
+    },
+    {
+      "id": "S5",
+      "repeat": 2,
+      "B1": "admit",
+      "B2": "admit",
+      "expected": "supported",
+      "comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "primary_valid_offsets_and_structure": true,
+      "primary_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "blind_valid_offsets_and_structure": true,
+      "blind_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      }
+    },
+    {
+      "id": "S5",
+      "repeat": 3,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "supported",
+      "comparison": {
+        "equal": false,
+        "error": "offset_whitespace_boundary"
+      },
+      "primary_valid_offsets_and_structure": false,
+      "primary_validation_error": "offset_whitespace_boundary",
+      "blind_valid_offsets_and_structure": true,
+      "blind_reference_comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      }
+    },
+    {
+      "id": "S6",
+      "repeat": 1,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "supported",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "primary_valid_offsets_and_structure": false,
+      "primary_validation_error": "role_value_mismatch",
+      "blind_valid_offsets_and_structure": false,
+      "blind_validation_error": "role_value_mismatch"
+    },
+    {
+      "id": "S6",
+      "repeat": 2,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "supported",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "primary_valid_offsets_and_structure": false,
+      "primary_validation_error": "role_value_mismatch",
+      "blind_valid_offsets_and_structure": false,
+      "blind_validation_error": "role_value_mismatch"
+    },
+    {
+      "id": "S6",
+      "repeat": 3,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "supported",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "primary_valid_offsets_and_structure": false,
+      "primary_validation_error": "role_value_mismatch",
+      "blind_valid_offsets_and_structure": false,
+      "blind_validation_error": "role_value_mismatch"
+    },
+    {
+      "id": "U1",
+      "repeat": 1,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "primary_valid_offsets_and_structure": false,
+      "primary_validation_error": "role_value_mismatch",
+      "blind_valid_offsets_and_structure": false,
+      "blind_validation_error": "role_value_mismatch"
+    },
+    {
+      "id": "U1",
+      "repeat": 2,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "primary_valid_offsets_and_structure": true,
+      "blind_valid_offsets_and_structure": false,
+      "blind_validation_error": "role_value_mismatch"
+    },
+    {
+      "id": "U1",
+      "repeat": 3,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "primary_valid_offsets_and_structure": true,
+      "blind_valid_offsets_and_structure": true
+    },
+    {
+      "id": "U2",
+      "repeat": 1,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [],
+        "only_blind": [
+          [
+            "coverage",
+            "local_recorded",
+            "source",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "primary_valid_offsets_and_structure": true,
+      "blind_valid_offsets_and_structure": true
+    },
+    {
+      "id": "U2",
+      "repeat": 2,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "primary_valid_offsets_and_structure": true,
+      "blind_valid_offsets_and_structure": true
+    },
+    {
+      "id": "U2",
+      "repeat": 3,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "primary_valid_offsets_and_structure": true,
+      "blind_valid_offsets_and_structure": true
+    },
+    {
+      "id": "U3",
+      "repeat": 1,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "primary_valid_offsets_and_structure": true,
+      "blind_valid_offsets_and_structure": false,
+      "blind_validation_error": "role_value_mismatch"
+    },
+    {
+      "id": "U3",
+      "repeat": 2,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "primary_valid_offsets_and_structure": true,
+      "blind_valid_offsets_and_structure": false,
+      "blind_validation_error": "role_value_mismatch"
+    },
+    {
+      "id": "U3",
+      "repeat": 3,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "primary_valid_offsets_and_structure": false,
+      "primary_validation_error": "role_value_mismatch",
+      "blind_valid_offsets_and_structure": false,
+      "blind_validation_error": "role_value_mismatch"
+    },
+    {
+      "id": "U4",
+      "repeat": 1,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": false,
+        "error": "unresolved_semantics"
+      },
+      "primary_valid_offsets_and_structure": false,
+      "primary_validation_error": "unresolved_semantics",
+      "blind_valid_offsets_and_structure": true
+    },
+    {
+      "id": "U4",
+      "repeat": 2,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": false,
+        "error": "unresolved_semantics"
+      },
+      "primary_valid_offsets_and_structure": false,
+      "primary_validation_error": "unresolved_semantics",
+      "blind_valid_offsets_and_structure": false,
+      "blind_validation_error": "unresolved_semantics"
+    },
+    {
+      "id": "U4",
+      "repeat": 3,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": false,
+        "error": "unresolved_semantics"
+      },
+      "primary_valid_offsets_and_structure": false,
+      "primary_validation_error": "unresolved_semantics",
+      "blind_valid_offsets_and_structure": false,
+      "blind_validation_error": "role_value_mismatch"
+    },
+    {
+      "id": "U5",
+      "repeat": 1,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "primary_valid_offsets_and_structure": false,
+      "primary_validation_error": "role_value_mismatch",
+      "blind_valid_offsets_and_structure": false,
+      "blind_validation_error": "role_value_mismatch"
+    },
+    {
+      "id": "U5",
+      "repeat": 2,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "primary_valid_offsets_and_structure": false,
+      "primary_validation_error": "role_value_mismatch",
+      "blind_valid_offsets_and_structure": false,
+      "blind_validation_error": "role_value_mismatch"
+    },
+    {
+      "id": "U5",
+      "repeat": 3,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "primary_valid_offsets_and_structure": false,
+      "primary_validation_error": "role_value_mismatch",
+      "blind_valid_offsets_and_structure": false,
+      "blind_validation_error": "role_value_mismatch"
+    },
+    {
+      "id": "U6",
+      "repeat": 1,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "output",
+            "identity",
+            "answer",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "output",
+            "term_list",
+            "answer",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "primary_valid_offsets_and_structure": true,
+      "blind_valid_offsets_and_structure": true
+    },
+    {
+      "id": "U6",
+      "repeat": 2,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": true,
+        "only_candidate": [],
+        "only_blind": []
+      },
+      "primary_valid_offsets_and_structure": true,
+      "blind_valid_offsets_and_structure": true
+    },
+    {
+      "id": "U6",
+      "repeat": 3,
+      "B1": "reject",
+      "B2": "reject",
+      "expected": "unsupported",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "output",
+            "identity",
+            "answer",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "output",
+            "term_list",
+            "answer",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "primary_valid_offsets_and_structure": true,
+      "blind_valid_offsets_and_structure": true
+    }
+  ],
+  "faults": [
+    {
+      "id": "S1-target",
+      "case": "S1",
+      "repeat": 1,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "target",
+            "membership_records",
+            "count",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "target",
+            "DailTerm",
+            "count",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S1-relationship",
+      "case": "S1",
+      "repeat": 1,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "shared_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S1-attachment",
+      "case": "S1",
+      "repeat": 1,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "term",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S1-negation",
+      "case": "S1",
+      "repeat": 1,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "negative",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S1-extra_output",
+      "case": "S1",
+      "repeat": 1,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "output",
+            "identity",
+            "answer",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": []
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S1-target",
+      "case": "S1",
+      "repeat": 2,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "target",
+            "membership_records",
+            "count",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "target",
+            "DailTerm",
+            "count",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S1-relationship",
+      "case": "S1",
+      "repeat": 2,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "shared_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S1-attachment",
+      "case": "S1",
+      "repeat": 2,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "term",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S1-negation",
+      "case": "S1",
+      "repeat": 2,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "negative",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S1-extra_output",
+      "case": "S1",
+      "repeat": 2,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "output",
+            "identity",
+            "answer",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": []
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S1-target",
+      "case": "S1",
+      "repeat": 3,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "target",
+            "membership_records",
+            "count",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "target",
+            "DailTerm",
+            "count",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S1-relationship",
+      "case": "S1",
+      "repeat": 3,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "shared_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S1-attachment",
+      "case": "S1",
+      "repeat": 3,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "term",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S1-negation",
+      "case": "S1",
+      "repeat": 3,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "negative",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S1-extra_output",
+      "case": "S1",
+      "repeat": 3,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "output",
+            "identity",
+            "answer",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": []
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S2-target",
+      "case": "S2",
+      "repeat": 1,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "target",
+            "membership_records",
+            "count",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "target",
+            "DailTerm",
+            "count",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S2-relationship",
+      "case": "S2",
+      "repeat": 1,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "shared_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S2-attachment",
+      "case": "S2",
+      "repeat": 1,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "term",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S2-negation",
+      "case": "S2",
+      "repeat": 1,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "negative",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S2-extra_output",
+      "case": "S2",
+      "repeat": 1,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "output",
+            "identity",
+            "answer",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": []
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S2-target",
+      "case": "S2",
+      "repeat": 2,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "target",
+            "membership_records",
+            "count",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "target",
+            "DailTerm",
+            "count",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S2-relationship",
+      "case": "S2",
+      "repeat": 2,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "shared_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S2-attachment",
+      "case": "S2",
+      "repeat": 2,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "term",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S2-negation",
+      "case": "S2",
+      "repeat": 2,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "negative",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S2-extra_output",
+      "case": "S2",
+      "repeat": 2,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "output",
+            "identity",
+            "answer",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": []
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S2-target",
+      "case": "S2",
+      "repeat": 3,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "target",
+            "membership_records",
+            "count",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "target",
+            "DailTerm",
+            "count",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S2-relationship",
+      "case": "S2",
+      "repeat": 3,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "shared_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S2-attachment",
+      "case": "S2",
+      "repeat": 3,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "term",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S2-negation",
+      "case": "S2",
+      "repeat": 3,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "negative",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S2-extra_output",
+      "case": "S2",
+      "repeat": 3,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "output",
+            "identity",
+            "answer",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": []
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S3-target",
+      "case": "S3",
+      "repeat": 1,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S3-relationship",
+      "case": "S3",
+      "repeat": 1,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S3-attachment",
+      "case": "S3",
+      "repeat": 1,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S3-negation",
+      "case": "S3",
+      "repeat": 1,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S3-extra_output",
+      "case": "S3",
+      "repeat": 1,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S3-target",
+      "case": "S3",
+      "repeat": 2,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "target",
+            "membership_records",
+            "count",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "target",
+            "DailTerm",
+            "count",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S3-relationship",
+      "case": "S3",
+      "repeat": 2,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "shared_service",
+            "source",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "houses_typed_dail_terms",
+            "source",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S3-attachment",
+      "case": "S3",
+      "repeat": 2,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "houses_typed_dail_terms",
+            "term",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "houses_typed_dail_terms",
+            "source",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S3-negation",
+      "case": "S3",
+      "repeat": 2,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "houses_typed_dail_terms",
+            "source",
+            "negative",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "houses_typed_dail_terms",
+            "source",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S3-extra_output",
+      "case": "S3",
+      "repeat": 2,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "output",
+            "identity",
+            "answer",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": []
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S3-target",
+      "case": "S3",
+      "repeat": 3,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S3-relationship",
+      "case": "S3",
+      "repeat": 3,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S3-attachment",
+      "case": "S3",
+      "repeat": 3,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S3-negation",
+      "case": "S3",
+      "repeat": 3,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S3-extra_output",
+      "case": "S3",
+      "repeat": 3,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S4-target",
+      "case": "S4",
+      "repeat": 1,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "target",
+            "membership_records",
+            "count",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "target",
+            "DailTerm",
+            "count",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S4-relationship",
+      "case": "S4",
+      "repeat": 1,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "shared_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S4-attachment",
+      "case": "S4",
+      "repeat": 1,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "term",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S4-negation",
+      "case": "S4",
+      "repeat": 1,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "negative",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S4-extra_output",
+      "case": "S4",
+      "repeat": 1,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "output",
+            "identity",
+            "answer",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": []
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S4-target",
+      "case": "S4",
+      "repeat": 2,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "target",
+            "membership_records",
+            "count",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "target",
+            "DailTerm",
+            "count",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S4-relationship",
+      "case": "S4",
+      "repeat": 2,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "shared_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S4-attachment",
+      "case": "S4",
+      "repeat": 2,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "term",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S4-negation",
+      "case": "S4",
+      "repeat": 2,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "negative",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S4-extra_output",
+      "case": "S4",
+      "repeat": 2,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "output",
+            "identity",
+            "answer",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": []
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S4-target",
+      "case": "S4",
+      "repeat": 3,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "target",
+            "membership_records",
+            "count",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "target",
+            "DailTerm",
+            "count",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S4-relationship",
+      "case": "S4",
+      "repeat": 3,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "shared_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S4-attachment",
+      "case": "S4",
+      "repeat": 3,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "term",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S4-negation",
+      "case": "S4",
+      "repeat": 3,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "negative",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S4-extra_output",
+      "case": "S4",
+      "repeat": 3,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "output",
+            "identity",
+            "answer",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": []
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S5-target",
+      "case": "S5",
+      "repeat": 1,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "offset_whitespace_boundary"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S5-relationship",
+      "case": "S5",
+      "repeat": 1,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "offset_whitespace_boundary"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S5-attachment",
+      "case": "S5",
+      "repeat": 1,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "offset_whitespace_boundary"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S5-negation",
+      "case": "S5",
+      "repeat": 1,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "offset_whitespace_boundary"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S5-extra_output",
+      "case": "S5",
+      "repeat": 1,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "offset_whitespace_boundary"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S5-target",
+      "case": "S5",
+      "repeat": 2,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "target",
+            "membership_records",
+            "count",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "target",
+            "DailTerm",
+            "count",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S5-relationship",
+      "case": "S5",
+      "repeat": 2,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "shared_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S5-attachment",
+      "case": "S5",
+      "repeat": 2,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "term",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S5-negation",
+      "case": "S5",
+      "repeat": 2,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "negative",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S5-extra_output",
+      "case": "S5",
+      "repeat": 2,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "output",
+            "identity",
+            "answer",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": []
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S5-target",
+      "case": "S5",
+      "repeat": 3,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "target",
+            "membership_records",
+            "count",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "target",
+            "DailTerm",
+            "count",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S5-relationship",
+      "case": "S5",
+      "repeat": 3,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "shared_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S5-attachment",
+      "case": "S5",
+      "repeat": 3,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "term",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S5-negation",
+      "case": "S5",
+      "repeat": 3,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "negative",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "relationship",
+            "member_recorded_dail_service",
+            "member",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S5-extra_output",
+      "case": "S5",
+      "repeat": 3,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "output",
+            "identity",
+            "answer",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": []
+      },
+      "changed_role_matches_frozen_reference": true,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": true
+    },
+    {
+      "id": "S6-target",
+      "case": "S6",
+      "repeat": 1,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S6-relationship",
+      "case": "S6",
+      "repeat": 1,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S6-attachment",
+      "case": "S6",
+      "repeat": 1,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S6-negation",
+      "case": "S6",
+      "repeat": 1,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S6-extra_output",
+      "case": "S6",
+      "repeat": 1,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S6-target",
+      "case": "S6",
+      "repeat": 2,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S6-relationship",
+      "case": "S6",
+      "repeat": 2,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S6-attachment",
+      "case": "S6",
+      "repeat": 2,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S6-negation",
+      "case": "S6",
+      "repeat": 2,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S6-extra_output",
+      "case": "S6",
+      "repeat": 2,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S6-target",
+      "case": "S6",
+      "repeat": 3,
+      "kind": "target",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S6-relationship",
+      "case": "S6",
+      "repeat": 3,
+      "kind": "relationship",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S6-attachment",
+      "case": "S6",
+      "repeat": 3,
+      "kind": "attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S6-negation",
+      "case": "S6",
+      "repeat": 3,
+      "kind": "negation",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "S6-extra_output",
+      "case": "S6",
+      "repeat": 3,
+      "kind": "extra_output",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "U1-omission",
+      "case": "U1",
+      "repeat": 1,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": false
+    },
+    {
+      "id": "U1-omission",
+      "case": "U1",
+      "repeat": 2,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": false
+    },
+    {
+      "id": "U1-omission",
+      "case": "U1",
+      "repeat": 3,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [],
+        "only_blind": [
+          [
+            "identity",
+            "Member",
+            "member",
+            "positive",
+            "simon harris"
+          ],
+          [
+            "filter",
+            "term_selection",
+            "term",
+            "negative",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": true
+    },
+    {
+      "id": "U2-omission",
+      "case": "U2",
+      "repeat": 1,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [],
+        "only_blind": [
+          [
+            "coverage",
+            "certified_history",
+            "source",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": true
+    },
+    {
+      "id": "U2-omission",
+      "case": "U2",
+      "repeat": 2,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "coverage",
+            "local_recorded",
+            "source",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "coverage",
+            "certified_history",
+            "source",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": true
+    },
+    {
+      "id": "U2-omission",
+      "case": "U2",
+      "repeat": 3,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [
+          [
+            "coverage",
+            "local_recorded",
+            "source",
+            "positive",
+            ""
+          ]
+        ],
+        "only_blind": [
+          [
+            "coverage",
+            "certified_history",
+            "source",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": true
+    },
+    {
+      "id": "U3-omission",
+      "case": "U3",
+      "repeat": 1,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": false
+    },
+    {
+      "id": "U3-condition-attachment",
+      "case": "U3",
+      "repeat": 1,
+      "kind": "condition_attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "U3-omission",
+      "case": "U3",
+      "repeat": 2,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": false
+    },
+    {
+      "id": "U3-condition-attachment",
+      "case": "U3",
+      "repeat": 2,
+      "kind": "condition_attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "U3-omission",
+      "case": "U3",
+      "repeat": 3,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": false
+    },
+    {
+      "id": "U3-condition-attachment",
+      "case": "U3",
+      "repeat": 3,
+      "kind": "condition_attachment",
+      "B1": "reject",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": false,
+      "semantic_detection": false
+    },
+    {
+      "id": "U4-omission",
+      "case": "U4",
+      "repeat": 1,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [],
+        "only_blind": [
+          [
+            "filter",
+            "other",
+            "service",
+            "negative",
+            "end date"
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": true
+    },
+    {
+      "id": "U4-omission",
+      "case": "U4",
+      "repeat": 2,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "unresolved_semantics"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": false
+    },
+    {
+      "id": "U4-omission",
+      "case": "U4",
+      "repeat": 3,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": false
+    },
+    {
+      "id": "U5-omission",
+      "case": "U5",
+      "repeat": 1,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": false
+    },
+    {
+      "id": "U5-omission",
+      "case": "U5",
+      "repeat": 2,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": false
+    },
+    {
+      "id": "U5-omission",
+      "case": "U5",
+      "repeat": 3,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "error": "role_value_mismatch"
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": false
+    },
+    {
+      "id": "U6-omission",
+      "case": "U6",
+      "repeat": 1,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [],
+        "only_blind": [
+          [
+            "output",
+            "term_list",
+            "answer",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": true
+    },
+    {
+      "id": "U6-omission",
+      "case": "U6",
+      "repeat": 2,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [],
+        "only_blind": [
+          [
+            "output",
+            "term_list",
+            "answer",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": true
+    },
+    {
+      "id": "U6-omission",
+      "case": "U6",
+      "repeat": 3,
+      "kind": "omission",
+      "B1": "admit",
+      "B2": "reject",
+      "comparison": {
+        "equal": false,
+        "only_candidate": [],
+        "only_blind": [
+          [
+            "output",
+            "term_list",
+            "answer",
+            "positive",
+            ""
+          ]
+        ]
+      },
+      "changed_role_matches_frozen_reference": null,
+      "omission_credit_requires_independent_semantics_review": true,
+      "semantic_detection": true
+    }
+  ],
+  "variability": {
+    "S1": {
+      "B1_stable": true,
+      "B2_stable": true,
+      "proposal_exact_stable": false,
+      "proposal_semantic_stable": true,
+      "blind_exact_stable": false,
+      "blind_semantic_stable": true
+    },
+    "S2": {
+      "B1_stable": true,
+      "B2_stable": true,
+      "proposal_exact_stable": false,
+      "proposal_semantic_stable": true,
+      "blind_exact_stable": false,
+      "blind_semantic_stable": true
+    },
+    "S3": {
+      "B1_stable": true,
+      "B2_stable": true,
+      "proposal_exact_stable": false,
+      "proposal_semantic_stable": true,
+      "blind_exact_stable": false,
+      "blind_semantic_stable": false
+    },
+    "S4": {
+      "B1_stable": true,
+      "B2_stable": true,
+      "proposal_exact_stable": false,
+      "proposal_semantic_stable": true,
+      "blind_exact_stable": false,
+      "blind_semantic_stable": true
+    },
+    "S5": {
+      "B1_stable": false,
+      "B2_stable": false,
+      "proposal_exact_stable": false,
+      "proposal_semantic_stable": true,
+      "blind_exact_stable": false,
+      "blind_semantic_stable": true
+    },
+    "S6": {
+      "B1_stable": true,
+      "B2_stable": true,
+      "proposal_exact_stable": false,
+      "proposal_semantic_stable": true,
+      "blind_exact_stable": false,
+      "blind_semantic_stable": true
+    },
+    "U1": {
+      "B1_stable": true,
+      "B2_stable": true,
+      "proposal_exact_stable": false,
+      "proposal_semantic_stable": false,
+      "blind_exact_stable": false,
+      "blind_semantic_stable": false
+    },
+    "U2": {
+      "B1_stable": true,
+      "B2_stable": true,
+      "proposal_exact_stable": false,
+      "proposal_semantic_stable": true,
+      "blind_exact_stable": false,
+      "blind_semantic_stable": false
+    },
+    "U3": {
+      "B1_stable": true,
+      "B2_stable": true,
+      "proposal_exact_stable": false,
+      "proposal_semantic_stable": false,
+      "blind_exact_stable": false,
+      "blind_semantic_stable": false
+    },
+    "U4": {
+      "B1_stable": true,
+      "B2_stable": true,
+      "proposal_exact_stable": false,
+      "proposal_semantic_stable": false,
+      "blind_exact_stable": false,
+      "blind_semantic_stable": false
+    },
+    "U5": {
+      "B1_stable": true,
+      "B2_stable": true,
+      "proposal_exact_stable": false,
+      "proposal_semantic_stable": false,
+      "blind_exact_stable": false,
+      "blind_semantic_stable": false
+    },
+    "U6": {
+      "B1_stable": true,
+      "B2_stable": true,
+      "proposal_exact_stable": false,
+      "proposal_semantic_stable": false,
+      "blind_exact_stable": false,
+      "blind_semantic_stable": true
+    }
+  },
+  "usage": {
+    "calls": 72,
+    "preflight": 0,
+    "completed_schema_valid": 72,
+    "http_statuses": {
+      "200": 72
+    },
+    "input_tokens": 141606,
+    "output_tokens": 117097,
+    "cached_tokens": 125555,
+    "reported_cost": 0.06180508000000001,
+    "non_numeric_cost_payloads": [],
+    "models_returned": {
+      "gpt-6-luna": 72
+    },
+    "cost_unit": "not specified in provider payload; not independently reconciled billing"
+  },
+  "latency_seconds": {
+    "proposal": {
+      "median": 15.319,
+      "p95": 25.766,
+      "minimum": 9.21,
+      "maximum": 26.736,
+      "sum": 571.001
+    },
+    "blind": {
+      "median": 13.473,
+      "p95": 23.917,
+      "minimum": 7.861,
+      "maximum": 24.632,
+      "sum": 545.333
+    },
+    "parallel_pair_wall_proxy": {
+      "median": 16.336,
+      "p95": 25.766,
+      "minimum": 10.321,
+      "maximum": 26.736,
+      "sum": 624.913
+    },
+    "sequential_pair_sum": {
+      "median": 29.888,
+      "p95": 47.925,
+      "minimum": 19.648000000000003,
+      "maximum": 48.56399999999999,
+      "sum": 1116.334
+    }
+  }
+}

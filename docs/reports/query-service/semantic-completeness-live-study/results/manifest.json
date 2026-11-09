@@ -1,0 +1,21 @@
+{
+  "baseline": "da74faf572651882a16c404413a86857658e871a",
+  "protocol_commit": "1c72e7ce08cdc5cb0c2b75e411c101ec0461e916",
+  "model": "gpt-6-luna",
+  "base_url": "https://opencode.ai/inference/openai/v1",
+  "max_output_tokens": 3000,
+  "timeout_seconds": 60,
+  "temperature": "omitted/provider default",
+  "reasoning": "omitted/provider default",
+  "seed": "omitted",
+  "store": "omitted/provider default",
+  "repetitions": 2,
+  "maximum_concurrency": 2,
+  "retry_count": 0,
+  "files": {
+    "cases.json": "a3d0d96fdc42aa11f5fd0e26d1c69d633a3af0851a732db393ae6761c640f734",
+    "protocol.md": "dfff73b5414f6fe0f9acfa460957bc326d3b3a2cf45d4257f0ccf8d3110412b3",
+    "run.py": "b135a3ef72185456110b3595fb36dfe99e85abf7668b3aea2e9606e7993cef69",
+    "grounding.json": "0fe7f8d634e57aada599ec7e456774f054c2cf604428a25fd7fbd9b985fc927e"
+  }
+}

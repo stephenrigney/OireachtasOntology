@@ -1,0 +1,61 @@
+{
+  "baseline": "42ecedaef71b769f4c8832af98db8a08d2393ebe",
+  "pre_execution_freeze_commit": "ad7ef73",
+  "scope": "Static, read-only application investigation; new report/scripts only; not production acceptance",
+  "original_file_integrity": {
+    "baseline_tracked_files": 586,
+    "changed_original_paths": [],
+    "digest_algorithm": "SHA256 of sorted tracked path + NUL + SHA256(file bytes) + newline, excluding newly added experiment paths",
+    "before_sha256": "946f1e127603849d00166ec6891215cb424100215400b6822c1feb65335724d1",
+    "after_sha256": "946f1e127603849d00166ec6891215cb424100215400b6822c1feb65335724d1",
+    "per_file_git_blob_comparison_to_baseline": "all 586 equal",
+    "coverage": "Includes application, specs/contracts, ontology, ETL, mappings, fixtures, all frozen implementation/evaluation and pilot artifacts"
+  },
+  "checks": [
+    {
+      "command": ".venv/bin/python docs/reports/query-service/semantic-completeness-experiment/run_static.py --output <new-path>",
+      "runs": 3,
+      "question_evaluations_per_run": 30,
+      "byte_identical_results": true,
+      "durable_output": "static-results.json",
+      "output_sha256": "20854442fbced56b30f8434e0f089facabe8d03cdde93ae3f4a3e91f41b76ec7",
+      "repeat_output_paths_disposable": [
+        "/tmp/opencode/semantic-completeness-ses_e40aa877-repeat-2.json",
+        "/tmp/opencode/semantic-completeness-ses_e40aa877-repeat-3.json"
+      ]
+    },
+    {
+      "command": ".venv/bin/python -m pytest tests/test_nlq_term_count_intent.py tests/test_nlq_composable_semantic_capability_discovery.py -q",
+      "passed": 209,
+      "warnings": 1,
+      "warning": "Existing Starlette/httpx TestClient deprecation",
+      "duration_seconds": 47.77
+    },
+    {"command": "git diff --check", "result": "passed"},
+    {"command": ".venv/bin/python -m json.tool docs/reports/query-service/semantic-completeness-experiment/cases.json", "result": "passed"},
+    {
+      "check": "Attempt output overwrite, parse all experiment JSON, verify case/script/source hashes against retained results",
+      "result": "passed; overwrite refused with exit 2 and existing output bytes unchanged"
+    }
+  ],
+  "live_configuration": {
+    "NLQ_LLM_process_settings": "absent",
+    "worktree_dotenv": "absent",
+    "primary_checkout_dotenv": "absent",
+    "model_calls": 0,
+    "no_substitute_provider_or_credential_store_search": true
+  },
+  "live_execution_or_data_calls": 0,
+  "focused_tests": "Existing mocked in-process TestClient /ask checks, not live service/provider/data requests",
+  "production_acceptance_campaign": false,
+  "full_test_suite_or_ontology_reasoner_rerun": false,
+  "verification_rationale": "All original tracked files byte-identical; scoped admission/capability tests and deterministic experiment replay are the smallest credible checks for isolated report/scripts additions.",
+  "pull_request": {
+    "repository": "stephenrigney/OireachtasOntology",
+    "number": 27,
+    "state": "OPEN",
+    "isDraft": true,
+    "mergedAt": null,
+    "acceptance": "NOT ACCEPTED; unchanged"
+  }
+}

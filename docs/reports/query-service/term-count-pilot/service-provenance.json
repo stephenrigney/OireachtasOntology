@@ -1,0 +1,16 @@
+{
+  "source_commit": "293ab74fa0f389217a31368a523b9c21e424cef2",
+  "pid": 2091959,
+  "working_directory": "/var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-user-coverage",
+  "bind": "127.0.0.1:8002",
+  "no_reload": true,
+  "launch_note": "Started after source checkpoint 293ab74, before corrected replay. No runtime source/spec changes afterward. Existing services on ports 8000/8001 untouched.",
+  "configuration": {
+    "NLQ_LLM_MODEL": "gpt-6-luna",
+    "NLQ_LLM_BASE_URL": "https://opencode.ai/inference/openai/v1",
+    "NLQ_FUSEKI_QUERY_URL": "http://localhost:3030/houses/query",
+    "OIR_NLQ_AS_OF_DATE": "2026-11-06"
+  },
+  "credentials": "Not recorded",
+  "shutdown": "Owned pilot service stopped after final diagnostic request"
+}

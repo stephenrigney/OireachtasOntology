@@ -1,0 +1,441 @@
+{
+  "provenance": {
+    "collected_utc": "2026-11-06T22:55:55.982398+00:00",
+    "source_commit": "df35d44115a4a1f8e03eecca2ebfa8107820b2cd",
+    "service_url": "http://127.0.0.1:8001",
+    "runs": 1,
+    "workers": 2
+  },
+  "cases": [
+    {
+      "id": "H01",
+      "question": "Find the parliamentary record for Deputy Joan Burton.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H02",
+      "question": "Find the parliamentary record for Deputy Róisín Shortall.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H03",
+      "question": "Which constituency does Alan Kelly represent now?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H04",
+      "question": "In Eamon Gilmore's latest recorded Dáil term, what was his constituency?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H05",
+      "question": "List every constituency Frances Fitzgerald has represented in the Dáil, keeping the terms separate.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H06",
+      "question": "How many distinct Dáil terms appear in Brendan Howlin's membership record?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H07",
+      "question": "How many distinct Dáil terms appear in Catherine Connolly's membership record?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H08",
+      "question": "Show the Dáil terms common to the service records of Joan Burton and Alan Kelly.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H09",
+      "question": "Show the Dáil terms common to the service records of Dick Spring and Brendan Howlin.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H10",
+      "question": "Show the Dáil terms common to the service records of Mary Robinson and Ivana Bacik.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H11",
+      "question": "Give me the Members whose records include both the 25th and 28th Dáil.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H12",
+      "question": "Give me the Members whose records include both the 30th and 32nd Dáil.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H13",
+      "question": "Give the recorded TD roster for Kerry North in Dáil number 24.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H14",
+      "question": "Give the recorded TD roster for Wexford in Dáil number 30.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H15",
+      "question": "Give the recorded TD roster for Tipperary in Dáil number 32.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H16",
+      "question": "Count the distinct people recorded as representing Cork South-West in the 31st Dáil.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H17",
+      "question": "Count the distinct people recorded as representing Galway West in this Dáil.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H18",
+      "question": "Count the distinct people recorded as representing Kerry North in the 24th Dáil.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H19",
+      "question": "Who are the TDs for Louth today?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H20",
+      "question": "How many different TDs represent Louth right now?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H21",
+      "question": "Who represented Dublin Bay North on 15 June 2019?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H22",
+      "question": "As of 1 July 2021, how many distinct Members represented Dublin Bay North?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H23",
+      "question": "Which Labour Party Members represented Wexford during the 31st Dáil?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H24",
+      "question": "Which Fine Gael Members represented Cork South-Central during the 32nd Dáil?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H25",
+      "question": "Count distinct recorded Labour Party Members in Dáil 31, rather than seats.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H26",
+      "question": "Count distinct recorded Sinn Féin Members in Dáil 32, rather than seats.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H27",
+      "question": "List Fine Gael representatives for either Mayo or Galway West in the 32nd Dáil.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H28",
+      "question": "List Labour Party representatives for either Wexford or Longford-Westmeath in the 31st Dáil.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H29",
+      "question": "Who else represented the same constituency as Brendan Howlin in Dáil 32?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H30",
+      "question": "How many other Members shared Alan Kelly's constituency in the previous Dáil?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H31",
+      "question": "Who else represented the same constituency as Willie O'Dea in Dáil 31?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H32",
+      "question": "Who held the office of Minister for Finance during 2022?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H33",
+      "question": "Who held the office of Tánaiste on 1 July 2003?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H34",
+      "question": "Who held the office of Taoiseach at any time in June 1958?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H35",
+      "question": "Who holds the office of Minister for Finance now?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H36",
+      "question": "What periods was Dick Spring Tánaiste?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H37",
+      "question": "What periods was Albert Reynolds Taoiseach?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H38",
+      "question": "Which Dáil term or terms were in existence on 1 September 1997?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H39",
+      "question": "Which Dáil term or terms were in existence during November 2024?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H40",
+      "question": "Which Dáil term or terms were in existence during February 2020?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H41",
+      "question": "What was the seat complement of the 28th Dáil?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H42",
+      "question": "List the parliamentary parties recorded for Dáil 30; I am not asking for groups.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H43",
+      "question": "Which people have a membership record in both the current Dáil term and the current Seanad term, even if the periods did not overlap?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H44",
+      "question": "Which other Fine Gael Members represented Enda Kenny's constituency in the 32nd Dáil while he was Taoiseach?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H45",
+      "question": "Name the current Labour Party Senators.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H46",
+      "question": "How many distinct current Senators belong to Fine Gael?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H47",
+      "question": "Name current Senators whose recorded TD service ended before their current Seanad membership started.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H48",
+      "question": "Count the distinct current Senators with a recorded Dáil membership ending strictly before their current Seanad membership began.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H49",
+      "question": "How many Bills did Brendan Howlin sponsor that were published in 2021?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H50",
+      "question": "Show the Bills with recorded sponsorship participation by Catherine Connolly.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H51",
+      "question": "At which election was Alan Kelly first elected to the Dáil?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H52",
+      "question": "For how many years in total was Dick Spring Tánaiste?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H53",
+      "question": "Which women were Members of both the 25th and 28th Dáil?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H54",
+      "question": "Which Dáil terms were shared by Joan Burton, Alan Kelly and Brendan Howlin?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H55",
+      "question": "Find Deputy Murphy.",
+      "source": "holdout60"
+    },
+    {
+      "id": "H56",
+      "question": "Who represented western constituencies for Fine Gael in the 32nd Dáil?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H57",
+      "question": "Who served simultaneously in the current Dáil and current Seanad?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H58",
+      "question": "How many women represented Wexford in the 31st Dáil?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H59",
+      "question": "Where was Róisín Shortall born?",
+      "source": "holdout60"
+    },
+    {
+      "id": "H60",
+      "question": "Who will be Minister for Finance in 2028?",
+      "source": "holdout60"
+    },
+    {
+      "id": "R01",
+      "question": "Who are the Sinn Féin TDs for Dublin Central?",
+      "source": "original26"
+    },
+    {
+      "id": "R02",
+      "question": "Find a Deputy called Browne",
+      "source": "original26"
+    },
+    {
+      "id": "R03",
+      "question": "What were the parties during the 12th Dáil?",
+      "source": "original26"
+    },
+    {
+      "id": "R04",
+      "question": "How long was Stephen Donnelly Minister for Health?",
+      "source": "original26"
+    },
+    {
+      "id": "R05",
+      "question": "When was Jack Lynch first elected?",
+      "source": "original26"
+    },
+    {
+      "id": "R06",
+      "question": "What constituencies did Jack Lynch represent?",
+      "source": "original26"
+    },
+    {
+      "id": "R07",
+      "question": "When was Bertie Ahern the Taoiseach?",
+      "source": "original26"
+    },
+    {
+      "id": "R08",
+      "question": "When was Bertie Ahern elected Taoiseach",
+      "source": "original26"
+    },
+    {
+      "id": "R09",
+      "question": "Who were the other Fianna Fáil TDs in the same constituency as Bertie Ahern while he was Taoiseach?",
+      "source": "original26"
+    },
+    {
+      "id": "R10",
+      "question": "Who is the Taoiseach?",
+      "source": "original26"
+    },
+    {
+      "id": "R11",
+      "question": "Who is the current Taoiseach?",
+      "source": "original26"
+    },
+    {
+      "id": "R12",
+      "question": "Who was the Taoiseach in 1994?",
+      "source": "original26"
+    },
+    {
+      "id": "R13",
+      "question": "Who was the Taoiseach in June 1994?",
+      "source": "original26"
+    },
+    {
+      "id": "R14",
+      "question": "Who were the Senators on the Agriculture Panel in June 1994?",
+      "source": "original26"
+    },
+    {
+      "id": "R15",
+      "question": "What was the start date of the Dáil which was sitting in June 1994?",
+      "source": "original26"
+    },
+    {
+      "id": "R16",
+      "question": "How many TDs represented the Dublin Central constituency in this Dáil?",
+      "source": "original26"
+    },
+    {
+      "id": "R17",
+      "question": "Who are the TDs for Dublin Central and when were they first elected?",
+      "source": "original26"
+    },
+    {
+      "id": "R18",
+      "question": "What constituency did Bertie Ahern represent in his last term in the Dáil?",
+      "source": "original26"
+    },
+    {
+      "id": "R19",
+      "question": "Who was a Senator in the current Seanad and a Deputy in the current Dáil?",
+      "source": "original26"
+    },
+    {
+      "id": "R20",
+      "question": "What current Senators previously served in the Dáil?",
+      "source": "original26"
+    },
+    {
+      "id": "R21a",
+      "question": "Who are the Fine Gael TDs in the two Galway constituencies?",
+      "source": "original26"
+    },
+    {
+      "id": "R21b",
+      "question": "Who are the Fine Gael TDs in Galway East and Galway West?",
+      "source": "original26"
+    },
+    {
+      "id": "R22",
+      "question": "How many TDs currently represent Meath East constituency?",
+      "source": "original26"
+    },
+    {
+      "id": "R23",
+      "question": "How many Fine Gael Senators are in the current Seanad?",
+      "source": "original26"
+    },
+    {
+      "id": "R24",
+      "question": "How many other TDs were in the same constituency as Mary Lou McDonald during the last Dáil?",
+      "source": "original26"
+    },
+    {
+      "id": "R25",
+      "question": "How many Fine Gael TDs were in the 27th Dáil?",
+      "source": "original26"
+    }
+  ]
+}

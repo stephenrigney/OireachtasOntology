@@ -1,0 +1,9 @@
+{
+  "baseline": "40a681c5ca0b707b0acf859067d2851085872357",
+  "blobs_checked": 666,
+  "changed": [],
+  "experimental_model_calls_so_far": 0,
+  "existing_tests": "329 passed; existing-tests.txt",
+  "shadow_selftest": "passed",
+  "python_compilation": "passed"
+}

@@ -1,0 +1,303 @@
+{
+  "timestamp": "2026-11-07T00:03:22.776607+00:00",
+  "scope": "Validator-only adversarial probes; no /ask or data queries, not incorrect returned factual answers. Uncommitted intermediate source.",
+  "source_sha256": "a04942ab754f6e3f93d818e5033ab22b2cd03564d8361d84f130ccf22f5a47f4",
+  "cases": [
+    {
+      "id": "P1",
+      "question": "Which Seanad terms did Micheál Martin and Mary Lou McDonald both serve in?",
+      "draft": {
+        "version": 2,
+        "supported": true,
+        "family": "shared_dail_terms",
+        "unsupportedReason": null,
+        "intent": "Find the exact Dáil terms shared by the two named Members.",
+        "referents": {
+          "member_a": {
+            "type": "Member",
+            "mention": "Micheál Martin"
+          },
+          "membership_a": {
+            "type": "DailMembership",
+            "mention": null
+          },
+          "member_b": {
+            "type": "Member",
+            "mention": "Mary Lou McDonald"
+          },
+          "membership_b": {
+            "type": "DailMembership",
+            "mention": null
+          },
+          "shared_term": {
+            "type": "DailTerm",
+            "mention": null
+          }
+        },
+        "relations": [
+          {
+            "id": "edge_member_has_membership_member_a_membership_a",
+            "fact": "member_has_membership",
+            "from": "member_a",
+            "to": "membership_a"
+          },
+          {
+            "id": "edge_membership_in_term_membership_a_shared_term",
+            "fact": "membership_in_term",
+            "from": "membership_a",
+            "to": "shared_term"
+          },
+          {
+            "id": "edge_member_has_membership_member_b_membership_b",
+            "fact": "member_has_membership",
+            "from": "member_b",
+            "to": "membership_b"
+          },
+          {
+            "id": "edge_membership_in_term_membership_b_shared_term",
+            "fact": "membership_in_term",
+            "from": "membership_b",
+            "to": "shared_term"
+          }
+        ],
+        "constraints": [],
+        "answer": {
+          "kind": "entities",
+          "referent": "shared_term",
+          "distinctBy": "identity",
+          "display": [
+            "label"
+          ],
+          "details": [],
+          "preserveEvidence": false
+        }
+      },
+      "expected": "rejected",
+      "actual": "accepted_unsupported_intent",
+      "diagnostic": null
+    },
+    {
+      "id": "P2",
+      "question": "Which Dáil terms did Micheál Martin and Mary Lou McDonald both serve in while representing Cork South-Central?",
+      "draft": {
+        "version": 2,
+        "supported": true,
+        "family": "shared_dail_terms",
+        "unsupportedReason": null,
+        "intent": "Find the exact Dáil terms shared by the two named Members.",
+        "referents": {
+          "member_a": {
+            "type": "Member",
+            "mention": "Micheál Martin"
+          },
+          "membership_a": {
+            "type": "DailMembership",
+            "mention": null
+          },
+          "member_b": {
+            "type": "Member",
+            "mention": "Mary Lou McDonald"
+          },
+          "membership_b": {
+            "type": "DailMembership",
+            "mention": null
+          },
+          "shared_term": {
+            "type": "DailTerm",
+            "mention": null
+          }
+        },
+        "relations": [
+          {
+            "id": "edge_member_has_membership_member_a_membership_a",
+            "fact": "member_has_membership",
+            "from": "member_a",
+            "to": "membership_a"
+          },
+          {
+            "id": "edge_membership_in_term_membership_a_shared_term",
+            "fact": "membership_in_term",
+            "from": "membership_a",
+            "to": "shared_term"
+          },
+          {
+            "id": "edge_member_has_membership_member_b_membership_b",
+            "fact": "member_has_membership",
+            "from": "member_b",
+            "to": "membership_b"
+          },
+          {
+            "id": "edge_membership_in_term_membership_b_shared_term",
+            "fact": "membership_in_term",
+            "from": "membership_b",
+            "to": "shared_term"
+          }
+        ],
+        "constraints": [],
+        "answer": {
+          "kind": "entities",
+          "referent": "shared_term",
+          "distinctBy": "identity",
+          "display": [
+            "label"
+          ],
+          "details": [],
+          "preserveEvidence": false
+        }
+      },
+      "expected": "rejected",
+      "actual": "accepted_unsupported_intent",
+      "diagnostic": null
+    },
+    {
+      "id": "P3",
+      "question": "Which Dáil terms did Micheál Martin and Mary Lou McDonald both serve in, and did Leo Varadkar serve in them too?",
+      "draft": {
+        "version": 2,
+        "supported": true,
+        "family": "shared_dail_terms",
+        "unsupportedReason": null,
+        "intent": "Find the exact Dáil terms shared by the two named Members.",
+        "referents": {
+          "member_a": {
+            "type": "Member",
+            "mention": "Micheál Martin"
+          },
+          "membership_a": {
+            "type": "DailMembership",
+            "mention": null
+          },
+          "member_b": {
+            "type": "Member",
+            "mention": "Mary Lou McDonald"
+          },
+          "membership_b": {
+            "type": "DailMembership",
+            "mention": null
+          },
+          "shared_term": {
+            "type": "DailTerm",
+            "mention": null
+          }
+        },
+        "relations": [
+          {
+            "id": "edge_member_has_membership_member_a_membership_a",
+            "fact": "member_has_membership",
+            "from": "member_a",
+            "to": "membership_a"
+          },
+          {
+            "id": "edge_membership_in_term_membership_a_shared_term",
+            "fact": "membership_in_term",
+            "from": "membership_a",
+            "to": "shared_term"
+          },
+          {
+            "id": "edge_member_has_membership_member_b_membership_b",
+            "fact": "member_has_membership",
+            "from": "member_b",
+            "to": "membership_b"
+          },
+          {
+            "id": "edge_membership_in_term_membership_b_shared_term",
+            "fact": "membership_in_term",
+            "from": "membership_b",
+            "to": "shared_term"
+          }
+        ],
+        "constraints": [],
+        "answer": {
+          "kind": "entities",
+          "referent": "shared_term",
+          "distinctBy": "identity",
+          "display": [
+            "label"
+          ],
+          "details": [],
+          "preserveEvidence": false
+        }
+      },
+      "expected": "rejected",
+      "actual": "accepted_unsupported_intent",
+      "diagnostic": null
+    },
+    {
+      "id": "P4",
+      "question": "What constituencies did Bertie Ahern represent, and what office did he hold?",
+      "draft": {
+        "version": 2,
+        "supported": true,
+        "family": "constituency_representation",
+        "unsupportedReason": null,
+        "intent": "Return the named Member's constituency evidence in the requested Dáil-term scope.",
+        "referents": {
+          "member": {
+            "type": "Member",
+            "mention": "Bertie Ahern"
+          },
+          "membership": {
+            "type": "DailMembership",
+            "mention": null
+          },
+          "term": {
+            "type": "DailTerm",
+            "mention": null,
+            "selector": null
+          },
+          "constituency": {
+            "type": "DailConstituency",
+            "mention": null
+          }
+        },
+        "relations": [
+          {
+            "id": "edge_member_has_membership_member_membership",
+            "fact": "member_has_membership",
+            "from": "member",
+            "to": "membership"
+          },
+          {
+            "id": "edge_membership_in_term_membership_term",
+            "fact": "membership_in_term",
+            "from": "membership",
+            "to": "term"
+          },
+          {
+            "id": "edge_membership_represents_membership_constituency",
+            "fact": "membership_represents",
+            "from": "membership",
+            "to": "constituency"
+          },
+          {
+            "id": "edge_constituency_in_term_constituency_term",
+            "fact": "constituency_in_term",
+            "from": "constituency",
+            "to": "term"
+          }
+        ],
+        "constraints": [],
+        "answer": {
+          "kind": "entities",
+          "referent": "constituency",
+          "distinctBy": "identity",
+          "display": [
+            "label"
+          ],
+          "details": [
+            {
+              "referent": "term",
+              "display": [
+                "label"
+              ]
+            }
+          ],
+          "preserveEvidence": true
+        }
+      },
+      "expected": "rejected",
+      "actual": "accepted_unsupported_intent",
+      "diagnostic": null
+    }
+  ]
+}

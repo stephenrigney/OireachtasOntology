@@ -1,0 +1,38 @@
+{
+  "purpose": "Exact identity-set oracle for pilot ambiguity probe P07, independent of /ask",
+  "timestamp_utc": "2026-11-08T10:01:50.027714+00:00",
+  "endpoint": "http://localhost:3030/houses/query",
+  "query": "PREFIX agents: <https://data.oireachtas.ie/ontology#>\nPREFIX foaf: <http://xmlns.com/foaf/0.1/>\nSELECT DISTINCT ?member ?name WHERE {\n GRAPH ?g { ?member a agents:Member; foaf:name ?name . FILTER(STR(?name) = \"Brendan Griffin\") }\n FILTER(STRSTARTS(STR(?g), \"https://data.oireachtas.ie/graph/member/\"))\n} ORDER BY ?member",
+  "response": {
+    "head": {
+      "vars": [
+        "member",
+        "name"
+      ]
+    },
+    "results": {
+      "bindings": [
+        {
+          "member": {
+            "type": "uri",
+            "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Brendan-Griffin.D.1973-03-14"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Brendan Griffin"
+          }
+        },
+        {
+          "member": {
+            "type": "uri",
+            "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Brendan-Griffin.D.2011-03-09"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Brendan Griffin"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "source_commit": "6eb109e",
+  "cases": 31,
+  "http_200": 31,
+  "outcomes": {
+    "validation_failure": 29,
+    "clarification_required": 1,
+    "answer": 1
+  },
+  "interpretation": "Retained first pilot replay. All planner-dependent cases blocked by unsupported uniqueItems schema keyword; these provider failures are not evidence of semantic refusal or factual success. Later replay is a separate corrected source checkpoint, not substituted first results."
+}

@@ -1,0 +1,14 @@
+{
+  "purpose": "Bounded pilot development checks, not rerun or replacement of frozen acceptance",
+  "cases": [
+    {"id": "P01", "question": "How many distinct Dáil terms does the Member record for Micheál Martin link to?", "expectation": {"count": 9}, "source": "QD-04 wording now separately authorised development material; oracle unchanged"},
+    {"id": "P02", "question": "How many distinct Dáil terms appear in Micheál Martin's membership record?", "expectation": {"count": 9}, "source": "existing development relationship wording, same exact Member as P01"},
+    {"id": "P03", "question": "How many distinct Dáil terms does the Member record for Micheál Martin link to as a Fianna Fáil TD?", "expectation": {"refusal": true}},
+    {"id": "P04", "question": "How many distinct Dáil terms does the Member record for Micheál Martin link to after 2000?", "expectation": {"refusal": true}},
+    {"id": "P05", "question": "How many distinct Dáil terms does the Member record for Micheál Martin link to and list their start dates?", "expectation": {"refusal": true}},
+    {"id": "P06", "question": "How many membership records link Micheál Martin to Dáil terms?", "expectation": {"refusal": true}},
+    {"id": "P07", "question": "How many distinct Dáil terms does the Member record for Brendan Griffin link to?", "expectation": {"ambiguity": true, "candidateCount": 2}},
+    {"id": "P08", "question": "How many distinct Dáil terms does the Member record for Micheál Martin link to, rather than membership rows?", "expectation": {"count": 9}},
+    {"id": "P09", "question": "How many distinct Dáil terms has Micheál Martin served in?", "expectation": {"count": 9}, "source": "service-relation equivalence control"}
+  ]
+}

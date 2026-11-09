@@ -1,0 +1,606 @@
+{
+  "experiment": "offline admission and injected-omission diagnostics; not acceptance",
+  "baseline": "42ecedaef71b769f4c8832af98db8a08d2393ebe",
+  "cases_sha256": "24e7db1b55c783d73436625847450f6b60faaf1f5a38c0a09befe3f4e03bdb3a",
+  "script_sha256": "2c70b8ab637f011b0b93dd566392197f65fcfe8a32c24adae5b3ed832066b67e",
+  "source_sha256": {
+    "poc/nlq/term_count_intent.py": "c3c2e846b6de574a7513fbced05ba4eb3b25913c7abf5ec533689cdb9ecdacb6",
+    "poc/nlq/composable_semantic_planner.py": "2d141c0913a5fc3ec8dceaef01ac57778d688fd7caf0a57d7c6ad5ec61a711ac",
+    "poc/nlq/composable_plan.py": "302688568be9d8bd889d0ada47a91c690d61481694fd1befd19192b4376a8ded",
+    "poc/nlq/stage_a.py": "700084ed861a006a05a00d69a19060defaa019d696eb6134b5bde084d0c50256",
+    "poc/specs/composable-query-plan-contract.json": "249855aebed824c2df3c61b3c97a5d69a6b17616eca28823e8ce80701e51335f",
+    "poc/specs/composable-query-plan-draft.schema.json": "c9b053fe6eecd0b0bd0dd1cae699e47cc01485cd28c88d0fae0fc1c21f8596b0"
+  },
+  "model_calls": 0,
+  "execution_calls": 0,
+  "live_unavailability": "No NLQ_LLM_* process settings or .env in current/primary checkout at investigation time; no credential-store search or alternate provider used.",
+  "summary": {
+    "new_diagnostic": {
+      "supported": 7,
+      "grammar_reachable": 0,
+      "grammar_false_refusals": 7,
+      "unsupported": 13,
+      "grammar_unsafe_admissions": 0,
+      "injected_incomplete_proposals_passing_necessary_checks": 13,
+      "ambiguous_cases": 1,
+      "ambiguous_grammar_admissions_not_identity_decisions": 0,
+      "semantic_verification_reachability": null,
+      "semantic_verification_unsafe_admissions": null
+    },
+    "recorded_pilot_development": {
+      "supported": 4,
+      "grammar_reachable": 1,
+      "grammar_false_refusals": 3,
+      "unsupported": 2,
+      "grammar_unsafe_admissions": 0,
+      "injected_incomplete_proposals_passing_necessary_checks": 2,
+      "ambiguous_cases": 0,
+      "ambiguous_grammar_admissions_not_identity_decisions": 0,
+      "semantic_verification_reachability": null,
+      "semantic_verification_unsafe_admissions": null
+    },
+    "executor_authored_sanity_controls": {
+      "supported": 2,
+      "grammar_reachable": 2,
+      "grammar_false_refusals": 0,
+      "unsupported": 0,
+      "grammar_unsafe_admissions": 0,
+      "injected_incomplete_proposals_passing_necessary_checks": 0,
+      "ambiguous_cases": 1,
+      "ambiguous_grammar_admissions_not_identity_decisions": 1,
+      "semantic_verification_reachability": null,
+      "semantic_verification_unsafe_admissions": null
+    }
+  },
+  "rows": [
+    {
+      "id": "NEW-TC-01",
+      "kind": "supported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": null,
+        "scope": "houses_catalogue",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-02",
+      "kind": "unsupported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Micheál Martin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-03",
+      "kind": "supported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Brendan Howlin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-04",
+      "kind": "supported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Mary Lou McDonald",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-05",
+      "kind": "supported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Micheál Martin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-06",
+      "kind": "supported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Brendan Howlin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-07",
+      "kind": "supported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Mary Lou McDonald",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-08",
+      "kind": "unsupported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Micheál Martin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-09",
+      "kind": "unsupported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Brendan Howlin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-10",
+      "kind": "unsupported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Mary Lou McDonald",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-11",
+      "kind": "unsupported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Mary Lou McDonald",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-12",
+      "kind": "unsupported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Micheál Martin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-13",
+      "kind": "unsupported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Brendan Howlin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-14",
+      "kind": "unsupported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Mary Lou McDonald",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-15",
+      "kind": "unsupported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Micheál Martin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-16",
+      "kind": "unsupported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Brendan Howlin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-17",
+      "kind": "unsupported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": null,
+        "scope": "houses_catalogue",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-18",
+      "kind": "unsupported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Mary Lou McDonald",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-19",
+      "kind": "unsupported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Micheál Martin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-20",
+      "kind": "ambiguous",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Brendan Griffin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "NEW-TC-21",
+      "kind": "supported",
+      "population": "new_diagnostic",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Brendan Howlin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": [
+          "membership_records"
+        ]
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "fresh-member-martin",
+      "kind": "supported",
+      "population": "recorded_pilot_development",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Micheál Martin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "fresh-member-howlin",
+      "kind": "supported",
+      "population": "recorded_pilot_development",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Brendan Howlin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "fresh-member-mcdonald",
+      "kind": "supported",
+      "population": "recorded_pilot_development",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Mary Lou McDonald",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "fresh-houses-catalogue",
+      "kind": "supported",
+      "population": "recorded_pilot_development",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": null,
+        "scope": "houses_catalogue",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": true,
+      "lowered_parameters": {},
+      "grammar_diagnostic": null,
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "fresh-negative-party-filter",
+      "kind": "unsupported",
+      "population": "recorded_pilot_development",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Brendan Howlin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "fresh-negative-conflicting-count-target",
+      "kind": "unsupported",
+      "population": "recorded_pilot_development",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Mary Lou McDonald",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": false,
+      "lowered_parameters": null,
+      "grammar_diagnostic": "The complete term-count intent is not representable: expected distinct Dáil terms through one Member's unfiltered recorded service or the Houses catalogue; no additional condition, relationship, count target or answer projection was dropped.",
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "CONTROL-MEMBER",
+      "kind": "supported",
+      "population": "executor_authored_sanity_controls",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Micheál Martin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": true,
+      "lowered_parameters": {
+        "member": "Micheál Martin"
+      },
+      "grammar_diagnostic": null,
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "CONTROL-CONTRAST",
+      "kind": "supported",
+      "population": "executor_authored_sanity_controls",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Micheál Martin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": [
+          "membership_records"
+        ]
+      },
+      "grammar_admitted": true,
+      "lowered_parameters": {
+        "member": "Micheál Martin"
+      },
+      "grammar_diagnostic": null,
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    },
+    {
+      "id": "CONTROL-AMBIGUITY",
+      "kind": "ambiguous",
+      "population": "executor_authored_sanity_controls",
+      "proposal": {
+        "countTarget": "DailTerm",
+        "member": "Brendan Griffin",
+        "scope": "member_service",
+        "answer": "count_distinct",
+        "exclusions": []
+      },
+      "grammar_admitted": true,
+      "lowered_parameters": {
+        "member": "Brendan Griffin"
+      },
+      "grammar_diagnostic": null,
+      "typed_compatibility_only": true,
+      "semantic_verifier_decision": null
+    }
+  ],
+  "incompatible_alterations": [
+    {
+      "field": "countTarget",
+      "value": "DailMembership",
+      "typed_compatibility_only": false
+    },
+    {
+      "field": "member",
+      "value": "Invented Member",
+      "typed_compatibility_only": false
+    },
+    {
+      "field": "scope",
+      "value": "houses_catalogue",
+      "typed_compatibility_only": false
+    },
+    {
+      "field": "answer",
+      "value": "list",
+      "typed_compatibility_only": false
+    },
+    {
+      "field": "exclusions",
+      "value": [
+        "34th Dáil"
+      ],
+      "typed_compatibility_only": false
+    }
+  ]
+}

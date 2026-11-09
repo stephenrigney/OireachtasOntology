@@ -45,6 +45,11 @@ FG_IDENTITY = "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fi
 Q19 = "Who was a Senator in the current Seanad and a Deputy in the current Dáil?"
 Q20 = "What current Senators previously served in the Dáil?"
 Q20_COUNT = "How many current Senators previously served in the Dáil?"
+Q20_TD_SERVICE = "Name current Senators whose recorded TD service ended before their current Seanad membership started."
+Q20_STRICT_MEMBERSHIP_COUNT = (
+    "Count the distinct current Senators with a recorded Dáil membership ending strictly before "
+    "their current Seanad membership began."
+)
 Q23_COUNT = "How many Fine Gael Senators are in the current Seanad?"
 Q23_LIST = "Which Fine Gael Senators are in the current Seanad?"
 
@@ -686,6 +691,11 @@ def test_q20_normalizes_evidence_detail_order_but_rejects_omitted_house_path():
         validate_composable_plan_draft(incomplete, question=Q20)
 
 
+def test_q20_validator_rejects_a_count_draft_for_the_original_list_question():
+    with pytest.raises(InvalidComposableDraft, match="count/list answer mode"):
+        validate_composable_plan_draft(_q20_draft(count=True), question=Q20)
+
+
 @pytest.mark.parametrize("question", [
     Q20,
     "Which present Senators have a recorded earlier Dáil membership?",
@@ -698,6 +708,86 @@ def test_q20_accepts_unseen_prior_service_wordings_without_changing_the_temporal
     assert unsupported is None
     assert final["referents"]["seanad_term"]["selector"] == {"kind": "currentTerm", "house": "Seanad"}
     assert final["referents"]["dail_term"] == {"type": "DailTerm"}
+
+
+def test_q20_transfer_wordings_validate_and_execute_with_the_same_strict_interval_selection():
+    prior = {
+        "slug": "Prior-Service-Transfer", "name": "Prior Service Transfer",
+        "seanad": ("2025-06-12T00:00:00", None),
+        "dail_paths": [(DAIL_TERM_33, ("2020-02-08T00:00:00", "2024-11-08T23:59:59"))],
+    }
+    listed, _ = _run(Q20_TD_SERVICE, _q20_draft(), CurrentHouseFixture(members=[prior]))
+    counted, _ = _run(
+        Q20_STRICT_MEMBERSHIP_COUNT, _q20_draft(count=True),
+        CurrentHouseFixture(members=[prior]),
+    )
+
+    assert listed.status == counted.status == "success", (listed.diagnostic, counted.diagnostic)
+    assert listed.result.rows[0][0] == "Prior Service Transfer"
+    assert counted.result.rows == (("1",),)
+    assert listed.sparql == counted.sparql
+    assert "strictly before" in listed.diagnostic
+    assert "strictly before" in counted.diagnostic
+
+
+@pytest.mark.parametrize(("question", "count"), [
+    ("Name female current Senators whose recorded TD service ended before their current Seanad membership started.", False),
+    ("Name current Senators whose recorded TD service ended before their current Seanad membership started and list their ages.", False),
+    ("Name current Senators whose recorded TD service ended before their current Seanad membership started and identify their offices.", False),
+    ("Name current Senators whose recorded TD service ended before their current Seanad membership started on 1 January 2020.", False),
+    ("Name current Senators whose current Seanad membership ended before their recorded TD service began.", False),
+    ("Name current Senators whose spouse's recorded TD service ended before their current Seanad membership started.", False),
+    ("Name current Senators whose recorded TD service ended before their current Seanad membership started while serving simultaneously.", False),
+    ("Name current Senators whose recorded TD service ended before their current Seanad membership started, although the periods did not overlap.", False),
+    ("Count distinct current Senators whose recorded TD service ended before their current Seanad membership started and also name Mary Lou McDonald.", True),
+])
+def test_q20_synonyms_do_not_erase_gender_outputs_dates_order_or_third_party_conditions(question, count):
+    fixture = CurrentHouseFixture(members=[])
+    outcome, _ = _run(question, _q20_draft(count=count), fixture)
+    assert outcome.status in {"unsupported_request", "validation_failure"}
+    assert outcome.result is None
+    assert not fixture.queries
+
+
+def test_q19_accepts_both_house_membership_with_optional_nonoverlap_disclaimer():
+    question = (
+        "Which Members have recorded service in both this Dáil and this Seanad? "
+        "The membership periods need not overlap."
+    )
+    fixture = CurrentHouseFixture()
+    outcome, _ = _run(question, _q19_draft(), fixture)
+    assert outcome.status == "success", outcome.diagnostic
+    assert outcome.result.rows
+
+
+def test_q23_accepts_current_senators_who_serve_now_through_the_same_party_graph():
+    question = "Show the Fine Gael Senators who serve now."
+    fixture = CurrentHouseFixture(members=[])
+    _add_party_evidence(fixture)
+    outcome, _ = _run(question, _q23_draft(count=False), fixture)
+    assert outcome.status == "success", outcome.diagnostic
+    assert outcome.result.rows
+    assert outcome.plan["referents"]["term"]["selector"] == {
+        "kind": "currentTerm", "house": "Seanad",
+    }
+
+
+@pytest.mark.parametrize(("question", "draft"), [
+    ("Which current Senators never previously served in the Dáil?", _q20_draft()),
+    ("Which female current Senators previously served in the Dáil?", _q20_draft()),
+    ("Which current Senators previously served in the Dáil and list their ages?", _q20_draft()),
+    ("How many current Senators previously served in the Dáil?", _q20_draft()),
+    ("Which female Fine Gael Senators are in the current Seanad?", _q23_draft(count=False)),
+    ("Show the Fine Gael Senators who serve now and list their ages.", _q23_draft(count=False)),
+    ("Show the Fine Gael Senators who serve now.", _q23_draft(count=True)),
+    ("Show the Fine Gael Senators who do not serve now.", _q23_draft(count=False)),
+])
+def test_membership_guards_reject_forced_supported_graphs_before_query(question, draft):
+    fixture = CurrentHouseFixture(members=[])
+    outcome, _ = _run(question, draft, fixture)
+    assert outcome.status in {"validation_failure", "unsupported_request"}
+    assert outcome.result is None
+    assert not fixture.queries
 
 
 def test_q20_user_facing_interpretation_preserves_positive_local_history_qualification(monkeypatch):
@@ -812,6 +902,8 @@ def test_q23_fails_closed_on_uncertain_active_interval_evidence(uncertainty):
         (Q23_COUNT, "numbered_term"),
         ("How many Fine Gael Senators in the current Seanad simultaneously served?", "none"),
         ("How many Fine Gael Senators in committees are in the current Seanad?", "none"),
+        ("How many Fine Gael Senators are in the current Seanad on 1 January 2020?", "none"),
+        ("How many Fine Gael Senators are in the current Seanad during January 2020?", "none"),
     ],
 )
 def test_q23_refuses_wrong_term_or_dropped_temporal_and_relationship_conditions(question, mutation):

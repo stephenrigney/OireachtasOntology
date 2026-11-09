@@ -1,0 +1,55 @@
+........................................................................ [ 21%]
+........................................................................ [ 43%]
+........................................................................ [ 65%]
+........................................................................ [ 87%]
+.........................................                                [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-user-coverage/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_nlq_composable_stage_a.py: 161 warnings
+tests/test_nlq_plan_sparql.py: 10 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-user-coverage/.venv/lib/python3.13/site-packages/rdflib/graph.py:1721: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    query_graph = self.default_context.identifier
+
+tests/test_nlq_composable_stage_a.py: 118 warnings
+tests/test_nlq_plan_sparql.py: 13 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-user-coverage/.venv/lib/python3.13/site-packages/rdflib/plugins/sparql/evaluate.py:233: DeprecationWarning: Dataset.contexts is deprecated, use Dataset.graphs instead.
+    for graph in ctx.dataset.contexts():
+
+tests/test_nlq_composable_stage_a.py: 1662 warnings
+tests/test_nlq_plan_sparql.py: 45 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-user-coverage/.venv/lib/python3.13/site-packages/rdflib/plugins/sparql/evaluate.py:235: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    if graph == ctx.dataset.default_context:
+
+tests/test_nlq_plan_sparql.py::test_deterministic_bill_compiler_and_label_lookup_match_final_etl_graph[bill_title]
+tests/test_nlq_plan_sparql.py::test_deterministic_bill_compiler_and_label_lookup_match_final_etl_graph[bill_status]
+tests/test_nlq_plan_sparql.py::test_deterministic_bill_compiler_and_label_lookup_match_final_etl_graph[bill_sponsor]
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-user-coverage/.venv/lib/python3.13/site-packages/pyshacl/rdfutil/load.py:356: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    target_ds.default_context.namespace_manager = target_ds.namespace_manager
+
+tests/test_nlq_plan_sparql.py::test_deterministic_bill_compiler_and_label_lookup_match_final_etl_graph[bill_title]
+tests/test_nlq_plan_sparql.py::test_deterministic_bill_compiler_and_label_lookup_match_final_etl_graph[bill_status]
+tests/test_nlq_plan_sparql.py::test_deterministic_bill_compiler_and_label_lookup_match_final_etl_graph[bill_sponsor]
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-user-coverage/.venv/lib/python3.13/site-packages/pyshacl/rdfutil/load.py:357: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    default_g = target_ds.default_context
+
+tests/test_nlq_plan_sparql.py::test_deterministic_bill_compiler_and_label_lookup_match_final_etl_graph[bill_title]
+tests/test_nlq_plan_sparql.py::test_deterministic_bill_compiler_and_label_lookup_match_final_etl_graph[bill_status]
+tests/test_nlq_plan_sparql.py::test_deterministic_bill_compiler_and_label_lookup_match_final_etl_graph[bill_sponsor]
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-user-coverage/.venv/lib/python3.13/site-packages/pyshacl/rdfutil/load.py:497: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    dest_g = target_g.default_context
+
+tests/test_nlq_plan_sparql.py::test_deterministic_bill_compiler_and_label_lookup_match_final_etl_graph[bill_title]
+tests/test_nlq_plan_sparql.py::test_deterministic_bill_compiler_and_label_lookup_match_final_etl_graph[bill_status]
+tests/test_nlq_plan_sparql.py::test_deterministic_bill_compiler_and_label_lookup_match_final_etl_graph[bill_sponsor]
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-user-coverage/.venv/lib/python3.13/site-packages/pyshacl/shapes_graph.py:75: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    g = self.graph.default_context
+
+tests/test_nlq_plan_sparql.py: 2418 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-user-coverage/.venv/lib/python3.13/site-packages/rdflib/graph.py:2340: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    if context == self.default_context:
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+329 passed, 4440 warnings in 72.46s (0:01:12)

@@ -1,0 +1,11 @@
+* Owlready2 * Running HermiT...
+    java -Xmx2000M -cp /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-user-coverage/.venv/lib/python3.13/site-packages/owlready2/hermit:/var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-user-coverage/.venv/lib/python3.13/site-packages/owlready2/hermit/HermiT.jar org.semanticweb.HermiT.cli.CommandLine -c -O -D -I file:////tmp/tmpo_xcm0e6 -Y
+* Owlready2 * HermiT took 0.7012603282928467 seconds
+* Owlready * Reparenting members.isPartyMembershipOf: {owl.ObjectProperty, members.memberOfCollection} => {members.memberOfCollection}
+* Owlready * Reparenting members.constituencyInHouseTerm: {owl.ObjectProperty, members.inHouseTerm} => {members.inHouseTerm}
+* Owlready * Reparenting members.DeputyTitle: {0.1.title, owl.DatatypeProperty} => {0.1.title}
+* Owlready * Reparenting members.MinisterialTitle: {0.1.title, owl.DatatypeProperty} => {0.1.title}
+* Owlready * Reparenting members.SenatorTitle: {0.1.title, owl.DatatypeProperty} => {0.1.title}
+* Owlready * Reparenting tmpgmd2jno8.dateSigned: {owl.DatatypeProperty, ontology.date_document} => {ontology.date_document}
+* Owlready * (NB: only changes on entities loaded in Python are shown, other changes are done but not listed)
+Ontology validation passed: 2586 triples from /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-user-coverage/ontology

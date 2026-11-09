@@ -1,0 +1,342 @@
+{
+  "basis": "Exact parsed canonical diagnostic plans and rendered answer text vs original final development replay, not acceptance artifacts.",
+  "results": [
+    {
+      "id": "R01",
+      "baseline_plans": 1,
+      "pilot_plans": 1,
+      "canonical_plans_byte_value_equal": false,
+      "rendered_answer_equal": true,
+      "semantic_plan_equal_ignoring_only_relation_ids": true,
+      "baseline_relation_ids": [
+        "member_has_membership",
+        "membership_in_term",
+        "membership_represents",
+        "constituency_in_term",
+        "member_party_membership",
+        "party_episode_in_membership",
+        "episode_in_parliamentary_party",
+        "party_active_during_term",
+        "parliamentary_party_has_affiliation_identity"
+      ],
+      "pilot_relation_ids": [
+        "r1",
+        "r2",
+        "r3",
+        "r4",
+        "r5",
+        "r6",
+        "r7",
+        "r8",
+        "r9"
+      ]
+    },
+    {
+      "id": "R03",
+      "baseline_plans": 1,
+      "pilot_plans": 1,
+      "canonical_plans_byte_value_equal": true,
+      "rendered_answer_equal": true,
+      "semantic_plan_equal_ignoring_only_relation_ids": true,
+      "baseline_relation_ids": [
+        "party-active-term"
+      ],
+      "pilot_relation_ids": [
+        "party-active-term"
+      ]
+    },
+    {
+      "id": "R06",
+      "baseline_plans": 1,
+      "pilot_plans": 1,
+      "canonical_plans_byte_value_equal": true,
+      "rendered_answer_equal": true,
+      "semantic_plan_equal_ignoring_only_relation_ids": true,
+      "baseline_relation_ids": [
+        "member_has_membership",
+        "membership_in_term",
+        "membership_represents",
+        "constituency_in_term"
+      ],
+      "pilot_relation_ids": [
+        "member_has_membership",
+        "membership_in_term",
+        "membership_represents",
+        "constituency_in_term"
+      ]
+    },
+    {
+      "id": "R09",
+      "baseline_plans": 1,
+      "pilot_plans": 1,
+      "canonical_plans_byte_value_equal": true,
+      "rendered_answer_equal": true,
+      "semantic_plan_equal_ignoring_only_relation_ids": true,
+      "baseline_relation_ids": [
+        "r1",
+        "r2",
+        "r3",
+        "r4",
+        "r5",
+        "r6",
+        "r7",
+        "r8",
+        "r9",
+        "r10",
+        "r11",
+        "r12",
+        "r13",
+        "r14"
+      ],
+      "pilot_relation_ids": [
+        "r1",
+        "r2",
+        "r3",
+        "r4",
+        "r5",
+        "r6",
+        "r7",
+        "r8",
+        "r9",
+        "r10",
+        "r11",
+        "r12",
+        "r13",
+        "r14"
+      ]
+    },
+    {
+      "id": "R10",
+      "baseline_plans": 0,
+      "pilot_plans": 0,
+      "canonical_plans_byte_value_equal": true,
+      "rendered_answer_equal": true,
+      "semantic_plan_equal_ignoring_only_relation_ids": null
+    },
+    {
+      "id": "R11",
+      "baseline_plans": 0,
+      "pilot_plans": 0,
+      "canonical_plans_byte_value_equal": true,
+      "rendered_answer_equal": true,
+      "semantic_plan_equal_ignoring_only_relation_ids": null
+    },
+    {
+      "id": "R13",
+      "baseline_plans": 0,
+      "pilot_plans": 0,
+      "canonical_plans_byte_value_equal": true,
+      "rendered_answer_equal": true,
+      "semantic_plan_equal_ignoring_only_relation_ids": null
+    },
+    {
+      "id": "R16",
+      "baseline_plans": 1,
+      "pilot_plans": 1,
+      "canonical_plans_byte_value_equal": false,
+      "rendered_answer_equal": true,
+      "semantic_plan_equal_ignoring_only_relation_ids": true,
+      "baseline_relation_ids": [
+        "member_membership",
+        "membership_term",
+        "membership_constituency",
+        "constituency_term"
+      ],
+      "pilot_relation_ids": [
+        "r1",
+        "r2",
+        "r3",
+        "r4"
+      ]
+    },
+    {
+      "id": "R18",
+      "baseline_plans": 1,
+      "pilot_plans": 1,
+      "canonical_plans_byte_value_equal": true,
+      "rendered_answer_equal": true,
+      "semantic_plan_equal_ignoring_only_relation_ids": true,
+      "baseline_relation_ids": [
+        "member_has_membership",
+        "membership_in_term",
+        "membership_represents",
+        "constituency_in_term"
+      ],
+      "pilot_relation_ids": [
+        "member_has_membership",
+        "membership_in_term",
+        "membership_represents",
+        "constituency_in_term"
+      ]
+    },
+    {
+      "id": "R19",
+      "baseline_plans": 1,
+      "pilot_plans": 1,
+      "canonical_plans_byte_value_equal": true,
+      "rendered_answer_equal": true,
+      "semantic_plan_equal_ignoring_only_relation_ids": true,
+      "baseline_relation_ids": [
+        "member_has_seanad_membership",
+        "seanad_membership_in_term",
+        "member_has_membership",
+        "membership_in_term"
+      ],
+      "pilot_relation_ids": [
+        "member_has_seanad_membership",
+        "seanad_membership_in_term",
+        "member_has_membership",
+        "membership_in_term"
+      ]
+    },
+    {
+      "id": "R20",
+      "baseline_plans": 1,
+      "pilot_plans": 1,
+      "canonical_plans_byte_value_equal": false,
+      "rendered_answer_equal": true,
+      "semantic_plan_equal_ignoring_only_relation_ids": true,
+      "baseline_relation_ids": [
+        "member_has_seanad_membership",
+        "seanad_membership_in_term",
+        "member_has_membership",
+        "membership_in_term"
+      ],
+      "pilot_relation_ids": [
+        "r1",
+        "r2",
+        "r3",
+        "r4"
+      ]
+    },
+    {
+      "id": "R21b",
+      "baseline_plans": 1,
+      "pilot_plans": 1,
+      "canonical_plans_byte_value_equal": false,
+      "rendered_answer_equal": true,
+      "semantic_plan_equal_ignoring_only_relation_ids": true,
+      "baseline_relation_ids": [
+        "member_has_membership",
+        "membership_in_term",
+        "membership_represents",
+        "constituency_in_term",
+        "member_party_membership",
+        "party_episode_in_membership",
+        "episode_in_parliamentary_party",
+        "party_active_during_term",
+        "parliamentary_party_has_affiliation_identity"
+      ],
+      "pilot_relation_ids": [
+        "member_membership",
+        "membership_term",
+        "membership_constituency",
+        "constituency_term",
+        "member_episode",
+        "episode_membership",
+        "episode_party",
+        "party_term",
+        "party_affiliation"
+      ]
+    },
+    {
+      "id": "R22",
+      "baseline_plans": 1,
+      "pilot_plans": 1,
+      "canonical_plans_byte_value_equal": false,
+      "rendered_answer_equal": true,
+      "semantic_plan_equal_ignoring_only_relation_ids": true,
+      "baseline_relation_ids": [
+        "r1",
+        "r2",
+        "r3",
+        "r4"
+      ],
+      "pilot_relation_ids": [
+        "member_has_membership",
+        "membership_in_term",
+        "membership_represents",
+        "constituency_in_term"
+      ]
+    },
+    {
+      "id": "R23",
+      "baseline_plans": 1,
+      "pilot_plans": 1,
+      "canonical_plans_byte_value_equal": false,
+      "rendered_answer_equal": true,
+      "semantic_plan_equal_ignoring_only_relation_ids": true,
+      "baseline_relation_ids": [
+        "member_has_seanad_membership",
+        "seanad_membership_in_term",
+        "member_party_membership",
+        "party_episode_in_seanad_membership",
+        "episode_in_parliamentary_party",
+        "party_active_during_seanad_term",
+        "parliamentary_party_has_affiliation_identity"
+      ],
+      "pilot_relation_ids": [
+        "r1",
+        "r2",
+        "r3",
+        "r4",
+        "r5",
+        "r6",
+        "r7"
+      ]
+    },
+    {
+      "id": "R24",
+      "baseline_plans": 1,
+      "pilot_plans": 1,
+      "canonical_plans_byte_value_equal": false,
+      "rendered_answer_equal": true,
+      "semantic_plan_equal_ignoring_only_relation_ids": true,
+      "baseline_relation_ids": [
+        "r1",
+        "r2",
+        "r3",
+        "r4",
+        "r5",
+        "r6",
+        "r7"
+      ],
+      "pilot_relation_ids": [
+        "answer_member_membership",
+        "answer_membership_term",
+        "answer_membership_constituency",
+        "constituency_term",
+        "anchor_member_membership",
+        "anchor_membership_term",
+        "anchor_membership_constituency"
+      ]
+    },
+    {
+      "id": "R25",
+      "baseline_plans": 1,
+      "pilot_plans": 1,
+      "canonical_plans_byte_value_equal": true,
+      "rendered_answer_equal": true,
+      "semantic_plan_equal_ignoring_only_relation_ids": true,
+      "baseline_relation_ids": [
+        "r1",
+        "r2",
+        "r3",
+        "r4",
+        "r5",
+        "r6",
+        "r7"
+      ],
+      "pilot_relation_ids": [
+        "r1",
+        "r2",
+        "r3",
+        "r4",
+        "r5",
+        "r6",
+        "r7"
+      ]
+    }
+  ],
+  "interpretation": "All 16 complete rendered answer texts are equal. All 13 available top-level v2 diagnostic plans are semantically equal; only syntactic relation IDs vary in seven. The three office controls do not expose top-level v2 plans, so no plan-parity credit is inferred from empty lists."
+}

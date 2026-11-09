@@ -1,0 +1,39 @@
+{
+  "observed_at": "2026-11-09T16:32:14.537803+00:00",
+  "endpoint": "http://localhost:3030/houses/query",
+  "candidates": {
+    "mary lou mcdonald": {
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09": "Mary Lou McDonald"
+    },
+    "simon harris": {
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Simon-Harris.D.2011-03-09": "Simon Harris"
+    }
+  },
+  "queries": [
+    {
+      "query": "PREFIX agents: <https://data.oireachtas.ie/ontology#>\nPREFIX foaf: <http://xmlns.com/foaf/0.1/>\nSELECT DISTINCT ?entity ?label WHERE {\n  GRAPH ?entityGraph { ?entity a agents:Member ; <http://xmlns.com/foaf/0.1/name> ?label . }\n  FILTER(STRSTARTS(STR(?entityGraph), \"https://data.oireachtas.ie/graph/member/\"))\n  FILTER(CONTAINS(LCASE(STR(?label)), LCASE(STR(\"Mary Lou McDonald\"))))\n}\nLIMIT 100",
+      "result": "{\n  \"head\": {\n    \"vars\": [\n      \"entity\",\n      \"label\"\n    ]\n  },\n  \"results\": {\n    \"bindings\": [\n      {\n        \"entity\": {\n          \"type\": \"uri\",\n          \"value\": \"https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09\"\n        },\n        \"label\": {\n          \"type\": \"literal\",\n          \"value\": \"Mary Lou McDonald\"\n        }\n      }\n    ]\n  }\n}"
+    },
+    {
+      "query": "PREFIX members: <https://data.oireachtas.ie/ontology/members#>\nSELECT DISTINCT ?term WHERE {\n GRAPH ?g { <https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09> members:hasMembersMembership ?membership .\n ?membership a members:DailMembership ; members:inHouseTerm ?term . }\n FILTER(STRSTARTS(STR(?g), \"https://data.oireachtas.ie/graph/member/\"))\n} ORDER BY ?term",
+      "result": "{\n  \"head\": {\n    \"vars\": [\n      \"term\"\n    ]\n  },\n  \"results\": {\n    \"bindings\": [\n      {\n        \"term\": {\n          \"type\": \"uri\",\n          \"value\": \"https://data.oireachtas.ie/ie/oireachtas/house/dail/31\"\n        }\n      },\n      {\n        \"term\": {\n          \"type\": \"uri\",\n          \"value\": \"https://data.oireachtas.ie/ie/oireachtas/house/dail/32\"\n        }\n      },\n      {\n        \"term\": {\n          \"type\": \"uri\",\n          \"value\": \"https://data.oireachtas.ie/ie/oireachtas/house/dail/33\"\n        }\n      },\n      {\n        \"term\": {\n          \"type\": \"uri\",\n          \"value\": \"https://data.oireachtas.ie/ie/oireachtas/house/dail/34\"\n        }\n      }\n    ]\n  }\n}"
+    },
+    {
+      "query": "PREFIX agents: <https://data.oireachtas.ie/ontology#>\nPREFIX foaf: <http://xmlns.com/foaf/0.1/>\nSELECT DISTINCT ?entity ?label WHERE {\n  GRAPH ?entityGraph { ?entity a agents:Member ; <http://xmlns.com/foaf/0.1/name> ?label . }\n  FILTER(STRSTARTS(STR(?entityGraph), \"https://data.oireachtas.ie/graph/member/\"))\n  FILTER(CONTAINS(LCASE(STR(?label)), LCASE(STR(\"Simon Harris\"))))\n}\nLIMIT 100",
+      "result": "{\n  \"head\": {\n    \"vars\": [\n      \"entity\",\n      \"label\"\n    ]\n  },\n  \"results\": {\n    \"bindings\": [\n      {\n        \"entity\": {\n          \"type\": \"uri\",\n          \"value\": \"https://data.oireachtas.ie/ie/oireachtas/member/id/Simon-Harris.D.2011-03-09\"\n        },\n        \"label\": {\n          \"type\": \"literal\",\n          \"value\": \"Simon Harris\"\n        }\n      }\n    ]\n  }\n}"
+    },
+    {
+      "query": "PREFIX members: <https://data.oireachtas.ie/ontology/members#>\nSELECT DISTINCT ?term WHERE {\n GRAPH ?g { <https://data.oireachtas.ie/ie/oireachtas/member/id/Simon-Harris.D.2011-03-09> members:hasMembersMembership ?membership .\n ?membership a members:DailMembership ; members:inHouseTerm ?term . }\n FILTER(STRSTARTS(STR(?g), \"https://data.oireachtas.ie/graph/member/\"))\n} ORDER BY ?term",
+      "result": "{\n  \"head\": {\n    \"vars\": [\n      \"term\"\n    ]\n  },\n  \"results\": {\n    \"bindings\": [\n      {\n        \"term\": {\n          \"type\": \"uri\",\n          \"value\": \"https://data.oireachtas.ie/ie/oireachtas/house/dail/31\"\n        }\n      },\n      {\n        \"term\": {\n          \"type\": \"uri\",\n          \"value\": \"https://data.oireachtas.ie/ie/oireachtas/house/dail/32\"\n        }\n      },\n      {\n        \"term\": {\n          \"type\": \"uri\",\n          \"value\": \"https://data.oireachtas.ie/ie/oireachtas/house/dail/33\"\n        }\n      },\n      {\n        \"term\": {\n          \"type\": \"uri\",\n          \"value\": \"https://data.oireachtas.ie/ie/oireachtas/house/dail/34\"\n        }\n      }\n    ]\n  }\n}"
+    },
+    {
+      "query": "PREFIX agents: <https://data.oireachtas.ie/ontology/agents#>\nSELECT DISTINCT ?term WHERE { GRAPH <https://data.oireachtas.ie/graph/houses> { ?term a agents:DailTerm . } } ORDER BY ?term",
+      "result": "{\n  \"head\": {\n    \"vars\": [\n      \"term\"\n    ]\n  },\n  \"results\": {\n    \"bindings\": []\n  }\n}"
+    },
+    {
+      "query": "SELECT (COUNT(*) AS ?triples) (COUNT(DISTINCT ?g) AS ?graphs) WHERE { GRAPH ?g { ?s ?p ?o } }",
+      "result": "{\n  \"head\": {\n    \"vars\": [\n      \"triples\",\n      \"graphs\"\n    ]\n  },\n  \"results\": {\n    \"bindings\": [\n      {\n        \"triples\": {\n          \"type\": \"literal\",\n          \"datatype\": \"http://www.w3.org/2001/XMLSchema#integer\",\n          \"value\": \"1119860\"\n        },\n        \"graphs\": {\n          \"type\": \"literal\",\n          \"datatype\": \"http://www.w3.org/2001/XMLSchema#integer\",\n          \"value\": \"7982\"\n        }\n      }\n    ]\n  }\n}"
+    }
+  ],
+  "purpose": "Independent read-only names, unfiltered term identities and catalogue; not model answers."
+}

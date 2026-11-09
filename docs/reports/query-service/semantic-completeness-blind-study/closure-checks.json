@@ -1,0 +1,22 @@
+{
+  "pr_27": {
+    "headRefName": "feat/query-service-generalisation",
+    "isDraft": true,
+    "mergedAt": null,
+    "state": "OPEN"
+  },
+  "pr_body_explicitly_NOT_ACCEPTED": true,
+  "recommendation": "REJECT THIS APPROACH",
+  "experimental_calls": 72,
+  "model_retries": 0,
+  "preflight_calls": 0,
+  "existing_tests_passed": 329,
+  "ontology_validation": "HermiT passed, 2586 triples",
+  "shadow_selftest": "passed",
+  "python_compilation": "passed",
+  "deterministic_summary_and_diagnostic_reproduction": "exact JSON equality",
+  "source_and_previous_evidence": "666 baseline blobs unchanged; final-verification.json",
+  "frozen_scoring_sources": "unchanged; replay wrapper normalizes JSON tuple/list representation only",
+  "no_production_acceptance_campaign": true,
+  "no_production_integration_or_follow_on_experiment": true
+}

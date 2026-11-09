@@ -1,0 +1,23 @@
+{
+  "observed_at": "2026-11-09T13:40:01.326251+00:00",
+  "endpoint": "http://localhost:3030/houses/query",
+  "candidates": {
+    "micheál martin": {
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Micheál-Martin.D.1989-06-29": "Micheál Martin"
+    },
+    "brendan griffin": {
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Brendan-Griffin.D.1973-03-14": "Brendan Griffin",
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Brendan-Griffin.D.2011-03-09": "Brendan Griffin"
+    }
+  },
+  "queries": [
+    {
+      "query": "PREFIX agents: <https://data.oireachtas.ie/ontology#>\nPREFIX foaf: <http://xmlns.com/foaf/0.1/>\nSELECT DISTINCT ?entity ?label WHERE {\n  GRAPH ?entityGraph { ?entity a agents:Member ; <http://xmlns.com/foaf/0.1/name> ?label . }\n  FILTER(STRSTARTS(STR(?entityGraph), \"https://data.oireachtas.ie/graph/member/\"))\n  FILTER(CONTAINS(LCASE(STR(?label)), LCASE(STR(\"Micheál Martin\"))))\n}\nLIMIT 100",
+      "result": "{\n  \"head\": {\n    \"vars\": [\n      \"entity\",\n      \"label\"\n    ]\n  },\n  \"results\": {\n    \"bindings\": [\n      {\n        \"entity\": {\n          \"type\": \"uri\",\n          \"value\": \"https://data.oireachtas.ie/ie/oireachtas/member/id/Micheál-Martin.D.1989-06-29\"\n        },\n        \"label\": {\n          \"type\": \"literal\",\n          \"value\": \"Micheál Martin\"\n        }\n      }\n    ]\n  }\n}"
+    },
+    {
+      "query": "PREFIX agents: <https://data.oireachtas.ie/ontology#>\nPREFIX foaf: <http://xmlns.com/foaf/0.1/>\nSELECT DISTINCT ?entity ?label WHERE {\n  GRAPH ?entityGraph { ?entity a agents:Member ; <http://xmlns.com/foaf/0.1/name> ?label . }\n  FILTER(STRSTARTS(STR(?entityGraph), \"https://data.oireachtas.ie/graph/member/\"))\n  FILTER(CONTAINS(LCASE(STR(?label)), LCASE(STR(\"Brendan Griffin\"))))\n}\nLIMIT 100",
+      "result": "{\n  \"head\": {\n    \"vars\": [\n      \"entity\",\n      \"label\"\n    ]\n  },\n  \"results\": {\n    \"bindings\": [\n      {\n        \"entity\": {\n          \"type\": \"uri\",\n          \"value\": \"https://data.oireachtas.ie/ie/oireachtas/member/id/Brendan-Griffin.D.1973-03-14\"\n        },\n        \"label\": {\n          \"type\": \"literal\",\n          \"value\": \"Brendan Griffin\"\n        }\n      },\n      {\n        \"entity\": {\n          \"type\": \"uri\",\n          \"value\": \"https://data.oireachtas.ie/ie/oireachtas/member/id/Brendan-Griffin.D.2011-03-09\"\n        },\n        \"label\": {\n          \"type\": \"literal\",\n          \"value\": \"Brendan Griffin\"\n        }\n      }\n    ]\n  }\n}"
+    }
+  ]
+}

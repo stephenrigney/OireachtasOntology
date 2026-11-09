@@ -1,0 +1,16 @@
+First deterministic score.py execution after all 72 model calls completed:
+
+Traceback (most recent call last):
+  File "docs/reports/query-service/semantic-completeness-blind-study/score.py", line 108, in <module>
+    main(p.parse_args().output)
+  File "docs/reports/query-service/semantic-completeness-blind-study/score.py", line 26, in main
+    assert all(row[k] == v for k, v in recomputed.items()), (row["id"], row["repeat"])
+AssertionError: ('U2', 1)
+
+Cause: the first nonempty semantic comparison used list-of-tuples in memory but
+the identical retained JSON representation decoded to list-of-lists. B1/B2 and
+all semantic fields were identical after a JSON roundtrip. No result was changed.
+The frozen scorer and gates remain byte-unchanged. replay_score.py performs that
+JSON-boundary normalization only, then runs all original exact replay assertions
+and scoring. This is deterministic evidence processing, not a model retry,
+interpretation repair, changed threshold or relaxed admission credit.

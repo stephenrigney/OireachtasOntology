@@ -1,0 +1,26 @@
+{
+  "id": "P01",
+  "run": 2,
+  "question": "How many distinct Dáil terms does the Member record for Micheál Martin link to?",
+  "timestamp": "2026-11-08T10:05:52.591844+00:00",
+  "seconds": 3.922,
+  "http_status": 200,
+  "outcome": "answer",
+  "rendered_answer": "Results\n    \n      \n        Distinct Dáil terms\n        \n        9\n        \n      \n    \n    Counted distinct membership-linked HouseTerm IRIs; missing HouseTerm labels or period metadata do not discard service links.",
+  "tables": [
+    [
+      [
+        "Distinct Dáil terms"
+      ],
+      [
+        "9"
+      ]
+    ]
+  ],
+  "diagnostics": [
+    "{\n  \"version\": 2,\n  \"asOf\": \"2026-11-06\",\n  \"family\": \"term_count\",\n  \"referents\": {\n    \"member\": {\n      \"type\": \"Member\",\n      \"mention\": \"Micheál Martin\",\n      \"resolution\": \"resolved\",\n      \"candidates\": [\n        {\n          \"iri\": \"https://data.oireachtas.ie/ie/oireachtas/member/id/Micheál-Martin.D.1989-06-29\",\n          \"label\": \"Micheál Martin\"\n        }\n      ],\n      \"iri\": \"https://data.oireachtas.ie/ie/oireachtas/member/id/Micheál-Martin.D.1989-06-29\",\n      \"label\": \"Micheál Martin\"\n    },\n    \"membership\": {\n      \"type\": \"DailMembership\"\n    },\n    \"term\": {\n      \"type\": \"DailTerm\"\n    }\n  },\n  \"relations\": [\n    {\n      \"id\": \"r1\",\n      \"fact\": \"member_has_membership\",\n      \"from\": \"member\",\n      \"to\": \"membership\"\n    },\n    {\n      \"id\": \"r2\",\n      \"fact\": \"membership_in_term\",\n      \"from\": \"membership\",\n      \"to\": \"term\"\n    }\n  ],\n  \"answer\": {\n    \"kind\": \"family_result\",\n    \"referent\": \"member\"\n  }\n}"
+  ],
+  "response_sha256": "c23444f25d3ef7359c9b4b2e1ff70b23ff32c05515f724066de969ba6fabc38a",
+  "purpose": "Explicit diagnostic repeat after first P01 provider HTTP 400. Does not replace primary evidence.",
+  "source_commit": "293ab74"
+}

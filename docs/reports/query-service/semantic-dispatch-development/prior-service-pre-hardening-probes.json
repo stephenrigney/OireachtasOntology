@@ -1,0 +1,9 @@
+{
+  "scope": "Development-only forced supported-draft probes before original-question hardening; not live /ask answers and not acceptance cases.",
+  "probe": "validate_composable_plan_draft(_q20_draft(), question=question), using the existing synthetic prior-service test draft",
+  "findings": [
+    {"question": "Which current Senators never previously served in the Dáil?", "observed": "accepted positive prior-service graph", "required": "reject unsupported negation rather than return a positive intersection"},
+    {"question": "Which female current Senators previously served in the Dáil?", "observed": "accepted unfiltered prior-service graph", "required": "reject unsupported gender condition as a whole"},
+    {"question": "Which current Senators previously served in the Dáil, and list their ages?", "observed": "accepted Member-only prior-service graph", "required": "reject unsupported additional output as a whole"}
+  ]
+}

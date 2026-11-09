@@ -1,0 +1,168 @@
+{
+  "artifact_kind": "independently_authored_fresh_development_transfer",
+  "purpose": "Four fresh natural-language paraphrases of supported term_count and two negative mutations; not production acceptance and not an acceptance campaign.",
+  "authorship": {
+    "independent": true,
+    "wording_coordinated_with_implementer": false,
+    "implementation_access": false,
+    "test_access": false,
+    "historical_questions_access": false,
+    "frozen_acceptance_artifacts_access": false,
+    "prior_reports_access": false,
+    "ask_called": false,
+    "dataset_or_configuration_mutated": false,
+    "branch_verified": "feat/query-service-generalisation",
+    "allowed_authority_read": "poc/specs/composable-query-plan-contract.json",
+    "contract_version": "2.29.0",
+    "capability": "term_count"
+  },
+  "semantics": {
+    "target": "DailTerm",
+    "operation": "count_distinct",
+    "identity": "exact RDF resource IRI",
+    "member_scope": "One exact Member's unfiltered recorded Member -> DailMembership -> DailTerm paths, with DailTerm typing in the Houses graph.",
+    "catalogue_scope": "All explicitly typed DailTerm identities in the Houses-owned catalogue graph.",
+    "answer_projection": "Count only; no identity, date, or list projection. Identity bindings below are oracle provenance, not requested answer fields.",
+    "coverage": "Recorded local evidence only; no assertion of complete historical coverage."
+  },
+  "oracle_provenance": {
+    "endpoint": "http://localhost:3030/houses/query",
+    "method": "GET with URL-encoded query parameter",
+    "accept": "application/sparql-results+json",
+    "read_only": true,
+    "namespaces": {
+      "agents": "https://data.oireachtas.ie/ontology#",
+      "members": "https://data.oireachtas.ie/ontology/members#",
+      "foaf": "http://xmlns.com/foaf/0.1/"
+    },
+    "predicate_authority": "Contract relations member_has_membership and membership_in_term: members:hasMembersMembership and members:inHouseTerm; RDF types agents:Member, members:DailMembership, agents:DailTerm.",
+    "discovery": {
+      "observed_date_utc": "2026-11-08",
+      "query": "PREFIX agents: <https://data.oireachtas.ie/ontology#>\nPREFIX foaf: <http://xmlns.com/foaf/0.1/>\nSELECT ?graph ?kind ?member ?name WHERE {\n { GRAPH ?graph { ?term a agents:DailTerm } BIND(\"dail_term_graph\" AS ?kind) }\n UNION\n { GRAPH ?graph { ?member a agents:Member ; foaf:name ?name . FILTER(STR(?name) IN (\"Micheál Martin\", \"Brendan Howlin\", \"Mary Lou McDonald\")) } BIND(\"member_graph\" AS ?kind) }\n} GROUP BY ?graph ?kind ?member ?name ORDER BY ?kind ?graph ?member",
+      "http_status": 200,
+      "content_type": "application/sparql-results+json; charset=utf-8",
+      "result": {
+        "head": {"vars": ["graph", "kind", "member", "name"]},
+        "results": {
+          "bindings": [
+            {
+              "graph": {"type": "uri", "value": "https://data.oireachtas.ie/graph/houses"},
+              "kind": {"type": "literal", "value": "dail_term_graph"}
+            },
+            {
+              "graph": {"type": "uri", "value": "https://data.oireachtas.ie/graph/member/Brendan-Howlin.S.1983-02-23"},
+              "kind": {"type": "literal", "value": "member_graph"},
+              "member": {"type": "uri", "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Brendan-Howlin.S.1983-02-23"},
+              "name": {"type": "literal", "value": "Brendan Howlin"}
+            },
+            {
+              "graph": {"type": "uri", "value": "https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09"},
+              "kind": {"type": "literal", "value": "member_graph"},
+              "member": {"type": "uri", "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09"},
+              "name": {"type": "literal", "value": "Mary Lou McDonald"}
+            },
+            {
+              "graph": {"type": "uri", "value": "https://data.oireachtas.ie/graph/member/Miche%C3%A1l-Martin.D.1989-06-29"},
+              "kind": {"type": "literal", "value": "member_graph"},
+              "member": {"type": "uri", "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Micheál-Martin.D.1989-06-29"},
+              "name": {"type": "literal", "value": "Micheál Martin"}
+            }
+          ]
+        }
+      },
+      "interpretation": "One exact typed Member identity and owner graph found per requested name; only the Houses graph contained typed DailTerm resources. Graph and Member IRIs are copied from direct evidence, including the different encoding of Micheál Martin's graph and Member IRIs."
+    }
+  },
+  "cases": [
+    {
+      "id": "fresh-member-martin",
+      "kind": "positive",
+      "question": "From the records here, how many Dáil terms has Micheál Martin served in?",
+      "expectation": {"capability": "term_count", "scope": "member_service", "target": "DailTerm", "operation": "count_distinct", "answer_kind": "count", "count": 9, "coverage": "local recorded service only"},
+      "direct_oracle": {
+        "retrieved_at_utc": "2026-11-08T09:55:12.556055+00:00",
+        "query": "PREFIX agents: <https://data.oireachtas.ie/ontology#>\nPREFIX members: <https://data.oireachtas.ie/ontology/members#>\nSELECT (COUNT(DISTINCT ?term) AS ?count) WHERE {\n  GRAPH <https://data.oireachtas.ie/graph/member/Miche%C3%A1l-Martin.D.1989-06-29> {\n    <https://data.oireachtas.ie/ie/oireachtas/member/id/Micheál-Martin.D.1989-06-29> a agents:Member ; members:hasMembersMembership ?membership .\n    ?membership a members:DailMembership ; members:inHouseTerm ?term .\n  }\n  GRAPH <https://data.oireachtas.ie/graph/houses> { ?term a agents:DailTerm . }\n}",
+        "http_status": 200,
+        "content_type": "application/sparql-results+json; charset=utf-8",
+        "result": {"head": {"vars": ["count"]}, "results": {"bindings": [{"count": {"type": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#integer", "value": "9"}}]}}
+      }
+    },
+    {
+      "id": "fresh-member-howlin",
+      "kind": "positive",
+      "question": "How many different Dáil terms does the local data record for Brendan Howlin's service?",
+      "expectation": {"capability": "term_count", "scope": "member_service", "target": "DailTerm", "operation": "count_distinct", "answer_kind": "count", "count": 9, "coverage": "local recorded service only"},
+      "direct_oracle": {
+        "retrieved_at_utc": "2026-11-08T09:55:12.556360+00:00",
+        "query": "PREFIX agents: <https://data.oireachtas.ie/ontology#>\nPREFIX members: <https://data.oireachtas.ie/ontology/members#>\nSELECT (COUNT(DISTINCT ?term) AS ?count) WHERE {\n  GRAPH <https://data.oireachtas.ie/graph/member/Brendan-Howlin.S.1983-02-23> {\n    <https://data.oireachtas.ie/ie/oireachtas/member/id/Brendan-Howlin.S.1983-02-23> a agents:Member ; members:hasMembersMembership ?membership .\n    ?membership a members:DailMembership ; members:inHouseTerm ?term .\n  }\n  GRAPH <https://data.oireachtas.ie/graph/houses> { ?term a agents:DailTerm . }\n}",
+        "http_status": 200,
+        "content_type": "application/sparql-results+json; charset=utf-8",
+        "result": {"head": {"vars": ["count"]}, "results": {"bindings": [{"count": {"type": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#integer", "value": "9"}}]}}
+      }
+    },
+    {
+      "id": "fresh-member-mcdonald",
+      "kind": "positive",
+      "question": "For Mary Lou McDonald, what's the total number of Dáil terms represented in her recorded service?",
+      "expectation": {"capability": "term_count", "scope": "member_service", "target": "DailTerm", "operation": "count_distinct", "answer_kind": "count", "count": 4, "coverage": "local recorded service only"},
+      "direct_oracle": {
+        "retrieved_at_utc": "2026-11-08T09:55:12.555761+00:00",
+        "query": "PREFIX agents: <https://data.oireachtas.ie/ontology#>\nPREFIX members: <https://data.oireachtas.ie/ontology/members#>\nSELECT (COUNT(DISTINCT ?term) AS ?count) WHERE {\n  GRAPH <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> {\n    <https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09> a agents:Member ; members:hasMembersMembership ?membership .\n    ?membership a members:DailMembership ; members:inHouseTerm ?term .\n  }\n  GRAPH <https://data.oireachtas.ie/graph/houses> { ?term a agents:DailTerm . }\n}",
+        "http_status": 200,
+        "content_type": "application/sparql-results+json; charset=utf-8",
+        "result": {"head": {"vars": ["count"]}, "results": {"bindings": [{"count": {"type": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#integer", "value": "4"}}]}}
+      }
+    },
+    {
+      "id": "fresh-houses-catalogue",
+      "kind": "positive",
+      "question": "How many Dáil terms are recorded in the Houses catalogue?",
+      "expectation": {"capability": "term_count", "scope": "houses_catalogue", "target": "DailTerm", "operation": "count_distinct", "answer_kind": "count", "count": 34, "coverage": "local Houses catalogue only"},
+      "direct_oracle": {
+        "retrieved_at_utc": "2026-11-08T09:55:12.560570+00:00",
+        "query": "PREFIX agents: <https://data.oireachtas.ie/ontology#>\nSELECT (COUNT(DISTINCT ?term) AS ?count) WHERE {\n  GRAPH <https://data.oireachtas.ie/graph/houses> { ?term a agents:DailTerm . }\n}",
+        "http_status": 200,
+        "content_type": "application/sparql-results+json; charset=utf-8",
+        "result": {"head": {"vars": ["count"]}, "results": {"bindings": [{"count": {"type": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#integer", "value": "34"}}]}}
+      }
+    },
+    {
+      "id": "fresh-negative-party-filter",
+      "kind": "negative_mutation",
+      "mutates": "fresh-member-howlin",
+      "question": "How many different Dáil terms does the local data record for Brendan Howlin's service while he was a Labour Party member?",
+      "mutation": "Adds a party-membership filter to the otherwise unfiltered Member service count.",
+      "expectation": {
+        "term_count_admissible": false,
+        "outcome": "unsupported_intent_no_count",
+        "count": null,
+        "reason": "term_count requires unfiltered member_service; do not drop the Labour Party condition or return the unfiltered count as an answer."
+      },
+      "oracle_basis": "Contract term_count intentAdmission; the positive direct oracle establishes only the unfiltered baseline, not a party-filtered count.",
+      "service_execution": "not run"
+    },
+    {
+      "id": "fresh-negative-conflicting-count-target",
+      "kind": "negative_mutation",
+      "mutates": "fresh-member-mcdonald",
+      "question": "For Mary Lou McDonald, what's the total number of Dáil terms represented in her recorded service, and how many membership records are there?",
+      "mutation": "Adds a second directed count request targeting membership records instead of distinct DailTerm identities.",
+      "expectation": {
+        "term_count_admissible": false,
+        "outcome": "unsupported_intent_no_count",
+        "count": null,
+        "reason": "The complete question is not a single DailTerm count. Do not silently discard the added membership-record count, confuse rows with terms, or give a partial term_count answer."
+      },
+      "oracle_basis": "Contract term_count intentAdmission requires DailTerm count target, count_distinct only, and complete directed-clause consumption. This is an additional requested measure, not a terminal excluded-measure contrast.",
+      "service_execution": "not run"
+    }
+  ],
+  "limitations": [
+    "This is independently authored fresh development transfer, not production acceptance; no planner, renderer, /ask route, or implementation behavior was exercised.",
+    "Only the allowed contract was read for task content; implementation, tests, historical questions, frozen acceptance material, and prior reports were not accessed.",
+    "Positive expectations come from direct read-only SPARQL responses at the recorded retrieval times. The mutable local dataset was not frozen or certified complete.",
+    "Counts deduplicate DailTerm RDF identities, not membership rows, people, elections, seats, or service durations. No date, party, constituency, or other filter is applied to positive Member paths.",
+    "Missing local service paths do not prove historical non-service. Catalogue size is not a claim about every Dáil that has ever existed.",
+    "Negative expectations are contract-derived admission expectations, not observed service results; no filtered-count evidence or exact refusal wording is asserted."
+  ]
+}

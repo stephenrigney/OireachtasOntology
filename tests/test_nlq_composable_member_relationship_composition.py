@@ -237,6 +237,21 @@ def _member_count_draft(ordinal: int = 31, constituency: str = "Dublin Central",
     return draft
 
 
+@pytest.mark.parametrize(("question", "draft"), [
+    (
+        "Count the women who represented Clare in Dáil 33, rather than seats.",
+        _member_count_draft(ordinal=33, constituency="Clare"),
+    ),
+    (
+        "Give the seats and distinct Members for Clare in Dáil 33.",
+        _representation_draft(ordinal=33, constituency="Clare"),
+    ),
+])
+def test_development_transfer_unsupported_demographic_and_mixed_seat_requests_stay_closed(question, draft):
+    with pytest.raises((InvalidComposableDraft, UnsupportedComposableRequest, ValueError)):
+        validate_composable_plan_draft(draft, question=question)
+
+
 def _anchored_shared_constituency_draft(
     *,
     anchor: str = "Aoife Byrne",
@@ -279,6 +294,23 @@ def _anchored_shared_constituency_draft(
                 "display": ["name"], "details": [], "preserveEvidence": False,
             }
         ),
+    }
+
+
+def _anchored_shared_constituency_selection(anchor: str) -> dict:
+    return {
+        "version": 2,
+        "supported": True,
+        "family": "capability_selection",
+        "unsupportedReason": None,
+        "intent": "Select the existing anchored shared-constituency graph.",
+        "referents": {
+            "capability": "anchored_shared_constituency_graph",
+            "parameters": {"anchor": anchor},
+        },
+        "relations": [],
+        "constraints": [],
+        "answer": None,
     }
 
 
@@ -338,7 +370,7 @@ def test_v2_contract_and_strict_draft_schema_cover_both_relationship_projections
     draft_schema = load_composable_draft_schema()
     Draft202012Validator.check_schema(plan_schema)
     Draft202012Validator.check_schema(draft_schema)
-    assert contract["contractVersion"] == "2.26.0"
+    assert contract["contractVersion"] == "2.29.0"
     count_contract = contract["memberCountProjections"]["member_relationship_composition"]["semantics"]
     assert "Stage C term-scoped ParliamentaryParty listing" in count_contract
     assert "not seats/election totals" in count_contract
@@ -410,6 +442,31 @@ def test_integrated_ask_executes_fresh_member_relationship_paraphrases(question,
         assert "FILTER(?membership_a != ?membership_b)" in answer_query
     assert "SERVICE" not in answer_query.upper()
     assert "FROM NAMED" not in answer_query.upper()
+
+
+@pytest.mark.parametrize(("question", "ordinal", "constituency"), [
+    ("Give the recorded TD roster for Kerry North in Dáil number 24.", 24, "Kerry North"),
+    ("Give the recorded TD roster for Wexford in Dáil number 30.", 30, "Wexford"),
+    ("Give the recorded TD roster for Tipperary in the 32nd Dáil.", 32, "Tipperary"),
+])
+def test_shared_numeric_dail_extraction_preserves_existing_member_graph_selectors(
+    question, ordinal, constituency,
+):
+    selected, unsupported = validate_composable_plan_draft(
+        _representation_draft(ordinal, constituency), question=question,
+    )
+    assert unsupported is None
+    assert selected["referents"]["term"]["selector"] == {
+        "kind": "termNumber", "number": ordinal,
+    }
+
+
+def test_shared_numeric_dail_extraction_rejects_conflicting_scopes_in_member_graph_selector():
+    question = "Give the recorded TD roster for Kerry North in Dáil number 24 and Dáil 25."
+    with pytest.raises((InvalidComposableDraft, UnsupportedComposableRequest)):
+        validate_composable_plan_draft(
+            _representation_draft(24, "Kerry North"), question=question,
+        )
 
 
 def test_member_count_and_list_share_the_same_term_constituency_selection_and_distinct_identity_set():
@@ -1076,6 +1133,56 @@ def test_anchored_shared_constituency_previous_term_count_and_list_share_one_com
     assert "FILTER(?anchorMembership != ?membership)" in counted.sparql
     assert "term-wide recorded co-membership, not evidence of simultaneous service" in counted.diagnostic
     assert "latestRecorded" not in counted.sparql
+
+
+@pytest.mark.parametrize(("question", "previous", "count"), [
+    (
+        "Who were the other TDs in the same constituency as Aoife Byrne during the last Dáil?",
+        True, False,
+    ),
+    (Q24_PREVIOUS, True, True),
+    (
+        "Who were the other TDs in the same constituency as Aoife Byrne in the 32nd Dáil?",
+        False, False,
+    ),
+    (
+        "How many other TDs were in the same constituency as Aoife Byrne in the 32nd Dáil?",
+        False, True,
+    ),
+])
+def test_anchored_shared_constituency_graph_capability_matches_legacy_dispatch(
+    question, previous, count,
+):
+    capability_fixture = MemberRelationshipFixture()
+    legacy_fixture = MemberRelationshipFixture()
+    _add_q24_term_chronology(capability_fixture)
+    _add_q24_term_chronology(legacy_fixture)
+    legacy_draft = _anchored_shared_constituency_draft(
+        previous=previous, ordinal=None if previous else 32, count=count,
+    )
+
+    capability_outcome, _ = _run(
+        capability_fixture, question, _anchored_shared_constituency_selection("Aoife Byrne"),
+    )
+    legacy_outcome, _ = _run(legacy_fixture, question, legacy_draft)
+
+    assert capability_outcome.status == legacy_outcome.status == "success"
+    assert capability_outcome.result == legacy_outcome.result
+    assert capability_outcome.sparql == legacy_outcome.sparql
+    assert capability_fixture.queries == legacy_fixture.queries
+    if count:
+        assert capability_outcome.result.rows == (("1",),)
+    else:
+        assert capability_outcome.result.rows == (("Eimear Walsh", MEMBER_CARA),)
+
+
+def test_same_constituency_wording_does_not_make_an_incomplete_legacy_graph_valid():
+    draft = _anchored_shared_constituency_draft(previous=True)
+    draft["relations"].pop()
+    question = "Who were the other TDs in the same constituency as Aoife Byrne during the last Dáil?"
+
+    with pytest.raises((InvalidComposableDraft, UnsupportedComposableRequest)):
+        validate_composable_plan_draft(draft, question=question)
 
 
 def test_anchored_shared_constituency_numbered_term_accepts_a_different_anchor_and_returns_other_members():

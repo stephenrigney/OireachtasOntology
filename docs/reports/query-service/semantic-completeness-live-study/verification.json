@@ -1,0 +1,40 @@
+{
+  "baseline": "da74faf572651882a16c404413a86857658e871a",
+  "protocol_freeze": "1c72e7c",
+  "repository": "stephenrigney/OireachtasOntology",
+  "branch": "feat/query-service-generalisation",
+  "scope": "Only new semantic-completeness-live-study files; no production implementation",
+  "baseline_integrity": {
+    "method": "Compare working-tree bytes of every baseline blob to git cat-file blob output",
+    "blobs_checked": 593,
+    "changed": [],
+    "includes": "All pre-existing implementation, contracts, ontology, ETL, mappings, fixtures, frozen PR acceptance, pilot and static semantic-completeness evidence"
+  },
+  "focused_existing_tests": {
+    "command": ".venv/bin/python -m pytest tests/test_nlq_term_count_intent.py tests/test_nlq_composable_semantic_capability_discovery.py -q",
+    "passed": 209,
+    "warnings": "One existing Starlette/httpx deprecation warning",
+    "elapsed_seconds": 47.22
+  },
+  "local_gate_selftest": {
+    "command": ".venv/bin/python docs/reports/query-service/semantic-completeness-live-study/run.py selftest",
+    "assertions_passed": 16,
+    "scope": "Type/target/member/relation/time/aggregation/filter/output/exclusion/unknown-key mutations, unresolved and ambiguous identity, audit status and quote provenance"
+  },
+  "python_compilation": "passed",
+  "live_run": {
+    "provider_calls": 102,
+    "completed_schema_valid_responses": 102,
+    "transport_errors": 0,
+    "model_requested_and_returned": "gpt-6-luna",
+    "source_cases_prompts_and_scorer_unchanged_since_protocol_freeze": true,
+    "post_run_diagnostics": "Separate failure-attribution script, no relaxed-gate admission credit",
+    "summary_and_diagnostics_reproduction": "Exact parsed-object equality on independent local re-execution",
+    "credential_check": "Exact configured API-key bytes absent from all study artifacts; key never printed"
+  },
+  "git_diff_check": "passed",
+  "read_only_data_access": "Two existing exact entity resolver SELECTs only; no count execution or data mutation",
+  "production_acceptance_campaign": "not run",
+  "pr_27": {"state": "OPEN", "isDraft": true, "mergedAt": null, "acceptance": "NOT ACCEPTED"},
+  "next_gate": "Human architectural review; no production implementation authorized"
+}

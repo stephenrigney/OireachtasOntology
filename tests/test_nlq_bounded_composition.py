@@ -175,6 +175,48 @@ def test_operator_schemas_and_deterministic_validation(draft, question):
     Draft202012Validator(json.loads((ROOT / "poc/specs/composable-query-plan.schema.json").read_text())).validate(final)
 
 
+def _party_representatives_for_constituency_set_draft():
+    draft = _temporal_draft(
+        answer_referent="member", affiliation_mention="Fine Gael",
+        constituency="Clare", term_selector={"kind": "termNumber", "number": 33},
+    )
+    draft["referents"]["constituency"] = {
+        "type": "DailConstituency",
+        "members": [
+            {"type": "DailConstituency", "mention": "Clare"},
+            {"type": "DailConstituency", "mention": "Carlow-Kilkenny"},
+        ],
+    }
+    return draft
+
+
+def test_t05_either_or_constituency_representative_wording_preserves_exact_party_and_term_slots():
+    question = "Give Fine Gael representatives for either Clare or Carlow-Kilkenny in Dáil 33."
+    draft = _party_representatives_for_constituency_set_draft()
+    Draft202012Validator(load_composable_draft_schema()).validate(draft)
+    validated, unsupported = validate_composable_plan_draft(draft, question=question)
+
+    assert unsupported is None
+    assert validated["referents"]["term"]["selector"] == {"kind": "termNumber", "number": 33}
+    assert [item["mention"] for item in validated["referents"]["constituency"]["members"]] == [
+        "Clare", "Carlow-Kilkenny",
+    ]
+    assert validated["referents"]["affiliation"]["mention"] == "Fine Gael"
+
+
+@pytest.mark.parametrize("question", [
+    "Give Fine Gael representatives for either Clare or Carlow-Kilkenny in Dáil 33 and list their ages.",
+    "Give Fine Gael representatives for either Clare or Carlow-Kilkenny in Dáil 33 on 1 January 2020.",
+    "Give Fine Gael representatives for either Clare or Carlow-Kilkenny in Dáil 33 or in Dáil 34.",
+    "Give Fine Gael representatives for either Clare or Carlow-Kilkenny in Dáil 33, excluding women.",
+])
+def test_t05_constituency_or_graph_rejects_extra_qualifiers_and_scope(question):
+    with pytest.raises((InvalidComposableDraft, ValueError)):
+        validate_composable_plan_draft(
+            _party_representatives_for_constituency_set_draft(), question=question,
+        )
+
+
 def test_shared_constituency_prompt_prioritizes_the_independent_anchor_operator():
     instructions = build_composable_planner_instructions()
     assert "Dispatch priority" in instructions
@@ -353,7 +395,7 @@ def test_current_office_point_is_documented_as_local_asof_injection_not_planner_
     )
     instructions = build_composable_planner_instructions()
 
-    assert contract["contractVersion"] == "2.26.0"
+    assert contract["contractVersion"] == "2.29.0"
     assert "local executor injects configured asOf" in capability["semantics"]
     assert 'parameters exactly {"office":"exact office mention from the question"}' in instructions
     assert "Do not put a date or period in the proposal" in instructions

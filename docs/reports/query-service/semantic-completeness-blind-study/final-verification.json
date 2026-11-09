@@ -1,0 +1,26 @@
+{
+  "baseline": "40a681c5ca0b707b0acf859067d2851085872357",
+  "freeze_commit": "79867c76500bc1740ee88fa05add599e6891db6c",
+  "repository": "stephenrigney/OireachtasOntology",
+  "branch": "feat/query-service-generalisation",
+  "baseline_blob_count": 666,
+  "baseline_changed": [],
+  "frozen_changed": [],
+  "all_request_inputs_question_only_hash_verified": true,
+  "provider_calls": 72,
+  "preflight_calls": 0,
+  "credential_exact_bytes_absent_from_all_artifacts": true,
+  "pr_27": {
+    "headRefName": "feat/query-service-generalisation",
+    "isDraft": true,
+    "mergedAt": null,
+    "state": "OPEN",
+    "title": "Query Service: semantic dispatch generalisation (acceptance failed)"
+  },
+  "acceptance": "NOT ACCEPTED",
+  "production_acceptance_campaign": "not rerun",
+  "existing_test_command": ".venv/bin/python -m pytest tests/test_nlq_term_count_intent.py tests/test_nlq_composable_semantic_capability_discovery.py tests/test_nlq_composable_stage_a.py tests/test_nlq_plan_sparql.py -q",
+  "test_log": "existing-tests.txt",
+  "diff_check": "passed",
+  "scope": "Only new files in semantic-completeness-blind-study; no production integration or data writes"
+}

@@ -1,0 +1,5722 @@
+{
+  "purpose": "Frozen deliberate corruptions; not natural model outputs",
+  "faults": [
+    {
+      "id": "S1-target",
+      "case": "S1",
+      "kind": "target",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "membership_records",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 48,
+                  "end": 65
+                }
+              ],
+              "argument": {
+                "start": 48,
+                "end": 65
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S1-relationship",
+      "case": "S1",
+      "kind": "relationship",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "shared_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 48,
+                  "end": 65
+                }
+              ],
+              "argument": {
+                "start": 48,
+                "end": 65
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S1-attachment",
+      "case": "S1",
+      "kind": "attachment",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 48,
+                  "end": 65
+                }
+              ],
+              "argument": {
+                "start": 48,
+                "end": 65
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S1-negation",
+      "case": "S1",
+      "kind": "negation",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "negative",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 48,
+                  "end": 65
+                }
+              ],
+              "argument": {
+                "start": 48,
+                "end": 65
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S1-extra_output",
+      "case": "S1",
+      "kind": "extra_output",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 107
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 48,
+                  "end": 65
+                }
+              ],
+              "argument": {
+                "start": 48,
+                "end": 65
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "identity",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S2-target",
+      "case": "S2",
+      "kind": "target",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "membership_records",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 14,
+                  "end": 26
+                }
+              ],
+              "argument": {
+                "start": 14,
+                "end": 26
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S2-relationship",
+      "case": "S2",
+      "kind": "relationship",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "shared_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 14,
+                  "end": 26
+                }
+              ],
+              "argument": {
+                "start": 14,
+                "end": 26
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S2-attachment",
+      "case": "S2",
+      "kind": "attachment",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 14,
+                  "end": 26
+                }
+              ],
+              "argument": {
+                "start": 14,
+                "end": 26
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S2-negation",
+      "case": "S2",
+      "kind": "negation",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "negative",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 14,
+                  "end": 26
+                }
+              ],
+              "argument": {
+                "start": 14,
+                "end": 26
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S2-extra_output",
+      "case": "S2",
+      "kind": "extra_output",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 139
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 14,
+                  "end": 26
+                }
+              ],
+              "argument": {
+                "start": 14,
+                "end": 26
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "identity",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S3-target",
+      "case": "S3",
+      "kind": "target",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "membership_records",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "houses_typed_dail_terms",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "houses_catalogue",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S3-relationship",
+      "case": "S3",
+      "kind": "relationship",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "shared_service",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "houses_catalogue",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S3-attachment",
+      "case": "S3",
+      "kind": "attachment",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "houses_typed_dail_terms",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "houses_catalogue",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S3-negation",
+      "case": "S3",
+      "kind": "negation",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "houses_typed_dail_terms",
+              "binding": "source",
+              "polarity": "negative",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "houses_catalogue",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S3-extra_output",
+      "case": "S3",
+      "kind": "extra_output",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "houses_typed_dail_terms",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "houses_catalogue",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 96
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "identity",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S4-target",
+      "case": "S4",
+      "kind": "target",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "membership_records",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 93,
+                  "end": 110
+                }
+              ],
+              "argument": {
+                "start": 93,
+                "end": 110
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "exclusion",
+              "value": "measure_membership_records",
+              "binding": "count",
+              "polarity": "negative",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 49
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S4-relationship",
+      "case": "S4",
+      "kind": "relationship",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "shared_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 93,
+                  "end": 110
+                }
+              ],
+              "argument": {
+                "start": 93,
+                "end": 110
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "exclusion",
+              "value": "measure_membership_records",
+              "binding": "count",
+              "polarity": "negative",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 49
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S4-attachment",
+      "case": "S4",
+      "kind": "attachment",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 93,
+                  "end": 110
+                }
+              ],
+              "argument": {
+                "start": 93,
+                "end": 110
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "exclusion",
+              "value": "measure_membership_records",
+              "binding": "count",
+              "polarity": "negative",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 49
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S4-negation",
+      "case": "S4",
+      "kind": "negation",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "negative",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 93,
+                  "end": 110
+                }
+              ],
+              "argument": {
+                "start": 93,
+                "end": 110
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "exclusion",
+              "value": "measure_membership_records",
+              "binding": "count",
+              "polarity": "negative",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 49
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S4-extra_output",
+      "case": "S4",
+      "kind": "extra_output",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 147
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 93,
+                  "end": 110
+                }
+              ],
+              "argument": {
+                "start": 93,
+                "end": 110
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "exclusion",
+              "value": "measure_membership_records",
+              "binding": "count",
+              "polarity": "negative",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 49
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "identity",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S5-target",
+      "case": "S5",
+      "kind": "target",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "membership_records",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 99,
+                  "end": 111
+                }
+              ],
+              "argument": {
+                "start": 99,
+                "end": 111
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S5-relationship",
+      "case": "S5",
+      "kind": "relationship",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "shared_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 99,
+                  "end": 111
+                }
+              ],
+              "argument": {
+                "start": 99,
+                "end": 111
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S5-attachment",
+      "case": "S5",
+      "kind": "attachment",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 99,
+                  "end": 111
+                }
+              ],
+              "argument": {
+                "start": 99,
+                "end": 111
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S5-negation",
+      "case": "S5",
+      "kind": "negation",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "negative",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 99,
+                  "end": 111
+                }
+              ],
+              "argument": {
+                "start": 99,
+                "end": 111
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S5-extra_output",
+      "case": "S5",
+      "kind": "extra_output",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 140
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 99,
+                  "end": 111
+                }
+              ],
+              "argument": {
+                "start": 99,
+                "end": 111
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "identity",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S6-target",
+      "case": "S6",
+      "kind": "target",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "membership_records",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "houses_typed_dail_terms",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "houses_catalogue",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S6-relationship",
+      "case": "S6",
+      "kind": "relationship",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "shared_service",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "houses_catalogue",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S6-attachment",
+      "case": "S6",
+      "kind": "attachment",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "houses_typed_dail_terms",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "houses_catalogue",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S6-negation",
+      "case": "S6",
+      "kind": "negation",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "houses_typed_dail_terms",
+              "binding": "source",
+              "polarity": "negative",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "houses_catalogue",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "S6-extra_output",
+      "case": "S6",
+      "kind": "extra_output",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "houses_typed_dail_terms",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "houses_catalogue",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 113
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "identity",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "U1-omission",
+      "case": "U1",
+      "kind": "omission",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 182
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 182
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 182
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 182
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 182
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 182
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 133,
+                  "end": 150
+                }
+              ],
+              "argument": {
+                "start": 133,
+                "end": 150
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "U2-omission",
+      "case": "U2",
+      "kind": "omission",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 159
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 159
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 159
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 159
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 159
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 159
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 74,
+                  "end": 86
+                }
+              ],
+              "argument": {
+                "start": 74,
+                "end": 86
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "U3-omission",
+      "case": "U3",
+      "kind": "omission",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 233
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 233
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 233
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 233
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 233
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 233
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 46,
+                  "end": 63
+                }
+              ],
+              "argument": {
+                "start": 46,
+                "end": 63
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "U4-omission",
+      "case": "U4",
+      "kind": "omission",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 122
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 122
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 122
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 122
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 122
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 122
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 43,
+                  "end": 55
+                }
+              ],
+              "argument": {
+                "start": 43,
+                "end": 55
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "U5-omission",
+      "case": "U5",
+      "kind": "omission",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 134
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 134
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "houses_typed_dail_terms",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 134
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "houses_catalogue",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 134
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 134
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 134
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "U6-omission",
+      "case": "U6",
+      "kind": "omission",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 137
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 137
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 137
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 137
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "unfiltered",
+              "binding": "service",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 137
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 137
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 39,
+                  "end": 51
+                }
+              ],
+              "argument": {
+                "start": 39,
+                "end": 51
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    },
+    {
+      "id": "U3-condition-attachment",
+      "case": "U3",
+      "kind": "condition_attachment",
+      "candidate": {
+        "interpretation": {
+          "requirements": [
+            {
+              "role": "operation",
+              "value": "count",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 233
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "target",
+              "value": "DailTerm",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 233
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "relationship",
+              "value": "member_recorded_dail_service",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 233
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "scope",
+              "value": "member_service",
+              "binding": "query",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 233
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "temporal",
+              "value": "date_before",
+              "binding": "term",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 107,
+                  "end": 124
+                }
+              ],
+              "argument": {
+                "start": 120,
+                "end": 124
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "aggregation",
+              "value": "count_distinct",
+              "binding": "count",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 233
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "coverage",
+              "value": "local_recorded",
+              "binding": "source",
+              "polarity": "positive",
+              "origin": "default",
+              "evidence": [],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "output",
+              "value": "count",
+              "binding": "answer",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 0,
+                  "end": 233
+                }
+              ],
+              "argument": null,
+              "explanation": "Pre-model reference from independent expected semantics."
+            },
+            {
+              "role": "identity",
+              "value": "Member",
+              "binding": "member",
+              "polarity": "positive",
+              "origin": "explicit",
+              "evidence": [
+                {
+                  "start": 46,
+                  "end": 63
+                }
+              ],
+              "argument": {
+                "start": 46,
+                "end": 63
+              },
+              "explanation": "Pre-model reference from independent expected semantics."
+            }
+          ]
+        },
+        "self_check": {
+          "verdict": "complete",
+          "roles": {
+            "operation": "preserved",
+            "target": "preserved",
+            "identity": "preserved",
+            "relationship": "preserved",
+            "scope": "preserved",
+            "temporal": "preserved",
+            "filter": "preserved",
+            "exclusion": "preserved",
+            "aggregation": "preserved",
+            "output": "preserved",
+            "coverage": "preserved"
+          },
+          "uncovered": []
+        }
+      }
+    }
+  ]
+}

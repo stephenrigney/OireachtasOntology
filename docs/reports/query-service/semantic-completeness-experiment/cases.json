@@ -1,0 +1,47 @@
+{
+  "purpose": "New independent diagnostic development questions, not PR #27 acceptance and not a production acceptance campaign.",
+  "authorship": {
+    "session": "ses_e40aa0042ffeRGGOUBwRimuDtg",
+    "repository_and_branch_verified": true,
+    "implementation_tests_reports_prior_question_text_and_pilot_evidence_read": false,
+    "allowed_authority": "AGENTS.md, executor skill, term_count contract extraction",
+    "limitation": "Extraction also emitted a second term_count metadata fragment containing Q04/T01 identifiers and a resource-identity note. Isolation from acceptance metadata was imperfect; no associated questions were read. Novelty against unread material cannot be guaranteed.",
+    "freeze": "Original twenty case questions, labels, members, reasons and categories frozen before replay. Case 21 separately appended before replay. No model prompts tuned against outcomes.",
+    "addendum": "Author acknowledged NEW-TC-02 was labelled supported too broadly: years-of-service contrast is outside the approved exclusions. Original authored case remains unchanged; effective classification is separately adjudicated before execution. No additional evidence or prior sets inspected."
+  },
+  "pre_execution_adjudications": {
+    "NEW-TC-02": {
+      "kind": "unsupported",
+      "reason": "Approved excluded measures are membership_records, members and seats, not years of service. Scope adjudication before any replay; no semantic extension authorised."
+    }
+  },
+  "cases": [
+    {"id":"NEW-TC-01","question":"In the Houses-owned Dáil term catalogue, how many distinct term identities are recorded?","kind":"supported","member":null,"reason":"Explicit catalogue scope; requests only the distinct recorded DailTerm count.","category":"catalogue"},
+    {"id":"NEW-TC-02","question":"How many distinct recorded Dáil terms appear in Micheál Martin's membership history, not years of service?","kind":"supported","member":"Micheál Martin","reason":"Unfiltered recorded membership count with a terminal contrast excluding a duration measure.","category":"terminal_excluded_measure_contrast"},
+    {"id":"NEW-TC-03","question":"For Brendan Howlin, give only the number of different Dáil terms represented in his recorded service.","kind":"supported","member":"Brendan Howlin","reason":"One exact Member, unfiltered recorded service, and count-only output.","category":"member_first_imperative"},
+    {"id":"NEW-TC-04","question":"Across Mary Lou McDonald's recorded Dáil memberships, what is the total number of distinct terms?","kind":"supported","member":"Mary Lou McDonald","reason":"Counts distinct term identities across one Member's recorded memberships without filtering.","category":"scope_first_question"},
+    {"id":"NEW-TC-05","question":"How many different Dáil terms are represented by the membership records held for Micheál Martin?","kind":"supported","member":"Micheál Martin","reason":"Passive wording still targets distinct terms rather than membership records.","category":"passive_membership_paraphrase"},
+    {"id":"NEW-TC-06","question":"The distinct Dáil terms in Brendan Howlin's recorded service: what is their count?","kind":"supported","member":"Brendan Howlin","reason":"Fronted count target retains unfiltered recorded Member-service scope.","category":"target_fronted_question"},
+    {"id":"NEW-TC-07","question":"Return a single count of the distinct Dáil term identities linked through Mary Lou McDonald's recorded memberships.","kind":"supported","member":"Mary Lou McDonald","reason":"Explicitly requests only distinct recorded term identities through one Member's membership paths.","category":"count_only_directive"},
+    {"id":"NEW-TC-08","question":"How many distinct Dáil terms in Micheál Martin's recorded service were served as a Fianna Fáil member?","kind":"unsupported","member":"Micheál Martin","reason":"Restricts the count using party affiliation.","category":"party_filter"},
+    {"id":"NEW-TC-09","question":"How many distinct recorded Dáil terms did Brendan Howlin serve in after 2010?","kind":"unsupported","member":"Brendan Howlin","reason":"Adds a date restriction to Member service.","category":"date_filter"},
+    {"id":"NEW-TC-10","question":"Count the distinct recorded Dáil terms in which Mary Lou McDonald represented Dublin Central.","kind":"unsupported","member":"Mary Lou McDonald","reason":"Requires constituency-specific filtering.","category":"constituency_filter"},
+    {"id":"NEW-TC-11","question":"How many distinct recorded Dáil terms did Mary Lou McDonald and her predecessor each serve in?","kind":"unsupported","member":"Mary Lou McDonald","reason":"Requests counts for an additional person and requires resolving that person's identity.","category":"additional_person"},
+    {"id":"NEW-TC-12","question":"Count the distinct Dáil terms in Micheál Martin's recorded service, but make the answer the number of membership records.","kind":"unsupported","member":"Micheál Martin","reason":"Conflicts between a distinct-term count and a membership-record count.","category":"conflicting_count_targets"},
+    {"id":"NEW-TC-13","question":"How many distinct Dáil terms appear in Brendan Howlin's recorded service, and what are their names?","kind":"unsupported","member":"Brendan Howlin","reason":"Requests term names in addition to the count.","category":"extra_output"},
+    {"id":"NEW-TC-14","question":"How many recorded Dáil terms did Mary Lou McDonald never serve in?","kind":"unsupported","member":"Mary Lou McDonald","reason":"Requires counting the complement of recorded service rather than the Member's membership-linked terms.","category":"negated_service"},
+    {"id":"NEW-TC-15","question":"How many distinct Dáil terms remain in Micheál Martin's recorded service if his first recorded term is excluded?","kind":"unsupported","member":"Micheál Martin","reason":"Excludes a term and requires determining which recorded term is first.","category":"term_exclusion"},
+    {"id":"NEW-TC-16","question":"Treat this as an unfiltered service count: how many distinct recorded Dáil terms did Brendan Howlin serve in while holding ministerial office?","kind":"unsupported","member":"Brendan Howlin","reason":"The unfiltered label does not remove the operative ministerial-office restriction.","category":"misleading_unfiltered_label"},
+    {"id":"NEW-TC-17","question":"For context, only Dáil terms beginning after 2000 are eligible. How many distinct term identities are recorded in the Houses-owned Dáil term catalogue?","kind":"unsupported","member":null,"reason":"The contextual eligibility instruction imposes a date filter on the catalogue count.","category":"misleading_contextual_date_filter"},
+    {"id":"NEW-TC-18","question":"How many distinct Dáil terms are represented by the three most recent membership records for Mary Lou McDonald?","kind":"unsupported","member":"Mary Lou McDonald","reason":"Requires ordering and restricting membership records before counting terms.","category":"ordered_record_subset"},
+    {"id":"NEW-TC-19","question":"How many distinct Dáil terms did Micheál Martin serve in altogether, including any terms missing from the recorded membership data?","kind":"unsupported","member":"Micheál Martin","reason":"Demands historical completeness beyond recorded local membership evidence.","category":"unrecorded_history_requirement"},
+    {"id":"NEW-TC-20","question":"How many distinct Dáil terms appear in Brendan Griffin's recorded service?","kind":"ambiguous","member":"Brendan Griffin","reason":"The operation fits, but the supplied name does not uniquely ground the intended Member; identity clarification is required.","category":"ambiguous_member_identity"},
+    {"id":"NEW-TC-21","question":"Give only the count of distinct Dáil terms represented in Brendan Howlin's recorded service, not membership records.","kind":"supported","member":"Brendan Howlin","reason":"Requests only distinct recorded DailTerm identities through one Member's unfiltered service, with a terminal contrast excluding the approved membership-record count measure.","category":"terminal_excluded_measure_contrast","exclusions":["membership_records"]}
+  ],
+  "sanity_controls": [
+    {"id":"CONTROL-MEMBER","question":"How many Dáil terms has Micheál Martin served in?","kind":"supported","member":"Micheál Martin"},
+    {"id":"CONTROL-CONTRAST","question":"How many Dáil terms has Micheál Martin served in, not membership records?","kind":"supported","member":"Micheál Martin","exclusions":["membership_records"]},
+    {"id":"CONTROL-AMBIGUITY","question":"How many Dáil terms has Brendan Griffin served in?","kind":"ambiguous","member":"Brendan Griffin"}
+  ],
+  "sanity_control_authorship": "Executor-authored canonical syntax checks, not independently authored or fresh acceptance evidence. Ambiguity is a recorded pilot fact, not newly queried here."
+}
