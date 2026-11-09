@@ -1,0 +1,32 @@
+{
+  "baseline": "40a681c5ca0b707b0acf859067d2851085872357",
+  "freeze_commit": "79867c76500bc1740ee88fa05add599e6891db6c",
+  "provider": "configured Responses-compatible OpenCode inference",
+  "model": "gpt-6-luna",
+  "base_url": "https://opencode.ai/inference/openai/v1",
+  "max_output_tokens": 6000,
+  "timeout_seconds": 90,
+  "temperature_top_p_reasoning_seed": "omitted/provider defaults",
+  "preflight_calls": 0,
+  "experimental_calls": 72,
+  "repetitions": 3,
+  "maximum_concurrency": 2,
+  "retries": 0,
+  "files": {
+    "protocol.md": "5165c8a9c0dbcc241abf9d70640b114a4de16b253b3d8f229a459c2d8977107b",
+    "run.py": "c57ac1167352ced9e03eadc81b06eca8ec6fcfb4efca9a086c6145481d110c7c",
+    "cases.json": "7883e908714e5306bca59f303509b55f87a8298a07b3b0472a64624e35b62ed1",
+    "prepare.py": "4b89f436c5cae10539a6a7723d24d1c9aa95168551f757484fec9b6183db0c4d",
+    "evidence.json": "c05f640838c1c03fbdd5013ff4ba49d6f6ecfc8447adae99bbfa269427323fb9",
+    "references.json": "4f1cd062a9824473d2f486643379f60ec0bd9c4df1712fec206f6e9f888943b3",
+    "faults.json": "203fd3f9d709068109478315becb26ad162cb698d7e3c1bec47dfb3e125e1d33",
+    "novelty.json": "52625d6912ed99d347adb6ac876109a41ead58d91f32fc1245873c801c5623a5",
+    "score.py": "4b83fab5d8369303fc9bdf908b6c67a8f314cd6339920ba47a0b3567e85c342d",
+    "catalogue-evidence.json": "e005a52e928ff8f41fb45ef1022db9f2027cb25f27fb69c28b965b8947572662",
+    "existing-tests.txt": "bfa8f78fc06a300866ee1212bfed48f4934e4d537f68933e4fbcc18f347e0ecf",
+    "interface.json": "dc419ba77f0b9d0fefe0caf40849bd46eb3248d9c9891e7bffe2e4be9f23b25c",
+    "verify.py": "edb63a1a6f4b8308162826f61835383531f41310e452d746bcf62d60f15f907f",
+    "pre-execution-integrity.json": "cd19045c6a5f572ca1ee9c99754cfcf306e3e536d800feaaa5916ccb0231b669",
+    "pre-execution-review.md": "0b46be96c9347c5779c42cefabf64a3695f4c423befa0e51e4d757e080841c6e"
+  }
+}

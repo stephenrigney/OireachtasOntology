@@ -1,0 +1,852 @@
+{
+  "purpose": "Post-run failure attribution, no relaxed-gate or repaired-result credit",
+  "calls": [
+    {
+      "id": "S1",
+      "repeat": 1,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S1",
+      "repeat": 2,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S1",
+      "repeat": 3,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S2",
+      "repeat": 1,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S2",
+      "repeat": 2,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S2",
+      "repeat": 3,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S3",
+      "repeat": 1,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [
+        {
+          "index": 4,
+          "role": "temporal",
+          "value": "term",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "S3",
+      "repeat": 2,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [
+        {
+          "index": 4,
+          "role": "temporal",
+          "value": "term",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "S3",
+      "repeat": 3,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [
+        {
+          "index": 4,
+          "role": "temporal",
+          "value": "term",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "S4",
+      "repeat": 1,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S4",
+      "repeat": 2,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S4",
+      "repeat": 3,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S5",
+      "repeat": 1,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S5",
+      "repeat": 2,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S5",
+      "repeat": 3,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": [
+        {
+          "index": 3,
+          "role": "scope",
+          "span": {
+            "start": 122,
+            "end": 135
+          },
+          "error": "offset_whitespace_boundary"
+        }
+      ]
+    },
+    {
+      "id": "S6",
+      "repeat": 1,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [
+        {
+          "index": 4,
+          "role": "temporal",
+          "value": "term",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "S6",
+      "repeat": 2,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [
+        {
+          "index": 4,
+          "role": "temporal",
+          "value": "term",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "S6",
+      "repeat": 3,
+      "stage": "proposal",
+      "expected": "supported",
+      "role_value_errors": [
+        {
+          "index": 4,
+          "role": "temporal",
+          "value": "term",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "U1",
+      "repeat": 1,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [
+        {
+          "index": 7,
+          "role": "exclusion",
+          "value": "term_selection",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "U1",
+      "repeat": 2,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U1",
+      "repeat": 3,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U2",
+      "repeat": 1,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U2",
+      "repeat": 2,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U2",
+      "repeat": 3,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U3",
+      "repeat": 1,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U3",
+      "repeat": 2,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U3",
+      "repeat": 3,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [
+        {
+          "index": 5,
+          "role": "filter",
+          "value": "start_date",
+          "binding": "service"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "U4",
+      "repeat": 1,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U4",
+      "repeat": 2,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U4",
+      "repeat": 3,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U5",
+      "repeat": 1,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [
+        {
+          "index": 6,
+          "role": "scope",
+          "value": "term_selection",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "U5",
+      "repeat": 2,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [
+        {
+          "index": 4,
+          "role": "temporal",
+          "value": "term",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "U5",
+      "repeat": 3,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [
+        {
+          "index": 4,
+          "role": "temporal",
+          "value": "term",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "U6",
+      "repeat": 1,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U6",
+      "repeat": 2,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U6",
+      "repeat": 3,
+      "stage": "proposal",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S1",
+      "repeat": 1,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S1",
+      "repeat": 2,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S1",
+      "repeat": 3,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S2",
+      "repeat": 1,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S2",
+      "repeat": 2,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S2",
+      "repeat": 3,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S3",
+      "repeat": 1,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [
+        {
+          "index": 4,
+          "role": "temporal",
+          "value": "term",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "S3",
+      "repeat": 2,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S3",
+      "repeat": 3,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [
+        {
+          "index": 4,
+          "role": "temporal",
+          "value": "term",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "S4",
+      "repeat": 1,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S4",
+      "repeat": 2,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S4",
+      "repeat": 3,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S5",
+      "repeat": 1,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": [
+        {
+          "index": 3,
+          "role": "relationship",
+          "span": {
+            "start": 122,
+            "end": 135
+          },
+          "error": "offset_whitespace_boundary"
+        },
+        {
+          "index": 4,
+          "role": "scope",
+          "span": {
+            "start": 122,
+            "end": 140
+          },
+          "error": "offset_whitespace_boundary"
+        }
+      ]
+    },
+    {
+      "id": "S5",
+      "repeat": 2,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S5",
+      "repeat": 3,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "S6",
+      "repeat": 1,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [
+        {
+          "index": 4,
+          "role": "temporal",
+          "value": "term",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "S6",
+      "repeat": 2,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [
+        {
+          "index": 4,
+          "role": "temporal",
+          "value": "term",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "S6",
+      "repeat": 3,
+      "stage": "blind",
+      "expected": "supported",
+      "role_value_errors": [
+        {
+          "index": 4,
+          "role": "temporal",
+          "value": "term",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "U1",
+      "repeat": 1,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [
+        {
+          "index": 10,
+          "role": "exclusion",
+          "value": "additional_person",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "U1",
+      "repeat": 2,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [
+        {
+          "index": 8,
+          "role": "exclusion",
+          "value": "term_selection",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "U1",
+      "repeat": 3,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U2",
+      "repeat": 1,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U2",
+      "repeat": 2,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U2",
+      "repeat": 3,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U3",
+      "repeat": 1,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [
+        {
+          "index": 6,
+          "role": "temporal",
+          "value": "start_date",
+          "binding": "service"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "U3",
+      "repeat": 2,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [
+        {
+          "index": 6,
+          "role": "filter",
+          "value": "start_date",
+          "binding": "service"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "U3",
+      "repeat": 3,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [
+        {
+          "index": 6,
+          "role": "filter",
+          "value": "start_date",
+          "binding": "service"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "U4",
+      "repeat": 1,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U4",
+      "repeat": 2,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [
+        {
+          "index": 6,
+          "role": "filter",
+          "value": "end_date",
+          "binding": "service"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "U4",
+      "repeat": 3,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [
+        {
+          "index": 6,
+          "role": "filter",
+          "value": "end_date",
+          "binding": "service"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "U5",
+      "repeat": 1,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [
+        {
+          "index": 4,
+          "role": "temporal",
+          "value": "term",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "U5",
+      "repeat": 2,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [
+        {
+          "index": 4,
+          "role": "temporal",
+          "value": "term_selection",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": []
+    },
+    {
+      "id": "U5",
+      "repeat": 3,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [
+        {
+          "index": 5,
+          "role": "temporal",
+          "value": "term",
+          "binding": "term"
+        }
+      ],
+      "offset_errors": [
+        {
+          "index": 5,
+          "role": "temporal",
+          "span": {
+            "start": 73,
+            "end": 110
+          },
+          "error": "offset_whitespace_boundary"
+        }
+      ]
+    },
+    {
+      "id": "U6",
+      "repeat": 1,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U6",
+      "repeat": 2,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    },
+    {
+      "id": "U6",
+      "repeat": 3,
+      "stage": "blind",
+      "expected": "unsupported",
+      "role_value_errors": [],
+      "offset_errors": []
+    }
+  ],
+  "by_stage": {
+    "proposal": {
+      "calls": 36,
+      "input_tokens": 70245,
+      "output_tokens": 57647,
+      "cached_tokens": 62235,
+      "reported_cost": 0.030444429999999995,
+      "non_numeric_cost_payloads": [],
+      "self_checks_complete": 35,
+      "offset_invalid_calls": 1,
+      "role_value_invalid_calls": 11,
+      "returned_parameters": {
+        "{\"reasoning\": {\"context\": \"all_turns\", \"effort\": \"medium\", \"mode\": \"standard\", \"summary\": null}, \"seed\": null, \"temperature\": 1, \"top_p\": 0.98}": 36
+      },
+      "rejection_reasons": {
+        "necessary_checks_passed": 11,
+        "role_value_mismatch": 11,
+        "offset_whitespace_boundary": 1,
+        "unsupported_filter_or_instruction": 2,
+        "unsupported:coverage": 3,
+        "unsupported:temporal": 2,
+        "unresolved_semantics": 3,
+        "unsupported_output": 3
+      }
+    },
+    "blind": {
+      "calls": 36,
+      "input_tokens": 71361,
+      "output_tokens": 59450,
+      "cached_tokens": 63320,
+      "reported_cost": 0.031360650000000004,
+      "non_numeric_cost_payloads": [],
+      "self_checks_complete": 36,
+      "offset_invalid_calls": 2,
+      "role_value_invalid_calls": 15,
+      "returned_parameters": {
+        "{\"reasoning\": {\"context\": \"all_turns\", \"effort\": \"medium\", \"mode\": \"standard\", \"summary\": null}, \"seed\": null, \"temperature\": 1, \"top_p\": 0.98}": 36
+      },
+      "rejection_reasons": {
+        "necessary_checks_passed": 12,
+        "role_value_mismatch": 14,
+        "offset_whitespace_boundary": 1,
+        "unsupported_filter_or_instruction": 2,
+        "core_cardinality:coverage": 1,
+        "unsupported:coverage": 2,
+        "unresolved_semantics": 1,
+        "unsupported_output": 3
+      }
+    }
+  }
+}
