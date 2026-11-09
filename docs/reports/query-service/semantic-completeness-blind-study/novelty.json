@@ -1,0 +1,20 @@
+{
+  "method": "Exact question text and JSON Unicode-escaped spelling against all baseline tracked JSON/JSONL/Markdown/Python; after authorship only",
+  "files_considered": 666,
+  "matches": {
+    "S1": [],
+    "S2": [],
+    "S3": [],
+    "S4": [],
+    "S5": [],
+    "S6": [],
+    "U1": [],
+    "U2": [],
+    "U3": [],
+    "U4": [],
+    "U5": [],
+    "U6": []
+  },
+  "limitations": "Does not prove conceptual novelty; author received no historical questions.",
+  "cases_sha256": "7883e908714e5306bca59f303509b55f87a8298a07b3b0472a64624e35b62ed1"
+}
