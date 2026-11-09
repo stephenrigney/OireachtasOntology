@@ -3991,6 +3991,9 @@ def readable_member_office_evidence_result(
     member_iri: str,
     member_label: str,
     office_label: str,
+    latest_recorded: bool = False,
+    office_iri: str | None = None,
+    as_of: date | None = None,
 ) -> QueryResult:
     """Return each validated accepted holding episode without joining tenure gaps."""
     if result.kind != "select":
@@ -4031,6 +4034,11 @@ def readable_member_office_evidence_result(
             raise NLQError(
                 "An accepted OfficeHolding ends before it starts; no partial episode list was returned."
             )
+        if latest_recorded:
+            # Chronology must use valid mapped lexical forms, not datetime's
+            # more permissive acceptance of truncated ISO timestamps.
+            start = _parse_member_datetime(start_text, what="OfficeHolding StartDate")
+            end = None if end_text in {"—", ""} else _parse_member_datetime(end_text, what="OfficeHolding EndDate")
         evidence = (row_member, range_iri, start, end)
         previous = by_holding.get(holding)
         if previous is not None and previous != evidence:
@@ -4039,6 +4047,22 @@ def readable_member_office_evidence_result(
             )
         by_holding[holding] = evidence
 
+    ordered = sorted(by_holding, key=lambda holding: (by_holding[holding][2], holding))
+    if latest_recorded:
+        if not ordered:
+            raise NLQError("No accepted local episode is available for latest-recorded selection.")
+        _require_local_iri(office_iri, "NamedOffice")
+        latest = ordered[-1]
+        latest_start = by_holding[latest][2]
+        if as_of is None or latest_start.date() > as_of:
+            raise NLQError("A latest recorded start is future-dated or lacks a reference date; it cannot answer a past-tenure request.")
+        for earlier in ordered[:-1]:
+            previous_start, previous_end = by_holding[earlier][2:]
+            if previous_start == latest_start:
+                raise NLQError("Distinct accepted episodes tie at the latest StartDate; no identity tie-break can establish a unique latest episode.")
+            if previous_end is None or previous_end >= latest_start:
+                raise NLQError("Earlier accepted episodes are open-ended or overlap the latest start; a separate latest period cannot be selected unambiguously.")
+        ordered = [latest]
     rows = [
         (
             member_label,
@@ -4048,12 +4072,14 @@ def readable_member_office_evidence_result(
             (_display_office_datetime(evidence[3]) if evidence[3] is not None
              else "Open-ended (no end date recorded)"),
         )
-        for holding, evidence in by_holding.items()
+        + ((expected_member, office_iri, by_holding[holding][1]) if latest_recorded else ())
+        for holding in ordered
+        for evidence in (by_holding[holding],)
     ]
-    rows.sort(key=lambda row: (row[3], row[2]))
     return QueryResult(
         "select",
-        ("Member", "Reviewed office", "OfficeHolding identity", "Start date", "End date"),
+        ("Member", "Reviewed office", "OfficeHolding identity", "Start date", "End date")
+        + (("Member identity", "NamedOffice identity", "DateRange identity") if latest_recorded else ()),
         tuple(rows),
         result.raw_json,
     )
@@ -6516,7 +6542,7 @@ def _execute_shared_dail_terms_question(
             return execute_stage_c(plan, as_of=as_of, fuseki=fuseki, supported_predicates=supported_predicates)
         if capability == "office_holding_evidence":
             from .interpretation import office_holding_boundary
-            return office_holding_boundary(parameters, fuseki=fuseki, supported_predicates=supported_predicates)
+            return office_holding_boundary(parameters, as_of=as_of, fuseki=fuseki, supported_predicates=supported_predicates)
         if capability == "office_holding_window":
             if set(parameters) == {"office"}:
                 # A date-less present/current office question has been

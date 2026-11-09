@@ -253,6 +253,17 @@ gaps. Unreviewed office observations are not queried as holdings. Election-event
 and tenure-duration questions, and requests with additional filters, remain
 unsupported.
 
+The same office-evidence capability accepts “last” or “most recently” in these
+period questions using the bounded `latestRecorded` selection. It reads and
+validates every accepted episode before selecting a unique greatest StartDate;
+tied starts, earlier open/overlapping intervals, future starts or uncertain
+evidence prevent selection. The result is prominently qualified as **latest
+recorded**, not a proven historically last tenure or a complete career history.
+Exact Member, NamedOffice, OfficeHolding and DateRange identities are retained.
+A missing end remains open-ended and is not evidence of a completed tenure.
+The unqualified comparison continues to list all separate recorded episodes;
+additional filters, election events and durations remain unsupported.
+
 Composable contract `2.26.0` adds a bounded distinct-Bill count for the exact
 request “How many Bills did [member] sponsor that were published in [calendar
 year]?” It joins the exact Member identity through Bill-owned sponsorship

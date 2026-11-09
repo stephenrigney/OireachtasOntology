@@ -208,7 +208,7 @@ def validate_default(plan: dict, *, constituency: str, current: bool) -> None:
         raise ValueError("Current representation default lacks approved scoped interpretation evidence.")
 
 
-def office_holding_boundary(parameters, *, fuseki, supported_predicates):
+def office_holding_boundary(parameters, *, fuseki, supported_predicates, as_of: date | None = None):
     """Return bounded accepted office episodes for one exact Member and office.
 
     These local episodes are not treated as a complete career timeline. Raw
@@ -227,6 +227,8 @@ def office_holding_boundary(parameters, *, fuseki, supported_predicates):
     )
     from .member_resolution import resolve_local_entity_label
     from .errors import NLQError, IdentityNotFound, QueryLimitError
+    latest_recorded = parameters.get("selection") == "latestRecorded"
+    request_family = "office_holding_latest_recorded" if latest_recorded else "office_holding_evidence"
     try:
         member_iri, member_label = resolve_member(
             fuseki.query(member_resolution_query(parameters["member"], supported_predicates=supported_predicates)),
@@ -236,19 +238,19 @@ def office_holding_boundary(parameters, *, fuseki, supported_predicates):
                                             supported_predicates=supported_predicates)
     except AmbiguousMember as error:
         return PlanOutcome("ambiguous", diagnostic=str(error), candidates=error.candidates,
-                           request_family="office_holding_evidence")
+                           request_family=request_family)
     except NLQError as error:
         status = "not_found" if isinstance(error, IdentityNotFound) else "validation_failure" if isinstance(error, QueryLimitError) else "source_data_unavailable"
-        return PlanOutcome(status, diagnostic=str(error), request_family="office_holding_evidence")
+        return PlanOutcome(status, diagnostic=str(error), request_family=request_family)
     if office.state == "unresolved":
-        return PlanOutcome("source_data_unavailable", request_family="office_holding_evidence",
+        return PlanOutcome("source_data_unavailable", request_family=request_family,
                            diagnostic=f"No accepted local NamedOffice identity is available for {parameters['office']}; accepted OfficeHolding evidence cannot establish this tenure. Unreviewed ministerial observations are not accepted holdings.")
     if office.state == "ambiguous":
-        return PlanOutcome("ambiguous", request_family="office_holding_evidence",
+        return PlanOutcome("ambiguous", request_family=request_family,
                            candidates=tuple({"iri": c.iri, "label": c.label} for c in office.candidates),
                            diagnostic="Several accepted office identities match; none was selected.")
     if office.state != "resolved" or len(office.candidates) != 1:
-        return PlanOutcome("source_data_unavailable", request_family="office_holding_evidence",
+        return PlanOutcome("source_data_unavailable", request_family=request_family,
                            diagnostic="The local office resolver did not return one usable reviewed identity.")
 
     office_candidate = office.candidates[0]
@@ -266,7 +268,7 @@ def office_holding_boundary(parameters, *, fuseki, supported_predicates):
         if not evidence.rows:
             return PlanOutcome(
                 "source_data_unavailable", sparql=evidence_query,
-                request_family="office_holding_evidence",
+                request_family=request_family,
                 diagnostic=(f"No accepted local OfficeHolding episode for {member_label} as "
                             f"{office_candidate.label} is recorded; tenure cannot be determined from local evidence."),
             )
@@ -275,22 +277,29 @@ def office_holding_boundary(parameters, *, fuseki, supported_predicates):
             member_iri=member_iri,
             member_label=member_label,
             office_label=office_candidate.label,
+            latest_recorded=latest_recorded,
+            office_iri=office_candidate.iri,
+            as_of=as_of,
         )
     except PlanError as error:
-        return PlanOutcome("unsupported_mapping", request_family="office_holding_evidence",
+        return PlanOutcome("unsupported_mapping", request_family=request_family,
                            diagnostic=f"The reviewed office-holding mapping could not be used safely: {error}")
     except NLQError as error:
         return PlanOutcome(
             "source_data_unavailable", sparql=evidence_query,
-            request_family="office_holding_evidence",
+            request_family=request_family,
             diagnostic=("Accepted local OfficeHolding episodes could not be read completely or their intervals "
                         f"are missing, conflicting, or uncertain ({error}); no partial episode list was returned."),
         )
 
     return PlanOutcome(
         "success", sparql=evidence_query, result=result,
-        request_family="office_holding_evidence",
-        diagnostic=(f"INCOMPLETE LOCAL-RECORDED EPISODES for {member_label} as {office_candidate.label}. "
+        request_family=request_family,
+        diagnostic=(("LATEST RECORDED EPISODE — not a proven historically last tenure. "
+                     "Selected by the unique greatest validated StartDate after reading all accepted local episodes; "
+                     "earlier intervals end strictly before it. A missing end date is not proof of a completed tenure. "
+                     if latest_recorded else "")
+                    + f"INCOMPLETE LOCAL-RECORDED EPISODES for {member_label} as {office_candidate.label}. "
                     "Each row is a separate locally recorded accepted OfficeHolding with its mapped interval. "
                     "This is not a complete career or tenure history; gaps in local records do not mean the "
                     "Member was not in office."),

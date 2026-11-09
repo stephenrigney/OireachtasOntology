@@ -96,7 +96,9 @@ def build_composable_planner_instructions() -> str:
 Interpretation contract: for the one-term, one-constituency Member list/count, the explicit phrase "in this Dáil" selects the exact House-date-resolved current term and is term-wide, regardless of whether the question says "represent" or "represented". It overrides only the implicit present-tense-as-of default: do not require an asOf membership interval unless the user explicitly asks for current representation (for example, "currently", "now", "today", or "as of now/today"). A literal calendar date remains its exact membership-date point. Without the explicit "this Dáil" scope, an unqualified present-tense constituency request defaults to representation at the query date; an explicit current-point request also requires the DailMembership interval to contain asOf. Dated party/representation composition retains its separate rule that currentTerm requires both party and DailMembership intervals to contain asOf. Never default numbered-term, other dated, historical, or election questions. The plain term-scoped constituency Member projection supports one explicit membership calendar-date point; preserve it as a membershipInterval constraint, never as a HouseTerm date or election event. For a Member's latest recorded Dáil term and constituency, use the constituency_representation family with selector "latestRecorded" when the question explicitly asks for the latest recorded term, the most recent term, or the last term (including "last term in the Dáil"). Local code selects from that Member's accepted DailMembership identities and House-owned chronology, and fails closed on missing/tied/conflicting dates or representation evidence. This is not an election-date answer.
 For partial-name person lookup use capability_selection member_lookup with parameters {{"member":"exact name mention","house":"Dail"}} for Deputy/TD, "Seanad" for Senator, or null for unqualified Member. Local code offers grounded alternatives; never expand a surname to an assumed full name.
 For a numbered-Dáil party listing use capability_selection dail_parties_and_groups with parameters {{"termNumber":N,"includeGroups":false}}; true only if groups are also requested. This reuses the existing party compiler, not the constituency composition.
-For an unfiltered question asking when/for what dates or periods one named person held one named office, also accepting "When did [member] serve as [office]?" and "During what period was [member] [office]?", use capability_selection office_holding_evidence with parameters {{"member":"exact mention","office":"exact office mention"}}. This returns each separately recorded accepted local OfficeHolding episode for the exact identities with its validated interval, explicitly labeled incomplete local-recorded evidence—not a complete career timeline. Do not merge episodes or infer first start, final end, total duration, election events, or absence from gaps; unreviewed observations cannot answer. Election, first/last-event, duration, and extra-filter requests remain unsupported.
+For an unfiltered question asking when/for what dates or periods one named person held one named office, also accepting "When did [member] serve as [office]?" and "During what period was [member] [office]?", use capability_selection office_holding_evidence with parameters {{"member":"exact mention","office":"exact office mention"}}. This returns each separately recorded accepted local OfficeHolding episode for the exact identities with its validated interval, explicitly labeled incomplete local-recorded evidence—not a complete career timeline. Do not merge episodes or infer first start, final end, total duration, election events, or absence from gaps; unreviewed observations cannot answer. Election, first-event, duration, and extra-filter requests remain unsupported.
+
+For the same named-person/office period request qualified by "last" or "most recently" (including "When was [member] last [office]?" and "When did [member] last serve as [office]?"), reuse office_holding_evidence with parameters {{"member":"exact mention","office":"exact office mention","selection":"latestRecorded"}}. Do not reject this as an election-event request or claim complete career history. Local code reads every accepted episode and may return only a uniquely latest recorded episode by validated StartDate, with an explicit NOT proven historically last tenure qualification. Tied latest starts, earlier open/overlapping intervals, future starts or any uncertain interval fail closed; no IRI tie-break determines chronology. A missing end remains open-ended, not a completed tenure. Do not omit selection for last/most-recently wording or add it to an all-episodes request. Extra dates, parties, election events and relationships remain unsupported as a whole.
 
 For who held a named office on a calendar date, during a complete month/year, or over an explicit month-to-month window, use capability_selection office_holding_window with exactly one of {{"office":"exact mention","date":"1994-06-01"}}, {{"office":"exact mention","year":1994}}, or {{"office":"exact mention","startMonth":6,"startYear":1994,"endMonth":6,"endYear":1994}}. Preserve date-point vs full-window semantics. Local code reuses the accepted dated OfficeHolding compiler and incomplete-coverage qualification; an overlap does not mean service throughout the window.
 
@@ -918,7 +920,8 @@ def _validate_capability_selection_draft(value: dict[str, Any], *, question: str
             raise InvalidComposableDraft(
                 "Office evidence dispatch metadata must match the reviewed composable_office_evidence handler and member_and_office input."
             )
-        if (not isinstance(parameters, dict) or set(parameters) != {"member", "office"}
+        if (not isinstance(parameters, dict) or set(parameters) not in ({"member", "office"}, {"member", "office", "selection"})
+                or ("selection" in parameters and parameters["selection"] != "latestRecorded")
                 or any(not isinstance(parameters.get(key), str) or not parameters[key].strip()
                        or _label_position(question, parameters[key]) is None for key in ("member", "office"))):
             raise InvalidComposableDraft("Office evidence lookup requires grounded Member and office mentions.")
@@ -944,12 +947,23 @@ def _validate_capability_selection_draft(value: dict[str, Any], *, question: str
             ("during", "what", "period", "was", "member", "office"),
             ("during", "what", "period", "was", "member", "the", "office"),
         })
-        if words not in accepted_shapes:
+        # Apply the bounded latest-recorded operator to the same period question,
+        # not to election events, durations, or an additional filtered timeline.
+        latest_shapes = set()
+        for shape in accepted_shapes:
+            member_position = shape.index("member") + 1
+            for qualifier in (("last",), ("most", "recently")):
+                latest_shapes.add(shape[:member_position] + qualifier + shape[member_position:])
+                latest_shapes.add(shape + qualifier)
+        latest = words in latest_shapes
+        if words not in accepted_shapes and not latest:
             raise UnsupportedComposableRequest(
                 "Office evidence can answer only an unfiltered question asking when or for what dates/periods "
-                "the named Member held the reviewed office. Election dates, first/last-event claims, duration, "
+                "the named Member held the reviewed office, optionally selecting the latest recorded episode. Election dates, first-event claims, duration, "
                 "and additional filters remain unsupported."
             )
+        if latest != (parameters.get("selection") == "latestRecorded"):
+            raise InvalidComposableDraft("Preserve the requested all-episodes versus latest-recorded office projection.")
         normalized_parameters = dict(parameters)
     elif capability == "seanad_entry":
         if (entry.get("handler") != "stage_a" or entry.get("input") != "member_mention"

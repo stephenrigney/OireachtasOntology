@@ -350,7 +350,8 @@ def create_app(
                     "committee_boolean", "committee_count", "house_terms", "dail_all",
                 }
                 plan_family = outcome.plan.get("family") if outcome.plan else outcome.request_family
-                is_office_holding_evidence = plan_family == "office_holding_evidence"
+                is_latest_office_episode = plan_family == "office_holding_latest_recorded"
+                is_office_holding_evidence = plan_family == "office_holding_evidence" or is_latest_office_episode
                 is_shared_dail_terms = plan_family == "shared_dail_terms"
                 is_member_relationship_composition = plan_family == "member_relationship_composition"
                 composition_refs = (outcome.plan or {}).get("referents", {})
@@ -626,6 +627,13 @@ def create_app(
                         "recorded accepted OfficeHolding episode with its validated interval. This is incomplete local "
                         "evidence, not a complete career timeline."
                     )
+                    if is_latest_office_episode:
+                        summary = (
+                            "Resolve the exact local Member and reviewed NamedOffice identities, read every accepted "
+                            "OfficeHolding episode, and select the unique latest recorded period by validated start dates "
+                            "only when earlier intervals end strictly before it. This qualified local result is not a "
+                            "proven historically last tenure or a complete career history."
+                        )
                 if is_representation:
                     current_representation = "selector" in composition_refs.get("term", {})
                     summary = (
@@ -679,6 +687,12 @@ def create_app(
                         "Each row is one distinct accepted OfficeHolding episode with its validated interval. Local records "
                         "may be incomplete; separate episodes are not merged and gaps do not establish absence."
                     )
+                    if is_latest_office_episode:
+                        answer_text = (
+                            "One uniquely latest recorded accepted OfficeHolding, preserving exact Member, NamedOffice, "
+                            "holding and DateRange identities and the source interval. Not a proven historically last "
+                            "tenure; a missing end date is not evidence of a completed tenure."
+                        )
                 if (is_member_relationship_composition and outcome.plan
                         and outcome.plan.get("answer", {}).get("kind") == "count"):
                     answer_text = (
