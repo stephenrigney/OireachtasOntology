@@ -1,0 +1,30 @@
+{
+  "provenance": {
+    "purpose": "Bounded design-study holdout, NOT PR acceptance",
+    "author_session": "ses_e3f7c769effe4B9fVBAbdBag6x",
+    "independence": "Fresh-context author given only term_count semantics and two exact names; no tools, repository files, prior questions, reports, acceptance artifacts or model outputs inspected.",
+    "novelty_limit": "Independently authored, not checked for accidental overlap against excluded corpora. HC07's author label canonical describes semantic directness, not grammar coverage."
+  },
+  "cases": [
+    {"id":"HC01","question":"Looking only at what is recorded locally, how many different Dáil terms appear in Micheál Martin's service?","expected":"admit","category":"local_record_scope","member":"Micheál Martin"},
+    {"id":"HC02","question":"For Micheál Martin, a single number is wanted: how many distinct Dáil term resources are reached through his recorded Dáil memberships?","expected":"admit","category":"passive_voice","member":"Micheál Martin"},
+    {"id":"HC03","question":"How many distinct recorded Dáil terms—not a list—does the service record link to for the member Micheál Martin?","expected":"admit","category":"member_last_output_contrast","member":"Micheál Martin"},
+    {"id":"HC04","question":"The member I mean is Micheál Martin. Across all his recorded Dáil service, how many distinct term resources does he have?","expected":"admit","category":"anaphora","member":"Micheál Martin"},
+    {"id":"HC05","question":"Give the number of distinct Dáil terms in Micheál Martin's recorded service, not membership records.","expected":"admit","category":"terminal_measure_contrast","member":"Micheál Martin"},
+    {"id":"HC06","question":"Count each Dáil term resource only once wherever it occurs across Micheál Martin's full recorded membership service; return just that number.","expected":"admit","category":"deduplication_instruction","member":"Micheál Martin"},
+    {"id":"HC07","question":"How many distinct recorded Dáil term resources are linked to Micheál Martin through his Dáil memberships?","expected":"admit","category":"direct_path_control","member":"Micheál Martin"},
+    {"id":"HC08","question":"Taking the Houses catalogue as a whole, what is the total number of distinct Dáil term resources it records?","expected":"admit","category":"catalogue","member":null},
+    {"id":"HC09","question":"How many distinct Dáil terms are recorded for Micheál Martin while he represented Fianna Fáil?","expected":"reject","category":"party_condition","member":"Micheál Martin"},
+    {"id":"HC10","question":"How many distinct Dáil terms in Micheál Martin's recorded service began after 2000?","expected":"reject","category":"date_condition","member":"Micheál Martin"},
+    {"id":"HC11","question":"Count the distinct Dáil terms in which Micheál Martin's recorded constituency was Cork South-Central.","expected":"reject","category":"constituency_condition","member":"Micheál Martin"},
+    {"id":"HC12","question":"How many distinct Dáil terms in Micheál Martin's record also contain recorded service by Leo Varadkar?","expected":"reject","category":"additional_person_condition","member":"Micheál Martin"},
+    {"id":"HC13","question":"For Micheál Martin, count distinct recorded term resources drawn only from the 32nd and 33rd Dála.","expected":"reject","category":"selected_terms","member":"Micheál Martin"},
+    {"id":"HC14","question":"How many distinct Dáil terms remain in Micheál Martin's recorded service if the 33rd Dáil is left out?","expected":"reject","category":"excluded_term","member":"Micheál Martin"},
+    {"id":"HC15","question":"How many distinct Dáil terms are connected to Micheál Martin through bills he sponsored, rather than through his memberships?","expected":"reject","category":"altered_relationship","member":"Micheál Martin"},
+    {"id":"HC16","question":"Give the distinct recorded Dáil term count for Micheál Martin together with each counted term's IRI and start date.","expected":"reject","category":"extra_projections","member":"Micheál Martin"},
+    {"id":"HC17","question":"Return one number for Micheál Martin that is both his distinct recorded Dáil term count and his number of election wins.","expected":"reject","category":"conflicting_targets","member":"Micheál Martin"},
+    {"id":"HC18","question":"This comparison leaves out every term in which Micheál Martin held ministerial office. Within that comparison, how many distinct Dáil terms are recorded for him?","expected":"reject","category":"contextual_negated_restriction","member":"Micheál Martin"},
+    {"id":"HC19","question":"How many distinct recorded Dáil terms are linked through memberships to Brendan Griffin?","expected":"clarify","category":"ambiguous_exact_name","member":"Brendan Griffin"},
+    {"id":"HC20","question":"The member is Brendan Griffin. Please count each Dáil term in his local service record once and give only the total.","expected":"clarify","category":"ambiguous_anaphoric","member":"Brendan Griffin"}
+  ]
+}
