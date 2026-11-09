@@ -3,7 +3,7 @@
   "contractId": "https://data.oireachtas.ie/specs/query-schema-contract",
   "contractSchema": "poc/specs/query-schema-contract.schema.json",
   "schemaVersion": 1,
-  "contractVersion": "2.11.0",
+  "contractVersion": "2.12.0",
   "description": "Queryable, currently emitted Oireachtas RDF patterns and local NLQ execution boundary.",
   "namespaces": {
     "agents": "https://data.oireachtas.ie/ontology#",
@@ -278,6 +278,14 @@
       "queryableInLocalNlq": true,
       "triples": [["?term", "rdf:type", "agents:DailTerm"], ["?term", "agents:termNo", "?ordinal"]],
       "note": "Authority: mappings/houses_mapping.csv, src/oireachtas_etl/transforms/houses.py, and the HouseTerm records in tests/expected/houses.ttl. This identifies a typed DailTerm by its mapped integer term number."
+    },
+    {
+      "id": "seanad-term-ordinal",
+      "graphFamily": "houses",
+      "availability": "emitted",
+      "queryableInLocalNlq": true,
+      "triples": [["?term", "rdf:type", "agents:SeanadTerm"], ["?term", "agents:termNo", "?ordinal"]],
+      "note": "Seanad ordinal authority: houses_mapping.csv and transforms/houses.py."
     },
     {
       "id": "house-term-seat-complement",

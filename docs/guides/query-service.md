@@ -103,6 +103,20 @@ it does not call the model again. Restart the question after server restart,
 expiry or source changes. Only this bounded name-lookup flow has interactive
 continuation; other ambiguities still require a more precise question.
 
+Named-party Senator queries reuse the dated party/membership composition.
+Unqualified present-tense forms such as “Who are the [party] Senators?” default
+to the configured query date (`present_seanad_party_as_of`). Houses-owned dates
+select the unique current Seanad; both the exact SeanadMembership and its linked
+PartyMembership must independently contain that date. An explicitly numbered
+Seanad instead selects historical membership/party interval overlaps, retaining
+separate party changes and all source identities before Member deduplication.
+It never substitutes today's affiliation. A whole reviewed party name may omit
+the terminal generic word “Party” (e.g. Labour / Labour Party); substring matches
+and ambiguous identity merges are not allowed. Extra dates, conflicting scopes
+and unrepresented relationships fail closed. Results and counts describe local
+records, not certified complete rosters; absent evidence is not a historical
+negative.
+
 An exact source `pId` spelling can ground an alias (whitespace is ignored only
 between name tokens); this is not a nickname dictionary or fuzzy identity merge.
 For example, the source identifier `JackLynch` distinguishes one recorded John

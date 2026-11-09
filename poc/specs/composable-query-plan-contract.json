@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "contractId": "https://data.oireachtas.ie/specs/composable-query-plan-contract",
   "schemaVersion": 1,
-  "contractVersion": "2.26.0",
+  "contractVersion": "2.27.0",
   "planVersion": 2,
   "scope": "Local Oireachtas query planning; Stage A, Stage B and Stage C plans use one shared typed v2 envelope with closed family-specific semantic projections.",
   "interpretationPolicy": {
@@ -76,6 +76,15 @@
         "semantics": "Q23 is owned by the integrated composable /ask route and reuses the validated Bill-owned sponsor Participation path and existing presentation. Return distinct Bills with English short titles and primary/supporting/unknown evidence. Its bounded count projection may add one exact Published-activity calendar-year constraint and counts distinct Bill IRIs only after the same sponsorship selection and fail-closed temporal evidence evaluation; this does not create a general Bill query framework."
       }
     ]
+  },
+  "seanadPartySelection": {
+    "family": "member_relationship_composition",
+    "selectors": ["currentTerm(asOf)", "exact Seanad termNumber"],
+    "presentDefault": "Only unqualified present-tense named-party Senator questions default to currentTerm; local interpretation policy present_seanad_party_as_of records the question and configured date. Explicit historical terms/dates never default.",
+    "current": "House-owned date resolution selects one current SeanadTerm. Exact typed SeanadMembership and its exact containing PartyMembership episode must both independently contain asOf inclusively.",
+    "numbered": "Resolve one exact typed SeanadTerm by mapped integer termNo. Reuse the Stage C term-scoped party gate and reviewed PoliticalAffiliationIdentity; require inclusive validated overlap between each exact SeanadMembership and linked PartyMembership episode. No present-day substitution. Preserve separate party changes/episodes before distinct Member deduplication.",
+    "evidence": "Preserve Member, term, membership, party, affiliation and episode identities and separate source intervals. Complete bounded pagination is required; missing/conflicting interval or identity evidence fails closed, no local match is not a certified historical negative, and local roster completeness is not certified. Party mentions may omit the terminal generic word Party from a whole reviewed name; resolution remains term-scoped and ambiguous matches are never collapsed (Labour does not match National Labour Party).",
+    "unsupported": "Additional dates, conflicting terms, panels, offices, committees, exclusions, simultaneous service and other unrepresented conditions fail closed."
   },
   "compositionOperators": {
     "identitySet": {"referentType": "DailConstituency", "minimum": 2, "maximum": 4, "semantics": "Finite OR of explicit exact mentions resolved independently in one selected DailTerm. One VALUES identity set, Member-identity deduplication; no substring-inferred geographic sets."},

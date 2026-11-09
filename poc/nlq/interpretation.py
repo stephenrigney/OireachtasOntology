@@ -5,6 +5,56 @@ from datetime import date
 
 
 POLICY = "present_constituency_as_of"
+SEANAD_PARTY_POLICY = "present_seanad_party_as_of"
+
+
+def present_seanad_party_default(question: str, party: str) -> bool:
+    """Default only a grounded, unqualified present-tense Senator-party request."""
+    text = re.sub(re.escape(party), "party", question, flags=re.I) if party else question
+    return bool(re.fullmatch(
+        r"\s*(?:who\s+are\s+(?:the\s+)?party\s+senators|"
+        r"(?:which|what)\s+party\s+senators\s+are\s+there|"
+        r"how\s+many\s+party\s+senators\s+are\s+there)\s*[?.!]?\s*",
+        text, re.I,
+    ))
+
+
+def validate_seanad_party_scope(question: str, party: str, selector: dict) -> None:
+    """Account for the whole bounded party/Seanad request, not just its term."""
+    text = re.sub(re.escape(party), " ", question, flags=re.I) if party else question
+    numbered = re.findall(r"\b([0-9]{1,3})(?:st|nd|rd|th)\s+seanad\b", text, re.I)
+    current = bool(re.search(r"\b(?:current|this|currently|now|today|present)\b", text, re.I))
+    if selector.get("kind") == "termNumber":
+        if numbered != [str(selector.get("number"))] or current:
+            raise ValueError("Preserve exactly one explicitly numbered Seanad, without a conflicting current scope.")
+    elif selector.get("kind") == "currentTerm":
+        if numbered or not (current or present_seanad_party_default(question, party)):
+            raise ValueError("Current Seanad party selection requires a current request or the scoped present-time default.")
+    else:
+        raise ValueError("Seanad party selection supports only currentTerm or one numbered term.")
+    text = re.sub(r"\b[0-9]{1,3}(?:st|nd|rd|th)\s+seanad\b", " seanad ", text, flags=re.I)
+    # A closed vocabulary here is deliberately limited to this existing graph.
+    # Any residual date, relationship, negation or other condition fails closed.
+    allowed = set("who which what how many count number of total list name show give me please are were was is the a an senator senators seanad in during for current this currently now today present serving served members party there recorded local evidence".split())
+    words = set(re.findall(r"[^\W\d_]+", text.casefold()))
+    if re.search(r"\d", text) or words - allowed:
+        raise ValueError("Seanad party selection cannot drop an additional temporal, party or relationship condition.")
+    if selector.get("kind") == "currentTerm" and re.search(r"\b(?:during|served)\b", text, re.I):
+        raise ValueError("Current Seanad party selection cannot replace historical service scope.")
+
+
+def validate_seanad_party_default(plan: dict) -> None:
+    evidence = plan.get("interpretation")
+    if evidence is None:
+        return
+    refs = plan["referents"]
+    if (not isinstance(evidence, dict) or set(evidence) != {"policy", "question", "date"}
+            or evidence.get("policy") != SEANAD_PARTY_POLICY
+            or evidence.get("date") != plan["asOf"]
+            or not isinstance(evidence.get("question"), str)
+            or refs["term"].get("selector") != {"kind": "currentTerm", "house": "Seanad"}
+            or not present_seanad_party_default(evidence["question"], refs["affiliation"].get("mention", ""))):
+        raise ValueError("Current Seanad party default lacks approved scoped interpretation evidence.")
 
 
 def unsupported_whole_intent(question):

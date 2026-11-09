@@ -131,7 +131,7 @@
            "properties": {
              "member": {"$ref": "#/$defs/memberAnswerReferent"},
              "membership": {"type": "object", "additionalProperties": false, "required": ["type", "mention"], "properties": {"type": {"const": "SeanadMembership", "type": "string"}, "mention": {"type": "null"}}},
-             "term": {"$ref": "#/$defs/currentSeanadTermReferent"},
+              "term": {"$ref": "#/$defs/selectedSeanadTermReferent"},
              "episode": {"$ref": "#/$defs/partyEpisodeReferent"},
              "party": {"$ref": "#/$defs/parliamentaryPartyReferent"},
              "affiliation": {"$ref": "#/$defs/affiliationReferent"}
@@ -263,6 +263,18 @@
            {"type": "object", "additionalProperties": false, "required": ["kind"],
             "properties": {"kind": {"type": "string", "const": "previousTerm"}}}
          ]}
+      }
+    },
+    "selectedSeanadTermReferent": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "mention", "selector"],
+      "properties": {
+        "type": {"type": "string", "const": "SeanadTerm"},
+        "mention": {"type": "null"},
+        "selector": {"anyOf": [
+          {"type": "object", "additionalProperties": false, "required": ["kind"], "properties": {"kind": {"type": "string", "const": "currentTerm"}}},
+          {"type": "object", "additionalProperties": false, "required": ["kind", "number"], "properties": {"kind": {"type": "string", "const": "termNumber"}, "number": {"type": "integer", "minimum": 1, "maximum": 999}}}
+        ]}
       }
     },
     "currentSeanadTermReferent": {

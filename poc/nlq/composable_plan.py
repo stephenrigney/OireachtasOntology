@@ -571,7 +571,7 @@ def _validate_member_party_composition_plan(plan: dict[str, Any]) -> dict[str, A
     if (not seanad_party_only and isinstance(refs, dict)
             and isinstance(refs.get("membership"), dict)
             and refs["membership"].get("type") == "SeanadMembership"):
-        raise PlanError("Seanad party selection is limited to the current term-wide party-only Member shape.")
+        raise PlanError("Seanad party selection is limited to the reviewed party-only Member shape.")
     if not party_only:
         expected_types["constituency"] = "DailConstituency"
     if anchored:
@@ -627,8 +627,12 @@ def _validate_member_party_composition_plan(plan: dict[str, Any]) -> dict[str, A
         and 1 <= selector["number"] <= 999
     )
     current_term = selector == {"kind": "currentTerm", "house": ("Seanad" if seanad_party_only else "Dail")}
-    if seanad_party_only and not current_term:
-        raise PlanError("Seanad party-only Member selection requires the uniquely date-resolved current SeanadTerm.")
+    if seanad_party_only:
+        from .interpretation import validate_seanad_party_default
+        try:
+            validate_seanad_party_default(plan)
+        except ValueError as error:
+            raise PlanError(str(error)) from error
     if party_only and not numeric_term and not seanad_party_only:
         raise PlanError("Dáil party-only Member selection requires one explicitly numbered DailTerm.")
     from .interpretation import validate_default
@@ -2541,8 +2545,10 @@ class AmbiguousConstituency(NLQError):
         self.candidates = candidates
 
 
-def dail_term_ordinal_resolution_query(ordinal: int, *, supported_predicates) -> str:
-    """Resolve one typed DailTerm using the reviewed HouseTerm ordinal pattern."""
+def dail_term_ordinal_resolution_query(ordinal: int, *, supported_predicates, term_type: str = "DailTerm") -> str:
+    """Resolve one exact typed HouseTerm using its reviewed ordinal pattern."""
+    if term_type not in {"DailTerm", "SeanadTerm"}:
+        raise PlanError("Unsupported HouseTerm type for ordinal resolution.")
     if type(ordinal) is not int or not 1 <= ordinal <= 999:
         raise PlanError("Dáil term ordinal must be an integer from 1 through 999.")
     contract = load_query_contract()
@@ -2553,10 +2559,10 @@ def dail_term_ordinal_resolution_query(ordinal: int, *, supported_predicates) ->
     if (not family or family.get("owner") != "Houses ETL"
             or graph.get("kind") != "fixed" or graph.get("iri") != "https://data.oireachtas.ie/graph/houses"):
         raise PlanError("Reviewed Houses graph ownership is unavailable for Dáil term resolution.")
-    pattern = _reviewed_pattern("house-term-ordinal", "houses")
+    pattern = _reviewed_pattern("house-term-ordinal" if term_type == "DailTerm" else "seanad-term-ordinal", "houses")
     rdf_type = _pattern_rdf_type(pattern, "?term")
     ordinal_predicate = _pattern_predicate(pattern, "?term", "?ordinal")
-    reviewed_type = _PLAN_CONTRACT["entityTypeRdfTypes"]["DailTerm"]
+    reviewed_type = _PLAN_CONTRACT["entityTypeRdfTypes"][term_type]
     if rdf_type != reviewed_type or ordinal_predicate != "agents:termNo":
         raise PlanError("Reviewed HouseTerm ordinal pattern disagrees with DailTerm semantics.")
     if reviewed_type not in contract["queryableClasses"]:
@@ -2591,7 +2597,7 @@ def _member_relationship_composition_mapping(
             or term_semantic_type != ("SeanadTerm" if seanad_membership else "DailTerm")):
         raise PlanError("The selected membership and HouseTerm types do not form one reviewed House path.")
     if seanad_membership and (not temporal or "constituency" in refs or "anchor" in refs):
-        raise PlanError("Seanad composition is limited to the current party-only membership selection.")
+        raise PlanError("Seanad composition is limited to the reviewed party-only membership selection.")
     query_contract = load_query_contract()
     families = {item["id"]: item for item in query_contract["graphFamilies"]}
     member_graph = families.get("member-records", {}).get("graph", {})
@@ -2628,7 +2634,7 @@ def _member_relationship_composition_mapping(
         "membership": _reviewed_pattern("member-house-membership", "member-records"),
         "representation": _reviewed_pattern("representation-reference", "member-records"),
         "term": _reviewed_pattern(
-            "house-term-description" if seanad_membership else "house-term-ordinal", "houses",
+            "seanad-term-ordinal" if seanad_membership else "house-term-ordinal", "houses",
         ),
         "constituency": _reviewed_pattern("constituency-term-occurrence", "constituencies"),
     }
@@ -2645,8 +2651,7 @@ def _member_relationship_composition_mapping(
     membership_term_link = _pattern_predicate(patterns["membership"], "?membership", "?term")
     representation_link = _pattern_predicate(patterns["representation"], "?membership", "?representation")
     constituency_term_link = _pattern_predicate(patterns["constituency"], "?constituency", "?term")
-    term_number_link = (None if seanad_membership else
-                        _pattern_predicate(patterns["term"], "?term", "?ordinal"))
+    term_number_link = _pattern_predicate(patterns["term"], "?term", "?ordinal")
     party_episode_membership = None
     member_party_link = None
     episode_party_link = None
@@ -2688,7 +2693,7 @@ def _member_relationship_composition_mapping(
             )
             or representation_link != _reviewed_predicate("membership_represents")
             or constituency_term_link != _reviewed_predicate("constituency_in_term")
-            or (not seanad_membership and term_number_link != "agents:termNo")
+            or term_number_link != "agents:termNo"
             or not any(selected_membership_type in items for items in membership_type_candidates)
             or not any(rdf_types["DailConstituency"] in items for items in constituency_type_candidates)
             or not any(selected_term_type in items for items in term_type_candidates)):
@@ -4964,6 +4969,10 @@ def _resolve_term_scoped_affiliation(
         raise NLQError("The term-scoped affiliation resolver returned an unexpected result shape.")
     indexes = {name: result.columns.index(name) for name in ("party", "partyLabel", "affiliation", "affiliationLabel")}
     wanted = _normalise_label(mention)
+    # A terminal generic "Party" may be omitted in a grounded party mention.
+    # Match only complete reviewed names, never substrings (e.g. National Labour
+    # Party cannot match Labour), and retain every candidate for ambiguity checks.
+    requested_labels = {wanted, wanted + " party"}
     labels_by_iri = _reviewed_affiliation_labels()
     identities: dict[str, set[str]] = {}
     unlinked_matching_parties: set[str] = set()
@@ -4981,7 +4990,7 @@ def _resolve_term_scoped_affiliation(
             reviewed_labels = labels_by_iri.get(identity)
             if reviewed_labels is None:
                 raise NLQError("A term-scoped party links to an identity absent from the reviewed identity register.")
-            alias_matches = wanted in {_normalise_label(label) for label in reviewed_labels}
+            alias_matches = bool(requested_labels.intersection(_normalise_label(label) for label in reviewed_labels))
             if identity_label in {"—", ""}:
                 if alias_matches or party_label and _normalise_label(party_label) == wanted:
                     unlabeled_matching_identities.add(identity)
@@ -5318,6 +5327,7 @@ def _temporal_member_party_result(
             evidence = (
                 f"{member_name} ({member_iri}); affiliation {_display_member_interval(party_interval)}; "
                 f"{membership_label} {_display_member_interval(membership_interval)}; "
+                f"membership {_membership_iri}; term {term_iri}; affiliation identity {identity}; "
                 f"established overlap {_display_member_interval(overlap)}; episode {episode_iri}; party {party_iri}"
             )
             if anchored:
@@ -5929,9 +5939,11 @@ def _execute_member_relationship_composition_plan(
             continue
 
         ordinal = selector["number"]
+        term_type = referent["type"]
+        term_label = _dail_ordinal_label(ordinal).replace("Dáil", "Seanad" if term_type == "SeanadTerm" else "Dáil")
         try:
             query = dail_term_ordinal_resolution_query(
-                ordinal, supported_predicates=supported_predicates,
+                ordinal, supported_predicates=supported_predicates, term_type=term_type,
             )
         except (PlanError, NLQError) as error:
             referent["resolution"] = "unsupported_mapping"
@@ -5947,14 +5959,14 @@ def _execute_member_relationship_composition_plan(
             referent["resolution"] = "source_data_unavailable"
             resolution_failures.append((
                 "source_data_unavailable",
-                f"The local Houses graph returned an unexpected identity response for {_dail_ordinal_label(ordinal)}.",
+                f"The local Houses graph returned an unexpected identity response for {term_label}.",
             ))
             continue
         if len(result.rows) >= 100:
             referent["resolution"] = "source_data_unavailable"
             resolution_failures.append((
                 "source_data_unavailable",
-                f"The typed identity lookup for {_dail_ordinal_label(ordinal)} reached the 100-row safety cap.",
+                f"The typed identity lookup for {term_label} reached the 100-row safety cap.",
             ))
             continue
         term_iris: set[str] = set()
@@ -5964,7 +5976,7 @@ def _execute_member_relationship_composition_plan(
                 malformed = True
                 break
             try:
-                term_iris.add(_require_local_iri(row[result.columns.index("term")], "DailTerm"))
+                term_iris.add(_require_local_iri(row[result.columns.index("term")], term_type))
             except NLQError:
                 malformed = True
                 break
@@ -5972,24 +5984,24 @@ def _execute_member_relationship_composition_plan(
             referent["resolution"] = "source_data_unavailable"
             resolution_failures.append((
                 "source_data_unavailable",
-                f"The Houses graph returned a malformed identity for {_dail_ordinal_label(ordinal)}.",
+                f"The Houses graph returned a malformed identity for {term_label}.",
             ))
         elif not term_iris:
             referent["resolution"] = "source_data_unavailable"
             resolution_failures.append((
                 "source_data_unavailable",
-                f"No typed local DailTerm with ordinal {ordinal} is available in the Houses graph.",
+                f"No typed local {term_type} with ordinal {ordinal} is available in the Houses graph.",
             ))
         elif len(term_iris) > 1:
             candidates = [
-                {"iri": iri, "label": _dail_ordinal_label(ordinal)}
+                {"iri": iri, "label": term_label}
                 for iri in sorted(term_iris)
             ]
             referent.update({"resolution": "ambiguous", "candidates": candidates})
             ambiguous_candidates.extend(candidates)
             resolution_failures.append((
                 "ambiguous",
-                f"More than one local DailTerm has ordinal {ordinal}; none was selected.",
+                f"More than one local {term_type} has ordinal {ordinal}; none was selected.",
             ))
         else:
             referent.update({"resolution": "resolved", "iri": next(iter(term_iris))})
