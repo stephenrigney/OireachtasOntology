@@ -49,13 +49,12 @@ remain as previously accepted.
 
 ## Factual and end-to-end evidence
 
-The local Fuseki endpoint was available. Requests ran through FastAPI `/ask`
-and the real read-only Fuseki client/compiler/executor at
-`OIR_NLQ_AS_OF_DATE=2026-11-09`. The environment had no `NLQ_LLM_API_KEY`, so
-the semantic draft was supplied by the fixed test generator: this exercises
-the actual validated-plan `/ask` execution route, but **not live LLM
-interpretation or draft generation**. Draft interpretation/admission and
-negative cases were exercised separately through the real validators.
+The local Fuseki endpoint was available. The initial tranche pass ran through
+FastAPI `/ask` and the real read-only Fuseki client/compiler/executor at
+`OIR_NLQ_AS_OF_DATE=2026-11-09`, using fixed drafts because the process
+environment and `.env` did not expose an LLM key at that time. This execution-
+only limitation is superseded by the genuine AI `/ask` verification below,
+after `.env.local` was loaded into the process environment.
 
 An independent hand-written SPARQL selection, separate from the application
 compiler, first inspected the complete typed Dáil chronology and resolved one
@@ -77,7 +76,7 @@ verified set. Live paraphrases “Which Fine Gael TDs are currently serving?” 
 “Which Fianna Fáil Deputies are currently serving?” also returned answers.
 The exact target form “Who are the current Fianna Fáil Deputies?” returned an
 answer; the unqualified “Who are the Fianna Fáil Deputies?” was a safe
-validation failure with no answer query. The returned evidence displays exact
+unsupported response with no answer query. The returned evidence displays exact
 Member, membership, episode, party, affiliation, and term identities plus
 separate interval evidence. These are **positive local-record selections**,
 not a certification that the local RDF is a complete real-world roster.
@@ -88,8 +87,8 @@ identities. The live `/ask` result for “Who were the Fine Gael TDs in the 33rd
 Dáil?” matched the exact 35-identity set. Existing Group A factual review also
 records exact RDF identity/interval checks for the 25th Seanad Labour result
 (five identities) and current Fianna Fáil Seanad result (19 identities).
-This run additionally confirmed HTTP 200 / answer for current Seanad Fine Gael
-selection; no new exact independent comparison for that party was claimed.
+The genuine AI follow-up independently compared current Seanad Fine Gael
+selection (16 identities) as well as the 25th Seanad Labour result.
 
 The reusable synthetic RDF regression includes current Fine Gael and Fianna
 Fáil occurrences, ended membership, ended party affiliation, a historical
@@ -114,10 +113,9 @@ Seanad and numbered-Dáil behavior remains covered by prior/current regressions.
   existing validator can silently discard a filter unless the exact question
   shape is checked; this tranche added only the narrow guards needed for the
   corrected shape.
-- Actual LLM interpretation was not tested because no key was configured;
-  fixed validated drafts isolated compilation and live execution. The question
-  admission behavior is covered by validator tests and explicit `/ask`
-  nonanswer, but real-model phrasing remains outside this evidence.
+- The initial tranche pass used fixed validated drafts; the genuine AI `/ask`
+  cases below close that interpretation gap for the bounded request sample. No
+  broad model reliability claim is made.
 
 ## Verification
 
@@ -127,6 +125,58 @@ Seanad and numbered-Dáil behavior remains covered by prior/current regressions.
 - `git diff --check` — passed.
 - Representative live `/ask` checks and independent read-only SPARQL comparisons: completed as described above.
 
-No commit or PR has been created yet. Tranche exit evidence is now available for
-the approved bounded correction; the work is ready for Human Gate 1. No merge
-or follow-on tranche is proposed here.
+The implementation was committed as `aa8268f` and opened as draft PR #30 to
+`master`. It remains unmerged. The live AI interpretation results for PR #30
+are recorded below; no follow-on tranche is proposed here.
+
+## Live AI interpretation follow-up (PR #30)
+
+The `.env.local` configuration was readable through its symlink and contained
+an LLM credential. The secret was loaded into the test process only; its value
+was not printed, recorded, or added to repository files. Since application
+configuration loads `.env` rather than `.env.local` itself, the test process
+loaded `.env.local` into its environment before starting the normal FastAPI
+application. The ordinary semantic planner factory was used for every request:
+no fixed drafts or interpretation bypasses were used. Fuseki was also live.
+Reference date remained `2026-11-09` to match the independently established
+RDF evidence above.
+
+For the eight supported requests below, the AI produced a supported
+`member_relationship_composition` draft, selected the shown temporal selector
+and answer kind, local validation passed, execution returned HTTP 200 / `answer`,
+and the answer projection had the expected shape. Exact Member identity sets
+from live `/ask` were compared to separately executed read-only SPARQL plus
+inclusive interval evaluation:
+
+| Genuine AI `/ask` question | Selector / projection | Independent RDF | Result | Stages |
+|---|---|---:|---:|---|
+| Who are the current Fianna Fáil Deputies? | currentTerm / Member list | 48 | 48, exact identity-set match | interpretation, selection, validation, execution, projection passed |
+| How many Fianna Fáil Deputies are in the current Dáil? | currentTerm / distinct Member count | 48 | 48 | all passed |
+| Which Fine Gael TDs are currently serving? | currentTerm / Member list | 38 | 38, exact identity-set match | all passed |
+| How many Fine Gael Deputies are in the current Dáil? | currentTerm / distinct Member count | 38 | 38 | all passed |
+| Who were the Fine Gael TDs in the 33rd Dáil? | termNumber 33 / Member list | 35 | 35, exact identity-set match | all passed |
+| Who are the Fine Gael Senators in the current Seanad? | currentTerm / Member list | 16 | 16, exact identity-set match | all passed |
+| Who were the Labour Senators in the 25th Seanad? | termNumber 25 / Member list | 5 | 5, exact identity-set match | all passed |
+| Who are the Fine Gael Senators? | existing Seanad current default / Member list | 16 | 16, exact identity-set match | all passed |
+
+Counts were checked against the independently selected sets and list/count
+projection uses distinct Member RDF identity, not episode or party cardinality.
+The existing Seanad unqualified default worked in the genuine AI route. The
+asymmetry remains: no unqualified Dáil default was inferred.
+
+Three genuine AI negative controls returned `unsupported_capability` with a
+valid unsupported proposal (`supported=false`, no family/answer), no result
+table, and no answer execution:
+
+| Negative control | Interpretation / capability selection | Validation | Execution / projection |
+|---|---|---|---|
+| Current Dáil party plus `on 2026-01-01` | Correctly interpreted as extra date; declined | Unsupported response accepted; no answer plan | Not run / none |
+| Current Dáil party plus committee condition | Correctly interpreted as extra relationship; declined | Unsupported response accepted; no answer plan | Not run / none |
+| Unqualified “Who are the Fianna Fáil Deputies?” | Did not invent a current Dáil default; declined | Unsupported response accepted; no answer plan | Not run / none |
+
+No interpretation, selection, validation, execution, or projection failure was
+observed in this bounded live set. The real planner and live dataset were
+verified. This was a finite sample, not a reliability estimate. No code change
+was required for this follow-up; unrelated model discovery failures were not
+observed and are not claimed fixed. PR #30 carries the prior verified code and
+this report update.
