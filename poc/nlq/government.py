@@ -54,6 +54,9 @@ def plan_government_question(question, *, as_of):
             r"which (?P<party>.+?) (?:members|politicians) are (?:in|members of) (?:the )?(?:current )?government[?.!]*",
             question.strip(), re.I)
     if match:
+        from .interpretation import current_relationship_scope
+        if current_relationship_scope(question, match["party"]) is None:
+            return None
         return government_plan(match["party"].strip(), as_of=as_of)
     return None
 

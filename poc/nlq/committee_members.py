@@ -34,6 +34,9 @@ def validate_request(question, mention):
         r"(?:\s+(?:currently|now|today))?\s*[?.!]?\s*", text, re.I,
     ):
         raise ValueError("Current committee Member listing cannot discard historical dates, extra conditions or other answer fields.")
+    from .interpretation import current_relationship_scope
+    if current_relationship_scope(question, mention) is None:
+        raise ValueError("Committee membership requires an unqualified present-time or explicit-current request.")
 
 
 def _name_key(value):

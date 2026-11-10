@@ -637,12 +637,15 @@ def create_app(
                             "proven historically last tenure or a complete career history."
                         )
                 if is_representation:
-                    current_representation = "selector" in composition_refs.get("term", {})
+                    representation_selector = composition_refs.get("term", {}).get("selector", {})
+                    current_representation = representation_selector.get("kind") == "currentTerm"
                     summary = (
                         f"Find recorded constituency representation at {as_of.isoformat()}, resolving the current Dáil from House-owned dates and checking membership dates."
                         if current_representation else
                         "Find the named Member's historical constituency occurrences, preserving their Dáil terms and exact identities."
                     )
+                    if representation_selector.get("kind") == "latestRecorded":
+                        summary = "Find the named Member's latest recorded House-dated Dáil term and constituency; latest recorded is not current membership or an election event."
                 if is_government:
                     summary = (
                         f"Find recorded constitutional Government members of the resolved political party at {as_of.isoformat()}, "
@@ -739,6 +742,11 @@ def create_app(
                 if is_office_representation:
                     summary = f"Resolve a reviewed NamedOffice to one locally accepted officeholder at {as_of.isoformat()}, then independently check that exact Member's current Dáil representation."
                     answer_text = "Exact office, holding, Member and Dáil representation identities and dates are retained; local evidence does not certify a complete current-office or government roster."
+                if plan_is_validated:
+                    from .interpretation import current_scope_explanation
+                    scope_note = current_scope_explanation(question, outcome.plan, as_of)
+                    if scope_note:
+                        summary = f"{summary} {scope_note}"
                 if outcome.status == "success":
                     return render(request, question=question, mode=mode,
                                   interpretation=summary, plan_json=plan_json,

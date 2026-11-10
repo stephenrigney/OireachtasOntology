@@ -338,7 +338,7 @@ def test_v2_contract_and_strict_draft_schema_cover_both_relationship_projections
     draft_schema = load_composable_draft_schema()
     Draft202012Validator.check_schema(plan_schema)
     Draft202012Validator.check_schema(draft_schema)
-    assert contract["contractVersion"] == "2.29.0"
+    assert contract["contractVersion"] == "2.30.0"
     count_contract = contract["memberCountProjections"]["member_relationship_composition"]["semantics"]
     assert "Stage C term-scoped ParliamentaryParty listing" in count_contract
     assert "not seats/election totals" in count_contract
@@ -687,6 +687,9 @@ def test_semantic_latest_recorded_term_and_constituency_selection_runs_through_i
     assert "Bertie Ahern" in response.text and "Dublin Central" in response.text
     assert "30th Dáil" in response.text and "2007-06-14" in response.text
     assert bertie in response.text
+    assert "latest recorded is not current membership" in response.text
+    assert "Present-time default applied" not in response.text
+    assert "Find recorded constituency representation at" not in response.text
     assert generator.calls == [question]
     assert generator.closed
 

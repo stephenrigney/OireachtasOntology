@@ -627,10 +627,10 @@ def _validate_member_party_composition_plan(plan: dict[str, Any]) -> dict[str, A
         and 1 <= selector["number"] <= 999
     )
     current_term = selector == {"kind": "currentTerm", "house": ("Seanad" if seanad_party_only else "Dail")}
-    if seanad_party_only:
-        from .interpretation import validate_seanad_party_default
+    if party_only:
+        from .interpretation import validate_party_default
         try:
-            validate_seanad_party_default(plan)
+            validate_party_default(plan, "Seanad" if seanad_party_only else "Dail")
         except ValueError as error:
             raise PlanError(str(error)) from error
     if party_only and not (numeric_term or current_term):
