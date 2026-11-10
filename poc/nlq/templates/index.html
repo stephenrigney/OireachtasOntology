@@ -37,6 +37,10 @@
     .system-status { margin-top:24px; }
     .system-status details { padding:16px 20px; background:var(--card); border:1px solid var(--border); border-radius:8px; }
     .system-status summary { color:var(--ink); font-size:1.1rem; font-weight:700; }
+    .performance { margin:14px 0; padding:0 14px 12px; border:1px solid var(--separator); border-radius:6px; background:var(--inset); }
+    .performance summary { padding:10px 0; font-weight:700; }
+    .performance dl { display:grid; grid-template-columns:minmax(13rem,1fr) 2fr; gap:5px 14px; margin:0; }
+    .performance dt { font-weight:600; } .performance dd { margin:0; }
     .feedback { border-color:var(--border); background:var(--card); }
     .adequacy-toggle { display: flex; gap: .35rem; width: fit-content; margin: .35rem 0 1rem; padding: .25rem; border: 1px solid #aeb4bc; border-radius: .5rem; background: #edf0f3; }
     .adequacy-toggle label { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 5rem; padding: .45rem .8rem; border-radius: .35rem; cursor: pointer; font-weight: 600; }
@@ -187,6 +191,22 @@
   {% if question %}
   <section id="query-processing">
     <h2>How this query was processed</h2>
+    {% if performance %}
+    <details class="performance" data-performance='{{ performance|tojson }}'>
+      <summary>Performance</summary>
+      <dl>
+        <dt>Application elapsed before HTML rendering</dt><dd>{{ performance.elapsed_before_render_ms }} ms</dd>
+        {% for name, timing in performance.stages.items() %}
+        <dt>{% if name == "query_pipeline" %}Query pipeline (interpretation through result projection){% elif name == "readiness_check" %}Fuseki readiness check (separate from query requests){% else %}{{ name|replace('_', ' ')|title }}{% endif %}</dt>
+        <dd>{% if timing.status == "not_executed" %}Not executed{% else %}{{ timing.elapsed_ms }} ms{% endif %}</dd>
+        {% endfor %}
+        <dt>LLM calls</dt><dd>{% if performance.llm.status == "not_executed" %}Not executed — {% endif %}{{ performance.llm.count }} calls · {{ performance.llm.cumulative_elapsed_ms }} ms cumulative</dd>
+        <dt>Fuseki query requests</dt><dd>{% if performance.fuseki.status == "not_executed" %}Not executed — {% endif %}{{ performance.fuseki.count }} requests · {{ performance.fuseki.cumulative_elapsed_ms }} ms cumulative</dd>
+        <dt>Outcome</dt><dd>{{ performance.outcome|replace('_', ' ') }}</dd>
+      </dl>
+      <p>Elapsed time stops immediately before HTML rendering and HTTP response delivery. The query pipeline span includes the LLM and Fuseki time shown separately; do not add these values together. Readiness checks are timed separately and excluded from query-request counts. Phase 2 internal resolution, validation, compilation and projection boundaries are not independently separated.</p>
+    </details>
+    {% endif %}
     {% set interpreted_ready = interpretation or plan_explanation or error or ambiguity or clarification or entity_outcomes %}
     {% set compiled_ready = sparql or plan_json %}
     {% set executed_ready = execution_attempted %}

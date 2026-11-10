@@ -34,6 +34,7 @@ from .results import QueryResult, format_debug_payload
 from .schema import build_schema_context
 from .vocabulary import supported_predicates
 from .feedback import FeedbackError, FeedbackStore
+from .performance import QueryPerformance
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -156,8 +157,15 @@ def create_app(
                 plan_json: str | None = None, plan_heading: str | None = None,
                 entity_outcomes: tuple[dict, ...] = (), plan_explanation=None,
                 clarification=None, execution_attempted: bool = False):
+        performance = getattr(request.state, "query_performance", None)
         if readiness is None:
-            readiness = check_fuseki_readiness()
+            readiness = (performance.measure("readiness_check", check_fuseki_readiness)
+                         if performance is not None else check_fuseki_readiness())
+        performance_diagnostics = None
+        if performance is not None:
+            outcome_name = getattr(request.state, "query_outcome", None) or ("failure" if error else "completed")
+            performance_diagnostics = performance.diagnostics(outcome_name)
+            logger.info("nlq_query_performance %s", json.dumps(performance_diagnostics, sort_keys=True))
         feedback_actual = _displayed_answer_text(
             error=error, result=result, result_notice=result_notice,
             ambiguity=ambiguity, entity_outcomes=entity_outcomes,
@@ -192,6 +200,7 @@ def create_app(
             "execution_attempted": execution_attempted,
             "feedback_actual": feedback_actual,
             "feedback_available": bool(question and feedback_actual and feedback_recording),
+            "performance": performance_diagnostics,
         })
 
     @app.post("/feedback/sessions")
@@ -266,6 +275,7 @@ def create_app(
     @app.post("/ask", response_class=HTMLResponse)
     def ask(request: Request, question: str = Form(...), mode: str = Form("phase2"),
             continuation: str = Form(""), choice: str = Form("")):
+        request.state.query_performance = QueryPerformance()
         if mode == "phase2" or continuation or choice:
             request.state.query_outcome = "validation_failure"
         question = question.strip()
@@ -308,14 +318,32 @@ def create_app(
                     username=os.getenv("OIR_FUSEKI_USER"),
                     password=os.getenv("OIR_FUSEKI_PASSWORD"),
                 )
-                outcome = execute_question(
-                    question, as_of=as_of, fuseki=fuseki,
+                performance = request.state.query_performance
+
+                class TimedFuseki:
+                    def query(self, sparql):
+                        return performance.fuseki(lambda: fuseki.query(sparql))
+
+                def timed_planner_factory():
+                    generator = (semantic_plan_generator_factory or create_composable_plan_generator)()
+
+                    class TimedPlanner:
+                        def generate(self, prompt):
+                            return performance.llm(lambda: generator.generate(prompt))
+
+                        def close(self):
+                            close = getattr(generator, "close", None)
+                            if close:
+                                return close()
+
+                    return TimedPlanner()
+
+                outcome = performance.measure("query_pipeline", lambda: execute_question(
+                    question, as_of=as_of, fuseki=TimedFuseki(),
                     supported_predicates=predicate_vocabulary,
                     **({"continuation": resumed} if resumed is not None else {}),
-                    semantic_plan_generator_factory=(
-                        semantic_plan_generator_factory or create_composable_plan_generator
-                    ),
-                )
+                    semantic_plan_generator_factory=timed_planner_factory,
+                ))
                 request.state.query_outcome = outcome.interaction
                 execution_attempted = (
                     outcome.result is not None
@@ -987,9 +1015,11 @@ def create_app(
         translation = None
         translator = fuseki = None
         phase = "LLM translation"
+        performance = request.state.query_performance
 
         def set_phase(current: str) -> None:
             nonlocal phase
+            performance.start_stage(current)
             phase = current
 
         def remember_translation(current) -> None:
@@ -1003,7 +1033,12 @@ def create_app(
                 username=os.getenv("OIR_FUSEKI_USER"),
                 password=os.getenv("OIR_FUSEKI_PASSWORD"),
             )
-            return fuseki
+
+            class TimedFuseki:
+                def query(self, sparql):
+                    return performance.fuseki(lambda: fuseki.query(sparql))
+
+            return TimedFuseki()
 
         try:
             translator = ResponsesTranslator(
@@ -1011,15 +1046,21 @@ def create_app(
                 os.getenv("NLQ_LLM_BASE_URL", ""),
                 os.getenv("NLQ_LLM_MODEL", ""),
             )
+
+            class TimedTranslator:
+                def translate(self, question_text, schema):
+                    return performance.llm(lambda: translator.translate(question_text, schema))
+
             outcome = process_question(
                 question,
-                translator=translator,
+                translator=TimedTranslator(),
                 fuseki_factory=remember_fuseki,
                 schema_context=schema_context,
                 supported_predicates=predicate_vocabulary,
                 on_phase=set_phase,
                 on_translation=remember_translation,
             )
+            performance.finish_stage()
             translation = outcome.translation
             if outcome.error is not None:
                 phase = outcome.error_phase or phase
