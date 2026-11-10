@@ -96,6 +96,10 @@ def build_composable_planner_instructions() -> str:
 Interpretation contract: for the one-term, one-constituency Member list/count, the explicit phrase "in this Dáil" selects the exact House-date-resolved current term and is term-wide, regardless of whether the question says "represent" or "represented". It overrides only the implicit present-tense-as-of default: do not require an asOf membership interval unless the user explicitly asks for current representation (for example, "currently", "now", "today", or "as of now/today"). A literal calendar date remains its exact membership-date point. Without the explicit "this Dáil" scope, an unqualified present-tense constituency request defaults to representation at the query date; an explicit current-point request also requires the DailMembership interval to contain asOf. Dated party/representation composition retains its separate rule that currentTerm requires both party and DailMembership intervals to contain asOf. Never default numbered-term, other dated, historical, or election questions. The plain term-scoped constituency Member projection supports one explicit membership calendar-date point; preserve it as a membershipInterval constraint, never as a HouseTerm date or election event. For a Member's latest recorded Dáil term and constituency, use the constituency_representation family with selector "latestRecorded" when the question explicitly asks for the latest recorded term, the most recent term, or the last term (including "last term in the Dáil"). Local code selects from that Member's accepted DailMembership identities and House-owned chronology, and fails closed on missing/tied/conflicting dates or representation evidence. This is not an election-date answer.
 For partial-name person lookup use capability_selection member_lookup with parameters {{"member":"exact name mention","house":"Dail"}} for Deputy/TD, "Seanad" for Senator, or null for unqualified Member. Local code offers grounded alternatives; never expand a surname to an assumed full name.
 For a numbered-Dáil party listing use capability_selection dail_parties_and_groups with parameters {{"termNumber":N,"includeGroups":false}}; true only if groups are also requested. This reuses the existing party compiler, not the constituency composition.
+
+For a present/current list of the members of one named committee, use capability_selection current_committee_members with parameters exactly {{"committee":"the exact committee name mention"}}. This includes "Who are the members of the Committee on Public Accounts?" and "Which members serve on the Committee of Public Accounts?". Do not supply a term, date, person, chair or inferred committee identity. Local code selects one current Committee incarnation using accepted owner and HouseTerm date evidence at configured asOf, then tests each exact CommitteeMembership interval independently. Preserve the whole user-mentioned committee name; only the initial generic Committee on/of connector may vary in source-label matching. Results are distinct local Member identities with separate dated membership evidence, not a certified complete current roster, attendance or chairmanship. Historical scope, counts, party filters, additional conditions or answer fields remain unsupported as a whole.
+
+For the current constituency of a named officeholder, e.g. "What constituency does the Tánaiste represent?", use capability_selection current_office_constituency with parameters exactly {{"office":"the exact office name mention"}}. An office title is a NamedOffice, NEVER a Member name. Do not name an assumed holder or invent a date. Code resolves one reviewed office and requires one accepted current OfficeHolding at configured asOf, then uses its exact Member identity for the independently dated current Dáil representation capability. Preserve both relationships and all identity/date evidence. Do not assume the holder is a TD or substitute former officeholders/historical constituencies. Missing, conflicting or ambiguous accepted evidence fails closed; neither local office nor government roster completeness is certified. Historical dates, extra conditions, counts and additional answer fields are unsupported as a whole.
 For an unfiltered question asking when/for what dates or periods one named person held one named office, also accepting "When did [member] serve as [office]?" and "During what period was [member] [office]?", use capability_selection office_holding_evidence with parameters {{"member":"exact mention","office":"exact office mention"}}. This returns each separately recorded accepted local OfficeHolding episode for the exact identities with its validated interval, explicitly labeled incomplete local-recorded evidence—not a complete career timeline. Do not merge episodes or infer first start, final end, total duration, election events, or absence from gaps; unreviewed observations cannot answer. Election, first-event, duration, and extra-filter requests remain unsupported.
 
 For the same named-person/office period request qualified by "last" or "most recently" (including "When was [member] last [office]?" and "When did [member] last serve as [office]?"), reuse office_holding_evidence with parameters {{"member":"exact mention","office":"exact office mention","selection":"latestRecorded"}}. Do not reject this as an election-event request or claim complete career history. Local code reads every accepted episode and may return only a uniquely latest recorded episode by validated StartDate, with an explicit NOT proven historically last tenure qualification. Tied latest starts, earlier open/overlapping intervals, future starts or any uncertain interval fail closed; no IRI tie-break determines chronology. A missing end remains open-ended, not a completed tenure. Do not omit selection for last/most-recently wording or add it to an all-episodes request. Extra dates, parties, election events and relationships remain unsupported as a whole.
@@ -834,7 +838,31 @@ def _validate_capability_selection_draft(value: dict[str, Any], *, question: str
             f"Existing semantic capability {capability!r} is not exposed for semantic selection."
         )
 
-    if capability == "member_lookup":
+    if capability == "current_office_constituency":
+        if (entry.get("handler") != "composable_office_representation" or entry.get("input") != "office_mention"
+                or not isinstance(parameters, dict) or set(parameters) != {"office"}
+                or not isinstance(parameters.get("office"), str) or not parameters["office"].strip()
+                or _label_position(question, parameters["office"]) is None):
+            raise InvalidComposableDraft("Current officeholder constituency requires one grounded NamedOffice mention.")
+        from .office_representation import validate_request
+        try:
+            validate_request(question, parameters["office"])
+        except ValueError as error:
+            raise UnsupportedComposableRequest(str(error)) from error
+        normalized_parameters = {"office": parameters["office"].strip()}
+    elif capability == "current_committee_members":
+        if (entry.get("handler") != "composable_committee_members" or entry.get("input") != "committee_mention"
+                or not isinstance(parameters, dict) or set(parameters) != {"committee"}
+                or not isinstance(parameters.get("committee"), str) or not parameters["committee"].strip()
+                or _label_position(question, parameters["committee"]) is None):
+            raise InvalidComposableDraft("Current committee listing requires one grounded Committee name.")
+        from .committee_members import validate_request
+        try:
+            validate_request(question, parameters["committee"])
+        except ValueError as error:
+            raise UnsupportedComposableRequest(str(error)) from error
+        normalized_parameters = {"committee": parameters["committee"].strip()}
+    elif capability == "member_lookup":
         if (entry.get("handler") != "stage_a" or not isinstance(parameters, dict)
                 or set(parameters) != {"member", "house"}
                 or parameters.get("house") not in (None, "Dail", "Seanad")

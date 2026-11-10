@@ -221,13 +221,18 @@ def resolve_current_house_term(result, as_of, *, term_type):
     return active[0]
 
 
-def compile_representation_query(plan, *, supported_predicates):
+def compile_representation_query(plan, *, supported_predicates, preserve_unlabelled=False):
     validate_representation_plan(plan)
     refs = plan["referents"]
     graphs = {item["id"]: item["graph"] for item in load_query_contract()["graphFamilies"]}
     joins = {fact: _reviewed_predicate(fact) for fact in EDGES}
     values = "\n".join(f"VALUES ?{key} {{ {URIRef(_require_local_iri(ref['iri'], key)).n3()} }}"
                        for key, ref in refs.items() if "iri" in ref)
+    label_pattern = "?constituency skos:prefLabel ?label ."
+    term_label_pattern = "?term skos:prefLabel ?termLabel ."
+    if preserve_unlabelled:
+        label_pattern = f"OPTIONAL {{ {label_pattern} }}"
+        term_label_pattern = f"OPTIONAL {{ {term_label_pattern} }}"
     return _query(_PREFIXES + f'''SELECT DISTINCT ?member ?name ?membership ?constituency ?label ?term ?termLabel ?range ?start ?end WHERE {{
   {values}
   GRAPH ?memberGraph {{
@@ -238,8 +243,8 @@ def compile_representation_query(plan, *, supported_predicates):
   }}
   FILTER(STRSTARTS(STR(?memberGraph), "{graphs['member-records']['iriTemplate'].split('{')[0]}"))
   GRAPH <{graphs['constituencies']['iri']}> {{ ?constituency a members:DailConstituency ;
-    skos:prefLabel ?label ; {joins['constituency_in_term']} ?term . }}
-  GRAPH <{graphs['houses']['iri']}> {{ ?term a agents:DailTerm ; skos:prefLabel ?termLabel . }}
+    {joins['constituency_in_term']} ?term . {label_pattern} }}
+  GRAPH <{graphs['houses']['iri']}> {{ ?term a agents:DailTerm . {term_label_pattern} }}
 }} ORDER BY ?member ?membership ?constituency ?term ?name ?label ?termLabel ?range ?start ?end LIMIT 100''', supported_predicates)
 
 
@@ -261,7 +266,13 @@ def compile_member_dail_terms_query(member_iri, *, supported_predicates):
 }} ORDER BY ?term ?membership LIMIT 100''', supported_predicates)
 
 
-def execute_representation(plan, *, fuseki, supported_predicates):
+def execute_representation(plan, *, fuseki, supported_predicates, resolved_member=None, preserve_membership_evidence=False):
+    """Execute the reviewed path; a local relationship adapter may bind an exact Member.
+
+    ``resolved_member`` is never model input. It avoids re-resolving an officeholder
+    by display name and can only bind the named-Member current representation path.
+    """
+    validate_representation_plan(plan)
     refs = plan["referents"]
     as_of = date.fromisoformat(plan["asOf"])
     query = None
@@ -272,7 +283,16 @@ def execute_representation(plan, *, fuseki, supported_predicates):
         if current:
             term = resolve_current_dail(fuseki.query(previous_dail_term_query(as_of, supported_predicates=supported_predicates)), as_of)
             refs["term"].update(iri=term, resolution="resolved", asOfEvidence=as_of.isoformat())
-        if refs["member"].get("mention"):
+        if resolved_member is not None:
+            if (not current or not refs["member"].get("mention") or refs["constituency"].get("mention")
+                    or not isinstance(resolved_member, tuple) or len(resolved_member) != 2):
+                raise NLQError("An exact relationship-bound Member requires current named-Member representation.")
+            iri, label = resolved_member
+            _require_local_iri(iri, "Member")
+            if not isinstance(label, str) or label == "—" or not label.strip():
+                raise NLQError("The relationship-bound Member has no usable display name.")
+            refs["member"].update(iri=iri, label=label, resolution="resolved")
+        elif refs["member"].get("mention"):
             mention = refs["member"]["mention"]
             iri, label = resolve_member(fuseki.query(member_resolution_query(mention, supported_predicates=supported_predicates)), mention)
             refs["member"].update(iri=iri, label=label, resolution="resolved")
@@ -345,11 +365,21 @@ def execute_representation(plan, *, fuseki, supported_predicates):
                 raise NLQError("Constituency lookup reached its safety cap; no occurrence was selected.")
             iri, label = resolve_constituency(raw, mention, term_label="the current Dáil")
             refs["constituency"].update(iri=iri, label=label, resolution="resolved")
-        query = compile_representation_query(plan, supported_predicates=supported_predicates)
+        query = compile_representation_query(plan, supported_predicates=supported_predicates,
+                                             preserve_unlabelled=resolved_member is not None)
         raw = select_pages(query, fuseki=fuseki, supported_predicates=supported_predicates)
         if not raw.rows:
             raise NLQError("No matching representation evidence is available; local absence does not establish a historical negative.")
+        if resolved_member is not None:
+            required = {"member", "name", "membership", "constituency", "label", "term", "termLabel", "range", "start", "end"}
+            if (raw.kind != "select" or not required.issubset(raw.columns)
+                    or any(len(row) != len(raw.columns) or not all(isinstance(cell, str) for cell in row) for row in raw.rows)):
+                raise NLQError("Relationship-bound representation returned missing or truncated identity/date evidence.")
         records = [dict(zip(raw.columns, row)) for row in raw.rows]
+        if resolved_member is not None and any(row.get("member") != resolved_member[0] for row in records):
+            raise NLQError("Representation evidence escaped the exact relationship-bound Member identity.")
+        if resolved_member is not None and any(row[key] == "—" or not row[key].strip() for row in records for key in ("name", "label", "termLabel")):
+            raise NLQError("Relationship-bound representation has missing Member, constituency or term display evidence; no path was silently excluded.")
         latest_start = None
         if latest_recorded:
             latest_start = date.fromisoformat(refs["term"]["termStart"])
@@ -375,12 +405,18 @@ def execute_representation(plan, *, fuseki, supported_predicates):
                 _require_local_iri(row[key], key)
             base = (row["name"].removesuffix("@en"), row["label"].removesuffix("@en"),
                     row["termLabel"].removesuffix("@en"), row["member"], row["constituency"], row["term"])
+            if preserve_membership_evidence:
+                _require_local_iri(row["range"], "DateRange")
+                base += (row["membership"], row["range"], row["start"],
+                         "open-ended" if row["end"] in {"—", ""} else row["end"], as_of.isoformat())
             rows.add((*base[:3], latest_start.isoformat(), *base[3:]) if latest_recorded else base)
         if latest_recorded:
             columns = ("Member", "Constituency", "Dáil term", "Term start", "Member identity", "Constituency identity", "Term identity")
         else:
             columns = ("Member", "Constituency", "Dáil term", "Member identity", "Constituency identity", "Term identity")
-        result = QueryResult("select", columns, tuple(sorted(rows)), raw.raw_json)
+        if preserve_membership_evidence:
+            columns += ("Membership identity", "Membership date range", "Membership start", "Membership end", "As of")
+        result = QueryResult("select", columns, tuple(sorted(rows)), raw_json=raw.raw_json)
         return PlanOutcome("success", plan=plan, sparql=query, result=result,
                            diagnostic=(f"Recorded representation evidence{' at ' + as_of.isoformat() if current else ' in the latest House-dated Dáil term' if latest_recorded else ' across recorded Dáil terms'}. "
                                        "The latest term is selected by exact HouseTerm identity and House-owned start dates; local source completeness is not certified."))

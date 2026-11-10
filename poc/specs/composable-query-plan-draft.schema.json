@@ -166,9 +166,10 @@
           "additionalProperties": false,
           "required": ["capability", "parameters"],
           "properties": {
-         "capability": {"type": "string", "enum": ["seanad_entry", "bill_lookup", "member_lookup", "dail_parties_and_groups", "office_holding_evidence", "office_holding_window"]},
+          "capability": {"type": "string", "enum": ["seanad_entry", "bill_lookup", "member_lookup", "dail_parties_and_groups", "office_holding_evidence", "office_holding_window", "current_committee_members", "current_office_constituency"]},
             "parameters": {
-                "anyOf": [
+                 "anyOf": [
+                   {"type": "object", "additionalProperties": false, "required": ["committee"], "properties": {"committee": {"type": "string", "minLength": 1}}},
                   {"type": "object", "additionalProperties": false, "required": ["office"], "properties": {"office": {"type": "string", "minLength": 1}}},
                   {"type": "object", "additionalProperties": false, "required": ["office", "startMonth", "startYear", "endMonth", "endYear"], "properties": {"office": {"type": "string", "minLength": 1}, "startMonth": {"type": "integer", "minimum": 1, "maximum": 12}, "endMonth": {"type": "integer", "minimum": 1, "maximum": 12}, "startYear": {"type": "integer", "minimum": 1, "maximum": 9998}, "endYear": {"type": "integer", "minimum": 1, "maximum": 9998}}},
                   {"type": "object", "additionalProperties": false, "required": ["office", "date"], "properties": {"office": {"type": "string", "minLength": 1}, "date": {"type": "string", "format": "date"}}},
