@@ -16,7 +16,8 @@ from poc.nlq.composable_semantic_planner import (
 from poc.nlq.vocabulary import supported_predicates
 from test_nlq_composable_current_house_membership import (
     CurrentHouseFixture, FixedPlanGenerator, _q23_draft, ROOT,
-    AGENTS, MEMBERS, HOUSE_GRAPH, SEANAD_TERM,
+    AGENTS, MEMBERS, HOUSE_GRAPH, SEANAD_TERM, DAIL_TERM, DAIL_TERM_33,
+    PARTY_GRAPH, IDENTITY_GRAPH, FG_IDENTITY, SKOS,
 )
 
 AS_OF = date(2026, 11, 9)
@@ -71,6 +72,183 @@ def _fixture(*, historical=False, missing=False, conflict=False, size=1):
                 for date_range in graph.objects(membership, URIRef(MEMBERS + 'hasMembershipDateRange')):
                     graph.add((date_range, URIRef(MEMBERS + 'EndDate'), Literal('2020-03-27T00:00:00', datatype=XSD.dateTime)))
     return fixture
+
+
+def _current_dail_party_draft(*, count=False):
+    draft = _draft(count=count)
+    refs = draft['referents']
+    refs['membership']['type'] = 'DailMembership'
+    refs['term'].update(type='DailTerm', selector={'kind': 'currentTerm'})
+    draft['relations'] = [
+        {'id': 'member-membership', 'fact': 'member_has_membership', 'from': 'member', 'to': 'membership'},
+        {'id': 'membership-term', 'fact': 'membership_in_term', 'from': 'membership', 'to': 'term'},
+        {'id': 'member-episode', 'fact': 'member_party_membership', 'from': 'member', 'to': 'episode'},
+        {'id': 'episode-membership', 'fact': 'party_episode_in_membership', 'from': 'episode', 'to': 'membership'},
+        {'id': 'episode-party', 'fact': 'episode_in_parliamentary_party', 'from': 'episode', 'to': 'party'},
+        {'id': 'party-term', 'fact': 'party_active_during_term', 'from': 'party', 'to': 'term'},
+        {'id': 'party-affiliation', 'fact': 'parliamentary_party_has_affiliation_identity', 'from': 'party', 'to': 'affiliation'},
+    ]
+    draft['constraints'][0]['field'] = 'partyEpisodeInterval'
+    return draft
+
+
+def test_explicit_current_dail_party_draft_is_supported_but_not_defaulted():
+    question = 'Who are the Fine Gael Deputies in the current Dáil?'
+    draft = _current_dail_party_draft()
+    validated, error = validate_composable_plan_draft(draft, question=question)
+    assert error is None
+    assert validated['referents']['term']['selector'] == {'kind': 'currentTerm', 'house': 'Dail'}
+    with pytest.raises(InvalidComposableDraft):
+        validate_composable_plan_draft(draft, question='Who are the Fine Gael Deputies?')
+
+
+def _dail_party_fixture():
+    fixture = CurrentHouseFixture(members=[])
+    fixture.dataset.graph(URIRef(HOUSE_GRAPH)).add(
+        (URIRef(DAIL_TERM_33), URIRef(AGENTS + 'termNo'), Literal(33, datatype=XSD.integer)))
+    records = [
+        ('Current-FG', 'Current Fine Gael', 'Fine Gael', FG_IDENTITY,
+         ('2025-01-01T00:00:00', None), ('2025-01-01T00:00:00', None), DAIL_TERM),
+        ('Current-FF', 'Current Fianna Fáil', 'Fianna Fáil',
+         'https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail',
+         ('2025-01-01T00:00:00', None), ('2025-01-01T00:00:00', None), DAIL_TERM),
+        ('Ended-Membership', 'Ended Membership', 'Fine Gael', FG_IDENTITY,
+         ('2025-01-01T00:00:00', '2026-11-08T23:59:59'), ('2025-01-01T00:00:00', None), DAIL_TERM),
+        ('Ended-Party', 'Ended Party', 'Fine Gael', FG_IDENTITY,
+         ('2025-01-01T00:00:00', None), ('2025-01-01T00:00:00', '2026-11-08T23:59:59'), DAIL_TERM),
+        ('Historical-FG', 'Historical Fine Gael', 'Fine Gael', FG_IDENTITY,
+         ('2020-02-08T00:00:00', '2024-11-08T00:00:00'), ('2020-02-08T00:00:00', '2024-11-08T00:00:00'), DAIL_TERM_33),
+    ]
+    for slug, name, party_name, identity, member_range, party_range, term in records:
+        item = {'slug': slug, 'name': name,
+                'dail_paths': [(term, member_range)]}
+        fixture.add_member(item, omit_dail_range=True)
+        member = URIRef(f'https://data.oireachtas.ie/ie/oireachtas/member/id/{slug}')
+        graph = fixture.dataset.graph(URIRef(f'https://data.oireachtas.ie/graph/member/{slug}'))
+        membership = URIRef(f'{member}#dail-membership')
+        episode = URIRef(f'{member}#party-episode')
+        party = URIRef(f'https://data.oireachtas.ie/ie/oireachtas/party/dail/{term.rsplit("/", 1)[-1]}/{slug}')
+        graph.add((member, URIRef(MEMBERS + 'hasMembersMembership'), episode))
+        graph.add((episode, RDF.type, URIRef(MEMBERS + 'PartyMembership')))
+        graph.add((episode, URIRef(MEMBERS + 'inOireachtasMembership'), membership))
+        graph.add((episode, URIRef(MEMBERS + 'isPartyMembershipOf'), party))
+        for resource, dates in ((membership, member_range), (episode, party_range)):
+            date_range = URIRef(f'{resource}#date-range')
+            graph.add((resource, URIRef(MEMBERS + 'hasMembershipDateRange'), date_range))
+            graph.add((date_range, RDF.type, URIRef(MEMBERS + 'DateRange')))
+            graph.add((date_range, URIRef(MEMBERS + 'StartDate'), Literal(dates[0], datatype=XSD.dateTime)))
+            if dates[1]:
+                graph.add((date_range, URIRef(MEMBERS + 'EndDate'), Literal(dates[1], datatype=XSD.dateTime)))
+        party_graph = fixture.dataset.graph(URIRef(PARTY_GRAPH))
+        party_graph.add((party, RDF.type, URIRef(MEMBERS + 'ParliamentaryParty')))
+        party_graph.add((party, URIRef(SKOS + 'prefLabel'), Literal(f'{party_name}, {term.rsplit("/", 1)[-1]}', lang='en')))
+        party_graph.add((party, URIRef(MEMBERS + 'activeDuringTerm'), URIRef(term)))
+        identity_graph = fixture.dataset.graph(URIRef(IDENTITY_GRAPH))
+        identity_graph.add((party, URIRef(MEMBERS + 'hasPoliticalAffiliationIdentity'), URIRef(identity)))
+        identity_graph.add((URIRef(identity), RDF.type, URIRef(MEMBERS + 'PoliticalAffiliationIdentity')))
+        identity_graph.add((URIRef(identity), URIRef(SKOS + 'prefLabel'), Literal(party_name, lang='en')))
+    # Same Member, membership and reviewed identity through a second party
+    # occurrence: entity lists/counts must remain distinct by Member identity.
+    member = URIRef('https://data.oireachtas.ie/ie/oireachtas/member/id/Current-FG')
+    graph = fixture.dataset.graph(URIRef('https://data.oireachtas.ie/graph/member/Current-FG'))
+    membership = URIRef(f'{member}#dail-membership')
+    episode = URIRef(f'{member}#second-party-episode')
+    party = URIRef('https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Current-FG-second')
+    graph.add((member, URIRef(MEMBERS + 'hasMembersMembership'), episode))
+    graph.add((episode, RDF.type, URIRef(MEMBERS + 'PartyMembership')))
+    graph.add((episode, URIRef(MEMBERS + 'inOireachtasMembership'), membership))
+    graph.add((episode, URIRef(MEMBERS + 'isPartyMembershipOf'), party))
+    date_range = URIRef(f'{episode}#date-range')
+    graph.add((episode, URIRef(MEMBERS + 'hasMembershipDateRange'), date_range))
+    graph.add((date_range, RDF.type, URIRef(MEMBERS + 'DateRange')))
+    graph.add((date_range, URIRef(MEMBERS + 'StartDate'), Literal('2025-01-01T00:00:00', datatype=XSD.dateTime)))
+    party_graph = fixture.dataset.graph(URIRef(PARTY_GRAPH))
+    party_graph.add((party, RDF.type, URIRef(MEMBERS + 'ParliamentaryParty')))
+    party_graph.add((party, URIRef(SKOS + 'prefLabel'), Literal('Fine Gael, 34 (second occurrence)', lang='en')))
+    party_graph.add((party, URIRef(MEMBERS + 'activeDuringTerm'), URIRef(DAIL_TERM)))
+    identity_graph = fixture.dataset.graph(URIRef(IDENTITY_GRAPH))
+    identity_graph.add((party, URIRef(MEMBERS + 'hasPoliticalAffiliationIdentity'), URIRef(FG_IDENTITY)))
+    return fixture, records
+
+
+def _dail_draft(*, party='Fine Gael', count=False, historical=False):
+    draft = _current_dail_party_draft(count=count)
+    draft['referents']['affiliation']['mention'] = party
+    if historical:
+        draft['referents']['term']['selector'] = {'kind': 'termNumber', 'number': 33}
+    return draft
+
+
+def _run_dail(question, fixture, *, party='Fine Gael', count=False, historical=False):
+    return execute_question(
+        question, as_of=AS_OF, fuseki=fixture,
+        supported_predicates=supported_predicates(ROOT / 'ontology'),
+        semantic_plan_generator_factory=lambda: FixedPlanGenerator(
+            _dail_draft(party=party, count=count, historical=historical)),
+    )
+
+
+def test_explicit_current_dail_party_lists_and_counts_match_independent_rdf_evidence():
+    fixture, records = _dail_party_fixture()
+    # Independent hand-written RDF selection (not the capability compiler).
+    query = f'''SELECT ?member ?memberStart ?memberEnd ?partyStart ?partyEnd ?identity WHERE {{
+      GRAPH ?mg {{ ?member a <{AGENTS}Member>; <http://xmlns.com/foaf/0.1/name> ?name;
+          <{MEMBERS}hasMembersMembership> ?membership, ?episode .
+        ?membership a <{MEMBERS}DailMembership>; <{MEMBERS}inHouseTerm> <{DAIL_TERM}>;
+          <{MEMBERS}hasMembershipDateRange> ?mr .
+        ?mr a <{MEMBERS}DateRange>; <{MEMBERS}StartDate> ?memberStart . OPTIONAL {{ ?mr <{MEMBERS}EndDate> ?memberEnd }}
+        ?episode a <{MEMBERS}PartyMembership>; <{MEMBERS}inOireachtasMembership> ?membership;
+          <{MEMBERS}isPartyMembershipOf> ?party; <{MEMBERS}hasMembershipDateRange> ?pr .
+        ?pr a <{MEMBERS}DateRange>; <{MEMBERS}StartDate> ?partyStart . OPTIONAL {{ ?pr <{MEMBERS}EndDate> ?partyEnd }}
+      }}
+      GRAPH <{PARTY_GRAPH}> {{ ?party <{MEMBERS}activeDuringTerm> <{DAIL_TERM}> }}
+      GRAPH <{IDENTITY_GRAPH}> {{ ?party <{MEMBERS}hasPoliticalAffiliationIdentity> ?identity }}
+    }}'''
+    raw = fixture.dataset.query(query)
+    expected = set()
+    for row in raw:
+        member_start = date.fromisoformat(str(row.memberStart)[:10])
+        member_end = date.fromisoformat(str(row.memberEnd)[:10]) if row.memberEnd else None
+        party_start = date.fromisoformat(str(row.partyStart)[:10])
+        party_end = date.fromisoformat(str(row.partyEnd)[:10]) if row.partyEnd else None
+        if (row.identity == URIRef(FG_IDENTITY) and member_start <= AS_OF
+                and (member_end is None or AS_OF <= member_end)
+                and party_start <= AS_OF and (party_end is None or AS_OF <= party_end)):
+            expected.add(str(row.member))
+
+    result = _run_dail('Who are the Fine Gael Deputies in the current Dáil?', fixture)
+    assert result.status == 'success', result.diagnostic
+    actual = {row[1] for row in result.result.rows}
+    assert actual == expected
+    assert len(actual) == 1
+    assert len(result.result.rows) == 1
+    assert DAIL_TERM in result.result.rows[0][2]
+    assert '2026-11-08T23:59:59' not in result.result.rows[0][2]
+    paraphrase = _run_dail('Which Fine Gael TDs are currently serving?', fixture)
+    assert paraphrase.status == 'success', paraphrase.diagnostic
+    assert {row[1] for row in paraphrase.result.rows} == actual
+
+    count = _run_dail('How many Fine Gael Deputies are in the current Dáil?', fixture, count=True)
+    assert count.status == 'success', count.diagnostic
+    assert count.result.rows == ((str(len(expected)),),)
+
+    fianna = _run_dail('Which Fianna Fáil Deputies are currently serving?', fixture, party='Fianna Fáil')
+    assert fianna.status == 'success', fianna.diagnostic
+    assert len(fianna.result.rows) == 1
+    assert 'Current-FF' in fianna.result.rows[0][1]
+
+    historical = _run_dail('Who were the Fine Gael TDs in the 33rd Dáil?', fixture, historical=True)
+    assert historical.status == 'success', historical.diagnostic
+    assert len(historical.result.rows) == 1
+    assert DAIL_TERM_33 in historical.result.rows[0][2]
+
+    for unsupported in (
+        'Who are the Fine Gael Deputies in the current Dáil on 2026-01-01?',
+        'Who are the Fine Gael Deputies in the current Dáil who serve on a committee?',
+        'Who are the Fine Gael and Fianna Fáil Deputies in the current Dáil?',
+    ):
+        rejected = _run_dail(unsupported, fixture)
+        assert rejected.status != 'success', (unsupported, rejected.result)
 
 
 @pytest.mark.parametrize('question', [

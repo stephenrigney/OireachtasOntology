@@ -633,8 +633,8 @@ def _validate_member_party_composition_plan(plan: dict[str, Any]) -> dict[str, A
             validate_seanad_party_default(plan)
         except ValueError as error:
             raise PlanError(str(error)) from error
-    if party_only and not numeric_term and not seanad_party_only:
-        raise PlanError("Dáil party-only Member selection requires one explicitly numbered DailTerm.")
+    if party_only and not (numeric_term or current_term):
+        raise PlanError("Party-only Member selection requires one exact numbered or House-date-resolved current term.")
     from .interpretation import validate_default
     if not party_only:
         try:
@@ -830,8 +830,8 @@ def _validate_member_party_composition_plan(plan: dict[str, Any]) -> dict[str, A
             raise PlanError("Party-list answers must target PoliticalAffiliationIdentity.")
     elif answer == {"kind": "count", "referent": "member", "distinctBy": "identity"}:
         if not party_only or party_answer or anchored:
-            if not (party_only and seanad_party_only and current_term and not party_answer and not anchored):
-                raise PlanError("Only the bounded numbered-Dáil or current-Seanad party-only Member projection supports a temporal count.")
+            if not (party_only and current_term and not party_answer and not anchored):
+                raise PlanError("Only a bounded party-only current-term or numbered-Dáil Member projection supports a temporal count.")
     elif answer == {
         "kind": "entities", "referent": "member", "distinctBy": "identity", "display": ["name"],
         "details": [
