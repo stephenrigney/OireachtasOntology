@@ -3836,22 +3836,25 @@ def compile_office_answer_query(plan: dict[str, Any], *, supported_predicates) -
     return _query(query, supported_predicates)
 
 
-def compile_office_evidence_query(plan: dict[str, Any], *, supported_predicates) -> str:
+def compile_office_evidence_query(plan: dict[str, Any], *, supported_predicates, preserve_unlabelled=False) -> str:
     """Inspect all accepted local holding records, including incomplete dates."""
     plan = validate_plan(plan)
     mapping = _office_query_mapping(plan)
-    return _compile_office_evidence(mapping, supported_predicates=supported_predicates)
+    return _compile_office_evidence(mapping, supported_predicates=supported_predicates, preserve_unlabelled=preserve_unlabelled)
 
 
-def _compile_office_evidence(mapping, *, supported_predicates):
+def _compile_office_evidence(mapping, *, supported_predicates, preserve_unlabelled=False):
     member_prefix = json.dumps(mapping["member_graph_prefix"])
     office_iri = f'<{mapping["office_iri"]}>'
     member_values = f'VALUES ?member_member {{ <{mapping["member_iri"]}> }}' if mapping["member_iri"] else ""
+    name_pattern = f'?member_member {mapping["member_name"]} ?memberName .'
+    if preserve_unlabelled:
+        name_pattern = f'OPTIONAL {{ {name_pattern} }}'
     query = _PREFIXES + f'''SELECT DISTINCT ?member_member ?memberName ?holding_holding ?holdingDateRange ?holdingStart ?holdingEnd WHERE {{
   GRAPH ?memberGraph {{
     {member_values}
-    ?member_member a {mapping["member_type"]} ; {mapping["member_name"]} ?memberName ;
-      {mapping["member_holding"]} ?holding_holding .
+    ?member_member a {mapping["member_type"]} ; {mapping["member_holding"]} ?holding_holding .
+    {name_pattern}
     ?holding_holding a {mapping["holding_type"]} ; {mapping["holding_office"]} {office_iri} .
     OPTIONAL {{
       ?holding_holding {mapping["holding_range"]} ?holdingDateRange .
@@ -7271,9 +7274,10 @@ def _execute_question(
         if member_mention:
             office_mention = re.sub(r"^(?:the\s+)?(?:current\s+)?", "", member_mention, flags=re.I)
             office_mention = re.sub(r"\s+(?:currently|now|today)$", "", office_mention, flags=re.I)
-            office_resolution = resolve_local_entity_label("NamedOffice", office_mention, fuseki,
-                                                          supported_predicates=supported_predicates)
-            if office_resolution.state in {"resolved", "ambiguous"}:
+            office_resolution = (resolve_local_entity_label("NamedOffice", office_mention, fuseki,
+                                                           supported_predicates=supported_predicates)
+                                 if office_mention.strip() else None)
+            if office_resolution is not None and office_resolution.state in {"resolved", "ambiguous"}:
                 if semantic_plan_generator_factory is None:
                     return PlanOutcome("unsupported_capability", diagnostic="An officeholder constituency requires validated NamedOffice selection, not a Member-name lookup.")
                 return _execute_shared_dail_terms_question(question, as_of=as_of, fuseki=fuseki,

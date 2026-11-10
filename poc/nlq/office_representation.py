@@ -11,7 +11,7 @@ from .errors import NLQError
 from .member_resolution import resolve_local_entity_label
 from .pagination import select_pages
 from .representation import representation_plan, execute_representation, EDGES as REPRESENTATION_EDGES
-from .results import QueryResult
+from .results import QueryResult, format_debug_payload
 
 
 FAMILY = "current_office_constituency"
@@ -68,7 +68,7 @@ def execute_office_representation(mention, *, as_of, fuseki, supported_predicate
         candidate = office.candidates[0]
         office_plan = _office_interval_plan(as_of=as_of, office=mention, start=as_of, end=as_of, scope="calendarDate")
         office_plan["referents"]["office"].update(resolution="resolved", iri=candidate.iri, label=candidate.label)
-        query = compile_office_evidence_query(office_plan, supported_predicates=supported_predicates)
+        query = compile_office_evidence_query(office_plan, supported_predicates=supported_predicates, preserve_unlabelled=True)
         evidence = select_pages(query, fuseki=fuseki, supported_predicates=supported_predicates)
         _, active_ids, issues = inspect_office_holding_evidence(evidence, office_plan)
         if issues:
@@ -91,7 +91,7 @@ def execute_office_representation(mention, *, as_of, fuseki, supported_predicate
             raise NLQError("More than one accepted current OfficeHolding relationship is locally recorded; no officeholder was selected.")
         holding = next(iter(active_ids))
         member, name, range_iri, (start, end) = holdings[holding]
-        if name in {"—", ""}:
+        if name == "—" or not name.strip():
             raise NLQError("The accepted officeholder has no usable local Member name.")
         # Exact identity is supplied by code, never re-resolved from its display name.
         child = execute_representation(representation_plan(as_of=as_of, member=name), fuseki=fuseki,
@@ -111,8 +111,11 @@ def execute_office_representation(mention, *, as_of, fuseki, supported_predicate
         office_columns = ("Named office", "Office identity", "Holding identity", "Holding date range", "Holding start", "Holding end")
         office_values = (candidate.label, candidate.iri, holding, range_iri, start.isoformat(), end.isoformat() if end else "open-ended")
         return PlanOutcome("success", plan=plan, sparql=child.sparql,
-                           result=QueryResult("select", result.columns + office_columns, tuple(row + office_values for row in result.rows)),
+                           result=QueryResult("select", result.columns + office_columns, tuple(row + office_values for row in result.rows),
+                                              raw_json=format_debug_payload({"officeEvidence": {"query": query, "columns": evidence.columns, "rows": evidence.rows},
+                                                                    "representationEvidence": {"query": child.sparql, "columns": result.columns, "rows": result.rows},
+                                                                    "exactMemberIdentity": member})),
                            diagnostic=f"Locally evidenced accepted officeholder and independently dated Dáil representation at {as_of.isoformat()}. "
                                       "Exact Member identity joins the two relationships; not a certified complete current-office or government roster. Missing ends remain open-ended.", request_family=FAMILY)
-    except NLQError as error:
+    except (NLQError, PlanError) as error:
         return PlanOutcome("source_data_unavailable", plan=plan, sparql=query, diagnostic=str(error), request_family=FAMILY)

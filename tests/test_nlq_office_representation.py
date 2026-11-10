@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from jsonschema import Draft202012Validator
 from rdflib import URIRef, Literal
 from rdflib.namespace import RDF, SKOS, XSD
+from rdflib.namespace import FOAF
 
 from poc.nlq.composable_plan import execute_question, validate_plan, PlanError
 from poc.nlq.composable_semantic_planner import (
@@ -87,6 +88,7 @@ def test_chain_uses_exact_officeholder_identity_even_with_duplicate_member_names
     assert row["As of"] == AS_OF.isoformat() and row["Membership start"].startswith("2024-11-29T00:00:00")
     assert validate_plan(out.plan) == out.plan
     assert "not a certified complete" in out.diagnostic
+    assert '"officeEvidence"' in out.result.raw_json and '"representationEvidence"' in out.result.raw_json
     assert not any("LCASE(?name)" in q or "LCASE(?memberName)" in q for q in f.queries)
 
 
@@ -191,6 +193,44 @@ def test_future_holding_with_invalid_end_cannot_hide_uncertainty():
         {"start": "2027-01-01T00:00:00", "end": "2026-01-01T00:00:00"}]); f.representation(holder)
     out = run(f)
     assert out.status == "source_data_unavailable" and out.result is None
+
+
+@pytest.mark.parametrize("name", [None, "   "])
+def test_missing_or_whitespace_holder_name_returns_structured_blocker(name):
+    f = Fixture(); holder = f.holder(); f.representation(holder)
+    g = f.dataset.graph(URIRef(BASE + "graph/member/holder"))
+    g.remove((URIRef(holder), FOAF.name, None))
+    if name is not None: g.add((URIRef(holder), FOAF.name, Literal(name)))
+    out = run(f)
+    assert out.status == "source_data_unavailable" and out.result is None
+    assert "no usable local Member name" in out.diagnostic
+
+
+def test_unlabelled_competing_holder_cannot_be_hidden_by_display_join():
+    f = Fixture(); member = f.holder(); f.representation(member)
+    other = f.holder("other", "Unlabelled")
+    f.dataset.graph(URIRef(BASE + "graph/member/other")).remove((URIRef(other), FOAF.name, None))
+    out = run(f)
+    assert out.status == "source_data_unavailable" and out.result is None
+    assert "More than one accepted current OfficeHolding" in out.diagnostic
+
+
+@pytest.mark.parametrize("fault", ["missing_constituency_label", "missing_term_label", "unlabelled_competing_constituency"])
+def test_missing_representation_labels_cannot_remove_a_relationship_before_validation(fault):
+    f = Fixture(); member = f.holder(); f.representation(member)
+    if fault == "missing_constituency_label":
+        f.dataset.graph(URIRef(BASE + "graph/constituencies")).remove((CONSTITUENCY, SKOS.prefLabel, None))
+    elif fault == "missing_term_label":
+        f.dataset.graph(URIRef(BASE + "graph/houses")).remove((TERM, SKOS.prefLabel, None))
+    else:
+        other = URIRef(str(CONSTITUENCY) + "-unlabelled")
+        c = f.dataset.graph(URIRef(BASE + "graph/constituencies"))
+        c.add((other, RDF.type, URIRef(MEMBERS + "DailConstituency")))
+        c.add((other, URIRef(MEMBERS + "constituencyInHouseTerm"), TERM))
+        f.representation(member, constituency=other)
+    out = run(f)
+    assert out.status == "source_data_unavailable" and out.result is None
+    assert "missing Member, constituency or term display evidence" in out.diagnostic
 
 
 def test_schema_and_canonical_plan_are_closed_and_evidence_preserving():

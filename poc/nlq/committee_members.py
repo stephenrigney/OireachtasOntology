@@ -167,7 +167,7 @@ def project_members(raw, owner, as_of):
                      owner["term"], owner["period"], owner["termStart"], owner["termEnd"], as_of.isoformat()))
     return QueryResult("select", ("Member", "Member identity", "Committee", "Committee identity", "Membership evidence",
                                   "Committee date range", "Committee start", "Committee end", "HouseTerm identity",
-                                  "HouseTerm period", "HouseTerm start", "HouseTerm end", "As of"), tuple(sorted(rows)), raw.raw_json)
+                                  "HouseTerm period", "HouseTerm start", "HouseTerm end", "As of"), tuple(sorted(rows)), raw_json=raw.raw_json)
 
 
 def execute_committee_members(mention, *, as_of, fuseki, supported_predicates):
