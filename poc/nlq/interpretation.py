@@ -5,6 +5,56 @@ from datetime import date
 
 
 POLICY = "present_constituency_as_of"
+SEANAD_PARTY_POLICY = "present_seanad_party_as_of"
+
+
+def present_seanad_party_default(question: str, party: str) -> bool:
+    """Default only a grounded, unqualified present-tense Senator-party request."""
+    text = re.sub(re.escape(party), "party", question, flags=re.I) if party else question
+    return bool(re.fullmatch(
+        r"\s*(?:who\s+are\s+(?:the\s+)?party\s+senators|"
+        r"(?:which|what)\s+party\s+senators\s+are\s+there|"
+        r"how\s+many\s+party\s+senators\s+are\s+there)\s*[?.!]?\s*",
+        text, re.I,
+    ))
+
+
+def validate_seanad_party_scope(question: str, party: str, selector: dict) -> None:
+    """Account for the whole bounded party/Seanad request, not just its term."""
+    text = re.sub(re.escape(party), " ", question, flags=re.I) if party else question
+    numbered = re.findall(r"\b([0-9]{1,3})(?:st|nd|rd|th)\s+seanad\b", text, re.I)
+    current = bool(re.search(r"\b(?:current|this|currently|now|today|present)\b", text, re.I))
+    if selector.get("kind") == "termNumber":
+        if numbered != [str(selector.get("number"))] or current:
+            raise ValueError("Preserve exactly one explicitly numbered Seanad, without a conflicting current scope.")
+    elif selector.get("kind") == "currentTerm":
+        if numbered or not (current or present_seanad_party_default(question, party)):
+            raise ValueError("Current Seanad party selection requires a current request or the scoped present-time default.")
+    else:
+        raise ValueError("Seanad party selection supports only currentTerm or one numbered term.")
+    text = re.sub(r"\b[0-9]{1,3}(?:st|nd|rd|th)\s+seanad\b", " seanad ", text, flags=re.I)
+    # A closed vocabulary here is deliberately limited to this existing graph.
+    # Any residual date, relationship, negation or other condition fails closed.
+    allowed = set("who which what how many count number of total list name show give me please are were was is the a an senator senators seanad in during for current this currently now today present serving served members party there recorded local evidence".split())
+    words = set(re.findall(r"[^\W\d_]+", text.casefold()))
+    if re.search(r"\d", text) or words - allowed:
+        raise ValueError("Seanad party selection cannot drop an additional temporal, party or relationship condition.")
+    if selector.get("kind") == "currentTerm" and re.search(r"\b(?:during|served)\b", text, re.I):
+        raise ValueError("Current Seanad party selection cannot replace historical service scope.")
+
+
+def validate_seanad_party_default(plan: dict) -> None:
+    evidence = plan.get("interpretation")
+    if evidence is None:
+        return
+    refs = plan["referents"]
+    if (not isinstance(evidence, dict) or set(evidence) != {"policy", "question", "date"}
+            or evidence.get("policy") != SEANAD_PARTY_POLICY
+            or evidence.get("date") != plan["asOf"]
+            or not isinstance(evidence.get("question"), str)
+            or refs["term"].get("selector") != {"kind": "currentTerm", "house": "Seanad"}
+            or not present_seanad_party_default(evidence["question"], refs["affiliation"].get("mention", ""))):
+        raise ValueError("Current Seanad party default lacks approved scoped interpretation evidence.")
 
 
 def unsupported_whole_intent(question):
@@ -158,7 +208,7 @@ def validate_default(plan: dict, *, constituency: str, current: bool) -> None:
         raise ValueError("Current representation default lacks approved scoped interpretation evidence.")
 
 
-def office_holding_boundary(parameters, *, fuseki, supported_predicates):
+def office_holding_boundary(parameters, *, fuseki, supported_predicates, as_of: date | None = None):
     """Return bounded accepted office episodes for one exact Member and office.
 
     These local episodes are not treated as a complete career timeline. Raw
@@ -177,6 +227,8 @@ def office_holding_boundary(parameters, *, fuseki, supported_predicates):
     )
     from .member_resolution import resolve_local_entity_label
     from .errors import NLQError, IdentityNotFound, QueryLimitError
+    latest_recorded = parameters.get("selection") == "latestRecorded"
+    request_family = "office_holding_latest_recorded" if latest_recorded else "office_holding_evidence"
     try:
         member_iri, member_label = resolve_member(
             fuseki.query(member_resolution_query(parameters["member"], supported_predicates=supported_predicates)),
@@ -186,19 +238,19 @@ def office_holding_boundary(parameters, *, fuseki, supported_predicates):
                                             supported_predicates=supported_predicates)
     except AmbiguousMember as error:
         return PlanOutcome("ambiguous", diagnostic=str(error), candidates=error.candidates,
-                           request_family="office_holding_evidence")
+                           request_family=request_family)
     except NLQError as error:
         status = "not_found" if isinstance(error, IdentityNotFound) else "validation_failure" if isinstance(error, QueryLimitError) else "source_data_unavailable"
-        return PlanOutcome(status, diagnostic=str(error), request_family="office_holding_evidence")
+        return PlanOutcome(status, diagnostic=str(error), request_family=request_family)
     if office.state == "unresolved":
-        return PlanOutcome("source_data_unavailable", request_family="office_holding_evidence",
+        return PlanOutcome("source_data_unavailable", request_family=request_family,
                            diagnostic=f"No accepted local NamedOffice identity is available for {parameters['office']}; accepted OfficeHolding evidence cannot establish this tenure. Unreviewed ministerial observations are not accepted holdings.")
     if office.state == "ambiguous":
-        return PlanOutcome("ambiguous", request_family="office_holding_evidence",
+        return PlanOutcome("ambiguous", request_family=request_family,
                            candidates=tuple({"iri": c.iri, "label": c.label} for c in office.candidates),
                            diagnostic="Several accepted office identities match; none was selected.")
     if office.state != "resolved" or len(office.candidates) != 1:
-        return PlanOutcome("source_data_unavailable", request_family="office_holding_evidence",
+        return PlanOutcome("source_data_unavailable", request_family=request_family,
                            diagnostic="The local office resolver did not return one usable reviewed identity.")
 
     office_candidate = office.candidates[0]
@@ -216,7 +268,7 @@ def office_holding_boundary(parameters, *, fuseki, supported_predicates):
         if not evidence.rows:
             return PlanOutcome(
                 "source_data_unavailable", sparql=evidence_query,
-                request_family="office_holding_evidence",
+                request_family=request_family,
                 diagnostic=(f"No accepted local OfficeHolding episode for {member_label} as "
                             f"{office_candidate.label} is recorded; tenure cannot be determined from local evidence."),
             )
@@ -225,22 +277,29 @@ def office_holding_boundary(parameters, *, fuseki, supported_predicates):
             member_iri=member_iri,
             member_label=member_label,
             office_label=office_candidate.label,
+            latest_recorded=latest_recorded,
+            office_iri=office_candidate.iri,
+            as_of=as_of,
         )
     except PlanError as error:
-        return PlanOutcome("unsupported_mapping", request_family="office_holding_evidence",
+        return PlanOutcome("unsupported_mapping", request_family=request_family,
                            diagnostic=f"The reviewed office-holding mapping could not be used safely: {error}")
     except NLQError as error:
         return PlanOutcome(
             "source_data_unavailable", sparql=evidence_query,
-            request_family="office_holding_evidence",
+            request_family=request_family,
             diagnostic=("Accepted local OfficeHolding episodes could not be read completely or their intervals "
                         f"are missing, conflicting, or uncertain ({error}); no partial episode list was returned."),
         )
 
     return PlanOutcome(
         "success", sparql=evidence_query, result=result,
-        request_family="office_holding_evidence",
-        diagnostic=(f"INCOMPLETE LOCAL-RECORDED EPISODES for {member_label} as {office_candidate.label}. "
+        request_family=request_family,
+        diagnostic=(("LATEST RECORDED EPISODE — not a proven historically last tenure. "
+                     "Selected by the unique greatest validated StartDate after reading all accepted local episodes; "
+                     "earlier intervals end strictly before it. A missing end date is not proof of a completed tenure. "
+                     if latest_recorded else "")
+                    + f"INCOMPLETE LOCAL-RECORDED EPISODES for {member_label} as {office_candidate.label}. "
                     "Each row is a separate locally recorded accepted OfficeHolding with its mapped interval. "
                     "This is not a complete career or tenure history; gaps in local records do not mean the "
                     "Member was not in office."),

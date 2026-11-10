@@ -350,7 +350,8 @@ def create_app(
                     "committee_boolean", "committee_count", "house_terms", "dail_all",
                 }
                 plan_family = outcome.plan.get("family") if outcome.plan else outcome.request_family
-                is_office_holding_evidence = plan_family == "office_holding_evidence"
+                is_latest_office_episode = plan_family == "office_holding_latest_recorded"
+                is_office_holding_evidence = plan_family == "office_holding_evidence" or is_latest_office_episode
                 is_shared_dail_terms = plan_family == "shared_dail_terms"
                 is_member_relationship_composition = plan_family == "member_relationship_composition"
                 composition_refs = (outcome.plan or {}).get("referents", {})
@@ -369,7 +370,7 @@ def create_app(
                     and isinstance(composition_refs.get("dail_term"), dict)
                     and "selector" not in composition_refs.get("dail_term", {})
                 )
-                is_current_seanad_party = (
+                is_seanad_party = (
                     is_member_relationship_composition
                     and isinstance(composition_refs.get("membership"), dict)
                     and isinstance(composition_refs.get("term"), dict)
@@ -377,7 +378,7 @@ def create_app(
                     and composition_refs.get("membership", {}).get("type") == "SeanadMembership"
                     and composition_refs.get("term", {}).get("type") == "SeanadTerm"
                     and isinstance(composition_refs.get("term", {}).get("selector"), dict)
-                    and composition_refs.get("term", {}).get("selector", {}).get("kind") == "currentTerm"
+                    and composition_refs.get("term", {}).get("selector", {}).get("kind") in {"currentTerm", "termNumber"}
                     and composition_refs.get("episode", {}).get("type") == "PartyMembershipEpisode"
                 )
                 is_representation = plan_family == "constituency_representation"
@@ -563,13 +564,17 @@ def create_app(
                         "Preserve both membership paths and term identities; this positive local-record list does not "
                         "certify complete history or establish that anyone else never served."
                     )
-                elif is_current_seanad_party:
+                elif is_seanad_party:
                     affiliation = composition_refs.get("affiliation", {})
                     party_name = affiliation.get("label", affiliation.get("mention", "the selected party"))
+                    seanad_current = composition_refs.get("term", {}).get("selector", {}).get("kind") == "currentTerm"
                     member_relationship_summary = (
                         f"Find Members linked to the exact {party_name} identity through a typed PartyMembership episode "
-                        f"for the current Seanad, requiring both the SeanadMembership and PartyMembership intervals "
-                        f"to contain {as_of.isoformat()}. Local current-roster completeness is not certified."
+                        + (f"for the current Seanad, requiring both the SeanadMembership and PartyMembership intervals "
+                           f"to contain {as_of.isoformat()}. Local current-roster completeness is not certified."
+                           if seanad_current else
+                           "in the explicitly numbered Seanad, requiring inclusive overlap with its exact SeanadMembership. "
+                           "Separate source intervals are retained; historical roster completeness is not certified.")
                     )
                 stage_a_summaries = {
                     "member_lookup": "Resolve the grounded Member name against local Member identities without guessing.",
@@ -622,6 +627,13 @@ def create_app(
                         "recorded accepted OfficeHolding episode with its validated interval. This is incomplete local "
                         "evidence, not a complete career timeline."
                     )
+                    if is_latest_office_episode:
+                        summary = (
+                            "Resolve the exact local Member and reviewed NamedOffice identities, read every accepted "
+                            "OfficeHolding episode, and select the unique latest recorded period by validated start dates "
+                            "only when earlier intervals end strictly before it. This qualified local result is not a "
+                            "proven historically last tenure or a complete career history."
+                        )
                 if is_representation:
                     current_representation = "selector" in composition_refs.get("term", {})
                     summary = (
@@ -675,6 +687,12 @@ def create_app(
                         "Each row is one distinct accepted OfficeHolding episode with its validated interval. Local records "
                         "may be incomplete; separate episodes are not merged and gaps do not establish absence."
                     )
+                    if is_latest_office_episode:
+                        answer_text = (
+                            "One uniquely latest recorded accepted OfficeHolding, preserving exact Member, NamedOffice, "
+                            "holding and DateRange identities and the source interval. Not a proven historically last "
+                            "tenure; a missing end date is not evidence of a completed tenure."
+                        )
                 if (is_member_relationship_composition and outcome.plan
                         and outcome.plan.get("answer", {}).get("kind") == "count"):
                     answer_text = (
@@ -702,10 +720,12 @@ def create_app(
                         "term identities and intervals are shown. Local records do not certify complete Dáil history; "
                         "absence is not proof that anyone never served."
                     )
-                elif is_current_seanad_party:
+                elif is_seanad_party:
                     answer_text = (
                         f"Distinct Member identities whose exact party and Seanad membership paths are joined and whose "
-                        f"two independently owned intervals contain {as_of.isoformat()}; local current-roster completeness is not certified."
+                        + (f"two independently owned intervals contain {as_of.isoformat()}; local current-roster completeness is not certified."
+                           if seanad_current else
+                           "independently owned intervals overlap in the selected term; historical completeness is not certified.")
                     )
                 if is_representation:
                     answer_text = "Constituency and Dáil-term evidence is retained by exact RDF identity; local coverage is not certified complete."

@@ -96,7 +96,9 @@ def build_composable_planner_instructions() -> str:
 Interpretation contract: for the one-term, one-constituency Member list/count, the explicit phrase "in this Dáil" selects the exact House-date-resolved current term and is term-wide, regardless of whether the question says "represent" or "represented". It overrides only the implicit present-tense-as-of default: do not require an asOf membership interval unless the user explicitly asks for current representation (for example, "currently", "now", "today", or "as of now/today"). A literal calendar date remains its exact membership-date point. Without the explicit "this Dáil" scope, an unqualified present-tense constituency request defaults to representation at the query date; an explicit current-point request also requires the DailMembership interval to contain asOf. Dated party/representation composition retains its separate rule that currentTerm requires both party and DailMembership intervals to contain asOf. Never default numbered-term, other dated, historical, or election questions. The plain term-scoped constituency Member projection supports one explicit membership calendar-date point; preserve it as a membershipInterval constraint, never as a HouseTerm date or election event. For a Member's latest recorded Dáil term and constituency, use the constituency_representation family with selector "latestRecorded" when the question explicitly asks for the latest recorded term, the most recent term, or the last term (including "last term in the Dáil"). Local code selects from that Member's accepted DailMembership identities and House-owned chronology, and fails closed on missing/tied/conflicting dates or representation evidence. This is not an election-date answer.
 For partial-name person lookup use capability_selection member_lookup with parameters {{"member":"exact name mention","house":"Dail"}} for Deputy/TD, "Seanad" for Senator, or null for unqualified Member. Local code offers grounded alternatives; never expand a surname to an assumed full name.
 For a numbered-Dáil party listing use capability_selection dail_parties_and_groups with parameters {{"termNumber":N,"includeGroups":false}}; true only if groups are also requested. This reuses the existing party compiler, not the constituency composition.
-For an unfiltered question asking when/for what dates or periods one named person held one named office, also accepting "When did [member] serve as [office]?" and "During what period was [member] [office]?", use capability_selection office_holding_evidence with parameters {{"member":"exact mention","office":"exact office mention"}}. This returns each separately recorded accepted local OfficeHolding episode for the exact identities with its validated interval, explicitly labeled incomplete local-recorded evidence—not a complete career timeline. Do not merge episodes or infer first start, final end, total duration, election events, or absence from gaps; unreviewed observations cannot answer. Election, first/last-event, duration, and extra-filter requests remain unsupported.
+For an unfiltered question asking when/for what dates or periods one named person held one named office, also accepting "When did [member] serve as [office]?" and "During what period was [member] [office]?", use capability_selection office_holding_evidence with parameters {{"member":"exact mention","office":"exact office mention"}}. This returns each separately recorded accepted local OfficeHolding episode for the exact identities with its validated interval, explicitly labeled incomplete local-recorded evidence—not a complete career timeline. Do not merge episodes or infer first start, final end, total duration, election events, or absence from gaps; unreviewed observations cannot answer. Election, first-event, duration, and extra-filter requests remain unsupported.
+
+For the same named-person/office period request qualified by "last" or "most recently" (including "When was [member] last [office]?" and "When did [member] last serve as [office]?"), reuse office_holding_evidence with parameters {{"member":"exact mention","office":"exact office mention","selection":"latestRecorded"}}. Do not reject this as an election-event request or claim complete career history. Local code reads every accepted episode and may return only a uniquely latest recorded episode by validated StartDate, with an explicit NOT proven historically last tenure qualification. Tied latest starts, earlier open/overlapping intervals, future starts or any uncertain interval fail closed; no IRI tie-break determines chronology. A missing end remains open-ended, not a completed tenure. Do not omit selection for last/most-recently wording or add it to an all-episodes request. Extra dates, parties, election events and relationships remain unsupported as a whole.
 
 For who held a named office on a calendar date, during a complete month/year, or over an explicit month-to-month window, use capability_selection office_holding_window with exactly one of {{"office":"exact mention","date":"1994-06-01"}}, {{"office":"exact mention","year":1994}}, or {{"office":"exact mention","startMonth":6,"startYear":1994,"endMonth":6,"endYear":1994}}. Preserve date-point vs full-window semantics. Local code reuses the accepted dated OfficeHolding compiler and incomplete-coverage qualification; an overlap does not mean service throughout the window.
 
@@ -115,6 +117,8 @@ Existing shared-term capability: {shared_terms['semantics']}
 Reusable Member relationship capability: {member_composition['semantics']}
 
 For the exact question shape asking who was a Senator in the current Seanad and a Deputy in the current Dáil, use family "member_relationship_composition" with referents member, seanad_membership, seanad_term, dail_membership, and dail_term. Use independent Member→SeanadMembership→SeanadTerm and Member→DailMembership→DailTerm paths, with facts member_has_seanad_membership, seanad_membership_in_term, member_has_membership, and membership_in_term. Both term selectors are {{"kind":"currentTerm"}}; local code resolves each exact term independently from House-owned date evidence. Set constraints to [] and answer exactly {{"kind":"entities","referent":"member","distinctBy":"identity","display":["name"],"details":[],"preserveEvidence":false}}. This means term-wide recorded membership in both terms. Do not require intervals to overlap, do not describe a Member as currently serving in either House, and do not claim simultaneous service; the executor displays each House's separate mapped membership intervals. If the user asks for simultaneous/concurrent/current-point service, a historical period, a date, a party, or any additional filter, return unsupported for the whole request rather than dropping it.
+
+The Seanad party-only shape below also supports one explicitly numbered Seanad with term selector {{"kind":"termNumber","number":N}}. Keep the SAME seven typed edges and partySeanadEpisodeInterval overlap constraint; local code resolves the exact SeanadTerm and validates inclusive party/membership interval overlap, without imposing today's party or membership. Preserve all matching separate episodes, including changes of party during the term. An unqualified present-tense named-party Senator request ("Who are the [party] Senators?", "Which [party] Senators are there?", or "How many [party] Senators are there?") instead uses currentTerm: local code records the scoped asOf default and enforces both active intervals. Never default a past-tense, explicitly numbered, dated or additionally filtered request. A numbered Seanad and current Seanad are distinct temporal meanings; unsupported extra dates/relationships must not be dropped.
 
 For a request for current Senators who previously served in the Dáil (Q20), use the same five typed roles and four exact Member→membership→HouseTerm edges, but select only seanad_term with selector {{"kind":"currentTerm"}}; dail_term is an unselected DailTerm because the Dáil is selected by its exact membership path, not by a guessed prior ordinal. Require the current SeanadMembership's own accepted interval to contain the configured asOf inclusively, and return a Member only when a finite accepted DailMembership EndDate is strictly earlier than that same SeanadMembership StartDate. Equal endpoints do not qualify; an open-ended DailMembership is not prior-service evidence. Use the evidence-preserving Member list answer with details for both membership intervals and both HouseTerm identities, or the distinct Member count only when explicitly requested. Count/list share the same complete bounded pagination and exact Member-identity join. Unknown, missing, conflicting, malformed or capped identity/date evidence fails closed. This is a positive local-record result only: do not claim complete career/history coverage or infer that anyone never served from an absent path. Refuse party, panel, office, election, simultaneity, dated/ordinal or other additional conditions as a whole.
 
@@ -566,7 +570,7 @@ def _validate_member_party_composition_draft(
     if (not seanad_party_only and isinstance(referents, dict)
             and isinstance(referents.get("membership"), dict)
             and referents["membership"].get("type") == "SeanadMembership"):
-        raise UnsupportedComposableRequest("Seanad party selection requires the bounded current-term party-only shape.")
+        raise UnsupportedComposableRequest("Seanad party selection requires the bounded party-only shape.")
     expected_types = {**core_types, **({} if party_only else {"constituency": "DailConstituency"})}
     if not isinstance(referents, dict) or set(referents) != set(expected_types):
         raise InvalidComposableDraft(
@@ -586,18 +590,16 @@ def _validate_member_party_composition_draft(
             selector = item.get("selector")
             if set(item) != {"type", "mention", "selector"} or item["mention"] is not None:
                 raise InvalidComposableDraft(f"The term must be one reviewed {term_type} selector.")
-            if seanad_party_only:
-                if (selector != {"kind": "currentTerm"}
-                        or not re.search(r"\b(?:current|this)\s+seanad\b", question, re.I)):
-                    raise UnsupportedComposableRequest("Seanad party-only selection requires the explicitly current Seanad term.")
-                normalized[key] = {"type": semantic_type,
-                                   "selector": {"kind": "currentTerm", "house": "Seanad"}}
-            elif (isinstance(selector, dict) and set(selector) == {"kind", "number"}
+            if (isinstance(selector, dict) and set(selector) == {"kind", "number"}
                     and selector.get("kind") == "termNumber"
                     and type(selector.get("number")) is int
                     and 1 <= selector["number"] <= 999):
                 normalized[key] = {"type": semantic_type, "selector": selector}
             elif isinstance(selector, dict) and selector == {"kind": "currentTerm"}:
+                if seanad_party_only:
+                    normalized[key] = {"type": semantic_type,
+                                       "selector": {"kind": "currentTerm", "house": "Seanad"}}
+                    continue
                 from .interpretation import present_constituency_default
                 constituency = referents.get("constituency", {}).get("mention")
                 inferred = isinstance(constituency, str) and present_constituency_default(question, constituency)
@@ -637,26 +639,21 @@ def _validate_member_party_composition_draft(
         residual = re.sub(r"\b(?:how many|count|number of|total of)\b", " ", residual, flags=re.I)
     if re.search(r"\b(?:and|or|while|same|shared|other|another|election|elected)\b", residual, re.I):
         raise InvalidComposableDraft("The proposed single-constituency graph omits a requested operator or projection.")
-    term_numbers = _question_dail_ordinals(question)
+    term_numbers = ([int(number) for number in re.findall(r"\b([0-9]{1,3})(?:st|nd|rd|th)\s+seanad\b", question, re.I)]
+                    if seanad_party_only else _question_dail_ordinals(question))
     if term_selector["kind"] == "termNumber":
         if len(term_numbers) != 1 or term_numbers[0] != term_selector["number"]:
-            raise InvalidComposableDraft("The plan must preserve exactly one explicitly requested numeric Dáil term.")
+            raise InvalidComposableDraft("The plan must preserve exactly one explicitly requested numeric House term.")
     elif term_numbers:
         raise InvalidComposableDraft("A currentTerm selector cannot replace an explicitly numbered Dáil term.")
     if party_only and not seanad_party_only and term_selector["kind"] != "termNumber":
         raise UnsupportedComposableRequest("Party-only Member selection is limited to one explicitly numbered Dáil term.")
-    if seanad_party_only and term_selector != {"kind": "currentTerm", "house": "Seanad"}:
-        raise InvalidComposableDraft("Seanad party selection must preserve the current Seanad term selector.")
     if seanad_party_only:
-        from .composable_plan import _question_calendar_dates
-        dates, invalid_date = _question_calendar_dates(question)
-        if dates or invalid_date is not None or term_numbers:
-            raise UnsupportedComposableRequest("Current Seanad party selection accepts no extra date or numbered-term filter.")
-        if _HISTORICAL_CURRENT_CONTRAST.search(question) or re.search(
-            r"\b(?:simultaneous(?:ly)?|concurrent(?:ly)?|overlap(?:ping)?|previous(?:ly)?|historical|history|before|after|since|until|during|between|committees?|panels?|offices?|elections?|elected|votes?|bills?|seats?|represent(?:ed|s|ing)?|representation|TDs?|deput(?:y|ies))\b",
-            question, re.I,
-        ) or re.search(r"\b[0-9]{1,3}(?:st|nd|rd|th)\s+seanad\b", question, re.I):
-            raise UnsupportedComposableRequest("The current Seanad party selection cannot drop an additional temporal or relationship condition.")
+        from .interpretation import validate_seanad_party_scope
+        try:
+            validate_seanad_party_scope(question, normalized["affiliation"]["mention"], term_selector)
+        except ValueError as error:
+            raise UnsupportedComposableRequest(str(error)) from error
 
     party_list_question = bool(re.search(
         r"\b(?:which|what)\s+(?:political\s+)?part(?:y|ies)\b", question, re.IGNORECASE,
@@ -787,7 +784,11 @@ def _validate_member_party_composition_draft(
         "constraints": [dict(item) for item in value["constraints"]],
         "answer": answer,
     }
-    if term_selector["kind"] == "currentTerm" and not re.search(r"\b(?:current|currently|now|today)\b", question, re.I):
+    if seanad_party_only:
+        from .interpretation import present_seanad_party_default, SEANAD_PARTY_POLICY
+        if present_seanad_party_default(question, affiliation_mention):
+            final["interpretation"] = {"policy": SEANAD_PARTY_POLICY, "question": question}
+    elif term_selector["kind"] == "currentTerm" and not re.search(r"\b(?:current|currently|now|today)\b", question, re.I):
         final["interpretation"] = {"policy": "present_constituency_as_of", "question": question}
     return final
 
@@ -919,7 +920,8 @@ def _validate_capability_selection_draft(value: dict[str, Any], *, question: str
             raise InvalidComposableDraft(
                 "Office evidence dispatch metadata must match the reviewed composable_office_evidence handler and member_and_office input."
             )
-        if (not isinstance(parameters, dict) or set(parameters) != {"member", "office"}
+        if (not isinstance(parameters, dict) or set(parameters) not in ({"member", "office"}, {"member", "office", "selection"})
+                or ("selection" in parameters and parameters["selection"] != "latestRecorded")
                 or any(not isinstance(parameters.get(key), str) or not parameters[key].strip()
                        or _label_position(question, parameters[key]) is None for key in ("member", "office"))):
             raise InvalidComposableDraft("Office evidence lookup requires grounded Member and office mentions.")
@@ -945,12 +947,23 @@ def _validate_capability_selection_draft(value: dict[str, Any], *, question: str
             ("during", "what", "period", "was", "member", "office"),
             ("during", "what", "period", "was", "member", "the", "office"),
         })
-        if words not in accepted_shapes:
+        # Apply the bounded latest-recorded operator to the same period question,
+        # not to election events, durations, or an additional filtered timeline.
+        latest_shapes = set()
+        for shape in accepted_shapes:
+            member_position = shape.index("member") + 1
+            for qualifier in (("last",), ("most", "recently")):
+                latest_shapes.add(shape[:member_position] + qualifier + shape[member_position:])
+                latest_shapes.add(shape + qualifier)
+        latest = words in latest_shapes
+        if words not in accepted_shapes and not latest:
             raise UnsupportedComposableRequest(
                 "Office evidence can answer only an unfiltered question asking when or for what dates/periods "
-                "the named Member held the reviewed office. Election dates, first/last-event claims, duration, "
+                "the named Member held the reviewed office, optionally selecting the latest recorded episode. Election dates, first-event claims, duration, "
                 "and additional filters remain unsupported."
             )
+        if latest != (parameters.get("selection") == "latestRecorded"):
+            raise InvalidComposableDraft("Preserve the requested all-episodes versus latest-recorded office projection.")
         normalized_parameters = dict(parameters)
     elif capability == "seanad_entry":
         if (entry.get("handler") != "stage_a" or entry.get("input") != "member_mention"
