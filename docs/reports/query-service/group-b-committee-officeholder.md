@@ -351,6 +351,14 @@ prefilters and retain both query/evidence sets. New negative tests cover them.
 The follow-up independent review found no material remaining correction; it was
 a separate review perspective, not execution approval or a data acceptance gate.
 
+The separate B1 review also independently reproduced the live owner, all 15
+membership episodes, the 13 returned identities/hashes/dates and the report's
+lossless identifier expansions, finding no outstanding material correction.
+B1 currently requires one consistent owner range and typed HouseTerm tuple per
+matching Committee IRI. If future accepted data legitimately supplies multiple
+ranges or terms for one IRI, this bounded capability will fail closed rather than
+choose an active subset; such a data-shape extension requires separate review.
+
 The ordinary ontology validator passes (2,586 triples; HermiT completes).
 No source/golden fixtures or acceptance constraints were changed. Optional
 mutation-capable capture/Fuseki/production acceptance is not enabled: the local
