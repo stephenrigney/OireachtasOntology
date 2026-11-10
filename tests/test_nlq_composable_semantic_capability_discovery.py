@@ -11,6 +11,9 @@ from fastapi.testclient import TestClient
 
 from poc.nlq.composable_semantic_planner import (
     InvalidComposableDraft,
+    UnsupportedComposableRequest,
+    build_composable_planner_instructions,
+    load_composable_draft_schema,
     validate_composable_plan_draft,
 )
 from poc.nlq.fuseki import FusekiReadiness
@@ -121,6 +124,32 @@ def test_dispatch_capabilities_are_contract_grounded_and_part_of_planner_context
     assert "every locally recorded typed dated activity" in instructions
     assert "earliest evidenced Seanad membership start date" in instructions
     assert "publishedDate" in instructions
+
+
+def test_generic_discovery_matches_schema_and_keeps_sponsorship_separately_discoverable():
+    import re
+
+    schema = load_composable_draft_schema()
+    selection = next(shape for shape in schema["properties"]["referents"]["anyOf"]
+                     if "capability" in shape.get("properties", {}))
+    selection_ids = set(selection["properties"]["capability"]["enum"])
+    instructions = build_composable_planner_instructions()
+    advertised = set(re.findall(r'^- Existing capability "([^"]+)"', instructions, re.M))
+    assert advertised == selection_ids
+    assert "member_bill_sponsorship" not in advertised
+    assert "member_bill_sponsorship" in schema["properties"]["family"]["enum"]
+    assert 'separate family "member_bill_sponsorship", never capability_selection' in instructions
+    assert "bill_has_sponsor_participation" in instructions
+    assert "inCalendarYear" in instructions
+
+
+def test_sponsorship_generic_selection_is_rejected_not_silently_rerouted():
+    from jsonschema import Draft202012Validator
+
+    draft = _selection("member_bill_sponsorship", {"member": "Micheál Martin"})
+    assert not Draft202012Validator(load_composable_draft_schema()).is_valid(draft)
+    with pytest.raises(UnsupportedComposableRequest, match="no reviewed dispatch adapter"):
+        validate_composable_plan_draft(draft, question="Which Bills did Micheál Martin sponsor?")
 
 
 @pytest.mark.parametrize(("question", "capability", "parameters", "deterministic"), [
