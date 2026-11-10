@@ -146,7 +146,7 @@ Use distinct referent IDs for separate membership/term resources. Do not substit
 
 For a dated political-party/constituency composition, use family "member_relationship_composition" and exactly the referents member, membership, term, constituency, episode, party, and affiliation. Connect member→membership→term, membership→constituency, constituency→term, member→episode, episode→membership, episode→party, party→term, and party→affiliation using their exact reviewed fact IDs. The episode must point to the exact same DailMembership that represents the constituency in the selected term. Set "constraints" to exactly [{{"referent":"episode","field":"partyEpisodeInterval","operator":"overlaps","value":"membership"}}] (inclusive xsd:dateTime endpoints; an absent end is open-ended; missing interval/start means uncertain, never a positive or negative match). When selector is "currentTerm", the local executor additionally requires both the DailMembership and PartyMembership intervals independently to contain the supplied asOf date; the model must not substitute only term membership for current service. Only typed PartyMembership records count; Independent is not a party. For "which parties" questions, use a null affiliation mention and set "answer" to exactly {{"kind":"entities","referent":"affiliation","distinctBy":"identity","display":["label"],"details":[{{"referent":"member","display":["name"]}},{{"referent":"episode","display":["start","end"]}},{{"referent":"membership","display":["start","end"]}}],"preserveEvidence":true}}. For every named-party TD list, keep the exact named affiliation mention as a required identity filter and set "answer" to exactly {{"kind":"entities","referent":"member","distinctBy":"identity","display":["name"],"details":[{{"referent":"affiliation","display":["label"]}},{{"referent":"episode","display":["start","end"]}},{{"referent":"membership","display":["start","end"]}}],"preserveEvidence":true}}. Never use party-label equality or term context as a substitute for the dated episode and exact identity links.
 
-For a named-party TD list or count in one explicitly numbered Dáil when no constituency is requested, use the Dáil-only party shape with exactly member, membership, term, episode, party, and affiliation referents and these seven edges: member→membership→term; member→episode→membership; episode→party→term; party→affiliation. Omit constituency and representation edges because they were not requested. Require the same exact PartyMembership/DailMembership identity join and inclusive interval-overlap constraint above. Resolve the named PoliticalAffiliationIdentity only among ParliamentaryParty identities active in the exact numbered term, using the existing term-scoped party listing path; count distinct Member IRIs only after the exact party filter and temporal validation. The list answer is exactly {{"kind":"entities","referent":"member","distinctBy":"identity","display":["name"],"details":[{{"referent":"affiliation","display":["label"]}},{{"referent":"episode","display":["start","end"]}},{{"referent":"membership","display":["start","end"]}}],"preserveEvidence":true}}; only an explicit count uses {{"kind":"count","referent":"member","distinctBy":"identity"}}. Do not count ParliamentaryParty records, seats, or elections; missing/conflicting intervals, identity links, or truncated evidence fail closed, and recorded counts do not imply a complete roster. This numbered-Dáil party-only shape does not support currentTerm; current Seanad party selection is separate as described above.
+For a named-party TD list or count with no constituency requested, use the Dáil-only party shape with exactly member, membership, term, episode, party, and affiliation referents and these seven edges: member→membership→term; member→episode→membership; episode→party→term; party→affiliation. Omit constituency and representation edges because they were not requested. Require the same exact PartyMembership/DailMembership identity join and inclusive interval-overlap constraint above. Resolve the named PoliticalAffiliationIdentity only among ParliamentaryParty identities active in the exact selected term, using the existing term-scoped party listing path; count distinct Member IRIs only after the exact party filter and temporal validation. Select an explicitly numbered term for a numbered request. For an explicitly current/as-of request, select currentTerm; local code resolves one exact DailTerm from House-owned dates and additionally requires both DailMembership and PartyMembership intervals independently to contain asOf. Do not infer a current default for unqualified present tense. The list answer is exactly {{"kind":"entities","referent":"member","distinctBy":"identity","display":["name"],"details":[{{"referent":"affiliation","display":["label"]}},{{"referent":"episode","display":["start","end"]}},{{"referent":"membership","display":["start","end"]}}],"preserveEvidence":true}}; only an explicit count uses {{"kind":"count","referent":"member","distinctBy":"identity"}}. Do not count ParliamentaryParty records, seats, or elections; missing/conflicting intervals, identity links, or truncated evidence fail closed, and recorded counts do not imply a complete roster. Current Seanad party selection retains its separately reviewed default policy as described above.
 
 Additional implemented capabilities (do not declare these unsupported):
 - Party history, including ordinary 'join', 'belonged to' and 'member of' paraphrases, uses family "member_party_history", referents member (named Member), episode (PartyMembershipEpisode), party (ParliamentaryParty), affiliation (PoliticalAffiliationIdentity). Only member has a non-null mention. Edges are member_party_membership member→episode, episode_in_parliamentary_party episode→party, parliamentary_party_has_affiliation_identity party→affiliation. Answer affiliation with display ["label"], details [], preserveEvidence true. This asks about recorded party membership, not joining events; Independent is not a party.
@@ -641,6 +641,13 @@ def _validate_member_party_composition_draft(
     count_intent = bool(re.search(r"\b(?:how many|count|number of|total of)\b", question, re.I))
     if count_intent:
         residual = re.sub(r"\b(?:how many|count|number of|total of)\b", " ", residual, flags=re.I)
+    if party_only and not seanad_party_only and term_selector["kind"] == "currentTerm" and re.search(
+        r"\b(?:committee|committees|panel|panels|constituenc(?:y|ies)|represent(?:ed|s|ing)?|"
+        r"office(?:holder)?s?|election|elected|before|after|between|while|and|or)\b", residual, re.I,
+    ):
+        raise UnsupportedComposableRequest(
+            "The current Dáil party-only selection cannot drop an additional relationship, identity, or temporal condition."
+        )
     if re.search(r"\b(?:and|or|while|same|shared|other|another|election|elected)\b", residual, re.I):
         raise InvalidComposableDraft("The proposed single-constituency graph omits a requested operator or projection.")
     term_numbers = ([int(number) for number in re.findall(r"\b([0-9]{1,3})(?:st|nd|rd|th)\s+seanad\b", question, re.I)]
@@ -650,8 +657,19 @@ def _validate_member_party_composition_draft(
             raise InvalidComposableDraft("The plan must preserve exactly one explicitly requested numeric House term.")
     elif term_numbers:
         raise InvalidComposableDraft("A currentTerm selector cannot replace an explicitly numbered Dáil term.")
-    if party_only and not seanad_party_only and term_selector["kind"] != "termNumber":
-        raise UnsupportedComposableRequest("Party-only Member selection is limited to one explicitly numbered Dáil term.")
+    if party_only and not seanad_party_only and term_selector["kind"] == "currentTerm":
+        if not re.search(r"\b(?:current|currently|now|today|present)\b", question, re.I):
+            raise UnsupportedComposableRequest("Current Dáil party selection requires an explicit current/as-of request.")
+        # currentTerm means the exact House-date-selected term plus the configured
+        # asOf point; it cannot silently stand in for a separately stated date.
+        from .composable_plan import _question_calendar_dates
+        dates, invalid_date = _question_calendar_dates(question)
+        if invalid_date is not None:
+            raise InvalidComposableDraft(f"{invalid_date} is not a valid calendar date; no party selection was run.")
+        if dates:
+            raise UnsupportedComposableRequest(
+                "Current Dáil party selection cannot drop an additional calendar-date condition."
+            )
     if seanad_party_only:
         from .interpretation import validate_seanad_party_scope
         try:
@@ -751,7 +769,7 @@ def _validate_member_party_composition_draft(
             raise InvalidComposableDraft("A party-only term count must count distinct Member identities after the complete temporal selection.")
     elif count_intent:
         raise UnsupportedComposableRequest(
-            "Named-party counts are only supported for the bounded party-only numbered-term selection; no list or simplified count was returned."
+            "Named-party counts are only supported for the bounded party-only term selection; no list or simplified count was returned."
         )
     else:
         answer = {
