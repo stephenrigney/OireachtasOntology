@@ -325,7 +325,23 @@ Focused capability/dispatch tests: **82 passed**. The initial broader runs found
 four stale exact-version assertions (`2.27.0`) after the intentional composable
 contract version bump; these were updated to `2.29.0`, without removing any
 semantic assertions. A focused rerun of those contract checks passed (17 tests).
-Fresh broader-suite results are recorded in the completion update.
+The fresh runs both pass:
+
+- Complete NLQ suite: **1,217 passed, 2 skipped**.
+- Full repository: **2,349 passed, 26 skipped**, plus **23 subtests passed**.
+- There are **73 new Group B regression cases**, including both closed
+  capabilities, exact-identity composition, ambiguity, missing/conflicting
+  evidence, missing display labels, pagination and unsupported-condition guards.
+- `git diff --check` passes. The report's lossless Member/relationship/range/date
+  expansions were also checked against all 13 final rendered B1 rows.
+
+```text
+.venv/bin/python -m pytest tests/test_nlq_office_representation.py tests/test_nlq_committee_members.py tests/test_nlq_composable_semantic_capability_discovery.py -q --tb=short
+.venv/bin/python -m pytest tests/test_nlq*.py -q --tb=short
+.venv/bin/python -m pytest tests -q --tb=short
+.venv/bin/python tests/validate.py
+git diff --check
+```
 
 Independent static review of the officeholder chain identified edge-case gaps
 around blank Member names, an empty routing mention, unlabelled competing
@@ -345,3 +361,12 @@ compositions remain bounded; neither local current nor historical completeness
 is certified. B2 requires a separately reviewed source-evidence update before
 the requested Tánaiste relationship can be factually answered. This work does
 not authorise that update or any Group C implementation.
+
+## Delivery
+
+Independent implementation slices: `351ae2f` (B1), `0ebc9bc` (B2), followed by
+`66933c5` (review-driven source-evidence hardening). The evidence report and
+verification update are separate documentation commits. Work is pushed to
+`query-service-member-memberships` in **draft PR
+[#29](https://github.com/stephenrigney/OireachtasOntology/pull/29)** targeting
+`master`. It is not merged. Group B ends here; Group C remains a human gate.
