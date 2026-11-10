@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "benchmark_id": "nlq-query-service-latency-baseline",
+  "evidence_kind": "live-end-to-end-only",
+  "questions_source": "poc/specs/query-service-questions-approved.md and docs/reports/query-service/user-question-regression.md",
+  "cases": [
+    {"id": "simple-lookup", "category": "simple lookup", "question": "Who is the Taoiseach?"},
+    {"id": "temporal", "category": "temporal query", "question": "Who was the Taoiseach in 1994?"},
+    {"id": "membership-party", "category": "membership/party", "question": "What parties was Stephen Donnelly a member of?"},
+    {"id": "composed", "category": "composed query", "question": "Who are the Fine Gael TDs in the two Galway constituencies?"},
+    {"id": "unsupported", "category": "unsupported question", "question": "When was Jack Lynch first elected?"}
+  ]
+}
