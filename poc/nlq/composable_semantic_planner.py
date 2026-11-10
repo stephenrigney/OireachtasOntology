@@ -101,6 +101,8 @@ def build_composable_planner_instructions() -> str:
     )
     return f"""Interpret one user question as a semantic proposal for composable query plan v2.
 
+Approved present-time policy: ordinary unqualified present-tense requests for an existing current-time parliamentary relationship mean current at configured asOf. This applies to both Dáil and Seanad named-party membership, current Dáil representation, current named-committee membership, current named-office holders, officeholder-to-constituency and constitutional Government/party membership. Use the existing current selector/operation without inventing a date; local code supplies asOf and validates each relationship's own temporal evidence. Explicit dates, numbered terms, past/future expressions, negation and additional requirements cannot be replaced by a default. latestRecorded is NOT current. This does not add standalone House rosters, generic current Senator representation, current cross-House simultaneous service, chairs or other unsupported operations. Family-specific completeness guards remain mandatory.
+
 Interpretation contract: for the one-term, one-constituency Member list/count, the explicit phrase "in this Dáil" selects the exact House-date-resolved current term and is term-wide, regardless of whether the question says "represent" or "represented". It overrides only the implicit present-tense-as-of default: do not require an asOf membership interval unless the user explicitly asks for current representation (for example, "currently", "now", "today", or "as of now/today"). A literal calendar date remains its exact membership-date point. Without the explicit "this Dáil" scope, an unqualified present-tense constituency request defaults to representation at the query date; an explicit current-point request also requires the DailMembership interval to contain asOf. Dated party/representation composition retains its separate rule that currentTerm requires both party and DailMembership intervals to contain asOf. Never default numbered-term, other dated, historical, or election questions. The plain term-scoped constituency Member projection supports one explicit membership calendar-date point; preserve it as a membershipInterval constraint, never as a HouseTerm date or election event. For a Member's latest recorded Dáil term and constituency, use the constituency_representation family with selector "latestRecorded" when the question explicitly asks for the latest recorded term, the most recent term, or the last term (including "last term in the Dáil"). Local code selects from that Member's accepted DailMembership identities and House-owned chronology, and fails closed on missing/tied/conflicting dates or representation evidence. This is not an election-date answer.
 For partial-name person lookup use capability_selection member_lookup with parameters {{"member":"exact name mention","house":"Dail"}} for Deputy/TD, "Seanad" for Senator, or null for unqualified Member. Local code offers grounded alternatives; never expand a surname to an assumed full name.
 For a numbered-Dáil party listing use capability_selection dail_parties_and_groups with parameters {{"termNumber":N,"includeGroups":false}}; true only if groups are also requested. This reuses the existing party compiler, not the constituency composition.
@@ -132,7 +134,7 @@ For the exact question shape asking who was a Senator in the current Seanad and 
 
 The Seanad party-only shape below also supports one explicitly numbered Seanad with term selector {{"kind":"termNumber","number":N}}. Keep the SAME seven typed edges and partySeanadEpisodeInterval overlap constraint; local code resolves the exact SeanadTerm and validates inclusive party/membership interval overlap, without imposing today's party or membership. Preserve all matching separate episodes, including changes of party during the term. An unqualified present-tense named-party Senator request ("Who are the [party] Senators?", "Which [party] Senators are there?", or "How many [party] Senators are there?") instead uses currentTerm: local code records the scoped asOf default and enforces both active intervals. Never default a past-tense, explicitly numbered, dated or additionally filtered request. A numbered Seanad and current Seanad are distinct temporal meanings; unsupported extra dates/relationships must not be dropped.
 
-For a request for current Senators who previously served in the Dáil (Q20), use the same five typed roles and four exact Member→membership→HouseTerm edges, but select only seanad_term with selector {{"kind":"currentTerm"}}; dail_term is an unselected DailTerm because the Dáil is selected by its exact membership path, not by a guessed prior ordinal. Require the current SeanadMembership's own accepted interval to contain the configured asOf inclusively, and return a Member only when a finite accepted DailMembership EndDate is strictly earlier than that same SeanadMembership StartDate. Equal endpoints do not qualify; an open-ended DailMembership is not prior-service evidence. Use the evidence-preserving Member list answer with details for both membership intervals and both HouseTerm identities, or the distinct Member count only when explicitly requested. Count/list share the same complete bounded pagination and exact Member-identity join. Unknown, missing, conflicting, malformed or capped identity/date evidence fails closed. This is a positive local-record result only: do not claim complete career/history coverage or infer that anyone never served from an absent path. Refuse party, panel, office, election, simultaneity, dated/ordinal or other additional conditions as a whole.
+For a request for current Senators who previously served in the Dáil (Q20), use the same five typed roles and four exact Member→membership→HouseTerm edges, but select only seanad_term with selector {{"kind":"currentTerm"}}; dail_term is an unselected DailTerm because the Dáil is selected by its exact membership path, not by a guessed prior ordinal. An ordinary unqualified present-tense Senator head in this same bounded request also defaults to current: the separate explicitly prior Dáil clause remains historical and must NEVER be replaced by current Dáil service. Require the current SeanadMembership's own accepted interval to contain the configured asOf inclusively, and return a Member only when a finite accepted DailMembership EndDate is strictly earlier than that same SeanadMembership StartDate. Equal endpoints do not qualify; an open-ended DailMembership is not prior-service evidence. Use the evidence-preserving Member list answer with details for both membership intervals and both HouseTerm identities, or the distinct Member count only when explicitly requested. Count/list share the same complete bounded pagination and exact Member-identity join. Unknown, missing, conflicting, malformed or capped identity/date evidence fails closed. This is a positive local-record result only: do not claim complete career/history coverage or infer that anyone never served from an absent path. Refuse party, panel, office, election, simultaneity, dated/ordinal or other additional conditions as a whole.
 
 For a named-party Member count/list in the explicitly current Seanad, use the party-only shape with member, membership (SeanadMembership), term (SeanadTerm selector {{"kind":"currentTerm"}}), episode, party, and affiliation. Use member_has_seanad_membership, seanad_membership_in_term, member_party_membership, party_episode_in_seanad_membership, episode_in_parliamentary_party, party_active_during_seanad_term, and parliamentary_party_has_affiliation_identity. Preserve the exact party mention as the PoliticalAffiliationIdentity filter and require constraints exactly [{{"referent":"episode","field":"partySeanadEpisodeInterval","operator":"overlaps","value":"membership"}}]. Local code resolves the unique current SeanadTerm by Houses-owned dates and requires both each SeanadMembership interval and its PartyMembership interval independently to contain asOf; the overlap does not replace either active-point test. A count answer is {{"kind":"count","referent":"member","distinctBy":"identity"}}; a list uses the same Member selection and preserves separate identity/episode/membership evidence. Exact identities, typed PartyMembership records, and complete pagination are mandatory; missing/conflicting dates or identity evidence fail closed. State that results reflect local records and do not certify a complete current Seanad roster. Do not use current Seanad membership alone as a substitute for active party evidence or answer a generic unfiltered Senator count.
 
@@ -154,7 +156,7 @@ Use distinct referent IDs for separate membership/term resources. Do not substit
 
 For a dated political-party/constituency composition, use family "member_relationship_composition" and exactly the referents member, membership, term, constituency, episode, party, and affiliation. Connect member→membership→term, membership→constituency, constituency→term, member→episode, episode→membership, episode→party, party→term, and party→affiliation using their exact reviewed fact IDs. The episode must point to the exact same DailMembership that represents the constituency in the selected term. Set "constraints" to exactly [{{"referent":"episode","field":"partyEpisodeInterval","operator":"overlaps","value":"membership"}}] (inclusive xsd:dateTime endpoints; an absent end is open-ended; missing interval/start means uncertain, never a positive or negative match). When selector is "currentTerm", the local executor additionally requires both the DailMembership and PartyMembership intervals independently to contain the supplied asOf date; the model must not substitute only term membership for current service. Only typed PartyMembership records count; Independent is not a party. For "which parties" questions, use a null affiliation mention and set "answer" to exactly {{"kind":"entities","referent":"affiliation","distinctBy":"identity","display":["label"],"details":[{{"referent":"member","display":["name"]}},{{"referent":"episode","display":["start","end"]}},{{"referent":"membership","display":["start","end"]}}],"preserveEvidence":true}}. For every named-party TD list, keep the exact named affiliation mention as a required identity filter and set "answer" to exactly {{"kind":"entities","referent":"member","distinctBy":"identity","display":["name"],"details":[{{"referent":"affiliation","display":["label"]}},{{"referent":"episode","display":["start","end"]}},{{"referent":"membership","display":["start","end"]}}],"preserveEvidence":true}}. Never use party-label equality or term context as a substitute for the dated episode and exact identity links.
 
-For a named-party TD list or count with no constituency requested, use the Dáil-only party shape with exactly member, membership, term, episode, party, and affiliation referents and these seven edges: member→membership→term; member→episode→membership; episode→party→term; party→affiliation. Omit constituency and representation edges because they were not requested. Require the same exact PartyMembership/DailMembership identity join and inclusive interval-overlap constraint above. Resolve the named PoliticalAffiliationIdentity only among ParliamentaryParty identities active in the exact selected term, using the existing term-scoped party listing path; count distinct Member IRIs only after the exact party filter and temporal validation. Select an explicitly numbered term for a numbered request. For an explicitly current/as-of request, select currentTerm; local code resolves one exact DailTerm from House-owned dates and additionally requires both DailMembership and PartyMembership intervals independently to contain asOf. Do not infer a current default for unqualified present tense. The list answer is exactly {{"kind":"entities","referent":"member","distinctBy":"identity","display":["name"],"details":[{{"referent":"affiliation","display":["label"]}},{{"referent":"episode","display":["start","end"]}},{{"referent":"membership","display":["start","end"]}}],"preserveEvidence":true}}; only an explicit count uses {{"kind":"count","referent":"member","distinctBy":"identity"}}. Do not count ParliamentaryParty records, seats, or elections; missing/conflicting intervals, identity links, or truncated evidence fail closed, and recorded counts do not imply a complete roster. Current Seanad party selection retains its separately reviewed default policy as described above.
+For a named-party TD list or count with no constituency requested, use the Dáil-only party shape with exactly member, membership, term, episode, party, and affiliation referents and these seven edges: member→membership→term; member→episode→membership; episode→party→term; party→affiliation. Omit constituency and representation edges because they were not requested. Require the same exact PartyMembership/DailMembership identity join and inclusive interval-overlap constraint above. Resolve the named PoliticalAffiliationIdentity only among ParliamentaryParty identities active in the exact selected term, using the existing term-scoped party listing path; count distinct Member IRIs only after the exact party filter and temporal validation. Select an explicitly numbered term for a numbered request. For an explicitly current/as-of request OR an ordinary unqualified present-tense named-party TD/Deputy request, select currentTerm; local code resolves one exact DailTerm from House-owned dates and additionally requires both DailMembership and PartyMembership intervals independently to contain asOf. The same present-time default applies to named-party Senators. The list answer is exactly {{"kind":"entities","referent":"member","distinctBy":"identity","display":["name"],"details":[{{"referent":"affiliation","display":["label"]}},{{"referent":"episode","display":["start","end"]}},{{"referent":"membership","display":["start","end"]}}],"preserveEvidence":true}}; only an explicit count uses {{"kind":"count","referent":"member","distinctBy":"identity"}}. Do not count ParliamentaryParty records, seats, or elections; missing/conflicting intervals, identity links, or truncated evidence fail closed, and recorded counts do not imply a complete roster.
 
 Additional implemented capabilities (do not declare these unsupported):
 Bill sponsorship uses the separate family "member_bill_sponsorship", never capability_selection. Its supported graph and bounded Published-year count are described below.
@@ -440,6 +442,9 @@ def _validate_existing_capability_draft(value, *, question):
         mention = refs.get("affiliation", {}).get("mention")
         if not isinstance(mention, str) or not mention.strip():
             raise InvalidComposableDraft("A named party identity is required.")
+        from .interpretation import current_relationship_scope
+        if current_relationship_scope(question, mention) is None:
+            raise UnsupportedComposableRequest("Government membership requires present-time or explicit-current scope; historical scope cannot be defaulted.")
         if re.search(r"\b(?:executive|benches|ministers? of state|including|committee|constituenc(?:y|ies))\b", condition_text, re.I):
             raise UnsupportedComposableRequest("The constitutional Government slice cannot substitute for a wider executive or additional relationship.")
         plan = government_plan(mention, as_of=placeholder)
@@ -497,6 +502,10 @@ def _validate_existing_capability_draft(value, *, question):
         mention = refs.get("member", {}).get("mention")
         if not isinstance(mention, str) or not mention.strip():
             raise InvalidComposableDraft("A Member name is required.")
+        if family == "member_party_history":
+            from .interpretation import current_relationship_scope
+            if current_relationship_scope(question, mention) is not None:
+                raise UnsupportedComposableRequest("A present/current party question requires dated current collection evidence; career-wide party history cannot substitute for current membership.")
         if re.search(r"\b(?:current|currently|now|government|minister|constituenc(?:y|ies))\b", condition_text, re.I):
             raise UnsupportedComposableRequest("This history slice cannot preserve an additional current or relationship condition.")
         canonical = (f"What parties was {mention} a member of?" if family == "member_party_history"
@@ -616,6 +625,9 @@ def _validate_member_party_composition_draft(
                 from .interpretation import present_constituency_default
                 constituency = referents.get("constituency", {}).get("mention")
                 inferred = isinstance(constituency, str) and present_constituency_default(question, constituency)
+                if party_only:
+                    from .interpretation import present_party_default
+                    inferred = present_party_default(question, referents["affiliation"].get("mention"), "Dail")
                 if not re.search(r"\b(?:current|currently|now|today)\b", question, re.IGNORECASE) and not inferred:
                     raise InvalidComposableDraft("A currentTerm selector requires an explicit current/as-of request.")
                 normalized[key] = {
@@ -667,7 +679,8 @@ def _validate_member_party_composition_draft(
     elif term_numbers:
         raise InvalidComposableDraft("A currentTerm selector cannot replace an explicitly numbered Dáil term.")
     if party_only and not seanad_party_only and term_selector["kind"] == "currentTerm":
-        if not re.search(r"\b(?:current|currently|now|today|present)\b", question, re.I):
+        from .interpretation import present_party_default
+        if not re.search(r"\b(?:current|currently|now|today|present)\b", question, re.I) and not present_party_default(question, normalized["affiliation"]["mention"], "Dail"):
             raise UnsupportedComposableRequest("Current Dáil party selection requires an explicit current/as-of request.")
         # currentTerm means the exact House-date-selected term plus the configured
         # asOf point; it cannot silently stand in for a separately stated date.
@@ -679,10 +692,10 @@ def _validate_member_party_composition_draft(
             raise UnsupportedComposableRequest(
                 "Current Dáil party selection cannot drop an additional calendar-date condition."
             )
-    if seanad_party_only:
-        from .interpretation import validate_seanad_party_scope
+    if party_only:
+        from .interpretation import validate_party_scope
         try:
-            validate_seanad_party_scope(question, normalized["affiliation"]["mention"], term_selector)
+            validate_party_scope(question, normalized["affiliation"]["mention"], term_selector, "Seanad" if seanad_party_only else "Dail")
         except ValueError as error:
             raise UnsupportedComposableRequest(str(error)) from error
 
@@ -815,10 +828,10 @@ def _validate_member_party_composition_draft(
         "constraints": [dict(item) for item in value["constraints"]],
         "answer": answer,
     }
-    if seanad_party_only:
-        from .interpretation import present_seanad_party_default, SEANAD_PARTY_POLICY
-        if present_seanad_party_default(question, affiliation_mention):
-            final["interpretation"] = {"policy": SEANAD_PARTY_POLICY, "question": question}
+    if party_only:
+        from .interpretation import present_party_default, RELATIONSHIP_POLICY
+        if present_party_default(question, affiliation_mention, "Seanad" if seanad_party_only else "Dail"):
+            final["interpretation"] = {"policy": RELATIONSHIP_POLICY, "question": question}
     elif term_selector["kind"] == "currentTerm" and not re.search(r"\b(?:current|currently|now|today)\b", question, re.I):
         final["interpretation"] = {"policy": "present_constituency_as_of", "question": question}
     return final
@@ -1452,6 +1465,8 @@ def _validate_current_seanad_prior_dail_membership_draft(
         r"\b(?:previously|previous|prior|earlier|former|formerly|used\s+to|past|before)\b",
         question, re.I,
     ))
+    from .interpretation import prior_service_present_default
+    current_seanad = current_seanad or prior_service_present_default(question)
     if not (current_seanad and dail_service and prior_service):
         raise UnsupportedComposableRequest(
             "This projection requires current Seanad membership and an explicitly requested prior Dáil service path."

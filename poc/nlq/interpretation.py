@@ -6,55 +6,117 @@ from datetime import date
 
 POLICY = "present_constituency_as_of"
 SEANAD_PARTY_POLICY = "present_seanad_party_as_of"
+RELATIONSHIP_POLICY = "present_relationship_as_of"
+
+
+def current_relationship_scope(question: str, *mentions: str) -> str | None:
+    """Classify time only AFTER a handler has accounted for the whole intent.
+
+    This is not relationship recognition or completeness validation. A caller
+    must retain its closed capability guards and independently dated execution.
+    None means no current default may be inferred (including conflicting scope).
+    """
+    text = question
+    for mention in sorted((m for m in mentions if isinstance(m, str) and m), key=len, reverse=True):
+        text = re.sub(re.escape(mention), " ", text, flags=re.I)
+    text = re.sub(r"\bas\s+of\s+(?:now|today|the\s+(?:current|query|reference)\s+date)\b", " currently ", text, flags=re.I)
+    if re.search(
+        r"[0-9]|\b(?:was|were|did|had|served|held|represented|belonged|joined|career|lifetime|past|formerly|former|historical|history|ever|"
+        r"previous|previously|last|latest|recently|before|after|since|until|between|during|throughout|"
+        r"as\s+of|will|would|should|could|might|may|shall|future|next|tomorrow|"
+        r"not|never|no|except|excluding|without|unless|if)\b", text, re.I,
+    ):
+        return None
+    if re.search(r"\b(?:current|currently|now|today|present|this)\b", text, re.I):
+        return "explicit"
+    if re.search(r"\b(?:is|are|does|do|represent|represents|representing|serve|serving|list|show|name)\b", text, re.I):
+        return "inferred"
+    return None
+
+
+def present_party_default(question: str, party: str, house: str) -> bool:
+    """One scoped party default for either House; no new relationship shape."""
+    if not isinstance(party, str) or not party or current_relationship_scope(question, party) != "inferred":
+        return False
+    text = re.sub(re.escape(party), "party", question, flags=re.I)
+    members = r"senators" if house == "Seanad" else r"(?:TDs|deputies)" if house == "Dail" else r"(?!)"
+    return bool(re.fullmatch(
+        rf"\s*(?:who\s+are\s+(?:the\s+)?party\s+{members}|"
+        rf"(?:which|what)\s+party\s+{members}\s+are\s+there|"
+        rf"how\s+many\s+party\s+{members}\s+are\s+there)\s*[?.!]?\s*", text, re.I,
+    ))
+
+
+def prior_service_present_default(question: str) -> bool:
+    """Scope current to Senators, never to the separate prior-Dáil path.
+
+    The historical clause is already executable in Q20, but may not be removed
+    generally: fully consume this bounded clause before classifying its head.
+    The original question still goes through every Q20 compatibility guard.
+    """
+    match = re.fullmatch(
+        r"\s*(?P<head>(?:who\s+are\s+(?:the\s+)?|(?:which|what|how\s+many)\s+)senators)\s+"
+        r"(?:(?:who\s+)?(?:have\s+)?previously\s+served\s+(?:in\s+(?:the\s+)?d[áa]il|as\s+(?:TDs|deputies))|"
+        r"who\s+were\s+previously\s+(?:TDs|deputies))\s*[?.!]?\s*",
+        question, re.I,
+    )
+    return bool(match and current_relationship_scope(match['head'] + ' are there') == 'inferred')
 
 
 def present_seanad_party_default(question: str, party: str) -> bool:
     """Default only a grounded, unqualified present-tense Senator-party request."""
-    text = re.sub(re.escape(party), "party", question, flags=re.I) if party else question
-    return bool(re.fullmatch(
-        r"\s*(?:who\s+are\s+(?:the\s+)?party\s+senators|"
-        r"(?:which|what)\s+party\s+senators\s+are\s+there|"
-        r"how\s+many\s+party\s+senators\s+are\s+there)\s*[?.!]?\s*",
-        text, re.I,
-    ))
+    return present_party_default(question, party, "Seanad")
 
 
 def validate_seanad_party_scope(question: str, party: str, selector: dict) -> None:
-    """Account for the whole bounded party/Seanad request, not just its term."""
+    validate_party_scope(question, party, selector, "Seanad")
+
+
+def validate_party_scope(question: str, party: str, selector: dict, house: str) -> None:
+    """Account for the whole bounded party/House request, not just its term."""
     text = re.sub(re.escape(party), " ", question, flags=re.I) if party else question
-    numbered = re.findall(r"\b([0-9]{1,3})(?:st|nd|rd|th)\s+seanad\b", text, re.I)
-    current = bool(re.search(r"\b(?:current|this|currently|now|today|present)\b", text, re.I))
+    house_word = "seanad" if house == "Seanad" else r"d[áa]il"
+    numbered = re.findall(rf"\b([0-9]{{1,3}})(?:st|nd|rd|th)\s+{house_word}\b", text, re.I)
+    explicit_words = bool(re.search(r"\b(?:current|this|currently|now|today|present)\b", text, re.I))
+    current = current_relationship_scope(question, party) == "explicit"
     if selector.get("kind") == "termNumber":
-        if numbered != [str(selector.get("number"))] or current:
-            raise ValueError("Preserve exactly one explicitly numbered Seanad, without a conflicting current scope.")
+        if numbered != [str(selector.get("number"))] or explicit_words:
+            raise ValueError(f"Preserve exactly one explicitly numbered {house}, without a conflicting current scope.")
     elif selector.get("kind") == "currentTerm":
-        if numbered or not (current or present_seanad_party_default(question, party)):
-            raise ValueError("Current Seanad party selection requires a current request or the scoped present-time default.")
+        if numbered or not (current or present_party_default(question, party, house)):
+            raise ValueError(f"Current {house} party selection requires a current request or the scoped present-time default.")
     else:
-        raise ValueError("Seanad party selection supports only currentTerm or one numbered term.")
-    text = re.sub(r"\b[0-9]{1,3}(?:st|nd|rd|th)\s+seanad\b", " seanad ", text, flags=re.I)
+        raise ValueError(f"{house} party selection supports only currentTerm or one numbered term.")
+    text = re.sub(rf"\b[0-9]{{1,3}}(?:st|nd|rd|th)\s+{house_word}\b", f" {house.casefold()} ", text, flags=re.I)
     # A closed vocabulary here is deliberately limited to this existing graph.
     # Any residual date, relationship, negation or other condition fails closed.
     allowed = set("who which what how many count number of total list name show give me please are were was is the a an senator senators seanad in during for current this currently now today present serving served members party there recorded local evidence".split())
+    if house == "Dail":
+        allowed -= {"senator", "senators", "seanad"}
+        allowed |= {"td", "tds", "deputy", "deputies", "dail", "dáil"}
     words = set(re.findall(r"[^\W\d_]+", text.casefold()))
     if re.search(r"\d", text) or words - allowed:
-        raise ValueError("Seanad party selection cannot drop an additional temporal, party or relationship condition.")
+        raise ValueError(f"{house} party selection cannot drop an additional temporal, party or relationship condition.")
     if selector.get("kind") == "currentTerm" and re.search(r"\b(?:during|served)\b", text, re.I):
         raise ValueError("Current Seanad party selection cannot replace historical service scope.")
 
 
 def validate_seanad_party_default(plan: dict) -> None:
+    validate_party_default(plan, "Seanad")
+
+
+def validate_party_default(plan: dict, house: str) -> None:
     evidence = plan.get("interpretation")
     if evidence is None:
         return
     refs = plan["referents"]
     if (not isinstance(evidence, dict) or set(evidence) != {"policy", "question", "date"}
-            or evidence.get("policy") != SEANAD_PARTY_POLICY
+            or evidence.get("policy") not in ({RELATIONSHIP_POLICY, SEANAD_PARTY_POLICY} if house == "Seanad" else {RELATIONSHIP_POLICY})
             or evidence.get("date") != plan["asOf"]
             or not isinstance(evidence.get("question"), str)
-            or refs["term"].get("selector") != {"kind": "currentTerm", "house": "Seanad"}
-            or not present_seanad_party_default(evidence["question"], refs["affiliation"].get("mention", ""))):
-        raise ValueError("Current Seanad party default lacks approved scoped interpretation evidence.")
+            or refs["term"].get("selector") != {"kind": "currentTerm", "house": house}
+            or not present_party_default(evidence["question"], refs["affiliation"].get("mention", ""), house)):
+        raise ValueError(f"Current {house} party default lacks approved scoped interpretation evidence.")
 
 
 def unsupported_whole_intent(question):
@@ -137,7 +199,43 @@ def current_office_point_mention(question: str) -> str | None:
 
 def current_office_point_request(question: str) -> bool:
     """Whether the question has the surface form of a date-less current lookup."""
-    return current_office_point_mention(question) is not None
+    mention = current_office_point_mention(question)
+    return mention is not None and current_relationship_scope(question) is not None
+
+
+def current_scope_explanation(question: str, plan: dict, as_of: date) -> str | None:
+    """Explain only established, validated current-point shapes; never select one."""
+    family = plan.get("family")
+    refs = plan.get("referents", {})
+    selector = refs.get("term", {}).get("selector")
+    current_term = isinstance(selector, dict) and selector.get("kind") == "currentTerm"
+    constraints = plan.get("constraints", [])
+    eligible = family in {"current_committee_members", "current_office_constituency", "government_party_members", "current_collection"}
+    eligible |= family == "constituency_representation" and current_term
+    eligible |= family == "member_relationship_composition" and current_term and (
+        "episode" in refs or any(c.get("field") == "membershipInterval" and c.get("value") == as_of.isoformat() for c in constraints)
+    )
+    eligible |= "family" not in plan and refs.get("holding", {}).get("type") == "OfficeHolding" and any(
+        isinstance(c.get("value"), dict) and c["value"].get("scope") == "calendarDate"
+        and c["value"].get("start") == c["value"].get("end") == as_of.isoformat() for c in constraints
+    )
+    prior_service = (family == 'member_relationship_composition'
+                     and refs.get('seanad_term', {}).get('selector') == {'kind': 'currentTerm', 'house': 'Seanad'}
+                     and refs.get('dail_term') == {'type': 'DailTerm'})
+    if prior_service and prior_service_present_default(question):
+        return (f"Present-time default applied: Senator membership is current at configured asOf {as_of.isoformat()}; "
+                "the separate Dáil service remains strictly prior to that Seanad membership, not current.")
+    if prior_service:
+        return (f"Explicit current-time request for Seanad membership at configured asOf {as_of.isoformat()}; "
+                "the separate Dáil service remains strictly prior, not current.")
+    if not eligible:
+        return None
+    scope = current_relationship_scope(question, *(ref.get("mention", "") for ref in refs.values()))
+    if scope == "inferred":
+        return f"Present-time default applied: no time was specified; interpreted as current at configured asOf {as_of.isoformat()}."
+    if scope == "explicit":
+        return f"Explicit current-time request: evaluated at configured asOf {as_of.isoformat()}; no present-time default was inferred."
+    return None
 
 
 def present_constituency_default(question: str, constituency: str) -> bool:
@@ -147,6 +245,8 @@ def present_constituency_default(question: str, constituency: str) -> bool:
     grounded its constituency mention. Explicit scope always wins.
     """
     text = re.sub(re.escape(constituency), " ", question, flags=re.I) if constituency else question
+    if current_relationship_scope(question, constituency) is None:
+        return False
     if re.search(r"\b(?:did|were|was|had|will|would|should|could|might|may|can|shall|planned|planning|expected|future|next|tomorrow|historical|history|ever|previous|last|elected|election|during|throughout|before|after|since|until|between|as of|on|senators?|seanad|panels?)\b|[0-9]", text, re.I):
         return False
     return bool(re.search(r"\b(?:are|is|represent|represents|representing)\b", text, re.I))

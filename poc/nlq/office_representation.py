@@ -28,6 +28,9 @@ def validate_request(question, mention):
         r"(?:currently\s+)?(?:a\s+)?(?:TD|deputy)\s+for)(?:\s+(?:now|today|currently))?\s*[?.!]?\s*", text, re.I,
     ):
         raise ValueError("Officeholder constituency supports only the current office-to-Member-to-current-Dáil path; no historical scope, additional condition or answer field can be dropped.")
+    from .interpretation import current_relationship_scope
+    if current_relationship_scope(question, mention) is None:
+        raise ValueError("Officeholder constituency requires a present-time or explicit-current request.")
 
 
 def make_plan(mention, as_of):

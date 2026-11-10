@@ -17,7 +17,7 @@
     "version": {"const": 2},
     "asOf": {"type": "string", "format": "date"},
     "interpretation": {"type": "object", "additionalProperties": false, "required": ["policy", "question", "date"],
-      "properties": {"policy": {"enum": ["present_constituency_as_of", "present_seanad_party_as_of"]}, "question": {"type": "string", "minLength": 1}, "date": {"type": "string", "format": "date"}}},
+      "properties": {"policy": {"enum": ["present_constituency_as_of", "present_seanad_party_as_of", "present_relationship_as_of"]}, "question": {"type": "string", "minLength": 1}, "date": {"type": "string", "format": "date"}}},
     "family": {"enum": ["member_lookup", "previous_service", "dail_duration", "term_count", "seanad_entry", "seanad_representation", "current_collection", "committee_boolean", "committee_count", "house_terms", "dail_all", "bill_title_search", "bills_published", "non_enacted_bills", "bill_status_history", "bill_sponsors", "bill_lookup", "committee_chair", "committee_conflict", "office_overlap", "office_current_coverage", "office_point", "dail_seats", "dail_parties_and_groups", "bill_quarantine", "debate_lookup", "committee_topic_latest", "bill_votes", "debate_transcript", "shared_dail_terms", "member_relationship_composition", "constituency_representation", "government_party_members"]},
     "referents": {
       "type": "object", "minProperties": 1,

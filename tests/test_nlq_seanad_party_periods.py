@@ -92,14 +92,17 @@ def _current_dail_party_draft(*, count=False):
     return draft
 
 
-def test_explicit_current_dail_party_draft_is_supported_but_not_defaulted():
+def test_explicit_and_approved_inferred_current_dail_party_scope():
     question = 'Who are the Fine Gael Deputies in the current Dáil?'
     draft = _current_dail_party_draft()
     validated, error = validate_composable_plan_draft(draft, question=question)
     assert error is None
     assert validated['referents']['term']['selector'] == {'kind': 'currentTerm', 'house': 'Dail'}
-    with pytest.raises(InvalidComposableDraft):
-        validate_composable_plan_draft(draft, question='Who are the Fine Gael Deputies?')
+    assert 'interpretation' not in validated
+    inferred, error = validate_composable_plan_draft(draft, question='Who are the Fine Gael Deputies?')
+    assert error is None
+    assert inferred['referents']['term']['selector'] == validated['referents']['term']['selector']
+    assert inferred['interpretation'] == {'policy': 'present_relationship_as_of', 'question': 'Who are the Fine Gael Deputies?'}
 
 
 def _dail_party_fixture():
@@ -272,7 +275,7 @@ def test_current_forms_share_exact_selection_and_separate_active_intervals(quest
     assert len(actual.result.rows) == 1
     assert SEANAD_TERM in actual.result.rows[0][2]
     if 'current' not in question:
-        assert actual.plan['interpretation']['policy'] == 'present_seanad_party_as_of'
+        assert actual.plan['interpretation']['policy'] == 'present_relationship_as_of'
         assert actual.plan['interpretation']['date'] == AS_OF.isoformat()
 
 
