@@ -313,7 +313,7 @@ def _committee_query(member_iri: str, *, supported_predicates) -> str:
     return _query(query, supported_predicates)
 
 
-def _committee_catalogue_query(*, supported_predicates) -> str:
+def _committee_catalogue_query(*, supported_predicates, preserve_evidence=False) -> str:
     """Resolve an unscoped Committee name from owner evidence before Member matching."""
     _, families = _contract_parts()
     committee_graph = _graph("committees")
@@ -327,15 +327,19 @@ def _committee_catalogue_query(*, supported_predicates) -> str:
     temporal = _predicate("dct:temporal")
     term_start = _predicate("dcat:startDate")
     term_end = _predicate("dcat:endDate")
-    query = _PREFIXES + f'''SELECT DISTINCT ?committee ?label ?term ?start ?end ?termStart ?termEnd WHERE {{
+    projection = "?committee ?label ?term ?start ?end ?termStart ?termEnd"
+    if preserve_evidence:
+        projection += " ?range ?period ?termType"
+    term_type = "?term a ?termType . VALUES ?termType { agents:DailTerm agents:SeanadTerm }" if preserve_evidence else ""
+    query = _PREFIXES + f'''SELECT DISTINCT {projection} WHERE {{
   GRAPH <{committee_graph}> {{
     ?committee a {committee_type} .
     OPTIONAL {{ ?committee {term_link} ?term . }}
     OPTIONAL {{ ?committee skos:prefLabel ?label . }}
     OPTIONAL {{ ?committee {committee_range} ?range . ?range a {date_range_type} . OPTIONAL {{ ?range {start} ?start . }} OPTIONAL {{ ?range {end} ?end . }} }}
   }}
-  OPTIONAL {{ GRAPH <{houses_graph}> {{ ?term dct:temporal ?period . ?period a dct:PeriodOfTime . OPTIONAL {{ ?period {term_start} ?termStart . }} OPTIONAL {{ ?period {term_end} ?termEnd . }} }} }}
-}} ORDER BY ?label ?term'''
+  OPTIONAL {{ GRAPH <{houses_graph}> {{ {term_type} ?term dct:temporal ?period . ?period a dct:PeriodOfTime . OPTIONAL {{ ?period {term_start} ?termStart . }} OPTIONAL {{ ?period {term_end} ?termEnd . }} }} }}
+}} ORDER BY {projection if preserve_evidence else '?label ?term'}'''
     return _query(query, supported_predicates)
 
 

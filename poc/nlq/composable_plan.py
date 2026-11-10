@@ -1742,6 +1742,9 @@ def validate_plan(plan: Any) -> dict[str, Any]:
     if "family" in plan:
         if not isinstance(plan["family"], str):
             raise PlanError("Query family must be a controlled string identifier.")
+        if plan["family"] == "current_committee_members":
+            from .committee_members import validate_committee_plan
+            return validate_committee_plan(plan)
         if plan["family"] == "constituency_representation":
             from .representation import validate_representation_plan
             return validate_representation_plan(plan)
@@ -6531,6 +6534,10 @@ def _execute_shared_dail_terms_question(
     if draft_plan.get("family") == "capability_selection":
         capability = draft_plan["capability"]
         parameters = draft_plan["parameters"]
+        if capability == "current_committee_members":
+            from .committee_members import execute_committee_members
+            return execute_committee_members(parameters["committee"], as_of=as_of, fuseki=fuseki,
+                                             supported_predicates=supported_predicates)
         if capability == "member_lookup":
             from .stage_a import StageARequest, execute_stage_a
             return execute_stage_a(StageARequest("member_lookup", mention=parameters["member"], house=parameters["house"]),

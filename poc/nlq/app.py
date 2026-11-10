@@ -383,9 +383,10 @@ def create_app(
                 )
                 is_representation = plan_family == "constituency_representation"
                 is_government = plan_family == "government_party_members"
+                is_committee_members = plan_family == "current_committee_members"
                 is_composable_semantic = (
                     is_shared_dail_terms or is_member_relationship_composition or is_representation or is_government
-                    or is_office_holding_evidence or plan_family == "composable_semantic"
+                    or is_office_holding_evidence or is_committee_members or plan_family == "composable_semantic"
                 )
                 stage_a_family = (plan_family if plan_family in stage_a_family_ids else
                                   parsed_stage_a.family if parsed_stage_a else None)
@@ -731,6 +732,9 @@ def create_app(
                     answer_text = "Constituency and Dáil-term evidence is retained by exact RDF identity; local coverage is not certified complete."
                 if is_government:
                     answer_text = "Recorded matches with dated Cabinet and party evidence—not a complete Government roster."
+                if is_committee_members:
+                    summary = f"Find locally recorded members of one uniquely dated current Committee incarnation at {as_of.isoformat()}, checking each membership interval independently."
+                    answer_text = "Distinct Member identities with separate CommitteeMembership evidence; not a certified complete current roster, chairmanship or attendance list."
                 if outcome.status == "success":
                     return render(request, question=question, mode=mode,
                                   interpretation=summary, plan_json=plan_json,
