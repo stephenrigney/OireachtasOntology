@@ -106,7 +106,8 @@ class CapabilityFixture:
 def test_dispatch_capabilities_are_contract_grounded_and_part_of_planner_context():
     contract = json.loads((ROOT / "poc/specs/composable-query-plan-contract.json").read_text())
     capabilities = {item["id"]: item for item in contract["semanticDispatch"]["capabilities"]}
-    assert set(capabilities) == {"bill_lookup", "seanad_entry", "member_lookup", "dail_parties_and_groups", "office_holding_evidence", "office_holding_window", "member_bill_sponsorship", "current_committee_members"}
+    assert set(capabilities) == {"bill_lookup", "seanad_entry", "member_lookup", "dail_parties_and_groups", "office_holding_evidence", "office_holding_window", "member_bill_sponsorship", "current_committee_members", "current_office_constituency"}
+    assert capabilities["current_office_constituency"]["handler"] == "composable_office_representation"
     assert capabilities["current_committee_members"]["handler"] == "composable_committee_members"
     assert capabilities["office_holding_evidence"]["handler"] == "composable_office_evidence"
     assert capabilities["office_holding_evidence"]["input"] == "member_and_office"

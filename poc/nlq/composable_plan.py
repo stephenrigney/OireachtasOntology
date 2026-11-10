@@ -1745,6 +1745,9 @@ def validate_plan(plan: Any) -> dict[str, Any]:
         if plan["family"] == "current_committee_members":
             from .committee_members import validate_committee_plan
             return validate_committee_plan(plan)
+        if plan["family"] == "current_office_constituency":
+            from .office_representation import validate_office_representation_plan
+            return validate_office_representation_plan(plan)
         if plan["family"] == "constituency_representation":
             from .representation import validate_representation_plan
             return validate_representation_plan(plan)
@@ -6534,6 +6537,10 @@ def _execute_shared_dail_terms_question(
     if draft_plan.get("family") == "capability_selection":
         capability = draft_plan["capability"]
         parameters = draft_plan["parameters"]
+        if capability == "current_office_constituency":
+            from .office_representation import execute_office_representation
+            return execute_office_representation(parameters["office"], as_of=as_of, fuseki=fuseki,
+                                                 supported_predicates=supported_predicates)
         if capability == "current_committee_members":
             from .committee_members import execute_committee_members
             return execute_committee_members(parameters["committee"], as_of=as_of, fuseki=fuseki,
@@ -7257,6 +7264,21 @@ def _execute_question(
     from .representation import plan_representation_question, execute_representation
     representation_plan = plan_representation_question(question, as_of=as_of)
     if representation_plan is not None:
+        # A source-grounded office title must not be treated as a person's name.
+        # This is routing only: AI still selects the bounded capability and local
+        # validation preserves the complete question before any holding query.
+        member_mention = representation_plan["referents"]["member"].get("mention")
+        if member_mention:
+            office_mention = re.sub(r"^(?:the\s+)?(?:current\s+)?", "", member_mention, flags=re.I)
+            office_mention = re.sub(r"\s+(?:currently|now|today)$", "", office_mention, flags=re.I)
+            office_resolution = resolve_local_entity_label("NamedOffice", office_mention, fuseki,
+                                                          supported_predicates=supported_predicates)
+            if office_resolution.state in {"resolved", "ambiguous"}:
+                if semantic_plan_generator_factory is None:
+                    return PlanOutcome("unsupported_capability", diagnostic="An officeholder constituency requires validated NamedOffice selection, not a Member-name lookup.")
+                return _execute_shared_dail_terms_question(question, as_of=as_of, fuseki=fuseki,
+                                                         supported_predicates=supported_predicates,
+                                                         planner_generator_factory=semantic_plan_generator_factory)
         return execute_representation(representation_plan, fuseki=fuseki,
                                       supported_predicates=supported_predicates)
     from .government import plan_government_question, execute_government

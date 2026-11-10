@@ -166,7 +166,7 @@
           "additionalProperties": false,
           "required": ["capability", "parameters"],
           "properties": {
-          "capability": {"type": "string", "enum": ["seanad_entry", "bill_lookup", "member_lookup", "dail_parties_and_groups", "office_holding_evidence", "office_holding_window", "current_committee_members"]},
+          "capability": {"type": "string", "enum": ["seanad_entry", "bill_lookup", "member_lookup", "dail_parties_and_groups", "office_holding_evidence", "office_holding_window", "current_committee_members", "current_office_constituency"]},
             "parameters": {
                  "anyOf": [
                    {"type": "object", "additionalProperties": false, "required": ["committee"], "properties": {"committee": {"type": "string", "minLength": 1}}},

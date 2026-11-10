@@ -384,9 +384,10 @@ def create_app(
                 is_representation = plan_family == "constituency_representation"
                 is_government = plan_family == "government_party_members"
                 is_committee_members = plan_family == "current_committee_members"
+                is_office_representation = plan_family == "current_office_constituency"
                 is_composable_semantic = (
                     is_shared_dail_terms or is_member_relationship_composition or is_representation or is_government
-                    or is_office_holding_evidence or is_committee_members or plan_family == "composable_semantic"
+                    or is_office_holding_evidence or is_committee_members or is_office_representation or plan_family == "composable_semantic"
                 )
                 stage_a_family = (plan_family if plan_family in stage_a_family_ids else
                                   parsed_stage_a.family if parsed_stage_a else None)
@@ -735,6 +736,9 @@ def create_app(
                 if is_committee_members:
                     summary = f"Find locally recorded members of one uniquely dated current Committee incarnation at {as_of.isoformat()}, checking each membership interval independently."
                     answer_text = "Distinct Member identities with separate CommitteeMembership evidence; not a certified complete current roster, chairmanship or attendance list."
+                if is_office_representation:
+                    summary = f"Resolve a reviewed NamedOffice to one locally accepted officeholder at {as_of.isoformat()}, then independently check that exact Member's current Dáil representation."
+                    answer_text = "Exact office, holding, Member and Dáil representation identities and dates are retained; local evidence does not certify a complete current-office or government roster."
                 if outcome.status == "success":
                     return render(request, question=question, mode=mode,
                                   interpretation=summary, plan_json=plan_json,
