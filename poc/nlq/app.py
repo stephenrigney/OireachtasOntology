@@ -157,9 +157,10 @@ def create_app(
                 plan_json: str | None = None, plan_heading: str | None = None,
                 entity_outcomes: tuple[dict, ...] = (), plan_explanation=None,
                 clarification=None, execution_attempted: bool = False):
-        if readiness is None:
-            readiness = check_fuseki_readiness()
         performance = getattr(request.state, "query_performance", None)
+        if readiness is None:
+            readiness = (performance.measure("readiness_check", check_fuseki_readiness)
+                         if performance is not None else check_fuseki_readiness())
         performance_diagnostics = None
         if performance is not None:
             outcome_name = getattr(request.state, "query_outcome", None) or ("failure" if error else "completed")

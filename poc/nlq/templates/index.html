@@ -195,16 +195,16 @@
     <details class="performance" data-performance='{{ performance|tojson }}'>
       <summary>Performance</summary>
       <dl>
-        <dt>Total response time</dt><dd>{{ performance.total_elapsed_ms }} ms</dd>
+        <dt>Application elapsed before HTML rendering</dt><dd>{{ performance.elapsed_before_render_ms }} ms</dd>
         {% for name, timing in performance.stages.items() %}
-        <dt>{% if name == "query_pipeline" %}Query pipeline (interpretation through result projection){% elif name == "llm_calls" %}LLM requests{% elif name == "fuseki_requests" %}Fuseki requests{% else %}{{ name|replace('_', ' ')|title }}{% endif %}</dt>
+        <dt>{% if name == "query_pipeline" %}Query pipeline (interpretation through result projection){% elif name == "readiness_check" %}Fuseki readiness check (separate from query requests){% else %}{{ name|replace('_', ' ')|title }}{% endif %}</dt>
         <dd>{% if timing.status == "not_executed" %}Not executed{% else %}{{ timing.elapsed_ms }} ms{% endif %}</dd>
         {% endfor %}
-        <dt>LLM calls</dt><dd>{{ performance.llm.count }} calls · {{ performance.llm.cumulative_elapsed_ms }} ms cumulative</dd>
-        <dt>Fuseki requests</dt><dd>{{ performance.fuseki.count }} requests · {{ performance.fuseki.cumulative_elapsed_ms }} ms cumulative</dd>
+        <dt>LLM calls</dt><dd>{% if performance.llm.status == "not_executed" %}Not executed — {% endif %}{{ performance.llm.count }} calls · {{ performance.llm.cumulative_elapsed_ms }} ms cumulative</dd>
+        <dt>Fuseki query requests</dt><dd>{% if performance.fuseki.status == "not_executed" %}Not executed — {% endif %}{{ performance.fuseki.count }} requests · {{ performance.fuseki.cumulative_elapsed_ms }} ms cumulative</dd>
         <dt>Outcome</dt><dd>{{ performance.outcome|replace('_', ' ') }}</dd>
       </dl>
-      <p>Stage names follow the implemented execution path. Phase 2 exposes one combined planning-to-projection span; its internal resolution, validation, compilation and projection boundaries are not independently separated.</p>
+      <p>Elapsed time stops immediately before HTML rendering and HTTP response delivery. The query pipeline span includes the LLM and Fuseki time shown separately; do not add these values together. Readiness checks are timed separately and excluded from query-request counts. Phase 2 internal resolution, validation, compilation and projection boundaries are not independently separated.</p>
     </details>
     {% endif %}
     {% set interpreted_ready = interpretation or plan_explanation or error or ambiguity or clarification or entity_outcomes %}

@@ -37,7 +37,7 @@ def median(values):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--url", default="http://127.0.0.1:8001/ask", help="Live query service /ask URL")
+    parser.add_argument("--url", default="http://127.0.0.1:8000/ask", help="Live query service /ask URL")
     parser.add_argument("--runs", type=int, default=3)
     parser.add_argument("--mode", default="phase2")
     args = parser.parse_args()
@@ -57,13 +57,17 @@ def main():
                 reader.feed(response.text)
                 if reader.performance is None:
                     raise RuntimeError("Response did not contain query performance diagnostics; no timing was inferred.")
-                samples.append(reader.performance)
-            total = [sample["total_elapsed_ms"] for sample in samples]
+                sample = dict(reader.performance)
+                sample["http_elapsed_ms"] = round(response.elapsed.total_seconds() * 1000, 3)
+                samples.append(sample)
+            total = [sample["http_elapsed_ms"] for sample in samples]
+            handler = [sample["elapsed_before_render_ms"] for sample in samples]
             stages = sorted({stage for sample in samples for stage in sample["stages"]})
             report["cases"].append({
                 "id": case["id"], "category": case["category"], "question": case["question"],
-                "outcome": samples[-1]["outcome"], "runs": len(samples),
-                "median_total_ms": median(total), "slowest_total_ms": max(total),
+                "outcomes": [sample["outcome"] for sample in samples], "runs": len(samples),
+                "median_http_elapsed_ms": median(total), "slowest_http_elapsed_ms": max(total),
+                "median_application_elapsed_before_render_ms": median(handler),
                 "median_stages_ms": {
                     stage: median([sample["stages"][stage]["elapsed_ms"]
                                    for sample in samples

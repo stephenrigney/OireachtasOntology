@@ -61,18 +61,16 @@ class QueryPerformance:
                    "elapsed_ms": round(seconds * 1000, 3)}
             for name, seconds in self.stages.items()
         }
-        for name, count, seconds in (
-            ("query_pipeline", int("query_pipeline" in stages), stages.get("query_pipeline", {}).get("elapsed_ms", 0) / 1000),
-            ("llm_calls", self.llm_calls, self.llm_seconds),
-            ("fuseki_requests", self.fuseki_requests, self.fuseki_seconds),
-        ):
-            if name not in stages:
-                stages[name] = ({"status": "completed", "elapsed_ms": round(seconds * 1000, 3)}
-                                if count else {"status": "not_executed", "elapsed_ms": None})
+        if "query_pipeline" not in stages:
+            stages["query_pipeline"] = {"status": "not_executed", "elapsed_ms": None}
         return {
-            "total_elapsed_ms": round(elapsed * 1000, 3),
+            # Collected immediately before TemplateResponse construction. This
+            # deliberately does not claim to include HTML rendering or network I/O.
+            "elapsed_before_render_ms": round(elapsed * 1000, 3),
             "stages": stages,
-            "llm": {"count": self.llm_calls, "cumulative_elapsed_ms": round(self.llm_seconds * 1000, 3)},
-            "fuseki": {"count": self.fuseki_requests, "cumulative_elapsed_ms": round(self.fuseki_seconds * 1000, 3)},
+            "llm": {"count": self.llm_calls, "cumulative_elapsed_ms": round(self.llm_seconds * 1000, 3),
+                    "status": "completed" if self.llm_calls else "not_executed"},
+            "fuseki": {"count": self.fuseki_requests, "cumulative_elapsed_ms": round(self.fuseki_seconds * 1000, 3),
+                       "status": "completed" if self.fuseki_requests else "not_executed"},
             "outcome": outcome,
         }
