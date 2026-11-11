@@ -1,0 +1,1598 @@
+{
+  "seats33": {
+    "answer": 160,
+    "evidence": [
+      {
+        "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33",
+        "number": "33",
+        "seats": "160",
+        "period": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33#term-period",
+        "start": "2020-02-08T00:00:00",
+        "end": "2024-11-08T00:00:00"
+      }
+    ]
+  },
+  "seats34": {
+    "answer": 174,
+    "evidence": [
+      {
+        "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "number": "34",
+        "seats": "174",
+        "period": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "start": "2024-11-29T00:00:00"
+      }
+    ]
+  },
+  "parties12": {
+    "identities": [
+      "https://data.oireachtas.ie/ie/oireachtas/party/dail/12/Clann_na_Poblachta",
+      "https://data.oireachtas.ie/ie/oireachtas/party/dail/12/Clann_na_Talmhan",
+      "https://data.oireachtas.ie/ie/oireachtas/party/dail/12/Fianna_Fáil",
+      "https://data.oireachtas.ie/ie/oireachtas/party/dail/12/Fine_Gael",
+      "https://data.oireachtas.ie/ie/oireachtas/party/dail/12/Labour_Party",
+      "https://data.oireachtas.ie/ie/oireachtas/party/dail/12/National_Labour_Party"
+    ],
+    "labels": [
+      "Clann na Poblachta",
+      "Clann na Talmhan",
+      "Fianna Fáil",
+      "Fine Gael",
+      "Labour Party",
+      "National Labour Party"
+    ],
+    "group_evidence": false
+  },
+  "parties13": {
+    "identities": [
+      "https://data.oireachtas.ie/ie/oireachtas/party/dail/13/Clann_na_Poblachta",
+      "https://data.oireachtas.ie/ie/oireachtas/party/dail/13/Clann_na_Talmhan",
+      "https://data.oireachtas.ie/ie/oireachtas/party/dail/13/Fianna_Fáil",
+      "https://data.oireachtas.ie/ie/oireachtas/party/dail/13/Fine_Gael",
+      "https://data.oireachtas.ie/ie/oireachtas/party/dail/13/Labour_Party",
+      "https://data.oireachtas.ie/ie/oireachtas/party/dail/13/National_Labour_Party"
+    ],
+    "labels": [
+      "Clann na Poblachta",
+      "Clann na Talmhan",
+      "Fianna Fáil",
+      "Fine Gael",
+      "Labour Party",
+      "National Labour Party"
+    ],
+    "group_evidence": false
+  },
+  "Minister for Finance": {
+    "active_holdings": [
+      {
+        "g": "https://data.oireachtas.ie/graph/member/Simon-Harris.D.2011-03-09",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Simon-Harris.D.2011-03-09",
+        "name": "Simon Harris",
+        "office": "https://data.oireachtas.ie/office/o-000003",
+        "label": "Minister for Finance",
+        "holding": "https://data.oireachtas.ie/ie/oireachtas/member/id/Simon-Harris.D.2011-03-09#office-holding-fdfe27d29558fecfa50a8802f02fe249b68f27254b97b236b58b0335b69cde20",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Simon-Harris.D.2011-03-09#office-holding-fdfe27d29558fecfa50a8802f02fe249b68f27254b97b236b58b0335b69cde20#date-range",
+        "start": "2025-11-18T00:00:00"
+      }
+    ],
+    "current_representation": [
+      {
+        "g": "https://data.oireachtas.ie/graph/member/Simon-Harris.D.2011-03-09",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Simon-Harris.D.2011-03-09",
+        "name": "Simon Harris",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Simon-Harris.D.2011-03-09/house/dail/34",
+        "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "number": "34",
+        "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Wicklow",
+        "label": "Wicklow",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Simon-Harris.D.2011-03-09/house/dail/34#date-range",
+        "start": "2024-11-29T00:00:00",
+        "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Simon-Harris.D.2011-03-09/house/dail/34#party-membership-9b98f51521498f282e34a6b30c6e1b73d186160237fff4a65599c8384302b74f",
+        "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael",
+        "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fine-gael",
+        "affiliationLabel": "Fine Gael",
+        "prange": "https://data.oireachtas.ie/ie/oireachtas/member/id/Simon-Harris.D.2011-03-09/house/dail/34#party-membership-9b98f51521498f282e34a6b30c6e1b73d186160237fff4a65599c8384302b74f#date-range",
+        "ps": "2024-11-29T00:00:00"
+      }
+    ],
+    "all_holding_count": 4
+  },
+  "Tánaiste": {
+    "active_holdings": [],
+    "current_representation": [],
+    "all_holding_count": 7
+  },
+  "dc-now": {
+    "identities": [
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09"
+    ],
+    "labels": [
+      "Mary Lou McDonald"
+    ],
+    "evidence": [
+      {
+        "g": "https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09",
+        "name": "Mary Lou McDonald",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34",
+        "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "number": "34",
+        "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central",
+        "label": "Dublin Central",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#date-range",
+        "start": "2024-11-29T00:00:00",
+        "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc",
+        "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin",
+        "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein",
+        "affiliationLabel": "Sinn Féin",
+        "prange": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range",
+        "ps": "2024-11-29T00:00:00"
+      }
+    ]
+  },
+  "dw-now": {
+    "identities": [
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Donnelly.D.2020-02-08"
+    ],
+    "labels": [
+      "Paul Donnelly"
+    ],
+    "evidence": [
+      {
+        "g": "https://data.oireachtas.ie/graph/member/Paul-Donnelly.D.2020-02-08",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Donnelly.D.2020-02-08",
+        "name": "Paul Donnelly",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Donnelly.D.2020-02-08/house/dail/34",
+        "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "number": "34",
+        "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-West",
+        "label": "Dublin West",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Donnelly.D.2020-02-08/house/dail/34#date-range",
+        "start": "2024-11-29T00:00:00",
+        "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Donnelly.D.2020-02-08/house/dail/34#party-membership-c6c4ee03af72fc061ed1506f5addf2842649801e4592ad8b35fdd41ed22f9ce7",
+        "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin",
+        "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein",
+        "affiliationLabel": "Sinn Féin",
+        "prange": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Donnelly.D.2020-02-08/house/dail/34#party-membership-c6c4ee03af72fc061ed1506f5addf2842649801e4592ad8b35fdd41ed22f9ce7#date-range",
+        "ps": "2024-11-29T00:00:00"
+      }
+    ]
+  },
+  "dc-33": {
+    "identities": [
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09"
+    ],
+    "labels": [
+      "Mary Lou McDonald"
+    ],
+    "evidence": [
+      {
+        "g": "https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09",
+        "name": "Mary Lou McDonald",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/33",
+        "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33",
+        "number": "33",
+        "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33/constituency/Dublin-Central",
+        "label": "Dublin Central",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/33#date-range",
+        "start": "2020-02-08T00:00:00",
+        "end": "2024-11-08T00:00:00",
+        "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/33#party-membership-a388d8ec4c7c74f22e6adb5da7b10454835d89b14d272c76cf487dcb5737af2f",
+        "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Sinn_Féin",
+        "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein",
+        "affiliationLabel": "Sinn Féin",
+        "prange": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/33#party-membership-a388d8ec4c7c74f22e6adb5da7b10454835d89b14d272c76cf487dcb5737af2f#date-range",
+        "ps": "2020-02-08T00:00:00",
+        "pe": "2024-11-08T00:00:00"
+      }
+    ]
+  },
+  "dc-unfiltered": {
+    "identities": [
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25",
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08",
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30",
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09"
+    ],
+    "labels": [
+      "Daniel Ennis",
+      "Gary Gannon",
+      "Marie Sherlock",
+      "Mary Lou McDonald"
+    ],
+    "evidence": [
+      {
+        "g": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25",
+        "name": "Daniel Ennis",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34",
+        "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "number": "34",
+        "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central",
+        "label": "Dublin Central",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#date-range",
+        "start": "2026-05-25T00:00:00",
+        "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e",
+        "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Social_Democrats",
+        "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/social-democrats",
+        "affiliationLabel": "Social Democrats",
+        "prange": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e#date-range",
+        "ps": "2026-05-25T00:00:00"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/member/Gary-Gannon.D.2020-02-08",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08",
+        "name": "Gary Gannon",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34",
+        "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "number": "34",
+        "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central",
+        "label": "Dublin Central",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34#date-range",
+        "start": "2024-11-29T00:00:00",
+        "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34#party-membership-b69d88803d83157951a9ab6204924cfa556ccbf57e35d48facb3de3f912cab07",
+        "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Social_Democrats",
+        "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/social-democrats",
+        "affiliationLabel": "Social Democrats",
+        "prange": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34#party-membership-b69d88803d83157951a9ab6204924cfa556ccbf57e35d48facb3de3f912cab07#date-range",
+        "ps": "2024-11-29T00:00:00"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/member/Marie-Sherlock.S.2020-03-30",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30",
+        "name": "Marie Sherlock",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34",
+        "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "number": "34",
+        "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central",
+        "label": "Dublin Central",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34#date-range",
+        "start": "2024-11-29T00:00:00",
+        "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34#party-membership-59f4b8bff30c6722eea77ae64d396c6110dc2f642efde82b088a355466a32fc1",
+        "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Labour_Party",
+        "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/labour-party",
+        "affiliationLabel": "Labour Party",
+        "prange": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34#party-membership-59f4b8bff30c6722eea77ae64d396c6110dc2f642efde82b088a355466a32fc1#date-range",
+        "ps": "2024-11-29T00:00:00"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09",
+        "name": "Mary Lou McDonald",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34",
+        "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "number": "34",
+        "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central",
+        "label": "Dublin Central",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#date-range",
+        "start": "2024-11-29T00:00:00",
+        "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc",
+        "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin",
+        "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein",
+        "affiliationLabel": "Sinn Féin",
+        "prange": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range",
+        "ps": "2024-11-29T00:00:00"
+      }
+    ]
+  },
+  "dc-dw-now": {
+    "identities": [
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09",
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Donnelly.D.2020-02-08"
+    ],
+    "labels": [
+      "Mary Lou McDonald",
+      "Paul Donnelly"
+    ],
+    "evidence": [
+      {
+        "g": "https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09",
+        "name": "Mary Lou McDonald",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34",
+        "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "number": "34",
+        "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central",
+        "label": "Dublin Central",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#date-range",
+        "start": "2024-11-29T00:00:00",
+        "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc",
+        "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin",
+        "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein",
+        "affiliationLabel": "Sinn Féin",
+        "prange": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range",
+        "ps": "2024-11-29T00:00:00"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/member/Paul-Donnelly.D.2020-02-08",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Donnelly.D.2020-02-08",
+        "name": "Paul Donnelly",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Donnelly.D.2020-02-08/house/dail/34",
+        "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "number": "34",
+        "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-West",
+        "label": "Dublin West",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Donnelly.D.2020-02-08/house/dail/34#date-range",
+        "start": "2024-11-29T00:00:00",
+        "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Donnelly.D.2020-02-08/house/dail/34#party-membership-c6c4ee03af72fc061ed1506f5addf2842649801e4592ad8b35fdd41ed22f9ce7",
+        "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin",
+        "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein",
+        "affiliationLabel": "Sinn Féin",
+        "prange": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Donnelly.D.2020-02-08/house/dail/34#party-membership-c6c4ee03af72fc061ed1506f5addf2842649801e4592ad8b35fdd41ed22f9ce7#date-range",
+        "ps": "2024-11-29T00:00:00"
+      }
+    ]
+  },
+  "ahern-anchor": {
+    "identities": [
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Cyprian-Brady.S.2002-09-12"
+    ],
+    "labels": [
+      "Cyprian Brady"
+    ],
+    "evidence": [
+      {
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cyprian-Brady.S.2002-09-12",
+        "name": "Cyprian Brady",
+        "intersection": [
+          "2007-06-14",
+          "2008-05-07"
+        ],
+        "holding": {
+          "g": "https://data.oireachtas.ie/graph/member/Bertie-Ahern.D.1977-07-05",
+          "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Bertie-Ahern.D.1977-07-05",
+          "name": "Bertie Ahern",
+          "office": "https://data.oireachtas.ie/office/o-000001",
+          "label": "Taoiseach",
+          "holding": "https://data.oireachtas.ie/ie/oireachtas/member/id/Bertie-Ahern.D.1977-07-05#office-holding-8bfdbf94ba2f1d521110f1e37e5339d2a7744234210786b395765ac94a806469",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Bertie-Ahern.D.1977-07-05#office-holding-8bfdbf94ba2f1d521110f1e37e5339d2a7744234210786b395765ac94a806469#date-range",
+          "start": "2007-06-14T00:00:00",
+          "end": "2008-05-07T00:00:00"
+        },
+        "anchor": {
+          "g": "https://data.oireachtas.ie/graph/member/Bertie-Ahern.D.1977-07-05",
+          "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Bertie-Ahern.D.1977-07-05",
+          "name": "Bertie Ahern",
+          "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Bertie-Ahern.D.1977-07-05/house/dail/30",
+          "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/30",
+          "number": "30",
+          "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/30/constituency/Dublin-Central",
+          "label": "Dublin Central",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Bertie-Ahern.D.1977-07-05/house/dail/30#date-range",
+          "start": "2007-06-14T00:00:00",
+          "end": "2011-02-01T00:00:00",
+          "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Bertie-Ahern.D.1977-07-05/house/dail/30#party-membership-7949e52f609523c68bf7ce556c9330054627b4bad765eda839c9800c35a8d816",
+          "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/30/Fianna_Fáil",
+          "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail",
+          "affiliationLabel": "Fianna Fáil",
+          "prange": "https://data.oireachtas.ie/ie/oireachtas/member/id/Bertie-Ahern.D.1977-07-05/house/dail/30#party-membership-7949e52f609523c68bf7ce556c9330054627b4bad765eda839c9800c35a8d816#date-range",
+          "ps": "2007-05-24T00:00:00",
+          "pe": "2011-02-01T00:00:00"
+        },
+        "answer": {
+          "g": "https://data.oireachtas.ie/graph/member/Cyprian-Brady.S.2002-09-12",
+          "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cyprian-Brady.S.2002-09-12",
+          "name": "Cyprian Brady",
+          "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cyprian-Brady.S.2002-09-12/house/dail/30",
+          "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/30",
+          "number": "30",
+          "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/30/constituency/Dublin-Central",
+          "label": "Dublin Central",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cyprian-Brady.S.2002-09-12/house/dail/30#date-range",
+          "start": "2007-06-14T00:00:00",
+          "end": "2011-02-01T00:00:00",
+          "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cyprian-Brady.S.2002-09-12/house/dail/30#party-membership-8afb897d354c503c54d49deb87695adc1a2fddcba37c9701d9686ca77c99b479",
+          "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/30/Fianna_Fáil",
+          "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail",
+          "affiliationLabel": "Fianna Fáil",
+          "prange": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cyprian-Brady.S.2002-09-12/house/dail/30#party-membership-8afb897d354c503c54d49deb87695adc1a2fddcba37c9701d9686ca77c99b479#date-range",
+          "ps": "2007-05-24T00:00:00",
+          "pe": "2011-02-01T00:00:00"
+        }
+      }
+    ],
+    "scope": "qualifying accepted holdings and representation evidence; no complete-career assertion"
+  },
+  "Malcolm Byrne": {
+    "identities": [
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2020/11",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2021/139",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2021/149",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2021/17",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2021/30",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2021/43",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2022/108",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2022/7",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2024/19",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2024/32",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2024/49",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2024/58",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2024/89",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2025/11",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2025/62",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2025/71",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2026/31",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2026/86",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2026/89",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2026/93"
+    ],
+    "titles": [
+      "Antarctic Treaty (Accession and Implementation) Bill 2026",
+      "Artificial Intelligence Companion Services (Protection of Children) Bill 2026",
+      "Bail (Amendment) Bill 2024",
+      "Companies (Protection of Title: Accountant) Bill 2025",
+      "Control of Dogs (Miscellaneous Provisions) Bill 2024",
+      "Defence (Restriction on Use of Certain Titles) Bill 2021",
+      "Disability (Personalised Budgets) Bill 2024",
+      "Education (Relationships and Sexuality Education) (Amendment) Bill 2022",
+      "Electoral (Amendment) (Voting at 16) Bill 2021",
+      "Health (Postponement of Certain Leave) Bill 2024",
+      "Health Insurance (International Students) (Amendment) Bill 2021",
+      "Horticultural Peat (Temporary Measures) Bill 2021",
+      "Local Government (Surveillance Powers in Relation to Certain Offences) Bill 2022",
+      "Protection of Private Residences (Against Targeted Picketing) Bill 2021",
+      "Protection of Retail Workers Bill 2024",
+      "Protection of Voice and Image Bill 2025",
+      "Public Health (Tobacco) (Amendment) (Smokefree Generation) Bill 2026",
+      "Road Traffic (Amendment) (Jax’s Law) Bill 2026",
+      "Seanad Electoral (University Members) (Amendment) Bill 2020",
+      "Seán Lemass Dublin International Airport Bill 2025"
+    ],
+    "published_date_rows": [],
+    "evidence": [
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2020/11",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2020/11",
+        "title": "Seanad Electoral (University Members) (Amendment) Bill 2020",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2020/11#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2020/11#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2020/11#process%23sponsor-9ce16c011b7871e05087aa21575413d3c9447b5058d71b3323d0d728975e409c"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2021/139",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/139",
+        "title": "Protection of Private Residences (Against Targeted Picketing) Bill 2021",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/139#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/139#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/139#process%23sponsor-9ce16c011b7871e05087aa21575413d3c9447b5058d71b3323d0d728975e409c"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2021/149",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/149",
+        "title": "Horticultural Peat (Temporary Measures) Bill 2021",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/149#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/149#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/149#process%23sponsor-b8e804a6dec53a0c103c0bb482a8e23e2dfd896575f36b53ee440d4d65504050"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2021/17",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/17",
+        "title": "Defence (Restriction on Use of Certain Titles) Bill 2021",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/17#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/17#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/17#process%23sponsor-9ce16c011b7871e05087aa21575413d3c9447b5058d71b3323d0d728975e409c"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2021/30",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/30",
+        "title": "Health Insurance (International Students) (Amendment) Bill 2021",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/30#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/30#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/30#process%23sponsor-9ce16c011b7871e05087aa21575413d3c9447b5058d71b3323d0d728975e409c"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2021/43",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/43",
+        "title": "Electoral (Amendment) (Voting at 16) Bill 2021",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/43#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/43#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/43#process%23sponsor-9ce16c011b7871e05087aa21575413d3c9447b5058d71b3323d0d728975e409c"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2022/108",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/108",
+        "title": "Education (Relationships and Sexuality Education) (Amendment) Bill 2022",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/108#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/108#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/108#process%23sponsor-b8e804a6dec53a0c103c0bb482a8e23e2dfd896575f36b53ee440d4d65504050"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2022/7",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/7",
+        "title": "Local Government (Surveillance Powers in Relation to Certain Offences) Bill 2022",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/7#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/7#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/7#process%23sponsor-9ce16c011b7871e05087aa21575413d3c9447b5058d71b3323d0d728975e409c"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2024/19",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/19",
+        "title": "Control of Dogs (Miscellaneous Provisions) Bill 2024",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/19#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/19#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/19#process%23sponsor-b8e804a6dec53a0c103c0bb482a8e23e2dfd896575f36b53ee440d4d65504050"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2024/32",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/32",
+        "title": "Protection of Retail Workers Bill 2024",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/32#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/32#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/32#process%23sponsor-9ce16c011b7871e05087aa21575413d3c9447b5058d71b3323d0d728975e409c"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2024/49",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/49",
+        "title": "Health (Postponement of Certain Leave) Bill 2024",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/49#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/49#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/49#process%23sponsor-b8e804a6dec53a0c103c0bb482a8e23e2dfd896575f36b53ee440d4d65504050"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2024/58",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/58",
+        "title": "Bail (Amendment) Bill 2024",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/58#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/58#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/58#process%23sponsor-b8e804a6dec53a0c103c0bb482a8e23e2dfd896575f36b53ee440d4d65504050"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2024/89",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/89",
+        "title": "Disability (Personalised Budgets) Bill 2024",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/89#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/89#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2024/89#process%23sponsor-b8e804a6dec53a0c103c0bb482a8e23e2dfd896575f36b53ee440d4d65504050"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2025/11",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/11",
+        "title": "Protection of Voice and Image Bill 2025",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/11#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/11#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/11#process%23sponsor-9ce16c011b7871e05087aa21575413d3c9447b5058d71b3323d0d728975e409c"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2025/62",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/62",
+        "title": "Companies (Protection of Title: Accountant) Bill 2025",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/62#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/62#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/62#process%23sponsor-9ce16c011b7871e05087aa21575413d3c9447b5058d71b3323d0d728975e409c"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2025/71",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/71",
+        "title": "Seán Lemass Dublin International Airport Bill 2025",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/71#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/71#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/71#process%23sponsor-9ce16c011b7871e05087aa21575413d3c9447b5058d71b3323d0d728975e409c"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2026/31",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/31",
+        "title": "Antarctic Treaty (Accession and Implementation) Bill 2026",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/31#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/31#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/31#process%23sponsor-9ce16c011b7871e05087aa21575413d3c9447b5058d71b3323d0d728975e409c"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2026/86",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/86",
+        "title": "Road Traffic (Amendment) (Jax’s Law) Bill 2026",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/86#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/86#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/86#process%23sponsor-b8e804a6dec53a0c103c0bb482a8e23e2dfd896575f36b53ee440d4d65504050"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2026/89",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/89",
+        "title": "Public Health (Tobacco) (Amendment) (Smokefree Generation) Bill 2026",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/89#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/89#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/89#process%23sponsor-9ce16c011b7871e05087aa21575413d3c9447b5058d71b3323d0d728975e409c"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2026/93",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Malcolm-Byrne.D.2019-11-29",
+        "name": "Malcolm Byrne",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/93",
+        "title": "Artificial Intelligence Companion Services (Protection of Children) Bill 2026",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/93#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/93#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2026/93#process%23sponsor-9ce16c011b7871e05087aa21575413d3c9447b5058d71b3323d0d728975e409c"
+      }
+    ]
+  },
+  "Ivana Bacik": {
+    "identities": [
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2007/42",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2008/12",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2008/13",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2008/8",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2009/66",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2010/14",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2011/65",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2013/23",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2013/33",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2016/106",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2016/109",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2016/8",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2017/44",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2017/64",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2017/68",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2018/17",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2019/35",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2019/39",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2019/81",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2021/112",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2021/158",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2021/16",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2021/2",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2021/24",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2021/27",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2021/29",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2021/38",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2021/48",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2021/68",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2022/31",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2022/51",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2022/65",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2023/35",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2023/52",
+      "https://data.oireachtas.ie/ie/oireachtas/bill/2025/79"
+    ],
+    "titles": [
+      "Adoption (Information and Tracing) Bill 2021",
+      "Adult Safeguarding Bill 2017",
+      "Autism Bill 2022",
+      "Broadband Infrastructure Bill 2008",
+      "Children and Family Relationships (Amendment) Bill 2023",
+      "Civil Liability (Child Sexual Abuse Proceedings Against Unincorporated Bodies of Persons) Bill 2025",
+      "Civil Registration (Amendment) Bill 2011",
+      "Civil Registration (Marriage Equality) Bill 2013",
+      "Climate Protection Bill 2007",
+      "Community Participation (Disability) (Miscellaneous Provisions) Bill 2019",
+      "Competition (Amendment) Bill 2016",
+      "Consumer Protection (Gift Vouchers) Bill 2009",
+      "Controlled Drugs and Harm Reduction Bill 2017",
+      "Convictions for Certain Sexual Offences (Apology and Exoneration) Bill 2016",
+      "Credit Union Savings Protection Bill 2008",
+      "Dublin Bay Bill 2021",
+      "Education (Admission to Schools) (Co-Education) Bill 2022",
+      "Electoral (Civil Society Freedom) (Amendment) Bill 2019",
+      "Equality (Miscellaneous Provisions) Bill 2013",
+      "Female Genital Mutilation Bill 2010",
+      "Free Education (Prohibition of Fees and Charges) Bill 2018",
+      "Gambling (Prohibition of Advertising) Bill 2021",
+      "Industrial Relations (Joint Labour Committees) Bill 2019",
+      "Irish Human Rights and Equality Commission (Gender Pay Gap Information) Bill 2017",
+      "Irish Nationality and Citizenship (Naturalisation of Minors Born in Ireland) Bill 2018",
+      "Living Wage Bill 2022",
+      "Local Government (Use of CCTV in Prosecution of  Offences) Bill 2021",
+      "Mental Capacity and Guardianship Bill 2008",
+      "Ministers and Secretaries (Attorney General) Bill 2023",
+      "Organisation of Working Time (Reproductive Health Related Leave) Bill 2021",
+      "Pensions (Equal Pension Treatment in Occupational Benefit Scheme) (Amendment) Bill 2016",
+      "Period Products (Free Provision) Bill 2021",
+      "Planning and Development (Amendment) Bill 2021",
+      "Prohibition of Conversion Therapies Bill 2018",
+      "Protection of Employment (Measures to Counter False Self-Employment) Bill 2018",
+      "Protection of Employment (Platform Workers and Bogus Self-Employment) Bill 2021",
+      "Public Sector (Plain Language) Bill 2019",
+      "Residential Tenancies (Tenants' Rights) Bill 2021",
+      "Short-term Lettings Bill 2018",
+      "Student Nurses (Pay) Bill 2021"
+    ],
+    "published_date_rows": [
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2007/42",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2007/42",
+        "title": "Climate Protection Bill 2007",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2007/42#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2007/42#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2007/42#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2007/42/published#activity-9dd9636592ed5484e53210f89af29e4dfc0455ae875186a04cd65b6ceda9b803",
+        "date": "2007-09-28"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2008/12",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/12",
+        "title": "Credit Union Savings Protection Bill 2008",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/12#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/12#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/12#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/12/published#activity-0d40e757fe2f0cc542283d002669e981001b3c7e4a1506f23aa7edd8accf76d1",
+        "date": "2008-02-19"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2008/13",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/13",
+        "title": "Mental Capacity and Guardianship Bill 2008",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/13#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/13#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/13#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/13/published#activity-d87153da8f5da2a23ddf29c7bd28da724a2b8ec25c3fa692cde27e394bfc4d1d",
+        "date": "2008-02-19"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2008/8",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/8",
+        "title": "Broadband Infrastructure Bill 2008",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/8#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/8#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/8#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/8/published#activity-aae4732cafef3250d91e4d95aa80650aedb0e0215ea9674ead7dc3afdb93bc7f",
+        "date": "2008-02-20"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2009/66",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2009/66",
+        "title": "Consumer Protection (Gift Vouchers) Bill 2009",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2009/66#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2009/66#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2009/66#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2009/66/published#activity-1f0b432db72bf8bf80b66009025b192f804bd4261a96d4c4f204c63e3541de0c",
+        "date": "2009-11-05"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2010/14",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2010/14",
+        "title": "Female Genital Mutilation Bill 2010",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2010/14#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2010/14#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2010/14#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2010/14/published#activity-7f115f2e65736cafaaaa5a3332ce544b13a7e45b208313ed872345495afd5604",
+        "date": "2010-04-15"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2011/65",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2011/65",
+        "title": "Civil Registration (Amendment) Bill 2011",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2011/65#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2011/65#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2011/65#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2011/65/published#activity-18912ce985a8362e04e6d0611c082557dc36e5ed884b34fa9cbef0d48115a0d3",
+        "date": "2011-11-03"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2013/23",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/23",
+        "title": "Equality (Miscellaneous Provisions) Bill 2013",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/23#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/23#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/23#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/23/published#activity-7598ac413fad35a2fc199150bc7dac561ea3b2180e204c201e63ffc24cf62da3",
+        "date": "2013-03-08"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2013/33",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/33",
+        "title": "Civil Registration (Marriage Equality) Bill 2013",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/33#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/33#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/33#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/33/published#activity-1cc3ae850cc50bd93660161e54429ab6b0419f818ff79c2ea0a08a027efeb80a",
+        "date": "2013-03-26"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2016/106",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/106",
+        "title": "Convictions for Certain Sexual Offences (Apology and Exoneration) Bill 2016",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/106#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/106#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/106#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/106/published#activity-0c8ab47a8d32de32b21affc92edf9e25670ea46d0894a83d1c44c5b2fe73ad50",
+        "date": "2016-12-06"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2016/109",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/109",
+        "title": "Pensions (Equal Pension Treatment in Occupational Benefit Scheme) (Amendment) Bill 2016",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/109#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/109#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/109#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/109/published#activity-1e0a7d3d9847c26d6ab0643834f9646530fb40764386787bf7ac0c7215d29808",
+        "date": "2016-12-08"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2016/8",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/8",
+        "title": "Competition (Amendment) Bill 2016",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/8#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/8#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/8#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/8/published#activity-94c3d90285f0ddc811b10cd3d4f1cf2a1852dd4d2a698ce1dc5266bd5f616289",
+        "date": "2016-01-15"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2017/44",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/44",
+        "title": "Adult Safeguarding Bill 2017",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/44#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/44#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/44#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/44/published#activity-fd7a757f02bca2d50e1e8da5fe1cd6df2711bc662342a0b40b9f57f577dcbd8d",
+        "date": "2017-03-30"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2017/64",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/64",
+        "title": "Irish Human Rights and Equality Commission (Gender Pay Gap Information) Bill 2017",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/64#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/64#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/64#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/64/published#activity-2ab308c692dc3319e7664e1d4d6ab089f909ec0a1e372d7c960d3018a69050a2",
+        "date": "2017-05-16"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2017/68",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/68",
+        "title": "Controlled Drugs and Harm Reduction Bill 2017",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/68#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/68#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/68#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/68/published#activity-444e4f446297da6468dd7660274be005f32c21c8a6adbe086f609227fb0fb0b6",
+        "date": "2017-05-24"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/124",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124",
+        "title": "Irish Nationality and Citizenship (Naturalisation of Minors Born in Ireland) Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124/published#activity-9d3ba2e9cc052d7d04ece645ef49439033183d037b24857707141c77f2ac4653",
+        "date": "2018-11-15"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/124",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124",
+        "title": "Irish Nationality and Citizenship (Naturalisation of Minors Born in Ireland) Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124/published#activity-9d3ba2e9cc052d7d04ece645ef49439033183d037b24857707141c77f2ac4653",
+        "date": "2020-03-27"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/124",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124",
+        "title": "Irish Nationality and Citizenship (Naturalisation of Minors Born in Ireland) Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124/published#activity-9d3ba2e9cc052d7d04ece645ef49439033183d037b24857707141c77f2ac4653",
+        "date": "2020-07-29"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/17",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/17",
+        "title": "Protection of Employment (Measures to Counter False Self-Employment) Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/17#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/17#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/17#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/17/published#activity-c932a1e8b58e96a3e20259d5225c83020ac92d70a671feb8cb59832ffde73283",
+        "date": "2018-02-13"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/39",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39",
+        "title": "Prohibition of Conversion Therapies Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39/published#activity-d152e43e02a8a1c375ec089b04ce243fcbceccce1e9fb4c7af7b65bde405256b",
+        "date": "2018-04-25"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/39",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39",
+        "title": "Prohibition of Conversion Therapies Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39/published#activity-d152e43e02a8a1c375ec089b04ce243fcbceccce1e9fb4c7af7b65bde405256b",
+        "date": "2020-03-27"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/39",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39",
+        "title": "Prohibition of Conversion Therapies Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39/published#activity-d152e43e02a8a1c375ec089b04ce243fcbceccce1e9fb4c7af7b65bde405256b",
+        "date": "2020-09-25"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/42",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42",
+        "title": "Short-term Lettings Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42/published#activity-19b170d26864b1d1f3e62c8783249e6e40d3e709cfc9081d2569aff3708f5360",
+        "date": "2018-05-02"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/42",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42",
+        "title": "Short-term Lettings Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42/published#activity-19b170d26864b1d1f3e62c8783249e6e40d3e709cfc9081d2569aff3708f5360",
+        "date": "2020-03-27"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/47",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47",
+        "title": "Free Education (Prohibition of Fees and Charges) Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47/published#activity-7652700e7aaff28c9e599f23ee44ee971e19d3cf092f83c2d2716472c691435b",
+        "date": "2018-05-03"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/47",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47",
+        "title": "Free Education (Prohibition of Fees and Charges) Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47/published#activity-7652700e7aaff28c9e599f23ee44ee971e19d3cf092f83c2d2716472c691435b",
+        "date": "2020-03-27"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2019/4",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4",
+        "title": "Public Sector (Plain Language) Bill 2019",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4/published#activity-ad8a9b43494668433f18f1033ffcba6b3b761e40f746f3d69c7b77524d65d7eb",
+        "date": "2019-01-29"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2019/4",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4",
+        "title": "Public Sector (Plain Language) Bill 2019",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4/published#activity-ad8a9b43494668433f18f1033ffcba6b3b761e40f746f3d69c7b77524d65d7eb",
+        "date": "2020-03-27"
+      }
+    ],
+    "evidence": [
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2007/42",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2007/42",
+        "title": "Climate Protection Bill 2007",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2007/42#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2007/42#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2007/42#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2007/42/published#activity-9dd9636592ed5484e53210f89af29e4dfc0455ae875186a04cd65b6ceda9b803",
+        "date": "2007-09-28"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2008/12",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/12",
+        "title": "Credit Union Savings Protection Bill 2008",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/12#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/12#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/12#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/12/published#activity-0d40e757fe2f0cc542283d002669e981001b3c7e4a1506f23aa7edd8accf76d1",
+        "date": "2008-02-19"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2008/13",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/13",
+        "title": "Mental Capacity and Guardianship Bill 2008",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/13#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/13#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/13#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/13/published#activity-d87153da8f5da2a23ddf29c7bd28da724a2b8ec25c3fa692cde27e394bfc4d1d",
+        "date": "2008-02-19"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2008/8",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/8",
+        "title": "Broadband Infrastructure Bill 2008",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/8#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/8#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/8#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2008/8/published#activity-aae4732cafef3250d91e4d95aa80650aedb0e0215ea9674ead7dc3afdb93bc7f",
+        "date": "2008-02-20"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2009/66",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2009/66",
+        "title": "Consumer Protection (Gift Vouchers) Bill 2009",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2009/66#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2009/66#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2009/66#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2009/66/published#activity-1f0b432db72bf8bf80b66009025b192f804bd4261a96d4c4f204c63e3541de0c",
+        "date": "2009-11-05"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2010/14",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2010/14",
+        "title": "Female Genital Mutilation Bill 2010",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2010/14#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2010/14#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2010/14#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2010/14/published#activity-7f115f2e65736cafaaaa5a3332ce544b13a7e45b208313ed872345495afd5604",
+        "date": "2010-04-15"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2011/65",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2011/65",
+        "title": "Civil Registration (Amendment) Bill 2011",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2011/65#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2011/65#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2011/65#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2011/65/published#activity-18912ce985a8362e04e6d0611c082557dc36e5ed884b34fa9cbef0d48115a0d3",
+        "date": "2011-11-03"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2013/23",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/23",
+        "title": "Equality (Miscellaneous Provisions) Bill 2013",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/23#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/23#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/23#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/23/published#activity-7598ac413fad35a2fc199150bc7dac561ea3b2180e204c201e63ffc24cf62da3",
+        "date": "2013-03-08"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2013/33",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/33",
+        "title": "Civil Registration (Marriage Equality) Bill 2013",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/33#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/33#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/33#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2013/33/published#activity-1cc3ae850cc50bd93660161e54429ab6b0419f818ff79c2ea0a08a027efeb80a",
+        "date": "2013-03-26"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2016/106",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/106",
+        "title": "Convictions for Certain Sexual Offences (Apology and Exoneration) Bill 2016",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/106#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/106#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/106#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/106/published#activity-0c8ab47a8d32de32b21affc92edf9e25670ea46d0894a83d1c44c5b2fe73ad50",
+        "date": "2016-12-06"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2016/109",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/109",
+        "title": "Pensions (Equal Pension Treatment in Occupational Benefit Scheme) (Amendment) Bill 2016",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/109#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/109#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/109#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/109/published#activity-1e0a7d3d9847c26d6ab0643834f9646530fb40764386787bf7ac0c7215d29808",
+        "date": "2016-12-08"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2016/8",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/8",
+        "title": "Competition (Amendment) Bill 2016",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/8#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/8#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/8#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2016/8/published#activity-94c3d90285f0ddc811b10cd3d4f1cf2a1852dd4d2a698ce1dc5266bd5f616289",
+        "date": "2016-01-15"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2017/44",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/44",
+        "title": "Adult Safeguarding Bill 2017",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/44#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/44#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/44#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/44/published#activity-fd7a757f02bca2d50e1e8da5fe1cd6df2711bc662342a0b40b9f57f577dcbd8d",
+        "date": "2017-03-30"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2017/64",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/64",
+        "title": "Irish Human Rights and Equality Commission (Gender Pay Gap Information) Bill 2017",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/64#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/64#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/64#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/64/published#activity-2ab308c692dc3319e7664e1d4d6ab089f909ec0a1e372d7c960d3018a69050a2",
+        "date": "2017-05-16"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2017/68",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/68",
+        "title": "Controlled Drugs and Harm Reduction Bill 2017",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/68#delivery-e8686b399a33d50d3ba61b3a9cb144d49c46ffd738d135c445dafe314a702c5d",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/68#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/68#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2017/68/published#activity-444e4f446297da6468dd7660274be005f32c21c8a6adbe086f609227fb0fb0b6",
+        "date": "2017-05-24"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/124",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124",
+        "title": "Irish Nationality and Citizenship (Naturalisation of Minors Born in Ireland) Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124/published#activity-9d3ba2e9cc052d7d04ece645ef49439033183d037b24857707141c77f2ac4653",
+        "date": "2018-11-15"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/124",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124",
+        "title": "Irish Nationality and Citizenship (Naturalisation of Minors Born in Ireland) Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124/published#activity-9d3ba2e9cc052d7d04ece645ef49439033183d037b24857707141c77f2ac4653",
+        "date": "2020-03-27"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/124",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124",
+        "title": "Irish Nationality and Citizenship (Naturalisation of Minors Born in Ireland) Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/124/published#activity-9d3ba2e9cc052d7d04ece645ef49439033183d037b24857707141c77f2ac4653",
+        "date": "2020-07-29"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/17",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/17",
+        "title": "Protection of Employment (Measures to Counter False Self-Employment) Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/17#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/17#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/17#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/17/published#activity-c932a1e8b58e96a3e20259d5225c83020ac92d70a671feb8cb59832ffde73283",
+        "date": "2018-02-13"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/39",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39",
+        "title": "Prohibition of Conversion Therapies Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39/published#activity-d152e43e02a8a1c375ec089b04ce243fcbceccce1e9fb4c7af7b65bde405256b",
+        "date": "2018-04-25"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/39",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39",
+        "title": "Prohibition of Conversion Therapies Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39/published#activity-d152e43e02a8a1c375ec089b04ce243fcbceccce1e9fb4c7af7b65bde405256b",
+        "date": "2020-03-27"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/39",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39",
+        "title": "Prohibition of Conversion Therapies Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/39/published#activity-d152e43e02a8a1c375ec089b04ce243fcbceccce1e9fb4c7af7b65bde405256b",
+        "date": "2020-09-25"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/42",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42",
+        "title": "Short-term Lettings Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42/published#activity-19b170d26864b1d1f3e62c8783249e6e40d3e709cfc9081d2569aff3708f5360",
+        "date": "2018-05-02"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/42",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42",
+        "title": "Short-term Lettings Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/42/published#activity-19b170d26864b1d1f3e62c8783249e6e40d3e709cfc9081d2569aff3708f5360",
+        "date": "2020-03-27"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/47",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47",
+        "title": "Free Education (Prohibition of Fees and Charges) Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47/published#activity-7652700e7aaff28c9e599f23ee44ee971e19d3cf092f83c2d2716472c691435b",
+        "date": "2018-05-03"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2018/47",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47",
+        "title": "Free Education (Prohibition of Fees and Charges) Bill 2018",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2018/47/published#activity-7652700e7aaff28c9e599f23ee44ee971e19d3cf092f83c2d2716472c691435b",
+        "date": "2020-03-27"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2019/35",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/35",
+        "title": "Electoral (Civil Society Freedom) (Amendment) Bill 2019",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/35#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/35#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/35#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2019/39",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/39",
+        "title": "Community Participation (Disability) (Miscellaneous Provisions) Bill 2019",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/39#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/39#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/39#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2019/4",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4",
+        "title": "Public Sector (Plain Language) Bill 2019",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4/published#activity-ad8a9b43494668433f18f1033ffcba6b3b761e40f746f3d69c7b77524d65d7eb",
+        "date": "2019-01-29"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2019/4",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4",
+        "title": "Public Sector (Plain Language) Bill 2019",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8",
+        "activity": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/4/published#activity-ad8a9b43494668433f18f1033ffcba6b3b761e40f746f3d69c7b77524d65d7eb",
+        "date": "2020-03-27"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2019/81",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/81",
+        "title": "Industrial Relations (Joint Labour Committees) Bill 2019",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/81#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/81#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2019/81#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2021/112",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/112",
+        "title": "Residential Tenancies (Tenants' Rights) Bill 2021",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/112#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/112#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/112#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2021/158",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/158",
+        "title": "Dublin Bay Bill 2021",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/158#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/158#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/158#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2021/16",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/16",
+        "title": "Student Nurses (Pay) Bill 2021",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/16#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/16#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/16#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2021/2",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/2",
+        "title": "Period Products (Free Provision) Bill 2021",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/2#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/2#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/2#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2021/24",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/24",
+        "title": "Local Government (Use of CCTV in Prosecution of  Offences) Bill 2021",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/24#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/24#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/24#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2021/27",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/27",
+        "title": "Planning and Development (Amendment) Bill 2021",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/27#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/27#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/27#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2021/29",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/29",
+        "title": "Adoption (Information and Tracing) Bill 2021",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/29#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/29#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/29#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2021/38",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/38",
+        "title": "Organisation of Working Time (Reproductive Health Related Leave) Bill 2021",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/38#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/38#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/38#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2021/48",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/48",
+        "title": "Gambling (Prohibition of Advertising) Bill 2021",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/48#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/48#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/48#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2021/68",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/68",
+        "title": "Protection of Employment (Platform Workers and Bogus Self-Employment) Bill 2021",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/68#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/68#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2021/68#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2022/31",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/31",
+        "title": "Education (Admission to Schools) (Co-Education) Bill 2022",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/31#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/31#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/31#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2022/51",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/51",
+        "title": "Living Wage Bill 2022",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/51#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/51#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/51#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2022/65",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/65",
+        "title": "Autism Bill 2022",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/65#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/65#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2022/65#process%23sponsor-5fae8ef9f208345c3cb40f69a9186830f5b02900d1476aa9596bdfe5acc33bd8"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2023/35",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2023/35",
+        "title": "Ministers and Secretaries (Attorney General) Bill 2023",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2023/35#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2023/35#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2023/35#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2023/52",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2023/52",
+        "title": "Children and Family Relationships (Amendment) Bill 2023",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2023/52#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2023/52#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2023/52#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f"
+      },
+      {
+        "g": "https://data.oireachtas.ie/graph/bill/2025/79",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Ivana-Bacik.S.2007-07-23",
+        "name": "Ivana Bacik",
+        "bill": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/79",
+        "title": "Civil Liability (Child Sexual Abuse Proceedings Against Unincorporated Bodies of Persons) Bill 2025",
+        "delivery": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/79#delivery-4937857e77e699006d0d155f4e321dde4ed845a1a9a5685be08c68b8d0719015",
+        "process": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/79#process",
+        "participation": "https://data.oireachtas.ie/ie/oireachtas/bill/2025/79#process%23sponsor-874f7ff2c4949147d2b71e13558d4a90df5f395e3e29478a6f12bed947ec022f"
+      }
+    ]
+  }
+}

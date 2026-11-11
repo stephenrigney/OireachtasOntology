@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-11-10T22:22:17.687051+00:00",
+  "all_oracle_queries_unchanged": true,
+  "oracle_equality": {
+    "terms": true,
+    "parties": true,
+    "holdings": true,
+    "representation": true,
+    "sponsorship": true
+  },
+  "graph_names_and_counts_unchanged": true,
+  "graphs": 7982,
+  "triples": 1119860,
+  "limitation": "Not a transaction snapshot or full-dataset content digest; equal graph counts alone cannot exclude equal-size mutations."
+}

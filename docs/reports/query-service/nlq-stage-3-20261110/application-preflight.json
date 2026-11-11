@@ -1,0 +1,29 @@
+{
+  "http_status": 200,
+  "context_keys": [
+    "question",
+    "interpretation",
+    "sparql",
+    "result",
+    "result_notice",
+    "ambiguity",
+    "error",
+    "debug_output",
+    "debug_message",
+    "debug_source",
+    "readiness",
+    "mode",
+    "interaction_status",
+    "plan_json",
+    "plan_heading",
+    "entity_outcomes",
+    "plan_explanation",
+    "clarification",
+    "outcome_kind",
+    "execution_attempted",
+    "feedback_actual",
+    "feedback_available",
+    "request"
+  ],
+  "readiness": "FusekiReadiness(state='ready', has_triples=True, sources=(('Houses', True), ('Parties', True), ('Constituencies', True), ('Members', True), ('Committees', True), ('Bills', True), ('Offices', True), ('Administrative Units', True), ('Office Holdings', True), ('Cabinet Memberships', True)), message='Houses, Parties, Constituencies, and Member graph families are present. Individual questions may still return no rows when their facts are not loaded. optional graph families detected: Administrative Units, Bills, Cabinet Memberships, Committees, Office Holdings, Offices.')"
+}

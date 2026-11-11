@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-11-10T22:26:09.523337+00:00",
+  "sha": "563a385173d312d33d22ca7868524714487967aa",
+  "freeze_hashes_verified": true,
+  "response_html_hashes_verified": 30,
+  "all_schedule_records_and_assessments_present": true,
+  "harness_hash_verified": true,
+  "authoritative_inputs_and_lockfile_unchanged": true,
+  "tracked_and_staged_diffs_empty": true,
+  "git_diff_check_exit": 0,
+  "credential_value_scan": "passed for inherited LLM key and nontrivial Fuseki password; neither secret nor hash persisted",
+  "git_status_before_verification_artifacts": "?? docs/reports/query-service/nlq-stage-1-forensic-architecture-reconstruction.md\n?? docs/reports/query-service/nlq-stage-2-executable-capability-inventory.md\n?? docs/reports/query-service/nlq-stage-3-20261110/\n?? docs/reports/query-service/nlq-stage-3-controlled-generalisation-experiments.md\n",
+  "test_attempt": {
+    "command": ".venv/bin/python -B -m pytest -p no:cacheprovider -q tests/test_nlq_composable_semantic_capability_discovery.py tests/test_nlq_office_representation.py",
+    "exit": 1,
+    "output": "No module named pytest",
+    "tests_ran": false
+  },
+  "stopped_facets": [
+    "sponsorship primary/status and role correctness",
+    "complete fail-closed alternative/unlabelled evidence selection certification",
+    "full subsidiary-query timeline and truncated debug remainder",
+    "loaded capture/run identity"
+  ],
+  "no_new_requests_after_fixed_schedule": "Only exact repeated independent RDF evidence and graph inventory stability queries; no extra /ask questions."
+}

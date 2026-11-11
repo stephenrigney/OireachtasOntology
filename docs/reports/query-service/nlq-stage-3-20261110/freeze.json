@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-11-10T22:18:42.329649+00:00",
+  "sha256": {
+    "questions.json": "b7ec4a41fdc893ed0ab7f1a08dee37ce817401bcc7010729480013de7eeb9da5",
+    "expected-answers.json": "985a88a58f0be8f25d5c8b1ea0f83c4301fafe19bfa1b82d3b1d5879991cc07c",
+    "oracle-before.json": "b5278a7c528cfe416719941348bf7c8c4accf1117ae424640a14a2c3458f869c",
+    "baseline.json": "da80d2eecbb1e1696214ce4ad55edbed7f10fb17064f2be76c74f3fdda602205"
+  },
+  "instrumentation_reused": "/tmp/oireachtasontology/tranche-2/live.py:15-32,42-56; transparent recording of execute outcome and real generator output; no query/compiler substitution",
+  "harness_sha256": "881dadec234280ce11311c5522a2f6b05e38b35d18c73df22d6998f21a62868b",
+  "read_only_limitation": "one outcome.sparql field and rendered existing debug only; subsidiary SPARQL and full branch timeline unavailable"
+}

@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oireachtas NLQ POC</title>
+  <style>
+    :root { color-scheme: light; --page:#F6F3EA; --card:#fff; --inset:#F7F6F2; --ink:#202124; --secondary:#4A463D; --gold:#6B5922; --gold-hover:#473A16; --border:#ABB0B6; --separator:#D4D7DB; --success:#146B37; --failure:#A3272F; --focus:#3F3414; }
+    html { min-height:100%; background:var(--page); }
+    * { box-sizing:border-box; }
+    body { max-width: 1240px; margin: 0 auto; padding: 24px 30px 56px; font: 1rem/1.55 "IBM Plex Sans",system-ui,sans-serif; color:var(--ink); background:transparent; }
+    header { border-bottom:3px solid var(--gold); padding:0 12px 18px; margin-bottom:20px; }
+    header .eyebrow { margin:0 0 2px; color:var(--gold); font-weight:700; letter-spacing:.04em; }
+    header h1 { margin:0; font-size:clamp(2rem,4vw,2.5rem); line-height:1.2; }
+    header p { margin:7px 0 0; color:var(--secondary); font-size:1.15rem; }
+    body > section, body > form, main > section, main > form { margin:20px 0; padding:20px 24px; background:var(--card); border:1px solid var(--border); border-radius:8px; }
+    h2 { margin:.1rem 0 .8rem; font-size:1.35rem; }
+    a { color:#473A16; text-decoration-thickness:1px; text-underline-offset:2px; }
+    :focus-visible { outline:3px solid var(--focus); outline-offset:3px; }
+    textarea, select { font:inherit; color:var(--ink); background:var(--inset); border:1px solid var(--border); border-radius:6px; }
+    textarea { width: 100%; min-height: 5rem; padding: .8rem; }
+    button { margin-top: .5rem; padding: .65rem 1rem; font: inherit; cursor: pointer; border-radius:6px; }
+    form[action="/ask"] button[type="submit"] { color:#fff; background:#2E8B57; border:1px solid #2E8B57; font-weight:700; }
+    form[action="/ask"] button[type="submit"]:hover { background:#247148; border-color:#247148; }
+    button.session-start { color:#fff; background:#2E8B57; border:1px solid #2E8B57; border-radius:.35rem; }
+    button.session-start:hover { background:#247148; border-color:#247148; }
+    button.session-stop { color:#fff; background:#C0392B; border:1px solid #C0392B; border-radius:.35rem; }
+    button.session-stop:hover { background:#A93226; border-color:#A93226; }
+    button:disabled { cursor: wait; opacity: .65; }
+    section { margin-top: 1.5rem; }
+    pre { overflow-x: auto; padding: 1rem; background: #f2f4f7; border: 1px solid #d5d9df; white-space: pre-wrap; }
+    .error { color:var(--failure); border-color:#A3272F; }
+    .ambiguity { background:#fffaf0; border-color:var(--gold); }
+  .debug-panel { padding: .75rem; border: 1px solid #c8ccd0; background: #f8f9fa; }
+    .readiness { padding: .75rem; border:0; color:var(--ink); background:transparent; }
+    .readiness-warning { margin:0 0 16px; padding:12px 16px; color:var(--ink); background:var(--card); border:1px solid var(--border); border-left:4px solid var(--failure); border-radius:6px; }
+    .system-status { margin-top:24px; }
+    .system-status details { padding:16px 20px; background:var(--card); border:1px solid var(--border); border-radius:8px; }
+    .system-status summary { color:var(--ink); font-size:1.1rem; font-weight:700; }
+    .feedback { border-color:var(--border); background:var(--card); }
+    .adequacy-toggle { display: flex; gap: .35rem; width: fit-content; margin: .35rem 0 1rem; padding: .25rem; border: 1px solid #aeb4bc; border-radius: .5rem; background: #edf0f3; }
+    .adequacy-toggle label { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 5rem; padding: .45rem .8rem; border-radius: .35rem; cursor: pointer; font-weight: 600; }
+    .adequacy-toggle input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .adequacy-toggle label:has(input:checked) { color: #fff; background: #46505b; }
+    .adequacy-toggle label:has(input[value="yes"]:checked) { background: #18733b; }
+    .adequacy-toggle label:has(input[value="no"]:checked) { background: #b4232e; }
+    .adequacy-toggle label:has(input:focus-visible) { outline: 3px solid #155eef; outline-offset: 2px; }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    details { margin-top: 1rem; }
+    summary { cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: .5rem; border: 1px solid #c8ccd0; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+    th { color:#fff; background:#6B5822; font-weight:700; }
+    .mast-link { display:inline-block; margin:0 0 12px; }
+    .stage-tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:16px 0; }
+    .stage-tabs button { margin:0; text-align:left; color:var(--ink); background:var(--inset); border:1px solid var(--separator); }
+    .stage-tabs button[aria-selected="true"] { color:#fff; background:var(--gold); border-color:var(--gold); }
+    .stage-tabs button:disabled { opacity:.55; cursor:not-allowed; }
+    .stage-num { display:inline-grid; place-items:center; width:2rem; height:2rem; margin-right:.5rem; border-radius:50%; background:#e4e1d8; }
+    [aria-selected="true"] .stage-num { color:var(--gold); background:#fff; }
+    .stage-panel { min-height:4rem; }
+    .session-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .session-controls p { margin:0; }
+    .session-controls { padding:14px 18px; }
+    .mode-toggle { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 0; padding:0; border:0; }
+    .mode-toggle legend { width:100%; margin-bottom:6px; font-weight:700; }
+    .mode-toggle label { position:relative; display:inline-flex; align-items:center; min-height:44px; padding:9px 14px; color:var(--ink); background:var(--inset); border:1px solid var(--border); border-radius:6px; cursor:pointer; }
+    .mode-toggle input { margin:0 8px 0 0; accent-color:var(--gold); }
+    .mode-toggle label:has(input:checked) { color:var(--gold-hover); background:#fff; border-color:var(--gold); box-shadow:inset 0 0 0 1px var(--gold); }
+    @media(max-width:650px) { body { padding:16px 14px 36px; } body > section, body > form, main > section, main > form { padding:16px; margin:16px 0; } .stage-tabs { grid-template-columns:1fr; } table { display:block; overflow-x:auto; } }
+    @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; } }
+  </style>
+</head>
+<body>
+  <header><p class="eyebrow">OIREACHTAS ONTOLOGY</p><h1>Natural language queries</h1><p>Explore Oireachtas data through ordinary language</p></header>
+  <p class="mast-link"><a href="/capabilities">Browse the query capability catalogue</a></p>
+  <section aria-label="Optional evidence collection" class="session-controls">
+    <button type="button" class="session-start" id="start-evidence">Start Evidence Session</button>
+    <button type="button" class="session-stop" id="stop-evidence" hidden>Stop Evidence Session</button>
+    <p id="evidence-status" role="status" aria-live="polite">Feedback collection is off.</p>
+  </section>
+  
+  <form method="post" action="/ask">
+    <h2>Ask a question</h2>
+    <label for="question"><strong>Your question</strong></label>
+    <textarea id="question" name="question" required maxlength="2000">How many Bills did Malcolm Byrne sponsor?</textarea>
+    <fieldset id="mode-toggle" class="mode-toggle">
+      <legend>Development Query Path</legend>
+      <label><input type="radio" name="mode" value="phase2" checked>Composable semantic query plan (default)</label>
+      <label><input type="radio" name="mode" value="phase1" >Phase 1 direct NL→SPARQL (comparison)</label>
+    </fieldset>
+    <button type="submit">Ask</button>
+  </form>
+
+  
+  <section class="error" role="alert" aria-live="polite">
+    <h2>
+        Unsupported question
+      
+    </h2>
+    <p>An all-time count of Bills sponsored is not supported; the available sponsorship count requires a Published-activity calendar year.</p>
+    
+  </section>
+  
+
+  
+
+  <p class="query-outcome" data-outcome="unsupported_capability">Outcome: unsupported capability</p>
+  
+
+  
+
+  
+  <section id="query-processing">
+    <h2>How this query was processed</h2>
+    
+    
+    
+    
+    <div class="stage-tabs" role="tablist" aria-label="Query processing stages">
+      <button type="button" role="tab" id="tab-interpreted" aria-controls="panel-interpreted" aria-selected="true" tabindex="0" ><span class="stage-num">01</span>Interpreted</button>
+      <button type="button" role="tab" id="tab-compiled" aria-controls="panel-compiled" aria-selected="false" tabindex="-1" disabled><span class="stage-num">02</span>Compiled</button>
+      <button type="button" role="tab" id="tab-executed" aria-controls="panel-executed" aria-selected="false" tabindex="-1" disabled><span class="stage-num">03</span>Executed</button>
+    </div>
+    <div class="stage-panel" role="tabpanel" id="panel-interpreted" aria-labelledby="tab-interpreted" >
+      <h3>Interpreted as</h3>
+      <p>Interpretation did not resolve to an executable request: An all-time count of Bills sponsored is not supported; the available sponsorship count requires a Published-activity calendar year.</p>
+      
+      
+      
+      <details><summary>Resolution diagnostics — Composable semantic planner</summary><p>No answer query was executed.</p><pre><code>{
+  &#34;diagnostic&#34;: &#34;An all-time count of Bills sponsored is not supported; the available sponsorship count requires a Published-activity calendar year.&#34;,
+  &#34;candidates&#34;: []
+}</code></pre></details>
+    </div>
+    <div class="stage-panel" role="tabpanel" id="panel-compiled" aria-labelledby="tab-compiled" hidden>
+      
+      <p>Compilation was not reached; no validated plan or SPARQL was produced.</p>
+    </div>
+    <div class="stage-panel" role="tabpanel" id="panel-executed" aria-labelledby="tab-executed" hidden>
+      <p>Execution was not reached: An all-time count of Bills sponsored is not supported; the available sponsorship count requires a Published-activity calendar year.</p>
+      <details><summary>Query debugger: Raw Composable semantic planner response payload</summary><pre><code>{
+  &#34;diagnostic&#34;: &#34;An all-time count of Bills sponsored is not supported; the available sponsorship count requires a Published-activity calendar year.&#34;,
+  &#34;candidates&#34;: []
+}</code></pre></details>
+    </div>
+  </section>
+  
+
+  
+  
+  <section class="system-status" aria-label="System status">
+    <details id="system-status">
+      <summary>System status</summary>
+      <div class="readiness">
+        <h2>Fuseki readiness <small>(read-only check)</small></h2>
+        <p><strong>Ready:</strong> Houses, Parties, Constituencies, and Member graph families are present. Individual questions may still return no rows when their facts are not loaded. optional graph families detected: Administrative Units, Bills, Cabinet Memberships, Committees, Office Holdings, Offices.</p>
+        <ul>
+        
+          <li>Houses: present</li>
+        
+          <li>Parties: present</li>
+        
+          <li>Constituencies: present</li>
+        
+          <li>Members: present</li>
+        
+          <li>Committees: present (optional for basic readiness)</li>
+        
+          <li>Bills: present (optional for basic readiness)</li>
+        
+          <li>Offices: present (optional for basic readiness)</li>
+        
+          <li>Administrative Units: present (optional for basic readiness)</li>
+        
+          <li>Office Holdings: present (optional for basic readiness)</li>
+        
+          <li>Cabinet Memberships: present (optional for basic readiness)</li>
+        
+        </ul>
+        <p>This check only queries Fuseki. The POC never loads, clears, or rebuilds graphs.</p>
+      </div>
+    </details>
+  </section>
+  
+  <script>
+    (() => {
+      const stageTabs = [...document.querySelectorAll('[role="tab"]')];
+      stageTabs.forEach((tab, index) => tab.addEventListener("click", () => {
+        stageTabs.forEach((item, itemIndex) => {
+          const selected = itemIndex === index;
+          item.setAttribute("aria-selected", String(selected));
+          item.tabIndex = selected ? 0 : -1;
+          document.getElementById(item.getAttribute("aria-controls")).hidden = !selected;
+        });
+      }));
+      stageTabs.forEach((tab, index) => tab.addEventListener("keydown", event => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        event.preventDefault();
+        const enabled = stageTabs.filter(item => !item.disabled);
+        const current = enabled.indexOf(tab);
+        const next = event.key === "Home" ? 0 : event.key === "End" ? enabled.length - 1 :
+          (current + (event.key === "ArrowRight" ? 1 : enabled.length - 1)) % enabled.length;
+        enabled[next].focus(); enabled[next].click();
+      }));
+      const sessionKey = "oireachtas-nlq-evidence-session";
+      const start = document.getElementById("start-evidence");
+      const stop = document.getElementById("stop-evidence");
+      const status = document.getElementById("evidence-status");
+      const feedback = document.getElementById("answer-feedback");
+      const form = document.getElementById("feedback-form");
+      const adequacyChoices = form ? form.querySelectorAll('input[name="correct"]') : [];
+      const expectedWrap = document.getElementById("expected-answer-wrap");
+      const expected = document.getElementById("expected-answer");
+      let sessionId = null;
+      const setRecording = (id, active) => {
+        sessionId = active ? id : null;
+        document.cookie = active
+          ? `oireachtas_nlq_feedback_session=${encodeURIComponent(id)}; Path=/; SameSite=Lax`
+          : "oireachtas_nlq_feedback_session=; Path=/; Max-Age=0; SameSite=Lax";
+        start.hidden = active;
+        stop.hidden = !active;
+        if (feedback) feedback.hidden = !active;
+        status.textContent = active ? "Evidence session is recording. Feedback is saved when submitted." : "Feedback collection is off.";
+      };
+      const showError = (message) => { status.textContent = message; };
+      try { sessionId = localStorage.getItem(sessionKey); }
+      catch (_) { showError("Could not access browser storage; evidence session state cannot be restored."); }
+      if (sessionId) {
+        fetch(`/feedback/sessions/${encodeURIComponent(sessionId)}`).then(async response => {
+          if (!response.ok) throw new Error("Could not check the saved evidence session.");
+          const data = await response.json();
+          if (data.active) setRecording(sessionId, true);
+          else { localStorage.removeItem(sessionKey); setRecording(null, false); }
+        }).catch(error => showError(error.message));
+      }
+      start.addEventListener("click", async () => {
+        start.disabled = true;
+        try {
+          const response = await fetch("/feedback/sessions", {method: "POST"});
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.detail || "Could not start evidence session.");
+          localStorage.setItem(sessionKey, data.session_id);
+          setRecording(data.session_id, true);
+        } catch (error) { showError(`${error.message} No session was started.`); }
+        finally { start.disabled = false; }
+      });
+      stop.addEventListener("click", async () => {
+        stop.disabled = true;
+        try {
+          const response = await fetch(`/feedback/sessions/${encodeURIComponent(sessionId)}/stop`, {method: "POST"});
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.detail || "Could not stop evidence session.");
+          localStorage.removeItem(sessionKey);
+          setRecording(null, false);
+        } catch (error) { showError(`${error.message} Previously saved feedback is unchanged.`); }
+        finally { stop.disabled = false; }
+      });
+      adequacyChoices.forEach(choice => choice.addEventListener("change", () => {
+        const needsExpected = form.elements.correct.value === "no";
+        expectedWrap.hidden = !needsExpected;
+        expected.required = needsExpected;
+      }));
+      if (form) form.addEventListener("submit", async event => {
+        event.preventDefault();
+        if (form.dataset.saved === "true") return;
+        const message = form.querySelector(".feedback-message");
+        if (!sessionId) { message.textContent = "No active evidence session; feedback was not saved."; return; }
+        const submit = form.querySelector("button[type=submit]");
+        submit.disabled = true;
+        let saved = false;
+        try {
+          const response = await fetch("/feedback", {method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({session_id: sessionId, question: form.elements.question.value,
+              actual: form.elements.actual.value, correct: form.elements.correct.value === "yes",
+              expected: form.elements.correct.value === "no" ? expected.value : ""})});
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.detail || "Feedback could not be saved.");
+          message.textContent = "Feedback saved immediately.";
+          saved = true;
+          form.dataset.saved = "true";
+          form.querySelectorAll("input, textarea, button").forEach(control => { control.disabled = true; });
+          submit.textContent = "Feedback saved";
+        } catch (error) { message.textContent = `${error.message} Please retry; the record was not confirmed saved.`; }
+        finally { if (!saved) submit.disabled = false; }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "query": "SELECT ?g ?s ?p ?o WHERE {GRAPH ?g {?s ?p ?o} FILTER(CONTAINS(LCASE(STR(?g)),\"catalog\") || CONTAINS(LCASE(STR(?g)),\"provenance\"))} ORDER BY ?g ?s ?p ?o LIMIT 2000",
+  "columns": [
+    "g",
+    "s",
+    "p",
+    "o"
+  ],
+  "rows": [],
+  "raw": "{\n  \"head\": {\n    \"vars\": [\n      \"g\",\n      \"s\",\n      \"p\",\n      \"o\"\n    ]\n  },\n  \"results\": {\n    \"bindings\": []\n  }\n}"
+}

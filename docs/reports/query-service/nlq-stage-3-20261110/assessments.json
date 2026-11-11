@@ -1,0 +1,553 @@
+{
+  "timestamp": "2026-11-10T22:22:36.841565+00:00",
+  "per_request": [
+    {
+      "id": "A1",
+      "run": 1,
+      "trace": "A1-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 0,
+      "expected_oracle": "seats34",
+      "expected_supported": true,
+      "checks": {
+        "seat_value": true
+      },
+      "classification": "correct_observed_once",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "A2",
+      "run": 1,
+      "trace": "A2-r1.html",
+      "status": "unsupported_request",
+      "interaction": "unsupported_capability",
+      "model_calls": 1,
+      "expected_oracle": "seats34",
+      "expected_supported": true,
+      "checks": {},
+      "classification": "implemented_but_not_selected",
+      "first_observed_divergence": "model proposal declares unsupported; no dail_seats selection, although A1 executes it"
+    },
+    {
+      "id": "A3",
+      "run": 1,
+      "trace": "A3-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 0,
+      "expected_oracle": "seats33",
+      "expected_supported": true,
+      "checks": {
+        "seat_value": true
+      },
+      "classification": "correct_observed_once",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "B1",
+      "run": 1,
+      "trace": "B1-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 0,
+      "expected_oracle": "parties12",
+      "expected_supported": true,
+      "checks": {
+        "exact_party_identity_set": true,
+        "group_scope_preserved": true
+      },
+      "classification": "correct_local_parties_group_evidence_limited",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "B2",
+      "run": 1,
+      "trace": "B2-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "parties12",
+      "expected_supported": true,
+      "checks": {
+        "exact_party_identity_set": true,
+        "group_scope_preserved": true
+      },
+      "classification": "correct_local_parties_group_evidence_limited",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "B3",
+      "run": 1,
+      "trace": "B3-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "parties12",
+      "expected_supported": true,
+      "checks": {
+        "exact_party_identity_set": true,
+        "group_scope_preserved": true
+      },
+      "classification": "correct_observed_once",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "B4",
+      "run": 1,
+      "trace": "B4-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "parties13",
+      "expected_supported": true,
+      "checks": {
+        "exact_party_identity_set": true,
+        "group_scope_preserved": true
+      },
+      "classification": "correct_observed_once",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "C1",
+      "run": 1,
+      "trace": "C1-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "Minister for Finance",
+      "expected_supported": true,
+      "checks": {
+        "office_member_representation_identity_date_chain": true
+      },
+      "classification": "correct_and_repeatable_in_selected_three_runs",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "C2",
+      "run": 1,
+      "trace": "C2-r1.html",
+      "status": "unsupported_request",
+      "interaction": "unsupported_capability",
+      "model_calls": 1,
+      "expected_oracle": "Minister for Finance",
+      "expected_supported": true,
+      "checks": {},
+      "classification": "selected_but_rejected_by_validation",
+      "first_observed_divergence": "local draft validation rejects correct current_office_constituency selector; no final plan"
+    },
+    {
+      "id": "C3",
+      "run": 1,
+      "trace": "C3-r1.html",
+      "status": "source_data_unavailable",
+      "interaction": "missing_or_unaccepted_evidence",
+      "model_calls": 1,
+      "expected_oracle": "Tánaiste",
+      "expected_supported": true,
+      "checks": {
+        "safe_nonanswer": true
+      },
+      "classification": "selected_executed_evidence_limited",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "C4",
+      "run": 1,
+      "trace": "C4-r1.html",
+      "status": "unsupported_request",
+      "interaction": "unsupported_capability",
+      "model_calls": 1,
+      "expected_oracle": null,
+      "expected_supported": false,
+      "checks": {
+        "safe_nonanswer": true
+      },
+      "classification": "unsupported_by_implemented_contract",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "D1",
+      "run": 1,
+      "trace": "D1-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "dc-now",
+      "expected_supported": true,
+      "checks": {
+        "exact_member_identity_set": true,
+        "qualifying_membership_party_episode_paths_and_starts": true,
+        "temporal_selector_preserved": true
+      },
+      "classification": "correct_observed_once",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "D2",
+      "run": 1,
+      "trace": "D2-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "dc-now",
+      "expected_supported": true,
+      "checks": {
+        "exact_member_identity_set": true,
+        "qualifying_membership_party_episode_paths_and_starts": true,
+        "temporal_selector_preserved": true
+      },
+      "classification": "correct_observed_once",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "D3",
+      "run": 1,
+      "trace": "D3-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "dw-now",
+      "expected_supported": true,
+      "checks": {
+        "exact_member_identity_set": true,
+        "qualifying_membership_party_episode_paths_and_starts": true,
+        "temporal_selector_preserved": true
+      },
+      "classification": "correct_observed_once",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "D4",
+      "run": 1,
+      "trace": "D4-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "dc-33",
+      "expected_supported": true,
+      "checks": {
+        "exact_member_identity_set": true,
+        "qualifying_membership_party_episode_paths_and_starts": true,
+        "temporal_selector_preserved": true
+      },
+      "classification": "correct_observed_once",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "D5",
+      "run": 1,
+      "trace": "D5-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "dc-unfiltered",
+      "expected_supported": true,
+      "checks": {
+        "count_equals_independent_active_identity_set": true
+      },
+      "classification": "correct_observed_once",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "D6",
+      "run": 1,
+      "trace": "D6-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 0,
+      "expected_oracle": "dc-unfiltered",
+      "expected_supported": true,
+      "checks": {
+        "exact_member_identity_set": true
+      },
+      "classification": "correct_observed_once",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "D7",
+      "run": 1,
+      "trace": "D7-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "dc-dw-now",
+      "expected_supported": true,
+      "checks": {
+        "exact_member_identity_set": true,
+        "qualifying_membership_party_episode_paths_and_starts": true,
+        "temporal_selector_preserved": true
+      },
+      "classification": "correct_observed_once",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "D8",
+      "run": 1,
+      "trace": "D8-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "ahern-anchor",
+      "expected_supported": true,
+      "checks": {
+        "exact_member_identity_set": true,
+        "raw_debug_truncated": true,
+        "answer_identity_and_common_interval": true,
+        "retained_raw_qualifying_member_term30": true,
+        "projected_term_identity_consistent": false
+      },
+      "classification": "correct_member_and_interval_but_incorrect_evidence_projection",
+      "first_observed_divergence": "returned evidence text inserts term /25 into the Cyprian Brady row; its raw qualifying binding and other displayed term evidence are /30"
+    },
+    {
+      "id": "E1",
+      "run": 1,
+      "trace": "E1-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 0,
+      "expected_oracle": "Malcolm Byrne",
+      "expected_supported": true,
+      "checks": {
+        "exact_bill_identity_and_title_sets": true
+      },
+      "classification": "correct_observed_once",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "E2",
+      "run": 1,
+      "trace": "E2-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "Malcolm Byrne",
+      "expected_supported": true,
+      "checks": {
+        "exact_bill_identity_and_title_sets": true
+      },
+      "classification": "correct_and_repeatable_in_selected_three_runs",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "E3",
+      "run": 1,
+      "trace": "E3-r1.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 0,
+      "expected_oracle": "Ivana Bacik",
+      "expected_supported": true,
+      "checks": {
+        "exact_bill_identity_and_title_sets": true
+      },
+      "classification": "correct_observed_once",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "E4",
+      "run": 1,
+      "trace": "E4-r1.html",
+      "status": "unsupported_request",
+      "interaction": "unsupported_capability",
+      "model_calls": 1,
+      "expected_oracle": null,
+      "expected_supported": false,
+      "checks": {
+        "safe_nonanswer": true
+      },
+      "classification": "unsupported_by_implemented_contract",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "E5",
+      "run": 1,
+      "trace": "E5-r1.html",
+      "status": "source_data_unavailable",
+      "interaction": "missing_or_unaccepted_evidence",
+      "model_calls": 0,
+      "expected_oracle": "Malcolm Byrne",
+      "expected_supported": true,
+      "checks": {
+        "safe_nonanswer": true
+      },
+      "classification": "selected_executed_evidence_limited",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "C1",
+      "run": 2,
+      "trace": "C1-r2.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "Minister for Finance",
+      "expected_supported": true,
+      "checks": {
+        "office_member_representation_identity_date_chain": true
+      },
+      "classification": "correct_and_repeatable_in_selected_three_runs",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "D8",
+      "run": 2,
+      "trace": "D8-r2.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "ahern-anchor",
+      "expected_supported": true,
+      "checks": {
+        "exact_member_identity_set": true,
+        "raw_debug_truncated": true,
+        "answer_identity_and_common_interval": true,
+        "retained_raw_qualifying_member_term30": true,
+        "projected_term_identity_consistent": false
+      },
+      "classification": "correct_member_and_interval_but_incorrect_evidence_projection",
+      "first_observed_divergence": "returned evidence text inserts term /25 into the Cyprian Brady row; its raw qualifying binding and other displayed term evidence are /30"
+    },
+    {
+      "id": "E2",
+      "run": 2,
+      "trace": "E2-r2.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "Malcolm Byrne",
+      "expected_supported": true,
+      "checks": {
+        "exact_bill_identity_and_title_sets": true
+      },
+      "classification": "correct_and_repeatable_in_selected_three_runs",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "C1",
+      "run": 3,
+      "trace": "C1-r3.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "Minister for Finance",
+      "expected_supported": true,
+      "checks": {
+        "office_member_representation_identity_date_chain": true
+      },
+      "classification": "correct_and_repeatable_in_selected_three_runs",
+      "first_observed_divergence": null
+    },
+    {
+      "id": "D8",
+      "run": 3,
+      "trace": "D8-r3.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "ahern-anchor",
+      "expected_supported": true,
+      "checks": {
+        "exact_member_identity_set": true,
+        "raw_debug_truncated": true,
+        "answer_identity_and_common_interval": true,
+        "retained_raw_qualifying_member_term30": true,
+        "projected_term_identity_consistent": false
+      },
+      "classification": "correct_member_and_interval_but_incorrect_evidence_projection",
+      "first_observed_divergence": "returned evidence text inserts term /25 into the Cyprian Brady row; its raw qualifying binding and other displayed term evidence are /30"
+    },
+    {
+      "id": "E2",
+      "run": 3,
+      "trace": "E2-r3.html",
+      "status": "success",
+      "interaction": "answer",
+      "model_calls": 1,
+      "expected_oracle": "Malcolm Byrne",
+      "expected_supported": true,
+      "checks": {
+        "exact_bill_identity_and_title_sets": true
+      },
+      "classification": "correct_and_repeatable_in_selected_three_runs",
+      "first_observed_divergence": null
+    }
+  ],
+  "repeatability": [
+    {
+      "id": "C1",
+      "runs": [
+        1,
+        2,
+        3
+      ],
+      "statuses": [
+        "success",
+        "success",
+        "success"
+      ],
+      "selected_draft_families": [
+        "capability_selection",
+        "capability_selection",
+        "capability_selection"
+      ],
+      "same_projected_columns_and_rows": true,
+      "assessments": [
+        "correct_and_repeatable_in_selected_three_runs",
+        "correct_and_repeatable_in_selected_three_runs",
+        "correct_and_repeatable_in_selected_three_runs"
+      ]
+    },
+    {
+      "id": "D8",
+      "runs": [
+        1,
+        2,
+        3
+      ],
+      "statuses": [
+        "success",
+        "success",
+        "success"
+      ],
+      "selected_draft_families": [
+        "member_relationship_composition",
+        "member_relationship_composition",
+        "member_relationship_composition"
+      ],
+      "same_projected_columns_and_rows": true,
+      "assessments": [
+        "correct_member_and_interval_but_incorrect_evidence_projection",
+        "correct_member_and_interval_but_incorrect_evidence_projection",
+        "correct_member_and_interval_but_incorrect_evidence_projection"
+      ]
+    },
+    {
+      "id": "E2",
+      "runs": [
+        1,
+        2,
+        3
+      ],
+      "statuses": [
+        "success",
+        "success",
+        "success"
+      ],
+      "selected_draft_families": [
+        "member_bill_sponsorship",
+        "member_bill_sponsorship",
+        "member_bill_sponsorship"
+      ],
+      "same_projected_columns_and_rows": true,
+      "assessments": [
+        "correct_and_repeatable_in_selected_three_runs",
+        "correct_and_repeatable_in_selected_three_runs",
+        "correct_and_repeatable_in_selected_three_runs"
+      ]
+    }
+  ],
+  "model_calls_total": 23,
+  "request_count": 30
+}
