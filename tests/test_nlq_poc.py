@@ -591,7 +591,7 @@ def test_browser_renders_result_and_exact_sparql(monkeypatch):
 
     response = asyncio.run(post_question())
     assert response.status_code == 200
-    assert "Interpreted as" in response.text
+    assert "Your question was understood as" in response.text
     assert "Find the requested member" in response.text
     assert "<th scope=\"col\">name</th>" in response.text
     assert "A Member" in response.text
@@ -605,7 +605,7 @@ def test_browser_renders_result_and_exact_sparql(monkeypatch):
         "PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n"
         "SELECT ?name WHERE { ?m foaf:name ?name }\nLIMIT 100"
     ) in unescape(response.text)
-    assert "Raw Fuseki response payload" in response.text
+    assert "Execution diagnostics — Fuseki" in response.text
     assert '"vars": [' in unescape(response.text)
     assert "Fuseki readiness" in response.text
     assert "Required graph families present." in response.text
@@ -653,9 +653,10 @@ def test_browser_shows_fuseki_error_payload_in_debug_output(monkeypatch):
     response = asyncio.run(post_question())
     assert response.status_code == 200
     assert "Fuseki returned HTTP 400" in response.text
-    assert "Query debugger" in response.text
+    assert "Execution was attempted but failed." in response.text
+    assert "Execution diagnostics" in response.text
     assert "passed local validation" in response.text
-    assert "<details open>" in response.text
+    assert "<details><summary>Execution diagnostics" in response.text
     assert '"detail": "syntax error"' in unescape(response.text)
 
 
@@ -701,13 +702,13 @@ def test_browser_shows_llm_error_payload_when_translation_fails(monkeypatch):
     response = asyncio.run(post_question())
     assert response.status_code == 200
     assert "LLM translation failed; no SPARQL query was sent" in response.text
-    assert "Raw LLM API response payload" in response.text
+    assert "Resolution diagnostics — LLM API" in response.text
     assert "invalid API key" in response.text
     assert "No response payload was received" not in response.text
     assert "Fuseki is empty." in response.text
 
 
-def test_browser_opens_debugger_for_empty_select_results(monkeypatch):
+def test_browser_keeps_debugger_collapsed_for_empty_select_results(monkeypatch):
     class FakeTranslator:
         def __init__(self, *args, **kwargs):
             pass
@@ -747,7 +748,8 @@ def test_browser_opens_debugger_for_empty_select_results(monkeypatch):
     response = asyncio.run(post_question())
     assert response.status_code == 200
     assert "Fuseki accepted the SELECT query but returned zero bindings" in response.text
-    assert "<details open>" in response.text
+    assert "<details><summary>Execution diagnostics" in response.text
+    assert "No matching records found in the queried data" in response.text
     assert '"bindings": []' in unescape(response.text)
 
 
