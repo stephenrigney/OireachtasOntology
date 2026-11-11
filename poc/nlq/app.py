@@ -35,6 +35,7 @@ from .schema import build_schema_context
 from .vocabulary import supported_predicates
 from .feedback import FeedbackError, FeedbackStore
 from .performance import QueryPerformance
+from .explainer import explain_validated_plan, explain_execution
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -156,7 +157,16 @@ def create_app(
                 mode: str = "phase2", interaction_status: str | None = None,
                 plan_json: str | None = None, plan_heading: str | None = None,
                 entity_outcomes: tuple[dict, ...] = (), plan_explanation=None,
-                clarification=None, execution_attempted: bool = False):
+                 clarification=None, execution_attempted: bool = False,
+                 explanation_plan: dict | None = None):
+        # Only the caller's already-validated structured plan may support prose.
+        # Do not reparse capped debug JSON or infer execution from SPARQL.
+        explainer = (explain_validated_plan(explanation_plan, question=question)
+                     if explanation_plan is not None else None)
+        execution_explanation = explain_execution(
+            attempted=execution_attempted, result=result, status=interaction_status,
+            error=error, plan=explanation_plan,
+        )
         performance = getattr(request.state, "query_performance", None)
         if readiness is None:
             readiness = (performance.measure("readiness_check", check_fuseki_readiness)
@@ -169,8 +179,10 @@ def create_app(
         feedback_actual = _displayed_answer_text(
             error=error, result=result, result_notice=result_notice,
             ambiguity=ambiguity, entity_outcomes=entity_outcomes,
-            clarification=clarification, interpretation=interpretation,
-            plan_explanation=plan_explanation,
+            clarification=clarification,
+            interpretation=(explainer["summary"] if explainer else
+                            interpretation if mode == "phase1" else None),
+            plan_explanation=({"answer_text": explainer["answer_text"]} if explainer else None),
         )
         feedback_session_id = request.cookies.get("oireachtas_nlq_feedback_session", "")
         try:
@@ -195,6 +207,8 @@ def create_app(
             "plan_heading": plan_heading,
             "entity_outcomes": entity_outcomes,
             "plan_explanation": plan_explanation,
+            "explainer": explainer,
+            "execution_explanation": execution_explanation,
             "clarification": clarification,
             "outcome_kind": getattr(request.state, "query_outcome", None),
             "execution_attempted": execution_attempted,
@@ -367,6 +381,7 @@ def create_app(
                     except (ValueError, TypeError, KeyError):
                         plan_is_validated = False
                 plan_json = format_debug_payload(outcome.plan) if plan_is_validated else None
+                explanation_plan = outcome.plan if plan_is_validated else None
                 is_q06 = bool(outcome.plan and outcome.plan.get("answer", {}).get("referent") == "affiliation")
                 is_debate = bool(outcome.plan and outcome.plan.get("referents", {}).get("sitting", {}).get("type") == "DebateSitting")
                 is_q35 = bool(outcome.plan and "family" not in outcome.plan and outcome.plan.get("referents", {}).get("holding", {}).get("type") == "OfficeHolding")
@@ -777,7 +792,7 @@ def create_app(
                         summary = f"{summary} {scope_note}"
                 if outcome.status == "success":
                     return render(request, question=question, mode=mode,
-                                  interpretation=summary, plan_json=plan_json,
+                                  interpretation=summary, plan_json=plan_json, explanation_plan=explanation_plan,
                                    plan_heading="Validated composable query plan" if plan_is_validated else None,
                                    plan_explanation={"summary": summary, "validated": plan_is_validated, "answer_text": answer_text},
                                    sparql=outcome.sparql, result=outcome.result,
@@ -799,7 +814,7 @@ def create_app(
                                                  "status": "ambiguous", "candidates": outcome.candidates}
                                                 for _ in (0,))
                     return render(request, question=question, mode=mode, error=message,
-                                  interaction_status=outcome.status, plan_json=plan_json,
+                                  interaction_status=outcome.status, plan_json=plan_json, explanation_plan=explanation_plan,
                                    plan_heading="Validated composable query plan" if plan_is_validated else None,
                                    plan_explanation=({"summary": summary, "validated": plan_is_validated} if plan_is_validated else None),
                                   sparql=outcome.sparql, result=outcome.result,
@@ -809,7 +824,7 @@ def create_app(
                                    debug_source=getattr(outcome, "debug_source", None) or ("Fuseki" if outcome.sparql else "Structured planner"))
                 if is_stage_c:
                     return render(request, question=question, mode=mode,
-                                  interpretation=summary, plan_json=plan_json,
+                                  interpretation=summary, plan_json=plan_json, explanation_plan=explanation_plan,
                                   plan_heading="Validated composable query plan" if plan_is_validated else None,
                                   plan_explanation=({"summary": summary, "validated": plan_is_validated} if plan_is_validated else None),
                                   error=outcome.diagnostic or "The local data does not support this Stage C answer.",
@@ -854,7 +869,7 @@ def create_app(
                     return render(
                         request, question=question, mode=mode,
                         interpretation=summary if plan_is_validated else None,
-                        plan_json=plan_json,
+                        plan_json=plan_json, explanation_plan=explanation_plan,
                         plan_heading=("Validated composable query plan" if plan_is_validated else
                                       "Proposed composable query plan") if outcome.plan else None,
                         plan_explanation=(
@@ -896,7 +911,7 @@ def create_app(
                             if referent.get("resolution") == "ambiguous"
                         )
                     return render(request, question=question, mode=mode,
-                                  interpretation=summary, plan_json=plan_json,
+                                  interpretation=summary, plan_json=plan_json, explanation_plan=explanation_plan,
                                    plan_heading="Validated composable query plan" if plan_is_validated else None,
                                    plan_explanation={"summary": summary, "validated": plan_is_validated},
                                   error=message, interaction_status=outcome.status,
@@ -981,7 +996,7 @@ def create_app(
                     },)
                 return render(
                     request, question=question, mode=mode,
-                    interpretation=summary if plan_is_validated else None, plan_json=plan_json,
+                    interpretation=summary if plan_is_validated else None, plan_json=plan_json, explanation_plan=explanation_plan,
                     plan_heading=("Validated composable query plan" if plan_is_validated else
                                   "Proposed composable query plan") if outcome.plan else None,
                     error=message,
@@ -1115,6 +1130,7 @@ def create_app(
                           sparql=translation.sparql if translation else None,
                           error=str(error), debug_output=error.debug_output,
                           execution_attempted=phase == "Fuseki query",
+                          interaction_status="execution_failure" if phase == "Fuseki query" else None,
                           debug_message=debug_message, debug_source=debug_source)
         except Exception:
             logger.exception("Unexpected failure in NLQ POC")

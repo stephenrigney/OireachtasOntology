@@ -197,10 +197,10 @@ def test_stage_explanations_and_diagnostics_are_scoped_to_their_tab(tmp_path):
     compiled = template.split('id="panel-compiled"', 1)[1].split('id="panel-executed"', 1)[0]
     executed = template.split('id="panel-executed"', 1)[1].split('</div>', 1)[0]
     assert "plan_json" not in interpreted and "resolution diagnostics" in interpreted.lower()
-    assert "plan_json" in compiled and "SPARQL compilation did not produce a query" in compiled
-    assert "debug_output" in executed and "Raw {{ debug_source or \"endpoint\" }} response payload" in executed
-    assert "execution_failure" in executed and "Execution outcome is unavailable" in executed
-    assert '<details{% if executed_ready and (error or debug_message) %} open{% endif %}>' in executed
+    assert "plan_json" in compiled and "No generated SPARQL is available" in compiled
+    assert "debug_output" in executed and "Execution diagnostics" in executed
+    assert "execution_explanation.status" in executed and "execution_explanation.summary" in executed
+    assert "<details><summary>" in executed and "<details open" not in executed
 
 
 def test_feedback_retry_does_not_clear_user_answers():
