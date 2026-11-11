@@ -1,6 +1,6 @@
 # NLQ Query Explainer — Presentation Contract
 
-Status: **Approved design direction; implementation pending**  
+Status: **Implemented and verified in PR #33; pending merge to master**  
 Branch: `feat/query-explainer-readability`  
 Scope: Existing **Interpreted → Compiled → Executed** query explainer in the NLQ dashboard  
 Date: 2026-11-11
@@ -149,4 +149,14 @@ Before changing presentation code, inspect `poc/nlq/app.py`, current templates a
 
 If the requested prose requires information not present in the validated plan/diagnostics, use a conservative UI fallback and record the gap. Escalate any proposed new compiler tracing, additional semantic fields, or behaviour changes for separate approval.
 
-This document fixes the **presentation contract**. It does not claim that the full field mapping or browser feasibility has already been verified, and it does not authorise the UI implementation by itself.
+This document remains the **presentation contract**. The implementation was completed on `feat/query-explainer-readability` in commit `a7e6c0e08c5fb26450df853ec5713b7e31c18cec` ([PR #33](https://github.com/stephenrigney/OireachtasOntology/pull/33)); this status does not itself authorise merging.
+
+### Implementation evidence and verification (2026-11-11)
+
+- [Implemented evidence mapping and known gaps](query-explainer-evidence.md) documents the reviewed plan-to-prose translations, supported family-specific semantics and conservative fallbacks.
+- Presentation lives in `poc/nlq/explainer.py`, `poc/nlq/app.py` and `poc/nlq/templates/index.html`. Relevant tests include `tests/test_nlq_explainer.py` and `tests/test_nlq_explainer_browser.py`.
+- Full test suite: **2,433 passed, 30 skipped, with 23 subtests passed**; final focused regressions: **218 passed**; ontology validation passed.
+- Headless Chromium verified keyboard navigation, tab/disclosure interaction and responsive rendering at **1240px, 390px and 320px**; screenshots were inspected.
+- **Not verified:** live LLM/Fuseki execution, other browser engines or physical screen-reader use. Certain execution paths lack retained structured plans and therefore receive conservative explanations rather than invented plan steps.
+
+PR #33 remains subject to ordinary human review and merge.
