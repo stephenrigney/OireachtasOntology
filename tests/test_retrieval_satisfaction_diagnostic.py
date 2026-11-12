@@ -136,8 +136,9 @@ def test_r1_separate_bill_lookup_not_a_final_outcome(evidence):
     assert status.atom.objects == ("Current",)
     assert accept_claim(history.atom, q, bill)
     assert not accept_claim(history.atom, SPONSOR, sponsors)  # sponsorship did not establish progress
-    assert not accept_claim(replace(status.atom, predicate="final_outcome"), q, bill)
-    assert not accept_claim(replace(status.atom, predicate="enactment"), q, bill)
+    for fact in (status, history):
+        for predicate in ("final_outcome", "enactment", "lapsed_outcome"):
+            assert not accept_claim(replace(fact.atom, predicate=predicate), q, bill)
 
 
 def test_r3_representation_is_not_officeholding_or_continuous_tenure(evidence):
@@ -201,3 +202,13 @@ def test_projection_does_not_accept_success_or_citation_without_accepted_result(
     outcome, _ = evidence[SPONSOR]
     assert project(replace(outcome, result=None), "existing-citation", "scope") == ()
     assert project(replace(outcome, status="execution_failure"), "existing-citation", "scope") == ()
+
+
+def test_changed_frozen_bundle_is_refused_before_parsing(monkeypatch):
+    class ChangedBundle:
+        def read_bytes(self):
+            return b"not the frozen evidence"
+
+    monkeypatch.setattr("tools.diagnose_retrieval_satisfaction.BUNDLE", ChangedBundle())
+    with pytest.raises(ValueError, match="Frozen evidence changed"):
+        load_bundle()

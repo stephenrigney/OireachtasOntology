@@ -163,7 +163,7 @@ a hidden production admission map.
 |---|---|---|---|---|
 | Housing subject | Sponsorship candidate listing | Open | Incorrectly closes | Subject claim rejected |
 | Opposition | Skip absent separate justified context | Open | Would incorrectly close if fed sponsorship facts | Opposition claim rejected |
-| Became law | Sponsored candidates, then separate legislative evidence | Open | Incorrectly closes | Enactment rejected |
+| Became law | Sponsored candidates only; suitable enactment evidence not demonstrated | Open | Incorrectly closes | Enactment rejected |
 | As a Senator | General sponsorship candidates only | Open | Incorrectly closes | Senator-period scope rejected |
 | Primarily sponsored | Listing with recorded primary-status fields | Open for unfiltered answer | Incorrectly closes | Reclassifying Supporting as Primary rejected |
 | Sponsorship before 2024 | Untimed candidate listing if useful | Open; original compiler refusal preserved | Incorrectly closes | Before-date scope rejected |
@@ -262,10 +262,11 @@ predicates, or an expected answer total. Those belong solely to evaluation.
 
 Preserving original text is necessary but does not independently bind it to a
 typed condition set. Requiring all model-proposed conditions to have evidence
-leaves omitted conditions invisible. Quotations, full source-span coverage,
-catalogue-clause citations and a second model agreeing would not supply the
-missing semantic check. Nor can an opaque “all residual resolved” flag be handed
-back to the same model.
+leaves omitted conditions invisible. Model-supplied quotations, full source-span
+coverage, catalogue-clause citations and a second model agreeing do not supply an
+independent semantic check. Nor can an opaque “all residual resolved” flag be
+handed back to the same model. A coordinator-evaluated binding mechanism is a
+different, untested proposal; this experiment does not establish its impossibility.
 
 An independent read-only architecture challenge agreed that typed matching must
 respect operation-certified meaning, highlighted the Current/Lapsed-event
@@ -339,19 +340,20 @@ Executed results:
 
 - Diagnostic CLI: **exit 2**, expected; 26 operations / 35 exact saved query
   responses replayed, 13 frozen parent admissions reproduced.
-- Combined focused run of the diagnostic and three neighbouring files:
-  **151 passed**, 14,740 existing warnings, 151.45 seconds (27 diagnostic tests
-  at that point plus 124 existing tests).
-- After adding two harness-rejection tests, final diagnostic rerun:
-  **29 passed**, 3.20 seconds. No application/compiler change between runs.
-- `git diff --check`: passed. No live acceptance, browser/UI, full repository
-  pytest or ontology reasoner rerun; those would not resolve this diagnostic-only
-  semantic-authority failure. Earlier corrective verification is recorded in its
-  report, not represented as a new run.
+- Final-state combined focused run of the diagnostic and three neighbouring
+  files: **154 passed** (30 diagnostic + 124 existing tests), 14,739 existing
+  warnings, 87.57 seconds. This includes frozen-bundle hash refusal and explicit
+  rejection of stronger final-outcome/enactment claims from both status and
+  opaque history atoms. Earlier intermediate counts are superseded by this run.
+- `git diff --check`: passed. The focused diagnostic/compiler/adapter checks are
+  the smallest broader credible regression check for this tools/tests/docs-only
+  change. No live acceptance, browser/UI, full repository pytest or ontology
+  reasoner rerun; application, compiler and ontology source are unchanged. Earlier
+  corrective verification is recorded in its report, not represented as a new run.
 
 | Exit criterion | Assessment |
 |---|---|
-| Relevant narrower queries execute | Demonstrated at the unchanged compiler boundary; housing/R1/R3 dependencies are useful. General free-text relevance remains unbound. |
+| Relevant narrower queries execute | Demonstrated by exact replay at the unchanged compiler boundary; housing/R1/R3 dependencies are useful. General free-text relevance remains unbound. |
 | All known incomplete controls prevented from becoming complete answers | Ledger-only **fails**. Original-intent hold blocks them but over-blocks positives. No validated combined solution. |
 | Citation alone cannot admit unsupported claims | Demonstrated for exact typed projections; arbitrary prose withheld, not semantically verified. |
 | Complete supported questions still answered | Compiler and typed-input positives pass; original ordinary-language satisfaction **fails** under the hold. |
