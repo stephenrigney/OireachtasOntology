@@ -136,7 +136,7 @@ The next OpenCode tranche is **design validation**, not corrective app delivery:
 2. **Run actual end-to-end research interactions:** real model interpretation, typed compiler calls, the evidence store and LLM report writing. Retain all proposals, clarifications, rejections, operations, results, report revisions and user-visible text.
 3. **Score separately:** complete-intent preservation, factual answer validity, useful handling of gaps, editorial readability and interaction interruptions. Record per-requirement outcomes; do not pool safe refusals into factual success.
 4. **Review independently:** a human evaluator assesses the report as a parliamentary reader, with source evidence available for factual checking. The implementation agent must not judge its own prose as sufficient.
-5. **Verify the UI:** research plan visibly precedes initial execution; the report progresses; conversation can modify it; source details and unsupported requirements remain accessible; keyboard, responsive, export and failure states comply with the v0.3 UI contract.
+5. **Verify the UI:** research plan visibly precedes initial execution; the report progresses; conversation can modify it; source details and unsupported requirements remain accessible; keyboard, responsive, export and failure states comply with the v0.4 UI contract.
 6. **Keep limitations visible:** accepted findings are relative to tested revisions, model settings and available data; no claim of broad generalisation from a small set of scenarios.
 
 ## 6. Acceptance gate for the next corrective vertical slice
