@@ -127,6 +127,33 @@ intervals and do not establish a latency target.
 
 ## Phase 1 exit assessment and limitations
 
+### Independent review
+
+The independent read-only audit of implementation commit `d6af713` returned
+**no material blocking findings**. It inspected the adapter, coordinator,
+transport, UI, compiler/schema diffs and all new tests; independently ran the
+**56 new tests**, **226 focused compiler regressions**, and ontology/HermiT
+validation; and confirmed the authority, requirement-accounting, accepted
+witness/trace, schema-alignment, comparison and Phase 1 boundaries.
+
+The audit confirmed that an explicitly requested independent current-Dáil term
+lookup may continue while unaccounted party requirements remain unanswered,
+consistent with specification S4. This does not fulfil or weaken the original
+unsupported brief: party operations remain blocked and the unanswered
+requirement remains visible.
+
+Non-blocking follow-ups are recorded, not implemented in this tranche:
+
+- Separate draft-admission from final-plan-validation metadata.
+- Narrow witness query references and label resolution/gate/answer trace stages.
+- Prune or explicitly preflight-test unused term-request allowlist variants.
+- Evict expired runs during lookup as well as new-run creation.
+- Escape Markdown link delimiters in display labels during a future export revision.
+
+These are not prerequisites for the authorised qualified-local-record slice.
+No independent browser or full-suite rerun is claimed by the audit; those
+executions are the implementation verification recorded above.
+
 The Phase 0 §8 gates are met for the **authorised qualified-local-record slice**:
 closed guarded dispatch; differential/independent identity and witness checks;
 negative/paginated evidence integrity; schema/trace retention; compatible
