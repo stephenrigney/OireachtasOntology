@@ -1,8 +1,8 @@
 # Parliamentary Research Assistant — Editorial and Plain-Language Contract
 
-**Version:** 1.2 · **Date:** 12 November 2026  
-**Status:** Approved design contract; implementation not authorised  
-**Parent:** [Parliamentary Research Assistant v0.5](parliamentary-research-assistant.md)  
+**Version:** 1.3 · **Date:** 12 November 2026  
+**Status:** Approved v0.6 UI-language update; not yet implemented  
+**Parent:** [Parliamentary Research Assistant v0.6](parliamentary-research-assistant.md)  
 **Companion:** [Research acceptance contract](parliamentary-research-assistant-acceptance.md)
 
 ## 1. Purpose and audience
@@ -29,7 +29,7 @@ These pages guide institutional language and tone. They are **not** a source of 
 8. **Do not invent context.** Historical, constitutional or procedural background is factual material and requires a suitable approved reference; model fluency is not evidence.
 9. **Keep uncertainty proportionate.** Avoid claiming source-wide completeness, absence, causation or changes over time without the required coverage and temporal evidence. A precise primary-source finding can coexist with incomplete source coverage or unknown freshness; these are separate qualifications, not one confidence score.
 10. **Keep prose readable.** Use informative headings, active voice, concise paragraphs, defined terms and neutral descriptions. Avoid jargon, padding, promotional claims, artificial confidence and repetitive boilerplate.
-11. **Write both the conversation and report in this style.** A friendly chat response is no excuse for technical report text.
+11. **Write both the conversation and report in this style.** A friendly chat response is no excuse for technical report text. The initial screen, research plan, activity indicators, follow-up composer and accessible labels must also use clear, ordinary language.
 12. **Make the draft status clear.** The assistant's complete report and interpretative narrative are for researcher review. A compiler-supported figure does not make every explanatory sentence or the overall investigation independently certified.
 
 ## 3. Technical-to-editorial translation
@@ -45,6 +45,29 @@ These pages guide institutional language and tone. They are **not** a source of 
 | “missing_identity_link” | “The available records do not establish a reliable link to the person or organisation named.” |
 
 The examples illustrate **wording**, not a new factual certification. Do not substitute a simpler sentence if it loses a material limitation.
+
+## 3A. Starting screen and contextual UI language — v0.6
+
+The first screen is a **question-writing surface**, not a marketing introduction, technical status panel or empty document preview.
+
+**Preferred starting copy:**
+- Main prompt: **“What would you like to find out?”**
+- Optional supporting sentence: **“Ask a question about the Oireachtas. Explore the findings and refine your report as you go.”**
+- Primary action: **“Start research”**
+- Secondary examples heading: **“Example question”** or **“For example, you could ask:”**
+- One concrete example: **“What happened to the Bills sponsored by Malcolm Byrne?”**; a second may ask about a Member's constituency representation.
+
+The example is selectable and fills the writer's question field **without submitting it**; explain its purpose plainly if needed. Never imply it is a special template or that the system can answer all possible parliamentary questions. Do not introduce a ready-made report structure in place of the user's question.
+
+**Retire from the first screen:** “Living Report”; “A clear brief. A traceable report”; “Parliamentary Research Note”; “Your report will take shape here”; “Validated findings appear as research progresses”; “Prepare a briefing on a Member's Bills” as an unexplained action; “Awaiting a research objective”; and “Drafts for human review. Source coverage and freshness are not certified.”
+
+Once research is underway, use **“Research plan”**, **“Research report”**, **“Draft — for review”**, **“Ask a follow-up or request a change”**, **“Conversation history”**, **“Research Activity”** and **“View evidence”** where these describe actual controls or content. Do not repeatedly append generic caveats to headings or make readers translate tool semantics.
+
+Distinguish ordinary **source qualifications in the report** from developer-facing boilerplate on the opening screen. For example, when material, write “The records available for this report do not establish what happened after this date,” not an abstract certification warning before the user has asked a question.
+
+A report may include **evidence-grounded findings and unresolved questions**; the initial workspace should not promise a standard report template or imply that a complete report already exists. Any optional **View an example report** action must open a clearly identified, genuinely illustrative and appropriately reviewed example, not a fabricated report or a hidden compulsory step.
+
+In the single-column experience, a concise plan comes before first factual dispatch; report findings then become the main reading material. Previous conversation is accessible on demand, without duplicating the report's prose. Avoid software-process narrations and status jargon in the primary report and chat.
 
 ## 4. Report structure and evidence references
 
