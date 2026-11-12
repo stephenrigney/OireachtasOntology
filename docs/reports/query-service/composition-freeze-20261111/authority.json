@@ -1,0 +1,53 @@
+{
+  "asOf": "2026-11-11",
+  "authoritative_files": {
+    "AGENTS.md": "0622461cbc6b71e1637b46205fb8b704b54152cdaf7534998bdae7ec895a3401",
+    "docs/architecture/etl.md": "edf7bda828ac92dbc4da13c719f4f1cc1a883f055b5d449bada1f25ee154cf67",
+    "docs/development/operations.md": "410c6a4831c99b851abb5cbb97fd5c15011101266ef55b53ead7baf793d3242b",
+    "docs/reference/etl/state-and-refresh.md": "9392a3eb5547c7527beae0e469812850344a6016fa96c3f055a00b03c7bac7cd",
+    "docs/reports/query-service/nlq-bounded-composition-experiment-readiness.md": "517a71c569fdb65f6ade147849544a08da4e33e86c44065af84d5993bd587bd8",
+    "documentation/mapping_notes.md": "05c94b5b2568e84747d701c4c2df613d93e1a85e67e89e1f7d06d88baa955d9a",
+    "mappings/committee_mapping.csv": "3d452c70e85411cf70ff210629a018fd79a0f5a508e877b15521a40056200284",
+    "mappings/constituencies_mapping.csv": "646a7a74a67efb736cfa6f88b6cf1993402ecb01c5433bf8bc732f078a9466e3",
+    "mappings/houses_mapping.csv": "0148d5b66b0d118d2863de8d6723a5aef84e814dbb9282dc6d1fc4dd9af12cc4",
+    "mappings/member_mapping.csv": "bbb652f840435bee604e81448d480d6126f91b9dc1da1538edb8ca1771924fa2",
+    "mappings/party_mapping.csv": "8699f9b3eaefc5a3f3ffd29366502307dd7563255f694dda6f30b23ac13ce915",
+    "ontology/agents.owl.ttl": "6c233e332ecb72b494872df83db9035e20110704f9b82c80b3e70824ebc71661",
+    "ontology/debates.owl.ttl": "f85566827205594c4b51b0eda05516d2bff34e41d211d00adf04b450f5c9bf21",
+    "ontology/events.owl.ttl": "8c90e2bf80ba6ab1dc43954b4efb32ce09d2691c41491292354154e68ec0b749",
+    "ontology/legislation.owl.ttl": "6ac1c0a774bee5021893ded2bc1e3c4530a3f86ef44cf65f5077ada17ab412ed",
+    "ontology/members.owl.ttl": "d38f8291ae9e8b00da1fecca5bcdf9dc4b118deff55d764a55221d58680798c8",
+    "ontology/oireachtas.owl.ttl": "ac2b7b329c614b5446f64be8f4eb4e0e4a4e35b96235a438c98105e851f2c21d",
+    "ontology/vocabulary.owl.ttl": "534a9a22621d314e29ac47e6bdeac13cccfb4ac5fb1abe66fa0e7fdcda60ad54",
+    "poc/nlq/committee_members.py": "306921894ee330fc91a2d7b3073377020661bd29c02b7e607b0f8ff422d3b943",
+    "poc/nlq/composable_plan.py": "d4ca9a1e7952c72d4ef5917d3823f3709403c25cf9cfaf7b8270488f07c1ded1",
+    "poc/nlq/pagination.py": "b02de58390b97f69e8f3c8be0ef028b014ea905ed9ebb8c430921dbaf49b9c14",
+    "poc/nlq/representation.py": "f97e57bead11aba5f0dc49b15d04f73faa13a5f6af916a1403ab815dc4c41d8e",
+    "poc/nlq/safety.py": "5cbd158c0e12205d1670e8345adb867a73009565f68d9b9c6b688529198d0872",
+    "poc/specs/query-schema-contract.json": "4a67ee0f1e6b75fdd8aebf49346e553191d20b697bd3ec48bd91222a66413f80"
+  },
+  "branch": "feat/nlq-bounded-composition-kernel",
+  "custodian_tools": {
+    "tests/test_nlq_evidence_freeze_tools.py": "adda6480a7b1d07041ba3898d82defa71c6405c9e5f12d137ecbd9880f6658be",
+    "tools/nlq_freeze_capture.py": "ab5083251eabb4a632c5410704e6adf212e5a01fb69885c9f98ccb5298203da1",
+    "tools/nlq_freeze_verify.py": "b969b53c953f517cdb4366ed5ddd2720b988a4b196d7335b120a85378316d855"
+  },
+  "fetch_performed": false,
+  "human_approval_scope": "bounded experiment only; task prompt approves recorded identity measure, either current House P, independent current-at tests, no cross-path term equality, exact joins/typed witnesses, empty nonanswer, readiness section 6 budgets, K+R withheld probe and user-held custody",
+  "origin_master_tracking_ref": "069b483e39b613c8958df11ba467d73c64d08653",
+  "repository": "stephenrigney/OireachtasOntology",
+  "source_provenance": {
+    "capture_identity": "query and response bytes, hashes and UTC start/end timestamps in each capture.json",
+    "immediate_source": "http://localhost:3030/houses/query",
+    "loaded_run_id": null,
+    "mode": "read-only manually authored SELECT, no app compiler or /ask, no Update, reload or configuration change",
+    "provenance_presence_check": "bounded SELECT for asserted prov:Activity in any named graph returned zero; not a proof no provenance of any other shape exists",
+    "scope_validation": "independent scoped RDF type/date/resource/owner/conflict checks, not whole-store SHACL/OWL certification",
+    "snapshot": "sequential bounded SELECT pages; repeated typed binding multiset equality is stability evidence, not transactional isolation",
+    "source_coverage": "not certified complete; recorded identity measure only",
+    "source_raw_json_hashes": null,
+    "store_publication_validation_attestation": null,
+    "upstream_source": "Oireachtas ETL owner graph conventions per pinned query schema/mappings; NOT an independently linked API raw-capture/run identity"
+  },
+  "starting_commit": "069b483e39b613c8958df11ba467d73c64d08653"
+}

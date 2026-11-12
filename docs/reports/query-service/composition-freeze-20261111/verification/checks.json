@@ -1,0 +1,66 @@
+{
+  "asOf": "2026-11-11",
+  "scope": "Evidence-custodian verification only; no composition candidate exists or has been scored",
+  "checks": [
+    {
+      "command": ".venv/bin/python tests/validate.py",
+      "exit": 0,
+      "result": "Ontology validation passed, 2586 triples; fail-closed reasoner checks retained",
+      "log": "ontology-validation.log",
+      "not_a_store_validation_attestation": true
+    },
+    {
+      "command": ".venv/bin/python -m pytest tests",
+      "exit": 0,
+      "passed": 2436,
+      "skipped": 30,
+      "seconds": 627.40,
+      "log": "pytest-baseline.log",
+      "limitation": "Existing baseline collection preceded addition of the nine custodian-tool tests. Skipped tests are not verified behaviour. Runtime/deprecation warnings are retained in the log."
+    },
+    {
+      "command": ".venv/bin/python -m pytest tests/test_nlq_evidence_freeze_tools.py -q",
+      "exit": 0,
+      "passed": 9,
+      "result": "Read-only query guard, full-page completion request accounting, oversized/timeout failure without completion certificate, and tamper rejection passed"
+    },
+    {
+      "command": ".venv/bin/python tools/nlq_freeze_verify.py docs/reports/query-service/composition-freeze-20261111",
+      "exit": 0,
+      "first_capture_requests": 36,
+      "typed_binding_rows": 2491,
+      "audited_quads": 1782,
+      "development_controls": 111,
+      "limitation": "Offline artifact integrity/structure check, not candidate acceptance"
+    },
+    {
+      "check": "Repeated development acquisition",
+      "queries": 16,
+      "second_capture_requests": 36,
+      "result": "Every typed-binding multiset identical; see development/stability.json",
+      "limitation": "Sequential reads, not a transaction or source-completeness proof"
+    },
+    {
+      "check": "Optimized Python mode rejects verification",
+      "result": "Python -O fails explicitly rather than disabling assertions and printing a pass"
+    },
+    {
+      "check": "Git whitespace lint",
+      "result": "Authored artifacts pass. Verbatim captures/**/page-*.json retain server-supplied trailing whitespace and are intentionally excluded from style lint, not from byte-hash or RDF evidence validation."
+    },
+    {
+      "command": ".venv/bin/python docs/reports/query-service/composition-freeze-20261111/development/independent-review/check.py .",
+      "exit": 0,
+      "rerun_date": "2026-11-12",
+      "log": "independent-raw-check.log",
+      "result": "Separate reviewer's raw-capture, candidate, type/date/ownership and scope checks pass without reading the oracle"
+    },
+    {
+      "command": ".venv/bin/python docs/reports/query-service/composition-freeze-20261111/development/independent-review/compare_oracle.py .",
+      "exit": 0,
+      "rerun_date": "2026-11-12",
+      "log": "independent-oracle-check.log",
+      "result": "Independent fact-derived candidate dispositions, count, ordered witness objects and provenance match the development oracle; not a kernel pass"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "endpoint": "http://localhost:3030/houses/query",
+  "asOf": "2026-11-11",
+  "timeout_seconds": 20,
+  "max_rows_per_request": 100,
+  "max_diagnostic_pages": 40,
+  "query_sha256": "a7c9548ecf393f844307ab75ef1bef9f45951da216d006bdd3c8fc3984e4c2f9",
+  "enumeration_complete": true,
+  "pages": [
+    {
+      "file": "page-00.json",
+      "offset": 0,
+      "rows": 100,
+      "sha256": "513d96bec0a9b03a935a2a178de15b1fe8a0fa8652d4a7a4539cd46016351f9f",
+      "http_status": 200,
+      "started": "2026-11-11T14:58:55.899751+00:00",
+      "finished": "2026-11-11T14:58:55.953656+00:00"
+    },
+    {
+      "file": "page-01.json",
+      "offset": 100,
+      "rows": 100,
+      "sha256": "ab24ea721deee4c24d530567b6c9d35f444f16d38755d1231bf7404fe331218a",
+      "http_status": 200,
+      "started": "2026-11-11T14:58:55.953678+00:00",
+      "finished": "2026-11-11T14:58:55.993249+00:00"
+    },
+    {
+      "file": "page-02.json",
+      "offset": 200,
+      "rows": 100,
+      "sha256": "c8b28a172645ea3a2099e5d7ea215e905f9bf415883579c3809cb7415bd3fde5",
+      "http_status": 200,
+      "started": "2026-11-11T14:58:55.993273+00:00",
+      "finished": "2026-11-11T14:58:56.034066+00:00"
+    },
+    {
+      "file": "page-03.json",
+      "offset": 300,
+      "rows": 9,
+      "sha256": "184e8b9fa0a425178be66dfc1b40ffe7c3dff9d0e999a422493d81bfc5534039",
+      "http_status": 200,
+      "started": "2026-11-11T14:58:56.034086+00:00",
+      "finished": "2026-11-11T14:58:56.066679+00:00"
+    }
+  ],
+  "snapshot": "Sequential SELECT captures, not a transactional store snapshot"
+}

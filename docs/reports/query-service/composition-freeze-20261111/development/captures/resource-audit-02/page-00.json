@@ -1,0 +1,608 @@
+{ "head": {
+    "vars": [ "g" , "s" , "p" , "o" ]
+  } ,
+  "results": {
+    "bindings": [
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Catherine-Connolly.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/32#party-membership-7874d9da61ec488013f961556b301472ec43d29c609eb7eff48ad24667136cae#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Catherine-Connolly.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/32#party-membership-7874d9da61ec488013f961556b301472ec43d29c609eb7eff48ad24667136cae#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#EndDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2020-01-14T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Catherine-Connolly.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/32#party-membership-7874d9da61ec488013f961556b301472ec43d29c609eb7eff48ad24667136cae#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2016-05-31T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Catherine-Connolly.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#CommitteeMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Catherine-Connolly.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87#member-date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Catherine-Connolly.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isCommitteeMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Catherine-Connolly.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87#member-date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Catherine-Connolly.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87#member-date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#EndDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2025-10-25T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Catherine-Connolly.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87#member-date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2025-05-07T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#Member" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "http://xmlns.com/foaf/0.1/name" } ,
+        "o": { "type": "literal" , "value": "Cathy Bennett" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#memberCode" } ,
+        "o": { "type": "literal" , "value": "Cathy-Bennett.D.2024-11-29" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-62e5978a038386c8f9267d662e5898145d0066693924af222cf8f0af60189920" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-8e2cc6a90846c4fc7a75932a3612352dbea21bc0d7f0193765ca4b4e07611bcd" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-fb4cde6ff42b00bd7a63001aed0a96fcf14387bc5660a7622d759e7a302e535b" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#party-membership-55c3b2f3ae29ba778094ddccbc2e2ef60d1fff906498c08c7322db3d019b1521" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DailMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#OireachtasMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inHouseTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isRepresentativeFrom" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Cavan-Monaghan" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#CommitteeMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572#member-date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isCommitteeMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572#member-date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572#member-date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2025-05-07T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-29T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#party-membership-55c3b2f3ae29ba778094ddccbc2e2ef60d1fff906498c08c7322db3d019b1521" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#party-membership-55c3b2f3ae29ba778094ddccbc2e2ef60d1fff906498c08c7322db3d019b1521" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#PartyMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#party-membership-55c3b2f3ae29ba778094ddccbc2e2ef60d1fff906498c08c7322db3d019b1521" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#party-membership-55c3b2f3ae29ba778094ddccbc2e2ef60d1fff906498c08c7322db3d019b1521#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#party-membership-55c3b2f3ae29ba778094ddccbc2e2ef60d1fff906498c08c7322db3d019b1521" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inOireachtasMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#party-membership-55c3b2f3ae29ba778094ddccbc2e2ef60d1fff906498c08c7322db3d019b1521" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isPartyMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#party-membership-55c3b2f3ae29ba778094ddccbc2e2ef60d1fff906498c08c7322db3d019b1521" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#memberOfCollection" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#party-membership-55c3b2f3ae29ba778094ddccbc2e2ef60d1fff906498c08c7322db3d019b1521#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#party-membership-55c3b2f3ae29ba778094ddccbc2e2ef60d1fff906498c08c7322db3d019b1521#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-29T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#Member" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25" } ,
+        "p": { "type": "uri" , "value": "http://xmlns.com/foaf/0.1/name" } ,
+        "o": { "type": "literal" , "value": "Daniel Ennis" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#memberCode" } ,
+        "o": { "type": "literal" , "value": "Daniel-Ennis.D.2026-05-25" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#committee-membership-5e043b9635f6c5d7025fbf3747894f6f44782fb156b669cbe12ca330b717cce7" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#committee-membership-959943bb2279699bab7da1981d92b5ee07de31538c6d42f214b97219687114ee" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DailMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#OireachtasMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inHouseTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isRepresentativeFrom" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2026-05-25T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#PartyMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inOireachtasMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isPartyMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Social_Democrats" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#memberOfCollection" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Social_Democrats" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2026-05-25T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#Member" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "http://xmlns.com/foaf/0.1/name" } ,
+        "o": { "type": "literal" , "value": "Eoghan Kenny" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#memberCode" } ,
+        "o": { "type": "literal" , "value": "Eoghan-Kenny.D.2024-11-29" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-778686874f63d654c635176e3070741f1820d2e8fc851f5fe977d1f169abc3dc" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-d14df115c83d0fd9290e58c53932e553d2bb2a8695633548809df7739b362eec" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#party-membership-eb03247c7a382c381d50a578879760fb2cb5f2d7a5be0001476201c03acb6cc5" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DailMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#OireachtasMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inHouseTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isRepresentativeFrom" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Cork-North-Central" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#CommitteeMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee#member-date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isCommitteeMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee#member-date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee#member-date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2025-05-07T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-29T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#party-membership-eb03247c7a382c381d50a578879760fb2cb5f2d7a5be0001476201c03acb6cc5" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#party-membership-eb03247c7a382c381d50a578879760fb2cb5f2d7a5be0001476201c03acb6cc5" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#PartyMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#party-membership-eb03247c7a382c381d50a578879760fb2cb5f2d7a5be0001476201c03acb6cc5" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#party-membership-eb03247c7a382c381d50a578879760fb2cb5f2d7a5be0001476201c03acb6cc5#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#party-membership-eb03247c7a382c381d50a578879760fb2cb5f2d7a5be0001476201c03acb6cc5" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inOireachtasMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#party-membership-eb03247c7a382c381d50a578879760fb2cb5f2d7a5be0001476201c03acb6cc5" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isPartyMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Labour_Party" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#party-membership-eb03247c7a382c381d50a578879760fb2cb5f2d7a5be0001476201c03acb6cc5" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#memberOfCollection" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Labour_Party" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#party-membership-eb03247c7a382c381d50a578879760fb2cb5f2d7a5be0001476201c03acb6cc5#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#party-membership-eb03247c7a382c381d50a578879760fb2cb5f2d7a5be0001476201c03acb6cc5#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-29T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Gary-Gannon.D.2020-02-08" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#Member" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Gary-Gannon.D.2020-02-08" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08" } ,
+        "p": { "type": "uri" , "value": "http://xmlns.com/foaf/0.1/name" } ,
+        "o": { "type": "literal" , "value": "Gary Gannon" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Gary-Gannon.D.2020-02-08" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#memberCode" } ,
+        "o": { "type": "literal" , "value": "Gary-Gannon.D.2020-02-08" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Gary-Gannon.D.2020-02-08" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/33" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Gary-Gannon.D.2020-02-08" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/33#committee-membership-440c65499a79b9a129c1108eff3a11678b134cc795877c08e1ebeacd803eb404" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Gary-Gannon.D.2020-02-08" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/33#committee-membership-45206fc08ea90d8a6c19083e9f92e70bef9e9f3dae45d7639b23d92b6c92bd94" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Gary-Gannon.D.2020-02-08" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/33#committee-membership-73f1c0e31503fde2c0b01b21b723b619269110d2cddb63718c08cde2502bad51" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Gary-Gannon.D.2020-02-08" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/33#committee-membership-8cb883bc739e808e743702824b7c05bfae5beea713aa6c8a7ad975e9d74a5fa1" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Gary-Gannon.D.2020-02-08" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/33#committee-membership-a72c9134fd938723b159991963c739ea685a8fe8b01a04d6cb7338db7d1a5a2d" }
+      }
+    ]
+  }
+}

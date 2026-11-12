@@ -1,0 +1,150 @@
+PREFIX a: <https://data.oireachtas.ie/ontology#>
+PREFIX m: <https://data.oireachtas.ie/ontology/members#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX dcat: <http://www.w3.org/ns/dcat#>
+SELECT DISTINCT ?g ?s ?p ?o WHERE {
+VALUES ?s {
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/15>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/15#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/16>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/16#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/17>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/17#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/18>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/18#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/19>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/19#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/1922>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/1922#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/1925>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/1925#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/1928>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/1928#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/1931>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/1931#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/1934>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/1934#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/2>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/2#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/20>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/20#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/21>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/21#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/22>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/22#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/23>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/23#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/24>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/24#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/25>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/25#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/26>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/26#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/27>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/27#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/3>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/3#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/4>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/4#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/5>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/5#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/6>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/6#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/7>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/7#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/8>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/8#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/9>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/9#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#committee-membership-7a2d9746a8c5bcd6f35632c508fe12088e51dce5270a016d79a9e5e5a7e9ad86>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#committee-membership-7a2d9746a8c5bcd6f35632c508fe12088e51dce5270a016d79a9e5e5a7e9ad86#member-date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#party-membership-8fa6d34c77fb1866c908a9b7732b3d14dfaac0566919f37896502f3b3c1190a0>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#party-membership-8fa6d34c77fb1866c908a9b7732b3d14dfaac0566919f37896502f3b3c1190a0#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#committee-membership-83ee419568331dfb794f79cd3762741bdba677951e3bbc287cdf5ef79807a3bf>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#committee-membership-83ee419568331dfb794f79cd3762741bdba677951e3bbc287cdf5ef79807a3bf#member-date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#committee-membership-8c75f36d80a9023281acdaf09e0d2166d565e34efb859265e5e4a15de96dd334>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#committee-membership-8c75f36d80a9023281acdaf09e0d2166d565e34efb859265e5e4a15de96dd334#member-date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#party-membership-90d249d1a8e49095a962c196f41b204f2a665fc6db46352eecad28230f4bff1b>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#party-membership-90d249d1a8e49095a962c196f41b204f2a665fc6db46352eecad28230f4bff1b#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/seanad/25>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/seanad/25#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/seanad/25#party-membership-33c947c27ee22b5cc187fb5bd74e569120ae1ac424e1300de6f905c16e9c05d3>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/seanad/25#party-membership-33c947c27ee22b5cc187fb5bd74e569120ae1ac424e1300de6f905c16e9c05d3#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/seanad/26>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/seanad/26#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/seanad/26#party-membership-19b262035d238b6ed07ffb1b7c7d0e4e938cceec1275026efda3677febee85f4>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/seanad/26#party-membership-19b262035d238b6ed07ffb1b7c7d0e4e938cceec1275026efda3677febee85f4#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/32>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/32#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/32#party-membership-7874d9da61ec488013f961556b301472ec43d29c609eb7eff48ad24667136cae>
+}
+GRAPH ?g {
+{ ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o . BIND(<http://www.w3.org/1999/02/22-rdf-syntax-ns#type> AS ?p) }
+UNION
+{ ?s <http://www.w3.org/2004/02/skos/core#prefLabel> ?o . BIND(<http://www.w3.org/2004/02/skos/core#prefLabel> AS ?p) }
+UNION
+{ ?s <http://xmlns.com/foaf/0.1/name> ?o . BIND(<http://xmlns.com/foaf/0.1/name> AS ?p) }
+UNION
+{ ?s <http://purl.org/dc/terms/temporal> ?o . BIND(<http://purl.org/dc/terms/temporal> AS ?p) }
+UNION
+{ ?s <http://www.w3.org/ns/dcat#startDate> ?o . BIND(<http://www.w3.org/ns/dcat#startDate> AS ?p) }
+UNION
+{ ?s <http://www.w3.org/ns/dcat#endDate> ?o . BIND(<http://www.w3.org/ns/dcat#endDate> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology#memberCode> ?o . BIND(<https://data.oireachtas.ie/ontology#memberCode> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology#termNo> ?o . BIND(<https://data.oireachtas.ie/ontology#termNo> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology#termOf> ?o . BIND(<https://data.oireachtas.ie/ontology#termOf> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#hasMembersMembership> ?o . BIND(<https://data.oireachtas.ie/ontology/members#hasMembersMembership> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#inHouseTerm> ?o . BIND(<https://data.oireachtas.ie/ontology/members#inHouseTerm> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf> ?o . BIND(<https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> ?o . BIND(<https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#StartDate> ?o . BIND(<https://data.oireachtas.ie/ontology/members#StartDate> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#EndDate> ?o . BIND(<https://data.oireachtas.ie/ontology/members#EndDate> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#inOireachtasMembership> ?o . BIND(<https://data.oireachtas.ie/ontology/members#inOireachtasMembership> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#memberOfCollection> ?o . BIND(<https://data.oireachtas.ie/ontology/members#memberOfCollection> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#isPartyMembershipOf> ?o . BIND(<https://data.oireachtas.ie/ontology/members#isPartyMembershipOf> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity> ?o . BIND(<https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#activeDuringTerm> ?o . BIND(<https://data.oireachtas.ie/ontology/members#activeDuringTerm> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#isRepresentativeFrom> ?o . BIND(<https://data.oireachtas.ie/ontology/members#isRepresentativeFrom> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#constituencyInHouseTerm> ?o . BIND(<https://data.oireachtas.ie/ontology/members#constituencyInHouseTerm> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#isCommitteeMembershipOf> ?o . BIND(<https://data.oireachtas.ie/ontology/members#isCommitteeMembershipOf> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#committeeInHouseTerm> ?o . BIND(<https://data.oireachtas.ie/ontology/members#committeeInHouseTerm> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#committeeCode> ?o . BIND(<https://data.oireachtas.ie/ontology/members#committeeCode> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#committeeID> ?o . BIND(<https://data.oireachtas.ie/ontology/members#committeeID> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#hasCommitteeDateRange> ?o . BIND(<https://data.oireachtas.ie/ontology/members#hasCommitteeDateRange> AS ?p) }
+}
+} ORDER BY ?g ?s ?p ?o LIMIT 100

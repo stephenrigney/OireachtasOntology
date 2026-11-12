@@ -1,0 +1,17 @@
+PREFIX a: <https://data.oireachtas.ie/ontology#>
+PREFIX m: <https://data.oireachtas.ie/ontology/members#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX dcat: <http://www.w3.org/ns/dcat#>
+SELECT DISTINCT * WHERE {
+VALUES ?member { <https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29> <https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25> <https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03> <https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29> <https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25> <https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29> <https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08> <https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29> <https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29> <https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29> <https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29> <https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03> <https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30> <https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29> <https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09> <https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23> <https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08> <https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10> <https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29> }
+GRAPH ?g {
+ ?member m:hasMembersMembership ?record .
+ OPTIONAL { ?record a ?recordType }
+ OPTIONAL { ?record m:inOireachtasMembership ?containing }
+ OPTIONAL { ?record m:isPartyMembershipOf ?party }
+ OPTIONAL { ?record m:memberOfCollection ?collection }
+ OPTIONAL { ?record m:inHouseTerm ?term }
+}
+} ORDER BY ?collection ?containing ?g ?member ?party ?record ?recordType ?term LIMIT 100

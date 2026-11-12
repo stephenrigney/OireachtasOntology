@@ -1,0 +1,608 @@
+{ "head": {
+    "vars": [ "g" , "s" , "p" , "o" ]
+  } ,
+  "results": {
+    "bindings": [
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23#cabinet-membership-e3fef3d60ce3b7f3f271f61da981e0f51a3afa478ad0c7335b9d883249cc7506" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23#office-holding-cfa37b767a4c571e497cff16626b4dbbd0d1c827cb3ef9078de9a7819982f22d" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23#office-holding-e1b1ab36a099015b73cedd4ee39b5c07c9bf72ea7e19c594a510e194d146aea1" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31#party-membership-d7f59bc7c7ce7ba76c56f80c5cbad781761d05ca7180e26048807563ebe6e7b2" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32#party-membership-01e76d04f541e7249326f6342491daa8e2b0ea48ef70ae18f7485e997fa4c817" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33#party-membership-2765e5f360933f3703bdebd641e4887bd3f420d9b2ab22af722d3ab6afa5c52c" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#party-membership-e409f692afb12b66e4f76f0157bd866d1a87ddb8324b566d058022d2abd2e9a5" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23#party-membership-987dd3121b07b627b77fbdbbd4270630dfedabf1977e20e3b3d086e0c7bd1c6f" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DailMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#OireachtasMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inHouseTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/31" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isRepresentativeFrom" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/31/constituency/Dublin-Central" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#EndDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2016-03-09T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2011-03-09T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31#party-membership-d7f59bc7c7ce7ba76c56f80c5cbad781761d05ca7180e26048807563ebe6e7b2" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31#party-membership-d7f59bc7c7ce7ba76c56f80c5cbad781761d05ca7180e26048807563ebe6e7b2" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#PartyMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31#party-membership-d7f59bc7c7ce7ba76c56f80c5cbad781761d05ca7180e26048807563ebe6e7b2" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31#party-membership-d7f59bc7c7ce7ba76c56f80c5cbad781761d05ca7180e26048807563ebe6e7b2#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31#party-membership-d7f59bc7c7ce7ba76c56f80c5cbad781761d05ca7180e26048807563ebe6e7b2" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inOireachtasMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31#party-membership-d7f59bc7c7ce7ba76c56f80c5cbad781761d05ca7180e26048807563ebe6e7b2" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isPartyMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Fine_Gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31#party-membership-d7f59bc7c7ce7ba76c56f80c5cbad781761d05ca7180e26048807563ebe6e7b2" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#memberOfCollection" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/31/Fine_Gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31#party-membership-d7f59bc7c7ce7ba76c56f80c5cbad781761d05ca7180e26048807563ebe6e7b2#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31#party-membership-d7f59bc7c7ce7ba76c56f80c5cbad781761d05ca7180e26048807563ebe6e7b2#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#EndDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2016-03-09T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/31#party-membership-d7f59bc7c7ce7ba76c56f80c5cbad781761d05ca7180e26048807563ebe6e7b2#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2011-02-25T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DailMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#OireachtasMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inHouseTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/32" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isRepresentativeFrom" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/32/constituency/Dublin-Central" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#EndDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2020-01-14T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2016-03-10T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32#party-membership-01e76d04f541e7249326f6342491daa8e2b0ea48ef70ae18f7485e997fa4c817" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32#party-membership-01e76d04f541e7249326f6342491daa8e2b0ea48ef70ae18f7485e997fa4c817" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#PartyMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32#party-membership-01e76d04f541e7249326f6342491daa8e2b0ea48ef70ae18f7485e997fa4c817" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32#party-membership-01e76d04f541e7249326f6342491daa8e2b0ea48ef70ae18f7485e997fa4c817#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32#party-membership-01e76d04f541e7249326f6342491daa8e2b0ea48ef70ae18f7485e997fa4c817" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inOireachtasMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32#party-membership-01e76d04f541e7249326f6342491daa8e2b0ea48ef70ae18f7485e997fa4c817" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isPartyMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/32/Fine_Gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32#party-membership-01e76d04f541e7249326f6342491daa8e2b0ea48ef70ae18f7485e997fa4c817" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#memberOfCollection" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/32/Fine_Gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32#party-membership-01e76d04f541e7249326f6342491daa8e2b0ea48ef70ae18f7485e997fa4c817#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32#party-membership-01e76d04f541e7249326f6342491daa8e2b0ea48ef70ae18f7485e997fa4c817#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#EndDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2020-01-14T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/32#party-membership-01e76d04f541e7249326f6342491daa8e2b0ea48ef70ae18f7485e997fa4c817#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2016-03-10T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DailMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#OireachtasMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inHouseTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isRepresentativeFrom" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33/constituency/Dublin-Central" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#EndDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-08T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2020-02-08T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33#party-membership-2765e5f360933f3703bdebd641e4887bd3f420d9b2ab22af722d3ab6afa5c52c" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33#party-membership-2765e5f360933f3703bdebd641e4887bd3f420d9b2ab22af722d3ab6afa5c52c" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#PartyMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33#party-membership-2765e5f360933f3703bdebd641e4887bd3f420d9b2ab22af722d3ab6afa5c52c" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33#party-membership-2765e5f360933f3703bdebd641e4887bd3f420d9b2ab22af722d3ab6afa5c52c#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33#party-membership-2765e5f360933f3703bdebd641e4887bd3f420d9b2ab22af722d3ab6afa5c52c" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inOireachtasMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33#party-membership-2765e5f360933f3703bdebd641e4887bd3f420d9b2ab22af722d3ab6afa5c52c" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isPartyMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Fine_Gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33#party-membership-2765e5f360933f3703bdebd641e4887bd3f420d9b2ab22af722d3ab6afa5c52c" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#memberOfCollection" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Fine_Gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33#party-membership-2765e5f360933f3703bdebd641e4887bd3f420d9b2ab22af722d3ab6afa5c52c#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33#party-membership-2765e5f360933f3703bdebd641e4887bd3f420d9b2ab22af722d3ab6afa5c52c#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#EndDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-08T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/33#party-membership-2765e5f360933f3703bdebd641e4887bd3f420d9b2ab22af722d3ab6afa5c52c#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2020-02-08T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DailMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#OireachtasMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inHouseTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isRepresentativeFrom" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#EndDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2025-11-21T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-29T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#party-membership-e409f692afb12b66e4f76f0157bd866d1a87ddb8324b566d058022d2abd2e9a5" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#party-membership-e409f692afb12b66e4f76f0157bd866d1a87ddb8324b566d058022d2abd2e9a5" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#PartyMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#party-membership-e409f692afb12b66e4f76f0157bd866d1a87ddb8324b566d058022d2abd2e9a5" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#party-membership-e409f692afb12b66e4f76f0157bd866d1a87ddb8324b566d058022d2abd2e9a5#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#party-membership-e409f692afb12b66e4f76f0157bd866d1a87ddb8324b566d058022d2abd2e9a5" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inOireachtasMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#party-membership-e409f692afb12b66e4f76f0157bd866d1a87ddb8324b566d058022d2abd2e9a5" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isPartyMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#party-membership-e409f692afb12b66e4f76f0157bd866d1a87ddb8324b566d058022d2abd2e9a5" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#memberOfCollection" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#party-membership-e409f692afb12b66e4f76f0157bd866d1a87ddb8324b566d058022d2abd2e9a5#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#party-membership-e409f692afb12b66e4f76f0157bd866d1a87ddb8324b566d058022d2abd2e9a5#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#EndDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2025-11-21T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#party-membership-e409f692afb12b66e4f76f0157bd866d1a87ddb8324b566d058022d2abd2e9a5#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-29T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#OireachtasMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#SeanadMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inHouseTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/23" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isRepresentativeFrom" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/23/panel/Administrative-Panel" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#EndDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2011-04-25T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2007-07-23T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23#party-membership-987dd3121b07b627b77fbdbbd4270630dfedabf1977e20e3b3d086e0c7bd1c6f" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23#party-membership-987dd3121b07b627b77fbdbbd4270630dfedabf1977e20e3b3d086e0c7bd1c6f" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#PartyMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23#party-membership-987dd3121b07b627b77fbdbbd4270630dfedabf1977e20e3b3d086e0c7bd1c6f" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23#party-membership-987dd3121b07b627b77fbdbbd4270630dfedabf1977e20e3b3d086e0c7bd1c6f#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23#party-membership-987dd3121b07b627b77fbdbbd4270630dfedabf1977e20e3b3d086e0c7bd1c6f" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inOireachtasMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23#party-membership-987dd3121b07b627b77fbdbbd4270630dfedabf1977e20e3b3d086e0c7bd1c6f" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isPartyMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Fine_Gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23#party-membership-987dd3121b07b627b77fbdbbd4270630dfedabf1977e20e3b3d086e0c7bd1c6f" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#memberOfCollection" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Fine_Gael" }
+      }
+    ]
+  }
+}

@@ -1,0 +1,608 @@
+{ "head": {
+    "vars": [ "g" , "s" , "p" , "o" ]
+  } ,
+  "results": {
+    "bindings": [
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/James-Geoghegan.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#party-membership-5fb67b5010820fd956ab762b92c52e5358929ed594adb5252ca12c6a1aab7028" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#PartyMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/James-Geoghegan.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#party-membership-5fb67b5010820fd956ab762b92c52e5358929ed594adb5252ca12c6a1aab7028" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#party-membership-5fb67b5010820fd956ab762b92c52e5358929ed594adb5252ca12c6a1aab7028#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/James-Geoghegan.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#party-membership-5fb67b5010820fd956ab762b92c52e5358929ed594adb5252ca12c6a1aab7028" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inOireachtasMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/James-Geoghegan.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#party-membership-5fb67b5010820fd956ab762b92c52e5358929ed594adb5252ca12c6a1aab7028" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isPartyMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/James-Geoghegan.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#party-membership-5fb67b5010820fd956ab762b92c52e5358929ed594adb5252ca12c6a1aab7028" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#memberOfCollection" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/James-Geoghegan.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#party-membership-5fb67b5010820fd956ab762b92c52e5358929ed594adb5252ca12c6a1aab7028#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/James-Geoghegan.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#party-membership-5fb67b5010820fd956ab762b92c52e5358929ed594adb5252ca12c6a1aab7028#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-29T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#Member" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "http://xmlns.com/foaf/0.1/name" } ,
+        "o": { "type": "literal" , "value": "Joanna Byrne" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#memberCode" } ,
+        "o": { "type": "literal" , "value": "Joanna-Byrne.D.2024-11-29" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-162805fbf02693ee06f427a79af07eaa474e0922e0c011097d5d987b1f95444d" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-65610360af88dce3206f9a9bfaf74344be258e18de5fbf7c3b19c56e45949660" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-80b1850df5962467a94f9d925233933aaa7fd454f657c34473808c644200cb6e" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-868b8f2ffbe5a147f2ee27fe23c669ce1b13d2cdf68d1e0e07aca3da1caf2e34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-9451789e2679c6ea8f6ba7ee85ab1f2557f5be7aec2bb9c3acd4bdf27549470b" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-a5a847fee3515d0f826e30eb518577e68f461246e00c10d825c95e329f9544ed" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#party-membership-344bfa1992e62bd1edf14f4a3615f62793631920ace8955725afbf55d244fb02" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DailMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#OireachtasMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inHouseTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isRepresentativeFrom" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Louth" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#CommitteeMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9#member-date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isCommitteeMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9#member-date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9#member-date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2025-05-07T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-29T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#party-membership-344bfa1992e62bd1edf14f4a3615f62793631920ace8955725afbf55d244fb02" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#party-membership-344bfa1992e62bd1edf14f4a3615f62793631920ace8955725afbf55d244fb02" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#PartyMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#party-membership-344bfa1992e62bd1edf14f4a3615f62793631920ace8955725afbf55d244fb02" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#party-membership-344bfa1992e62bd1edf14f4a3615f62793631920ace8955725afbf55d244fb02#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#party-membership-344bfa1992e62bd1edf14f4a3615f62793631920ace8955725afbf55d244fb02" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inOireachtasMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#party-membership-344bfa1992e62bd1edf14f4a3615f62793631920ace8955725afbf55d244fb02" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isPartyMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#party-membership-344bfa1992e62bd1edf14f4a3615f62793631920ace8955725afbf55d244fb02" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#memberOfCollection" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#party-membership-344bfa1992e62bd1edf14f4a3615f62793631920ace8955725afbf55d244fb02#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#party-membership-344bfa1992e62bd1edf14f4a3615f62793631920ace8955725afbf55d244fb02#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-29T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#Member" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "http://xmlns.com/foaf/0.1/name" } ,
+        "o": { "type": "literal" , "value": "Joe Neville" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#memberCode" } ,
+        "o": { "type": "literal" , "value": "Joe-Neville.D.2024-11-29" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-a246f1342371970e7c3e692fd1fc7515d0d05010def0dba339bb5551acaf67cd" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-f394c5334831c658af1fdc6b98774525eab5c529e99137ea43ed054dd5817d54" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-fca169dc0eef2a6dc906ed31f71b342fa285a8eee039fc4f7cdb89aab5e0450d" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#party-membership-8c2187cb1e397dda037ab7b2f257cda33a0e9c0732020f047af5e6f4971d094e" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DailMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#OireachtasMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inHouseTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isRepresentativeFrom" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Kildare-North" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#CommitteeMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e#member-date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isCommitteeMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e#member-date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e#member-date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2025-05-07T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-29T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#party-membership-8c2187cb1e397dda037ab7b2f257cda33a0e9c0732020f047af5e6f4971d094e" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#party-membership-8c2187cb1e397dda037ab7b2f257cda33a0e9c0732020f047af5e6f4971d094e" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#PartyMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#party-membership-8c2187cb1e397dda037ab7b2f257cda33a0e9c0732020f047af5e6f4971d094e" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#party-membership-8c2187cb1e397dda037ab7b2f257cda33a0e9c0732020f047af5e6f4971d094e#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#party-membership-8c2187cb1e397dda037ab7b2f257cda33a0e9c0732020f047af5e6f4971d094e" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inOireachtasMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#party-membership-8c2187cb1e397dda037ab7b2f257cda33a0e9c0732020f047af5e6f4971d094e" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isPartyMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#party-membership-8c2187cb1e397dda037ab7b2f257cda33a0e9c0732020f047af5e6f4971d094e" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#memberOfCollection" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#party-membership-8c2187cb1e397dda037ab7b2f257cda33a0e9c0732020f047af5e6f4971d094e#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#party-membership-8c2187cb1e397dda037ab7b2f257cda33a0e9c0732020f047af5e6f4971d094e#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-29T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#Member" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "http://xmlns.com/foaf/0.1/name" } ,
+        "o": { "type": "literal" , "value": "John Brady" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#memberCode" } ,
+        "o": { "type": "literal" , "value": "John-Brady.D.2016-10-03" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32#committee-membership-9fb509478400163b7076a223dc88beb6cccd6dd0a8eb69377a0c0c39649d5359" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32#committee-membership-ead56845b06e00bbebdeac572ca6aed60fe5dfedeec74612e04aa09146382e9f" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32#party-membership-78ea1d70dc9520d33aac3b1a1b80d481492eeceed79b69ef74e53408fd181481" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/33" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/33#committee-membership-1278998b246c1919296f18154d6dd9acf80fe051e4c251da98f81c160a11cbd2" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/33#committee-membership-2ccfbb488f93c48e82af97d5374a91d0618d911c1f6b65bb8cac7c935e81df20" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/33#committee-membership-3896ff803a74658d23daba79f8f8ebebefb72f9490a6e9d642f64240c9e5270d" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/33#committee-membership-4cd389c6565987f035279a30de1aaf8bb90219be8a031bd075f4b1939e6b560a" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/33#committee-membership-62c78069a43f3db1288fa1f8a1541a254c86f163bf4967397e724904274027a0" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/33#committee-membership-a3abb1ee50c72ca71d1c62441743109dfaa2e07682e49d83af543596778b27c5" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/33#committee-membership-af4edbfc3cee438fb15daa4e68c929065559a9c51c9edbe50c111d901b39d120" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/33#committee-membership-b43da6a165d4cf3c066c4fd0d4050a9192cae525f21ba45e364810f160c939e8" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/33#committee-membership-dd091eebf5d3c45ba6bfd8fe1b2f49052596f7b6f8492ca1aef00944d5695ca2" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/33#party-membership-39573c98611ea162925fc59b4f0ce38149f624db723d2887a463c766103b294a" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#committee-membership-3673ae70ac2cd53f8c88238aaa81bb1e3848b24248fd298802e686c63dcbfc83" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#committee-membership-897ebbb535915271ce2ca1d3a68b87494914716085e8dc8d8807266df8b13349" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#party-membership-577b5edbc1fc57b972474192a6da4d6fcacda7931d6ed60e637f01610b5c28f0" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DailMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#OireachtasMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inHouseTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/32" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isRepresentativeFrom" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/32/constituency/Wicklow" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#EndDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2020-01-14T00:00:00" }
+      }
+    ]
+  }
+}

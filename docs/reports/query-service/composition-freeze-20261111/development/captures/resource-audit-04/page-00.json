@@ -1,0 +1,458 @@
+{ "head": {
+    "vars": [ "g" , "s" , "p" , "o" ]
+  } ,
+  "results": {
+    "bindings": [
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryParty" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/2004/02/skos/core#prefLabel" } ,
+        "o": { "type": "literal" , "xml:lang": "en" , "value": "Fianna Fáil" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#activeDuringTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Fine_Gael" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Fine_Gael" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryParty" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Fine_Gael" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/2004/02/skos/core#prefLabel" } ,
+        "o": { "type": "literal" , "xml:lang": "en" , "value": "Fine Gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Fine_Gael" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#activeDuringTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/People_Before_Profit_Solidarity" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/People_Before_Profit_Solidarity" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryParty" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/People_Before_Profit_Solidarity" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/2004/02/skos/core#prefLabel" } ,
+        "o": { "type": "literal" , "xml:lang": "en" , "value": "People Before Profit-Solidarity" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/People_Before_Profit_Solidarity" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#activeDuringTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Sinn_Féin" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Sinn_Féin" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryParty" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Sinn_Féin" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/2004/02/skos/core#prefLabel" } ,
+        "o": { "type": "literal" , "xml:lang": "en" , "value": "Sinn Féin" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Sinn_Féin" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#activeDuringTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Social_Democrats" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Social_Democrats" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryParty" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Social_Democrats" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/2004/02/skos/core#prefLabel" } ,
+        "o": { "type": "literal" , "xml:lang": "en" , "value": "Social Democrats" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Social_Democrats" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#activeDuringTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryParty" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/2004/02/skos/core#prefLabel" } ,
+        "o": { "type": "literal" , "xml:lang": "en" , "value": "Fianna Fáil" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#activeDuringTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryParty" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/2004/02/skos/core#prefLabel" } ,
+        "o": { "type": "literal" , "xml:lang": "en" , "value": "Fine Gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#activeDuringTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Labour_Party" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Labour_Party" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryParty" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Labour_Party" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/2004/02/skos/core#prefLabel" } ,
+        "o": { "type": "literal" , "xml:lang": "en" , "value": "Labour Party" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Labour_Party" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#activeDuringTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/People_Before_Profit_Solidarity" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/People_Before_Profit_Solidarity" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryParty" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/People_Before_Profit_Solidarity" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/2004/02/skos/core#prefLabel" } ,
+        "o": { "type": "literal" , "xml:lang": "en" , "value": "People Before Profit-Solidarity" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/People_Before_Profit_Solidarity" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#activeDuringTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryParty" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/2004/02/skos/core#prefLabel" } ,
+        "o": { "type": "literal" , "xml:lang": "en" , "value": "Sinn Féin" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#activeDuringTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Social_Democrats" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Social_Democrats" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryParty" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Social_Democrats" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/2004/02/skos/core#prefLabel" } ,
+        "o": { "type": "literal" , "xml:lang": "en" , "value": "Social Democrats" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Social_Democrats" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#activeDuringTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Fine_Gael" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Fine_Gael" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryParty" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Fine_Gael" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/2004/02/skos/core#prefLabel" } ,
+        "o": { "type": "literal" , "xml:lang": "en" , "value": "Fine Gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Fine_Gael" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#activeDuringTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/23" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/25/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/25/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryParty" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/25/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/2004/02/skos/core#prefLabel" } ,
+        "o": { "type": "literal" , "xml:lang": "en" , "value": "Fianna Fáil" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/25/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#activeDuringTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/25" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryParty" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/2004/02/skos/core#prefLabel" } ,
+        "o": { "type": "literal" , "xml:lang": "en" , "value": "Fianna Fáil" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#activeDuringTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/26" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Labour_Party" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Labour_Party" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryParty" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Labour_Party" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/2004/02/skos/core#prefLabel" } ,
+        "o": { "type": "literal" , "xml:lang": "en" , "value": "Labour Party" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/parties" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Labour_Party" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#activeDuringTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/26" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/political-affiliations/identities" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/political-affiliations/identities" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Fine_Gael" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fine-gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/political-affiliations/identities" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/People_Before_Profit_Solidarity" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/people-before-profit-solidarity" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/political-affiliations/identities" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Sinn_Féin" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/political-affiliations/identities" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/33/Social_Democrats" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/social-democrats" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/political-affiliations/identities" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/political-affiliations/identities" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fine-gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/political-affiliations/identities" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Labour_Party" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/labour-party" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/political-affiliations/identities" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/People_Before_Profit_Solidarity" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/people-before-profit-solidarity" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/political-affiliations/identities" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/political-affiliations/identities" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Social_Democrats" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/social-democrats" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/political-affiliations/identities" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Fine_Gael" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fine-gael" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/political-affiliations/identities" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/25/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/political-affiliations/identities" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Fianna_Fáil" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/political-affiliations/identities" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Labour_Party" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/labour-party" }
+      }
+    ]
+  }
+}

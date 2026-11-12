@@ -1,0 +1,128 @@
+{ "head": {
+    "vars": [ "g" , "s" , "p" , "o" ]
+  } ,
+  "results": {
+    "bindings": [
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Marie-Sherlock.S.2020-03-30" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/seanad/26#party-membership-60c488144fca17e814722e4029d36fc46115ecce4267f24db87b6f6fc36773e9" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#memberOfCollection" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Labour_Party" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Marie-Sherlock.S.2020-03-30" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/seanad/26#party-membership-60c488144fca17e814722e4029d36fc46115ecce4267f24db87b6f6fc36773e9#date-range" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Marie-Sherlock.S.2020-03-30" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/seanad/26#party-membership-60c488144fca17e814722e4029d36fc46115ecce4267f24db87b6f6fc36773e9#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#EndDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-29T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Marie-Sherlock.S.2020-03-30" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/seanad/26#party-membership-60c488144fca17e814722e4029d36fc46115ecce4267f24db87b6f6fc36773e9#date-range" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#StartDate" } ,
+        "o": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2020-03-30T00:00:00" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#Member" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "http://xmlns.com/foaf/0.1/name" } ,
+        "o": { "type": "literal" , "value": "Martin Daly" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#memberCode" } ,
+        "o": { "type": "literal" , "value": "Martin-Daly.D.2024-11-29" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#committee-membership-1c8f5095b694ac6c096537670083df419367513239783aef32a87d11310477a6" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#committee-membership-30ed67c03e4bfaf8453319715682fa6d27dbdb392d576d153ffd2a6619e0aca9" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#committee-membership-b98a4ec68003e93ab23bb0cb28bc3ce787da98120cfe9f096a815eeb4e596374" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#committee-membership-be335280d89b2fdae6de7539e80ba9b68f39ebb397b6fffce879306c28441503" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#committee-membership-f3c35f58f00541e0680b6bf5fd1c2a24a49941c160fc29f6c07ea2d31a56ac0c" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembersMembership" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#party-membership-52bd8d8b977ea03973a8331f11f60711697e8017e8072b438b928a4b48c56cc9" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DailMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#OireachtasMembership" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#hasMembershipDateRange" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#date-range" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#inHouseTerm" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" }
+      } ,
+      { 
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29" } ,
+        "s": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34" } ,
+        "p": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#isRepresentativeFrom" } ,
+        "o": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Roscommon-Galway" }
+      }
+    ]
+  }
+}

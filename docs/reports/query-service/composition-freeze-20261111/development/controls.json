@@ -1,0 +1,1365 @@
+{
+  "controls": [
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "remove",
+          "path": "/requiredSelections/0"
+        }
+      ],
+      "case": "R+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "R+P-drop-R",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "replace",
+          "path": "/requiredSelections/0/constituency",
+          "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33/constituency/Dublin-Central"
+        }
+      ],
+      "case": "R+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "R+P-alter-constituency",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "remove",
+          "path": "/requiredSelections/1"
+        }
+      ],
+      "case": "R+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "R+P-drop-P",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "replace",
+          "path": "/requiredSelections/1/affiliation",
+          "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fine-gael"
+        }
+      ],
+      "case": "R+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "R+P-alter-affiliation",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "replace",
+          "path": "/asOf",
+          "value": "2025-01-01"
+        }
+      ],
+      "case": "R+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "R+P-alter-asOf",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "remove",
+          "path": "/asOf"
+        }
+      ],
+      "case": "R+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "R+P-drop-asOf",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "replace",
+          "path": "/currentAtRoles",
+          "value": []
+        }
+      ],
+      "case": "R+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "R+P-drop-current",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "replace",
+          "path": "/answer/shape",
+          "value": "list"
+        }
+      ],
+      "case": "R+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "R+P-alter-shape",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "replace",
+          "path": "/exactSharedBindings",
+          "value": [
+            "name label equality"
+          ]
+        }
+      ],
+      "case": "R+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "R+P-weaken-member-join",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "add",
+          "path": "/extraRequirements",
+          "value": [
+            "attendance"
+          ]
+        }
+      ],
+      "case": "R+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "R+P-attendance",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "add",
+          "path": "/extraRequirements",
+          "value": [
+            "not a member of another party"
+          ]
+        }
+      ],
+      "case": "R+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "R+P-negation",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "add",
+          "path": "/extraAnswerFields",
+          "value": [
+            "chairmanship"
+          ]
+        }
+      ],
+      "case": "R+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "R+P-extra-projection",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "remove",
+          "path": "/requiredSelections/0"
+        }
+      ],
+      "case": "K+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "K+P-drop-K",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "replace",
+          "path": "/requiredSelections/0/committee",
+          "value": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/committee_of_public_accounts"
+        }
+      ],
+      "case": "K+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "K+P-alter-committee",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "remove",
+          "path": "/requiredSelections/1"
+        }
+      ],
+      "case": "K+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "K+P-drop-P",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "replace",
+          "path": "/requiredSelections/1/affiliation",
+          "value": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fine-gael"
+        }
+      ],
+      "case": "K+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "K+P-alter-affiliation",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "replace",
+          "path": "/asOf",
+          "value": "2025-01-01"
+        }
+      ],
+      "case": "K+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "K+P-alter-asOf",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "remove",
+          "path": "/asOf"
+        }
+      ],
+      "case": "K+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "K+P-drop-asOf",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "replace",
+          "path": "/currentAtRoles",
+          "value": []
+        }
+      ],
+      "case": "K+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "K+P-drop-current",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "replace",
+          "path": "/answer/shape",
+          "value": "count"
+        }
+      ],
+      "case": "K+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "K+P-alter-shape",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "replace",
+          "path": "/exactSharedBindings",
+          "value": [
+            "name label equality"
+          ]
+        }
+      ],
+      "case": "K+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "K+P-weaken-member-join",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "add",
+          "path": "/extraRequirements",
+          "value": [
+            "attendance"
+          ]
+        }
+      ],
+      "case": "K+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "K+P-attendance",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "add",
+          "path": "/extraRequirements",
+          "value": [
+            "not a member of another party"
+          ]
+        }
+      ],
+      "case": "K+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "K+P-negation",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "add",
+          "path": "/extraAnswerFields",
+          "value": [
+            "chairmanship"
+          ]
+        }
+      ],
+      "case": "K+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "K+P-extra-projection",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "replace",
+          "path": "/exactSharedBindings",
+          "value": [
+            "Member",
+            "R.term=P.term"
+          ]
+        }
+      ],
+      "case": "R+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "RP-wrong-pm-binding",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "replace",
+          "path": "/answer/unit",
+          "value": "membership episode count"
+        }
+      ],
+      "case": "R+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "RP-count-memberships-not-identities",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "replace",
+          "path": "/requiredSelections/1/houses",
+          "value": [
+            "Dail"
+          ]
+        }
+      ],
+      "case": "K+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "KP-dail-only",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "add",
+          "path": "/extraEqualities",
+          "value": [
+            "K.term=P.term"
+          ]
+        }
+      ],
+      "case": "K+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "KP-added-cross-term-equality",
+      "layer": "semantic-admission"
+    },
+    {
+      "candidateSemanticPatches": [
+        {
+          "op": "add",
+          "path": "/extraEqualities",
+          "value": [
+            "K.membership=P.containingMembership"
+          ]
+        }
+      ],
+      "case": "K+P",
+      "expected": "reject_for_fixed_original_intent",
+      "id": "KP-added-cross-membership-equality",
+      "layer": "semantic-admission"
+    },
+    {
+      "addQuads": [],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "missing-party-start",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2024-11-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2024-12-01T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "conflicting-party-start",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "missing-pm-start",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2024-11-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2024-12-01T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "conflicting-pm-start",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "missing-term-start",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period> <http://www.w3.org/ns/dcat#startDate> \"2024-11-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/houses> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period> <http://www.w3.org/ns/dcat#startDate> \"2024-12-01T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/houses> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "conflicting-term-start",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"not-a-date\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "invalid-party-start",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2024-11-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2024-11-29T00:00:00\" <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "wrong-start-datatype",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2024-11-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <https://data.oireachtas.ie/ontology/members#EndDate> \"2020-01-01T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "end-before-start",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <https://data.oireachtas.ie/ontology/members#EndDate> \"2026-11-10T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "ended-party-current-representation",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2026-11-12T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "future-party-start",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2024-11-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#date-range> <https://data.oireachtas.ie/ontology/members#EndDate> \"2026-11-10T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "ended-parliamentary-membership-current-party",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period> <http://www.w3.org/ns/dcat#endDate> \"2026-11-10T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/houses> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "ended-house-term-current-member-intervals",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <https://data.oireachtas.ie/ontology/members#EndDate> \"2026-11-11T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "same_identities_count_and_witnesses_except_explicit_endpoint_edit",
+      "id": "inclusive-end-today",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2026-11-11T23:59:59\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "same_identities_count_and_witnesses_except_explicit_endpoint_edit",
+      "id": "inclusive-start-today",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2024-11-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc> <https://data.oireachtas.ie/ontology/members#inOireachtasMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "wrong-containing-pm",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc> <https://data.oireachtas.ie/ontology/members#inOireachtasMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ]
+    },
+    {
+      "addQuads": [],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "missing-member-pm-link",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09> <https://data.oireachtas.ie/ontology/members#hasMembersMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin> <https://data.oireachtas.ie/ontology/members#activeDuringTerm> <https://data.oireachtas.ie/ie/oireachtas/house/seanad/27> <https://data.oireachtas.ie/graph/parties> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "wrong-party-term",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin> <https://data.oireachtas.ie/ontology/members#activeDuringTerm> <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> <https://data.oireachtas.ie/graph/parties> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central> <https://data.oireachtas.ie/ontology/members#constituencyInHouseTerm> <https://data.oireachtas.ie/ie/oireachtas/house/dail/33> <https://data.oireachtas.ie/graph/constituencies> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "wrong-constituency-term",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central> <https://data.oireachtas.ie/ontology/members#constituencyInHouseTerm> <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> <https://data.oireachtas.ie/graph/constituencies> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc> <https://data.oireachtas.ie/ontology/members#isPartyMembershipOf> <https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "conflicting-party-targets",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#IndependentMemberCollection> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "wrong-type-episode",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#PartyMembership> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#IndependentMemberCollection> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "wrong-type-range",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#DateRange> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#IndependentMemberCollection> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "wrong-type-member",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology#Member> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#IndependentMemberCollection> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "wrong-type-pm",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#DailMembership> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#IndependentMemberCollection> <https://data.oireachtas.ie/graph/parties> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "wrong-type-party",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#ParliamentaryParty> <https://data.oireachtas.ie/graph/parties> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#IndependentMemberCollection> <https://data.oireachtas.ie/graph/political-affiliations/identities> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "wrong-type-affiliation",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#PoliticalAffiliationIdentity> <https://data.oireachtas.ie/graph/political-affiliations/identities> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#IndependentMemberCollection> <https://data.oireachtas.ie/graph/constituencies> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "wrong-type-constituency",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#DailConstituency> <https://data.oireachtas.ie/graph/constituencies> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc> <https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> <https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#date-range> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "conflicting-range",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin> <https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity> <https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fine-gael> <https://data.oireachtas.ie/graph/political-affiliations/identities> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "ambiguous-affiliation",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin> <https://data.oireachtas.ie/ontology/members#activeDuringTerm> <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "wrong-party-owner-graph",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin> <https://data.oireachtas.ie/ontology/members#activeDuringTerm> <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> <https://data.oireachtas.ie/graph/parties> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2024-11-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/not-the-owner> ."
+      ],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "wrong-member-owner-graph",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2024-11-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ]
+    },
+    {
+      "addQuads": [],
+      "case": "R+P",
+      "expected": "evidence_nonanswer",
+      "id": "invalid-nonqualifying-candidate",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2026-05-25T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc-control-alternative#date-range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#DateRange> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc-control-alternative#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2024-11-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc-control-alternative> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc-control-alternative> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#PartyMembership> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc-control-alternative> <https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> <https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc-control-alternative#date-range> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc-control-alternative> <https://data.oireachtas.ie/ontology/members#inOireachtasMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc-control-alternative> <https://data.oireachtas.ie/ontology/members#isPartyMembershipOf> <https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc-control-alternative> <https://data.oireachtas.ie/ontology/members#memberOfCollection> <https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09> <https://data.oireachtas.ie/ontology/members#hasMembersMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc-control-alternative> <https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09> ."
+      ],
+      "case": "R+P",
+      "expected": "same_member_count_one_with_two_distinct_party_episode_witnesses",
+      "expectedAdditionalEpisode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc-control-alternative",
+      "id": "multiple-supporting-episodes",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29> <https://data.oireachtas.ie/ontology/members#hasMembersMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29> <https://data.oireachtas.ie/ontology/members#hasMembersMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#SeanadMembership> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#OireachtasMembership> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership> <https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf> <https://data.oireachtas.ie/house/seanad> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership> <https://data.oireachtas.ie/ontology/members#inHouseTerm> <https://data.oireachtas.ie/ie/oireachtas/house/seanad/27> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership> <https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership#range> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership#range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#DateRange> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership#range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2025-01-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#PartyMembership> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode> <https://data.oireachtas.ie/ontology/members#inOireachtasMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode> <https://data.oireachtas.ie/ontology/members#isPartyMembershipOf> <https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode> <https://data.oireachtas.ie/ontology/members#memberOfCollection> <https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode> <https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode#range> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode#range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#DateRange> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode#range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2025-01-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#ParliamentaryParty> <https://data.oireachtas.ie/graph/parties> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil> <https://data.oireachtas.ie/ontology/members#activeDuringTerm> <https://data.oireachtas.ie/ie/oireachtas/house/seanad/27> <https://data.oireachtas.ie/graph/parties> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection> <https://data.oireachtas.ie/graph/parties> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil> <http://www.w3.org/2004/02/skos/core#prefLabel> \"Fianna Fáil\"@en <https://data.oireachtas.ie/graph/parties> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil> <https://data.oireachtas.ie/ontology/members#partyCode> \"Fianna_Fáil\" <https://data.oireachtas.ie/graph/parties> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil> <https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity> <https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail> <https://data.oireachtas.ie/graph/political-affiliations/identities> ."
+      ],
+      "case": "K+P",
+      "expected": "same_four_Members_with_selected_Member_supported_only_by_current_Seanad_party_path",
+      "expectedWitness": {
+        "committeeTerm": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29",
+        "partyEpisode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode",
+        "partyMembership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership",
+        "partyTerm": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/27"
+      },
+      "id": "either-House-independent-terms",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b#date-range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#DateRange> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2024-11-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#PartyMembership> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b> <https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b#date-range> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b> <https://data.oireachtas.ie/ontology/members#inOireachtasMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b> <https://data.oireachtas.ie/ontology/members#isPartyMembershipOf> <https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b> <https://data.oireachtas.ie/ontology/members#memberOfCollection> <https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29> <https://data.oireachtas.ie/ontology/members#hasMembersMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> ."
+      ],
+      "synthetic": true
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29> <https://data.oireachtas.ie/ontology/members#hasMembersMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29> <https://data.oireachtas.ie/ontology/members#hasMembersMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#SeanadMembership> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#OireachtasMembership> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership> <https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf> <https://data.oireachtas.ie/house/seanad> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership> <https://data.oireachtas.ie/ontology/members#inHouseTerm> <https://data.oireachtas.ie/ie/oireachtas/house/seanad/27> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership> <https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership#range> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership#range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#DateRange> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership#range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2025-01-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#PartyMembership> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode> <https://data.oireachtas.ie/ontology/members#inOireachtasMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-membership> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode> <https://data.oireachtas.ie/ontology/members#isPartyMembershipOf> <https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode> <https://data.oireachtas.ie/ontology/members#memberOfCollection> <https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode> <https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode#range> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode#range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#DateRange> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29#control-seanad-party-episode#range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2025-01-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#ParliamentaryParty> <https://data.oireachtas.ie/graph/parties> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil> <https://data.oireachtas.ie/ontology/members#activeDuringTerm> <https://data.oireachtas.ie/ie/oireachtas/house/seanad/27> <https://data.oireachtas.ie/graph/parties> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#ParliamentaryMemberCollection> <https://data.oireachtas.ie/graph/parties> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil> <http://www.w3.org/2004/02/skos/core#prefLabel> \"Fianna Fáil\"@en <https://data.oireachtas.ie/graph/parties> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil> <https://data.oireachtas.ie/ontology/members#partyCode> \"Fianna_Fáil\" <https://data.oireachtas.ie/graph/parties> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/party/seanad/27/Fianna_Fáil> <https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity> <https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail> <https://data.oireachtas.ie/graph/political-affiliations/identities> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/house/seanad/27#term-period> <http://www.w3.org/ns/dcat#endDate> \"2026-11-10T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/houses> ."
+      ],
+      "case": "K+P",
+      "expected": "evidence_nonanswer",
+      "id": "ended-independent-party-HouseTerm",
+      "layer": "valid-plan-evidence",
+      "reason": "Required either-House current-term resolution is no longer sufficiently evidenced; no partial Dáil-only answer",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b#date-range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#DateRange> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b#date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2024-11-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#PartyMembership> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b> <https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b#date-range> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b> <https://data.oireachtas.ie/ontology/members#inOireachtasMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b> <https://data.oireachtas.ie/ontology/members#isPartyMembershipOf> <https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b> <https://data.oireachtas.ie/ontology/members#memberOfCollection> <https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29> <https://data.oireachtas.ie/ontology/members#hasMembersMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> ."
+      ],
+      "synthetic": true
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#committee-membership-83ee419568331dfb794f79cd3762741bdba677951e3bbc287cdf5ef79807a3bf#member-date-range> <https://data.oireachtas.ie/ontology/members#EndDate> \"2026-11-10T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#committee-membership-f3c35f58f00541e0680b6bf5fd1c2a24a49941c160fc29f6c07ea2d31a56ac0c#member-date-range> <https://data.oireachtas.ie/ontology/members#EndDate> \"2026-11-10T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#committee-membership-adf2def11234f4f15a787e2fd09c4f780aaa5501d6889d6b34951964c345bbdf#member-date-range> <https://data.oireachtas.ie/ontology/members#EndDate> \"2026-11-10T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Paul-McAuliffe.D.2020-02-08> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#committee-membership-62f3b3423921cb4b42aaef70d040465d9a38e4d73fdcf8314746caeb50788a61#member-date-range> <https://data.oireachtas.ie/ontology/members#EndDate> \"2026-11-10T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/S%C3%A9amus-McGrath.D.2024-11-29> ."
+      ],
+      "case": "K+P",
+      "expected": "evidence_nonanswer",
+      "id": "ended-all-qualifying-committee-current-party",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#committee-membership-83ee419568331dfb794f79cd3762741bdba677951e3bbc287cdf5ef79807a3bf#member-date-range> <https://data.oireachtas.ie/ontology/members#EndDate> \"2026-11-10T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> ."
+      ],
+      "case": "K+P",
+      "expected": "supported_reduced_list",
+      "expectedMembers": [
+        "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29",
+        "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08",
+        "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29"
+      ],
+      "id": "ended-one-committee-current-party",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#date-range> <https://data.oireachtas.ie/ontology/members#EndDate> \"2026-11-10T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> ."
+      ],
+      "case": "K+P",
+      "expected": "supported_reduced_list",
+      "expectedMembers": [
+        "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29",
+        "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08",
+        "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29"
+      ],
+      "id": "ended-containing-pm-current-committee-and-party-episode",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [],
+      "case": "K+P",
+      "expected": "evidence_nonanswer",
+      "id": "missing-committee-start",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#committee-membership-83ee419568331dfb794f79cd3762741bdba677951e3bbc287cdf5ef79807a3bf#member-date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2025-05-07T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b> <https://data.oireachtas.ie/ontology/members#inOireachtasMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> ."
+      ],
+      "case": "K+P",
+      "expected": "evidence_nonanswer",
+      "id": "KP-wrong-containing-pm",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b> <https://data.oireachtas.ie/ontology/members#inOireachtasMembership> <https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b#date-range> <https://data.oireachtas.ie/ontology/members#EndDate> \"2026-11-10T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#party-membership-52bd8d8b977ea03973a8331f11f60711697e8017e8072b438b928a4b48c56cc9#date-range> <https://data.oireachtas.ie/ontology/members#EndDate> \"2026-11-10T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#party-membership-13538adc9b8543b4f83317f569ce29d51264dc2db78b80adf10bf959b4075b3a#date-range> <https://data.oireachtas.ie/ontology/members#EndDate> \"2026-11-10T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Paul-McAuliffe.D.2020-02-08> .",
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#party-membership-3588b766a1c6be4acd5169b6fe82392cf9cf9f32fc5fa20e10bf0d9f38a40ad6#date-range> <https://data.oireachtas.ie/ontology/members#EndDate> \"2026-11-10T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/S%C3%A9amus-McGrath.D.2024-11-29> ."
+      ],
+      "case": "K+P",
+      "expected": "evidence_nonanswer",
+      "id": "current-committee-ended-all-qualifying-party",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#committee-membership-83ee419568331dfb794f79cd3762741bdba677951e3bbc287cdf5ef79807a3bf#member-date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2025-05-08T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29> ."
+      ],
+      "case": "K+P",
+      "expected": "evidence_nonanswer",
+      "id": "conflicting-committee-start",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [],
+      "case": "K+P",
+      "expected": "evidence_nonanswer",
+      "id": "missing-committee-owner-start",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range> <https://data.oireachtas.ie/ontology/members#StartDate> \"2024-12-18T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/committees> ."
+      ]
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range> <https://data.oireachtas.ie/ontology/members#EndDate> \"2026-11-10T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/committees> ."
+      ],
+      "case": "K+P",
+      "expected": "evidence_nonanswer",
+      "id": "ended-committee-owner-current-memberships",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts> <https://data.oireachtas.ie/ontology/members#committeeInHouseTerm> <https://data.oireachtas.ie/ie/oireachtas/house/dail/33> <https://data.oireachtas.ie/graph/committees> ."
+      ],
+      "case": "K+P",
+      "expected": "evidence_nonanswer",
+      "id": "conflicting-committee-owner-term",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "addQuads": [],
+      "case": "K+P",
+      "expected": "evidence_nonanswer",
+      "id": "wrong-committee-type",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#Committee> <https://data.oireachtas.ie/graph/committees> ."
+      ]
+    },
+    {
+      "addQuads": [],
+      "case": "K+P",
+      "expected": "evidence_nonanswer",
+      "id": "missing-committee-term-start",
+      "layer": "valid-plan-evidence",
+      "removeQuads": [
+        "<https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period> <http://www.w3.org/ns/dcat#startDate> \"2024-11-29T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/houses> ."
+      ]
+    },
+    {
+      "addQuads": [],
+      "case": "K+P",
+      "expected": "unchanged_oracle_excludes_both_ended_episodes",
+      "id": "natural-ended-committee-control",
+      "layer": "valid-plan-evidence",
+      "removeQuads": []
+    },
+    {
+      "case": "R+P",
+      "expected": "identical_identity_count_and_canonical_witness_set",
+      "id": "R+P-reverse-rows",
+      "layer": "evidence-invariance",
+      "requireStableCandidateOutputOrdering": true,
+      "rowTransform": {
+        "operation": "reverse_each_response"
+      }
+    },
+    {
+      "case": "R+P",
+      "expected": "identical_identity_count_and_canonical_witness_set",
+      "id": "R+P-duplicate-rows",
+      "layer": "evidence-invariance",
+      "requireStableCandidateOutputOrdering": true,
+      "rowTransform": {
+        "operation": "duplicate_each_row",
+        "withinBounds": true
+      }
+    },
+    {
+      "case": "R+P",
+      "expected": "every_witness_keeps_its_own_source_term_range_and_endpoints",
+      "id": "R+P-row-local-metadata",
+      "layer": "evidence-invariance",
+      "requireStableCandidateOutputOrdering": true,
+      "rowTransform": {
+        "operation": "reverse_then_duplicate_each_row",
+        "withinBounds": true
+      }
+    },
+    {
+      "case": "R+P",
+      "expected": "nonanswer_or_identity_preserving_answer_without_invented_display_never_silently_drop_member",
+      "id": "R+P-missing-display",
+      "layer": "valid-plan-evidence",
+      "rowTransform": {
+        "operation": "unbind_optional_display_fields"
+      }
+    },
+    {
+      "case": "R+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "R+P-nine-selects",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "selectRequests": 9
+      }
+    },
+    {
+      "case": "R+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "R+P-101-raw-rows",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "rowsInOneRequest": 101
+      }
+    },
+    {
+      "case": "R+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "R+P-101-witnesses",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "joinWitnessTuples": 101
+      }
+    },
+    {
+      "case": "R+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "R+P-three-selections",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "relationshipSelections": 3
+      }
+    },
+    {
+      "case": "R+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "R+P-three-party-Houses",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "partyHouseVariants": 3
+      }
+    },
+    {
+      "case": "R+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "R+P-timeout",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "requestTimeout": true
+      }
+    },
+    {
+      "case": "R+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "R+P-incomplete",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "enumerationComplete": false
+      }
+    },
+    {
+      "case": "R+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "R+P-page-cap",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "lastPageRows": 100,
+        "morePagesPossible": true,
+        "selectRequests": 8
+      }
+    },
+    {
+      "case": "R+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "R+P-malformed",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "malformedTypedBinding": true
+      }
+    },
+    {
+      "case": "R+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "R+P-oversized-query",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "queryCharacters": 32001
+      }
+    },
+    {
+      "case": "R+P",
+      "expected": "same_supported_oracle_at_inclusive_limits",
+      "id": "R+P-inclusive-budget-boundary",
+      "layer": "budget-boundary",
+      "retrievalOverride": {
+        "completionRequestIncludedInTotal": true,
+        "enumerationComplete": true,
+        "joinWitnessTuples": 100,
+        "padding": "equivalent duplicate rows/witness tuples only, other requests stay within 100; count raw rows before deduplication",
+        "requestTimeoutSeconds": 20,
+        "rowsInOneRequest": 100,
+        "selectRequests": 8
+      }
+    },
+    {
+      "case": "R+P",
+      "expected": "evidence_nonanswer_not_zero_or_successful_empty_list",
+      "id": "R+P-empty-retrieval",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "enumerationComplete": true,
+        "replaceSelectionRowsWith": []
+      }
+    },
+    {
+      "case": "R+P",
+      "expected": "clarification_or_nonanswer_never_choose_arbitrary_identity",
+      "id": "R+P-ambiguous-resolver",
+      "layer": "resolution",
+      "resolverOverride": {
+        "additionalCandidateIRI": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central-control-ambiguous",
+        "additionalOwnerQuads": [
+          "<https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central-control-ambiguous> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#Constituencies> <https://data.oireachtas.ie/graph/constituencies> .",
+          "<https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central-control-ambiguous> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#DailConstituency> <https://data.oireachtas.ie/graph/constituencies> .",
+          "<https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central-control-ambiguous> <http://www.w3.org/2004/02/skos/core#prefLabel> \"Dublin Central\"@en <https://data.oireachtas.ie/graph/constituencies> .",
+          "<https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central-control-ambiguous> <https://data.oireachtas.ie/ontology/members#constituencyInHouseTerm> <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> <https://data.oireachtas.ie/graph/constituencies> ."
+        ]
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "identical_identity_count_and_canonical_witness_set",
+      "id": "K+P-reverse-rows",
+      "layer": "evidence-invariance",
+      "requireStableCandidateOutputOrdering": true,
+      "rowTransform": {
+        "operation": "reverse_each_response"
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "identical_identity_count_and_canonical_witness_set",
+      "id": "K+P-duplicate-rows",
+      "layer": "evidence-invariance",
+      "requireStableCandidateOutputOrdering": true,
+      "rowTransform": {
+        "operation": "duplicate_each_row",
+        "withinBounds": true
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "every_witness_keeps_its_own_source_term_range_and_endpoints",
+      "id": "K+P-row-local-metadata",
+      "layer": "evidence-invariance",
+      "requireStableCandidateOutputOrdering": true,
+      "rowTransform": {
+        "operation": "reverse_then_duplicate_each_row",
+        "withinBounds": true
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "nonanswer_or_identity_preserving_answer_without_invented_display_never_silently_drop_member",
+      "id": "K+P-missing-display",
+      "layer": "valid-plan-evidence",
+      "rowTransform": {
+        "operation": "unbind_optional_display_fields"
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "K+P-nine-selects",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "selectRequests": 9
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "K+P-101-raw-rows",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "rowsInOneRequest": 101
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "K+P-101-witnesses",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "joinWitnessTuples": 101
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "K+P-three-selections",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "relationshipSelections": 3
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "K+P-three-party-Houses",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "partyHouseVariants": 3
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "K+P-timeout",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "requestTimeout": true
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "K+P-incomplete",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "enumerationComplete": false
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "K+P-page-cap",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "lastPageRows": 100,
+        "morePagesPossible": true,
+        "selectRequests": 8
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "K+P-malformed",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "malformedTypedBinding": true
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "evidence_nonanswer_no_partial_factual_output",
+      "id": "K+P-oversized-query",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "queryCharacters": 32001
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "same_supported_oracle_at_inclusive_limits",
+      "id": "K+P-inclusive-budget-boundary",
+      "layer": "budget-boundary",
+      "retrievalOverride": {
+        "completionRequestIncludedInTotal": true,
+        "enumerationComplete": true,
+        "joinWitnessTuples": 100,
+        "padding": "equivalent duplicate rows/witness tuples only, other requests stay within 100; count raw rows before deduplication",
+        "requestTimeoutSeconds": 20,
+        "rowsInOneRequest": 100,
+        "selectRequests": 8
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "evidence_nonanswer_not_zero_or_successful_empty_list",
+      "id": "K+P-empty-retrieval",
+      "layer": "valid-plan-evidence",
+      "retrievalOverride": {
+        "enumerationComplete": true,
+        "replaceSelectionRowsWith": []
+      }
+    },
+    {
+      "case": "K+P",
+      "expected": "clarification_or_nonanswer_never_choose_arbitrary_identity",
+      "id": "K+P-ambiguous-resolver",
+      "layer": "resolution",
+      "resolverOverride": {
+        "additionalCandidateIRI": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts-control-ambiguous",
+        "additionalOwnerQuads": [
+          "<https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range-control-ambiguous> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#DateRange> <https://data.oireachtas.ie/graph/committees> .",
+          "<https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range-control-ambiguous> <https://data.oireachtas.ie/ontology/members#StartDate> \"2024-12-18T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> <https://data.oireachtas.ie/graph/committees> .",
+          "<https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts-control-ambiguous> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.oireachtas.ie/ontology/members#Committee> <https://data.oireachtas.ie/graph/committees> .",
+          "<https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts-control-ambiguous> <http://www.w3.org/2004/02/skos/core#prefLabel> \"An Coiste um Chuntais Phoiblí\"@ga <https://data.oireachtas.ie/graph/committees> .",
+          "<https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts-control-ambiguous> <http://www.w3.org/2004/02/skos/core#prefLabel> \"Committee of Public Accounts\"@en <https://data.oireachtas.ie/graph/committees> .",
+          "<https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts-control-ambiguous> <https://data.oireachtas.ie/ontology/members#committeeCode> \"ACC\" <https://data.oireachtas.ie/graph/committees> .",
+          "<https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts-control-ambiguous> <https://data.oireachtas.ie/ontology/members#committeeID> \"236\"^^<http://www.w3.org/2001/XMLSchema#integer> <https://data.oireachtas.ie/graph/committees> .",
+          "<https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts-control-ambiguous> <https://data.oireachtas.ie/ontology/members#committeeInHouseTerm> <https://data.oireachtas.ie/ie/oireachtas/house/dail/34> <https://data.oireachtas.ie/graph/committees> .",
+          "<https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts-control-ambiguous> <https://data.oireachtas.ie/ontology/members#hasCommitteeDateRange> <https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range-control-ambiguous> <https://data.oireachtas.ie/graph/committees> ."
+        ]
+      }
+    }
+  ],
+  "protocol": "../protocol.md",
+  "schemaVersion": 1
+}

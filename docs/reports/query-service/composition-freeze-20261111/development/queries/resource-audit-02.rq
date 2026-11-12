@@ -1,0 +1,150 @@
+PREFIX a: <https://data.oireachtas.ie/ontology#>
+PREFIX m: <https://data.oireachtas.ie/ontology/members#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX dcat: <http://www.w3.org/ns/dcat#>
+SELECT DISTINCT ?g ?s ?p ?o WHERE {
+VALUES ?s {
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/32#party-membership-7874d9da61ec488013f961556b301472ec43d29c609eb7eff48ad24667136cae#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87#member-date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572#member-date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#party-membership-55c3b2f3ae29ba778094ddccbc2e2ef60d1fff906498c08c7322db3d019b1521>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#party-membership-55c3b2f3ae29ba778094ddccbc2e2ef60d1fff906498c08c7322db3d019b1521#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee#member-date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#party-membership-eb03247c7a382c381d50a578879760fb2cb5f2d7a5be0001476201c03acb6cc5>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#party-membership-eb03247c7a382c381d50a578879760fb2cb5f2d7a5be0001476201c03acb6cc5#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/33>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/33#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/33#party-membership-704bef09319880d6bd51161e948322664a26cbe9f44efbd45486cc4e0e0ba65b>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/33#party-membership-704bef09319880d6bd51161e948322664a26cbe9f44efbd45486cc4e0e0ba65b#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34#party-membership-b69d88803d83157951a9ab6204924cfa556ccbf57e35d48facb3de3f912cab07>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34#party-membership-b69d88803d83157951a9ab6204924cfa556ccbf57e35d48facb3de3f912cab07#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#committee-membership-332a9b9bf82c1b09bc876733deaf3dde2d15c9f963931ccbf65883b989d719a9>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#committee-membership-332a9b9bf82c1b09bc876733deaf3dde2d15c9f963931ccbf65883b989d719a9#member-date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#party-membership-f55709b35f9ba83224b9da0563f1d3939139b12cc73a05173ad33b0a42aafbe9>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#party-membership-f55709b35f9ba83224b9da0563f1d3939139b12cc73a05173ad33b0a42aafbe9#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#committee-membership-09fc8af09070919a9c78be0f4acc258c5c92050b5777c4545f63148581256c98>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#committee-membership-09fc8af09070919a9c78be0f4acc258c5c92050b5777c4545f63148581256c98#member-date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#party-membership-5fb67b5010820fd956ab762b92c52e5358929ed594adb5252ca12c6a1aab7028>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#party-membership-5fb67b5010820fd956ab762b92c52e5358929ed594adb5252ca12c6a1aab7028#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9#member-date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#party-membership-344bfa1992e62bd1edf14f4a3615f62793631920ace8955725afbf55d244fb02>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#party-membership-344bfa1992e62bd1edf14f4a3615f62793631920ace8955725afbf55d244fb02#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e#member-date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#party-membership-8c2187cb1e397dda037ab7b2f257cda33a0e9c0732020f047af5e6f4971d094e>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#party-membership-8c2187cb1e397dda037ab7b2f257cda33a0e9c0732020f047af5e6f4971d094e#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32#party-membership-78ea1d70dc9520d33aac3b1a1b80d481492eeceed79b69ef74e53408fd181481>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/32#party-membership-78ea1d70dc9520d33aac3b1a1b80d481492eeceed79b69ef74e53408fd181481#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/33>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/33#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/33#party-membership-39573c98611ea162925fc59b4f0ce38149f624db723d2887a463c766103b294a>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/33#party-membership-39573c98611ea162925fc59b4f0ce38149f624db723d2887a463c766103b294a#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#committee-membership-897ebbb535915271ce2ca1d3a68b87494914716085e8dc8d8807266df8b13349>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#committee-membership-897ebbb535915271ce2ca1d3a68b87494914716085e8dc8d8807266df8b13349#member-date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#party-membership-577b5edbc1fc57b972474192a6da4d6fcacda7931d6ed60e637f01610b5c28f0>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#party-membership-577b5edbc1fc57b972474192a6da4d6fcacda7931d6ed60e637f01610b5c28f0#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34#party-membership-59f4b8bff30c6722eea77ae64d396c6110dc2f642efde82b088a355466a32fc1>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34#party-membership-59f4b8bff30c6722eea77ae64d396c6110dc2f642efde82b088a355466a32fc1#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/seanad/26>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/seanad/26#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/seanad/26#party-membership-60c488144fca17e814722e4029d36fc46115ecce4267f24db87b6f6fc36773e9>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/seanad/26#party-membership-60c488144fca17e814722e4029d36fc46115ecce4267f24db87b6f6fc36773e9#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34>
+}
+GRAPH ?g {
+{ ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o . BIND(<http://www.w3.org/1999/02/22-rdf-syntax-ns#type> AS ?p) }
+UNION
+{ ?s <http://www.w3.org/2004/02/skos/core#prefLabel> ?o . BIND(<http://www.w3.org/2004/02/skos/core#prefLabel> AS ?p) }
+UNION
+{ ?s <http://xmlns.com/foaf/0.1/name> ?o . BIND(<http://xmlns.com/foaf/0.1/name> AS ?p) }
+UNION
+{ ?s <http://purl.org/dc/terms/temporal> ?o . BIND(<http://purl.org/dc/terms/temporal> AS ?p) }
+UNION
+{ ?s <http://www.w3.org/ns/dcat#startDate> ?o . BIND(<http://www.w3.org/ns/dcat#startDate> AS ?p) }
+UNION
+{ ?s <http://www.w3.org/ns/dcat#endDate> ?o . BIND(<http://www.w3.org/ns/dcat#endDate> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology#memberCode> ?o . BIND(<https://data.oireachtas.ie/ontology#memberCode> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology#termNo> ?o . BIND(<https://data.oireachtas.ie/ontology#termNo> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology#termOf> ?o . BIND(<https://data.oireachtas.ie/ontology#termOf> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#hasMembersMembership> ?o . BIND(<https://data.oireachtas.ie/ontology/members#hasMembersMembership> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#inHouseTerm> ?o . BIND(<https://data.oireachtas.ie/ontology/members#inHouseTerm> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf> ?o . BIND(<https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> ?o . BIND(<https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#StartDate> ?o . BIND(<https://data.oireachtas.ie/ontology/members#StartDate> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#EndDate> ?o . BIND(<https://data.oireachtas.ie/ontology/members#EndDate> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#inOireachtasMembership> ?o . BIND(<https://data.oireachtas.ie/ontology/members#inOireachtasMembership> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#memberOfCollection> ?o . BIND(<https://data.oireachtas.ie/ontology/members#memberOfCollection> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#isPartyMembershipOf> ?o . BIND(<https://data.oireachtas.ie/ontology/members#isPartyMembershipOf> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity> ?o . BIND(<https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#activeDuringTerm> ?o . BIND(<https://data.oireachtas.ie/ontology/members#activeDuringTerm> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#isRepresentativeFrom> ?o . BIND(<https://data.oireachtas.ie/ontology/members#isRepresentativeFrom> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#constituencyInHouseTerm> ?o . BIND(<https://data.oireachtas.ie/ontology/members#constituencyInHouseTerm> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#isCommitteeMembershipOf> ?o . BIND(<https://data.oireachtas.ie/ontology/members#isCommitteeMembershipOf> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#committeeInHouseTerm> ?o . BIND(<https://data.oireachtas.ie/ontology/members#committeeInHouseTerm> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#committeeCode> ?o . BIND(<https://data.oireachtas.ie/ontology/members#committeeCode> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#committeeID> ?o . BIND(<https://data.oireachtas.ie/ontology/members#committeeID> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#hasCommitteeDateRange> ?o . BIND(<https://data.oireachtas.ie/ontology/members#hasCommitteeDateRange> AS ?p) }
+}
+} ORDER BY ?g ?s ?p ?o LIMIT 100

@@ -1,0 +1,1665 @@
+{
+  "K+P": {
+    "candidateDispositions": [
+      {
+        "committeeInterval": {
+          "currentAtAsOf": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Aidan-Farrelly.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#committee-membership-7a2d9746a8c5bcd6f35632c508fe12088e51dce5270a016d79a9e5e5a7e9ad86#member-date-range",
+          "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+          "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#committee-membership-7a2d9746a8c5bcd6f35632c508fe12088e51dce5270a016d79a9e5e5a7e9ad86",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "committeeMembership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#committee-membership-7a2d9746a8c5bcd6f35632c508fe12088e51dce5270a016d79a9e5e5a7e9ad86",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/social-democrats",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#party-membership-8fa6d34c77fb1866c908a9b7732b3d14dfaac0566919f37896502f3b3c1190a0",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Aidan-Farrelly.D.2024-11-29",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#party-membership-8fa6d34c77fb1866c908a9b7732b3d14dfaac0566919f37896502f3b3c1190a0#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#party-membership-8fa6d34c77fb1866c908a9b7732b3d14dfaac0566919f37896502f3b3c1190a0",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Aidan-Farrelly.D.2024-11-29",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Aidan-Farrelly.D.2024-11-29",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Social_Democrats",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [
+          "no independently current target-affiliation party witness in either current House"
+        ],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Aidan-Farrelly.D.2024-11-29",
+        "name": "Aidan Farrelly",
+        "partyWitnesses": [],
+        "qualifies": false
+      },
+      {
+        "committeeInterval": {
+          "currentAtAsOf": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#committee-membership-83ee419568331dfb794f79cd3762741bdba677951e3bbc287cdf5ef79807a3bf#member-date-range",
+          "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+          "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#committee-membership-83ee419568331dfb794f79cd3762741bdba677951e3bbc287cdf5ef79807a3bf",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "committeeMembership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#committee-membership-83ee419568331dfb794f79cd3762741bdba677951e3bbc287cdf5ef79807a3bf",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29",
+        "name": "Albert Dolan",
+        "partyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#party-membership-329366f077b8cea52814a3f801b2cb4fcc96b8d00f411d80274ab46e092f963b",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "qualifies": true
+      },
+      {
+        "committeeInterval": {
+          "currentAtAsOf": false,
+          "end": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2026-05-28T00:00:00"
+          },
+          "graph": "https://data.oireachtas.ie/graph/member/Catherine-Ardagh.S.2016-04-25",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#committee-membership-8c75f36d80a9023281acdaf09e0d2166d565e34efb859265e5e4a15de96dd334#member-date-range",
+          "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+          "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#committee-membership-8c75f36d80a9023281acdaf09e0d2166d565e34efb859265e5e4a15de96dd334",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "committeeMembership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#committee-membership-8c75f36d80a9023281acdaf09e0d2166d565e34efb859265e5e4a15de96dd334",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#party-membership-90d249d1a8e49095a962c196f41b204f2a665fc6db46352eecad28230f4bff1b",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Catherine-Ardagh.S.2016-04-25",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#party-membership-90d249d1a8e49095a962c196f41b204f2a665fc6db46352eecad28230f4bff1b#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#party-membership-90d249d1a8e49095a962c196f41b204f2a665fc6db46352eecad28230f4bff1b",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Catherine-Ardagh.S.2016-04-25",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Catherine-Ardagh.S.2016-04-25",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [
+          "committee membership interval excludes asOf"
+        ],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Catherine-Ardagh.S.2016-04-25",
+        "name": "Catherine Ardagh",
+        "partyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#party-membership-90d249d1a8e49095a962c196f41b204f2a665fc6db46352eecad28230f4bff1b",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Catherine-Ardagh.S.2016-04-25",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#party-membership-90d249d1a8e49095a962c196f41b204f2a665fc6db46352eecad28230f4bff1b#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#party-membership-90d249d1a8e49095a962c196f41b204f2a665fc6db46352eecad28230f4bff1b",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Catherine-Ardagh.S.2016-04-25",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Catherine-Ardagh.S.2016-04-25",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "qualifies": false
+      },
+      {
+        "committeeInterval": {
+          "currentAtAsOf": false,
+          "end": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-10-25T00:00:00"
+          },
+          "graph": "https://data.oireachtas.ie/graph/member/Catherine-Connolly.D.2016-10-03",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87#member-date-range",
+          "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+          "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "committeeMembership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87",
+        "examinedCurrentTermPartyWitnesses": [],
+        "exclusionReasons": [
+          "committee membership interval excludes asOf",
+          "no independently current target-affiliation party witness in either current House"
+        ],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Catherine-Connolly.D.2016-10-03",
+        "name": "Catherine Connolly",
+        "partyWitnesses": [],
+        "qualifies": false
+      },
+      {
+        "committeeInterval": {
+          "currentAtAsOf": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572#member-date-range",
+          "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+          "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "committeeMembership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#party-membership-55c3b2f3ae29ba778094ddccbc2e2ef60d1fff906498c08c7322db3d019b1521",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#party-membership-55c3b2f3ae29ba778094ddccbc2e2ef60d1fff906498c08c7322db3d019b1521#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#party-membership-55c3b2f3ae29ba778094ddccbc2e2ef60d1fff906498c08c7322db3d019b1521",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [
+          "no independently current target-affiliation party witness in either current House"
+        ],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29",
+        "name": "Cathy Bennett",
+        "partyWitnesses": [],
+        "qualifies": false
+      },
+      {
+        "committeeInterval": {
+          "currentAtAsOf": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee#member-date-range",
+          "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+          "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "committeeMembership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/labour-party",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#party-membership-eb03247c7a382c381d50a578879760fb2cb5f2d7a5be0001476201c03acb6cc5",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#party-membership-eb03247c7a382c381d50a578879760fb2cb5f2d7a5be0001476201c03acb6cc5#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#party-membership-eb03247c7a382c381d50a578879760fb2cb5f2d7a5be0001476201c03acb6cc5",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Labour_Party",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [
+          "no independently current target-affiliation party witness in either current House"
+        ],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29",
+        "name": "Eoghan Kenny",
+        "partyWitnesses": [],
+        "qualifies": false
+      },
+      {
+        "committeeInterval": {
+          "currentAtAsOf": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Grace-Boland.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#committee-membership-332a9b9bf82c1b09bc876733deaf3dde2d15c9f963931ccbf65883b989d719a9#member-date-range",
+          "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+          "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#committee-membership-332a9b9bf82c1b09bc876733deaf3dde2d15c9f963931ccbf65883b989d719a9",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "committeeMembership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#committee-membership-332a9b9bf82c1b09bc876733deaf3dde2d15c9f963931ccbf65883b989d719a9",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fine-gael",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#party-membership-f55709b35f9ba83224b9da0563f1d3939139b12cc73a05173ad33b0a42aafbe9",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Grace-Boland.D.2024-11-29",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#party-membership-f55709b35f9ba83224b9da0563f1d3939139b12cc73a05173ad33b0a42aafbe9#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#party-membership-f55709b35f9ba83224b9da0563f1d3939139b12cc73a05173ad33b0a42aafbe9",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Grace-Boland.D.2024-11-29",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Grace-Boland.D.2024-11-29",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [
+          "no independently current target-affiliation party witness in either current House"
+        ],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Grace-Boland.D.2024-11-29",
+        "name": "Grace Boland",
+        "partyWitnesses": [],
+        "qualifies": false
+      },
+      {
+        "committeeInterval": {
+          "currentAtAsOf": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/James-Geoghegan.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#committee-membership-09fc8af09070919a9c78be0f4acc258c5c92050b5777c4545f63148581256c98#member-date-range",
+          "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+          "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#committee-membership-09fc8af09070919a9c78be0f4acc258c5c92050b5777c4545f63148581256c98",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "committeeMembership": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#committee-membership-09fc8af09070919a9c78be0f4acc258c5c92050b5777c4545f63148581256c98",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fine-gael",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#party-membership-5fb67b5010820fd956ab762b92c52e5358929ed594adb5252ca12c6a1aab7028",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/James-Geoghegan.D.2024-11-29",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#party-membership-5fb67b5010820fd956ab762b92c52e5358929ed594adb5252ca12c6a1aab7028#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#party-membership-5fb67b5010820fd956ab762b92c52e5358929ed594adb5252ca12c6a1aab7028",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/James-Geoghegan.D.2024-11-29",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/James-Geoghegan.D.2024-11-29",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [
+          "no independently current target-affiliation party witness in either current House"
+        ],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/James-Geoghegan.D.2024-11-29",
+        "name": "James Geoghegan",
+        "partyWitnesses": [],
+        "qualifies": false
+      },
+      {
+        "committeeInterval": {
+          "currentAtAsOf": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9#member-date-range",
+          "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+          "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "committeeMembership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#party-membership-344bfa1992e62bd1edf14f4a3615f62793631920ace8955725afbf55d244fb02",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#party-membership-344bfa1992e62bd1edf14f4a3615f62793631920ace8955725afbf55d244fb02#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#party-membership-344bfa1992e62bd1edf14f4a3615f62793631920ace8955725afbf55d244fb02",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [
+          "no independently current target-affiliation party witness in either current House"
+        ],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29",
+        "name": "Joanna Byrne",
+        "partyWitnesses": [],
+        "qualifies": false
+      },
+      {
+        "committeeInterval": {
+          "currentAtAsOf": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e#member-date-range",
+          "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+          "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "committeeMembership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fine-gael",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#party-membership-8c2187cb1e397dda037ab7b2f257cda33a0e9c0732020f047af5e6f4971d094e",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#party-membership-8c2187cb1e397dda037ab7b2f257cda33a0e9c0732020f047af5e6f4971d094e#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#party-membership-8c2187cb1e397dda037ab7b2f257cda33a0e9c0732020f047af5e6f4971d094e",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [
+          "no independently current target-affiliation party witness in either current House"
+        ],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29",
+        "name": "Joe Neville",
+        "partyWitnesses": [],
+        "qualifies": false
+      },
+      {
+        "committeeInterval": {
+          "currentAtAsOf": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#committee-membership-897ebbb535915271ce2ca1d3a68b87494914716085e8dc8d8807266df8b13349#member-date-range",
+          "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+          "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#committee-membership-897ebbb535915271ce2ca1d3a68b87494914716085e8dc8d8807266df8b13349",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "committeeMembership": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#committee-membership-897ebbb535915271ce2ca1d3a68b87494914716085e8dc8d8807266df8b13349",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#party-membership-577b5edbc1fc57b972474192a6da4d6fcacda7931d6ed60e637f01610b5c28f0",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#party-membership-577b5edbc1fc57b972474192a6da4d6fcacda7931d6ed60e637f01610b5c28f0#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#party-membership-577b5edbc1fc57b972474192a6da4d6fcacda7931d6ed60e637f01610b5c28f0",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [
+          "no independently current target-affiliation party witness in either current House"
+        ],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03",
+        "name": "John Brady",
+        "partyWitnesses": [],
+        "qualifies": false
+      },
+      {
+        "committeeInterval": {
+          "currentAtAsOf": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#committee-membership-f3c35f58f00541e0680b6bf5fd1c2a24a49941c160fc29f6c07ea2d31a56ac0c#member-date-range",
+          "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+          "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#committee-membership-f3c35f58f00541e0680b6bf5fd1c2a24a49941c160fc29f6c07ea2d31a56ac0c",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2026-07-15T00:00:00"
+          }
+        },
+        "committeeMembership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#committee-membership-f3c35f58f00541e0680b6bf5fd1c2a24a49941c160fc29f6c07ea2d31a56ac0c",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#party-membership-52bd8d8b977ea03973a8331f11f60711697e8017e8072b438b928a4b48c56cc9",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#party-membership-52bd8d8b977ea03973a8331f11f60711697e8017e8072b438b928a4b48c56cc9#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#party-membership-52bd8d8b977ea03973a8331f11f60711697e8017e8072b438b928a4b48c56cc9",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29",
+        "name": "Martin Daly",
+        "partyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#party-membership-52bd8d8b977ea03973a8331f11f60711697e8017e8072b438b928a4b48c56cc9",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#party-membership-52bd8d8b977ea03973a8331f11f60711697e8017e8072b438b928a4b48c56cc9#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#party-membership-52bd8d8b977ea03973a8331f11f60711697e8017e8072b438b928a4b48c56cc9",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "qualifies": true
+      },
+      {
+        "committeeInterval": {
+          "currentAtAsOf": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Paul-McAuliffe.D.2020-02-08",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#committee-membership-adf2def11234f4f15a787e2fd09c4f780aaa5501d6889d6b34951964c345bbdf#member-date-range",
+          "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+          "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#committee-membership-adf2def11234f4f15a787e2fd09c4f780aaa5501d6889d6b34951964c345bbdf",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "committeeMembership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#committee-membership-adf2def11234f4f15a787e2fd09c4f780aaa5501d6889d6b34951964c345bbdf",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#party-membership-13538adc9b8543b4f83317f569ce29d51264dc2db78b80adf10bf959b4075b3a",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Paul-McAuliffe.D.2020-02-08",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#party-membership-13538adc9b8543b4f83317f569ce29d51264dc2db78b80adf10bf959b4075b3a#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#party-membership-13538adc9b8543b4f83317f569ce29d51264dc2db78b80adf10bf959b4075b3a",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Paul-McAuliffe.D.2020-02-08",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Paul-McAuliffe.D.2020-02-08",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Paul-McAuliffe.D.2020-02-08",
+        "name": "Paul McAuliffe",
+        "partyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#party-membership-13538adc9b8543b4f83317f569ce29d51264dc2db78b80adf10bf959b4075b3a",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Paul-McAuliffe.D.2020-02-08",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#party-membership-13538adc9b8543b4f83317f569ce29d51264dc2db78b80adf10bf959b4075b3a#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#party-membership-13538adc9b8543b4f83317f569ce29d51264dc2db78b80adf10bf959b4075b3a",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Paul-McAuliffe.D.2020-02-08",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Paul-McAuliffe.D.2020-02-08",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "qualifies": true
+      },
+      {
+        "committeeInterval": {
+          "currentAtAsOf": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Paul-Murphy.D.2014-10-10",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10/house/dail/34#committee-membership-89703cbd028ee24c36338a53eafa8bb0f6bec308fe31cf8227fc03a39aa3f8a5#member-date-range",
+          "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+          "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10/house/dail/34#committee-membership-89703cbd028ee24c36338a53eafa8bb0f6bec308fe31cf8227fc03a39aa3f8a5",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-11-26T00:00:00"
+          }
+        },
+        "committeeMembership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10/house/dail/34#committee-membership-89703cbd028ee24c36338a53eafa8bb0f6bec308fe31cf8227fc03a39aa3f8a5",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/people-before-profit-solidarity",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10/house/dail/34#party-membership-8c133e1835e6c5826f04000f40a965214557c77223a375b5a06e26c7e1cb1ac6",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Paul-Murphy.D.2014-10-10",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10/house/dail/34#party-membership-8c133e1835e6c5826f04000f40a965214557c77223a375b5a06e26c7e1cb1ac6#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10/house/dail/34#party-membership-8c133e1835e6c5826f04000f40a965214557c77223a375b5a06e26c7e1cb1ac6",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Paul-Murphy.D.2014-10-10",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Paul-Murphy.D.2014-10-10",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/People_Before_Profit_Solidarity",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [
+          "no independently current target-affiliation party witness in either current House"
+        ],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Paul-Murphy.D.2014-10-10",
+        "name": "Paul Murphy",
+        "partyWitnesses": [],
+        "qualifies": false
+      },
+      {
+        "committeeInterval": {
+          "currentAtAsOf": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/S%C3%A9amus-McGrath.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#committee-membership-62f3b3423921cb4b42aaef70d040465d9a38e4d73fdcf8314746caeb50788a61#member-date-range",
+          "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+          "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#committee-membership-62f3b3423921cb4b42aaef70d040465d9a38e4d73fdcf8314746caeb50788a61",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "committeeMembership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#committee-membership-62f3b3423921cb4b42aaef70d040465d9a38e4d73fdcf8314746caeb50788a61",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#party-membership-3588b766a1c6be4acd5169b6fe82392cf9cf9f32fc5fa20e10bf0d9f38a40ad6",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/S%C3%A9amus-McGrath.D.2024-11-29",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#party-membership-3588b766a1c6be4acd5169b6fe82392cf9cf9f32fc5fa20e10bf0d9f38a40ad6#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#party-membership-3588b766a1c6be4acd5169b6fe82392cf9cf9f32fc5fa20e10bf0d9f38a40ad6",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/S%C3%A9amus-McGrath.D.2024-11-29",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/S%C3%A9amus-McGrath.D.2024-11-29",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/S%C3%A9amus-McGrath.D.2024-11-29",
+        "name": "Séamus McGrath",
+        "partyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#party-membership-3588b766a1c6be4acd5169b6fe82392cf9cf9f32fc5fa20e10bf0d9f38a40ad6",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/S%C3%A9amus-McGrath.D.2024-11-29",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#party-membership-3588b766a1c6be4acd5169b6fe82392cf9cf9f32fc5fa20e10bf0d9f38a40ad6#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#party-membership-3588b766a1c6be4acd5169b6fe82392cf9cf9f32fc5fa20e10bf0d9f38a40ad6",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/S%C3%A9amus-McGrath.D.2024-11-29",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/S%C3%A9amus-McGrath.D.2024-11-29",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fianna_Fáil",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "qualifies": true
+      }
+    ],
+    "committee": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+    "committeeOwnerInterval": {
+      "currentAtAsOf": true,
+      "end": null,
+      "graph": "https://data.oireachtas.ie/graph/committees",
+      "range": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range",
+      "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+      "resource": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+      "start": {
+        "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+        "type": "literal",
+        "value": "2024-12-18T00:00:00"
+      }
+    },
+    "committeeTerm": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+    "expectedMembers": [
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29",
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29",
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08",
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29"
+    ]
+  },
+  "R+P": {
+    "candidateDispositions": [
+      {
+        "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central",
+        "constituencyGraph": "https://data.oireachtas.ie/graph/constituencies",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/social-democrats",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#party-membership-2e6b6e813e79b689010130429705e039a7ba5e966852c27818565aa2ab59811e",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2026-05-25T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2026-05-25T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Social_Democrats",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [
+          "no independently current target-affiliation episode on the exact representation membership"
+        ],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25",
+        "name": "Daniel Ennis",
+        "partyWitnesses": [],
+        "qualifies": false,
+        "representation": {
+          "house": "dail",
+          "interval": {
+            "currentAtAsOf": true,
+            "end": null,
+            "graph": "https://data.oireachtas.ie/graph/member/Daniel-Ennis.D.2026-05-25",
+            "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34#date-range",
+            "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+            "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34",
+            "start": {
+              "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+              "type": "literal",
+              "value": "2026-05-25T00:00:00"
+            }
+          },
+          "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Daniel-Ennis.D.2026-05-25/house/dail/34",
+          "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+        }
+      },
+      {
+        "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central",
+        "constituencyGraph": "https://data.oireachtas.ie/graph/constituencies",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/social-democrats",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34#party-membership-b69d88803d83157951a9ab6204924cfa556ccbf57e35d48facb3de3f912cab07",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Gary-Gannon.D.2020-02-08",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34#party-membership-b69d88803d83157951a9ab6204924cfa556ccbf57e35d48facb3de3f912cab07#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34#party-membership-b69d88803d83157951a9ab6204924cfa556ccbf57e35d48facb3de3f912cab07",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Gary-Gannon.D.2020-02-08",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Gary-Gannon.D.2020-02-08",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Social_Democrats",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [
+          "no independently current target-affiliation episode on the exact representation membership"
+        ],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Gary-Gannon.D.2020-02-08",
+        "name": "Gary Gannon",
+        "partyWitnesses": [],
+        "qualifies": false,
+        "representation": {
+          "house": "dail",
+          "interval": {
+            "currentAtAsOf": true,
+            "end": null,
+            "graph": "https://data.oireachtas.ie/graph/member/Gary-Gannon.D.2020-02-08",
+            "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34#date-range",
+            "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+            "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34",
+            "start": {
+              "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+              "type": "literal",
+              "value": "2024-11-29T00:00:00"
+            }
+          },
+          "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34",
+          "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+        }
+      },
+      {
+        "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central",
+        "constituencyGraph": "https://data.oireachtas.ie/graph/constituencies",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/labour-party",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34#party-membership-59f4b8bff30c6722eea77ae64d396c6110dc2f642efde82b088a355466a32fc1",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Marie-Sherlock.S.2020-03-30",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34#party-membership-59f4b8bff30c6722eea77ae64d396c6110dc2f642efde82b088a355466a32fc1#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34#party-membership-59f4b8bff30c6722eea77ae64d396c6110dc2f642efde82b088a355466a32fc1",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Marie-Sherlock.S.2020-03-30",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Marie-Sherlock.S.2020-03-30",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Labour_Party",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [
+          "no independently current target-affiliation episode on the exact representation membership"
+        ],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Marie-Sherlock.S.2020-03-30",
+        "name": "Marie Sherlock",
+        "partyWitnesses": [],
+        "qualifies": false,
+        "representation": {
+          "house": "dail",
+          "interval": {
+            "currentAtAsOf": true,
+            "end": null,
+            "graph": "https://data.oireachtas.ie/graph/member/Marie-Sherlock.S.2020-03-30",
+            "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34#date-range",
+            "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+            "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34",
+            "start": {
+              "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+              "type": "literal",
+              "value": "2024-11-29T00:00:00"
+            }
+          },
+          "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/dail/34",
+          "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+        }
+      },
+      {
+        "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central",
+        "constituencyGraph": "https://data.oireachtas.ie/graph/constituencies",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09",
+        "name": "Mary Lou McDonald",
+        "partyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": true,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc",
+            "episodeInterval": {
+              "currentAtAsOf": true,
+              "end": null,
+              "graph": "https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#party-membership-b6ba1335ea2b1599fd7cbd937edf6620fa1e0c6ba0467d97a6f7541b62a927bc",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": true,
+                "end": null,
+                "graph": "https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Sinn_Féin",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "qualifies": true,
+        "representation": {
+          "house": "dail",
+          "interval": {
+            "currentAtAsOf": true,
+            "end": null,
+            "graph": "https://data.oireachtas.ie/graph/member/Mary-Lou-McDonald.D.2011-03-09",
+            "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34#date-range",
+            "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+            "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34",
+            "start": {
+              "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+              "type": "literal",
+              "value": "2024-11-29T00:00:00"
+            }
+          },
+          "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09/house/dail/34",
+          "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+        }
+      },
+      {
+        "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central",
+        "constituencyGraph": "https://data.oireachtas.ie/graph/constituencies",
+        "examinedCurrentTermPartyWitnesses": [
+          {
+            "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fine-gael",
+            "affiliationGraph": "https://data.oireachtas.ie/graph/political-affiliations/identities",
+            "currentAtAsOf": false,
+            "episode": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#party-membership-e409f692afb12b66e4f76f0157bd866d1a87ddb8324b566d058022d2abd2e9a5",
+            "episodeInterval": {
+              "currentAtAsOf": false,
+              "end": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2025-11-21T00:00:00"
+              },
+              "graph": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23",
+              "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#party-membership-e409f692afb12b66e4f76f0157bd866d1a87ddb8324b566d058022d2abd2e9a5#date-range",
+              "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+              "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#party-membership-e409f692afb12b66e4f76f0157bd866d1a87ddb8324b566d058022d2abd2e9a5",
+              "start": {
+                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                "type": "literal",
+                "value": "2024-11-29T00:00:00"
+              }
+            },
+            "episodeType": "https://data.oireachtas.ie/ontology/members#PartyMembership",
+            "memberGraph": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23",
+            "parliamentary": {
+              "house": "dail",
+              "interval": {
+                "currentAtAsOf": false,
+                "end": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2025-11-21T00:00:00"
+                },
+                "graph": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23",
+                "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#date-range",
+                "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+                "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34",
+                "start": {
+                  "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                  "type": "literal",
+                  "value": "2024-11-29T00:00:00"
+                }
+              },
+              "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34",
+              "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+            },
+            "party": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Fine_Gael",
+            "partyGraph": "https://data.oireachtas.ie/graph/parties"
+          }
+        ],
+        "exclusionReasons": [
+          "representation interval excludes asOf",
+          "no independently current target-affiliation episode on the exact representation membership"
+        ],
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23",
+        "memberGraph": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23",
+        "name": "Paschal Donohoe",
+        "partyWitnesses": [],
+        "qualifies": false,
+        "representation": {
+          "house": "dail",
+          "interval": {
+            "currentAtAsOf": false,
+            "end": {
+              "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+              "type": "literal",
+              "value": "2025-11-21T00:00:00"
+            },
+            "graph": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23",
+            "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34#date-range",
+            "rangeType": "https://data.oireachtas.ie/ontology/members#DateRange",
+            "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34",
+            "start": {
+              "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+              "type": "literal",
+              "value": "2024-11-29T00:00:00"
+            }
+          },
+          "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/dail/34",
+          "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+        }
+      }
+    ],
+    "count": 1,
+    "expectedMembers": [
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09"
+    ]
+  },
+  "asOf": "2026-11-11",
+  "currentTerms": {
+    "dail": {
+      "interval": {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "rangeType": "http://purl.org/dc/terms/PeriodOfTime",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      "term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+      "type": "https://data.oireachtas.ie/ontology#DailTerm"
+    },
+    "seanad": {
+      "interval": {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/27#term-period",
+        "rangeType": "http://purl.org/dc/terms/PeriodOfTime",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/27",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2025-01-29T00:00:00"
+        }
+      },
+      "term": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/27",
+      "type": "https://data.oireachtas.ie/ontology#SeanadTerm"
+    }
+  },
+  "measure": "distinct qualifying Member identities recorded in the captured RDF; source coverage not certified complete"
+}

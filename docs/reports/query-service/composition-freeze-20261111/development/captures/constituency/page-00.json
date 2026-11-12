@@ -1,0 +1,20 @@
+{ "head": {
+    "vars": [ "constituency" , "label" , "constituencyType" , "term" ]
+  } ,
+  "results": {
+    "bindings": [
+      { 
+        "constituency": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central" } ,
+        "label": { "type": "literal" , "xml:lang": "en" , "value": "Dublin Central" } ,
+        "constituencyType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#Constituencies" } ,
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" }
+      } ,
+      { 
+        "constituency": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central" } ,
+        "label": { "type": "literal" , "xml:lang": "en" , "value": "Dublin Central" } ,
+        "constituencyType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DailConstituency" } ,
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" }
+      }
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+{ "head": {
+    "vars": [ "committee" , "label" , "committeeType" , "term" , "range" , "rangeType" , "start" , "end" ]
+  } ,
+  "results": {
+    "bindings": [
+      { 
+        "committee": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/32/committee_of_public_accounts" } ,
+        "label": { "type": "literal" , "xml:lang": "en" , "value": "Committee of Public Accounts" } ,
+        "committeeType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#Committee" } ,
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/32" } ,
+        "range": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/32/committee_of_public_accounts#committee-date-range" } ,
+        "rangeType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2016-03-10T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2020-01-14T00:00:00" }
+      } ,
+      { 
+        "committee": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/committee_of_public_accounts" } ,
+        "label": { "type": "literal" , "xml:lang": "en" , "value": "Committee of Public Accounts" } ,
+        "committeeType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#Committee" } ,
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33" } ,
+        "range": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/committee_of_public_accounts#committee-date-range" } ,
+        "rangeType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2020-02-20T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-08T00:00:00" }
+      } ,
+      { 
+        "committee": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts" } ,
+        "label": { "type": "literal" , "xml:lang": "en" , "value": "Committee of Public Accounts" } ,
+        "committeeType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#Committee" } ,
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" } ,
+        "range": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range" } ,
+        "rangeType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#DateRange" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-12-18T00:00:00" }
+      }
+    ]
+  }
+}

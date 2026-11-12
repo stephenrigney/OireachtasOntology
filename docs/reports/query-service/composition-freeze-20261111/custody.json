@@ -1,0 +1,59 @@
+{
+  "status": "user_authorized_custody_gate_accepted_temporary_copies_deleted_release_locked",
+  "asOf": "2026-11-11",
+  "plaintext_committed": false,
+  "user_custody_confirmed": true,
+  "release_authorized": false,
+  "implementation_candidate_commit_sha": null,
+  "user_confirmation": {
+    "recorded_date": "2026-11-12",
+    "check_presented": "Verified private copy safely stored, with future implementation access excluded from private custodian conversations/tool logs",
+    "response_verbatim": "Proceed with deletion and commit.",
+    "basis": "User authorized proceeding in response to the explicit combined custody check. This is human authorization, not an independent technical audit of their retained copy or future access isolation."
+  },
+  "temporary_cleanup": {
+    "date": "2026-11-12",
+    "oracle_directory_deleted": true,
+    "handoff_archive_deleted": true,
+    "both_paths_verified_absent": true,
+    "handoff_paths_below_are_historical": true,
+    "session_history_deleted": false,
+    "implementation_access_exclusion": "User responsibility: private custodian conversations/tool logs must remain inaccessible to the implementation environment. A fresh chat alone does not establish this."
+  },
+  "handoff": {
+    "archive": "/tmp/oireachtasontology/nlq-evidence-freeze/withheld-handoff-20261111.tar.gz",
+    "sha256": "99f30c1450a62c92ca35d4fdf92ed029df94647426ec3c51be9666b3ee546107",
+    "bytes": 570859,
+    "staging_directory": "/tmp/oireachtasontology/nlq-evidence-freeze/withheld/",
+    "internal_manifest": "withheld/SHA256SUMS",
+    "internal_manifest_sha256": "83e67c60d4a8691fcd1b86e8b9c77b684eeadbfa1ed7aa72c7d99b2b1de1f28f"
+  },
+  "withheld_verification_commitments": {
+    "input.json": "4005909041be554d4c8a9b2bea020ca3fa7193b862e2facab04ca3076020b0fc",
+    "oracle.json": "3270ab822cb1a98ff3c9e361ce1de78818a21e37479f0e14f992578577f9c199",
+    "negative-controls.json": "29cadc677268eef8e23a05dc4de02c7e7cd273275c6964fade998fa186d63b13",
+    "independent-review.md": "e15fa1b5922e61de1e01159eca27e3216159c075c46c78c3bfa5c967f2372916",
+    "independent_verify.py": "818533e434e9d0bbd6925b3fc6dbd8ca14ece61b3583a2a0c245f16a71429dbd"
+  },
+  "verification": {
+    "independent_private_review": "pass; separate reviewer recovered and checked the unfinished preparer's package against its captured evidence",
+    "custodian_offline_verifier_rerun": "pass on 2026-11-12; no endpoint contact",
+    "complete_internal_checksum_coverage": "pass; every payload file covered, no unlisted file or symlink",
+    "archive_readback": "pass; archived payload bytes match the independently checked internal manifest",
+    "candidate_kernel_execution": "not performed; no candidate exists"
+  },
+  "release_gate": [
+    "User verifies the archive and internal manifest and retains a durable copy outside implementation access",
+    "User confirms staging/archive copies and custodian/private-agent transcripts and tool logs are removed or inaccessible to the implementation environment",
+    "Fresh implementation context receives public development materials only; a fresh chat alone does not prove filesystem or log isolation",
+    "Before oracle release record the frozen implementation commit SHA, clean status, dependencies, approved capability configuration and harness/replay hashes",
+    "Release this exact verified package only after candidate freeze, recording recipient, time and hashes; no topology-specific logic changes or prebuilt special case receive reuse credit"
+  ],
+  "limitations": [
+    "The K+R topology and prior readiness exemplar were already disclosed, not unseen",
+    "Shared source/model infrastructure and procedural custody do not imply statistical independence or confidentiality against the workstation owner",
+    "Captures are sequential, scoped evidence rather than a transactional snapshot, upstream publication-validation attestation or real-world completeness certificate",
+    "Diagnostic acquisition does not establish future whole-plan budget fit",
+    "Custody/access exclusion rests on the user's authorization; no technical isolation is independently established by file permissions or separate agent sessions"
+  ]
+}

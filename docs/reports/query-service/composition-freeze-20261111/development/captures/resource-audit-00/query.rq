@@ -1,0 +1,150 @@
+PREFIX a: <https://data.oireachtas.ie/ontology#>
+PREFIX m: <https://data.oireachtas.ie/ontology/members#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX dcat: <http://www.w3.org/ns/dcat#>
+SELECT DISTINCT ?g ?s ?p ?o WHERE {
+VALUES ?s {
+<https://data.oireachtas.ie/ie/oireachtas/committee/dail/32/committee_of_public_accounts>
+<https://data.oireachtas.ie/ie/oireachtas/committee/dail/32/committee_of_public_accounts#committee-date-range>
+<https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/committee_of_public_accounts>
+<https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/committee_of_public_accounts#committee-date-range>
+<https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts>
+<https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/1>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/1#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/10>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/10#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/11>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/11#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/12>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/12#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/13>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/13#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/14>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/14#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/15>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/15#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/16>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/16#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/17>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/17#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/18>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/18#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/19>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/19#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/2>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/2#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/20>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/20#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/21>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/21#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/22>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/22#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/23>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/23#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/24>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/24#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/25>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/25#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/26>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/26#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/27>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/27#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/28>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/28#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/29>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/29#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/3>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/3#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/30>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/30#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/31>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/31#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/32>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/32#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/33>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/33#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/34>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/4>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/4#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/5>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/5#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/6>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/6#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/7>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/7#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/8>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/8#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/9>
+<https://data.oireachtas.ie/ie/oireachtas/house/dail/9#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/10>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/10#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/11>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/11#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/12>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/12#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/13>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/13#term-period>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/14>
+<https://data.oireachtas.ie/ie/oireachtas/house/seanad/14#term-period>
+}
+GRAPH ?g {
+{ ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o . BIND(<http://www.w3.org/1999/02/22-rdf-syntax-ns#type> AS ?p) }
+UNION
+{ ?s <http://www.w3.org/2004/02/skos/core#prefLabel> ?o . BIND(<http://www.w3.org/2004/02/skos/core#prefLabel> AS ?p) }
+UNION
+{ ?s <http://xmlns.com/foaf/0.1/name> ?o . BIND(<http://xmlns.com/foaf/0.1/name> AS ?p) }
+UNION
+{ ?s <http://purl.org/dc/terms/temporal> ?o . BIND(<http://purl.org/dc/terms/temporal> AS ?p) }
+UNION
+{ ?s <http://www.w3.org/ns/dcat#startDate> ?o . BIND(<http://www.w3.org/ns/dcat#startDate> AS ?p) }
+UNION
+{ ?s <http://www.w3.org/ns/dcat#endDate> ?o . BIND(<http://www.w3.org/ns/dcat#endDate> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology#memberCode> ?o . BIND(<https://data.oireachtas.ie/ontology#memberCode> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology#termNo> ?o . BIND(<https://data.oireachtas.ie/ontology#termNo> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology#termOf> ?o . BIND(<https://data.oireachtas.ie/ontology#termOf> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#hasMembersMembership> ?o . BIND(<https://data.oireachtas.ie/ontology/members#hasMembersMembership> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#inHouseTerm> ?o . BIND(<https://data.oireachtas.ie/ontology/members#inHouseTerm> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf> ?o . BIND(<https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> ?o . BIND(<https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#StartDate> ?o . BIND(<https://data.oireachtas.ie/ontology/members#StartDate> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#EndDate> ?o . BIND(<https://data.oireachtas.ie/ontology/members#EndDate> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#inOireachtasMembership> ?o . BIND(<https://data.oireachtas.ie/ontology/members#inOireachtasMembership> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#memberOfCollection> ?o . BIND(<https://data.oireachtas.ie/ontology/members#memberOfCollection> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#isPartyMembershipOf> ?o . BIND(<https://data.oireachtas.ie/ontology/members#isPartyMembershipOf> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity> ?o . BIND(<https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#activeDuringTerm> ?o . BIND(<https://data.oireachtas.ie/ontology/members#activeDuringTerm> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#isRepresentativeFrom> ?o . BIND(<https://data.oireachtas.ie/ontology/members#isRepresentativeFrom> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#constituencyInHouseTerm> ?o . BIND(<https://data.oireachtas.ie/ontology/members#constituencyInHouseTerm> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#isCommitteeMembershipOf> ?o . BIND(<https://data.oireachtas.ie/ontology/members#isCommitteeMembershipOf> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#committeeInHouseTerm> ?o . BIND(<https://data.oireachtas.ie/ontology/members#committeeInHouseTerm> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#committeeCode> ?o . BIND(<https://data.oireachtas.ie/ontology/members#committeeCode> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#committeeID> ?o . BIND(<https://data.oireachtas.ie/ontology/members#committeeID> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#hasCommitteeDateRange> ?o . BIND(<https://data.oireachtas.ie/ontology/members#hasCommitteeDateRange> AS ?p) }
+}
+} ORDER BY ?g ?s ?p ?o LIMIT 100

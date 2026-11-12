@@ -1,0 +1,21 @@
+{
+  "endpoint": "http://localhost:3030/houses/query",
+  "asOf": "2026-11-11",
+  "timeout_seconds": 20,
+  "max_rows_per_request": 100,
+  "max_diagnostic_pages": 40,
+  "query_sha256": "787c5ed3b022025fb64cfa9d79fca1add74b81b81814e74b99eb8971ed9256bc",
+  "enumeration_complete": true,
+  "pages": [
+    {
+      "file": "page-00.json",
+      "offset": 0,
+      "rows": 42,
+      "sha256": "9ffd5ad32ccdcfd3c31355d4a834d1ae0994134ec98b3cc40da449a7d0c50617",
+      "http_status": 200,
+      "started": "2026-11-11T14:59:28.858243+00:00",
+      "finished": "2026-11-11T14:59:28.885767+00:00"
+    }
+  ],
+  "snapshot": "Sequential SELECT captures, not a transactional store snapshot"
+}

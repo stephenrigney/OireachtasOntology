@@ -1,0 +1,89 @@
+{ "head": {
+    "vars": [ "member" , "record" , "recordType" , "containing" , "party" , "collection" , "term" , "g" ]
+  } ,
+  "results": {
+    "bindings": [
+      { 
+        "member": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08" } ,
+        "record": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34#party-membership-b69d88803d83157951a9ab6204924cfa556ccbf57e35d48facb3de3f912cab07" } ,
+        "recordType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#PartyMembership" } ,
+        "containing": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Gary-Gannon.D.2020-02-08/house/dail/34" } ,
+        "party": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Social_Democrats" } ,
+        "collection": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/dail/34/Social_Democrats" } ,
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Gary-Gannon.D.2020-02-08" }
+      } ,
+      { 
+        "member": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23" } ,
+        "record": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23#party-membership-987dd3121b07b627b77fbdbbd4270630dfedabf1977e20e3b3d086e0c7bd1c6f" } ,
+        "recordType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership" } ,
+        "containing": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23" } ,
+        "party": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Fine_Gael" } ,
+        "collection": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Fine_Gael" } ,
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" }
+      } ,
+      { 
+        "member": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23" } ,
+        "record": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23#party-membership-987dd3121b07b627b77fbdbbd4270630dfedabf1977e20e3b3d086e0c7bd1c6f" } ,
+        "recordType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#PartyMembership" } ,
+        "containing": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paschal-Donohoe.S.2007-07-23/house/seanad/23" } ,
+        "party": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Fine_Gael" } ,
+        "collection": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/23/Fine_Gael" } ,
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Paschal-Donohoe.S.2007-07-23" }
+      } ,
+      { 
+        "member": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25" } ,
+        "record": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/seanad/25#party-membership-33c947c27ee22b5cc187fb5bd74e569120ae1ac424e1300de6f905c16e9c05d3" } ,
+        "recordType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership" } ,
+        "containing": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/seanad/25" } ,
+        "party": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/25/Fianna_Fáil" } ,
+        "collection": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/25/Fianna_Fáil" } ,
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Catherine-Ardagh.S.2016-04-25" }
+      } ,
+      { 
+        "member": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25" } ,
+        "record": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/seanad/25#party-membership-33c947c27ee22b5cc187fb5bd74e569120ae1ac424e1300de6f905c16e9c05d3" } ,
+        "recordType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#PartyMembership" } ,
+        "containing": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/seanad/25" } ,
+        "party": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/25/Fianna_Fáil" } ,
+        "collection": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/25/Fianna_Fáil" } ,
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Catherine-Ardagh.S.2016-04-25" }
+      } ,
+      { 
+        "member": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25" } ,
+        "record": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/seanad/26#party-membership-19b262035d238b6ed07ffb1b7c7d0e4e938cceec1275026efda3677febee85f4" } ,
+        "recordType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership" } ,
+        "containing": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/seanad/26" } ,
+        "party": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Fianna_Fáil" } ,
+        "collection": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Fianna_Fáil" } ,
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Catherine-Ardagh.S.2016-04-25" }
+      } ,
+      { 
+        "member": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25" } ,
+        "record": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/seanad/26#party-membership-19b262035d238b6ed07ffb1b7c7d0e4e938cceec1275026efda3677febee85f4" } ,
+        "recordType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#PartyMembership" } ,
+        "containing": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/seanad/26" } ,
+        "party": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Fianna_Fáil" } ,
+        "collection": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Fianna_Fáil" } ,
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Catherine-Ardagh.S.2016-04-25" }
+      } ,
+      { 
+        "member": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30" } ,
+        "record": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/seanad/26#party-membership-60c488144fca17e814722e4029d36fc46115ecce4267f24db87b6f6fc36773e9" } ,
+        "recordType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#ParliamentaryCollectionMembership" } ,
+        "containing": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/seanad/26" } ,
+        "party": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Labour_Party" } ,
+        "collection": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Labour_Party" } ,
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Marie-Sherlock.S.2020-03-30" }
+      } ,
+      { 
+        "member": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30" } ,
+        "record": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/seanad/26#party-membership-60c488144fca17e814722e4029d36fc46115ecce4267f24db87b6f6fc36773e9" } ,
+        "recordType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology/members#PartyMembership" } ,
+        "containing": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/member/id/Marie-Sherlock.S.2020-03-30/house/seanad/26" } ,
+        "party": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Labour_Party" } ,
+        "collection": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/party/seanad/26/Labour_Party" } ,
+        "g": { "type": "uri" , "value": "https://data.oireachtas.ie/graph/member/Marie-Sherlock.S.2020-03-30" }
+      }
+    ]
+  }
+}

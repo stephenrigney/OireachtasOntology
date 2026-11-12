@@ -1,0 +1,656 @@
+{ "head": {
+    "vars": [ "term" , "termType" , "number" , "house" , "period" , "periodType" , "start" , "end" ]
+  } ,
+  "results": {
+    "bindings": [
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "34" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-29T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/27" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "27" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/27#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2025-01-29T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/1" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "1" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/1#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1919-01-21T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1921-05-10T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/2" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "2" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/2#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1921-08-16T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1922-06-16T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/3" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "3" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/3#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1922-09-09T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1923-08-09T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/1922" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "1922" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/1922#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1922-12-06T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1925-12-05T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/4" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "4" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/4#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1923-09-19T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1927-05-23T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/5" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "5" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/5#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1927-06-23T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1927-08-25T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/1925" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "1925" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/1925#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1925-12-06T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1928-12-05T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/1928" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "1928" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/1928#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1928-12-06T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1931-12-05T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/6" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "6" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/6#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1927-10-11T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1932-01-29T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/7" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "7" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/7#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1932-03-09T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1933-01-02T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/1931" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "1931" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/1931#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1931-12-06T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1934-12-05T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/1934" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "1934" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/1934#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1934-12-06T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1936-05-29T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/8" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "8" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/8#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1933-02-08T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1937-06-14T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/9" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "9" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/9#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1937-07-21T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1938-05-27T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/2" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "2" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/2#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1938-04-27T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1938-07-22T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/10" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "10" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/10#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1938-06-30T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1943-05-31T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/3" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "3" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/3#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1938-09-07T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1943-07-14T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/11" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "11" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/11#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1943-07-01T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1944-05-10T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/4" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "4" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/4#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1943-09-08T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1944-07-05T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/12" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "12" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/12#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1944-06-09T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1948-01-12T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/5" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "5" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/5#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1944-08-18T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1948-03-12T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/13" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "13" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/13#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1948-02-18T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1951-05-07T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/6" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "6" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/6#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1948-04-21T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1951-07-25T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/14" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "14" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/14#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1951-06-13T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1954-04-24T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/7" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "7" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/7#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1951-08-14T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1954-07-07T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/15" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "15" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/15#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1954-06-02T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1957-02-12T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/8" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "8" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/8#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1954-07-22T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1957-03-28T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/9" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "9" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/9#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1957-05-22T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1961-09-01T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/16" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "16" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/16#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1957-03-20T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1961-09-15T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/17" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "17" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/17#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1961-10-11T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1965-03-18T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/10" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "10" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/10#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1961-12-14T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1965-04-28T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/18" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "18" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/18#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1965-04-21T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1969-05-22T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/11" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "11" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/11#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1965-06-23T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1969-07-24T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/19" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "19" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/19#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1969-07-02T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1973-02-05T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/12" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "12" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/12#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1969-11-05T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1973-03-30T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/20" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "20" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/20#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1973-03-14T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1977-05-25T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/13" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "13" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/13#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1973-06-01T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1977-08-16T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/21" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "21" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/21#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1977-07-05T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1981-05-21T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/14" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "14" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/14#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1977-10-27T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1981-07-16T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/22" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "22" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/22#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1981-06-30T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1982-02-27T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/15" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "15" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/15#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1981-10-08T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1982-04-16T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/23" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "23" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/23#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1982-03-09T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1982-11-04T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/16" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "16" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/16#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1982-05-13T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1982-12-21T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/24" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "24" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/24#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1982-12-14T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1987-01-21T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/17" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "17" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/17#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1983-02-23T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1987-04-03T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/25" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "25" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/25#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1987-03-10T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1989-05-25T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/18" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "18" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/18#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1987-04-25T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1989-07-05T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/26" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "26" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/26#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1989-06-29T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1992-11-05T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/19" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "19" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/19#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1989-10-01T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1992-12-17T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/27" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "27" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/27#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1992-12-14T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1997-05-15T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/20" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "20" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/20#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1993-02-17T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1997-07-10T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/28" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "28" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/28#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1997-06-26T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2002-04-25T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/21" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "21" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/21#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "1997-09-17T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2002-06-26T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/29" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "29" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/29#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2002-06-06T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2007-04-30T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/22" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "22" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/22#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2002-09-12T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2007-07-22T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/30" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "30" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/30#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2007-06-14T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2011-02-01T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/23" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "23" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/23#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2007-07-23T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2011-04-25T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/31" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "31" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/31#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2011-03-09T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2016-03-09T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/24" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "24" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/24#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2011-05-25T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2016-04-24T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/32" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "32" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/32#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2016-03-10T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2020-01-14T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/25" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "25" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/25#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2016-04-25T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2020-03-29T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#DailTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "33" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/dail" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/dail/33#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2020-02-08T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2024-11-08T00:00:00" }
+      } ,
+      { 
+        "term": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/26" } ,
+        "termType": { "type": "uri" , "value": "https://data.oireachtas.ie/ontology#SeanadTerm" } ,
+        "number": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "value": "26" } ,
+        "house": { "type": "uri" , "value": "https://data.oireachtas.ie/house/seanad" } ,
+        "period": { "type": "uri" , "value": "https://data.oireachtas.ie/ie/oireachtas/house/seanad/26#term-period" } ,
+        "periodType": { "type": "uri" , "value": "http://purl.org/dc/terms/PeriodOfTime" } ,
+        "start": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2020-03-30T00:00:00" } ,
+        "end": { "type": "literal" , "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" , "value": "2025-01-29T00:00:00" }
+      }
+    ]
+  }
+}

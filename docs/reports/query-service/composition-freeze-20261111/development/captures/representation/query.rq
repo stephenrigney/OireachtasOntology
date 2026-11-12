@@ -1,0 +1,17 @@
+PREFIX a: <https://data.oireachtas.ie/ontology#>
+PREFIX m: <https://data.oireachtas.ie/ontology/members#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX dcat: <http://www.w3.org/ns/dcat#>
+SELECT DISTINCT * WHERE {
+GRAPH ?g {
+ ?membership m:isRepresentativeFrom <https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central> .
+ OPTIONAL { ?member m:hasMembersMembership ?membership . OPTIONAL { ?member a ?memberType }
+ OPTIONAL { ?member a:memberCode ?code } OPTIONAL { ?member foaf:name ?name } }
+ OPTIONAL { ?membership a ?membershipType } OPTIONAL { ?membership m:inHouseTerm ?term }
+ OPTIONAL { ?membership m:isRepresentativeFrom ?constituency }
+ OPTIONAL { ?membership m:hasMembershipDateRange ?range . OPTIONAL { ?range a ?rangeType }
+ OPTIONAL { ?range m:StartDate ?start } OPTIONAL { ?range m:EndDate ?end } }
+}
+} ORDER BY ?code ?constituency ?end ?g ?member ?memberType ?membership ?membershipType ?name ?range ?rangeType ?start ?term LIMIT 100

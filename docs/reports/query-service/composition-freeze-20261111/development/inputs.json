@@ -1,0 +1,82 @@
+{
+  "artifactKind": "semantic test inputs, not a kernel plan schema",
+  "cases": {
+    "R+P": {
+      "id": "R+P",
+      "asOf": "2026-11-11",
+      "requiredSelections": [
+        {
+          "role": "R",
+          "relationship": "current Dáil constituency representation",
+          "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Dublin-Central",
+          "house": "Dail"
+        },
+        {
+          "role": "P",
+          "relationship": "current party membership",
+          "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/sinn-fein",
+          "house": "Dail"
+        }
+      ],
+      "exactSharedBindings": [
+        "Member",
+        "R.parliamentaryMembership=P.containingMembership",
+        "R.term=P.term"
+      ],
+      "currentAtRoles": [
+        "R.parliamentaryMembership",
+        "R.term",
+        "P.episode",
+        "P.containingMembership",
+        "P.term"
+      ],
+      "answer": {
+        "shape": "count",
+        "unit": "distinct Member IRI",
+        "scope": "qualifying identities recorded in captured RDF; not a certified real-world total"
+      },
+      "retainAllWitnesses": true
+    },
+    "K+P": {
+      "id": "K+P",
+      "asOf": "2026-11-11",
+      "requiredSelections": [
+        {
+          "role": "K",
+          "relationship": "current committee membership",
+          "committee": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts"
+        },
+        {
+          "role": "P",
+          "relationship": "current party membership",
+          "affiliation": "https://data.oireachtas.ie/ie/oireachtas/political-affiliation/fianna-fail",
+          "houses": [
+            "Dail",
+            "Seanad"
+          ]
+        }
+      ],
+      "exactSharedBindings": [
+        "Member"
+      ],
+      "forbiddenExtraEquality": [
+        "K.term=P.term",
+        "K.membership=P.containingMembership"
+      ],
+      "currentAtRoles": [
+        "K.owner",
+        "K.term",
+        "K.membership",
+        "P.episode",
+        "P.containingMembership",
+        "P.term"
+      ],
+      "answer": {
+        "shape": "list",
+        "unit": "distinct Member IRI",
+        "scope": "qualifying identities recorded in captured RDF; not a certified complete roster"
+      },
+      "retainAllWitnesses": true
+    }
+  }
+}

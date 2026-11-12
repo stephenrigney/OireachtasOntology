@@ -1,0 +1,71 @@
+PREFIX a: <https://data.oireachtas.ie/ontology#>
+PREFIX m: <https://data.oireachtas.ie/ontology/members#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX dcat: <http://www.w3.org/ns/dcat#>
+SELECT DISTINCT ?g ?s ?p ?o WHERE {
+VALUES ?s {
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/32#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/32#party-membership-5d78f039fbb2070db40838ca40385260e8e2a173d11ab0d9b659c7c3237996e4#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/33#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/33#party-membership-595b8036c625e5368583049ef41f168c74129112a7b16e352f7d60acbe711370#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#date-range>
+<https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#party-membership-9d1a950f1592383df394b2ba8b553f6353104d3939ebf6bca15d455935d9639d#date-range>
+}
+GRAPH ?g {
+{ ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o . BIND(<http://www.w3.org/1999/02/22-rdf-syntax-ns#type> AS ?p) }
+UNION
+{ ?s <http://www.w3.org/2004/02/skos/core#prefLabel> ?o . BIND(<http://www.w3.org/2004/02/skos/core#prefLabel> AS ?p) }
+UNION
+{ ?s <http://xmlns.com/foaf/0.1/name> ?o . BIND(<http://xmlns.com/foaf/0.1/name> AS ?p) }
+UNION
+{ ?s <http://purl.org/dc/terms/temporal> ?o . BIND(<http://purl.org/dc/terms/temporal> AS ?p) }
+UNION
+{ ?s <http://www.w3.org/ns/dcat#startDate> ?o . BIND(<http://www.w3.org/ns/dcat#startDate> AS ?p) }
+UNION
+{ ?s <http://www.w3.org/ns/dcat#endDate> ?o . BIND(<http://www.w3.org/ns/dcat#endDate> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology#memberCode> ?o . BIND(<https://data.oireachtas.ie/ontology#memberCode> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology#termNo> ?o . BIND(<https://data.oireachtas.ie/ontology#termNo> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology#termOf> ?o . BIND(<https://data.oireachtas.ie/ontology#termOf> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#hasMembersMembership> ?o . BIND(<https://data.oireachtas.ie/ontology/members#hasMembersMembership> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#inHouseTerm> ?o . BIND(<https://data.oireachtas.ie/ontology/members#inHouseTerm> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf> ?o . BIND(<https://data.oireachtas.ie/ontology/members#isOireachtasMembershipOf> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> ?o . BIND(<https://data.oireachtas.ie/ontology/members#hasMembershipDateRange> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#StartDate> ?o . BIND(<https://data.oireachtas.ie/ontology/members#StartDate> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#EndDate> ?o . BIND(<https://data.oireachtas.ie/ontology/members#EndDate> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#inOireachtasMembership> ?o . BIND(<https://data.oireachtas.ie/ontology/members#inOireachtasMembership> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#memberOfCollection> ?o . BIND(<https://data.oireachtas.ie/ontology/members#memberOfCollection> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#isPartyMembershipOf> ?o . BIND(<https://data.oireachtas.ie/ontology/members#isPartyMembershipOf> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity> ?o . BIND(<https://data.oireachtas.ie/ontology/members#hasPoliticalAffiliationIdentity> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#activeDuringTerm> ?o . BIND(<https://data.oireachtas.ie/ontology/members#activeDuringTerm> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#isRepresentativeFrom> ?o . BIND(<https://data.oireachtas.ie/ontology/members#isRepresentativeFrom> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#constituencyInHouseTerm> ?o . BIND(<https://data.oireachtas.ie/ontology/members#constituencyInHouseTerm> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#isCommitteeMembershipOf> ?o . BIND(<https://data.oireachtas.ie/ontology/members#isCommitteeMembershipOf> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#committeeInHouseTerm> ?o . BIND(<https://data.oireachtas.ie/ontology/members#committeeInHouseTerm> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#committeeCode> ?o . BIND(<https://data.oireachtas.ie/ontology/members#committeeCode> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#committeeID> ?o . BIND(<https://data.oireachtas.ie/ontology/members#committeeID> AS ?p) }
+UNION
+{ ?s <https://data.oireachtas.ie/ontology/members#hasCommitteeDateRange> ?o . BIND(<https://data.oireachtas.ie/ontology/members#hasCommitteeDateRange> AS ?p) }
+}
+} ORDER BY ?g ?s ?p ?o LIMIT 100
