@@ -1,0 +1,178 @@
+{
+  "authorityAndToolHashes": "pass; all pinned hashes verified before implementation and again before freeze",
+  "baselineAncestry": "pass",
+  "baselineCommit": "6fdf597f1eaf3ff18caa0c99ab7fd82af04373aa",
+  "baselines": {
+    "K+P": {
+      "distinctMemberIdentities": 4,
+      "intermediate": {
+        "K": {
+          "currentSelected": 13,
+          "validated": 15
+        },
+        "P": {
+          "currentSelected": 5,
+          "validated": 23
+        },
+        "bindingStages": [
+          13,
+          4
+        ],
+        "joinWitnessTuples": 4
+      },
+      "members": [
+        "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29",
+        "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29",
+        "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08",
+        "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29"
+      ],
+      "oracleAssertionRecords": 688,
+      "rawRowsPerRequest": [
+        65,
+        6,
+        15,
+        26
+      ],
+      "requests": 4,
+      "shape": "list",
+      "sourceIntervalAssertions": 114,
+      "structure": {
+        "partyHouseVariants": 2,
+        "relationshipSelections": 2
+      }
+    },
+    "R+P": {
+      "distinctMemberIdentities": 1,
+      "intermediate": {
+        "P": {
+          "currentSelected": 1,
+          "validated": 14
+        },
+        "R": {
+          "currentSelected": 4,
+          "validated": 5
+        },
+        "bindingStages": [
+          4,
+          1
+        ],
+        "joinWitnessTuples": 1
+      },
+      "members": [
+        "https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09"
+      ],
+      "oracleAssertionRecords": 171,
+      "rawRowsPerRequest": [
+        65,
+        1,
+        5,
+        14
+      ],
+      "requests": 4,
+      "shape": "count",
+      "sourceIntervalAssertions": 52,
+      "structure": {
+        "partyHouseVariants": 1,
+        "relationshipSelections": 2
+      }
+    }
+  },
+  "controlLayers": {
+    "budget-boundary": 2,
+    "evidence-invariance": 6,
+    "resolution": 2,
+    "semantic-admission": 29,
+    "valid-plan-evidence": 72
+  },
+  "controlStatuses": {
+    "answer": 15,
+    "nonanswer": 67,
+    "semantic_rejection": 29
+  },
+  "counterOnlyControls": [
+    "R+P-inclusive-budget-boundary",
+    "K+P-inclusive-budget-boundary"
+  ],
+  "development": {
+    "controlsPassed": 111,
+    "controlsTotal": 111,
+    "positivesPassed": 2
+  },
+  "expectedDiagnostics": [
+    "RDFLib not-a-date conversion warning comes from the frozen malformed-date negative control; it yields nonanswer, not a candidate failure"
+  ],
+  "freeze": {
+    "implementationCommit": "Full Git SHA is recorded in the final handoff; it is the commit containing these artifacts",
+    "sourceConfigurationAndEvidence": "environment.json",
+    "structuredReplay": "results.json.gz"
+  },
+  "independentChecks": {
+    "implementationReview": "P1-P5 corrections independently reviewed; no blocking defect found",
+    "rawEvidence": "pass",
+    "rawOracleComparison": "pass"
+  },
+  "limitations": [
+    "30 skipped repository tests remain unverified",
+    "Scoped captured evidence is not a store-wide, transactional, upstream-publication or real-world completeness certificate",
+    "Offline SELECT replay only; no live Fuseki execution or latency/availability certification",
+    "Only inclusive-boundary controls are unit-counter tests; their frozen20-second ceiling is distinguished from the operative15-second timeout",
+    "Witness caps are per primitive and per binding stage, not a cumulative sum across unrelated primitive sets",
+    "Third-selection/House semantic mutation controls were not added to the frozen inventory; those frozen negative budget shapes exercise native budget entrypoints",
+    "Development oracle field adapter is expected-result scoring, not candidate composition; private oracle format compatibility and withheld reuse are unverified",
+    "Withheld K+R material has not been accessed or executed; release remains separately authorized"
+  ],
+  "liveHTTPRequests": 0,
+  "outstandingFailures": [],
+  "productionAdmissionChanged": false,
+  "publicIntegrity": {
+    "audited_quads": 1782,
+    "development_controls": 111,
+    "first_capture_requests": 36,
+    "integrity": "pass",
+    "typed_binding_rows": 2491
+  },
+  "resolvedFailures": [
+    {
+      "disposition": "not passes; completed reruns used no shell time limit",
+      "failure": "Initial focused/full shell commands terminated at the 120-second execution limit"
+    },
+    {
+      "cause": "An OPTIONAL reverse link shares an already-bound anchor graph; bound graph alone cannot prove the missing Member endpoint exists",
+      "disposition": "Corrected fact-presence extraction without weakening the test or changing nonanswer semantics; final focused133/full2578 pass",
+      "failure": "Added orphan test expected missing reverse Member but got Truncated typed fact; superseded focused run 1 failed/131 passed; superseded full run 1 failed/2577 passed/30 skipped"
+    },
+    {
+      "disposition": "Pinned R/K reverse graph to captured anchor; negative overrides now run actual candidate with injected ledger/transport faults; all111 controls rerun and pass",
+      "failure": "Review found reverse-link certificate scope mismatch and negative budget controls routed only to counters"
+    }
+  ],
+  "status": "development verified; candidate freeze; withheld evaluation not performed",
+  "tests": {
+    "existingCompilerRegressions": {
+      "failed": 0,
+      "passed": 402,
+      "seconds": 308.37,
+      "skipped": 1
+    },
+    "focused": {
+      "failed": 0,
+      "passed": 133,
+      "seconds": 154.99
+    },
+    "fullRepository": {
+      "failed": 0,
+      "passed": 2578,
+      "seconds": 769.8,
+      "skipped": 30
+    },
+    "ontology": {
+      "reasoner": "HermiT",
+      "status": "pass",
+      "triples": 2586
+    },
+    "skippedDisposition": "unverified, not passed; no skipped test is acceptance credit"
+  },
+  "totalRecordedSelectBudgetCharges": 267,
+  "withheldAccessed": false,
+  "withheldExecuted": false
+}

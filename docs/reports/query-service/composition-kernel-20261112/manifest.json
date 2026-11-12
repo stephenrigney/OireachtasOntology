@@ -1,0 +1,19 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "README.md": "503f83db50f5573f0b9d3244adb81c795e026faa4b9c43a4972f673079b86b11",
+    "configuration.json": "f9e7dd750322e1b137144a56c7eb15332382b9740990bceaf3e3467189fcbe12",
+    "environment.json": "0239731fa64af7bafe081adee66e06250edd735bc62ebbf98f0ab6ea848277d9",
+    "results.json.gz": "557cb88ec558d5cdeb60fc03e8562c3c7b08a3b9dfec00d4e84cd3427233e199",
+    "verification.json": "72bcbc9511272dff2351ac8329a4bdab553be0e51a183fe9d625e360502a7193",
+    "verification/independent-oracle.log": "9de53fd208f18bb8d97e5e72c8b6cdd01478690057463e57e1237307ad1bc3a2",
+    "verification/independent-raw.log": "48d034d3ae939cca078467324e86ee4e35313b7478e81e1696a89a96c8e72f0d",
+    "verification/ontology-validation.log": "05dbf7641c633b847ad46d3f2ee3e54c5ac5beca72353b3efa708bebfdc99185",
+    "verification/public-integrity.json": "4064b4484279329cfb9d3eed8d41ee72061050a29ade3cb76460d706d379089e",
+    "verification/pytest-focused.log": "11f690c7f6136c505d7e47380ddf656d939c67e3c48308047c55b7476babc680",
+    "verification/pytest-full.log": "9ac8cf373ae4dd0e41593beba9a15439cc09a4dba941819d046d8e8cb21cf948",
+    "verification/pytest-regressions.log": "fb5c617a3ff78f5d4ad1acc94ad6e4cc349751f41d6d6685f14f9114c6e92cb3",
+    "verification/replay.log": "7cd1b510a258b7743e69d7c19d8b312af2426597d31ff6a0ab1b6f0f9e47dd9b",
+    "verification/superseded-orphan-failure.log.gz": "e885fbcd6828448a4df174b17286e9995b0350a1b5bdedb0aa61ac9bcfa42120"
+  }
+}

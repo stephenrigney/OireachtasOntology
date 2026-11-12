@@ -1,0 +1,6 @@
+Oracle comparison candidate counts: K+P 15 qualifying 4 R+P 5 qualifying 1
+Independent qualifying K+P Members: ['https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29', 'https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29', 'https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08', 'https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29']
+Independent qualifying R+P Members: ['https://data.oireachtas.ie/ie/oireachtas/member/id/Mary-Lou-McDonald.D.2011-03-09']
+Disposition and witness arrays compared against raw evidence; oracle not used to derive candidates.
+
+Independent raw-evidence/oracle comparison: PASS (not a kernel pass).

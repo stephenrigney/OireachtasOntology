@@ -1,0 +1,13 @@
+* Owlready2 * Running HermiT...
+    java -Xmx2000M -cp /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service/.venv/lib/python3.13/site-packages/owlready2/hermit:/var/home/stephen/Projects/OireachtasOntology-worktrees/query-service/.venv/lib/python3.13/site-packages/owlready2/hermit/HermiT.jar org.semanticweb.HermiT.cli.CommandLine -c -O -D -I file:////tmp/tmp6hiynhc_ -Y
+* Owlready2 * HermiT took 1.1509838104248047 seconds
+* Owlready * Reparenting members.isPartyMembershipOf: {members.memberOfCollection, owl.ObjectProperty} => {members.memberOfCollection}
+* Owlready * Reparenting ontology.statuteBookURI: {terms.relation, owl.ObjectProperty} => {terms.relation}
+* Owlready * Reparenting ontology.responsibleTo: {org.reportsTo, owl.ObjectProperty} => {org.reportsTo}
+* Owlready * Reparenting members.constituencyInHouseTerm: {members.inHouseTerm, owl.ObjectProperty} => {members.inHouseTerm}
+* Owlready * Reparenting ontology.dateSigned: {owl.DatatypeProperty, ontology.date_document} => {ontology.date_document}
+* Owlready * Reparenting members.SenatorTitle: {0.1.title, owl.DatatypeProperty} => {0.1.title}
+* Owlready * Reparenting members.MinisterialTitle: {0.1.title, owl.DatatypeProperty} => {0.1.title}
+* Owlready * Reparenting members.DeputyTitle: {0.1.title, owl.DatatypeProperty} => {0.1.title}
+* Owlready * (NB: only changes on entities loaded in Python are shown, other changes are done but not listed)
+Ontology validation passed: 2586 triples from /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service/ontology

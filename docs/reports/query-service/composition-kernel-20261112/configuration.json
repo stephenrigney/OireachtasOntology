@@ -1,0 +1,27 @@
+{
+  "mode": "offline read-only scoped RDFLib SELECT replay",
+  "productionAdmissionChanged": false,
+  "asOf": "2026-11-11",
+  "developmentCases": ["R+P", "K+P"],
+  "primitiveKinds": ["R", "P", "K"],
+  "operators": ["typed exact-identity binding", "bounded conjunction", "distinct Member list", "distinct Member count"],
+  "committeeCountAdmitted": false,
+  "preserveAllSupportingWitnesses": true,
+  "emptySelection": "evidence nonanswer, not zero or factual empty list",
+  "limits": {
+    "selections": 2,
+    "partyHouses": 2,
+    "requests": 8,
+    "rows": 100,
+    "witnesses": 100,
+    "timeout": 20
+  },
+  "effectiveRequestTimeoutSeconds": 15,
+  "queryCharacters": 32000,
+  "pageSize": 100,
+  "maxOffset": 10000,
+  "liveHTTPRequests": 0,
+  "withheldAccessed": false,
+  "withheldExecuted": false,
+  "note": "Snapshot of executed constants and development configuration, not a production capability contract or topology-specific query template. Inclusive budget tests exercise the frozen 20-second counter ceiling without increasing the existing 15-second execution timeout."
+}

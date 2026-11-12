@@ -1,0 +1,49 @@
+........................................................................ [ 17%]
+........................................................................ [ 35%]
+........................................................................ [ 53%]
+........................................................................ [ 71%]
+........................................................................ [ 89%]
+..........................................s                              [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_nlq_committee_members.py: 38 warnings
+tests/test_nlq_composable_member_relationship_composition.py: 159 warnings
+tests/test_nlq_composable_party_temporal.py: 127 warnings
+tests/test_nlq_seanad_party_periods.py: 96 warnings
+tests/test_nlq_office_representation.py: 134 warnings
+tests/test_nlq_bounded_composition.py: 161 warnings
+tests/test_nlq_explainer.py: 58 warnings
+tests/test_nlq_interpretation_clarification.py: 146 warnings
+tests/test_nlq_question_failures.py: 186 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service/.venv/lib/python3.13/site-packages/rdflib/graph.py:1721: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    query_graph = self.default_context.identifier
+
+tests/test_nlq_committee_members.py: 15 warnings
+tests/test_nlq_composable_member_relationship_composition.py: 88 warnings
+tests/test_nlq_composable_party_temporal.py: 38 warnings
+tests/test_nlq_seanad_party_periods.py: 26 warnings
+tests/test_nlq_office_representation.py: 51 warnings
+tests/test_nlq_bounded_composition.py: 97 warnings
+tests/test_nlq_explainer.py: 22 warnings
+tests/test_nlq_interpretation_clarification.py: 107 warnings
+tests/test_nlq_question_failures.py: 126 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service/.venv/lib/python3.13/site-packages/rdflib/plugins/sparql/evaluate.py:233: DeprecationWarning: Dataset.contexts is deprecated, use Dataset.graphs instead.
+    for graph in ctx.dataset.contexts():
+
+tests/test_nlq_committee_members.py: 267 warnings
+tests/test_nlq_composable_member_relationship_composition.py: 2814 warnings
+tests/test_nlq_composable_party_temporal.py: 241 warnings
+tests/test_nlq_seanad_party_periods.py: 571 warnings
+tests/test_nlq_office_representation.py: 267 warnings
+tests/test_nlq_bounded_composition.py: 1079 warnings
+tests/test_nlq_explainer.py: 134 warnings
+tests/test_nlq_interpretation_clarification.py: 1058 warnings
+tests/test_nlq_question_failures.py: 5532 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service/.venv/lib/python3.13/site-packages/rdflib/plugins/sparql/evaluate.py:235: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    if graph == ctx.dataset.default_context:
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+402 passed, 1 skipped, 13639 warnings in 308.37s (0:05:08)
