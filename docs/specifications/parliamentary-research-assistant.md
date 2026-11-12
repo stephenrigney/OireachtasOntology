@@ -259,7 +259,7 @@ The composer should encourage ordinary conversational requests rather than requi
 
 The assistant speaks as a helpful, impartial parliamentary research colleague. It discusses the purpose of the investigation, explains meaningful findings, asks necessary clarifications and supports follow-up questions that genuinely revise the research/report. It does not fill the conversation with query-completion notices. Advanced query details belong in Research Activity.
 
-All user-visible messages follow [the editorial standard](parliamentary-research-assistant-editorial.md). Responses that merely say "refinement requires Phase 2" are non-compliant with the intended v0.3 experience.
+All user-visible messages follow [the editorial standard](parliamentary-research-assistant-editorial.md). Responses that merely say "refinement requires Phase 2" are non-compliant with the intended v0.4 experience.
 
 ### 6.3 Research plan card
 
@@ -655,11 +655,11 @@ Keep the v0.2 browser and accessibility requirements: plan visible before initia
 
 - Before restarting application implementation, run a **bounded admission-versus-satisfaction design validation** using the retained [corrective admission report](../reports/parliamentary-research-assistant/corrective-admission-review.md) and its deliberately incomplete controls. Verify that relevant narrow supporting retrieval can proceed without requiring parent-query equivalence, but incomplete evidence never closes a parent requirement or authorises a stronger factual claim.
 - First identify and register a small set of existing verified tools for the chosen realistic research briefs; do not broaden compiler semantics simply to produce an attractive demo.
-- Preserve working query/evidence infrastructure when it supports v0.3, but do not build further features on the rejected word-list interpretation/product flow.
+- Preserve working query/evidence infrastructure when it supports v0.4, but do not build further features on the rejected word-list interpretation/product flow.
 - Implement one thin meaningful research journey end-to-end, then demonstrate a second domain or honest bounded limitation.
 - Verify with actual user language and model behaviour, not canned report text or a known exact string only.
 - Stop for human review if correct **supporting-query admission, requirement satisfaction, or factual claim grounding** cannot be demonstrated without changing approved authority boundaries. Do not demand impossible universal equivalence proof or silently shift routine semantic decisions onto the user.
-- Do not automatically treat v0.3 approval as authorisation to implement the next tranche. A separate, bounded OpenCode implementation prompt and human gate are required.
+- Do not automatically treat v0.4 approval as authorisation to implement the next tranche. A separate, bounded OpenCode implementation prompt and human gate are required.
 
 ## 20. References and Decision Record
 
