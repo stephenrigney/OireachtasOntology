@@ -276,7 +276,7 @@ The composer should encourage ordinary conversational requests rather than requi
 
 The assistant speaks as a helpful, impartial parliamentary research colleague. It discusses the purpose of the investigation, explains meaningful findings, asks necessary clarifications and supports follow-up questions that genuinely revise the research/report. It does not fill the conversation with query-completion notices. Advanced query details belong in Research Activity.
 
-All user-visible messages follow [the editorial standard](parliamentary-research-assistant-editorial.md). Responses that merely say "refinement requires Phase 2" are non-compliant with the intended v0.4 experience.
+All user-visible messages follow [the editorial standard](parliamentary-research-assistant-editorial.md). Responses that merely say "refinement requires Phase 2" are non-compliant with the intended v0.5 experience.
 
 ### 6.3 Research plan card
 
@@ -584,7 +584,9 @@ For every material user requirement, preserve an explicit disposition: **answere
 
 Before **each query dispatch**, check that the proposed typed operation accurately expresses its **own** stated subsidiary question, satisfies normal compiler safeguards, has a defensible relevance to an authorised research objective and cannot be mistaken for a broader operation. **Do not require the supporting operation to be equivalent to the entire original brief.** Query admissibility is not an assertion that the parent requirement has been satisfied.
 
-Before **marking a requirement answered or publishing a substantive report claim**, check all material conditions against actual validated, compatible evidence. A model-generated “entailed”, “covered” or “answered” label, citation or complete quoted source-span ledger is not independent validation. Conditions lacking supported typed evidence remain explicitly open, even if a broader or weaker query returned results. Unsupported or ambiguous work must not obstruct independent supported tasks.
+Before labelling any **particular assertion** as established (Level 1/2), validate its exact meaning—entities, relationship, date, scope and relevant qualifications—against accepted evidence or an approved deterministic derivation. Never use a model-generated “entailed”, “covered” or “answered” label, quotation or citation as proof. Preserve known unsupported or ambiguous conditions and keep their research tasks open, while independent supported work continues.
+
+The coordinator may describe a **bounded finding as answered at its verified scope**, but it must not independently certify that the entire original ordinary-language brief has been exhaustively interpreted or satisfied. The LLM may offer a provisional account of what the draft addresses; the researcher reviews its adequacy against the preserved original brief. Unknown omissions are a product evaluation risk, not a pretext for blocking every supported query or producing verified-looking unsupported prose.
 
 The coordinator enforces bounded tool budgets, safe retries, user approvals and selective evidence/report invalidation on revisions. Neither initial plan publication nor standing consent waives future requirements.
 
@@ -598,7 +600,7 @@ The LLM may propose and sequence tools, but execution must reuse existing compil
 
 Keep accepted results, identities, temporal context, traces, coverage/freshness qualifications, tool/requirement IDs and assertion dependencies outside the conversation transcript. Represent **supporting retrieval**, **validated factual assertion**, **provisional interpretation/hypothesis**, **research requirement assessment** and **user review state** as separate linked records. Each accepted fact retains its source operation's actual semantics; no parent condition is inherited merely because the fact contributes to that question.
 
-For every substantive assertion, retain at minimum: stable assertion ID; exact text or structured proposition; evidence class (1–4); source evidence IDs and scope; derivation or reasoning; assumptions and contrary/missing evidence; qualitative confidence **only for Level 3**; and review status (**provisional** or **reviewed**). Level 1 and 2 must reference accepted machine-verifiable operations/calculations; Levels 3 and 4 must be distinguishable as model-authored, non-certified prose. Keep source freshness/coverage as separate attributes, not rolled into a confidence badge. For Level 4, prefer explicit uncertainty and a research question over a numeric or qualitative confidence rating.
+For every substantive assertion, retain at minimum: stable assertion ID; exact text or structured proposition; evidence class (1–4); source evidence IDs and scope; derivation or reasoning; assumptions and contrary/missing evidence; qualitative confidence **only for Level 3**; and review status (**provisional** or **reviewed by the researcher**). The system must not mark an assertion human-reviewed without an actual review action. Level 1 and 2 must reference accepted machine-verifiable operations/calculations; Levels 3 and 4 must be distinguishable as model-authored, non-certified prose. Keep source freshness/coverage as separate attributes, not rolled into a confidence badge. For Level 4, prefer explicit uncertainty and a research question over a numeric or qualitative confidence rating.
 
 Successful tool execution is not proof that an arbitrary sentence or the user's entire question is answered.
 
@@ -687,11 +689,11 @@ Keep the v0.2 browser and accessibility requirements: plan visible before initia
 
 - The completed [retrieval/satisfaction validation](../reports/parliamentary-research-assistant/retrieval-satisfaction-validation.md) remains evidence that ledger-only semantic completeness fails and independent original-intent holds over-block ordinary questions. **Do not repeat its impossible exhaustive-binding gate.** Retain its known omission examples as regression and human review cases for false factual promotion, while allowing useful draft research.
 - First identify and register a small set of existing verified tools for the chosen realistic research briefs; do not broaden compiler semantics simply to produce an attractive demo.
-- Preserve working query/evidence infrastructure when it supports v0.4, but do not build further features on the rejected word-list interpretation/product flow.
+- Preserve working query/evidence infrastructure when it supports v0.5, but do not build further features on the rejected word-list interpretation/product flow.
 - Implement one thin meaningful research journey end-to-end, then demonstrate a second domain or honest bounded limitation.
 - Verify with actual user language and model behaviour, not canned report text or a known exact string only.
 - Stop for human review if guarded query admission, source-to-Level-1/2 factual grounding, uncertainty labelling or the ability to distinguish provisional interpretations from established facts cannot be maintained. Do not stop merely because exhaustive automatic natural-language comprehension or unrestricted prose certification is unavailable.
-- Do not automatically treat v0.4 approval as authorisation to implement the next tranche. A separate, bounded OpenCode implementation prompt and human gate are required.
+- Do not automatically treat v0.5 approval as authorisation to implement the next tranche. A separate, bounded OpenCode implementation prompt and human gate are required.
 
 ## 20. References and Decision Record
 
