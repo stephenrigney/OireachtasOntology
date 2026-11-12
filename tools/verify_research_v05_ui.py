@@ -63,9 +63,13 @@ async def verify(url):
         # Request a new task with a different name. Replay refuses the mismatched
         # query: deliberate execution failure, not missing/zero facts.
         await page.locator("#brief").fill("Injected scope change with a failing independent query")
-        await page.locator("#brief").press("Enter")
-        await expect(page.locator("#plan-interpretation")).to_contain_text("Investigate")
-        await expect(page.locator("#unanswered")).to_contain_text("could not be safely established")
+        async with page.expect_response(lambda r: r.url.endswith("/messages")):
+            await page.locator("#brief").press("Enter")
+        await expect(page.locator("#plan-tasks")).to_contain_text("Unresolved Person")
+        await expect(page.locator("#overall-state")).to_have_text("Completed with limitations")
+        await page.locator("#activity").click()
+        await expect(page.locator("#activity-content")).to_contain_text("could not be safely established")
+        await page.keyboard.press("Escape")
         assert await page.locator("#report-sections section").count() >= 1
         assert await page.locator("#report-sections").get_by_role("button", name="Evidence:").count() > 0
         # User messages are server replayed once, not locally doubled.

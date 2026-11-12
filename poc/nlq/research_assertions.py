@@ -45,11 +45,11 @@ def facts_from(env):
         return []
     data, eid, facts = env["data"], env["evidenceId"], []
 
-    def add(proposition, text, level=1, reasoning="Exact accepted compiler proposition."):
+    def add(proposition, text, level=1, reasoning="Exact accepted compiler proposition.", display=None):
         facts.append(Assertion(id=stable_id([eid, proposition]), text=text, level=level,
             evidenceRefs=[eid], factRefs=[], reasoning=reasoning, assumptions=[], conflicts=[],
             limitations=env["completeness"]["limitations"], confidence=None, confidenceRationale=None).model_dump()
-            | {"proposition": proposition})
+            | {"proposition": proposition, "display": display})
 
     member = env["request"]["factualRequest"]
     if "bills" in data:
@@ -66,7 +66,7 @@ def facts_from(env):
             "Approved calculation: cardinality of the distinct Bill IRI set in this one accepted sponsorship enumeration; no join or population estimate.")
     for b in data.get("lifecycle", []):
         add(["recorded_status", b["billIri"], b["statusIri"], b["processes"]],
-            f"{b['title']} has the recorded process status ‘{b['recordedStatus']}’ in the available records. This is not a certified final outcome.")
+            f"{b['title']} has the recorded process status ‘{b['recordedStatus']}’ in the available records. This is not a certified final outcome.", display={"status": b["recordedStatus"]})
         for e in b["events"]:
             add(["recorded_activity", b["billIri"], e],
                 f"The records for {b['title']} include {e['label']} dated {e['date']}. This describes recorded activity, not necessarily the Bill's last development or final outcome.")
@@ -74,7 +74,8 @@ def facts_from(env):
     for r in data.get("representation", []):
         key = (r["member"], r["constituency"], r["term"])
         if key not in seen:
-            add(["representation", key], f"The available records identify {r['name']} as representing {r['label']} in the {r['termLabel']}. This term-specific finding does not establish uninterrupted tenure or other parliamentary roles.")
+            add(["representation", key], f"The available records identify {r['name']} as representing {r['label']} in the {r['termLabel']}. This term-specific finding does not establish uninterrupted tenure or other parliamentary roles.",
+                display={"name": r["name"], "constituency": r["label"], "term": r["termLabel"]})
             seen.add(key)
     return facts
 

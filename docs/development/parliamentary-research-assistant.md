@@ -59,6 +59,40 @@ facts or their source links from the evidence store. Export before restart or
 expiry: runs are in-memory, expire after one hour, capped at 32; each session has
 a twelve-turn, 24-task budget. There is no persistent cross-session library.
 
+### Reading and revising the report
+
+The author chooses the report's organisation and selected developments. Detailed
+Bill and representation findings can be shown in compact factual tables rather
+than repeated assertion paragraphs. **Source records** in a row opens all its
+individual accepted facts, including activities not selected for the table; each
+fact opens its reasoning and complete source evidence. Research Activity also
+retains **All individual factual assertions**. Tables scroll horizontally by
+keyboard or touch on narrow screens.
+
+Ask, for example, “Make the overview shorter and explain why recorded status is
+not final outcome. Keep the Bill findings and evidence.” Editorial revisions
+reuse compiler evidence and should change only the affected prose. Requirement
+types separate outstanding factual questions from evidence limitations, editorial
+instructions, process messages and clarification requests. These types are model
+assessments for review, not an independent language-certification gate.
+The author can explicitly assess a pending/partly-supported subsidiary question
+as addressed **at recorded scope**, citing accepted facts and explaining the
+bounded answer. This provisional ledger assessment retires stale progress
+questions; it does not certify the full brief. Unsupported/unavailable questions
+cannot be retired this way. Editorial omission alone cannot remove a question.
+
+For a shortening request the model selects the existing prose target. The
+coordinator supplies a budget of 65% of its previous narrative word count,
+preserves its factual tables, and permits one bounded author repair if the prose
+is too long. This is an editorial length constraint, not factual certification.
+The model still chooses the wording and explanatory emphasis. A failed repair
+retains the previous draft and reports that the revision could not be applied.
+
+Markdown export includes the compact report and the **entire accepted factual
+registry and source evidence**, even when facts are not expanded in the document.
+The technical appendix is intentionally large. It is not necessary to read it
+linearly to use the report.
+
 ### Verified tool catalogue
 
 `research_tools.py` is deliberately a small facade, not a general agent framework.
@@ -102,6 +136,13 @@ review status, and confidence only where permitted:
    section; no confidence rating. Prefer a research question over speculation.
 
 The model cannot submit Level 1/2 prose or mark an assertion human-reviewed.
+Tables display exact fields of accepted propositions, with assertion references
+for every cell; aligning already accepted observations by exact Bill identity is
+a presentation operation, not an outcome inference or a new compiler capability.
+Descriptive summaries should use those presentations or the existing approved
+calculation rather than automatically becoming speculative interpretations.
+Free synthesis that cannot be independently grounded this way remains provisional
+under the existing Level 3 contract; references alone cannot promote it.
 Short model-facing fact handles resolve by exact registry lookup to stable
 assertion IDs; the mapping is archived. Substantive conversational explanations
 also carry exact-text Level 3 records and an evidence-inspection control.

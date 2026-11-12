@@ -15,14 +15,22 @@ from .config import DEFAULT_LLM_BASE_URL, DEFAULT_LLM_MODEL
 from .research_adapter import ClosedModel
 from .research_assertions import Narrative, accept_narrative, facts_from
 from .research_tools import CATALOGUE, LIMITATIONS, ToolTask
+from .research_presentation import FactTable, project_table
+from .results import format_debug_text
 from .structured_planner import ResponsesPlanGenerator, parse_draft_json
 
 
 class Requirement(ClosedModel):
+    kind: Literal["research_question", "evidence_limitation", "editorial_instruction", "process", "clarification"]
     wording: str
     conditions: list[str]
-    disposition: Literal["partly supported", "evidence pending", "needs clarification", "unsupported", "unavailable"]
+    disposition: Literal["partly supported", "evidence pending", "needs clarification", "unsupported", "unavailable", "completed", "answered", "withdrawn"]
     explanation: str
+
+
+class RevisionTarget(ClosedModel):
+    sectionId: str
+    action: Literal["shorten", "revise"]
 
 
 class Plan(ClosedModel):
@@ -34,6 +42,7 @@ class Plan(ClosedModel):
     requirements: list[Requirement] = Field(min_length=1, max_length=12)
     tasks: list[ToolTask] = Field(max_length=6)
     revisionInstructions: str
+    revisionTargets: list[RevisionTarget]
 
 
 class SectionDraft(ClosedModel):
@@ -42,18 +51,32 @@ class SectionDraft(ClosedModel):
     kind: Literal["findings", "further_questions"]
     factRefs: list[str]
     narrative: list[Narrative] = Field(max_length=8)
+    tables: list[FactTable] = Field(max_length=3)
+
+
+class OutstandingQuestion(ClosedModel):
+    requirementRef: str
+    question: str = Field(min_length=1, max_length=1000)
+
+
+class ResolvedQuestion(ClosedModel):
+    requirementRef: str
+    explanation: str = Field(min_length=1)
+    factRefs: list[str] = Field(min_length=1)
 
 
 class ReportDraft(ClosedModel):
     response: str
     responseNarrative: Narrative | None
     sections: list[SectionDraft] = Field(max_length=10)
-    unanswered: list[str]
+    unanswered: list[OutstandingQuestion]
+    resolvedQuestions: list[ResolvedQuestion]
 
 
 EDITORIAL = """You are an impartial parliamentary research colleague writing in clear Oireachtas.ie-style English.
 Produce an evidence-grounded Draft — for review, not a certified exhaustive answer. Explain findings, do not merely list rows.
 No model-memory facts, invented history, institutional background, causal accounts, dates, offices or citations.
+When naming a Bill in prose, copy its exact accepted title INCLUDING its Bill year. Never substitute an activity year for the Bill's title year, or conflate similarly named editions. Shortening must not lose that distinction.
 Sponsorship is not opposition; constituency history is not offices, continuous service or ministerial-service overlap.
 Recorded Current is not proof of progress/enactment; Lapsed is not a certified final outcome. Events may appear inconsistent; report them separately, do not invent procedural explanations.
 Keep original brief and material qualifiers visible as unanswered when tools cannot establish them. Useful supporting retrieval is allowed without answering the whole question.
@@ -65,26 +88,35 @@ Use only this catalogue. member is a human name mention from the authorised conv
 sponsorship/career have member=<name>, sourceTask=null. A lifecycle task automatically enumerates accepted Bill identities; never guess numbers.
 The published question for each task must truthfully describe its own narrower tool scope. The UI separately shows exact canonical tool meaning. No routine approval questions.
 Ask clarification only when material ambiguity changes the research, while independent supported work can proceed.
+Put every currently needed user decision in clarification (not only a requirement), retaining an earlier decision if a later message has not resolved or superseded it. Use null only when no current user decision is needed; history stays in the ledger.
 List material requirements and known unsupported qualifiers. Dispositions are provisional assessments, never exhaustive certification.
+Classify each requirement's kind: research_question (a substantive factual question), evidence_limitation (known coverage/freshness limits), editorial_instruction (shorten/reorganise/explain wording), process, or clarification (a decision needed from the user). Completed editorial work is not unanswered research. Do not repeat prior research requirements on an editorial turn: they already have stable IDs. Split materially different outstanding questions into separate requirements; do not duplicate prior ones.
+If the original brief asks what happened to Bills, their final outcomes are a substantive research_question, unavailable through this catalogue. Do not replace that requested answer with only an evidence_limitation or silently narrow it to recorded status/activity. Explain the source limit separately. Likewise a requested role history remains a substantive question even when role discovery is unavailable.
 reportingDate is application metadata, NOT a date supplied by the user or an implied date filter. Do not invent a dated requirement from it.
 For editorial follow-ups, explanation, or evidence discussion, return tasks=[] and revisionInstructions describing requested changes. Reuse existing evidence; new factual focus needs affected tasks only. Do not rerun cached facts for editorial work.
+revisionTargets identifies only existing sections authorised for prose revision, using exact sectionId. action=shorten for a request to shorten an overview/section (the coordinator supplies a materially shorter prose budget and preserves its factual tables). action=revise for other prose changes. Return [] on initial/additive research or conversation-only evidence inspection; do not rewrite the report merely to show existing evidence in conversation. If several sections exist, choose the actual overview, not unrelated developments or tables.
 response is concise conversational process/scope text. If it includes substantive findings or explanations from existing facts, responseNarrative MUST describe that exact same response text as Level 3, with exact short factRefs, reasoning, assumptions, conflicts, limitations and qualitative confidence/rationale. Otherwise responseNarrative=null. Before evidence exists, discuss intentions/limitations only; do not supply facts from memory. Hypotheses belong in the report's further-questions section, not conversational findings.
 """
 AUTHOR_INSTRUCTIONS = EDITORIAL + """
 Author a coherent research report suited to the brief, with explanatory narrative and selected exact factRefs from the accepted fact store.
 For factRefs copy the short fact-map keys exactly (f1, f2, etc.). Section IDs, assertion IDs and evidence IDs are not fact references. Never reconstruct a hash ID.
 You cannot author Level 1/2 wording: choose exact fact IDs for those established statements. Their text is rendered unchanged.
-Every narrative paragraph is a substantive Level 3 provisional interpretation or Level 4 hypothesis, with accepted factRefs, reasoning, assumptions, conflicts, limitations. Do not disguise unsupported specific factual relationships as interpretation.
+Do not turn straightforward summaries of facts into speculative interpretations merely because several records are involved. Prefer exact facts in compact tables and a selected approved calculation for factual summaries. Reserve Level 3 narrative for genuine reasoning beyond records. If free factual synthesis cannot be independently grounded by these exact presentations, it must remain provisional Level 3: explain its limited basis naturally, without implying speculation or calling it verified. Never promote free synthesis to Level 1/2 through references. Level 4 is only an explicitly unverified question/hypothesis.
 Level 3: confidence high/moderate/low; rationale must discuss directness/corroboration, assumptions, conflicts and missing evidence. No percentages. These are proposed qualitative assessments, not calibrated probabilities.
 High needs several directly relevant consistent findings and no known material assumptions/conflicts. Unknown freshness/completeness is separate.
 Signal interpretation naturally in main prose (e.g. 'The records suggest', 'A cautious reading'). Include material limitations in the paragraph, not just metadata.
 Level 4: confidence=null, confidenceRationale=null; ONLY in kind=further_questions. Prefer a question rather than invent an explanation. Cite evidence motivating the question.
 Use stable section IDs and paragraph keys. Return only sections needing a change; omitted sections are preserved. Preserve unrelated sections and source-backed facts on editorial changes. Reuse existing paragraph keys for revisions.
 Every section ID must be UNIQUE in this response. Use a NEW unique ID for a new progress/findings section, not an existing further-questions section ID. Paragraph keys must be unique within each section.
-Choose only the most useful exact factRefs per section; facts remain in the evidence store even when not repeated in the narrative. Do not duplicate the entire sponsorship list in a questions section.
+Compose a research document, not a transcript of assertions: lead with a concise answer-oriented overview, then significant developments and compact factual detail. Put the full sponsored Bill selection primarily in a bills table, not dozens of paragraphs. tables has caption, kind (bills/representation), factRefs (all sponsorship/representation row handles), activityRefs (selected exact recorded_activity handles for those Bills; [] for career). Bill tables automatically display exact recorded status and link ALL facts/histories in a row inspector. Choose illustrative activities, section organisation, headings and explanatory emphasis yourself. Include all returned Bills, not just interesting examples. Never repeat table facts as individual factRefs paragraphs. A section's factRefs are standalone exact statements, not a bibliography; narrative factRefs already link its support. Further-questions sections must not repeat factual paragraphs/tables. No fixed report template.
 Write a substantive overview of recorded progress once lifecycle evidence is available, with illustrative dated developments and the limits of statuses. Do not reduce the completed briefing to a sponsorship list and unanswered questions.
+Keep the answer-oriented overview separate from the detail. Explain a few significant named, dated developments in a short dedicated discussion, so a later shortening of the overview need not remove or duplicate that explanation. Avoid repeating long caveats; explain once why recorded status is not the Bill's final fate, using the supplied facts rather than invented procedure.
+Recorded stages DO establish the listed recorded activity: do not deny that evidence with an over-broad 'not proof of progress' disclaimer. The uncertainty is about later/current progress and final outcomes, not whether the accepted entries exist. When shortening, explain the consequence of confusing a recorded label with an outcome, rather than just repeating a disclaimer.
 Never calculate new totals, date ranges, proportions or temporal relationships in prose. Use only supplied exact calculated facts for quantitative summaries.
-Write response as concise conversation, not duplicate report. unanswered must include known unestablished conditions and outcomes.
+Write response as concise conversation, not duplicate report. unanswered contains {requirementRef, question}: use exact stable IDs from requirements' proposedConditions, ONLY unresolved substantive research_question entries. One concise factual question per ID; consolidate rather than repeating it in a hypothesis paragraph. Do not include limitations, completed editorial instructions, process explanations, or clarification requests. Those remain separately available. Retain earlier subjects' questions on additive research; do not rewrite them. Do not add a further_questions section merely to restate unanswered.
+resolvedQuestions records your explicit PROVISIONAL assessment that a pending/partly-supported subsidiary question is now addressed AT THE RECORDED SCOPE: {requirementRef, explanation, factRefs}. Identify its exact accepted facts and explain the bounded answer; this is not certification of full original intent or prose. Use it to retire temporary progress questions when recorded lifecycle evidence arrives. Omission alone cannot retire a known partly-supported question. Never resolve unsupported/unavailable requirements, final outcomes, completeness, freshness, or offices from sponsorship/status/representation evidence. Only assess the current factual subject; editorial turns and additive other-subject research preserve earlier assessments. Return [] when none change.
+An editorial request to shorten the overview must substantially reduce that overview, not just swap words. Preserve the factual tables and unrelated sections exactly; revise only the affected overview/explanation, reusing paragraph keys. Explain the significance of a limitation once rather than repeating it after each finding.
+Follow editorialTargets' maxNarrativeWords exactly across ALL narrative paragraphs in each target section. This is a prose-length budget, not a limit on evidence. Keep factual examples in their existing dedicated discussion/table rather than adding them to a shortened overview. Return only the specified existing target sections for an editorial revision; omitted sections remain untouched.
 responseNarrative=null for non-factual process messages such as 'I have updated the draft'. If response includes substantive findings or explanation, responseNarrative MUST classify that exact same text as Level 3 with evidence references and a provisional qualitative confidence rationale. Do not leave substantive conversational findings unclassified.
 Do not reproduce all events; select meaningful evidence for a useful briefing, and explain remaining gaps. No fixed table/report template is required.
 """
@@ -117,15 +149,27 @@ class ResearchRun:
         self.evidence, self.facts, self.assertions = {}, {}, {}
         self.tasks, self.sections, self.requirements, self.plans, self.modelCalls = [], [], [], [], []
         self.messages = [{"role": "user", "text": brief}]
-        self.unanswered, self.report_unanswered = [], []
+        self.unanswered, self.report_unanswered = [], {}
+        self.question_assessments = {}
         self.section_context, self.factual_turn = None, True
+        self.revision_targets = []
         self.title, self.interpretation, self.status = "Parliamentary research", "", "Preparing research"
         self.metrics = {"firstValidatedSeconds": None, "completedSeconds": None}
         self._plan(brief)
 
     def _call(self, phase, payload):
         start = monotonic()
-        output = self.model.generate(phase, payload)
+        try:
+            output = self.model.generate(phase, payload)
+        except Exception as error:
+            # The planner already redacts credentials from endpoint diagnostics.
+            # Retain operational failures too; no invented model output or facts.
+            secrets = tuple(os.getenv(key, "") for key in ("NLQ_LLM_API_KEY", "OIR_FUSEKI_PASSWORD"))
+            self.modelCalls.append({"phase": phase, "turn": self.turn, "input": copy.deepcopy(payload),
+                "seconds": round(monotonic()-start, 3), "output": None,
+                "error": {"type": type(error).__name__, "message": format_debug_text(str(error), secrets=secrets)[:500],
+                          "diagnostic": format_debug_text(getattr(error, "debug_output", "") or "", secrets=secrets)}, "factReferenceMap": self._aliases()})
+            raise
         self.modelCalls.append({"phase": phase, "turn": self.turn, "seconds": round(monotonic()-start, 3),
                                 "input": copy.deepcopy(payload), "output": copy.deepcopy(output),
                                 "factReferenceMap": self._aliases()})
@@ -168,14 +212,22 @@ class ResearchRun:
         for value in sections + list(assertions.values()):
             if "factRefs" in value:
                 value["factRefs"] = [reverse[ref] for ref in value["factRefs"]]
+        for section in sections:
+            for table in section.get("tables", []):
+                for key in ("factRefs", "activityRefs"):
+                    table["specification"][key] = [reverse[ref] for ref in table["specification"][key]]
         return {"originalBrief": self.brief, "reportingDate": self.date, "conversation": self.messages,
                 "requirements": self.requirements, "tasks": self.tasks, "sections": sections,
-                "facts": {alias: {"id": alias, "text": self.facts[key]["text"], "level": self.facts[key]["level"]}
+                "questionAssessments": copy.deepcopy(self.question_assessments),
+                "facts": {alias: {"id": alias, "text": self.facts[key]["text"], "level": self.facts[key]["level"], "proposition": self.facts[key]["proposition"], "display": self.facts[key].get("display")}
                           for alias, key in aliases.items()}, "assertions": assertions}
 
     def _plan(self, message):
         try:
             plan = Plan.model_validate(self._call("plan", self._context() | {"newMessage": message}))
+            known_sections = {s["id"] for s in self.sections}
+            if any(t.sectionId not in known_sections for t in plan.revisionTargets):
+                raise ValueError("Revision targets must reference existing sections.")
             response_assertion = self._response_assertion(plan.response, plan.responseNarrative)
             ids = [t.id for t in plan.tasks]
             if len(set(ids)) != len(ids):
@@ -203,7 +255,7 @@ class ResearchRun:
             self.tasks.extend(candidate_tasks)
             self.turn += 1
             record = {"id": f"r{self.turn-1}", "originalWording": message,
-                      "proposedConditions": [r.model_dump() for r in plan.requirements],
+                      "proposedConditions": [r.model_dump() | {"id": f"r{self.turn-1}-q{i}"} for i, r in enumerate(plan.requirements)],
                       "assessment": "Provisional — researcher review required; no exhaustive completeness certification"}
             self.requirements.append(record)
             if not self.sections:
@@ -211,10 +263,11 @@ class ResearchRun:
             self.factual_turn = bool(candidate_tasks)
             self.interpretation = plan.interpretation
             self.revision = plan.revisionInstructions
+            self.revision_targets = [t.model_dump() for t in plan.revisionTargets]
             self.plans.append({"version": self.turn, "interpretation": plan.interpretation,
-                               "taskIds": [t["id"] for t in candidate_tasks], "requirements": record})
+                               "taskIds": [t["id"] for t in candidate_tasks], "requirements": record, "clarification": plan.clarification,
+                               "revisionTargets": self.revision_targets})
             self._append_response(plan.response, response_assertion)
-            self.unanswered.extend(r.explanation for r in plan.requirements if r.disposition in {"partly supported", "unsupported", "needs clarification", "unavailable"})
             if plan.clarification:
                 self.messages.append({"role": "assistant", "text": plan.clarification})
             self.author_pending = bool(self.facts) and not candidate_tasks
@@ -235,9 +288,10 @@ class ResearchRun:
 
     def _author(self):
         payload = self._context() | {"revisionInstructions": self.revision,
-            "knownUnanswered": self.unanswered, "operationOutcomes": [{"task": t["title"], "state": t["state"]} for t in self.tasks]}
-        # One bounded retry for structural/reference errors, never a factual or
-        # editorial self-certification pass. Rejected proposals remain archived.
+            "editorialTargets": self._editorial_targets(),
+            "knownUnanswered": self.view()["unanswered"], "operationOutcomes": [{"task": t["title"], "state": t["state"]} for t in self.tasks]}
+        # One bounded repair for structure/references or a requested prose-length
+        # budget, never factual/semantic self-certification. Proposals are archived.
         for attempt in range(2):
             try:
                 self._author_attempt(payload)
@@ -257,8 +311,18 @@ class ResearchRun:
         if len({s.id for s in draft.sections}) != len(draft.sections):
             raise ValueError("Duplicate section IDs: return each section ID only once. New progress findings need a distinct ID from further questions.")
         updates, assertions = [], {}
+        targets = {t["sectionId"]: t for t in self._editorial_targets()}
+        if targets and not self.factual_turn and set(targets) - {s.id for s in draft.sections}:
+            raise ValueError("Return the requested editorial target sections; do not leave the requested revision unapplied.")
         for section in draft.sections:
             old = next((s for s in self.sections if s["id"] == section.id), None)
+            if targets and not self.factual_turn and section.id not in targets:
+                continue
+            target = targets.get(section.id, {})
+            if target.get("action") == "shorten" and not section.narrative:
+                raise ValueError("Shortening an overview must retain a useful concise narrative, not delete it.")
+            if "maxNarrativeWords" in target and sum(len(p.text.split()) for p in section.narrative) > target["maxNarrativeWords"]:
+                raise ValueError(f"Shorten {section.id}: total narrative must be at most {target['maxNarrativeWords']} words. Preserve evidence; do not move excess prose into unrelated sections.")
             # New factual investigations may add findings, but cannot rewrite
             # unrelated prior research. Explicit section context authorises only
             # that section; editorial-only turns may revise returned sections.
@@ -269,6 +333,16 @@ class ResearchRun:
             if len({p.key for p in section.narrative}) != len(section.narrative):
                 raise ValueError("Paragraph keys must be unique within a section.")
             selected_facts = self._canonical_refs(section.factRefs)
+            tables = []
+            if section.kind == "further_questions" and (section.factRefs or section.tables):
+                raise ValueError("Further questions must not duplicate factual paragraphs/tables; cite motivating facts in narrative only.")
+            for table in section.tables:
+                specification = table.model_dump() | {"factRefs": self._canonical_refs(table.factRefs), "activityRefs": self._canonical_refs(table.activityRefs)}
+                if len(set(specification["factRefs"])) != len(specification["factRefs"]):
+                    raise ValueError("Do not duplicate table rows.")
+                tables.append({"specification": specification, **project_table(specification, self.facts)})
+            if old and target.get("action") == "shorten":
+                tables = copy.deepcopy(old.get("tables", []))
             old_by_key = {self.assertions[a].get("key"): self.assertions[a] for a in (old or {}).get("assertionRefs", []) if a in self.assertions}
             refs = []
             for paragraph in section.narrative:
@@ -284,8 +358,33 @@ class ResearchRun:
             fact_refs = list(dict.fromkeys(selected_facts))
             updates.append({"id": section.id, "title": section.title, "kind": section.kind,
                 "requirementId": (old or {}).get("requirementId", f"r{self.turn-1}"),
-                "state": "Draft — for review", "factRefs": fact_refs, "assertionRefs": refs,
-                "evidenceRefs": sorted({e for ref in fact_refs for e in self.facts[ref]["evidenceRefs"]})})
+                "state": "Draft — for review", "factRefs": fact_refs, "assertionRefs": refs, "tables": tables,
+                "evidenceRefs": sorted({e for ref in fact_refs + [ref for t in tables for row in t["rows"] for ref in row["assertionRefs"]]
+                                        for e in self.facts[ref]["evidenceRefs"]} | {e for ref in refs for e in assertions[ref]["evidenceRefs"]})})
+        questions = self._question_registry()
+        question_updates = {}
+        resolved_updates = {}
+        for assessment in draft.resolvedQuestions:
+            q = questions.get(assessment.requirementRef)
+            if not q or q["kind"] != "research_question" or q["disposition"] not in {"evidence pending", "partly supported"}:
+                raise ValueError("Only pending/partly-supported research questions may be provisionally addressed at recorded scope; unsupported/unavailable questions must remain open.")
+            refs = self._canonical_refs(assessment.factRefs)
+            if self.factual_turn and assessment.requirementRef.startswith(f"r{self.turn-1}-"):
+                resolved_updates[assessment.requirementRef] = {"disposition": "answered at recorded scope", "explanation": assessment.explanation,
+                    "factRefs": refs, "assessment": "Provisional model assessment — not exhaustive completeness certification"}
+        for q in draft.unanswered:
+            if q.requirementRef not in questions or questions[q.requirementRef]["kind"] != "research_question" or questions[q.requirementRef]["disposition"] in {"completed", "answered", "withdrawn", "needs clarification"}:
+                raise ValueError("Unanswered must reference an unresolved substantive research question, not editorial/process/clarification material.")
+            if q.requirementRef in question_updates:
+                raise ValueError("One unanswered question per stable requirement ID; do not duplicate it.")
+            if q.requirementRef in resolved_updates:
+                raise ValueError("A question cannot be both outstanding and addressed at recorded scope in the same assessment.")
+            # Additive research cannot rewrite earlier research questions either.
+            if ((q.requirementRef in self.report_unanswered and not self.factual_turn)
+                or (self.factual_turn and not q.requirementRef.startswith(f"r{self.turn-1}-")
+                    and (q.requirementRef in self.report_unanswered or q.requirementRef in self.question_assessments))):
+                continue
+            question_updates[q.requirementRef] = q.question
         self.assertions.update(assertions)
         for update in updates:
             index = next((i for i, s in enumerate(self.sections) if s["id"] == update["id"]), None)
@@ -293,8 +392,30 @@ class ResearchRun:
                 self.sections.append(update)
             else:
                 self.sections[index] = update
-        self.report_unanswered = draft.unanswered
+        # Each author pass replaces the pending-question assessment for its
+        # subject. A temporary 'awaiting lifecycle evidence' question must be
+        # removable after that evidence arrives. Known partly-supported /
+        # unavailable conditions still have the conservative ledger fallback.
+        self.report_unanswered = {key: value for key, value in self.report_unanswered.items()
+                                  if not self.factual_turn or not key.startswith(f"r{self.turn-1}-")}
+        self.report_unanswered.update(question_updates)
+        for key in question_updates:
+            self.question_assessments.pop(key, None)
+        self.question_assessments.update(resolved_updates)
+        for key in resolved_updates:
+            self.report_unanswered.pop(key, None)
         self._append_response(draft.response, response_assertion)
+
+    def _editorial_targets(self):
+        targets = []
+        for target in self.revision_targets:
+            section = next(s for s in self.sections if s["id"] == target["sectionId"])
+            entry = dict(target)
+            if target["action"] == "shorten":
+                words = sum(len(self.assertions[ref]["text"].split()) for ref in section["assertionRefs"])
+                entry["maxNarrativeWords"] = max(1, int(words * .65))
+            targets.append(entry)
+        return targets
 
     def step(self, version):
         if version != self.version:
@@ -347,28 +468,42 @@ class ResearchRun:
     def has_work(self):
         return self.author_pending or any(t["state"] == "Pending" for t in self.tasks)
 
+    def _question_registry(self):
+        return {q["id"]: q for record in self.requirements for q in record["proposedConditions"]}
+
+    def _outstanding(self):
+        return [{"id": key, "state": "Unanswered / for review", "requirement": q["wording"],
+                 "reason": self.report_unanswered.get(key, q["wording"])}
+                for key, q in self._question_registry().items()
+                if key not in self.question_assessments and q["kind"] == "research_question" and (q["disposition"] in {"partly supported", "unsupported", "unavailable"}
+                    or (key in self.report_unanswered and q["disposition"] == "evidence pending"))]
+
     def view(self):
         sections = copy.deepcopy(self.sections)
         for section in sections:
             section["state"] = "Populating" if self.has_work() else "Incomplete"
-        pending = [r.explanation for record in self.requirements
-                   for r in map(Requirement.model_validate, record["proposedConditions"])
-                   if r.disposition == "evidence pending"] if self.has_work() else []
         return copy.deepcopy({"id": self.id, "brief": self.brief, "title": self.title, "reportingDate": self.date,
             "status": self.status, "version": self.version, "interpretation": self.interpretation,
             "tasks": self.tasks, "sections": sections, "facts": self.facts, "assertions": self.assertions,
             "messages": self.messages, "requirements": self.requirements, "plans": self.plans,
-            "unanswered": [{"state": "Unanswered / for review", "requirement": u, "reason": u} for u in dict.fromkeys(self.unanswered + self.report_unanswered + pending)],
-            "limitations": LIMITATIONS, "metrics": self.metrics, "hasWork": self.has_work(),
+            "questionAssessments": self.question_assessments,
+            "unanswered": self._outstanding(), "processMessages": list(dict.fromkeys(self.unanswered)),
+            "clarifications": ([self.plans[-1]["clarification"]] if self.plans and self.plans[-1].get("clarification") else []),
+            "limitations": self._limitations(), "metrics": self.metrics, "hasWork": self.has_work(),
             "evidence": {eid: {"evidenceId": eid, "outcome": e["outcome"], "request": e["request"], "compilerStatus": e["compilerStatus"],
-                               "error": e["error"], "queryCount": len(e["execution"]["queries"])} for eid, e in self.evidence.items()}})
+                                "error": e["error"], "queryCount": len(e["execution"]["queries"])} for eid, e in self.evidence.items()}})
+
+    def _limitations(self):
+        tools = {t["tool"] for t in self.tasks}
+        return LIMITATIONS[:2] + ([LIMITATIONS[2]] if "lifecycle" in tools else []) + ([LIMITATIONS[3]] if "career" in tools else []) + list(dict.fromkeys(q["explanation"] for q in self._question_registry().values() if q["kind"] == "evidence_limitation"))
 
     def markdown(self):
         def safe(s):
-            return str(s).replace("<", "&lt;").replace(">", "&gt;").replace("[", "\\[").replace("]", "\\]")
+            return str(s).replace("<", "&lt;").replace(">", "&gt;").replace("[", "\\[").replace("]", "\\]").replace("|", "\\|")
         lines = ["# " + safe(self.title).replace("\n", " "), "", "**Draft — for review** · Incomplete / qualified research", "",
                  "Original brief: " + safe(self.brief), "Reporting date: " + self.date, ""]
         active = {}
+        table_sources = {}
         for s in self.sections:
             lines += ["## " + safe(s["title"]).replace("\n", " "), ""]
             if s["kind"] == "further_questions":
@@ -378,8 +513,22 @@ class ResearchRun:
                 active[ref] = a
                 label = {1: "Directly supported recorded fact", 2: "Approved calculation", 3: "Provisional interpretation", 4: "Unverified hypothesis / further question"}[a["level"]]
                 lines += [safe(a["text"]) + f" [{ref}]", f"_{label}" + (f" — {a['confidence']} qualitative confidence (provisional)" if a["level"] == 3 else "") + "_", ""]
-        lines += ["## Limitations and unanswered questions", ""] + ["- " + safe(l) for l in LIMITATIONS + list(dict.fromkeys(self.unanswered + self.report_unanswered))]
+            for table in s.get("tables", []):
+                lines += ["### " + safe(table["caption"]), "", safe(table["qualification"]), "",
+                          "| " + " | ".join(table["columns"]) + " | Evidence |",
+                          "| " + " | ".join(["---"] * (len(table["columns"]) + 1)) + " |"]
+                for row in table["rows"]:
+                    anchor = "records-" + row["assertionRefs"][0]
+                    table_sources[anchor] = row["assertionRefs"]
+                    lines.append("| " + " | ".join(safe(c["text"]) or "No accepted value shown" for c in row["cells"]) + f" | [Source records](#{anchor}) |")
+                lines.append("")
+        lines += ["## Evidence limitations", ""] + ["- " + safe(l) for l in self._limitations()]
+        lines += ["", "## Unanswered research questions", ""] + ["- " + safe(q["reason"]) for q in self._outstanding()]
+        # Evidence is not discarded merely because a report is made shorter.
+        active = self.facts | active
         lines += ["", "## Assertion evidence and reasoning", ""]
+        for anchor, refs in table_sources.items():
+            lines += ["### " + anchor, "", "Individual assertion references: " + ", ".join(refs), ""]
         for ref, a in active.items():
             lines += ["### " + ref, "```json", json.dumps(a, ensure_ascii=False, indent=2), "```", ""]
         lines += ["## Evidence references", ""]

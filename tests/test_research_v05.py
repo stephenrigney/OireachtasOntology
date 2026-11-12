@@ -96,9 +96,9 @@ def test_provisional_interpretation_and_segregated_hypothesis(compiler_evidence)
 def plan(tasks=None, revision="Write a useful bounded briefing"):
     return {"title": "Research draft", "interpretation": "Investigate sponsorship and recorded progress, not definitive outcomes.",
             "response": "I will identify recorded Bills and look for their recorded developments.", "responseNarrative": None, "clarification": None,
-            "requirements": [{"wording": "Bills and outcomes", "conditions": ["recorded sponsorship", "progress", "final outcomes"],
+            "requirements": [{"kind": "research_question", "wording": "Bills and outcomes", "conditions": ["recorded sponsorship", "progress", "final outcomes"],
                               "disposition": "partly supported", "explanation": "Final outcomes remain unestablished."}],
-            "tasks": tasks or [], "revisionInstructions": revision}
+            "tasks": tasks or [], "revisionInstructions": revision, "revisionTargets": []}
 
 
 def sponsor_task():
@@ -119,9 +119,10 @@ class InjectedModel:
         text = "A cautious reading suggests these sponsorship records are a starting point; final outcomes remain unestablished."
         if payload["revisionInstructions"].startswith("Shorten"):
             text = "The records suggest a starting point, not final outcomes."
+        question_id = payload["requirements"][0]["proposedConditions"][0]["id"]
         return {"response": "I have updated the draft and retained the source facts.", "responseNarrative": None, "sections": [
             {"id": "findings", "title": "What the records establish", "kind": "findings", "factRefs": [next(iter(facts))],
-             "narrative": [paragraph(facts, text=text)]}], "unanswered": ["Definitive outcomes remain unanswered."]}
+             "narrative": [paragraph(facts, text=text)], "tables": []}], "unanswered": [{"requirementRef": question_id, "question": "What were the definitive outcomes?"}], "resolvedQuestions": []}
 
 
 class AcceptedAdapter:
@@ -152,7 +153,7 @@ def test_plan_before_dispatch_and_genuine_editorial_revision_reuses_facts(compil
     assert r.brief == "Investigate Bills and progress" and len(r.requirements) == 2
     exported = r.markdown()
     assert "Draft — for review" in exported and "Provisional interpretation" in exported
-    assert "moderate qualitative confidence" in exported and "Definitive outcomes remain unanswered" in exported
+    assert "moderate qualitative confidence" in exported and "What were the definitive outcomes?" in exported
     assert assertion_id in exported and next(iter(r.evidence)) in exported
 
 
@@ -305,8 +306,8 @@ def test_partly_supported_gaps_are_visible_without_author_repeating_them(compile
     model.generate = no_repeated_gap
     r = ResearchRun("Bills", AS_OF, AcceptedAdapter(compiler_evidence["sponsorship"]), lambda: model)
     r.step(0); r.step(r.version)
-    assert "Final outcomes remain unestablished." in r.markdown()
-    assert any(u["reason"] == "Final outcomes remain unestablished." for u in r.view()["unanswered"])
+    assert "Bills and outcomes" in r.markdown()
+    assert any(u["reason"] == "Bills and outcomes" for u in r.view()["unanswered"])
 
 
 def test_substantive_conversation_has_its_own_exact_provisional_assertion(compiler_evidence):
@@ -347,3 +348,237 @@ def test_new_factual_domain_cannot_rewrite_unrelated_existing_sections(compiler_
     # preserves it because it belongs to the earlier factual requirement.
     assert r.sections == before and r.title == title
     assert any(a["proposition"][0] == "representation" for a in r.facts.values())
+
+
+def test_compact_table_exact_cells_and_all_individual_evidence(compiler_evidence):
+    from poc.nlq.research_presentation import project_table
+    facts = {a["id"]: a for e in compiler_evidence.values() for a in facts_from(e)}
+    sponsors = [ref for ref, a in facts.items() if a["proposition"][0] == "sponsorship"]
+    events = [ref for ref, a in facts.items() if a["proposition"][0] == "recorded_activity"]
+    table = project_table({"kind": "bills", "caption": "Recorded Bills", "factRefs": sponsors, "activityRefs": events[:1]}, facts)
+    assert len(table["rows"]) == len(sponsors)
+    row = next(r for r in table["rows"] if events[0] in r["assertionRefs"])
+    assert set(events) <= set(row["assertionRefs"])  # unselected events not lost
+    assert row["cells"][2]["text"] == "Current"
+    assert row["cells"][3]["refs"] == events[:1]
+    assert all(facts[ref]["level"] == 1 for r in table["rows"] for c in r["cells"] for ref in c["refs"])
+    assert "final outcomes" in table["qualification"]
+    # A matching title is not identity, and no unknown/sibling event is admitted.
+    unrelated = copy.deepcopy(facts[events[0]])
+    unrelated["id"] = "other-event"
+    unrelated["proposition"][1] = "https://example.test/different-bill"
+    facts[unrelated["id"]] = unrelated
+    with pytest.raises(ValueError):
+        project_table({"kind": "bills", "caption": "Bad", "factRefs": sponsors, "activityRefs": [unrelated["id"]]}, facts)
+
+
+def test_table_only_report_preserves_full_registry_and_exports_it(compiler_evidence):
+    model = InjectedModel()
+    original = model.generate
+
+    def table_author(phase, payload):
+        draft = original(phase, payload)
+        if phase == "report":
+            draft["sections"][0].update(factRefs=[], narrative=[], tables=[{
+                "caption": "Legislative findings", "kind": "bills", "activityRefs": [],
+                "factRefs": [ref for ref, a in payload["facts"].items() if a["proposition"][0] == "sponsorship"]}])
+        return draft
+
+    model.generate = table_author
+    r = ResearchRun("Bills", AS_OF, AcceptedAdapter(compiler_evidence["sponsorship"]), lambda: model)
+    r.step(0); r.step(r.version)
+    assert r.sections[0]["tables"] and not r.sections[0]["factRefs"]
+    assert r.sections[0]["evidenceRefs"]
+    before = copy.deepcopy(r.sections[0]["tables"])
+    facts = copy.deepcopy(r.facts)
+    exported = r.markdown()
+    body, appendix = exported.split("## Assertion evidence and reasoning")
+    assert "| Bill | Recorded sponsorship" in body
+    assert "The available records identify" not in body
+    assert all(ref in appendix for ref in facts)
+    r.message("Shorten overview, keep the table")
+    r.step(r.version)
+    assert r.sections[0]["tables"] == before and r.facts == facts and r.adapter.calls == 1
+
+
+def test_question_accounting_separates_work_types_and_rejects_bad_refs(compiler_evidence):
+    p = plan([sponsor_task()])
+    p["clarification"] = "Which Bill did you mean?"
+    p["requirements"] += [p["requirements"][0] | {"kind": kind, "wording": kind, "explanation": kind}
+                          for kind in ("editorial_instruction", "evidence_limitation", "process", "clarification")]
+    model = InjectedModel([p])
+    r = ResearchRun("Bills", AS_OF, AcceptedAdapter(compiler_evidence["sponsorship"]), lambda: model)
+    r.step(0); r.step(r.version)
+    state = r.view()
+    assert len(state["unanswered"]) == 1 and state["unanswered"][0]["id"] == "r0-q0"
+    assert "evidence_limitation" in state["limitations"]
+    assert state["clarifications"] == ["Which Bill did you mean?"]
+    original = model.generate
+    previous = copy.deepcopy(r.sections)
+    for bad in ("r0-q1", "r0-q2", "r0-q3", "r0-q4", "invented"):
+        def invalid(phase, payload):
+            draft = original(phase, payload)
+            draft["unanswered"] = [{"requirementRef": bad, "question": "Not a substantive research question"}]
+            return draft
+        model.generate = invalid
+        with pytest.raises(ValueError):
+            r._author_attempt(r._context() | {"revisionInstructions": "test"})
+        assert r.sections == previous
+    model.generate = original
+
+
+def test_completed_editorial_turn_does_not_accumulate_questions(compiler_evidence):
+    editorial = plan(revision="Shorten")
+    editorial["requirements"] = [{"kind": "editorial_instruction", "wording": "Shorten the overview", "conditions": [],
+                                  "disposition": "completed", "explanation": "This is an editorial request, not outstanding factual research."}]
+    model = InjectedModel([plan([sponsor_task()]), editorial, editorial])
+    r = ResearchRun("Bills", AS_OF, AcceptedAdapter(compiler_evidence["sponsorship"]), lambda: model)
+    r.step(0); r.step(r.version)
+    before = r.view()["unanswered"]
+    for _ in range(2):
+        r.message("Shorten the overview")
+        r.step(r.version)
+        assert r.view()["unanswered"] == before
+    body = r.markdown().split("## Assertion evidence and reasoning")[0]
+    assert "This is an editorial request" not in body
+    assert r.adapter.calls == 1
+
+
+def test_representation_table_has_no_invented_service_dates(compiler_evidence):
+    from poc.nlq.research_presentation import project_table
+    facts = {a["id"]: a for a in facts_from(compiler_evidence["career"])}
+    table = project_table({"caption": "Career records", "kind": "representation", "factRefs": list(facts), "activityRefs": []}, facts)
+    assert len(table["rows"]) == 4 and table["columns"] == ["Member", "Constituency", "Dáil term"]
+    assert all(r["cells"][1]["text"] == "Dublin Central" for r in table["rows"])
+    assert "continuous tenure" in table["qualification"]
+
+
+def test_model_schemas_have_strict_required_properties():
+    from poc.nlq.research_collaborator import Plan, ReportDraft
+
+    def check(value):
+        if isinstance(value, dict):
+            if value.get("type") == "object":
+                assert set(value["properties"]) == set(value["required"])
+                assert value["additionalProperties"] is False
+            assert "default" not in value
+            for item in value.values():
+                check(item)
+        elif isinstance(value, list):
+            for item in value:
+                check(item)
+    for model in (Plan, ReportDraft):
+        check(model.model_json_schema())
+
+
+def test_temporary_pending_question_is_removed_after_evidence_arrives(compiler_evidence):
+    p = plan([sponsor_task()])
+    p["requirements"][0]["disposition"] = "evidence pending"
+    model = InjectedModel([p])
+    r = ResearchRun("Bills", AS_OF, AcceptedAdapter(compiler_evidence["sponsorship"]), lambda: model)
+    r.step(0); r.step(r.version)
+    assert r.view()["unanswered"]
+    original = model.generate
+
+    def no_pending_question(phase, payload):
+        draft = original(phase, payload)
+        draft["unanswered"] = []
+        return draft
+
+    model.generate = no_pending_question
+    r.author_pending = True  # later accepted evidence / author pass, same subject
+    r.step(r.version)
+    assert not r.view()["unanswered"] and not r.report_unanswered
+
+
+def test_model_failure_archives_redacted_diagnostic_without_output(monkeypatch):
+    from poc.nlq.structured_planner import PlannerModelError
+    monkeypatch.setenv("NLQ_LLM_API_KEY", "test-private-secret")
+    class Broken:
+        def generate(self, phase, payload):
+            raise PlannerModelError("bad test-private-secret", debug_output="diagnostic test-private-secret")
+    r = ResearchRun("Bills", AS_OF, None, Broken)
+    assert r.status == "Research planning interrupted" and not r.tasks
+    assert r.modelCalls[0]["output"] is None
+    assert "test-private-secret" not in str(r.modelCalls)
+    assert "diagnostic" in r.modelCalls[0]["error"]["diagnostic"]
+
+
+def test_shortening_budget_repairs_overlong_prose_preserves_unrelated_and_tables(compiler_evidence):
+    editorial = plan(revision="Shorten")
+    editorial["revisionTargets"] = [{"sectionId": "findings", "action": "shorten"}]
+    editorial["requirements"][0].update(kind="editorial_instruction", disposition="completed")
+    model = InjectedModel([plan([sponsor_task()]), editorial])
+    original = model.generate
+    revision_attempts = []
+
+    def author(phase, payload):
+        draft = original(phase, payload)
+        if phase == "report" and payload.get("editorialTargets"):
+            revision_attempts.append(payload)
+            if len(revision_attempts) == 1:
+                draft["sections"][0]["narrative"][0]["text"] = "Too long. " * 80
+        return draft
+
+    model.generate = author
+    r = ResearchRun("Bills", AS_OF, AcceptedAdapter(compiler_evidence["sponsorship"]), lambda: model)
+    r.step(0); r.step(r.version)
+    old_text = r.assertions[r.sections[0]["assertionRefs"][0]]["text"]
+    r.sections.append({"id": "unrelated", "title": "Other findings", "kind": "findings", "assertionRefs": [], "factRefs": [], "tables": []})
+    unrelated = copy.deepcopy(r.sections[-1])
+    r.message("Make the overview shorter")
+    r.step(r.version)
+    assert len(revision_attempts) == 2 and "structuralCorrection" in revision_attempts[1]
+    new_text = r.assertions[r.sections[0]["assertionRefs"][0]]["text"]
+    assert len(new_text.split()) <= int(len(old_text.split()) * .65)
+    assert r.sections[-1] == unrelated and r.adapter.calls == 1
+
+
+def test_editorial_omission_cannot_drop_existing_pending_research_question(compiler_evidence):
+    p = plan([sponsor_task()])
+    p["requirements"][0]["disposition"] = "evidence pending"
+    editorial = plan()
+    editorial["requirements"][0].update(kind="editorial_instruction", disposition="completed")
+    model = InjectedModel([p, editorial])
+    r = ResearchRun("Bills", AS_OF, AcceptedAdapter(compiler_evidence["sponsorship"]), lambda: model)
+    r.step(0); r.step(r.version)
+    before = r.view()["unanswered"]
+    original = model.generate
+    def omit(phase, payload):
+        draft = original(phase, payload)
+        if phase == "report":
+            draft["unanswered"] = []
+        return draft
+    model.generate = omit
+    r.message("Shorten the overview")
+    r.step(r.version)
+    assert r.view()["unanswered"] == before and r.adapter.calls == 1
+
+
+def test_explicit_scoped_assessment_retires_partial_question_but_cannot_close_unavailable(compiler_evidence):
+    p = plan([sponsor_task()])
+    p["requirements"][0]["wording"] = "Which Bills have recorded sponsorship?"
+    p["requirements"].append(p["requirements"][0] | {"wording": "What were their final outcomes?", "disposition": "unavailable"})
+    model = InjectedModel([p])
+    original = model.generate
+    def assess(phase, payload):
+        draft = original(phase, payload)
+        if phase == "report":
+            draft["unanswered"] = []
+            draft["resolvedQuestions"] = [{"requirementRef": "r0-q0", "explanation": "Recorded sponsorship is available; completeness is not certified.", "factRefs": [next(iter(payload["facts"]))]}]
+        return draft
+    model.generate = assess
+    r = ResearchRun("Bills", AS_OF, AcceptedAdapter(compiler_evidence["sponsorship"]), lambda: model)
+    r.step(0); r.step(r.version)
+    assert [q["id"] for q in r.view()["unanswered"]] == ["r0-q1"]
+    assert r.view()["questionAssessments"]["r0-q0"]["disposition"] == "answered at recorded scope"
+    assert r.view()["questionAssessments"]["r0-q0"]["factRefs"] == [next(iter(r.facts))]
+    saved = copy.deepcopy(r.sections)
+    def invalid(phase, payload):
+        draft = assess(phase, payload)
+        draft["resolvedQuestions"][0]["requirementRef"] = "r0-q1"
+        return draft
+    model.generate = invalid
+    with pytest.raises(ValueError):
+        r._author_attempt(r._context() | {"revisionInstructions": "test"})
+    assert r.sections == saved and r.view()["unanswered"]

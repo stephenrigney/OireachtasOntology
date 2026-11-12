@@ -31,7 +31,7 @@ function setView(view) {
 }
 $("show-conversation").onclick = () => setView("conversation");
 $("show-report").onclick = () => setView("report");
-function openDrawer() { opener = document.activeElement; if (!$("activity-drawer").open) $("activity-drawer").showModal(); }
+function openDrawer() { if (!$("activity-drawer").open) { opener = document.activeElement; $("activity-drawer").showModal(); } }
 $("close-activity").onclick = () => $("activity-drawer").close();
 $("activity-drawer").addEventListener("close", () => { if (opener?.isConnected) opener.focus(); });
 $("activity-drawer").addEventListener("keydown", event => {
@@ -64,7 +64,10 @@ function renderPlan() {
   $("plan-interpretation").textContent = run.interpretation;
   $("requirements").replaceChildren(node("summary", "Original brief & proposed requirement assessment"), node("p", run.brief));
   (run.requirements || []).forEach(r => { $("requirements").append(node("h3", r.originalWording), node("p", r.assessment));
-    r.proposedConditions.forEach(c => $("requirements").append(node("p", `${c.wording} — ${c.disposition}: ${c.explanation}`), node("p", c.conditions.join("; "), "metadata"))); });
+    r.proposedConditions.forEach(c => { $("requirements").append(node("p", `${c.wording} — ${c.disposition}: ${c.explanation}`), node("p", c.conditions.join("; "), "metadata"));
+      const assessment = run.questionAssessments?.[c.id];
+      if (assessment) $("requirements").append(node("p", `Current provisional assessment: ${assessment.disposition}. ${assessment.explanation}`, "metadata"));
+    }); });
 }
 function evidenceButtons(refs, parent, member = null, offset = 0) {
   refs.forEach((ref, i) => parent.append(button(`Evidence ${i + offset + 1} · ${ref.slice(0, 10)}`, () => showEvidence(ref, member), "evidence-link")));
@@ -98,6 +101,11 @@ function renderActivity() {
   });
   content.append(node("h3", "Evidence"), node("p", "Only accepted compiler findings populate report claims. Deterministic calculations retain their input evidence references. Model interpretation is not factual proof.", "metadata"));
   run.unanswered.forEach(u => content.append(node("p", `${u.state}: ${u.requirement} — ${u.reason}`, "notice")));
+  (run.processMessages || []).forEach(t => content.append(node("p", t, "notice")));
+  (run.clarifications || []).forEach(t => content.append(node("p", `Clarification: ${t}`, "notice")));
+  const facts = node("details"); facts.append(node("summary", "All individual factual assertions"));
+  Object.values(run.facts).forEach(a => facts.append(button(a.text, () => showAssertion(a.id), "evidence-link")));
+  content.append(facts);
 }
 
 const classLabel = {1: "Directly supported recorded fact", 2: "Approved calculation", 3: "Provisional interpretation", 4: "Unverified hypothesis / further question"};
@@ -115,9 +123,34 @@ function showAssertion(ref) {
   evidenceButtons(a.evidenceRefs, content);
   content.append(button("Challenge or explain this assertion", () => { $("activity-drawer").close(); sectionContext = null; $("brief").value = `Please explain or reconsider assertion ${ref}: `; $("brief").dispatchEvent(new Event("input")); setView("conversation"); $("brief").focus(); }));
 }
+function showRowEvidence(row) {
+  openDrawer();
+  const content = $("activity-content");
+  content.replaceChildren(button("← All research activity", renderActivity), node("h3", "Individual recorded facts"), node("p", row.cells[0].text),
+    node("p", "All accepted facts for this row, including activities not selected for the table. Each opens its exact assertion, reasoning and full source records."));
+  row.assertionRefs.forEach(ref => content.append(button(run.facts[ref].text, () => showAssertion(ref), "evidence-link")));
+}
+function renderTable(data) {
+  const region = node("div", undefined, "table-scroll"); region.tabIndex = 0;
+  region.setAttribute("role", "region"); region.setAttribute("aria-label", data.caption + " — scrollable factual table");
+  const table = node("table"); table.append(node("caption", data.caption));
+  const head = node("thead"), headers = node("tr");
+  [...data.columns, "Evidence"].forEach(c => { const th = node("th", c); th.scope = "col"; headers.append(th); });
+  head.append(headers); table.append(head);
+  const body = node("tbody");
+  data.rows.forEach(row => {
+    const tr = node("tr");
+    row.cells.forEach((cell, i) => { const td = node(i === 0 ? "th" : "td", cell.text || "No accepted value shown"); if (i === 0) td.scope = "row"; tr.append(td); });
+    const td = node("td"), inspect = button("Source records", () => showRowEvidence(row), "evidence-link");
+    inspect.setAttribute("aria-label", `Evidence: individual recorded facts · ${row.cells[0].text}`);
+    td.append(inspect); tr.append(td); body.append(tr);
+  });
+  table.append(body); region.append(table);
+  return region;
+}
 function renderSection(section) {
   // Stable section IDs and unchanged DOM preserve unrelated reading position.
-  const serialized = JSON.stringify(section);
+  const serialized = JSON.stringify([section, section.assertionRefs.map(ref => run.assertions[ref])]);
   if (sectionVersions.get(section.id) === serialized) return;
   sectionVersions.set(section.id, serialized);
   let el = $("section-" + section.id);
@@ -134,6 +167,7 @@ function renderSection(section) {
     const indicator = button("Source & reasoning", () => showAssertion(ref), "evidence-link");
     indicator.setAttribute("aria-label", `Evidence: ${classLabel[a.level]} · ${ref}`); p.append(indicator); el.append(p);
   }
+  (section.tables || []).forEach(table => { el.append(node("p", table.qualification, "metadata"), renderTable(table)); });
   el.append(button("Refine this section", () => { sectionContext = section.id; $("brief").value = `Please revise “${section.title}”: `; $("brief").dispatchEvent(new Event("input")); setView("conversation"); $("brief").focus(); }, "evidence-link"));
   if (hadFocus) {
     const equivalent = [...el.querySelectorAll("button")].find(b => b.getAttribute("aria-label") === focusedLabel);
@@ -156,8 +190,7 @@ function render() {
   });
   messageCount = (run.messages || []).length;
   $("limitation-list").replaceChildren(...run.limitations.map(l => node("li", l)));
-  $("unanswered").replaceChildren(...run.unanswered.map(u => node("p", `${u.state}: ${u.reason}`, "notice")),
-    ...run.tasks.filter(t => !["Validated", "Pending"].includes(t.state)).map(t => node("p", `${t.title}: ${t.state}. ${t.reason || ""}`, "notice")));
+  $("unanswered").replaceChildren(node("h3", "Unanswered research questions"), ...run.unanswered.map(u => node("p", u.reason, "notice")));
   $("pause").hidden = !run.hasWork;
   $("pause").textContent = paused ? "Resume research" : "Pause research";
   $("copy").disabled = $("export").disabled = false;
@@ -207,9 +240,9 @@ $("composer-form").addEventListener("submit", async event => {
     sectionContext = null;
     if ($("brief").value === brief) $("brief").value = "";
     render();
-    message("Assistant", "The plan is published. Supported operations will now run automatically. The report will develop as findings are validated.");
+    if (run.tasks.some(t => t.state === "Pending")) message("Assistant", "The plan is published. The report will develop as findings are retrieved.");
     $("plan-card").scrollIntoView({block: "start"});
-    announce("Research plan published. Supported queries will run automatically.");
+    announce(run.status === "Research planning interrupted" ? "Research planning interrupted. Your request is retained." : run.hasWork ? "Research plan published. The draft will now be updated." : run.status);
     // Two animation frames + a short visible interval ensure the initial plan
     // is painted BEFORE even the first factual-query dispatch.
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 350))));
