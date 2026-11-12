@@ -1,0 +1,160 @@
+{
+  "r1-initial": [
+    {
+      "role": "user",
+      "text": "Prepare a briefing on the Bills sponsored by Malcolm Byrne. What progress have they made, and what happened to them?"
+    },
+    {
+      "role": "assistant",
+      "text": "I will check the recorded sponsorship and, for the Bills accepted from that record, retrieve recorded status and dated activities. The briefing will keep those records distinct from certified final outcomes, which the available sources cannot establish."
+    },
+    {
+      "role": "assistant",
+      "text": "The draft identifies 20 recorded sponsored Bills. Progress and final outcomes remain unresolved pending lifecycle records.",
+      "assertionRef": "a-8e9c8c55aaafea0c2bc7"
+    },
+    {
+      "role": "assistant",
+      "text": "The draft now includes the recorded lifecycle information. It distinguishes those entries from certified final outcomes, which remain unanswered."
+    }
+  ],
+  "r1-revision": [
+    {
+      "role": "user",
+      "text": "Prepare a briefing on the Bills sponsored by Malcolm Byrne. What progress have they made, and what happened to them?"
+    },
+    {
+      "role": "assistant",
+      "text": "I will check the recorded sponsorship and, for the Bills accepted from that record, retrieve recorded status and dated activities. The briefing will keep those records distinct from certified final outcomes, which the available sources cannot establish."
+    },
+    {
+      "role": "assistant",
+      "text": "The draft identifies 20 recorded sponsored Bills. Progress and final outcomes remain unresolved pending lifecycle records.",
+      "assertionRef": "a-8e9c8c55aaafea0c2bc7"
+    },
+    {
+      "role": "assistant",
+      "text": "The draft now includes the recorded lifecycle information. It distinguishes those entries from certified final outcomes, which remain unanswered."
+    },
+    {
+      "role": "user",
+      "text": "Please make the overview shorter and explain why the distinction between recorded status and final outcome matters. Keep the Bill findings and evidence.",
+      "sectionId": null
+    },
+    {
+      "role": "assistant",
+      "text": "I’ll shorten the overview and clarify the distinction, leaving the Bill findings and evidence intact."
+    },
+    {
+      "role": "assistant",
+      "text": "I have shortened the overview and clarified why recorded status should not be mistaken for a final outcome. The Bill table and its evidence are retained."
+    }
+  ],
+  "r1-evidence-discussion": [
+    {
+      "role": "user",
+      "text": "Prepare a briefing on the Bills sponsored by Malcolm Byrne. What progress have they made, and what happened to them?"
+    },
+    {
+      "role": "assistant",
+      "text": "I will check the recorded sponsorship and, for the Bills accepted from that record, retrieve recorded status and dated activities. The briefing will keep those records distinct from certified final outcomes, which the available sources cannot establish."
+    },
+    {
+      "role": "assistant",
+      "text": "The draft identifies 20 recorded sponsored Bills. Progress and final outcomes remain unresolved pending lifecycle records.",
+      "assertionRef": "a-8e9c8c55aaafea0c2bc7"
+    },
+    {
+      "role": "assistant",
+      "text": "The draft now includes the recorded lifecycle information. It distinguishes those entries from certified final outcomes, which remain unanswered."
+    },
+    {
+      "role": "user",
+      "text": "Please make the overview shorter and explain why the distinction between recorded status and final outcome matters. Keep the Bill findings and evidence.",
+      "sectionId": null
+    },
+    {
+      "role": "assistant",
+      "text": "I’ll shorten the overview and clarify the distinction, leaving the Bill findings and evidence intact."
+    },
+    {
+      "role": "assistant",
+      "text": "I have shortened the overview and clarified why recorded status should not be mistaken for a final outcome. The Bill table and its evidence are retained."
+    },
+    {
+      "role": "user",
+      "text": "Show me the evidence for the Bill with a lapsed event and a later recorded stage. What can and cannot be concluded?",
+      "sectionId": null
+    },
+    {
+      "role": "assistant",
+      "text": "The records show more than one such case. For Protection of Private Residences (Against Targeted Picketing) Bill 2021, they record a Bill Lapsed Event and a Second Stage on 8 November 2024, then another Second Stage on 1 May 2025. For Seanad Electoral (University Members) (Amendment) Bill 2020, they record a Bill Lapsed Event and a Committee Stage on 29 January 2025, then another Committee Stage on 27 March 2025. These entries establish that the events are recorded with those dates. They do not explain the apparent inconsistencies, establish what procedural effect the entries had, or certify either Bill’s final outcome. If you meant a different Bill, please give its title.",
+      "assertionRef": "a-0cc9c5994902f07648a2"
+    },
+    {
+      "role": "assistant",
+      "text": "The records contain two matching cases. For Protection of Private Residences (Against Targeted Picketing) Bill 2021, they record a Bill Lapsed Event and a Second Stage on 8 November 2024, followed by another Second Stage on 1 May 2025. For Seanad Electoral (University Members) (Amendment) Bill 2020, they record a Bill Lapsed Event and a Committee Stage on 29 January 2025, followed by another Committee Stage on 27 March 2025. These entries establish that those events and dates are recorded. They do not explain why the entries coexist, establish their procedural effect, or certify either Bill’s final outcome.",
+      "assertionRef": "a-7232a4a0bcbfa01d36ee"
+    }
+  ],
+  "r3-same-session": [
+    {
+      "role": "user",
+      "text": "Prepare a briefing on the Bills sponsored by Malcolm Byrne. What progress have they made, and what happened to them?"
+    },
+    {
+      "role": "assistant",
+      "text": "I will check the recorded sponsorship and, for the Bills accepted from that record, retrieve recorded status and dated activities. The briefing will keep those records distinct from certified final outcomes, which the available sources cannot establish."
+    },
+    {
+      "role": "assistant",
+      "text": "The draft identifies 20 recorded sponsored Bills. Progress and final outcomes remain unresolved pending lifecycle records.",
+      "assertionRef": "a-8e9c8c55aaafea0c2bc7"
+    },
+    {
+      "role": "assistant",
+      "text": "The draft now includes the recorded lifecycle information. It distinguishes those entries from certified final outcomes, which remain unanswered."
+    },
+    {
+      "role": "user",
+      "text": "Please make the overview shorter and explain why the distinction between recorded status and final outcome matters. Keep the Bill findings and evidence.",
+      "sectionId": null
+    },
+    {
+      "role": "assistant",
+      "text": "I’ll shorten the overview and clarify the distinction, leaving the Bill findings and evidence intact."
+    },
+    {
+      "role": "assistant",
+      "text": "I have shortened the overview and clarified why recorded status should not be mistaken for a final outcome. The Bill table and its evidence are retained."
+    },
+    {
+      "role": "user",
+      "text": "Show me the evidence for the Bill with a lapsed event and a later recorded stage. What can and cannot be concluded?",
+      "sectionId": null
+    },
+    {
+      "role": "assistant",
+      "text": "The records show more than one such case. For Protection of Private Residences (Against Targeted Picketing) Bill 2021, they record a Bill Lapsed Event and a Second Stage on 8 November 2024, then another Second Stage on 1 May 2025. For Seanad Electoral (University Members) (Amendment) Bill 2020, they record a Bill Lapsed Event and a Committee Stage on 29 January 2025, then another Committee Stage on 27 March 2025. These entries establish that the events are recorded with those dates. They do not explain the apparent inconsistencies, establish what procedural effect the entries had, or certify either Bill’s final outcome. If you meant a different Bill, please give its title.",
+      "assertionRef": "a-0cc9c5994902f07648a2"
+    },
+    {
+      "role": "assistant",
+      "text": "The records contain two matching cases. For Protection of Private Residences (Against Targeted Picketing) Bill 2021, they record a Bill Lapsed Event and a Second Stage on 8 November 2024, followed by another Second Stage on 1 May 2025. For Seanad Electoral (University Members) (Amendment) Bill 2020, they record a Bill Lapsed Event and a Committee Stage on 29 January 2025, followed by another Committee Stage on 27 March 2025. These entries establish that those events and dates are recorded. They do not explain why the entries coexist, establish their procedural effect, or certify either Bill’s final outcome.",
+      "assertionRef": "a-7232a4a0bcbfa01d36ee"
+    },
+    {
+      "role": "user",
+      "text": "Prepare a background briefing on Mary Lou McDonald's parliamentary career, including constituencies represented and parliamentary roles. Add this as a separate career section and retain the earlier Bill research.",
+      "sectionId": null
+    },
+    {
+      "role": "assistant",
+      "text": "I’ll add a separate career section using recorded constituency and Dáil-term identities, while retaining the Bill material. The available career records do not establish parliamentary offices or other role history, so that part will remain unanswered."
+    },
+    {
+      "role": "assistant",
+      "text": "I’ve added the separate career section and retained the earlier Bill research."
+    }
+  ]
+}

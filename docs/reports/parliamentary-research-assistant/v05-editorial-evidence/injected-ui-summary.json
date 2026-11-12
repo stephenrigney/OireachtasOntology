@@ -1,0 +1,9 @@
+{
+  "kind": "injected model + exact compiler-response replay",
+  "planInViewportBeforeDispatch": true,
+  "pauseResume": true,
+  "modalTabEscapeFocus": true,
+  "independentFailureRetainsReport": true,
+  "singleUserMessageEcho": true,
+  "humanAcceptance": "not assessed"
+}

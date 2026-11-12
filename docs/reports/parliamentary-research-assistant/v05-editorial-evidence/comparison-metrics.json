@@ -1,0 +1,46 @@
+{
+  "method": "Report body only; preamble, hash references, class-label lines and Markdown separators excluded; whitespace words; Source records button text retained.",
+  "previous": {
+    "r1-initial": {
+      "readingWords": 2008,
+      "visibleAssertionParagraphs": 57,
+      "standaloneDirectFactParagraphs": 51,
+      "repeatedAssertionReferences": 8
+    },
+    "r1-revision": {
+      "readingWords": 1888,
+      "visibleAssertionParagraphs": 52,
+      "standaloneDirectFactParagraphs": 46,
+      "repeatedAssertionReferences": 8
+    }
+  },
+  "corrected": {
+    "r1-initial": {
+      "readingWords": 829,
+      "visibleAssertionParagraphs": 2,
+      "standaloneDirectFactParagraphs": 0,
+      "repeatedAssertionReferences": 0
+    },
+    "r1-revision": {
+      "readingWords": 768,
+      "visibleAssertionParagraphs": 2,
+      "standaloneDirectFactParagraphs": 0,
+      "repeatedAssertionReferences": 0
+    },
+    "r3-same-session": {
+      "readingWords": 910,
+      "visibleAssertionParagraphs": 3,
+      "standaloneDirectFactParagraphs": 0,
+      "repeatedAssertionReferences": 0
+    }
+  },
+  "correctedFactualPresentation": {
+    "billRows": 20,
+    "selectedActivityAssertions": 42,
+    "availableFacts": 130,
+    "directFacts": 129,
+    "approvedCalculations": 1,
+    "compilerOperations": 21,
+    "compilerReads": 22
+  }
+}

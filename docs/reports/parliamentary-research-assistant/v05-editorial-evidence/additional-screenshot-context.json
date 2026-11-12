@@ -1,0 +1,10 @@
+{
+  "kind": "Exact retained generated r1-revision state rendered in the current app; no model or compiler queries; no text edits",
+  "screenshots": [
+    "revised-overview-top.png",
+    "table-heading-desktop.png",
+    "narrow-overview-top.png",
+    "narrow-table-left.png",
+    "narrow-table-evidence.png"
+  ]
+}

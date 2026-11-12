@@ -1,0 +1,25 @@
+{
+  "kind": "actual configured model and read-only Fuseki",
+  "planVisibleBeforeDispatch": true,
+  "stepDispatches": 28,
+  "responsiveWidths": [
+    1440,
+    1024,
+    768,
+    390,
+    320
+  ],
+  "keyboardEvidenceEscapeFocus": true,
+  "editorialEvidencePreserved": true,
+  "sameSessionSecondaryDomain": true,
+  "markdownExportQualified": true,
+  "javascriptErrors": [],
+  "humanAcceptance": "pending",
+  "initialOverviewWords": 173,
+  "revisedOverviewWords": 112,
+  "allBillRowsPresent": true,
+  "allFactsExported": true,
+  "keyboardHorizontalTableScroll": true,
+  "rowAndIndividualEvidence": true,
+  "resumedBrowserVerification": false
+}
