@@ -1,11 +1,13 @@
 # Parliamentary Research Assistant
-## Product, UI and Architecture Specification — v0.5
+## Product, UI and Architecture Specification — v0.6
 
 **Project:** OireachtasOntology  
 **Date:** 12 November 2026  
-**Status:** Approved design decisions; implementation not authorised  
+**Status:** Approved v0.6 interaction/UI design; not yet implemented; v0.5 product acceptance remains pending  
 **Branch:** `parliamentary-research-assistant`  
 **Companion contracts:** [Editorial and plain-language standard](parliamentary-research-assistant-editorial.md) · [Research acceptance scenarios](parliamentary-research-assistant-acceptance.md)
+
+> **v0.6 UI decision (12 November 2026):** Replace the permanent two-pane workspace with a **single-column, writing-first research journey**, drawing on Drafter's interaction pattern rather than its drafting logic. The initial question occupies the central canvas; after submission, planning and then the research report become the primary content. A compact follow-up composer sits below the report, conversation history is available on demand, and research/evidence detail remains contextual in a drawer or dialog. Remove abstract promotional text and developer-facing disclaimers from the start screen. The existing v0.5 compiler, research, evidence-confidence and human-review authority contracts are unchanged. **This is a specification approval, not implementation or product acceptance.**
 
 > **v0.5 research authority decision (12 November 2026):** The assistant produces **evidence-grounded research drafts for human review**, not independently certified exhaustive answers to arbitrary ordinary-language questions. The LLM leads research and explanatory writing; the compiler validates factual operations; approved deterministic calculations derive bounded results. Substantive assertions are classified by their distance from evidence, with provisional qualitative confidence for interpretations. Model-authored prose and the completeness of the overall investigation remain reviewable, not automatically certified. The guarded compiler and factual evidence boundaries are not relaxed. **Implementation remains subject to a separate bounded authorisation.**
 
@@ -44,7 +46,7 @@ The current-Dáil party-count comparison remains an integration regression, not 
 
 This document governs product, UI and architecture. The [editorial contract](parliamentary-research-assistant-editorial.md) governs visible language and report content; the [acceptance contract](parliamentary-research-assistant-acceptance.md) defines research scenarios and the independent product gate. Approved compiler contracts remain authoritative for executable semantics; these documents do not create new operations.
 
-The approved v0.2 two-pane layout, evidence access, responsiveness and accessibility requirements remain in effect unless explicitly strengthened here.
+**UI precedence:** The v0.6 single-column interaction and its companion editorial/browser contracts **supersede** the previous v0.2–v0.5 desktop two-pane layout and mobile conversation/report switching. All other accepted requirements for evidence access, progressive research, responsiveness, accessibility and qualified export remain applicable.
 
 ---
 
@@ -56,15 +58,15 @@ The LLM interprets research purpose, proposes relevant subsidiary questions and 
 
 ### 2.2 Visible research plan
 
-**Approved:** The assistant publishes a concise plan before initial factual query execution. Plan items are **research questions and expected findings**, not compiler function names. The plan is updated when the user refines the brief. Routine supported operations do not require separate approval.
+**Approved:** After submission, the assistant publishes a concise, readable research plan **in the primary column before initial factual query execution**. Plan items are **research questions and expected findings**, not compiler function names. The plan is updated when the user refines the brief; once results are available it may reduce to a compact progress summary, with the full plan accessible on demand. Routine supported operations do not require separate approval.
 
 ### 2.3 Progressive report
 
-**Approved:** The report develops as validated findings are available. The LLM authors coherent explanatory prose from evidence; tables support the narrative rather than replace it. Pending, blocked and partially answerable requirements remain visible. Factual prose cannot precede accepted evidence.
+**Approved:** The report takes over the **primary single-column reading canvas** as validated findings arrive. The LLM authors coherent explanatory prose from evidence; tables support the narrative rather than replace it. Pending, blocked and partially answerable requirements remain visible, and relevant updates do not displace the reader's position. Factual prose cannot precede accepted evidence.
 
 ### 2.4 Genuine ongoing conversation
 
-The user may ask why a finding matters, what remains unknown, request clearer explanations, challenge source evidence, introduce a new scope or revise a section. The assistant responds to the research context, updates affected plan/report items and reuses unaffected accepted evidence. Editorial changes must not require re-querying facts unnecessarily.
+The user may ask why a finding matters, what remains unknown, request clearer explanations, challenge source evidence, introduce a new scope or revise a section. A **compact follow-up composer below the report** remains available; previous conversation can be expanded on demand without losing any turns. The assistant responds to the research context, updates affected plan/report items and reuses unaffected accepted evidence. Editorial changes must not require re-querying facts unnecessarily.
 
 ### 2.5 Safe understanding without an exhaustive-language gate
 
@@ -103,105 +105,63 @@ The compiler/evidence layer, not the LLM, authorises Level 1; approved determini
 
 ### 3.1 Primary application layout
 
-The desktop application comprises:
+The MVP is a **single-column research workspace**, not a split-screen chat/dashboard.
 
-**A. Application header**
+**A. Application header:** restrained identity, current research title when established, and contextual New research / Research Activity / Pause / Export controls. Do not display inactive report controls or developer status prominently on the empty start screen.
 
-Provides the application identity, current research session title, execution status and high-level controls.
+**B. Starting canvas:** a centred, generous multiline field asking **“What would you like to find out?”**, one prominent **Start research** action, and one or two clearly labelled example questions. This is the primary interaction; there is **no empty report pane** alongside it.
 
-**B. Conversation panel**
+**C. Planning and progress canvas:** after submission, show the preserved original question, the LLM's plain-language interpretation and a **visible research plan before the first factual query**. Research progress and clarifications use the same column.
 
-Used for user requests, assistant responses, research planning, clarifications and report refinement.
+**D. Report canvas:** once findings arrive, the evidence-grounded report is the main content in a document-oriented reading area. Tables may occupy the available document width while prose retains comfortable line lengths. A compact follow-up composer appears **below the report**; prior exchanges are available via an on-demand conversation-history disclosure, not a permanently visible chat column.
 
-**C. Report panel**
+**E. Research Activity and evidence:** contextual drawer/dialog opened from the header, a plan item, or an evidence indicator. Preserve all existing source inspection and query tracing; these are not separate dashboard columns.
 
-A persistent report document displaying headings, factual findings, tables, narrative and supporting evidence.
+### 3.2 Primary navigation and source-of-truth behaviour
 
-**D. Research activity drawer**
+Move naturally through **Ask → Plan → Research → Report → Refine** within one continuous workspace, retaining scroll position and state where practical. This is a presentation progression, not separate mandatory pages or a fixed research sequence.
 
-An on-demand panel containing detailed research plan status, query execution history, evidence status and technical explanations.
+The report becomes the dominant reading surface after the initial plan; the plan remains retrievable. Keep the complete original question, research dialogue and accepted evidence available without forcing the user to navigate away or restart. Earlier exchanges may be collapsed but must never be discarded.
 
-The conversation and report are the two primary surfaces.
-
-The research activity drawer must not permanently compete with them for horizontal space.
-
-### 3.2 Primary navigation
-
-The MVP is a single research workspace, not a multipage dashboard.
-
-It should not require separate pages for planning, query execution and report writing.
-
-The user can move between conversation, report and research activity without losing conversational or report context.
+Contextual evidence inspection and clarifications must not obstruct independent research or permanently consume document width. On all screen sizes, provide **one primary content column** rather than reinstating a split-screen layout.
 
 ---
 
-## 4. Desktop Screen Layout
+## 4. Single-Column Screen Composition
 
-### 4.1 Layout proportions
+### 4.1 Layout and widths
 
-At desktop widths of approximately 1200 pixels or greater:
+On desktop, centre the **starting writing canvas** in a generous editorial column (approximately **680–760px maximum**). Do not surround it with blank report cards or large dashboard panels. Let the question field take visual priority, with comfortable whitespace.
 
-| Region | Proposed behaviour |
-|---|---|
-| Application header | Full width, fixed at top |
-| Conversation panel | Approximately 32% of workspace |
-| Report panel | Approximately 68% of workspace |
-| Research activity | Slide-over or expandable drawer |
-| Composer | Anchored to bottom of conversation panel |
+After submission, the **report canvas** may use a wider working document area (approximately **850–950px maximum**) for factual tables and evidence links. Keep long prose lines to the readable measure defined in §9.3, even when the document itself is wider. Tables may scroll within their own containers when necessary.
 
-The report should receive more horizontal space because it is the primary research output.
+The header spans the viewport; document content scrolls as **one coherent main page**. Research Activity/evidence opens as a contextual drawer/dialog. Do not place the report and conversation in independently scrolling side-by-side panes or introduce a resizable divider.
 
-The conversation and report panels should scroll independently.
-
-Where practical, users should be able to resize the division between conversation and report.
+The compact follow-up composer belongs **under the current report**, not anchored in a separate conversation panel. Previous exchanges are in a collapsible/expandable history area. When the report is long, provide a convenient, keyboard-accessible way to reach the composer without obstructing report reading.
 
 ### 4.2 Header
 
-Display:
+Display **Parliamentary Research** identity and restrained contextual actions: New research, Research Activity, Pause/Resume during execution, and copy/export when a report exists. Show the current research title and state when meaningful. Keep the starting screen sparse and do not give technical availability, query counts or unsupported-source disclaimers prominent header space.
 
-- Parliamentary Research identity.
-- Current research title.
-- Overall research state.
-- Research Activity control.
-- Pause/Resume control when execution is active.
-- Report export control when report content is available.
-- New research action.
+### 4.3 Starting writing canvas
 
-Avoid displaying raw query counts or technical service status prominently unless they materially affect the user's current work.
+Use a single prominent question: **“What would you like to find out?”** with a real multiline composer and one clear **Start research** action. A short supporting line may say: **“Ask a question about the Oireachtas. Explore the findings and refine your report as you go.”**
 
-### 4.3 Conversation panel
+Provide one or two realistic, **explicitly labelled example questions**. Selecting an example **populates the question field without starting research**, so the researcher can edit it. Example:
 
-The panel contains:
+> What happened to the Bills sponsored by Malcolm Byrne?
 
-- User messages.
-- Concise assistant messages.
-- Research plan cards.
-- Clarification and approval cards.
-- Notices concerning unsupported requirements.
-- A persistent message composer.
+Examples illustrate possible questions; they are not named templates or guarantees that every question is fully answerable. Do not display the technical wording “Drafts for human review. Source coverage and freshness are not certified” here. Meaningful qualifications belong with the findings they affect.
 
-Messages should be visually distinguishable by speaker without large decorative chat bubbles.
+Optional **View an example report** may be offered as a secondary action **only** if backed by a genuine, read-only, appropriately reviewed illustrative report. This must not become a fixed template or displace the question composer. Do not create a fake preview as a prerequisite for launch.
 
-Long technical details should be collapsed by default.
+### 4.4 Report and follow-up canvas
 
-The conversation should not duplicate the entire report.
+Display the research report as the primary document: a purposeful title, short scope or answer-oriented summary, structured findings, factual tables, evidence indicators, unanswered questions and section-level refinement actions.
 
-### 4.4 Report panel
+After or within the final report context, provide a labelled, compact follow-up input such as **“Ask a follow-up or request a change”**. Typical uses include asking about a Bill, explaining a finding or rewriting part of the report; these are examples, not restricted command phrases.
 
-The report panel resembles a readable document rather than a conventional dashboard.
-
-It contains:
-
-- Report title.
-- Short description and scope.
-- Report status.
-- Structured sections.
-- Factual tables and summaries.
-- Evidence references.
-- Limitations and unanswered questions.
-- Section-level refinement actions.
-
-The report remains visible while the assistant conducts further research.
+Prior exchanges and assistant replies remain available through an on-demand **Conversation history** disclosure; the user may inspect, expand and return to the report without losing any work. A selected report section can supply context to the follow-up composer. Keep the report as the primary surface during further research instead of reverting to a permanent chat/report split.
 
 ---
 
@@ -211,15 +171,17 @@ The report remains visible while the assistant conducts further research.
 
 **Purpose:** Invite a useful research objective, not a database exercise.
 
-Show a prominent multiline composer labelled **What would you like to find out?**, a **Start research** action and examples reflecting meaningful parliamentary research needs (e.g. a Member's Bills and their progress, or changes in constituency representation). Examples are research prompts, not promises that every part is supported. The report shows an understated document empty state.
+Show **only the centred, writing-first research canvas** with the question field, a prominent **Start research** action and one or two labelled, selectable example questions that fill (but do not submit) the field. No empty report panel or competing “report coming soon” placeholder appears. Do not duplicate the question heading as a separate prominent label elsewhere; preserve an accessible name.
+
+Do not use **“Living Report”**, **“A clear brief. A traceable report”**, **“Parliamentary research note”** as an opening label, **“Your report will take shape here”**, **“Validated findings appear as research progresses”**, **“Prepare a briefing on a Member's Bills”** as an unexplained pseudo-template, or introductory **“source coverage/freshness not certified”** boilerplate. Prefer direct, institutional language explaining what the user can ask and what the output will be.
 
 ### S2 — Preparing Research
 
-The LLM interprets the brief as a research purpose, identifies subsidiary questions and distinguishes genuinely material ambiguities. The assistant summarises what it intends to investigate in plain language; it does not just extract entity names. Unsupported requirements are retained. Publish the initial plan visibly before dispatching any factual query.
+In the same primary column, retain the original question and show the LLM's proposed interpretation, relevant subsidiary questions and any material ambiguity. The assistant summarises what it intends to investigate in plain language; it does not just extract entity names. Unsupported requirements are retained. **Publish the initial plan visibly before dispatching any factual query**. A blank report placeholder is not required during planning.
 
 ### S3 — Research in Progress
 
-Plan items address research questions, such as "Which Bills are associated with this Member?" or "What documented stages can be established?", not operation identifiers. Mark a subsidiary search as **supporting evidence** when it does not itself answer the parent question. Supported factual requests run automatically; only adequately supported claims populate answered portions of the report. The user may discuss and refine the investigation during the run. Unanswerable conditions remain visible even when useful supporting results were found.
+Plan items address research questions, such as “Which Bills are associated with this Member?” or “What documented stages can be established?”, not operation identifiers. Mark a subsidiary search as **supporting evidence** when it does not itself answer the parent question. Supported factual requests run automatically; accepted factual findings progressively populate the **same main report column**. The user can read without being pushed to another pane or losing position. Keep an accessible way to ask a follow-up or clarification during work. Unanswerable conditions remain visible even when useful supporting results were found.
 
 ### S4 — Clarification Required
 
@@ -229,11 +191,11 @@ Explain the uncertainty, why its resolution changes the evidence selected, and g
 
 Once the initial research plan has finished:
 
-- The report displays its available validated findings.
-- The research status changes to Completed or Completed with limitations.
-- The assistant provides a concise summary of what was achieved.
-- Any unanswered requirements remain visible.
-- The user can refine the report or extend the investigation.
+- The **report is the primary reading document**, with scope, source-qualified findings and accessible evidence details.
+- The research status changes to Completed or Completed with limitations; the document still says **Draft — for review**.
+- The assistant provides a concise summary of what was achieved, without duplicating the report as chat messages.
+- Any unanswered requirements remain visible next to the relevant findings or in the report's limitations section.
+- The compact follow-up composer is available **beneath the report**; earlier messages and the plan can be opened on demand.
 
 Completion does not imply complete underlying data coverage.
 
@@ -259,28 +221,30 @@ The user should not lose the report because a later query fails.
 
 ### 6.1 Message composer
 
-The composer is persistent and supports multiline input.
+The initial question composer is the **dominant starting control**; the follow-up composer is compact and contextual below the report. Both accept free-form multiline writing.
 
 Required behaviour:
 
-- Enter submits a message.
-- Shift+Enter inserts a line break.
-- Submission is disabled for an empty message.
-- The message is preserved if submission fails.
-- The user can send requests during ongoing research.
-- An obvious control allows the user to pause further query dispatch.
+- **Enter** creates a new line; **Ctrl/⌘+Enter** submits, following Drafter's writing-first pattern. A visible, descriptive **Start research** button initiates the initial question; the follow-up button sends the next request. Do not silently submit a multi-paragraph brief when the user presses Enter to write.
+- An accessible hint explains the shortcut without requiring knowledge of it; the button remains the obvious primary action.
+- Submission is disabled for an empty/whitespace-only message.
+- The user's text survives a failed submission; preserve draft text and focus where practical.
+- Examples populate the initial composer without dispatching a request or overwriting already written text without an explicit user action.
+- During research, the user can provide clarifications and follow-ups without abandoning the report, and Pause remains accessible while further operations are in flight.
 
-The composer should encourage ordinary conversational requests rather than require predefined command syntax.
+The composer must encourage ordinary conversational research requests rather than predefined command syntax. Do not introduce rich-text editing or attachments solely to emulate Drafter; borrow the focused input interaction, not unrelated features.
 
-### 6.2 Assistant messages
+### 6.2 Assistant messages and history
 
-The assistant speaks as a helpful, impartial parliamentary research colleague. It discusses the purpose of the investigation, explains meaningful findings, asks necessary clarifications and supports follow-up questions that genuinely revise the research/report. It does not fill the conversation with query-completion notices. Advanced query details belong in Research Activity.
+The assistant speaks as a helpful, impartial parliamentary research colleague. It discusses the purpose of the investigation, explains meaningful findings, asks necessary clarifications and supports follow-up questions that genuinely revise the research/report. It does not fill the conversation with query-completion notices or repeat the full report. Advanced query details belong in Research Activity.
+
+Earlier messages must be **preserved and accessible on demand** through a labelled Conversation history disclosure, with speakers and chronology understandable. A new reply, material clarification or failure must be discoverable without reopening the full transcript every time; use concise contextual cues. Neither history expansion nor new progress messages should steal focus or displace the main report.
 
 All user-visible messages follow [the editorial standard](parliamentary-research-assistant-editorial.md). Responses that merely say "refinement requires Phase 2" are non-compliant with the intended v0.5 experience.
 
-### 6.3 Research plan card
+### 6.3 Research plan presentation
 
-The plan card contains:
+Show the plan as a **readable primary-column step** before execution, then collapse or summarise its history after findings arrive while keeping it fully inspectable. The plan contains:
 
 - Research objective, including the material conditions in the original brief.
 - Proposed subsidiary research questions and their relevance.
@@ -303,7 +267,7 @@ Pending decisions remain accessible until resolved or superseded by the user.
 
 ### 6.5 Conversation-to-report interaction
 
-The user can select a report section and request refinement without manually copying its title or contents into the conversation.
+The user can select a report section and request refinement through the compact follow-up composer without manually copying its title or contents into a separate conversation panel.
 
 Example section actions:
 
@@ -312,7 +276,7 @@ Example section actions:
 - Investigate further.
 - View supporting evidence.
 
-The selected section becomes the context of the next conversational request.
+The selected section becomes the context of the next conversational request. Show that context near the composer and allow the user to clear it. Preserve report reading position after a targeted revision unless the user chooses to jump to the changed section.
 
 ---
 
