@@ -1,0 +1,531 @@
+{
+  "head": "e98296ef2d89a07810c3b0f3f801c99f76636ae7",
+  "frozenChecks": [
+    {
+      "path": "AGENTS.md",
+      "expected": "0622461cbc6b71e1637b46205fb8b704b54152cdaf7534998bdae7ec895a3401",
+      "actual": "0622461cbc6b71e1637b46205fb8b704b54152cdaf7534998bdae7ec895a3401",
+      "match": true
+    },
+    {
+      "path": "docs/architecture/etl.md",
+      "expected": "edf7bda828ac92dbc4da13c719f4f1cc1a883f055b5d449bada1f25ee154cf67",
+      "actual": "edf7bda828ac92dbc4da13c719f4f1cc1a883f055b5d449bada1f25ee154cf67",
+      "match": true
+    },
+    {
+      "path": "docs/development/operations.md",
+      "expected": "410c6a4831c99b851abb5cbb97fd5c15011101266ef55b53ead7baf793d3242b",
+      "actual": "410c6a4831c99b851abb5cbb97fd5c15011101266ef55b53ead7baf793d3242b",
+      "match": true
+    },
+    {
+      "path": "docs/reference/etl/state-and-refresh.md",
+      "expected": "9392a3eb5547c7527beae0e469812850344a6016fa96c3f055a00b03c7bac7cd",
+      "actual": "9392a3eb5547c7527beae0e469812850344a6016fa96c3f055a00b03c7bac7cd",
+      "match": true
+    },
+    {
+      "path": "docs/reports/query-service/composition-kernel-20261112/configuration.json",
+      "expected": "f9e7dd750322e1b137144a56c7eb15332382b9740990bceaf3e3467189fcbe12",
+      "actual": "f9e7dd750322e1b137144a56c7eb15332382b9740990bceaf3e3467189fcbe12",
+      "match": true
+    },
+    {
+      "path": "docs/reports/query-service/nlq-bounded-composition-experiment-readiness.md",
+      "expected": "517a71c569fdb65f6ade147849544a08da4e33e86c44065af84d5993bd587bd8",
+      "actual": "517a71c569fdb65f6ade147849544a08da4e33e86c44065af84d5993bd587bd8",
+      "match": true
+    },
+    {
+      "path": "documentation/mapping_notes.md",
+      "expected": "05c94b5b2568e84747d701c4c2df613d93e1a85e67e89e1f7d06d88baa955d9a",
+      "actual": "05c94b5b2568e84747d701c4c2df613d93e1a85e67e89e1f7d06d88baa955d9a",
+      "match": true
+    },
+    {
+      "path": "mappings/committee_mapping.csv",
+      "expected": "3d452c70e85411cf70ff210629a018fd79a0f5a508e877b15521a40056200284",
+      "actual": "3d452c70e85411cf70ff210629a018fd79a0f5a508e877b15521a40056200284",
+      "match": true
+    },
+    {
+      "path": "mappings/constituencies_mapping.csv",
+      "expected": "646a7a74a67efb736cfa6f88b6cf1993402ecb01c5433bf8bc732f078a9466e3",
+      "actual": "646a7a74a67efb736cfa6f88b6cf1993402ecb01c5433bf8bc732f078a9466e3",
+      "match": true
+    },
+    {
+      "path": "mappings/houses_mapping.csv",
+      "expected": "0148d5b66b0d118d2863de8d6723a5aef84e814dbb9282dc6d1fc4dd9af12cc4",
+      "actual": "0148d5b66b0d118d2863de8d6723a5aef84e814dbb9282dc6d1fc4dd9af12cc4",
+      "match": true
+    },
+    {
+      "path": "mappings/member_mapping.csv",
+      "expected": "bbb652f840435bee604e81448d480d6126f91b9dc1da1538edb8ca1771924fa2",
+      "actual": "bbb652f840435bee604e81448d480d6126f91b9dc1da1538edb8ca1771924fa2",
+      "match": true
+    },
+    {
+      "path": "mappings/party_mapping.csv",
+      "expected": "8699f9b3eaefc5a3f3ffd29366502307dd7563255f694dda6f30b23ac13ce915",
+      "actual": "8699f9b3eaefc5a3f3ffd29366502307dd7563255f694dda6f30b23ac13ce915",
+      "match": true
+    },
+    {
+      "path": "ontology/agents.owl.ttl",
+      "expected": "6c233e332ecb72b494872df83db9035e20110704f9b82c80b3e70824ebc71661",
+      "actual": "6c233e332ecb72b494872df83db9035e20110704f9b82c80b3e70824ebc71661",
+      "match": true
+    },
+    {
+      "path": "ontology/debates.owl.ttl",
+      "expected": "f85566827205594c4b51b0eda05516d2bff34e41d211d00adf04b450f5c9bf21",
+      "actual": "f85566827205594c4b51b0eda05516d2bff34e41d211d00adf04b450f5c9bf21",
+      "match": true
+    },
+    {
+      "path": "ontology/events.owl.ttl",
+      "expected": "8c90e2bf80ba6ab1dc43954b4efb32ce09d2691c41491292354154e68ec0b749",
+      "actual": "8c90e2bf80ba6ab1dc43954b4efb32ce09d2691c41491292354154e68ec0b749",
+      "match": true
+    },
+    {
+      "path": "ontology/legislation.owl.ttl",
+      "expected": "6ac1c0a774bee5021893ded2bc1e3c4530a3f86ef44cf65f5077ada17ab412ed",
+      "actual": "6ac1c0a774bee5021893ded2bc1e3c4530a3f86ef44cf65f5077ada17ab412ed",
+      "match": true
+    },
+    {
+      "path": "ontology/members.owl.ttl",
+      "expected": "d38f8291ae9e8b00da1fecca5bcdf9dc4b118deff55d764a55221d58680798c8",
+      "actual": "d38f8291ae9e8b00da1fecca5bcdf9dc4b118deff55d764a55221d58680798c8",
+      "match": true
+    },
+    {
+      "path": "ontology/oireachtas.owl.ttl",
+      "expected": "ac2b7b329c614b5446f64be8f4eb4e0e4a4e35b96235a438c98105e851f2c21d",
+      "actual": "ac2b7b329c614b5446f64be8f4eb4e0e4a4e35b96235a438c98105e851f2c21d",
+      "match": true
+    },
+    {
+      "path": "ontology/vocabulary.owl.ttl",
+      "expected": "534a9a22621d314e29ac47e6bdeac13cccfb4ac5fb1abe66fa0e7fdcda60ad54",
+      "actual": "534a9a22621d314e29ac47e6bdeac13cccfb4ac5fb1abe66fa0e7fdcda60ad54",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/__init__.py",
+      "expected": "54014edbb14afe0ee7fb75587542a3abecee1c49b56c76880bf0b4f47a98cd71",
+      "actual": "54014edbb14afe0ee7fb75587542a3abecee1c49b56c76880bf0b4f47a98cd71",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/app.py",
+      "expected": "ee8511a9a9e4280bc02023b09266b9d56c0f31873dd98d34be9ac30ab5ac189a",
+      "actual": "ee8511a9a9e4280bc02023b09266b9d56c0f31873dd98d34be9ac30ab5ac189a",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/benchmark.py",
+      "expected": "9aea7a1fe7f36c7a4b3d6b5dcc6a1cbc0c587a44ac0838891a7c6e061388c475",
+      "actual": "9aea7a1fe7f36c7a4b3d6b5dcc6a1cbc0c587a44ac0838891a7c6e061388c475",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/benchmark_isolation.py",
+      "expected": "257e3e9ab60ecb32f8f27c225c7d38f365c9f7647d4f46e47cdc31173787dbd8",
+      "actual": "257e3e9ab60ecb32f8f27c225c7d38f365c9f7647d4f46e47cdc31173787dbd8",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/committee_members.py",
+      "expected": "306921894ee330fc91a2d7b3073377020661bd29c02b7e607b0f8ff422d3b943",
+      "actual": "306921894ee330fc91a2d7b3073377020661bd29c02b7e607b0f8ff422d3b943",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/composable_plan.py",
+      "expected": "d4ca9a1e7952c72d4ef5917d3823f3709403c25cf9cfaf7b8270488f07c1ded1",
+      "actual": "d4ca9a1e7952c72d4ef5917d3823f3709403c25cf9cfaf7b8270488f07c1ded1",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/composable_semantic_planner.py",
+      "expected": "012fbacce394f3f98486a0b22d66a540f4701b88c996bac5b65bf246c4822741",
+      "actual": "012fbacce394f3f98486a0b22d66a540f4701b88c996bac5b65bf246c4822741",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/config.py",
+      "expected": "8da246a0d09498fd29dc1a640bc9360cc36d5991ed74992524df94a94ae2795c",
+      "actual": "8da246a0d09498fd29dc1a640bc9360cc36d5991ed74992524df94a94ae2795c",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/contract.py",
+      "expected": "fc1f05b4ee6b41153eba80849162e4bffc2cad63fdf84b2a85e6cb6d9ea43ade",
+      "actual": "fc1f05b4ee6b41153eba80849162e4bffc2cad63fdf84b2a85e6cb6d9ea43ade",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/errors.py",
+      "expected": "9ca7816008c8d7aeff22b45c5f75a0d17a07eeb8ed63d820b6d2aea260491bb7",
+      "actual": "9ca7816008c8d7aeff22b45c5f75a0d17a07eeb8ed63d820b6d2aea260491bb7",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/experimental_composition.py",
+      "expected": "0560acf2b813fdf04f237e09522dcc02b60d99700bdc66cef410948609dd5d06",
+      "actual": "0560acf2b813fdf04f237e09522dcc02b60d99700bdc66cef410948609dd5d06",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/explainer.py",
+      "expected": "52c6cc20a6eb066020ffb60654d3a7229c1c4c370660dc741888ce09d2534d25",
+      "actual": "52c6cc20a6eb066020ffb60654d3a7229c1c4c370660dc741888ce09d2534d25",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/feedback.py",
+      "expected": "52f98ae5e42e1aaf08488785730921c624bcd10c8017aaa1bfb75bec5b1a2353",
+      "actual": "52f98ae5e42e1aaf08488785730921c624bcd10c8017aaa1bfb75bec5b1a2353",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/fuseki.py",
+      "expected": "267cd9a4c9a8fcc90b9b952ceb09ab89e7988161c58fbefb92f37f950df05752",
+      "actual": "267cd9a4c9a8fcc90b9b952ceb09ab89e7988161c58fbefb92f37f950df05752",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/government.py",
+      "expected": "dbec657467340a35494f5739c8387c08a1ac471b7d24fe5a5e0aaa5599f8f3e2",
+      "actual": "dbec657467340a35494f5739c8387c08a1ac471b7d24fe5a5e0aaa5599f8f3e2",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/interpretation.py",
+      "expected": "65e1497be3886198286bc04200c540d5906f1aefdce936083caa3baf9db5963a",
+      "actual": "65e1497be3886198286bc04200c540d5906f1aefdce936083caa3baf9db5963a",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/llm.py",
+      "expected": "e48ffd8ce54576a32bb9e2ea7c07fea9ea00061cd22feb6c5663faa52e7eec58",
+      "actual": "e48ffd8ce54576a32bb9e2ea7c07fea9ea00061cd22feb6c5663faa52e7eec58",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/member_resolution.py",
+      "expected": "2469e1ab01cfc475842d5d3b2b16f4edd2b2ae348ff5d53b18d8c582ec51d28d",
+      "actual": "2469e1ab01cfc475842d5d3b2b16f4edd2b2ae348ff5d53b18d8c582ec51d28d",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/office_representation.py",
+      "expected": "b45b9ff8ffdafd69b336697761330b785c66ebd02c623c4523fda85311e73a3e",
+      "actual": "b45b9ff8ffdafd69b336697761330b785c66ebd02c623c4523fda85311e73a3e",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/pagination.py",
+      "expected": "b02de58390b97f69e8f3c8be0ef028b014ea905ed9ebb8c430921dbaf49b9c14",
+      "actual": "b02de58390b97f69e8f3c8be0ef028b014ea905ed9ebb8c430921dbaf49b9c14",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/performance.py",
+      "expected": "e8458a64e6cdc52fa427d2d3185ab42cd5e1b595c829826453ab7424065e27eb",
+      "actual": "e8458a64e6cdc52fa427d2d3185ab42cd5e1b595c829826453ab7424065e27eb",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/pipeline.py",
+      "expected": "941727f48e5df65cea1070f62c61ef938c2438ff2da1b1577264baf83d274f92",
+      "actual": "941727f48e5df65cea1070f62c61ef938c2438ff2da1b1577264baf83d274f92",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/plan_benchmark.py",
+      "expected": "ee6b7d9710f386b21b5efa8e4771873e45c513da2948c676d450b17ec93b5991",
+      "actual": "ee6b7d9710f386b21b5efa8e4771873e45c513da2948c676d450b17ec93b5991",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/plan_contract.py",
+      "expected": "e2a84a037e18d3b90f4ee9b9ebeabae51dd5c298e00525abbc47eb77df06c169",
+      "actual": "e2a84a037e18d3b90f4ee9b9ebeabae51dd5c298e00525abbc47eb77df06c169",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/plan_pipeline.py",
+      "expected": "b5692a6a491b97ca28d1b200225e52505e13694d4f54f7745c0048bfddab3acb",
+      "actual": "b5692a6a491b97ca28d1b200225e52505e13694d4f54f7745c0048bfddab3acb",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/plan_sparql.py",
+      "expected": "fec6dd657c731edc0014c0999513fe390057b12fbc1d4ae87b09541d241e4764",
+      "actual": "fec6dd657c731edc0014c0999513fe390057b12fbc1d4ae87b09541d241e4764",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/planner_benchmark.py",
+      "expected": "c836bab23cf31db7e07ee2178db6a3c274bbcabfd9d14dd334ea95840c047d08",
+      "actual": "c836bab23cf31db7e07ee2178db6a3c274bbcabfd9d14dd334ea95840c047d08",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/presentation.py",
+      "expected": "e43f52d6618d31f25c89c58eced5b05151f24e1a562b3d2fae6ae1ead24713b7",
+      "actual": "e43f52d6618d31f25c89c58eced5b05151f24e1a562b3d2fae6ae1ead24713b7",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/representation.py",
+      "expected": "f97e57bead11aba5f0dc49b15d04f73faa13a5f6af916a1403ab815dc4c41d8e",
+      "actual": "f97e57bead11aba5f0dc49b15d04f73faa13a5f6af916a1403ab815dc4c41d8e",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/results.py",
+      "expected": "9e16fcadcc8f9a14f51c56d1490a5b19ab21d72a1fe35c458c00b90c4b2afee2",
+      "actual": "9e16fcadcc8f9a14f51c56d1490a5b19ab21d72a1fe35c458c00b90c4b2afee2",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/safety.py",
+      "expected": "5cbd158c0e12205d1670e8345adb867a73009565f68d9b9c6b688529198d0872",
+      "actual": "5cbd158c0e12205d1670e8345adb867a73009565f68d9b9c6b688529198d0872",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/schema.py",
+      "expected": "5ff9c133166904571753a940e427ca3f59cd82ca5e3c0377a2b0bd06125f4578",
+      "actual": "5ff9c133166904571753a940e427ca3f59cd82ca5e3c0377a2b0bd06125f4578",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/stage_a.py",
+      "expected": "2d9fa28e714c65dedcae3c83d9a7c0756969cf8baf00ba7cc2cdcfd880ae8153",
+      "actual": "2d9fa28e714c65dedcae3c83d9a7c0756969cf8baf00ba7cc2cdcfd880ae8153",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/stage_b.py",
+      "expected": "444c1615e7d613e5c1e559ef3bc63d5bcb36749592eca3d73ac42024ff92b8b0",
+      "actual": "444c1615e7d613e5c1e559ef3bc63d5bcb36749592eca3d73ac42024ff92b8b0",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/stage_c.py",
+      "expected": "0b59dea7f58fe88a7bd4d09001c4b1e93ab03f93713bff663f76e99821b934e8",
+      "actual": "0b59dea7f58fe88a7bd4d09001c4b1e93ab03f93713bff663f76e99821b934e8",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/structured_planner.py",
+      "expected": "cfd91cb018d2c53fb4b066ee5fa37e1fb53c34dd6b5e8e428133648bd4287e9f",
+      "actual": "cfd91cb018d2c53fb4b066ee5fa37e1fb53c34dd6b5e8e428133648bd4287e9f",
+      "match": true
+    },
+    {
+      "path": "poc/nlq/vocabulary.py",
+      "expected": "b1168f9c0e89daaebb0ccfa76f5a5f31e93cfaf68e37ff3dcec068b12edb254a",
+      "actual": "b1168f9c0e89daaebb0ccfa76f5a5f31e93cfaf68e37ff3dcec068b12edb254a",
+      "match": true
+    },
+    {
+      "path": "poc/specs/composable-query-plan-contract.json",
+      "expected": "740d464f859715fc028c1943ebb25e006dee79435ad6e45f275f2b6136543e69",
+      "actual": "740d464f859715fc028c1943ebb25e006dee79435ad6e45f275f2b6136543e69",
+      "match": true
+    },
+    {
+      "path": "poc/specs/composable-query-plan-draft.schema.json",
+      "expected": "00cb64b733ee59dcbcb7edea3d8ba5e98448bfb17cefd2a944691a1b423d4539",
+      "actual": "00cb64b733ee59dcbcb7edea3d8ba5e98448bfb17cefd2a944691a1b423d4539",
+      "match": true
+    },
+    {
+      "path": "poc/specs/composable-query-plan.schema.json",
+      "expected": "9ba6774086434166a0b2e552c0fb7814fe67e76610069ab765f41eca3d2cdeac",
+      "actual": "9ba6774086434166a0b2e552c0fb7814fe67e76610069ab765f41eca3d2cdeac",
+      "match": true
+    },
+    {
+      "path": "poc/specs/nlq-benchmark.schema.json",
+      "expected": "c25168f71d93175a7ad288e5533dff11417f119c7492e485bd3f7b6845f31036",
+      "actual": "c25168f71d93175a7ad288e5533dff11417f119c7492e485bd3f7b6845f31036",
+      "match": true
+    },
+    {
+      "path": "poc/specs/query-plan-contract.json",
+      "expected": "75bbe37721d923302f43d682515484d4ca5633205890c8325b884780b9297cd1",
+      "actual": "75bbe37721d923302f43d682515484d4ca5633205890c8325b884780b9297cd1",
+      "match": true
+    },
+    {
+      "path": "poc/specs/query-plan-contract.schema.json",
+      "expected": "75130f244ec536cc1c15883d61729104018cded7e0d7ada774ab69f47ed8bdf4",
+      "actual": "75130f244ec536cc1c15883d61729104018cded7e0d7ada774ab69f47ed8bdf4",
+      "match": true
+    },
+    {
+      "path": "poc/specs/query-plan-draft.schema.json",
+      "expected": "9d51d7ce364ced4fc0dd7ec4fb5789fbadb815afd8d6ec3a18507b9d91b41222",
+      "actual": "9d51d7ce364ced4fc0dd7ec4fb5789fbadb815afd8d6ec3a18507b9d91b41222",
+      "match": true
+    },
+    {
+      "path": "poc/specs/query-plan.schema.json",
+      "expected": "6774817e5ad19d463cc5bf5ce673359b8436f3dce76083f23bc4e8736f2ecda1",
+      "actual": "6774817e5ad19d463cc5bf5ce673359b8436f3dce76083f23bc4e8736f2ecda1",
+      "match": true
+    },
+    {
+      "path": "poc/specs/query-schema-contract.json",
+      "expected": "4a67ee0f1e6b75fdd8aebf49346e553191d20b697bd3ec48bd91222a66413f80",
+      "actual": "4a67ee0f1e6b75fdd8aebf49346e553191d20b697bd3ec48bd91222a66413f80",
+      "match": true
+    },
+    {
+      "path": "poc/specs/query-schema-contract.schema.json",
+      "expected": "133b0b60f8e4d34ef2bd376a31957c306408a9398eb1477ba694605ea7cf993f",
+      "actual": "133b0b60f8e4d34ef2bd376a31957c306408a9398eb1477ba694605ea7cf993f",
+      "match": true
+    },
+    {
+      "path": "pyproject.toml",
+      "expected": "c106cab96a0563720f5e2e8fa29b7eaa267ed355fcee160434d70b7683cdd9b7",
+      "actual": "c106cab96a0563720f5e2e8fa29b7eaa267ed355fcee160434d70b7683cdd9b7",
+      "match": true
+    },
+    {
+      "path": "tests/test_nlq_experimental_composition.py",
+      "expected": "b20327dbeab5785204bad6e64769a84c7b9af061d08183536827e75b249d18b2",
+      "actual": "b20327dbeab5785204bad6e64769a84c7b9af061d08183536827e75b249d18b2",
+      "match": true
+    },
+    {
+      "path": "tests/validate.py",
+      "expected": "e4f951238b770886cb3bdda667491856ef2945a919f68f4a871144ab216885b3",
+      "actual": "e4f951238b770886cb3bdda667491856ef2945a919f68f4a871144ab216885b3",
+      "match": true
+    },
+    {
+      "path": "tools/nlq_composition_replay.py",
+      "expected": "5d3909bec1058864f6f6219e6a7de3ced729971dfc9abf8b791fbc7835317947",
+      "actual": "5d3909bec1058864f6f6219e6a7de3ced729971dfc9abf8b791fbc7835317947",
+      "match": true
+    },
+    {
+      "path": "tools/nlq_freeze_verify.py",
+      "expected": "b969b53c953f517cdb4366ed5ddd2720b988a4b196d7335b120a85378316d855",
+      "actual": "b969b53c953f517cdb4366ed5ddd2720b988a4b196d7335b120a85378316d855",
+      "match": true
+    },
+    {
+      "path": "uv.lock",
+      "expected": "1e0c7ed9f05ee55ce64ead98fa76eff24f6de1028d5e0e9e9a209429073c9eec",
+      "actual": "1e0c7ed9f05ee55ce64ead98fa76eff24f6de1028d5e0e9e9a209429073c9eec",
+      "match": true
+    },
+    {
+      "path": "docs/reports/query-service/composition-freeze-20261111/authority.json",
+      "expected": "6a650d6982ee9fd401313a376280369719471a3090cdd3e7636d97cc4d1a9558",
+      "actual": "6a650d6982ee9fd401313a376280369719471a3090cdd3e7636d97cc4d1a9558",
+      "match": true
+    },
+    {
+      "path": "docs/reports/query-service/composition-freeze-20261111/custody.json",
+      "expected": "3f4e76e841ea17068fc9498f39eaef0b63ca86637d6af7acf65ae8a80c9653ba",
+      "actual": "3f4e76e841ea17068fc9498f39eaef0b63ca86637d6af7acf65ae8a80c9653ba",
+      "match": true
+    },
+    {
+      "path": "docs/reports/query-service/composition-freeze-20261111/development/controls.json",
+      "expected": "426f6ecf04161edb0d44469b351ebe2bb0d83372a5060fef15f2d2daa83b465d",
+      "actual": "426f6ecf04161edb0d44469b351ebe2bb0d83372a5060fef15f2d2daa83b465d",
+      "match": true
+    },
+    {
+      "path": "docs/reports/query-service/composition-freeze-20261111/development/evidence.nq",
+      "expected": "5c4224b5d0209dced5d9963dd8303bc0dc5888158764bfc74a572affd238c804",
+      "actual": "5c4224b5d0209dced5d9963dd8303bc0dc5888158764bfc74a572affd238c804",
+      "match": true
+    },
+    {
+      "path": "docs/reports/query-service/composition-freeze-20261111/development/inputs.json",
+      "expected": "a3356bf5e179f21acc71ff61f7951a776058e2bef6be84b7dea730a0b8b97fbf",
+      "actual": "a3356bf5e179f21acc71ff61f7951a776058e2bef6be84b7dea730a0b8b97fbf",
+      "match": true
+    },
+    {
+      "path": "docs/reports/query-service/composition-freeze-20261111/development/oracle.json",
+      "expected": "2c0375c1d1e97fc3bf12a52752a3eedc3e979b045c9791d9bc2641201483e9e5",
+      "actual": "2c0375c1d1e97fc3bf12a52752a3eedc3e979b045c9791d9bc2641201483e9e5",
+      "match": true
+    },
+    {
+      "path": "docs/reports/query-service/composition-freeze-20261111/development/scope.json",
+      "expected": "d0e81047517ad00c8337d093d238b24383571becfbdc73439d7f77460d852ed6",
+      "actual": "d0e81047517ad00c8337d093d238b24383571becfbdc73439d7f77460d852ed6",
+      "match": true
+    },
+    {
+      "path": "docs/reports/query-service/composition-freeze-20261111/manifest.json",
+      "expected": "2810ab0eecfe612a470c99db43fd1d33c1be236a5c0a0c9e092c0aa824073de2",
+      "actual": "2810ab0eecfe612a470c99db43fd1d33c1be236a5c0a0c9e092c0aa824073de2",
+      "match": true
+    },
+    {
+      "path": "docs/reports/query-service/composition-freeze-20261111/protocol.md",
+      "expected": "246e34c7f34d66a11ffc158c43c36670ad42bb861a4dd89ed64821798244f427",
+      "actual": "246e34c7f34d66a11ffc158c43c36670ad42bb861a4dd89ed64821798244f427",
+      "match": true
+    }
+  ],
+  "evaluationPreExecutionChecks": [
+    {
+      "path": "tools/nlq_composition_live.py",
+      "expected": "e57b97d60cc053e52ba9c7a15c468f584244fcfd22b04a495d00abc9b11ce1f8",
+      "actual": "e57b97d60cc053e52ba9c7a15c468f584244fcfd22b04a495d00abc9b11ce1f8",
+      "match": true
+    },
+    {
+      "path": "tools/nlq_composition_live_controls.py",
+      "expected": "067490042d64f9fbbafc12d94f13f50253a8b661049b3b1645b7883a2dfa7909",
+      "actual": "067490042d64f9fbbafc12d94f13f50253a8b661049b3b1645b7883a2dfa7909",
+      "match": true
+    },
+    {
+      "path": "tools/nlq_live_kr_compare.py",
+      "expected": "9083637aa0c441c9801ae462ed30ab0ff3604cedf651b8fd82995ead2f26078c",
+      "actual": "9083637aa0c441c9801ae462ed30ab0ff3604cedf651b8fd82995ead2f26078c",
+      "match": true
+    },
+    {
+      "path": "tools/nlq_live_kr_oracle.py",
+      "expected": "0ad8a472090962b27b05fc00267bc4c0b2f9c3fe0e614878bd4b6584f939e4f6",
+      "actual": "0ad8a472090962b27b05fc00267bc4c0b2f9c3fe0e614878bd4b6584f939e4f6",
+      "match": true
+    },
+    {
+      "path": "docs/reports/query-service/composition-live-kr-20261112/oracle/oracle.json",
+      "expected": "1003368b9436377bcaac76de5afdd6b1be970cc539c9fe046d64a3e938e3f067",
+      "actual": "1003368b9436377bcaac76de5afdd6b1be970cc539c9fe046d64a3e938e3f067",
+      "match": true
+    },
+    {
+      "path": "docs/reports/query-service/composition-live-kr-20261112/input.json",
+      "expected": "d42240b1112c7d46235dacbdffdac1ff19f3f52a304580920a487b33635eef16",
+      "actual": "d42240b1112c7d46235dacbdffdac1ff19f3f52a304580920a487b33635eef16",
+      "match": true
+    }
+  ],
+  "firstExecutionSHA256": "3d2ef191de6d51b5174b475c98ef75c5d5d67942662d41f0578677913445bf5c",
+  "noTrackedDiff": true
+}

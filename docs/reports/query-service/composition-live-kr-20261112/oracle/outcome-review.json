@@ -1,0 +1,1813 @@
+{
+  "answer": {
+    "exactly_all_raw_qualified_member_pairs": true,
+    "members": [
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29",
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29"
+    ],
+    "no_missing_or_extra_witness_alternatives": true,
+    "pairs": [
+      {
+        "K_membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#committee-membership-7a2d9746a8c5bcd6f35632c508fe12088e51dce5270a016d79a9e5e5a7e9ad86",
+        "R_membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29"
+      },
+      {
+        "K_membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e",
+        "R_membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29"
+      }
+    ],
+    "witness_pair_count": 2
+  },
+  "candidate_and_witness_inventory": {
+    "candidate_audits": [
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/Aidan-Farrelly.D.2024-11-29",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#committee-membership-7a2d9746a8c5bcd6f35632c508fe12088e51dce5270a016d79a9e5e5a7e9ad86",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Aidan-Farrelly.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#committee-membership-7a2d9746a8c5bcd6f35632c508fe12088e51dce5270a016d79a9e5e5a7e9ad86#member-date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "K",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#committee-membership-83ee419568331dfb794f79cd3762741bdba677951e3bbc287cdf5ef79807a3bf",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#committee-membership-83ee419568331dfb794f79cd3762741bdba677951e3bbc287cdf5ef79807a3bf#member-date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "K",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": false,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/Catherine-Ardagh.S.2016-04-25",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#committee-membership-8c75f36d80a9023281acdaf09e0d2166d565e34efb859265e5e4a15de96dd334",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": false,
+        "range": {
+          "active": false,
+          "end": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2026-05-28T00:00:00"
+          },
+          "graph": "https://data.oireachtas.ie/graph/member/Catherine-Ardagh.S.2016-04-25",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#committee-membership-8c75f36d80a9023281acdaf09e0d2166d565e34efb859265e5e4a15de96dd334#member-date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "K",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": false,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/Catherine-Connolly.D.2016-10-03",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": false,
+        "range": {
+          "active": false,
+          "end": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-10-25T00:00:00"
+          },
+          "graph": "https://data.oireachtas.ie/graph/member/Catherine-Connolly.D.2016-10-03",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87#member-date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "K",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572#member-date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "K",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee#member-date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "K",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/Grace-Boland.D.2024-11-29",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#committee-membership-332a9b9bf82c1b09bc876733deaf3dde2d15c9f963931ccbf65883b989d719a9",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Grace-Boland.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#committee-membership-332a9b9bf82c1b09bc876733deaf3dde2d15c9f963931ccbf65883b989d719a9#member-date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "K",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/James-Geoghegan.D.2024-11-29",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#committee-membership-09fc8af09070919a9c78be0f4acc258c5c92050b5777c4545f63148581256c98",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/James-Geoghegan.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#committee-membership-09fc8af09070919a9c78be0f4acc258c5c92050b5777c4545f63148581256c98#member-date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "K",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9#member-date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "K",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e#member-date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "K",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#committee-membership-897ebbb535915271ce2ca1d3a68b87494914716085e8dc8d8807266df8b13349",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#committee-membership-897ebbb535915271ce2ca1d3a68b87494914716085e8dc8d8807266df8b13349#member-date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "K",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#committee-membership-f3c35f58f00541e0680b6bf5fd1c2a24a49941c160fc29f6c07ea2d31a56ac0c",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#committee-membership-f3c35f58f00541e0680b6bf5fd1c2a24a49941c160fc29f6c07ea2d31a56ac0c#member-date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2026-07-15T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "K",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/Paul-McAuliffe.D.2020-02-08",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#committee-membership-adf2def11234f4f15a787e2fd09c4f780aaa5501d6889d6b34951964c345bbdf",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Paul-McAuliffe.D.2020-02-08",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#committee-membership-adf2def11234f4f15a787e2fd09c4f780aaa5501d6889d6b34951964c345bbdf#member-date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "K",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/Paul-Murphy.D.2014-10-10",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10/house/dail/34#committee-membership-89703cbd028ee24c36338a53eafa8bb0f6bec308fe31cf8227fc03a39aa3f8a5",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Paul-Murphy.D.2014-10-10",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10/house/dail/34#committee-membership-89703cbd028ee24c36338a53eafa8bb0f6bec308fe31cf8227fc03a39aa3f8a5#member-date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-11-26T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "K",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/S%C3%A9amus-McGrath.D.2024-11-29",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#committee-membership-62f3b3423921cb4b42aaef70d040465d9a38e4d73fdcf8314746caeb50788a61",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/S%C3%A9amus-McGrath.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#committee-membership-62f3b3423921cb4b42aaef70d040465d9a38e4d73fdcf8314746caeb50788a61#member-date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2025-05-07T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "K",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/Aidan-Farrelly.D.2024-11-29",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Aidan-Farrelly.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2024-11-29T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "R",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/James-Lawless.D.2016-10-03",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Lawless.D.2016-10-03",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Lawless.D.2016-10-03/house/dail/34",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/James-Lawless.D.2016-10-03",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Lawless.D.2016-10-03/house/dail/34#date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2024-11-29T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "R",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2024-11-29T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "R",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/Naoise-%C3%93-Cear%C3%BAil.D.2024-11-29",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Naoise-Ó-Cearúil.D.2024-11-29",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Naoise-Ó-Cearúil.D.2024-11-29/house/dail/34",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/Naoise-%C3%93-Cear%C3%BAil.D.2024-11-29",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Naoise-Ó-Cearúil.D.2024-11-29/house/dail/34#date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2024-11-29T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "R",
+        "term_constraint_exact": true
+      },
+      {
+        "active_at_as_of": true,
+        "date_range_exact": true,
+        "graph": "https://data.oireachtas.ie/graph/member/R%C3%A9ada-Cronin.D.2020-02-08",
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Réada-Cronin.D.2020-02-08",
+        "member_type_code_owner_exact": true,
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Réada-Cronin.D.2020-02-08/house/dail/34",
+        "membership_owner_exact": true,
+        "membership_type_explicit": true,
+        "qualifies_at_as_of": true,
+        "range": {
+          "active": true,
+          "end": null,
+          "graph": "https://data.oireachtas.ie/graph/member/R%C3%A9ada-Cronin.D.2020-02-08",
+          "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Réada-Cronin.D.2020-02-08/house/dail/34#date-range",
+          "start": {
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "type": "literal",
+            "value": "2024-11-29T00:00:00"
+          }
+        },
+        "reverse_member_exact": true,
+        "role": "R",
+        "term_constraint_exact": true
+      }
+    ],
+    "inactive_K_candidates": [
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25",
+      "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03"
+    ],
+    "kernel_candidate_count": {
+      "K": 15,
+      "R": 5
+    },
+    "raw_candidate_count": {
+      "K": 15,
+      "R": 5
+    },
+    "raw_kernel_candidate_identity_sets_equal": true,
+    "raw_qualified_count": {
+      "K": 13,
+      "R": 5
+    }
+  },
+  "execution_evidence": {
+    "K_validated_current_selected": [
+      15,
+      13
+    ],
+    "R_validated_current_selected": [
+      5,
+      5
+    ],
+    "all_pages_complete": true,
+    "joined_witness_tuples": 2,
+    "select_row_counts": [
+      65,
+      6,
+      15,
+      1,
+      5
+    ],
+    "status": "answer"
+  },
+  "expected_witness_fact_sets": {
+    "all_complete_sets_exact_against_raw_capture": true,
+    "checks": [
+      {
+        "complete_expected_fact_quad_count": 18,
+        "kernel_projection_exact": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#committee-membership-7a2d9746a8c5bcd6f35632c508fe12088e51dce5270a016d79a9e5e5a7e9ad86",
+        "raw_fact_quad_count": 18,
+        "required_member_membership_range_projection_present_in_expected_set": true,
+        "required_projection_fact_quad_count": 20,
+        "role": "K"
+      },
+      {
+        "complete_expected_fact_quad_count": 21,
+        "kernel_projection_exact": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34",
+        "raw_fact_quad_count": 21,
+        "required_member_membership_range_projection_present_in_expected_set": true,
+        "required_projection_fact_quad_count": 17,
+        "role": "R"
+      },
+      {
+        "complete_expected_fact_quad_count": 19,
+        "kernel_projection_exact": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e",
+        "raw_fact_quad_count": 19,
+        "required_member_membership_range_projection_present_in_expected_set": true,
+        "required_projection_fact_quad_count": 20,
+        "role": "K"
+      },
+      {
+        "complete_expected_fact_quad_count": 22,
+        "kernel_projection_exact": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34",
+        "raw_fact_quad_count": 22,
+        "required_member_membership_range_projection_present_in_expected_set": true,
+        "required_projection_fact_quad_count": 17,
+        "role": "R"
+      }
+    ],
+    "required_assertion_projection_exact_in_kernel": true,
+    "scope_note": "Oracle expected sets preserve all outgoing Member and membership assertions; kernel facts are the required witness projection only. Full source sets were checked against raw capture; the required assertion projection was checked against both expected sets and kernel facts.",
+    "set_count": 4
+  },
+  "independent_selection": {
+    "all_sections_complete": true,
+    "candidate_discovery_complete": true,
+    "constituency_term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+    "deduplicated_period_fact_sets_used": true,
+    "matching_public_accounts_candidates": [
+      "https://data.oireachtas.ie/ie/oireachtas/committee/dail/32/committee_of_public_accounts",
+      "https://data.oireachtas.ie/ie/oireachtas/committee/dail/33/committee_of_public_accounts",
+      "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts"
+    ],
+    "positive_evidence_gate_satisfied": true,
+    "target_evidence_complete": true,
+    "typed_dail_term_count": 34,
+    "uncertain_typed_dail_terms": [],
+    "unique_current_committee_incarnation": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+    "unique_current_dail_term": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34"
+  },
+  "inputs": {
+    "baseline_oracle": {
+      "path": "docs/reports/query-service/composition-live-kr-20261112/oracle/oracle.json",
+      "sha256": "1003368b9436377bcaac76de5afdd6b1be970cc539c9fe046d64a3e938e3f067"
+    },
+    "first_execution": {
+      "path": "docs/reports/query-service/composition-live-kr-20261112/first-execution.json",
+      "sha256": "3d2ef191de6d51b5174b475c98ef75c5d5d67942662d41f0578677913445bf5c"
+    },
+    "postrun_stability": {
+      "path": "docs/reports/query-service/composition-live-kr-20261112/oracle/stability/oracle-20261112T210621141770Z.json",
+      "sha256": "85166fb08269303771381cfab6314a1edfe66b8931441c4e8dd2211efc572ab2"
+    }
+  },
+  "intervals": {
+    "all_exact_against_raw_range_facts": true,
+    "count": 55,
+    "current_count": 53,
+    "inactive_count": 2,
+    "records": [
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/Aidan-Farrelly.D.2024-11-29",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#committee-membership-7a2d9746a8c5bcd6f35632c508fe12088e51dce5270a016d79a9e5e5a7e9ad86#member-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#committee-membership-7a2d9746a8c5bcd6f35632c508fe12088e51dce5270a016d79a9e5e5a7e9ad86",
+        "role": "membership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2025-05-07T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/committees",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+        "role": "owner",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-12-18T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/Albert-Dolan.D.2024-11-29",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#committee-membership-83ee419568331dfb794f79cd3762741bdba677951e3bbc287cdf5ef79807a3bf#member-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#committee-membership-83ee419568331dfb794f79cd3762741bdba677951e3bbc287cdf5ef79807a3bf",
+        "role": "membership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2025-05-07T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/committees",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+        "role": "owner",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-12-18T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": false,
+        "end": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2026-05-28T00:00:00"
+        },
+        "graph": "https://data.oireachtas.ie/graph/member/Catherine-Ardagh.S.2016-04-25",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#committee-membership-8c75f36d80a9023281acdaf09e0d2166d565e34efb859265e5e4a15de96dd334#member-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#committee-membership-8c75f36d80a9023281acdaf09e0d2166d565e34efb859265e5e4a15de96dd334",
+        "role": "membership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2025-05-07T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/committees",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+        "role": "owner",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-12-18T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": false,
+        "end": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2025-10-25T00:00:00"
+        },
+        "graph": "https://data.oireachtas.ie/graph/member/Catherine-Connolly.D.2016-10-03",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87#member-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87",
+        "role": "membership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2025-05-07T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/committees",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+        "role": "owner",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-12-18T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/Cathy-Bennett.D.2024-11-29",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572#member-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572",
+        "role": "membership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2025-05-07T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/committees",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+        "role": "owner",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-12-18T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/Eoghan-Kenny.D.2024-11-29",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee#member-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee",
+        "role": "membership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2025-05-07T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/committees",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+        "role": "owner",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-12-18T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/Grace-Boland.D.2024-11-29",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#committee-membership-332a9b9bf82c1b09bc876733deaf3dde2d15c9f963931ccbf65883b989d719a9#member-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#committee-membership-332a9b9bf82c1b09bc876733deaf3dde2d15c9f963931ccbf65883b989d719a9",
+        "role": "membership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2025-05-07T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/committees",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+        "role": "owner",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-12-18T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/James-Geoghegan.D.2024-11-29",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#committee-membership-09fc8af09070919a9c78be0f4acc258c5c92050b5777c4545f63148581256c98#member-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#committee-membership-09fc8af09070919a9c78be0f4acc258c5c92050b5777c4545f63148581256c98",
+        "role": "membership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2025-05-07T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/committees",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+        "role": "owner",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-12-18T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/Joanna-Byrne.D.2024-11-29",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9#member-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9",
+        "role": "membership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2025-05-07T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/committees",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+        "role": "owner",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-12-18T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e#member-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e",
+        "role": "membership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2025-05-07T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/committees",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+        "role": "owner",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-12-18T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/John-Brady.D.2016-10-03",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#committee-membership-897ebbb535915271ce2ca1d3a68b87494914716085e8dc8d8807266df8b13349#member-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#committee-membership-897ebbb535915271ce2ca1d3a68b87494914716085e8dc8d8807266df8b13349",
+        "role": "membership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2025-05-07T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/committees",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+        "role": "owner",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-12-18T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/Martin-Daly.D.2024-11-29",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#committee-membership-f3c35f58f00541e0680b6bf5fd1c2a24a49941c160fc29f6c07ea2d31a56ac0c#member-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#committee-membership-f3c35f58f00541e0680b6bf5fd1c2a24a49941c160fc29f6c07ea2d31a56ac0c",
+        "role": "membership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2026-07-15T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/committees",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+        "role": "owner",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-12-18T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/Paul-McAuliffe.D.2020-02-08",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#committee-membership-adf2def11234f4f15a787e2fd09c4f780aaa5501d6889d6b34951964c345bbdf#member-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#committee-membership-adf2def11234f4f15a787e2fd09c4f780aaa5501d6889d6b34951964c345bbdf",
+        "role": "membership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2025-05-07T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/committees",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+        "role": "owner",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-12-18T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/Paul-Murphy.D.2014-10-10",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10/house/dail/34#committee-membership-89703cbd028ee24c36338a53eafa8bb0f6bec308fe31cf8227fc03a39aa3f8a5#member-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10/house/dail/34#committee-membership-89703cbd028ee24c36338a53eafa8bb0f6bec308fe31cf8227fc03a39aa3f8a5",
+        "role": "membership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2025-11-26T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/committees",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+        "role": "owner",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-12-18T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/S%C3%A9amus-McGrath.D.2024-11-29",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#committee-membership-62f3b3423921cb4b42aaef70d040465d9a38e4d73fdcf8314746caeb50788a61#member-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#committee-membership-62f3b3423921cb4b42aaef70d040465d9a38e4d73fdcf8314746caeb50788a61",
+        "role": "membership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2025-05-07T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/committees",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts#committee-date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+        "role": "owner",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-12-18T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/Aidan-Farrelly.D.2024-11-29",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34",
+        "role": "parliamentaryMembership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/James-Lawless.D.2016-10-03",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Lawless.D.2016-10-03",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Lawless.D.2016-10-03/house/dail/34#date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Lawless.D.2016-10-03/house/dail/34",
+        "role": "parliamentaryMembership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Lawless.D.2016-10-03",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/Joe-Neville.D.2024-11-29",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34",
+        "role": "parliamentaryMembership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/Naoise-%C3%93-Cear%C3%BAil.D.2024-11-29",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Naoise-Ó-Cearúil.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Naoise-Ó-Cearúil.D.2024-11-29/house/dail/34#date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Naoise-Ó-Cearúil.D.2024-11-29/house/dail/34",
+        "role": "parliamentaryMembership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Naoise-Ó-Cearúil.D.2024-11-29",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/member/R%C3%A9ada-Cronin.D.2020-02-08",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Réada-Cronin.D.2020-02-08",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/member/id/Réada-Cronin.D.2020-02-08/house/dail/34#date-range",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/member/id/Réada-Cronin.D.2020-02-08/house/dail/34",
+        "role": "parliamentaryMembership",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      },
+      {
+        "currentAtAsOf": true,
+        "end": null,
+        "graph": "https://data.oireachtas.ie/graph/houses",
+        "matches_raw_oracle": true,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Réada-Cronin.D.2020-02-08",
+        "range": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34#term-period",
+        "resource": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34",
+        "role": "term",
+        "start": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2024-11-29T00:00:00"
+        }
+      }
+    ]
+  },
+  "kernel_fact_evidence": {
+    "all_20_required_witness_projections_exact": true,
+    "all_kernel_fact_quads_present_in_scoped_pre_run_raw_results": true,
+    "kernel_fact_quad_occurrences": 387,
+    "per_record_fact_checks": [
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 20,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34#committee-membership-7a2d9746a8c5bcd6f35632c508fe12088e51dce5270a016d79a9e5e5a7e9ad86",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 20,
+        "role": "K"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 20,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Albert-Dolan.D.2024-11-29/house/dail/34#committee-membership-83ee419568331dfb794f79cd3762741bdba677951e3bbc287cdf5ef79807a3bf",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 20,
+        "role": "K"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 21,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Ardagh.S.2016-04-25/house/dail/34#committee-membership-8c75f36d80a9023281acdaf09e0d2166d565e34efb859265e5e4a15de96dd334",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 21,
+        "role": "K"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 21,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Catherine-Connolly.D.2016-10-03/house/dail/34#committee-membership-6d0db5a83a72a523323f4702c87ca90b77a5fd83de52bc8ce555d7a350a27c87",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 21,
+        "role": "K"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 20,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Cathy-Bennett.D.2024-11-29/house/dail/34#committee-membership-23a748f26e866b5774885cae7959df18dd79f44332f66921fc5f1e72c91fe572",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 20,
+        "role": "K"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 20,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Eoghan-Kenny.D.2024-11-29/house/dail/34#committee-membership-4e90992d1a1d43776921a4ccff8c19066e1a3705674291ec7cc2663bd3d9d2ee",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 20,
+        "role": "K"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 20,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Grace-Boland.D.2024-11-29/house/dail/34#committee-membership-332a9b9bf82c1b09bc876733deaf3dde2d15c9f963931ccbf65883b989d719a9",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 20,
+        "role": "K"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 20,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Geoghegan.D.2024-11-29/house/dail/34#committee-membership-09fc8af09070919a9c78be0f4acc258c5c92050b5777c4545f63148581256c98",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 20,
+        "role": "K"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 20,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joanna-Byrne.D.2024-11-29/house/dail/34#committee-membership-5f5eae6b81ca16f17e04520361115d1e30ce5d1b29ebfe413e08ed8dbde0b5f9",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 20,
+        "role": "K"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 20,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34#committee-membership-9870c9b8b2956a07259682c60f6134c2629a885a3fabaf577e5077f7f618b22e",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 20,
+        "role": "K"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 20,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/John-Brady.D.2016-10-03/house/dail/34#committee-membership-897ebbb535915271ce2ca1d3a68b87494914716085e8dc8d8807266df8b13349",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 20,
+        "role": "K"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 20,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Martin-Daly.D.2024-11-29/house/dail/34#committee-membership-f3c35f58f00541e0680b6bf5fd1c2a24a49941c160fc29f6c07ea2d31a56ac0c",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 20,
+        "role": "K"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 20,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-McAuliffe.D.2020-02-08/house/dail/34#committee-membership-adf2def11234f4f15a787e2fd09c4f780aaa5501d6889d6b34951964c345bbdf",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 20,
+        "role": "K"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 20,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Paul-Murphy.D.2014-10-10/house/dail/34#committee-membership-89703cbd028ee24c36338a53eafa8bb0f6bec308fe31cf8227fc03a39aa3f8a5",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 20,
+        "role": "K"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 20,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Séamus-McGrath.D.2024-11-29/house/dail/34#committee-membership-62f3b3423921cb4b42aaef70d040465d9a38e4d73fdcf8314746caeb50788a61",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 20,
+        "role": "K"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 17,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Aidan-Farrelly.D.2024-11-29/house/dail/34",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 17,
+        "role": "R"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 17,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Lawless.D.2016-10-03",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/James-Lawless.D.2016-10-03/house/dail/34",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 17,
+        "role": "R"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 17,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Joe-Neville.D.2024-11-29/house/dail/34",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 17,
+        "role": "R"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 17,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Naoise-Ó-Cearúil.D.2024-11-29",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Naoise-Ó-Cearúil.D.2024-11-29/house/dail/34",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 17,
+        "role": "R"
+      },
+      {
+        "intervals_exact": true,
+        "kernel_fact_count": 17,
+        "member": "https://data.oireachtas.ie/ie/oireachtas/member/id/Réada-Cronin.D.2020-02-08",
+        "membership": "https://data.oireachtas.ie/ie/oireachtas/member/id/Réada-Cronin.D.2020-02-08/house/dail/34",
+        "required_projection_exact": true,
+        "required_projection_fact_count": 17,
+        "role": "R"
+      }
+    ],
+    "raw_scoped_fact_quad_count": 889,
+    "unique_kernel_fact_quads": 178
+  },
+  "limitations": [
+    "The review certifies captured evidence only; it does not claim a complete roster or transactional snapshot.",
+    "The pre/post capture comparison establishes stability of the scoped typed-result multisets, not stability of uncaptured data."
+  ],
+  "review_method": "Independent read-only extraction from preserved raw typed SPARQL JSON bindings and preserved kernel execution facts; no scorer or kernel helper imports; no endpoint requests or kernel rerun.",
+  "schema": "nlq-live-kr-outcome-review/v1",
+  "scope": {
+    "answer_scope": "qualifying identities observed in captured RDF, not a certified complete roster",
+    "as_of": "2026-11-11",
+    "committee": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts",
+    "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Kildare-North"
+  },
+  "stability": {
+    "all_complete": true,
+    "all_typed_result_multisets_equal": true,
+    "section_count": 16,
+    "sections": [
+      {
+        "page_count": 1,
+        "queries_equal": true,
+        "rows": 47,
+        "section": "K_candidate_membership_facts",
+        "typed_result_multiset_equal": true
+      },
+      {
+        "page_count": 1,
+        "queries_equal": true,
+        "rows": 32,
+        "section": "K_membership_date_range_quads",
+        "typed_result_multiset_equal": true
+      },
+      {
+        "page_count": 3,
+        "queries_equal": true,
+        "rows": 292,
+        "section": "K_reverse_linked_member_facts",
+        "typed_result_multiset_equal": true
+      },
+      {
+        "page_count": 1,
+        "queries_equal": true,
+        "rows": 15,
+        "section": "K_reverse_member_links",
+        "typed_result_multiset_equal": true
+      },
+      {
+        "page_count": 1,
+        "queries_equal": true,
+        "rows": 30,
+        "section": "R_candidate_membership_facts",
+        "typed_result_multiset_equal": true
+      },
+      {
+        "page_count": 1,
+        "queries_equal": true,
+        "rows": 10,
+        "section": "R_membership_date_range_quads",
+        "typed_result_multiset_equal": true
+      },
+      {
+        "page_count": 1,
+        "queries_equal": true,
+        "rows": 96,
+        "section": "R_reverse_linked_member_facts",
+        "typed_result_multiset_equal": true
+      },
+      {
+        "page_count": 1,
+        "queries_equal": true,
+        "rows": 5,
+        "section": "R_reverse_member_links",
+        "typed_result_multiset_equal": true
+      },
+      {
+        "page_count": 3,
+        "queries_equal": true,
+        "rows": 272,
+        "section": "all_typed_DailTerm_facts",
+        "typed_result_multiset_equal": true
+      },
+      {
+        "page_count": 1,
+        "queries_equal": true,
+        "rows": 13,
+        "section": "exact_target_resource_quads",
+        "typed_result_multiset_equal": true
+      },
+      {
+        "page_count": 2,
+        "queries_equal": true,
+        "rows": 125,
+        "section": "linked_house_term_and_period_facts",
+        "typed_result_multiset_equal": true
+      },
+      {
+        "page_count": 1,
+        "queries_equal": true,
+        "rows": 8,
+        "section": "linked_house_term_temporal_range_facts",
+        "typed_result_multiset_equal": true
+      },
+      {
+        "page_count": 1,
+        "queries_equal": true,
+        "rows": 23,
+        "section": "matching_Public_Accounts_committee_candidate_discovery",
+        "typed_result_multiset_equal": true
+      },
+      {
+        "page_count": 1,
+        "queries_equal": true,
+        "rows": 23,
+        "section": "matching_Public_Accounts_committee_full_facts",
+        "typed_result_multiset_equal": true
+      },
+      {
+        "page_count": 1,
+        "queries_equal": true,
+        "rows": 8,
+        "section": "matching_Public_Accounts_committee_operational_range_quads",
+        "typed_result_multiset_equal": true
+      },
+      {
+        "page_count": 1,
+        "queries_equal": true,
+        "rows": 4,
+        "section": "owner_and_provenance_graph_presence",
+        "typed_result_multiset_equal": true
+      }
+    ]
+  },
+  "verdict": "pass"
+}

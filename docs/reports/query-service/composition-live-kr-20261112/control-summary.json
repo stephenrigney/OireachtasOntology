@@ -1,0 +1,109 @@
+[
+  {
+    "id": "duplicates-and-order",
+    "passed": true,
+    "status": "answer",
+    "requests": 5,
+    "rows": [
+      66,
+      7,
+      16,
+      2,
+      6
+    ],
+    "error": null,
+    "intermediate": {
+      "K": {
+        "validated": 15,
+        "currentSelected": 13
+      },
+      "R": {
+        "validated": 5,
+        "currentSelected": 5
+      },
+      "joinWitnessTuples": 2,
+      "bindingStages": [
+        13,
+        2
+      ]
+    }
+  },
+  {
+    "id": "missing-start",
+    "passed": true,
+    "status": "nonanswer",
+    "requests": 3,
+    "rows": [
+      65,
+      6,
+      15
+    ],
+    "error": "Truncated typed fact",
+    "intermediate": {}
+  },
+  {
+    "id": "incomplete",
+    "passed": true,
+    "status": "nonanswer",
+    "requests": 3,
+    "rows": [
+      65,
+      6,
+      15
+    ],
+    "error": "Incomplete required enumeration",
+    "intermediate": {}
+  },
+  {
+    "id": "raw-101",
+    "passed": true,
+    "status": "nonanswer",
+    "requests": 3,
+    "rows": [
+      65,
+      6,
+      101
+    ],
+    "error": "Raw response row budget exceeded before deduplication.",
+    "intermediate": {}
+  },
+  {
+    "id": "full-pages",
+    "passed": true,
+    "status": "nonanswer",
+    "requests": 8,
+    "rows": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "error": "Whole-plan request/timeout budget exceeded.",
+    "intermediate": {}
+  },
+  {
+    "id": "timeout",
+    "passed": true,
+    "status": "nonanswer",
+    "requests": 3,
+    "rows": [
+      65,
+      6
+    ],
+    "error": "Required SELECT failed: Synthetic required SELECT timeout",
+    "intermediate": {}
+  },
+  {
+    "id": "added-term-equality",
+    "passed": true,
+    "status": "semantic_rejection",
+    "requests": 0,
+    "rows": [],
+    "error": "Candidate changes the fixed original semantic requirements.",
+    "intermediate": {}
+  }
+]

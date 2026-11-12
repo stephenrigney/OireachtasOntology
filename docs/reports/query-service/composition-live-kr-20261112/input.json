@@ -1,0 +1,33 @@
+{
+  "id": "K+R",
+  "asOf": "2026-11-11",
+  "requiredSelections": [
+    {
+      "role": "K",
+      "relationship": "current committee membership",
+      "committee": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts"
+    },
+    {
+      "role": "R",
+      "relationship": "current Dáil constituency representation",
+      "constituency": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Kildare-North",
+      "house": "Dail"
+    }
+  ],
+  "exactSharedBindings": [
+    "Member"
+  ],
+  "currentAtRoles": [
+    "K.owner",
+    "K.term",
+    "K.membership",
+    "R.parliamentaryMembership",
+    "R.term"
+  ],
+  "answer": {
+    "shape": "list",
+    "unit": "distinct Member IRI",
+    "scope": "qualifying identities recorded in captured RDF; not a certified complete roster"
+  },
+  "retainAllWitnesses": true
+}

@@ -1,0 +1,88 @@
+[
+  {
+    "request": 1,
+    "kind": "terms",
+    "coverage": {
+      "anchor": "terms"
+    },
+    "querySHA256": "81c59d0878cf03558bb764e0632472a6da62ece3ccf3612c15c6d3f2646d84a5",
+    "queryCharacters": 1166,
+    "rawRows": 65,
+    "offset": 0,
+    "timeoutSeconds": 15,
+    "elapsedSeconds": 0.016757486038841307,
+    "completion": "HTTP 200 complete JSON; short page (<100)",
+    "startedAt": "2026-11-12T21:06:06.262178+00:00",
+    "finishedAt": "2026-11-12T21:06:06.277433+00:00"
+  },
+  {
+    "request": 2,
+    "kind": "owner",
+    "coverage": {
+      "anchor": "owner",
+      "role": "K",
+      "target": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts"
+    },
+    "querySHA256": "4dc26cac22eca0b16e357a29cd66bf4d9e78c712ca8db361516b1df0a3146c79",
+    "queryCharacters": 1586,
+    "rawRows": 6,
+    "offset": 0,
+    "timeoutSeconds": 15,
+    "elapsedSeconds": 0.056942004011943936,
+    "completion": "HTTP 200 complete JSON; short page (<100)",
+    "startedAt": "2026-11-12T21:06:06.327613+00:00",
+    "finishedAt": "2026-11-12T21:06:06.384357+00:00"
+  },
+  {
+    "request": 3,
+    "kind": "K",
+    "coverage": {
+      "anchor": "K",
+      "target": "https://data.oireachtas.ie/ie/oireachtas/committee/dail/34/committee_of_public_accounts"
+    },
+    "querySHA256": "90729b7cb5fd19e90024918b5c5baa7c4b18d3e74e82063b21fb9d71d9209405",
+    "queryCharacters": 1566,
+    "rawRows": 15,
+    "offset": 0,
+    "timeoutSeconds": 15,
+    "elapsedSeconds": 0.05856664595194161,
+    "completion": "HTTP 200 complete JSON; short page (<100)",
+    "startedAt": "2026-11-12T21:06:06.402530+00:00",
+    "finishedAt": "2026-11-12T21:06:06.460374+00:00"
+  },
+  {
+    "request": 4,
+    "kind": "owner",
+    "coverage": {
+      "anchor": "owner",
+      "role": "R",
+      "target": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Kildare-North"
+    },
+    "querySHA256": "954ddda16102b89a053dac99eafff38ad134295ef5ba3445ee67cc98b9c35269",
+    "queryCharacters": 1171,
+    "rawRows": 1,
+    "offset": 0,
+    "timeoutSeconds": 15,
+    "elapsedSeconds": 0.007278642035089433,
+    "completion": "HTTP 200 complete JSON; short page (<100)",
+    "startedAt": "2026-11-12T21:06:06.480287+00:00",
+    "finishedAt": "2026-11-12T21:06:06.487515+00:00"
+  },
+  {
+    "request": 5,
+    "kind": "R",
+    "coverage": {
+      "anchor": "R",
+      "target": "https://data.oireachtas.ie/ie/oireachtas/house/dail/34/constituency/Kildare-North"
+    },
+    "querySHA256": "c426e8a06921e77355c15abcbabd91873b7ab12e92c991eee237bcd3e7a3bc3a",
+    "queryCharacters": 1848,
+    "rawRows": 5,
+    "offset": 0,
+    "timeoutSeconds": 15,
+    "elapsedSeconds": 0.012883223011158407,
+    "completion": "HTTP 200 complete JSON; short page (<100)",
+    "startedAt": "2026-11-12T21:06:06.508103+00:00",
+    "finishedAt": "2026-11-12T21:06:06.520786+00:00"
+  }
+]

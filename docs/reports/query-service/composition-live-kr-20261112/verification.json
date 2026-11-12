@@ -1,0 +1,21 @@
+{
+  "ontology": {
+    "exit": 0,
+    "triples": 2586,
+    "reasoner": "HermiT"
+  },
+  "repositoryTests": {
+    "exit": 0,
+    "passed": 2589,
+    "skipped": 30,
+    "warnings": 351357,
+    "seconds": 708.2,
+    "command": ".venv/bin/python -m pytest tests --disable-warnings",
+    "note": "Collected before twelfth transport-only test was added; frozen 133 experimental tests included. Skips remain unverified."
+  },
+  "transportTests": {
+    "exit": 0,
+    "passed": 12,
+    "sourceSHA256": "0d0d22d6e8e5e3b8ae0616efaddbb862e6fa8f389e6965f020d290e815e216c7"
+  }
+}

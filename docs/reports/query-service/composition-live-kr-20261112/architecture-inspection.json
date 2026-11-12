@@ -1,0 +1,121 @@
+{
+  "kernelSHA256": "0560acf2b813fdf04f237e09522dcc02b60d99700bdc66cef410948609dd5d06",
+  "sourceMap": {
+    "iri": {
+      "start": 34,
+      "end": 36
+    },
+    "graph": {
+      "start": 39,
+      "end": 40
+    },
+    "term_json": {
+      "start": 43,
+      "end": 53
+    },
+    "canonical": {
+      "start": 56,
+      "end": 57
+    },
+    "Fact": {
+      "start": 61,
+      "end": 68
+    },
+    "Identity": {
+      "start": 72,
+      "end": 74
+    },
+    "Witness": {
+      "start": 78,
+      "end": 94
+    },
+    "SemanticError": {
+      "start": 97,
+      "end": 98
+    },
+    "Plan": {
+      "start": 116,
+      "end": 121
+    },
+    "parse_semantics": {
+      "start": 124,
+      "end": 173
+    },
+    "admit": {
+      "start": 176,
+      "end": 181
+    },
+    "Budget": {
+      "start": 185,
+      "end": 208
+    },
+    "Pattern": {
+      "start": 212,
+      "end": 226
+    },
+    "Read": {
+      "start": 229,
+      "end": 249
+    },
+    "Lookup": {
+      "start": 253,
+      "end": 270
+    },
+    "term_lookup": {
+      "start": 273,
+      "end": 279
+    },
+    "owner_lookup": {
+      "start": 282,
+      "end": 309
+    },
+    "relationship_lookup": {
+      "start": 312,
+      "end": 356
+    },
+    "Evidence": {
+      "start": 359,
+      "end": 451
+    },
+    "retrieve": {
+      "start": 454,
+      "end": 507
+    },
+    "resolve_terms": {
+      "start": 510,
+      "end": 531
+    },
+    "resolve_owner": {
+      "start": 534,
+      "end": 559
+    },
+    "primitive": {
+      "start": 562,
+      "end": 634
+    },
+    "bind": {
+      "start": 637,
+      "end": 663
+    },
+    "project": {
+      "start": 666,
+      "end": 677
+    },
+    "execute": {
+      "start": 680,
+      "end": 720
+    }
+  },
+  "inspection": {
+    "adapters": "SIGNATURES / owner_lookup / relationship_lookup / primitive: R, P, K role-local contracts",
+    "binding": "bind: generic Member equality and optional declared typed equalities",
+    "projection": "project: generic distinct Member list with complete witness tuples",
+    "execution": "execute: generic primitive-dependent resolution and ordering; K+R has no dedicated assembler or branch",
+    "productionRouting": "no production files modified; tool imports experimental execute only"
+  },
+  "newEvaluationSourceSHA256": {
+    "tools/nlq_composition_live.py": "e57b97d60cc053e52ba9c7a15c468f584244fcfd22b04a495d00abc9b11ce1f8",
+    "tools/nlq_composition_live_controls.py": "067490042d64f9fbbafc12d94f13f50253a8b661049b3b1645b7883a2dfa7909",
+    "tests/test_nlq_composition_live_transport.py": "0d0d22d6e8e5e3b8ae0616efaddbb862e6fa8f389e6965f020d290e815e216c7"
+  }
+}

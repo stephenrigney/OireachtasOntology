@@ -1,0 +1,118 @@
+{
+  "allSectionsStable": true,
+  "sections": [
+    {
+      "section": "owner_and_provenance_graph_presence",
+      "beforeRows": 4,
+      "afterRows": 4,
+      "typedResultMultisetExact": true,
+      "queryExact": true
+    },
+    {
+      "section": "exact_target_resource_quads",
+      "beforeRows": 13,
+      "afterRows": 13,
+      "typedResultMultisetExact": true,
+      "queryExact": true
+    },
+    {
+      "section": "all_typed_DailTerm_facts",
+      "beforeRows": 272,
+      "afterRows": 272,
+      "typedResultMultisetExact": true,
+      "queryExact": true
+    },
+    {
+      "section": "matching_Public_Accounts_committee_candidate_discovery",
+      "beforeRows": 23,
+      "afterRows": 23,
+      "typedResultMultisetExact": true,
+      "queryExact": true
+    },
+    {
+      "section": "K_candidate_membership_facts",
+      "beforeRows": 47,
+      "afterRows": 47,
+      "typedResultMultisetExact": true,
+      "queryExact": true
+    },
+    {
+      "section": "K_reverse_member_links",
+      "beforeRows": 15,
+      "afterRows": 15,
+      "typedResultMultisetExact": true,
+      "queryExact": true
+    },
+    {
+      "section": "K_reverse_linked_member_facts",
+      "beforeRows": 292,
+      "afterRows": 292,
+      "typedResultMultisetExact": true,
+      "queryExact": true
+    },
+    {
+      "section": "K_membership_date_range_quads",
+      "beforeRows": 32,
+      "afterRows": 32,
+      "typedResultMultisetExact": true,
+      "queryExact": true
+    },
+    {
+      "section": "R_candidate_membership_facts",
+      "beforeRows": 30,
+      "afterRows": 30,
+      "typedResultMultisetExact": true,
+      "queryExact": true
+    },
+    {
+      "section": "R_reverse_member_links",
+      "beforeRows": 5,
+      "afterRows": 5,
+      "typedResultMultisetExact": true,
+      "queryExact": true
+    },
+    {
+      "section": "R_reverse_linked_member_facts",
+      "beforeRows": 96,
+      "afterRows": 96,
+      "typedResultMultisetExact": true,
+      "queryExact": true
+    },
+    {
+      "section": "R_membership_date_range_quads",
+      "beforeRows": 10,
+      "afterRows": 10,
+      "typedResultMultisetExact": true,
+      "queryExact": true
+    },
+    {
+      "section": "matching_Public_Accounts_committee_full_facts",
+      "beforeRows": 23,
+      "afterRows": 23,
+      "typedResultMultisetExact": true,
+      "queryExact": true
+    },
+    {
+      "section": "matching_Public_Accounts_committee_operational_range_quads",
+      "beforeRows": 8,
+      "afterRows": 8,
+      "typedResultMultisetExact": true,
+      "queryExact": true
+    },
+    {
+      "section": "linked_house_term_and_period_facts",
+      "beforeRows": 125,
+      "afterRows": 125,
+      "typedResultMultisetExact": true,
+      "queryExact": true
+    },
+    {
+      "section": "linked_house_term_temporal_range_facts",
+      "beforeRows": 8,
+      "afterRows": 8,
+      "typedResultMultisetExact": true,
+      "queryExact": true
+    }
+  ],
+  "snapshotClaim": false
+}

@@ -1,0 +1,6 @@
+tests/test_semantic_enrichment_poc.py ........                           [ 99%]
+tests/test_serialization.py ..                                           [ 99%]
+tests/test_shared_entity_lineage.py .....                                [ 99%]
+tests/test_source_contract.py ...................                        [100%]
+
+======== 2589 passed, 30 skipped, 351357 warnings in 708.20s (0:11:48) =========
