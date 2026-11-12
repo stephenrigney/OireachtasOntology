@@ -12,6 +12,7 @@ override those sources.
 - [Practical ontology guide](docs/guides/ontology.md)
 - [OWL source-module index](ontology/README.md)
 - [Mapping notes](documentation/mapping_notes.md) and [mapping CSVs](mappings/)
+- [Parliamentary Research Assistant: launch and verification](docs/development/parliamentary-research-assistant.md)
 
 The [documentation index](docs/README.md) separates current guidance and
 contracts from archived reports. ETL publication requires validated RDF; do not

@@ -25,7 +25,7 @@ def select_pages(query, *, fuseki, supported_predicates):
         rows.extend(page.rows)
         offsets.append(offset)
         if len(page.rows) < MAX_RESULT_ROWS:
-            return QueryResult("select", columns, tuple(rows), format_debug_payload({
+            return QueryResult("select", columns, tuple(rows), raw_json=format_debug_payload({
                 "pagination": {"pageSize": MAX_RESULT_ROWS, "offsets": offsets},
                 "columns": columns, "rows": rows,
             }))

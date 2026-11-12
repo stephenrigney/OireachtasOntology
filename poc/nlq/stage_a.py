@@ -744,7 +744,7 @@ def execute_stage_a(request: StageARequest, *, as_of: date, fuseki, supported_pr
             return PlanOutcome(
                 "success", plan=plan,
                 sparql=_dail_temporal_selection_query(supported_predicates=supported_predicates),
-                result=QueryResult("select", ("Dáil term", "House start", "House end", "Term identity"), display_rows, raw.raw_json),
+                result=QueryResult("select", ("Dáil term", "House start", "House end", "Term identity"), display_rows, raw_json=raw.raw_json),
                 diagnostic=(f"Selected exact DailTerm identities whose House-owned date intervals overlap {scope_text}. "
                             "A term-date match does not establish that a parliamentary sitting occurred."),
                 request_family="house_terms",

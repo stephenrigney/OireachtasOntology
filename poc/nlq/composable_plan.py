@@ -74,6 +74,7 @@ class PlanOutcome:
     debug_output: str | None = None
     debug_source: str | None = None
     clarification: dict[str, Any] | None = None
+    accepted_evidence: dict[str, Any] | None = None
 
     @property
     def interaction(self) -> str:
@@ -5219,6 +5220,7 @@ def _temporal_member_party_result(
             "missing_affiliation": False, "membership_ranges": set(), "party_ranges": set(),
             "anchor_ranges": set(), "holding_ranges": set(),
             "scopes": set(),
+            "terms": set(),
         })
         name = row[index["memberName"]].removesuffix("@en").strip()
         if name not in {"—", ""}:
@@ -5247,6 +5249,7 @@ def _temporal_member_party_result(
             row[index["partyRange"]], row[index["partyStart"]], row[index["partyEnd"]],
         ))
         term_iri = _require_local_iri(row[index["term"]], term_type)
+        entry["terms"].add(term_iri)
         selected_term_iri = plan["referents"]["term"].get("iri")
         if selected_term_iri is not None and term_iri != selected_term_iri:
             return PlanOutcome("validation_failure", plan=plan, sparql=answer_query,
@@ -5380,12 +5383,31 @@ def _temporal_member_party_result(
                                        request_family="member_relationship_composition")
                 record["evidence"].add(evidence)
             else:
-                record = evidence_by_member.setdefault(member_iri, {"name": member_name, "evidence": set()})
+                record = evidence_by_member.setdefault(member_iri, {"name": member_name, "evidence": set(), "witnesses": []})
                 if record["name"] != member_name:
                     return PlanOutcome("source_data_unavailable", plan=plan, sparql=answer_query,
                                        diagnostic="A local Member identity has conflicting display names.",
                                        request_family="member_relationship_composition")
                 record["evidence"].add(f"{identity_label}; {evidence}")
+                # Retain only witnesses accepted by the evaluator above. This
+                # additive boundary is deliberately limited to the MVP shape;
+                # raw candidates and rendered prose are not accepted evidence.
+                if party_only and current_term and membership_type == "DailMembership":
+                    def interval_evidence(resource, values, interval):
+                        range_iri, source_start, source_end = next(iter(values))
+                        return {"resourceIri": resource, "rangeIri": range_iri,
+                                "start": interval[0].isoformat(),
+                                "end": interval[1].isoformat() if interval[1] else None,
+                                "sourceStart": source_start, "sourceEnd": source_end,
+                                "ownerGraph": None}
+                    record["witnesses"].append({
+                        "termIri": next(iter(entry["terms"])),
+                        "partyIri": party_iri, "affiliationIri": identity,
+                        "membership": interval_evidence(_membership_iri, owned_ranges[_membership_iri], membership_interval),
+                        "episode": interval_evidence(episode_iri, owned_ranges[episode_iri], party_interval),
+                        "overlap": {"start": overlap[0].isoformat(),
+                                    "end": overlap[1].isoformat() if overlap[1] else None},
+                    })
 
     is_count = plan["answer"]["kind"] == "count"
     if party_answer and evidence_by_identity:
@@ -5441,6 +5463,10 @@ def _temporal_member_party_result(
                        if current_term else "source intervals; local historical source completeness is not certified.")
                     + count_note),
         request_family="member_relationship_composition",
+        accepted_evidence=({"members": [
+            {"memberIri": iri, "displayName": value["name"], "witnesses": value["witnesses"]}
+            for iri, value in sorted(evidence_by_member.items())
+        ]} if party_only and current_term and membership_type == "DailMembership" and not party_answer else None),
     )
 
 
@@ -7092,6 +7118,7 @@ def execute_question(
     supported_predicates,
     semantic_plan_generator_factory=None,
     continuation=None,
+    _current_dail_operation=None,
 ) -> PlanOutcome:
     """Shared execution/error boundary, including a grounded candidate choice."""
     from .errors import QueryExecutionFailure, QueryLimitError
@@ -7111,7 +7138,8 @@ def execute_question(
                                    supported_predicates=supported_predicates, selected_member_iri=selected)
         return _execute_question(question, as_of=as_of, fuseki=ReadOnlyExecution(),
                                  supported_predicates=supported_predicates,
-                                 semantic_plan_generator_factory=semantic_plan_generator_factory)
+                                 semantic_plan_generator_factory=semantic_plan_generator_factory,
+                                 current_dail_operation=_current_dail_operation)
     except QueryExecutionFailure as error:
         cause = error.__cause__
         return PlanOutcome("execution_failure", diagnostic=f"The local read-only query failed: {error}",
@@ -7219,6 +7247,7 @@ def _execute_current_office_point_request(
 def _execute_question(
     question: str, *, as_of: date, fuseki, supported_predicates,
     semantic_plan_generator_factory=None,
+    current_dail_operation=None,
 ) -> PlanOutcome:
     """Plan, resolve, validate, compile and execute bounded composable slices."""
     from .stage_a import execute_stage_a, parse_stage_a_question
@@ -7243,6 +7272,15 @@ def _execute_question(
     preflight = _composable_interpretation_preflight(question, as_of)
     if preflight is not None:
         return preflight
+
+    if current_dail_operation is not None:
+        # Explicit closed dispatch after the SAME public preflight/error
+        # boundary, before NL routing can select a different family.
+        from .research_adapter import dispatch_current_dail
+        return dispatch_current_dail(
+            question, current_dail_operation, as_of=as_of, fuseki=fuseki,
+            supported_predicates=supported_predicates,
+        )
 
     current_office_outcome = _execute_current_office_point_request(
         question, as_of=as_of, fuseki=fuseki,
