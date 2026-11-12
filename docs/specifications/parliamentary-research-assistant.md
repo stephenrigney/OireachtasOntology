@@ -1,5 +1,5 @@
 # Parliamentary Research Assistant
-## Product, UI and Architecture Specification — v0.4
+## Product, UI and Architecture Specification — v0.5
 
 **Project:** OireachtasOntology  
 **Date:** 12 November 2026  
@@ -7,7 +7,9 @@
 **Branch:** `parliamentary-research-assistant`  
 **Companion contracts:** [Editorial and plain-language standard](parliamentary-research-assistant-editorial.md) · [Research acceptance scenarios](parliamentary-research-assistant-acceptance.md)
 
-> **v0.4 admission decision (12 November 2026):** The corrective admission investigation exposed that existing compiler guards can execute valid but incomplete LLM-proposed queries. We now distinguish **retrieving supporting evidence** from **satisfying an entire research requirement**. Preserve the original request and its unanswered conditions; admit narrower, relevant searches as clearly scoped research steps, but never promote them to answers or report conclusions without sufficient independently checked evidence. This decision does **not** authorise the corrective application implementation.
+> **v0.5 research authority decision (12 November 2026):** The assistant produces **evidence-grounded research drafts for human review**, not independently certified exhaustive answers to arbitrary ordinary-language questions. The LLM leads research and explanatory writing; the compiler validates factual operations; approved deterministic calculations derive bounded results. Substantive assertions are classified by their distance from evidence, with provisional qualitative confidence for interpretations. Model-authored prose and the completeness of the overall investigation remain reviewable, not automatically certified. The guarded compiler and factual evidence boundaries are not relaxed. **Implementation remains subject to a separate bounded authorisation.**
+
+> **Earlier v0.4 decision retained:** Distinguish admissible supporting retrieval from satisfying the full original research question. A correctly scoped supporting search must never be represented as establishing a stronger relationship, filter or outcome that its evidence does not show.
 
 > **Previous product finding:** Phase 1 demonstrated guarded compiler integration and progressive UI mechanics, but user assessment found its deterministic word-list input and fixed party-count report unusable as research assistance. These remain rejected product patterns.
 
@@ -18,9 +20,9 @@
 The Parliamentary Research Assistant is an **LLM-led, evidence-constrained research collaborator**. It works with a user to understand a useful parliamentary research question, identify subsidiary questions, obtain supported evidence, write a comprehensible report and refine that report through conversation.
 
 - **LLM:** research dialogue, proposed questions, planning, tool selection, explanations and report authorship.
-- **Coordinator:** requirement tracking, validated execution, approval limits, dependency management and evidence-grounded revision.
+- **Coordinator:** requirement tracking, validated execution, approval limits, dependency management, assertion/evidence provenance and selective report revision; it does **not** purport to independently certify the completeness of arbitrary-language interpretation.
 - **Existing compiler:** authoritative supported queries, identity resolution, temporal semantics, safe execution and factual evidence.
-- **User:** authority over research aims and decisions that materially change meaning or scope.
+- **User:** authority over research aims and decisions that materially change meaning or scope; reviews the research draft and determines whether it adequately answers the brief.
 
 It must neither generate unrestricted authoritative SPARQL nor reduce the LLM to extracting names for predetermined reports.
 
@@ -29,6 +31,8 @@ It must neither generate unrestricted authoritative SPARQL nor reduce the LLM to
 Users should be able to ask substantive parliamentary research questions in ordinary language; discuss scope; view an understandable plan before execution; receive validated findings automatically; read reports with narrative substance; inspect evidence; and ask follow-ups that change or improve the same report.
 
 Partial research can be useful, provided that unanswered questions and evidence limitations are explained. Merely refusing a multi-part brief when independent portions are answerable is not sufficient research assistance.
+
+**Product status:** A generated report is a **draft for researcher review**. Validated findings in that draft may be relied on at their stated scope, but the application must not claim that every requested question has been recognised, fully answered or independently checked as prose.
 
 ### 1.2 Research-first domain selection
 
@@ -68,17 +72,30 @@ The ordinary-language interface must not depend on a fixed list of permissible b
 
 ### 2.6 Supporting retrieval is not an answer
 
-There are **three separate decisions**:
+There are **three distinct activities**:
 
 1. **Query admissibility:** A proposed supporting question has an explicit, accurate, bounded meaning of its own; a verified typed operation implements that meaning, with full compiler validation. Its role in the plan is labelled as *supporting*, *direct* or *exploratory*. This does not certify the parent request.
-2. **Requirement satisfaction:** The original requirement and all its material conditions remain open until accepted evidence establishes each one, with compatible identities, relationships, dates and coverage. A query may return a correct subset, wider list or useful context without satisfying the parent requirement.
-3. **Report claim acceptance:** A claim may be presented as established only when accepted evidence (and any approved deterministic composition or reference source) supports the **actual claim**, not simply because it has a query citation. Unsupported conditions must be expressed as unresolved, not smuggled into fluent prose.
+2. **Research requirement assessment:** The LLM proposes what appears to be answered, partly addressed or outstanding. Keep original wording visible and make known unresolved conditions explicit. Do not certify that the model has identified **every** semantic condition in arbitrary language. The overall report's completeness is a matter for researcher review, not a hidden all-conditions gate that blocks ordinary supported questions.
+3. **Assertion classification and review:** Direct facts and approved deterministic derivations have defined trusted support. LLM explanations are clearly distinguished as provisional interpretations or hypotheses; their prose is **not** automatically certified merely by attaching a reference. Do not state an unsupported specific relationship or outcome as an established fact, even in fluent prose.
 
 For example, retrieving all Bills sponsored by a named Member can support an investigation into **housing Bills**, but it cannot determine which concern housing. A sponsorship query does not establish **opposition**. Constituency history does not establish parliamentary **roles** or constituencies **during ministerial service** without the required relationship and time evidence. If such conditions cannot be checked, retain them explicitly as unanswered.
 
 Relevant supporting retrieval can proceed automatically within approved scope; **no routine per-query confirmation** is required. A tool which has no defensible research relevance should not run merely because it is executable. No blanket plan approval or model-assigned “entailed” label waives unmet conditions. Ask for user input only for genuine material ambiguity, scope alteration or new evidence authority.
 
-The coordinator must avoid claiming universal natural-language equivalence verification. Instead, use the verified semantics of specific operations and evidence-dependent satisfaction rules for the bounded supported cases; fail closed on unsupported inferences or unresolved conditions.
+The coordinator must not claim universal natural-language equivalence or unrestricted prose verification. Use operation-specific evidence semantics for confirmed facts and calculations; make remaining research questions and model interpretations transparent. Failure to independently certify **full parent-intent binding** is not by itself a reason to block a useful report draft. It remains a reason **not to claim exhaustive completion**.
+
+### 2.7 Evidence and interpretation confidence
+
+Each substantive assertion is identified as one of four evidence classes:
+
+1. **Level 1 — Directly supported:** A specific fact is established by an accepted compiler result or approved reference, preserving source, identity, relationship, reporting period and limitations.
+2. **Level 2 — Calculated or derived:** A reproducible, approved deterministic operation derives the assertion from accepted facts with compatible scopes.
+3. **Level 3 — Evidence-based interpretation:** The LLM offers a reasoned explanation based on identified findings, beyond what the records explicitly establish. Its classification and qualitative confidence (**high, moderate, low**) are **provisional**; the user may challenge or revise them.
+4. **Level 4 — Hypothesis or unverified inference:** A clearly labelled possibility for further investigation, not an established finding. Show only in a distinct discussion/further-investigation area; do not assign a pseudo-precise likelihood or present unsupported speculation as substantive research.
+
+These describe **evidential basis and distance from evidence**, not probability of truth. The presence of a direct source does not certify its completeness or freshness. Separate source coverage, recency, contradictions and scope limitations from the assertion level. No numerical self-reported LLM confidence percentages are permitted in the initial implementation.
+
+The compiler/evidence layer, not the LLM, authorises Level 1; approved deterministic calculations authorise Level 2. The LLM proposes Levels 3–4 with explicit assumptions and evidence references; those assessments remain provisional and subject to human review. It cannot upgrade an unsupported claim to Level 1 or 2 by changing a label.
 
 # Part A — User Interface Specification
 
@@ -305,7 +322,9 @@ The selected section becomes the context of the next conversational request.
 
 The LLM proposes a report structure that suits the user's research purpose. Typical elements are a meaningful title, scope, answer-oriented summary where supported, thematic findings, tables/timelines where valuable, remaining questions and evidence references. A report does not have to follow one inflexible template.
 
-**Reports need narrative substance:** explain what was investigated, what the available records establish and what those findings mean **within the supported evidence**. A successful supporting search can be described as *what the records show*, but not as a full answer to an outstanding question. Separate confirmed findings from questions still needing evidence. Do not supply invented causes, political interpretations or institutional background. A list of Member totals and database rows, however accurate, is not an adequate research report.
+**Reports need narrative substance:** explain what was investigated, what the available records establish and what those findings may mean **within the limits of the evidence**. A successful supporting search can be described as *what the records show*, but not as a full answer to an outstanding question. Separate confirmed facts and deterministic derivations from provisional interpretations, hypotheses and unresolved questions. Do not invent causal explanations or institutional background; a labelled hypothesis is not permission to manufacture a factual history. A list of Member totals and database rows, however accurate, is not an adequate research report.
+
+The document as a whole remains a **research draft for human review**. Verified factual components are not a certificate that its LLM-authored prose is entirely correct or that the original brief has been exhaustively answered.
 
 ### 7.2 Section states
 
@@ -315,13 +334,13 @@ Each section has one of the following states:
 |---|---|
 | Pending | Heading and concise awaiting-evidence message |
 | Populating | Validated content available; additional work in progress |
-| Validated | Required findings accepted |
+| Validated | Specific factual evidence accepted for the section; not certification of the whole research brief or free-form prose |
 | Incomplete | Partial findings with explicit qualifications |
 | Blocked | Content cannot be completed, with reason |
 | Unsupported | Requested operation unavailable |
 | Needs revision | Existing content requires revalidation after a scope change |
 
-A section's state must be visible through text and appropriate iconography, not colour alone.
+A section's state must be visible through text and appropriate iconography, not colour alone. Overall report status should indicate **Draft — for review** even if every available tool step is complete. Section status and assertion evidence level are different concepts.
 
 ### 7.3 Progressive updates
 
@@ -333,6 +352,7 @@ Report updates must:
 - Avoid sudden layout shifts.
 - Clearly indicate when new validated findings are available.
 - Never present temporary generated prose as established factual content.
+- Keep claim identifiers, evidence classifications, source links and uncertainty visible across section edits; avoid silently upgrading provisional text to verified facts.
 
 Each section should have a stable identity independent of its displayed heading.
 
@@ -360,7 +380,7 @@ Factual scope changes invalidate only dependent findings and require fresh valid
 
 For the MVP, provide a straightforward way to copy or export the current report as Markdown.
 
-Export must preserve factual qualifications and evidence references where available.
+Export must preserve the **Draft — for review** status, factual qualifications, evidence references, material unanswered questions and any Level 3/4 interpretation or hypothesis labels. An exported copy must not imply automatic editorial or exhaustive-completeness certification.
 
 PDF, Word, collaborative editing and formal document publication are outside the initial scope.
 
@@ -410,7 +430,9 @@ Selecting an evidence reference opens the relevant details without navigating aw
 
 Where multiple claims rely on the same validated result, they may share an evidence reference.
 
-The interface must distinguish direct RDF evidence from an LLM's explanatory synthesis.
+The interface must distinguish direct RDF evidence, approved deterministic derivation, provisional LLM interpretation and hypothesis. Important findings should have a small, keyboard-accessible **evidence indicator** with a plain-text label and expandable evidence/reasoning details; do not clutter every sentence with coloured tags. Never rely on colour alone.
+
+The evidence inspector should show, for a selected assertion: its exact wording or structured fact, evidence class, confidence where applicable, linked records, derivation/reasoning, assumptions, conflicts, source limitations and review state. The user can challenge its classification or ask for a clearer explanation. Hypotheses belong in a distinct **Further questions / Possible explanations** section, not among confirmed findings. If there is insufficient evidence even to motivate a hypothesis, formulate a research question instead.
 
 ### 8.4 Research limitations
 
@@ -574,11 +596,17 @@ The LLM may propose and sequence tools, but execution must reuse existing compil
 
 ### 12.5 Evidence and claim store
 
-Keep accepted results, identities, temporal context, traces, coverage/freshness qualifications, tool/requirement IDs and claim dependencies outside the conversation transcript. Represent **supporting fact**, **requirement satisfaction** and **report claim** as distinct, linked records. Each accepted fact has its source operation's actual semantics; no parent condition is inherited merely because a fact is attached to that requirement. A query's success is not proof that arbitrary LLM prose about it is correct.
+Keep accepted results, identities, temporal context, traces, coverage/freshness qualifications, tool/requirement IDs and assertion dependencies outside the conversation transcript. Represent **supporting retrieval**, **validated factual assertion**, **provisional interpretation/hypothesis**, **research requirement assessment** and **user review state** as separate linked records. Each accepted fact retains its source operation's actual semantics; no parent condition is inherited merely because the fact contributes to that question.
+
+For every substantive assertion, retain at minimum: stable assertion ID; exact text or structured proposition; evidence class (1–4); source evidence IDs and scope; derivation or reasoning; assumptions and contrary/missing evidence; qualitative confidence **only for Level 3**; and review status (**provisional** or **reviewed**). Level 1 and 2 must reference accepted machine-verifiable operations/calculations; Levels 3 and 4 must be distinguishable as model-authored, non-certified prose. Keep source freshness/coverage as separate attributes, not rolled into a confidence badge. For Level 4, prefer explicit uncertainty and a research question over a numeric or qualitative confidence rating.
+
+Successful tool execution is not proof that an arbitrary sentence or the user's entire question is answered.
 
 ### 12.6 LLM report author
 
-Author a coherent narrative from a controlled evidence package and, where appropriate, approved institutional background sources. Before accepting a substantive factual claim, check its concrete entities, relationships, time scope and conditions against the actual evidence fact types and approved deterministic derivations. **A citation or LLM self-review alone is insufficient.** If such binding cannot be checked for a claim, withhold it as an established finding and express the gap in plain language. Do not invent a general semantic theorem prover or claim that free-form prose is automatically verified. Never treat model memory as a source for parliamentary history, legal procedure or contemporary facts.
+Author a coherent, useful **research draft** from controlled accepted facts and, where appropriate, approved institutional background sources. Level 1 and 2 assertions require the actual accepted facts or deterministic derivations, including their relationship, entity and temporal limits. A citation or LLM self-review **does not** certify that a broader prose statement is true. When the author cannot bind a stronger proposition, it must not be presented as established; the LLM may instead offer a clearly marked Level 3 interpretation with assumptions, a Level 4 hypothesis in the designated area, or an explicit unanswered question, according to the evidence.
+
+The LLM may write readable explanatory prose without a universal independent semantic verifier. This prose remains a draft subject to human assessment; the system must **not** falsely label it verified or certify full interpretation of arbitrary user language. Do not treat model memory as a source for parliamentary history, legal procedure or contemporary facts. Editorial review may correct, qualify or reject model prose without invalidating separately accepted compiler facts.
 
 Maintain the [editorial language contract](parliamentary-research-assistant-editorial.md) in the report and conversation. Technical provenance is available in the activity drawer, but not inserted into the primary narrative.
 
@@ -600,7 +628,9 @@ For unsupported substantive Debate analysis or historical composition, make the 
 
 ## 15. Evidence, Language and Safety Integrity
 
-Three distinct requirements must hold: **faithful retention of the user's complete research intent; compiler-validated evidence-gathering; and accurate requirement/claim satisfaction with comprehensible report prose**. Passing one does not establish the others. A valid narrower supporting query is permissible; a broader answer claim inferred from that query is not.
+Maintain three distinct responsibilities: **retain and transparently interpret the user's original research intent; validate executable factual evidence; and produce a clearly classified, reviewable report draft**. A valid narrower supporting query is permissible; a stronger established factual claim inferred from that query is not.
+
+Do **not** require an independent proof that every material condition in arbitrary natural language has been discovered or discharged before a useful draft can be shown. Do not automatically label a complete report “verified”. Instead make the research plan, known unanswered conditions, evidence and assertion classifications available for informed researcher review.
 
 Every substantive claim links to accepted evidence, an approved deterministic calculation or independently supported reference background. Date/term meaning, uncertainty and incomplete source coverage must survive synthesis, revisions and export. Raw IRIs, graph names, accepted witnesses, pagination and status strings belong in technical disclosures. The [editorial contract](parliamentary-research-assistant-editorial.md) and [acceptance contract](parliamentary-research-assistant-acceptance.md) are normative.
 
@@ -638,14 +668,16 @@ Candidate domains include Member/constituency history, Bill sponsorship/progress
 
 ## 18. Product and Technical Acceptance
 
-**A technically correct tool integration is necessary but insufficient.** Run the independent, realistic research scenarios in [the acceptance contract](parliamentary-research-assistant-acceptance.md), including ordinary paraphrases, partial/unsupported needs, a live multi-turn revision and editorial review.
+**A technically correct tool integration is necessary but insufficient.** Run the independent, realistic research scenarios in [the acceptance contract](parliamentary-research-assistant-acceptance.md), including ordinary paraphrases, partial/unsupported needs, a live multi-turn revision and human editorial/factual review.
+
+Acceptance concerns a **useful, evidence-grounded draft** with correct classification of claims, not a machine-certified exhaustive answer to an arbitrary question.
 
 The four independent assessment dimensions are:
 
 1. **Language understanding:** faithful interpretation, meaningful clarification, no silently omitted conditions.
 2. **Research usefulness:** intelligent subsidiary questions, helpful partial research, useful final document.
 3. **Editorial quality:** Oireachtas-style plain-English explanatory conversation/report, no unexplained compiler jargon.
-4. **Factual integrity:** every substantive claim grounded, appropriate uncertainty, no unsupported joins or invented facts.
+4. **Factual integrity:** established Level 1/2 claims have accepted support, Level 3/4 assertions are visibly provisional, appropriate uncertainty is maintained, and no unsupported join or claim is falsely presented as fact.
 
 All four dimensions must pass. A safe refusal does not count as a successful factual report. Independent human assessment is required in addition to automated tests.
 
@@ -653,12 +685,12 @@ Keep the v0.2 browser and accessibility requirements: plan visible before initia
 
 ## 19. Implementation Guidance and Human Gate
 
-- Before restarting application implementation, run a **bounded admission-versus-satisfaction design validation** using the retained [corrective admission report](../reports/parliamentary-research-assistant/corrective-admission-review.md) and its deliberately incomplete controls. Verify that relevant narrow supporting retrieval can proceed without requiring parent-query equivalence, but incomplete evidence never closes a parent requirement or authorises a stronger factual claim.
+- The completed [retrieval/satisfaction validation](../reports/parliamentary-research-assistant/retrieval-satisfaction-validation.md) remains evidence that ledger-only semantic completeness fails and independent original-intent holds over-block ordinary questions. **Do not repeat its impossible exhaustive-binding gate.** Retain its known omission examples as regression and human review cases for false factual promotion, while allowing useful draft research.
 - First identify and register a small set of existing verified tools for the chosen realistic research briefs; do not broaden compiler semantics simply to produce an attractive demo.
 - Preserve working query/evidence infrastructure when it supports v0.4, but do not build further features on the rejected word-list interpretation/product flow.
 - Implement one thin meaningful research journey end-to-end, then demonstrate a second domain or honest bounded limitation.
 - Verify with actual user language and model behaviour, not canned report text or a known exact string only.
-- Stop for human review if correct **supporting-query admission, requirement satisfaction, or factual claim grounding** cannot be demonstrated without changing approved authority boundaries. Do not demand impossible universal equivalence proof or silently shift routine semantic decisions onto the user.
+- Stop for human review if guarded query admission, source-to-Level-1/2 factual grounding, uncertainty labelling or the ability to distinguish provisional interpretations from established facts cannot be maintained. Do not stop merely because exhaustive automatic natural-language comprehension or unrestricted prose certification is unavailable.
 - Do not automatically treat v0.4 approval as authorisation to implement the next tranche. A separate, bounded OpenCode implementation prompt and human gate are required.
 
 ## 20. References and Decision Record
@@ -669,6 +701,7 @@ Keep the v0.2 browser and accessibility requirements: plan visible before initia
 - `docs/reports/parliamentary-research-assistant/phase-1-vertical-slice.md`
 - `docs/reports/parliamentary-research-assistant/corrective-admission-review.md`
 - `docs/reports/parliamentary-research-assistant/corrective-admission-live.json`
+- `docs/reports/parliamentary-research-assistant/retrieval-satisfaction-validation.md`
 - `docs/reports/query-service/nlq-stage-2-executable-capability-inventory.md`
 - `docs/reports/query-service/nlq-stage-5-evidence-based-architectural-evaluation.md`
 - `poc/specs/composable-query-plan-contract.json`
@@ -683,11 +716,16 @@ Keep the v0.2 browser and accessibility requirements: plan visible before initia
 4. Adopt Oireachtas-style editorial and plain-language contract with worked examples.
 5. Make ongoing conversation and revision of the same report essential.
 6. Accept the application only on separate language, research usefulness, editorial and factual-integrity dimensions, using independently prepared realistic briefs.
-7. Distinguish admissible, relevant **supporting retrieval** from independently established **requirement satisfaction** and **report claims**. Do not require every query to cover the parent request or mistake successful tool execution for an answer.
+7. Distinguish relevant supporting retrieval from factual assertion support. A successful query cannot automatically certify a complete answer.
+8. Produce research **drafts for human review** rather than claim independent exhaustive natural-language completeness.
+9. Use four assertion evidence classes: direct; deterministic derived; provisional interpretation; and clearly marked hypothesis.
+10. Use **high / moderate / low** confidence only for provisional evidence-based interpretations, with a transparent rubric and no uncalibrated percentages.
+11. Show unobtrusive, accessible evidence indicators beside substantive findings, with detail in the inspector and qualifications retained in exports.
+12. Restrict hypotheses to explicitly labelled discussion/further-investigation material; unsupported speculation must instead be framed as a question.
 
 ### Unchanged v0.2 UI foundations
 
 Two-pane desktop conversation/report; wider document pane; collapsible Research Activity drawer; visible plan before query dispatch; progressive findings; responsive mobile views; keyboard accessibility; evidence access; qualified Markdown export. These remain normative alongside the strengthened conversation and writing requirements.
 
-**Status:** v0.4 and its two companion contracts record approved design decisions. The next authorised activity is a **bounded admission/satisfaction validation**, not the corrective application implementation, compiler expansion, external-source access or deployment.
+**Status:** v0.5 and its two companion contracts record approved product and evidence-confidence decisions. The previous admission/satisfaction validation has concluded **NO-GO for automatic completeness certification**; that gate is retired. A bounded corrective research application tranche may be separately authorised. This document does **not** itself authorise implementation, compiler expansion, external-source access or deployment.
 
