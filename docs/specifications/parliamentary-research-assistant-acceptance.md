@@ -1,8 +1,8 @@
 # Parliamentary Research Assistant — Research Acceptance Contract
 
-**Version:** 1.2 · **Date:** 12 November 2026  
-**Status:** Approved design contract; implementation not authorised  
-**Parent:** [Parliamentary Research Assistant v0.5](parliamentary-research-assistant.md)  
+**Version:** 1.3 · **Date:** 12 November 2026  
+**Status:** Approved v0.6 UI-acceptance update; not yet implemented; human product review pending  
+**Parent:** [Parliamentary Research Assistant v0.6](parliamentary-research-assistant.md)  
 **Companion:** [Editorial standard](parliamentary-research-assistant-editorial.md)
 
 ## 1. Purpose
@@ -140,6 +140,35 @@ Evaluate high/moderate/low using the editorial rubric (directness, independent c
 - Conversation/section revisions retain source links and assertion identities, invalidate changed dependencies and **do not silently promote** Level 3/4 prose to Level 1/2.
 - Human review must be able to challenge or reclassify a provisional interpretation without changing accepted source facts.
 
+## 3B. Writing-first, single-column UI acceptance — v0.6
+
+This is a **presentation and interaction** acceptance contract. It supersedes tests expecting a permanent two-pane desktop workspace or mandatory conversation/report view toggles. It does not relax research, evidence or compiler acceptance.
+
+### Start without competing panels
+
+- At desktop, tablet, 390px and 320px widths, the first screen has **one dominant, centred multiline question composer** and a visible, clearly labelled **Start research** action. No blank report panel or “report coming soon” placeholder competes for attention.
+- The primary wording is **“What would you like to find out?”**. There are no abstract slogans, developer-facing “validated findings” phrases, unexplained pseudo-template controls, or broad source/freshness certification disclaimers on the opening view. The reader understands that a report will follow without being promised a fixed report template.
+- Show one or two clearly labelled real example questions. Selecting an example **fills, but does not submit**, the field; the researcher may modify it. Examples must not masquerade as exclusive capabilities. If an optional sample-report action exists, inspect the genuine reviewed example and its read-only status.
+- **Enter creates a newline** and **Ctrl/⌘+Enter submits**. Keyboard shortcut hint and the primary button are accessible; empty/whitespace-only input does not submit. On failure, the user's complete original text remains available. Confirm ordinary multi-paragraph research briefs are not accidentally sent by Enter.
+
+### Plan, progress and report priority
+
+- After submission, the same primary column presents the preserved question and **visible interpretation/research plan before the first factual query**. Record an observable plan-before-dispatch event in both injected and actual-model browser checks.
+- During execution, plan state and accepted findings update progressively without moving focus or forcing readers into a second pane. After research, the **report is the main readable document**; the plan remains accessible as a collapsed/expandable summary.
+- A compact **“Ask a follow-up or request a change”** composer is available below the report. Test a real follow-up and a section-context revision. The report and all accepted evidence remain intact while new work proceeds; the composer should be practically reachable even with a long report.
+- **Conversation history** is available on demand and preserves the exact earlier user/assistant exchanges and chronology. Expanding/collapsing it neither erases context nor unexpectedly shifts focus or loses report position. Do not substitute the transcript for the report or print the full report in chat messages.
+- Research Activity and row-level evidence remain contextual, keyboard-operable dialogs/drawers. Opening/closing restores focus; evidence sources, uncertainty, confidence and provenance remain inspectable; no permanent evidence column.
+
+### Layout, export and non-regression
+
+- Verify **one primary column** at 1440, 1024, 768, 390 and 320px, 200% text-size and 400% zoom-equivalent reflow. Avoid horizontal page overflow or clipped actions; wide tables scroll only within their own accessible container.
+- Check readable prose measure, headings, contrast, focus indication, reduced motion, accessible labels, live progress announcements and stable reading position. The new composer and disclosures must not regress keyboard or screen-reader navigation.
+- Export retains **Draft — for review**, the report body and evidence classifications/references, source limitations and unanswered questions. It does not export opening-screen slogans or hidden technical copy as report prose.
+- Test at least R1, an editorial refinement without new compiler reads, a same-session R3 addition retaining R1, an unsupported request and a failed query. Browser and focused tests must demonstrate that query safeguards, evidence authority and in-memory session behaviour are unchanged.
+- Conduct human usability review: can a first-time researcher explain **how to begin, what report they will get, how to ask a follow-up and how to inspect sources**, without having to understand the underlying research system?
+
+**A test that passes solely because the old two-pane interface continues working does not meet v0.6.** Automated browser checks support, but do not replace, the human usability decision.
+
 ## 4. Four independent acceptance dimensions
 
 | Dimension | Required outcome | Failing examples |
@@ -157,12 +186,12 @@ Evaluate high/moderate/low using the editorial rubric (directness, independent c
 2. **Run actual end-to-end research interactions:** real model interpretation, typed compiler calls, the evidence store and LLM report writing. Retain all proposals, clarifications, rejections, operations, results, report revisions and user-visible text.
 3. **Score separately:** ordinary-language interpretation fidelity (including known or independently discovered omissions), established factual assertion validity, classification correctness, interpretation-confidence calibration plausibility, handling of gaps, editorial readability and interaction interruptions. Record per-requirement outcomes; do not pool safe refusals into factual success.
 4. **Review independently:** a human evaluator assesses the report as a parliamentary reader, compares it with the untouched original brief, and checks material factual assertions, provisional interpretation and hypotheses against the linked evidence. The implementation agent must not judge its own prose or confidence labels as sufficient.
-5. **Verify the UI:** research plan visibly precedes initial execution; the report progresses; conversation can modify it; unobtrusive evidence indicators and qualifications remain accessible; keyboard, responsive, export and failure states comply with the v0.5 UI contract.
+5. **Verify the UI:** evaluate the entire writing-first journey in §3B. The original question dominates the start, the plan precedes execution, the report becomes primary after evidence arrives, the compact follow-up and on-demand history work, and evidence/keyboard/responsive/export/failure behaviours comply with the v0.6 contract. Distinguish genuine-model/Fuseki tests from injected browser controls.
 6. **Keep limitations visible:** accepted findings are relative to tested revisions, model settings and available data; no claim of broad generalisation from a small set of scenarios.
 
-## 6. Acceptance gate for the next corrective vertical slice
+## 6. Product and v0.6 UI human-acceptance gate
 
-This is a **proposed gate**, not implementation authorisation:
+The **v0.5 research vertical slice and its bounded editorial correction already exist** on this branch; their automated checks are technical evidence, not human product acceptance. The **v0.6 UI redesign is approved in specification only** and requires separately authorised implementation. Product acceptance must assess the whole research journey together with §3B, rather than treat the previous v0.5 two-pane browser checks as proof of the new layout:
 
 - At least one substantial research brief from **R1–R3** produces a readable evidence-backed report with genuinely LLM-led interpretation, research planning and prose (not a fixed report template).
 - Demonstrate **a second domain** through an independently checked research flow or a well-evidenced bounded limitation; a successful party-count comparison cannot be the only operational demonstration.
@@ -170,11 +199,11 @@ This is a **proposed gate**, not implementation authorisation:
 - At least one real multi-turn refinement modifies an existing plan/report; unrelated accepted findings survive.
 - The original brief, proposed interpretation and known unanswered requirements remain visible; independent evaluation records any missing material requirements. **No claim of exhaustive automatic intent certification** is made. Supporting evidence is not promoted to an unsupported established factual assertion.
 - The report is labelled **Draft — for review**. Level 1/2 facts are traceable and accurately scoped; Level 3 confidence is qualitative, provisional and reviewable; Level 4 hypotheses appear only in the designated area. Qualifications, evidence indicators and assertion class survive export and revision.
-- Independent reviewers accept editorial usefulness, accuracy of factual claims, appropriate treatment of provisional reasoning, and comprehensibility. All required existing/new compiler safeguards and end-to-end browser checks pass.
+- Independent reviewers accept editorial usefulness, accuracy of factual claims, appropriate treatment of provisional reasoning, **clear one-column orientation and effective report-first follow-up**, and comprehensibility. All required existing/new compiler safeguards and end-to-end browser checks pass.
 - Record remaining deficits rather than broadening compiler/ETL scope to chase every possible question. If genuine research dialogue, compiler-verified factual components or honest assertion classification cannot be achieved, stop for design review rather than declaring success from integration tests. **Do not stop only because a universal arbitrary-language or free-prose completeness proof is unavailable.**
 
 Passing the adapter test suite, R6 or a polished UI alone does **not** meet this gate.
 
 ## 7. Status and authority
 
-Phase 1's adapter, trace preservation and progressive rendering are technical assets, not proof the v0.5 research experience is delivered. The admission/satisfaction design-validation tranche concluded **NO-GO for automatic exhaustive completeness certification**; that gate is retired for the **evidence-grounded, human-reviewed research draft** product model. The above assertion-level tests and independent product/editorial review are now the acceptance criteria. This specification does not itself approve a corrective app build, compiler expansion, data reload, external-source access or public deployment.
+The v0.5 guarded research implementation and editorial correction are technically delivered, with human product acceptance pending. The admission/satisfaction design-validation tranche concluded **NO-GO for automatic exhaustive completeness certification**; that gate remains retired for the **evidence-grounded, human-reviewed research draft** product. v0.6 supersedes only the former two-pane UI and startup-language rules. The assertion-level, research-quality and §3B interaction checks together define the human acceptance gate. This specification does **not** authorise the v0.6 implementation, merging, compiler expansion, data reload, external-source access or public deployment.
