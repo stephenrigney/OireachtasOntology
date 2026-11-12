@@ -240,7 +240,7 @@ The assistant speaks as a helpful, impartial parliamentary research colleague. I
 
 Earlier messages must be **preserved and accessible on demand** through a labelled Conversation history disclosure, with speakers and chronology understandable. A new reply, material clarification or failure must be discoverable without reopening the full transcript every time; use concise contextual cues. Neither history expansion nor new progress messages should steal focus or displace the main report.
 
-All user-visible messages follow [the editorial standard](parliamentary-research-assistant-editorial.md). Responses that merely say "refinement requires Phase 2" are non-compliant with the intended v0.5 experience.
+All user-visible messages follow [the editorial standard](parliamentary-research-assistant-editorial.md). Responses that merely say "refinement requires Phase 2" are non-compliant with the intended research experience.
 
 ### 6.3 Research plan presentation
 
@@ -410,7 +410,7 @@ Users must not have to inspect debugging controls to discover that a substantive
 
 ### 9.1 Visual direction
 
-**Professional, restrained, document-oriented and readable in the editorial tradition of Oireachtas.ie.** Preserve the approved two-pane layout, activity drawer, responsive behaviour and accessible component states. The workspace is for research reading and dialogue, not a technical developer console. Plain language is an interface requirement, not optional post-processing.
+**Professional, restrained, document-oriented and readable in the editorial tradition of Oireachtas.ie.** The approved experience is a **single-column editorial canvas**, with a Drafter-like writing-first start and a report-first continuation. Preserve the activity/evidence drawer, responsive behaviour and accessible component states. Use the project's existing professional palette rather than importing Drafter's colour scheme or drafting workflow. The workspace is for research reading and dialogue, not a technical developer console. Plain language is an interface requirement, not optional post-processing.
 
 ### 9.2 Colour
 
@@ -467,40 +467,19 @@ Meaningful status must always be conveyed through text.
 
 ### 10.1 Large desktop — 1200px and above
 
-Show conversation and report simultaneously.
-
-Prefer approximately 32:68 horizontal proportions, subject to sensible minimum widths.
-
-Research activity is available as a drawer.
+Keep the **single main column**: a centred writing canvas before submission, then a wider but readable report canvas. No side-by-side conversation pane, permanent report placeholder, resizable divider or independent pane scrolling. The on-demand activity/evidence dialog may overlay the page without destroying its state.
 
 ### 10.2 Compact desktop and tablet — 768px to 1199px
 
-Retain the dual-pane layout where both panes remain usable.
-
-Allow a more balanced split and user adjustment.
-
-When available width becomes inadequate, switch to the single-pane interface rather than producing cramped text columns.
+Use the same single-column hierarchy with fluid margins, scalable document width and contextual controls. Do **not** resurrect a two-column layout at intermediate breakpoints. Avoid cramped or clipped tables; support table-contained scrolling.
 
 ### 10.3 Mobile — below 768px
 
-Provide a single primary content area with accessible navigation between:
-
-- Conversation.
-- Report.
-
-Research activity remains accessible through a separate drawer or view.
-
-The active conversation and report state must be preserved when switching views.
-
-The composer remains available in Conversation.
-
-The report remains a readable vertical document.
+Keep the question, plan, report and contextual follow-up in a **single vertically readable flow**. No mandatory Conversation/Report tabs or view switcher. Research activity and evidence use an accessible drawer or dialog. Previous exchanges remain available on demand. Keyboard and software-keyboard interaction must not obscure the composer or leave essential actions unreachable.
 
 ### 10.4 Narrow-screen requirements
 
-The interface must remain functional at 390px and 320px widths.
-
-Controls must not overlap, critical text must not be clipped and wide factual tables must remain inspectable.
+Check 390px and 320px widths, plus 200% text-size and 400% zoom-equivalent reflow. Preserve readable report paragraphs, a practical multiline question field, accessible example selection, non-overlapping actions, keyboard reachability of conversation history and source inspection, and horizontal scroll only **inside** wide factual tables as necessary. Never require horizontal page scrolling to read the main research narrative.
 
 ---
 
@@ -519,6 +498,9 @@ Requirements include:
 - Accessible tables with proper headings.
 - Status changes announced without overwhelming assistive-technology users.
 - No forced focus changes when progressive report updates arrive.
+- Clearly labelled initial and follow-up composers, with correct multiline behaviour (Enter newline, Ctrl/⌘+Enter submit) and accessible shortcut hints; initial example selection does not trigger submission.
+- Main-column keyboard focus progression through question → plan → report → follow-up and, on demand, conversation history and evidence.
+- Collapsible history and plan preserve accessible names, expanded state, chronological order and focus on return to the report.
 - Reduced-motion support.
 - Readable content at 200% text zoom and 400% browser zoom.
 
@@ -532,7 +514,7 @@ Automatic research activity must not prevent the user from reading or operating 
 
 ### 12.1 Conversation and interface
 
-Maintain the visible research plan, ongoing dialogue, stable living report, decisions and optional detailed activity/evidence inspector. Conversation should survive multiple authorised research and editorial turns within one run.
+Maintain the visible research plan, ongoing dialogue, stable **research report**, decisions and optional detailed activity/evidence inspector. Present these in one primary column with contextual history and follow-up composition. Conversation should survive multiple authorised research and editorial turns within one run.
 
 ### 12.2 LLM research collaborator
 
@@ -604,11 +586,11 @@ Every substantive claim links to accepted evidence, an approved deterministic ca
 
 ## 16. Domain and Vertical-Slice Boundary
 
-**The existing Phase 1 party-comparison implementation is a technical prototype, not an accepted user-facing MVP.** Preserve its safe adapter, structured evidence, compiler guardrails and progressive report mechanics if they remain suitable. Redesign or retire the narrow name extractor, fixed admissible-word list, predetermined party-report assembly and technical language.
+**The original Phase 1 party-comparison implementation was a technical prototype, not an accepted user-facing MVP.** Preserve its safe adapter, structured evidence, compiler guardrails and progressive report mechanics if they remain suitable. Redesign or retire the narrow name extractor, fixed admissible-word list, predetermined party-report assembly and technical language.
 
-The **next corrective vertical slice** must deliver real LLM-led interpretation, relevant subsidiary questions and LLM-authored prose on at least one meaningful parliamentary research brief from [the acceptance contract](parliamentary-research-assistant-acceptance.md), with a second bounded domain exercised and explicit truthful handling of unsupported composition/content. Do not choose a count-only demonstration as the product success case.
+The **v0.5 research vertical slice** has already delivered live LLM-led interpretation, subsidiary research, LLM-authored prose and a second bounded domain, with independent human product acceptance still pending. The **v0.6 design update** addresses the observed usability of the start screen and workspace flow; it does not reopen the capability or factual-authority architecture. Do not use a count-only demonstration as product success evidence.
 
-Candidate domains include Member/constituency history, Bill sponsorship/progress and officeholding. Whether a specific requested connection is executable remains a technical verification question. The target is a useful, honest report when full evidence is unavailable, not fabricated completeness.
+Candidate domains include Member/constituency history, Bill sponsorship/progress and officeholding. Whether a specific requested connection is executable remains a technical verification question. The target remains a useful, honest report when full evidence is unavailable, not fabricated completeness. No new research domain or compiler operation is required by this UI update.
 
 ## 17. MVP Feature Boundary
 
@@ -621,7 +603,7 @@ Candidate domains include Member/constituency history, Bill sponsorship/progress
 - LLM-authored, readable, evidence-backed report with contextual explanation.
 - Genuine follow-up conversation and section/plan revision without restarting research.
 - Clear partial-answer, clarification and unsupported states.
-- Existing approved two-pane responsive, accessible UI and activity/evidence inspector.
+- Approved v0.6 single-column, responsive, accessible writing-first UI; report-first continuation with contextual conversation and activity/evidence inspector.
 - Qualified export that preserves unsupported findings and sources.
 
 ### Outside the bounded slice
@@ -634,7 +616,7 @@ Candidate domains include Member/constituency history, Bill sponsorship/progress
 
 ## 18. Product and Technical Acceptance
 
-**A technically correct tool integration is necessary but insufficient.** Run the independent, realistic research scenarios in [the acceptance contract](parliamentary-research-assistant-acceptance.md), including ordinary paraphrases, partial/unsupported needs, a live multi-turn revision and human editorial/factual review.
+**A technically correct tool integration and an attractive interface are necessary but insufficient.** Run the independent, realistic research scenarios in [the acceptance contract](parliamentary-research-assistant-acceptance.md), including ordinary paraphrases, partial/unsupported needs, a live multi-turn revision and human editorial/factual review.
 
 Acceptance concerns a **useful, evidence-grounded draft** with correct classification of claims, not a machine-certified exhaustive answer to an arbitrary question.
 
@@ -647,17 +629,17 @@ The four independent assessment dimensions are:
 
 All four dimensions must pass. A safe refusal does not count as a successful factual report. Independent human assessment is required in addition to automated tests.
 
-Keep the v0.2 browser and accessibility requirements: plan visible before initial dispatch; progressive updates and reading-position stability; keyboard/focus; partial/failure retention; responsive desktop/tablet/390px/320px; evidence inspection and qualified Markdown export. Existing compiler regression tests remain mandatory.
+Keep existing browser and accessibility safeguards while **replacing the layout-specific expectations**: plan visible before initial dispatch; progressive report updates and reading-position stability; keyboard/focus; partial/failure retention; a single primary column at desktop/tablet/390px/320px; contextual history/evidence inspection; functional multiline shortcut and example selection; qualified Markdown export. Existing compiler regression tests remain mandatory.
 
 ## 19. Implementation Guidance and Human Gate
 
 - The completed [retrieval/satisfaction validation](../reports/parliamentary-research-assistant/retrieval-satisfaction-validation.md) remains evidence that ledger-only semantic completeness fails and independent original-intent holds over-block ordinary questions. **Do not repeat its impossible exhaustive-binding gate.** Retain its known omission examples as regression and human review cases for false factual promotion, while allowing useful draft research.
 - First identify and register a small set of existing verified tools for the chosen realistic research briefs; do not broaden compiler semantics simply to produce an attractive demo.
-- Preserve working query/evidence infrastructure when it supports v0.5, but do not build further features on the rejected word-list interpretation/product flow.
-- Implement one thin meaningful research journey end-to-end, then demonstrate a second domain or honest bounded limitation.
+- Preserve the working v0.5 query/evidence/report infrastructure; limit any subsequent v0.6 implementation to the approved interaction/presentation change and do not build on the rejected word-list interpretation/product flow.
+- Preserve and browser-test the existing R1 research journey, real multi-turn revision and R3 addition through the revised UI; do not rebuild the already-working research engine or create extra orchestration.
 - Verify with actual user language and model behaviour, not canned report text or a known exact string only.
 - Stop for human review if guarded query admission, source-to-Level-1/2 factual grounding, uncertainty labelling or the ability to distinguish provisional interpretations from established facts cannot be maintained. Do not stop merely because exhaustive automatic natural-language comprehension or unrestricted prose certification is unavailable.
-- Do not automatically treat v0.5 approval as authorisation to implement the next tranche. A separate, bounded OpenCode implementation prompt and human gate are required.
+- Do not automatically treat this v0.6 UI specification approval as authorisation to implement. A separate, bounded OpenCode implementation prompt and human usability gate are required.
 
 ## 20. References and Decision Record
 
@@ -689,9 +671,15 @@ Keep the v0.2 browser and accessibility requirements: plan visible before initia
 11. Show unobtrusive, accessible evidence indicators beside substantive findings, with detail in the inspector and qualifications retained in exports.
 12. Restrict hypotheses to explicitly labelled discussion/further-investigation material; unsupported speculation must instead be framed as a question.
 
-### Unchanged v0.2 UI foundations
+### v0.6 UI decision (12 November 2026) and retained safeguards
 
-Two-pane desktop conversation/report; wider document pane; collapsible Research Activity drawer; visible plan before query dispatch; progressive findings; responsive mobile views; keyboard accessibility; evidence access; qualified Markdown export. These remain normative alongside the strengthened conversation and writing requirements.
+13. Replace the v0.2–v0.5 two-pane conversation/report design with a **single-column, writing-first** canvas across starting, planning, findings and refinement.
+14. Begin with one prominent multiline question, clear **Start research** action and one or two labelled, selectable examples that fill the field without submitting. Remove empty report placeholders, slogans and technical caveats from the first view.
+15. Use **Enter for a newline** and **Ctrl/⌘+Enter for submission**, with visible controls and shortcut guidance.
+16. Make the **research plan visible before first factual execution**; then make the report the primary reading surface, with a compact follow-up composer below and earlier conversation accessible on demand.
+17. Retain Research Activity and evidence inspection in contextual drawer/dialog surfaces, with keyboard focus management, responsive tables, qualified export and unchanged factual authority boundaries.
 
-**Status:** v0.5 and its two companion contracts record approved product and evidence-confidence decisions. The previous admission/satisfaction validation has concluded **NO-GO for automatic completeness certification**; that gate is retired. A bounded corrective research application tranche may be separately authorised. This document does **not** itself authorise implementation, compiler expansion, external-source access or deployment.
+**Superseded:** permanent two-pane desktop split, split resizing, independent conversation/report scrolling, empty report panel on first load, mandatory mobile view toggles, and technical/motto copy on the welcome screen. These are **not** normative acceptance requirements. Retained: accessible source evidence, progressive findings, original question/plan preservation, responsive reflow and human-reviewed research drafts.
+
+**Status:** v0.6 updates the **UI/interaction contract only**. v0.5 research authority, evidence classification and qualitative confidence remain settled. The v0.5 implementation and bounded editorial correction have been completed on this branch, but **human product acceptance is pending**. This specification does **not** itself authorise the v0.6 UI implementation, merge to `master`, compiler expansion, external-source access or deployment.
 
