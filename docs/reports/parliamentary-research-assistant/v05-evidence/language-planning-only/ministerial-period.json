@@ -1,0 +1,179 @@
+{
+  "kind": "actual configured model planning only; no factual queries",
+  "caseOrigin": "AI-authored evaluation input",
+  "state": {
+    "id": "3b645b41a4894d038df2871e06579740",
+    "brief": "Which constituencies did Mary Lou McDonald represent during her ministerial service?",
+    "title": "Constituencies during ministerial service",
+    "reportingDate": "2026-11-12",
+    "status": "Plan published",
+    "version": 0,
+    "interpretation": "The question asks which constituencies Mary Lou McDonald represented while serving as a Minister. Establishing that requires identifying any ministerial service and its dates, then matching those dates to constituency representation. The available career record can provide supporting constituency and Dáil-term identities, but cannot establish ministerial offices, service dates, or an overlap.",
+    "tasks": [
+      {
+        "id": "t0-career-mcdonald",
+        "question": "What recorded constituency and Dáil-term identities are associated with Mary Lou McDonald's recorded career?",
+        "relevance": "Provides supporting constituency-history context, without implying that any constituency overlapped with ministerial service.",
+        "role": "supporting",
+        "tool": "career",
+        "member": "Mary Lou McDonald",
+        "sourceTask": null,
+        "title": "What recorded constituency and Dáil-term identities are associated with Mary Lou McDonald's recorded career?",
+        "state": "Pending",
+        "requirementId": "r0",
+        "toolMeaning": "Recorded constituency/Dáil-term relationships for Mary Lou McDonald; no offices or continuous tenure."
+      }
+    ],
+    "sections": [],
+    "facts": {},
+    "assertions": {},
+    "messages": [
+      {
+        "role": "user",
+        "text": "Which constituencies did Mary Lou McDonald represent during her ministerial service?"
+      },
+      {
+        "role": "assistant",
+        "text": "I can check the recorded constituency and Dáil-term identities associated with Mary Lou McDonald's career. That may provide useful context, but it cannot determine which constituencies she represented during ministerial service: the available records do not establish ministerial service or its dates, and constituency history alone does not establish an overlap."
+      }
+    ],
+    "requirements": [
+      {
+        "id": "r0",
+        "originalWording": "Which constituencies did Mary Lou McDonald represent during her ministerial service?",
+        "proposedConditions": [
+          {
+            "wording": "Identify the constituencies Mary Lou McDonald represented during her ministerial service.",
+            "conditions": [
+              "Establish whether and when she served as a Minister.",
+              "Match any ministerial-service period to constituency representation."
+            ],
+            "disposition": "unsupported",
+            "explanation": "The available tools do not record ministerial offices or service dates, and the career tool cannot establish an overlap between ministerial service and constituency representation."
+          },
+          {
+            "wording": "Identify recorded constituency and Dáil-term identities associated with Mary Lou McDonald's career.",
+            "conditions": [
+              "Use as supporting context only; a career record does not establish ministerial service or its timing."
+            ],
+            "disposition": "evidence pending",
+            "explanation": "A career lookup can retrieve recorded constituency and Dáil-term identities, but those records cannot answer the ministerial-service qualification."
+          }
+        ],
+        "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+      }
+    ],
+    "plans": [
+      {
+        "version": 1,
+        "interpretation": "The question asks which constituencies Mary Lou McDonald represented while serving as a Minister. Establishing that requires identifying any ministerial service and its dates, then matching those dates to constituency representation. The available career record can provide supporting constituency and Dáil-term identities, but cannot establish ministerial offices, service dates, or an overlap.",
+        "taskIds": [
+          "t0-career-mcdonald"
+        ],
+        "requirements": {
+          "id": "r0",
+          "originalWording": "Which constituencies did Mary Lou McDonald represent during her ministerial service?",
+          "proposedConditions": [
+            {
+              "wording": "Identify the constituencies Mary Lou McDonald represented during her ministerial service.",
+              "conditions": [
+                "Establish whether and when she served as a Minister.",
+                "Match any ministerial-service period to constituency representation."
+              ],
+              "disposition": "unsupported",
+              "explanation": "The available tools do not record ministerial offices or service dates, and the career tool cannot establish an overlap between ministerial service and constituency representation."
+            },
+            {
+              "wording": "Identify recorded constituency and Dáil-term identities associated with Mary Lou McDonald's career.",
+              "conditions": [
+                "Use as supporting context only; a career record does not establish ministerial service or its timing."
+              ],
+              "disposition": "evidence pending",
+              "explanation": "A career lookup can retrieve recorded constituency and Dáil-term identities, but those records cannot answer the ministerial-service qualification."
+            }
+          ],
+          "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+        }
+      }
+    ],
+    "unanswered": [
+      {
+        "state": "Unanswered / for review",
+        "requirement": "The available tools do not record ministerial offices or service dates, and the career tool cannot establish an overlap between ministerial service and constituency representation.",
+        "reason": "The available tools do not record ministerial offices or service dates, and the career tool cannot establish an overlap between ministerial service and constituency representation."
+      }
+    ],
+    "limitations": [
+      "These are findings from the available parliamentary records, not a certified complete account.",
+      "The source's last update and completeness are not established. Retrieval time is not source freshness.",
+      "Recorded Bill statuses and dated activities do not by themselves establish a final outcome.",
+      "Representation in separate Dáil terms does not establish continuous service or other parliamentary roles."
+    ],
+    "metrics": {
+      "firstValidatedSeconds": null,
+      "completedSeconds": null
+    },
+    "hasWork": true,
+    "evidence": {}
+  },
+  "modelCalls": [
+    {
+      "phase": "plan",
+      "turn": 0,
+      "seconds": 8.5,
+      "input": {
+        "originalBrief": "Which constituencies did Mary Lou McDonald represent during her ministerial service?",
+        "reportingDate": "2026-11-12",
+        "conversation": [
+          {
+            "role": "user",
+            "text": "Which constituencies did Mary Lou McDonald represent during her ministerial service?"
+          }
+        ],
+        "requirements": [],
+        "tasks": [],
+        "sections": [],
+        "facts": {},
+        "assertions": {},
+        "newMessage": "Which constituencies did Mary Lou McDonald represent during her ministerial service?"
+      },
+      "output": {
+        "title": "Constituencies during ministerial service",
+        "interpretation": "The question asks which constituencies Mary Lou McDonald represented while serving as a Minister. Establishing that requires identifying any ministerial service and its dates, then matching those dates to constituency representation. The available career record can provide supporting constituency and Dáil-term identities, but cannot establish ministerial offices, service dates, or an overlap.",
+        "response": "I can check the recorded constituency and Dáil-term identities associated with Mary Lou McDonald's career. That may provide useful context, but it cannot determine which constituencies she represented during ministerial service: the available records do not establish ministerial service or its dates, and constituency history alone does not establish an overlap.",
+        "clarification": null,
+        "requirements": [
+          {
+            "wording": "Identify the constituencies Mary Lou McDonald represented during her ministerial service.",
+            "conditions": [
+              "Establish whether and when she served as a Minister.",
+              "Match any ministerial-service period to constituency representation."
+            ],
+            "disposition": "unsupported",
+            "explanation": "The available tools do not record ministerial offices or service dates, and the career tool cannot establish an overlap between ministerial service and constituency representation."
+          },
+          {
+            "wording": "Identify recorded constituency and Dáil-term identities associated with Mary Lou McDonald's career.",
+            "conditions": [
+              "Use as supporting context only; a career record does not establish ministerial service or its timing."
+            ],
+            "disposition": "evidence pending",
+            "explanation": "A career lookup can retrieve recorded constituency and Dáil-term identities, but those records cannot answer the ministerial-service qualification."
+          }
+        ],
+        "tasks": [
+          {
+            "id": "career-mcdonald",
+            "question": "What recorded constituency and Dáil-term identities are associated with Mary Lou McDonald's recorded career?",
+            "relevance": "Provides supporting constituency-history context, without implying that any constituency overlapped with ministerial service.",
+            "role": "supporting",
+            "tool": "career",
+            "member": "Mary Lou McDonald",
+            "sourceTask": null
+          }
+        ],
+        "revisionInstructions": "Treat the career lookup as supporting evidence only. Do not state that it establishes ministerial service, ministerial-service dates, or which constituencies were represented during such service."
+      }
+    }
+  ]
+}

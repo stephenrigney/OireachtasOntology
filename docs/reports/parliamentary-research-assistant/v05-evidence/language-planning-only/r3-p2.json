@@ -1,0 +1,196 @@
+{
+  "kind": "actual configured model planning only; no factual queries",
+  "caseOrigin": "AI-authored evaluation input",
+  "state": {
+    "id": "3910dce895434c77b44871b6694aaeb5",
+    "brief": "Help me understand Mary Lou McDonald's career in the Oireachtas: which constituencies are recorded, and what parliamentary responsibilities can actually be verified?",
+    "title": "Mary Lou McDonald: recorded Oireachtas career and verifiable responsibilities",
+    "reportingDate": "2026-11-12",
+    "status": "Plan published",
+    "version": 0,
+    "interpretation": "Identify the constituencies and Dáil-term identities recorded for Mary Lou McDonald, then assess what the available records can establish about parliamentary responsibilities. The available responsibility-related evidence is limited to recorded Bill sponsorship and sponsor roles; it cannot establish a complete account of her parliamentary roles.",
+    "tasks": [
+      {
+        "id": "t0-career-1",
+        "question": "Which constituency and Dáil-term identities are recorded for Mary Lou McDonald?",
+        "relevance": "Addresses the constituency part of the brief and provides the available recorded career context, without claiming continuous service or offices.",
+        "role": "direct",
+        "tool": "career",
+        "member": "Mary Lou McDonald",
+        "sourceTask": null,
+        "title": "Which constituency and Dáil-term identities are recorded for Mary Lou McDonald?",
+        "state": "Pending",
+        "requirementId": "r0",
+        "toolMeaning": "Recorded constituency/Dáil-term relationships for Mary Lou McDonald; no offices or continuous tenure."
+      },
+      {
+        "id": "t0-sponsorship-1",
+        "question": "What Bills, primary classifications, and sponsor roles are recorded for Mary Lou McDonald?",
+        "relevance": "Provides the available evidence of Bill-related parliamentary activity that may be described as a verifiable responsibility, while not treating sponsorship as opposition or as a complete account of her roles.",
+        "role": "supporting",
+        "tool": "sponsorship",
+        "member": "Mary Lou McDonald",
+        "sourceTask": null,
+        "title": "What Bills, primary classifications, and sponsor roles are recorded for Mary Lou McDonald?",
+        "state": "Pending",
+        "requirementId": "r0",
+        "toolMeaning": "All recorded Bill sponsorship for Mary Lou McDonald; no subject, outcome, role-period or date filter."
+      }
+    ],
+    "sections": [],
+    "facts": {},
+    "assertions": {},
+    "messages": [
+      {
+        "role": "user",
+        "text": "Help me understand Mary Lou McDonald's career in the Oireachtas: which constituencies are recorded, and what parliamentary responsibilities can actually be verified?"
+      },
+      {
+        "role": "assistant",
+        "text": "I will check the recorded constituency and Dáil-term identities and the Bills and sponsor roles recorded in her name. These records may provide evidence of Bill sponsorship, but they cannot establish other responsibilities such as offices held, committee roles, or service during a particular ministerial period."
+      }
+    ],
+    "requirements": [
+      {
+        "id": "r0",
+        "originalWording": "Help me understand Mary Lou McDonald's career in the Oireachtas: which constituencies are recorded, and what parliamentary responsibilities can actually be verified?",
+        "proposedConditions": [
+          {
+            "wording": "Which constituencies are recorded in Mary Lou McDonald's Oireachtas career?",
+            "conditions": [
+              "Report recorded constituency identities, without treating them as offices or proof of continuous service."
+            ],
+            "disposition": "evidence pending",
+            "explanation": "The career record can retrieve constituency and Dáil-term identities. It does not provide service dates or establish continuous tenure."
+          },
+          {
+            "wording": "What parliamentary responsibilities can actually be verified?",
+            "conditions": [
+              "Distinguish recorded Bill sponsorship and sponsor roles from other parliamentary responsibilities.",
+              "Do not infer offices, committee roles, debate activity, or ministerial-service overlap."
+            ],
+            "disposition": "partly supported",
+            "explanation": "The sponsorship record can identify recorded Bills, primary classifications, and sponsor roles. No available tool establishes the full range of parliamentary responsibilities or verifies offices, committee roles, debate content, or role periods."
+          }
+        ],
+        "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+      }
+    ],
+    "plans": [
+      {
+        "version": 1,
+        "interpretation": "Identify the constituencies and Dáil-term identities recorded for Mary Lou McDonald, then assess what the available records can establish about parliamentary responsibilities. The available responsibility-related evidence is limited to recorded Bill sponsorship and sponsor roles; it cannot establish a complete account of her parliamentary roles.",
+        "taskIds": [
+          "t0-career-1",
+          "t0-sponsorship-1"
+        ],
+        "requirements": {
+          "id": "r0",
+          "originalWording": "Help me understand Mary Lou McDonald's career in the Oireachtas: which constituencies are recorded, and what parliamentary responsibilities can actually be verified?",
+          "proposedConditions": [
+            {
+              "wording": "Which constituencies are recorded in Mary Lou McDonald's Oireachtas career?",
+              "conditions": [
+                "Report recorded constituency identities, without treating them as offices or proof of continuous service."
+              ],
+              "disposition": "evidence pending",
+              "explanation": "The career record can retrieve constituency and Dáil-term identities. It does not provide service dates or establish continuous tenure."
+            },
+            {
+              "wording": "What parliamentary responsibilities can actually be verified?",
+              "conditions": [
+                "Distinguish recorded Bill sponsorship and sponsor roles from other parliamentary responsibilities.",
+                "Do not infer offices, committee roles, debate activity, or ministerial-service overlap."
+              ],
+              "disposition": "partly supported",
+              "explanation": "The sponsorship record can identify recorded Bills, primary classifications, and sponsor roles. No available tool establishes the full range of parliamentary responsibilities or verifies offices, committee roles, debate content, or role periods."
+            }
+          ],
+          "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+        }
+      }
+    ],
+    "unanswered": [],
+    "limitations": [
+      "These are findings from the available parliamentary records, not a certified complete account.",
+      "The source's last update and completeness are not established. Retrieval time is not source freshness.",
+      "Recorded Bill statuses and dated activities do not by themselves establish a final outcome.",
+      "Representation in separate Dáil terms does not establish continuous service or other parliamentary roles."
+    ],
+    "metrics": {
+      "firstValidatedSeconds": null,
+      "completedSeconds": null
+    },
+    "hasWork": true,
+    "evidence": {}
+  },
+  "modelCalls": [
+    {
+      "phase": "plan",
+      "turn": 0,
+      "seconds": 9.935,
+      "input": {
+        "originalBrief": "Help me understand Mary Lou McDonald's career in the Oireachtas: which constituencies are recorded, and what parliamentary responsibilities can actually be verified?",
+        "reportingDate": "2026-11-12",
+        "conversation": [
+          {
+            "role": "user",
+            "text": "Help me understand Mary Lou McDonald's career in the Oireachtas: which constituencies are recorded, and what parliamentary responsibilities can actually be verified?"
+          }
+        ],
+        "requirements": [],
+        "tasks": [],
+        "sections": [],
+        "facts": {},
+        "assertions": {},
+        "newMessage": "Help me understand Mary Lou McDonald's career in the Oireachtas: which constituencies are recorded, and what parliamentary responsibilities can actually be verified?"
+      },
+      "output": {
+        "title": "Mary Lou McDonald: recorded Oireachtas career and verifiable responsibilities",
+        "interpretation": "Identify the constituencies and Dáil-term identities recorded for Mary Lou McDonald, then assess what the available records can establish about parliamentary responsibilities. The available responsibility-related evidence is limited to recorded Bill sponsorship and sponsor roles; it cannot establish a complete account of her parliamentary roles.",
+        "response": "I will check the recorded constituency and Dáil-term identities and the Bills and sponsor roles recorded in her name. These records may provide evidence of Bill sponsorship, but they cannot establish other responsibilities such as offices held, committee roles, or service during a particular ministerial period.",
+        "clarification": null,
+        "requirements": [
+          {
+            "wording": "Which constituencies are recorded in Mary Lou McDonald's Oireachtas career?",
+            "conditions": [
+              "Report recorded constituency identities, without treating them as offices or proof of continuous service."
+            ],
+            "disposition": "evidence pending",
+            "explanation": "The career record can retrieve constituency and Dáil-term identities. It does not provide service dates or establish continuous tenure."
+          },
+          {
+            "wording": "What parliamentary responsibilities can actually be verified?",
+            "conditions": [
+              "Distinguish recorded Bill sponsorship and sponsor roles from other parliamentary responsibilities.",
+              "Do not infer offices, committee roles, debate activity, or ministerial-service overlap."
+            ],
+            "disposition": "partly supported",
+            "explanation": "The sponsorship record can identify recorded Bills, primary classifications, and sponsor roles. No available tool establishes the full range of parliamentary responsibilities or verifies offices, committee roles, debate content, or role periods."
+          }
+        ],
+        "tasks": [
+          {
+            "id": "career-1",
+            "question": "Which constituency and Dáil-term identities are recorded for Mary Lou McDonald?",
+            "relevance": "Addresses the constituency part of the brief and provides the available recorded career context, without claiming continuous service or offices.",
+            "role": "direct",
+            "tool": "career",
+            "member": "Mary Lou McDonald",
+            "sourceTask": null
+          },
+          {
+            "id": "sponsorship-1",
+            "question": "What Bills, primary classifications, and sponsor roles are recorded for Mary Lou McDonald?",
+            "relevance": "Provides the available evidence of Bill-related parliamentary activity that may be described as a verifiable responsibility, while not treating sponsorship as opposition or as a complete account of her roles.",
+            "role": "supporting",
+            "tool": "sponsorship",
+            "member": "Mary Lou McDonald",
+            "sourceTask": null
+          }
+        ],
+        "revisionInstructions": "Prepare a draft for review based only on the retrieved records. Explain what they establish and keep the limits on offices, committee roles, debate activity, service dates, and ministerial overlap explicit."
+      }
+    }
+  ]
+}

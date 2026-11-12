@@ -1,0 +1,208 @@
+{
+  "kind": "actual configured model planning only; no factual queries",
+  "caseOrigin": "AI-authored evaluation input",
+  "state": {
+    "id": "94ac529e98164245808220553729e543",
+    "brief": "Which Bills did Malcolm Byrne sponsor as a Senator before 2024?",
+    "title": "Bills sponsored by Malcolm Byrne before 2024",
+    "reportingDate": "2026-11-12",
+    "status": "Plan published",
+    "version": 0,
+    "interpretation": "Identify Bills recorded as sponsored by Malcolm Byrne, while checking whether the available records can establish that he sponsored them as a Senator and before 2024.",
+    "tasks": [
+      {
+        "id": "t0-byrne-sponsorship",
+        "question": "Which Bills are recorded as sponsored by Malcolm Byrne, and what primary classifications and sponsor roles are recorded for them?",
+        "relevance": "Provides the recorded sponsorship list to review against the brief. This broader lookup cannot establish that a Bill was sponsored as a Senator or before 2024.",
+        "role": "direct",
+        "tool": "sponsorship",
+        "member": "Malcolm Byrne",
+        "sourceTask": null,
+        "title": "Which Bills are recorded as sponsored by Malcolm Byrne, and what primary classifications and sponsor roles are recorded for them?",
+        "state": "Pending",
+        "requirementId": "r0",
+        "toolMeaning": "All recorded Bill sponsorship for Malcolm Byrne; no subject, outcome, role-period or date filter."
+      }
+    ],
+    "sections": [],
+    "facts": {},
+    "assertions": {},
+    "messages": [
+      {
+        "role": "user",
+        "text": "Which Bills did Malcolm Byrne sponsor as a Senator before 2024?"
+      },
+      {
+        "role": "assistant",
+        "text": "Draft research plan: retrieve the Bills recorded as sponsored by Malcolm Byrne, including their recorded primary classifications and sponsor roles. The available sponsorship record does not filter by Senator-period or date, so that retrieval can provide a broader list but cannot by itself establish which entries meet both conditions in the question. Any resulting list should be presented as a draft for review, not as a certified exhaustive answer to the original brief."
+      }
+    ],
+    "requirements": [
+      {
+        "id": "r0",
+        "originalWording": "Which Bills did Malcolm Byrne sponsor as a Senator before 2024?",
+        "proposedConditions": [
+          {
+            "wording": "Which Bills did Malcolm Byrne sponsor?",
+            "conditions": [
+              "Exact Member sponsorship",
+              "Bills and recorded sponsor roles"
+            ],
+            "disposition": "evidence pending",
+            "explanation": "A sponsorship lookup can retrieve Bills recorded under Malcolm Byrne's exact name. No lookup has yet been performed."
+          },
+          {
+            "wording": "As a Senator",
+            "conditions": [
+              "Establish that each sponsorship occurred during Malcolm Byrne's service as a Senator"
+            ],
+            "disposition": "unsupported",
+            "explanation": "The sponsorship record does not identify a Senator-period or filter sponsorships by that period. Recorded sponsor roles may be reported, but they do not establish when the sponsorship occurred."
+          },
+          {
+            "wording": "Before 2024",
+            "conditions": [
+              "Establish that each relevant sponsorship was before 2024"
+            ],
+            "disposition": "unsupported",
+            "explanation": "The sponsorship record has no before-date filter and cannot establish the date of each sponsorship. The requested time condition therefore remains unanswered."
+          }
+        ],
+        "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+      }
+    ],
+    "plans": [
+      {
+        "version": 1,
+        "interpretation": "Identify Bills recorded as sponsored by Malcolm Byrne, while checking whether the available records can establish that he sponsored them as a Senator and before 2024.",
+        "taskIds": [
+          "t0-byrne-sponsorship"
+        ],
+        "requirements": {
+          "id": "r0",
+          "originalWording": "Which Bills did Malcolm Byrne sponsor as a Senator before 2024?",
+          "proposedConditions": [
+            {
+              "wording": "Which Bills did Malcolm Byrne sponsor?",
+              "conditions": [
+                "Exact Member sponsorship",
+                "Bills and recorded sponsor roles"
+              ],
+              "disposition": "evidence pending",
+              "explanation": "A sponsorship lookup can retrieve Bills recorded under Malcolm Byrne's exact name. No lookup has yet been performed."
+            },
+            {
+              "wording": "As a Senator",
+              "conditions": [
+                "Establish that each sponsorship occurred during Malcolm Byrne's service as a Senator"
+              ],
+              "disposition": "unsupported",
+              "explanation": "The sponsorship record does not identify a Senator-period or filter sponsorships by that period. Recorded sponsor roles may be reported, but they do not establish when the sponsorship occurred."
+            },
+            {
+              "wording": "Before 2024",
+              "conditions": [
+                "Establish that each relevant sponsorship was before 2024"
+              ],
+              "disposition": "unsupported",
+              "explanation": "The sponsorship record has no before-date filter and cannot establish the date of each sponsorship. The requested time condition therefore remains unanswered."
+            }
+          ],
+          "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+        }
+      }
+    ],
+    "unanswered": [
+      {
+        "state": "Unanswered / for review",
+        "requirement": "The sponsorship record does not identify a Senator-period or filter sponsorships by that period. Recorded sponsor roles may be reported, but they do not establish when the sponsorship occurred.",
+        "reason": "The sponsorship record does not identify a Senator-period or filter sponsorships by that period. Recorded sponsor roles may be reported, but they do not establish when the sponsorship occurred."
+      },
+      {
+        "state": "Unanswered / for review",
+        "requirement": "The sponsorship record has no before-date filter and cannot establish the date of each sponsorship. The requested time condition therefore remains unanswered.",
+        "reason": "The sponsorship record has no before-date filter and cannot establish the date of each sponsorship. The requested time condition therefore remains unanswered."
+      }
+    ],
+    "limitations": [
+      "These are findings from the available parliamentary records, not a certified complete account.",
+      "The source's last update and completeness are not established. Retrieval time is not source freshness.",
+      "Recorded Bill statuses and dated activities do not by themselves establish a final outcome.",
+      "Representation in separate Dáil terms does not establish continuous service or other parliamentary roles."
+    ],
+    "metrics": {
+      "firstValidatedSeconds": null,
+      "completedSeconds": null
+    },
+    "hasWork": true,
+    "evidence": {}
+  },
+  "modelCalls": [
+    {
+      "phase": "plan",
+      "turn": 0,
+      "seconds": 11.678,
+      "input": {
+        "originalBrief": "Which Bills did Malcolm Byrne sponsor as a Senator before 2024?",
+        "reportingDate": "2026-11-12",
+        "conversation": [
+          {
+            "role": "user",
+            "text": "Which Bills did Malcolm Byrne sponsor as a Senator before 2024?"
+          }
+        ],
+        "requirements": [],
+        "tasks": [],
+        "sections": [],
+        "facts": {},
+        "assertions": {},
+        "newMessage": "Which Bills did Malcolm Byrne sponsor as a Senator before 2024?"
+      },
+      "output": {
+        "title": "Bills sponsored by Malcolm Byrne before 2024",
+        "interpretation": "Identify Bills recorded as sponsored by Malcolm Byrne, while checking whether the available records can establish that he sponsored them as a Senator and before 2024.",
+        "response": "Draft research plan: retrieve the Bills recorded as sponsored by Malcolm Byrne, including their recorded primary classifications and sponsor roles. The available sponsorship record does not filter by Senator-period or date, so that retrieval can provide a broader list but cannot by itself establish which entries meet both conditions in the question. Any resulting list should be presented as a draft for review, not as a certified exhaustive answer to the original brief.",
+        "clarification": null,
+        "requirements": [
+          {
+            "wording": "Which Bills did Malcolm Byrne sponsor?",
+            "conditions": [
+              "Exact Member sponsorship",
+              "Bills and recorded sponsor roles"
+            ],
+            "disposition": "evidence pending",
+            "explanation": "A sponsorship lookup can retrieve Bills recorded under Malcolm Byrne's exact name. No lookup has yet been performed."
+          },
+          {
+            "wording": "As a Senator",
+            "conditions": [
+              "Establish that each sponsorship occurred during Malcolm Byrne's service as a Senator"
+            ],
+            "disposition": "unsupported",
+            "explanation": "The sponsorship record does not identify a Senator-period or filter sponsorships by that period. Recorded sponsor roles may be reported, but they do not establish when the sponsorship occurred."
+          },
+          {
+            "wording": "Before 2024",
+            "conditions": [
+              "Establish that each relevant sponsorship was before 2024"
+            ],
+            "disposition": "unsupported",
+            "explanation": "The sponsorship record has no before-date filter and cannot establish the date of each sponsorship. The requested time condition therefore remains unanswered."
+          }
+        ],
+        "tasks": [
+          {
+            "id": "byrne-sponsorship",
+            "question": "Which Bills are recorded as sponsored by Malcolm Byrne, and what primary classifications and sponsor roles are recorded for them?",
+            "relevance": "Provides the recorded sponsorship list to review against the brief. This broader lookup cannot establish that a Bill was sponsored as a Senator or before 2024.",
+            "role": "direct",
+            "tool": "sponsorship",
+            "member": "Malcolm Byrne",
+            "sourceTask": null
+          }
+        ],
+        "revisionInstructions": "After retrieving the sponsorship records, report the recorded Bills and roles, and keep the Senator-period and before-2024 conditions explicitly unanswered unless supported by additional evidence."
+      }
+    }
+  ]
+}

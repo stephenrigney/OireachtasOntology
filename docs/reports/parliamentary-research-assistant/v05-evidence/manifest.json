@@ -1,0 +1,140 @@
+{
+  "implementationCommit": "13395aab06b3ca4e4c6911c3b03a9cc538dd6d35",
+  "requestedModel": "gpt-6-luna",
+  "reportingDate": "2026-11-12",
+  "compilerContentIdentity": "sha256:2bcc0ea63a0577d56ce1d414eb7fd52aacea56718844790c8b925bd1e64358e3",
+  "snapshotId": null,
+  "freshness": "unknown",
+  "sourceCoverage": "uncertified",
+  "humanAcceptance": "pending",
+  "artefacts": {
+    "README.md": {
+      "sha256": "7d2f5c900fdf0509c7142239637a51688ffb791011fd85220ea6baf027bd0a84",
+      "bytes": 3390
+    },
+    "browser-summary.json": {
+      "sha256": "a1e9f5a71a1106dd434996fb069f05bde69a89a412eee3ea697c69120bc2bec6",
+      "bytes": 404
+    },
+    "full-r3-export.md": {
+      "sha256": "95db79d89be5a284a711357a344da24cf07506d8d820d8ddef32fe23dbc7a195",
+      "bytes": 354278
+    },
+    "injected-ui-summary.json": {
+      "sha256": "b046ad715d3751e9281b2a5d79eaf855789d849d9b5b2e85a0543893867e8904",
+      "bytes": 270
+    },
+    "language-planning-only/housing.json": {
+      "sha256": "35f65d7db0a1d6cd014e9c9e72b92794feaf5630dabbd04a583a961a07dbc939",
+      "bytes": 7792
+    },
+    "language-planning-only/ministerial-period.json": {
+      "sha256": "43ef774baaac0b9320db2191b6f6bcf7a87e85ee87c43d367329bfcd725c0065",
+      "bytes": 10443
+    },
+    "language-planning-only/opposition.json": {
+      "sha256": "6baff529e7f3cee854c7a91a314a36bac5fab40f5f44776559120797a7b7c6dc",
+      "bytes": 6059
+    },
+    "language-planning-only/r1-p1.json": {
+      "sha256": "a7e474160ead567b187be91ef379cac394db0e2336cfbb7adc28b6d1e82a239e",
+      "bytes": 13744
+    },
+    "language-planning-only/r1-p2.json": {
+      "sha256": "6a581f4d2add32d04cb82a0ec17d257acdcce4fad626b68151c2ad0b42272022",
+      "bytes": 14422
+    },
+    "language-planning-only/r3-p1.json": {
+      "sha256": "4c160f2992457905968bd962327e8aefe2e9def9ff8edac41b5d942d190e207f",
+      "bytes": 13347
+    },
+    "language-planning-only/r3-p2.json": {
+      "sha256": "3442b322ae36ecef4de6543b688f7f39f1bab910b91df692de1e716ce26d8b87",
+      "bytes": 11931
+    },
+    "language-planning-only/senator-before.json": {
+      "sha256": "fc99f88f1ac3b9bfa447e83540e1f185b71348179d9d2bc12f0750388a6b0854",
+      "bytes": 10934
+    },
+    "language-planning-only/summary.json": {
+      "sha256": "c6e89fa3b275f32e237d92f60d6f7a6fb3ccd9d06ec53abd28399ad41bc0afc8",
+      "bytes": 4259
+    },
+    "r1-initial.md": {
+      "sha256": "7140c29e09d49f9d4c700ca2346c5fff5910af9e4f4ae12d74111266d6d44a12",
+      "bytes": 18365
+    },
+    "r1-revision.md": {
+      "sha256": "242d40ee099752c4e858b6f571ae06c08307fbbbe90dec75dd49f69f073de072",
+      "bytes": 17245
+    },
+    "r3-same-session.md": {
+      "sha256": "a455f75696dfeb77e2b39164b63ff5ddef114f181e913293aae3a7f2d2a2c908",
+      "bytes": 20011
+    },
+    "research-review-bundle.json": {
+      "sha256": "255ac080a09b9af401276d97c1cc72a3e675420c3ac6d09e6737d1725356f437",
+      "bytes": 965639
+    },
+    "screenshots/assertion-inspector.png": {
+      "sha256": "a29853247d6f72cf74f4b94faeb8a10899295e3a6e26ffc8ff31d3b90e9a8f6a",
+      "bytes": 281128
+    },
+    "screenshots/conversation-assertion-inspector.png": {
+      "sha256": "954d287c88ed604da99a7af32353eda4ad58154afc1a67a802e4b091a384a13b",
+      "bytes": 301704
+    },
+    "screenshots/layout-1024.png": {
+      "sha256": "f8ae4764d838facfc04537858688d63bc5e12d6b7814c120e1058f67195317c2",
+      "bytes": 218665
+    },
+    "screenshots/layout-1440.png": {
+      "sha256": "947e55f5205ac5080d2770182081677701bbe6e41d62a997b35093de2923bd1f",
+      "bytes": 240544
+    },
+    "screenshots/layout-320.png": {
+      "sha256": "f21041a4a6b09245dd8fc48ffd3d39a803559c57d62bc43636d2f2b71c4d22ed",
+      "bytes": 69038
+    },
+    "screenshots/layout-390.png": {
+      "sha256": "1167dbea7903b99d73cfc40b2758f7b319c318a0c1b54441e61d9fe3b316b234",
+      "bytes": 83636
+    },
+    "screenshots/layout-768.png": {
+      "sha256": "63900c6882286f265a863111807141cf95388ce2d8acabc995f9632698838c45",
+      "bytes": 173939
+    },
+    "screenshots/r1-desktop.png": {
+      "sha256": "ea68c31c1448e4d904428b570fba54d01564b34ebf4624f8d6ece63cb5a41dd4",
+      "bytes": 241909
+    },
+    "screenshots/r1-plan-before-dispatch.png": {
+      "sha256": "858cf8165368002ec8dc6fc32acee3c768f866d2a839ffe964d89803710e3de2",
+      "bytes": 231566
+    },
+    "screenshots/r1-revised.png": {
+      "sha256": "08bca8bd40adb9c3b81802c119ccec6a7ed0fb2cb5e37d4f6dc97ccac981fe98",
+      "bytes": 239969
+    },
+    "screenshots/r3-career.png": {
+      "sha256": "ea5f720d8314834186b6af2b264a7ed696f294a989e7f9a094501d0acb61f0a5",
+      "bytes": 242835
+    },
+    "screenshots/text-zoom-200.png": {
+      "sha256": "bc690c7c97a58880e854bcb00bb6496ed210c4badfa75150ea5377cf95918c3b",
+      "bytes": 130504
+    },
+    "verification/affected-tests.txt": {
+      "sha256": "6ccb68a72f67a1140bbd122a34ab31d4df5feddd4fbecd2653571cd850addefe",
+      "bytes": 287
+    },
+    "verification/ontology-validation.txt": {
+      "sha256": "4ac4b4b2154fba2df7715647bd1743b98792b810b18c82464c50284d943a5aa8",
+      "bytes": 1448
+    },
+    "verification/repository-tests.txt": {
+      "sha256": "0bf5862503436b3fff6d157153e50e952bd0b6ea8611ffb754bde3d48b33058d",
+      "bytes": 2931
+    }
+  }
+}

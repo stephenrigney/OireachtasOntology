@@ -1,0 +1,229 @@
+{
+  "kind": "actual configured model planning only; no factual queries",
+  "caseOrigin": "AI-authored evaluation input",
+  "state": {
+    "id": "ba267e6f2c6341eab7ca57b07d4dcc06",
+    "brief": "I need a reader-friendly note about legislation with Malcolm Byrne as a sponsor. Please investigate its subsequent stages and explain what remains uncertain about its fate.",
+    "title": "Malcolm Byrne-sponsored legislation: recorded stages and outstanding uncertainty",
+    "reportingDate": "2026-11-12",
+    "status": "Plan published",
+    "version": 0,
+    "interpretation": "Prepare a reader-friendly note identifying Bills for which Malcolm Byrne is recorded as a sponsor, then summarising the recorded subsequent process and what the available records do—and do not—establish about each Bill's fate. No subject or date filter was specified.",
+    "tasks": [
+      {
+        "id": "t0-byrne-sponsored-bills",
+        "question": "Which Bills are recorded as having Malcolm Byrne as a sponsor, and what primary classifications and sponsor roles are recorded for them?",
+        "relevance": "Establishes the set of recorded Bill identities to which the subsequent-stage review can be tied.",
+        "role": "direct",
+        "tool": "sponsorship",
+        "member": "Malcolm Byrne",
+        "sourceTask": null,
+        "title": "Which Bills are recorded as having Malcolm Byrne as a sponsor, and what primary classifications and sponsor roles are recorded for them?",
+        "state": "Pending",
+        "requirementId": "r0",
+        "toolMeaning": "All recorded Bill sponsorship for Malcolm Byrne; no subject, outcome, role-period or date filter."
+      },
+      {
+        "id": "t0-byrne-bill-stages",
+        "question": "For Bills accepted from the sponsorship lookup, what process statuses and dated activities are recorded?",
+        "relevance": "Provides the available subsequent-stage evidence for explaining each Bill's recorded progress and the limits of what can be concluded about its fate.",
+        "role": "direct",
+        "tool": "lifecycle",
+        "member": null,
+        "sourceTask": "t0-byrne-sponsored-bills",
+        "title": "For Bills accepted from the sponsorship lookup, what process statuses and dated activities are recorded?",
+        "state": "Pending",
+        "requirementId": "r0",
+        "toolMeaning": "Recorded status and dated activities for exact Bills from accepted sponsorship; not definitive outcomes."
+      }
+    ],
+    "sections": [],
+    "facts": {},
+    "assertions": {},
+    "messages": [
+      {
+        "role": "user",
+        "text": "I need a reader-friendly note about legislation with Malcolm Byrne as a sponsor. Please investigate its subsequent stages and explain what remains uncertain about its fate."
+      },
+      {
+        "role": "assistant",
+        "text": "I will first retrieve the recorded Bills with Malcolm Byrne as an exact sponsor, then look up recorded process statuses and dated activities for the accepted Bill identities. The resulting note can describe those records, but it cannot certify final outcomes or establish that the sponsorship record is exhaustive."
+      }
+    ],
+    "requirements": [
+      {
+        "id": "r0",
+        "originalWording": "I need a reader-friendly note about legislation with Malcolm Byrne as a sponsor. Please investigate its subsequent stages and explain what remains uncertain about its fate.",
+        "proposedConditions": [
+          {
+            "wording": "Legislation with Malcolm Byrne as a sponsor",
+            "conditions": [
+              "Identify Bills in the sponsorship records where Malcolm Byrne is recorded as a sponsor.",
+              "The tool does not establish sponsorship outside its recorded entries or filter by subject, opposition, Senator-period or date."
+            ],
+            "disposition": "evidence pending",
+            "explanation": "A sponsorship lookup can provide the recorded Bills and their primary classifications and sponsor roles. The available tool does not establish whether the records capture every relevant Bill."
+          },
+          {
+            "wording": "Investigate the legislation's subsequent stages",
+            "conditions": [
+              "Retrieve recorded process statuses and dated activities for accepted Bill identities from the sponsorship lookup.",
+              "Lifecycle lookups are limited to 32 Bills per turn."
+            ],
+            "disposition": "evidence pending",
+            "explanation": "A linked lifecycle lookup can report the available process records for accepted Bills. If the sponsorship lookup returns more than 32 Bills, the full set of stages may not be retrievable in one turn."
+          },
+          {
+            "wording": "Explain what remains uncertain about each Bill's fate",
+            "conditions": [
+              "Distinguish recorded process status from a certified final outcome.",
+              "Do not treat a recorded Current status as proof of progress or enactment, or a Lapsed status as a certified final outcome.",
+              "Report any apparent inconsistencies between recorded events separately, without inferring a procedural explanation."
+            ],
+            "disposition": "partly supported",
+            "explanation": "The records can support a careful account of what statuses and activities are recorded, and identify limits or inconsistencies. They cannot certify each Bill's final outcome."
+          }
+        ],
+        "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+      }
+    ],
+    "plans": [
+      {
+        "version": 1,
+        "interpretation": "Prepare a reader-friendly note identifying Bills for which Malcolm Byrne is recorded as a sponsor, then summarising the recorded subsequent process and what the available records do—and do not—establish about each Bill's fate. No subject or date filter was specified.",
+        "taskIds": [
+          "t0-byrne-sponsored-bills",
+          "t0-byrne-bill-stages"
+        ],
+        "requirements": {
+          "id": "r0",
+          "originalWording": "I need a reader-friendly note about legislation with Malcolm Byrne as a sponsor. Please investigate its subsequent stages and explain what remains uncertain about its fate.",
+          "proposedConditions": [
+            {
+              "wording": "Legislation with Malcolm Byrne as a sponsor",
+              "conditions": [
+                "Identify Bills in the sponsorship records where Malcolm Byrne is recorded as a sponsor.",
+                "The tool does not establish sponsorship outside its recorded entries or filter by subject, opposition, Senator-period or date."
+              ],
+              "disposition": "evidence pending",
+              "explanation": "A sponsorship lookup can provide the recorded Bills and their primary classifications and sponsor roles. The available tool does not establish whether the records capture every relevant Bill."
+            },
+            {
+              "wording": "Investigate the legislation's subsequent stages",
+              "conditions": [
+                "Retrieve recorded process statuses and dated activities for accepted Bill identities from the sponsorship lookup.",
+                "Lifecycle lookups are limited to 32 Bills per turn."
+              ],
+              "disposition": "evidence pending",
+              "explanation": "A linked lifecycle lookup can report the available process records for accepted Bills. If the sponsorship lookup returns more than 32 Bills, the full set of stages may not be retrievable in one turn."
+            },
+            {
+              "wording": "Explain what remains uncertain about each Bill's fate",
+              "conditions": [
+                "Distinguish recorded process status from a certified final outcome.",
+                "Do not treat a recorded Current status as proof of progress or enactment, or a Lapsed status as a certified final outcome.",
+                "Report any apparent inconsistencies between recorded events separately, without inferring a procedural explanation."
+              ],
+              "disposition": "partly supported",
+              "explanation": "The records can support a careful account of what statuses and activities are recorded, and identify limits or inconsistencies. They cannot certify each Bill's final outcome."
+            }
+          ],
+          "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+        }
+      }
+    ],
+    "unanswered": [],
+    "limitations": [
+      "These are findings from the available parliamentary records, not a certified complete account.",
+      "The source's last update and completeness are not established. Retrieval time is not source freshness.",
+      "Recorded Bill statuses and dated activities do not by themselves establish a final outcome.",
+      "Representation in separate Dáil terms does not establish continuous service or other parliamentary roles."
+    ],
+    "metrics": {
+      "firstValidatedSeconds": null,
+      "completedSeconds": null
+    },
+    "hasWork": true,
+    "evidence": {}
+  },
+  "modelCalls": [
+    {
+      "phase": "plan",
+      "turn": 0,
+      "seconds": 12.44,
+      "input": {
+        "originalBrief": "I need a reader-friendly note about legislation with Malcolm Byrne as a sponsor. Please investigate its subsequent stages and explain what remains uncertain about its fate.",
+        "reportingDate": "2026-11-12",
+        "conversation": [
+          {
+            "role": "user",
+            "text": "I need a reader-friendly note about legislation with Malcolm Byrne as a sponsor. Please investigate its subsequent stages and explain what remains uncertain about its fate."
+          }
+        ],
+        "requirements": [],
+        "tasks": [],
+        "sections": [],
+        "facts": {},
+        "assertions": {},
+        "newMessage": "I need a reader-friendly note about legislation with Malcolm Byrne as a sponsor. Please investigate its subsequent stages and explain what remains uncertain about its fate."
+      },
+      "output": {
+        "title": "Malcolm Byrne-sponsored legislation: recorded stages and outstanding uncertainty",
+        "interpretation": "Prepare a reader-friendly note identifying Bills for which Malcolm Byrne is recorded as a sponsor, then summarising the recorded subsequent process and what the available records do—and do not—establish about each Bill's fate. No subject or date filter was specified.",
+        "response": "I will first retrieve the recorded Bills with Malcolm Byrne as an exact sponsor, then look up recorded process statuses and dated activities for the accepted Bill identities. The resulting note can describe those records, but it cannot certify final outcomes or establish that the sponsorship record is exhaustive.",
+        "clarification": null,
+        "requirements": [
+          {
+            "wording": "Legislation with Malcolm Byrne as a sponsor",
+            "conditions": [
+              "Identify Bills in the sponsorship records where Malcolm Byrne is recorded as a sponsor.",
+              "The tool does not establish sponsorship outside its recorded entries or filter by subject, opposition, Senator-period or date."
+            ],
+            "disposition": "evidence pending",
+            "explanation": "A sponsorship lookup can provide the recorded Bills and their primary classifications and sponsor roles. The available tool does not establish whether the records capture every relevant Bill."
+          },
+          {
+            "wording": "Investigate the legislation's subsequent stages",
+            "conditions": [
+              "Retrieve recorded process statuses and dated activities for accepted Bill identities from the sponsorship lookup.",
+              "Lifecycle lookups are limited to 32 Bills per turn."
+            ],
+            "disposition": "evidence pending",
+            "explanation": "A linked lifecycle lookup can report the available process records for accepted Bills. If the sponsorship lookup returns more than 32 Bills, the full set of stages may not be retrievable in one turn."
+          },
+          {
+            "wording": "Explain what remains uncertain about each Bill's fate",
+            "conditions": [
+              "Distinguish recorded process status from a certified final outcome.",
+              "Do not treat a recorded Current status as proof of progress or enactment, or a Lapsed status as a certified final outcome.",
+              "Report any apparent inconsistencies between recorded events separately, without inferring a procedural explanation."
+            ],
+            "disposition": "partly supported",
+            "explanation": "The records can support a careful account of what statuses and activities are recorded, and identify limits or inconsistencies. They cannot certify each Bill's final outcome."
+          }
+        ],
+        "tasks": [
+          {
+            "id": "byrne-sponsored-bills",
+            "question": "Which Bills are recorded as having Malcolm Byrne as a sponsor, and what primary classifications and sponsor roles are recorded for them?",
+            "relevance": "Establishes the set of recorded Bill identities to which the subsequent-stage review can be tied.",
+            "role": "direct",
+            "tool": "sponsorship",
+            "member": "Malcolm Byrne",
+            "sourceTask": null
+          },
+          {
+            "id": "byrne-bill-stages",
+            "question": "For Bills accepted from the sponsorship lookup, what process statuses and dated activities are recorded?",
+            "relevance": "Provides the available subsequent-stage evidence for explaining each Bill's recorded progress and the limits of what can be concluded about its fate.",
+            "role": "direct",
+            "tool": "lifecycle",
+            "member": null,
+            "sourceTask": "byrne-sponsored-bills"
+          }
+        ],
+        "revisionInstructions": "After retrieval, write a clear, reader-friendly note organised by Bill. Explain the recorded stages in plain language, identify uncertainties and any inconsistencies without resolving them by inference, and make clear that the records do not certify final outcomes. Do not infer a reporting-date filter from application metadata."
+      }
+    }
+  ]
+}

@@ -1,0 +1,226 @@
+{
+  "kind": "actual configured model planning only; no factual queries",
+  "caseOrigin": "AI-authored evaluation input",
+  "state": {
+    "id": "1e47a11c06fe487d8b48d05f73beed0f",
+    "brief": "Could you give me an account of Malcolm Byrne's proposed legislation, identifying the Bills he sponsored and explaining how far the records show each got?",
+    "title": "Malcolm Byrne’s sponsored Bills and recorded progress",
+    "reportingDate": "2026-11-12",
+    "status": "Plan published",
+    "version": 0,
+    "interpretation": "Prepare a draft account of Bills recorded as sponsored by Malcolm Byrne and, for each identified Bill, describe the recorded process status and dated activities. Treat the records as evidence of what they show, not as a certified exhaustive list or a certified final account of each Bill’s outcome.",
+    "tasks": [
+      {
+        "id": "t0-byrne-sponsorship",
+        "question": "Which Bills are recorded as sponsored by Malcolm Byrne, and what primary classifications and sponsor roles are recorded for them?",
+        "relevance": "Identifies the Bills on which to base the requested account and supplies the recorded classifications and sponsor roles.",
+        "role": "direct",
+        "tool": "sponsorship",
+        "member": "Malcolm Byrne",
+        "sourceTask": null,
+        "title": "Which Bills are recorded as sponsored by Malcolm Byrne, and what primary classifications and sponsor roles are recorded for them?",
+        "state": "Pending",
+        "requirementId": "r0",
+        "toolMeaning": "All recorded Bill sponsorship for Malcolm Byrne; no subject, outcome, role-period or date filter."
+      },
+      {
+        "id": "t0-byrne-bill-lifecycle",
+        "question": "For the Bills returned by the Malcolm Byrne sponsorship lookup, what process statuses and dated activities are recorded?",
+        "relevance": "Provides the available evidence for describing how far the records show each identified Bill got, without certifying its final outcome.",
+        "role": "direct",
+        "tool": "lifecycle",
+        "member": null,
+        "sourceTask": "t0-byrne-sponsorship",
+        "title": "For the Bills returned by the Malcolm Byrne sponsorship lookup, what process statuses and dated activities are recorded?",
+        "state": "Pending",
+        "requirementId": "r0",
+        "toolMeaning": "Recorded status and dated activities for exact Bills from accepted sponsorship; not definitive outcomes."
+      }
+    ],
+    "sections": [],
+    "facts": {},
+    "assertions": {},
+    "messages": [
+      {
+        "role": "user",
+        "text": "Could you give me an account of Malcolm Byrne's proposed legislation, identifying the Bills he sponsored and explaining how far the records show each got?"
+      },
+      {
+        "role": "assistant",
+        "text": "I will check the recorded Bills with Malcolm Byrne as an exact sponsor match, then retrieve the available lifecycle records for those Bills. The results can support an account of recorded sponsorship and recorded progress. They cannot establish every form of legislative involvement, or certify a Bill’s final outcome."
+      }
+    ],
+    "requirements": [
+      {
+        "id": "r0",
+        "originalWording": "Could you give me an account of Malcolm Byrne's proposed legislation, identifying the Bills he sponsored and explaining how far the records show each got?",
+        "proposedConditions": [
+          {
+            "wording": "Identify Bills recorded as sponsored by Malcolm Byrne.",
+            "conditions": [
+              "Use exact Member sponsorship records.",
+              "The records do not establish other forms of involvement or whether a Bill was opposed."
+            ],
+            "disposition": "evidence pending",
+            "explanation": "A sponsorship lookup can identify recorded Bills with an exact sponsorship match. The result should not be represented as covering activity outside that record."
+          },
+          {
+            "wording": "Explain how far the records show each identified Bill got.",
+            "conditions": [
+              "Use recorded process status and dated activities for Bills returned by the sponsorship lookup.",
+              "Report Current or Lapsed as recorded, without treating either as proof of progress or a certified final outcome."
+            ],
+            "disposition": "evidence pending",
+            "explanation": "Lifecycle records can provide status and activity information for the identified Bills, subject to the available records and a maximum of 32 Bills per retrieval."
+          },
+          {
+            "wording": "Give an account of the proposed legislation and its outcome.",
+            "conditions": [
+              "The available tools do not provide debate content or certify final legislative outcomes.",
+              "Do not infer a final outcome from recorded status alone."
+            ],
+            "disposition": "partly supported",
+            "explanation": "The proposed legislation can be identified by recorded sponsorship, and recorded progress can be summarised. Any fuller account of debate or certified final outcomes remains outside the available evidence."
+          }
+        ],
+        "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+      }
+    ],
+    "plans": [
+      {
+        "version": 1,
+        "interpretation": "Prepare a draft account of Bills recorded as sponsored by Malcolm Byrne and, for each identified Bill, describe the recorded process status and dated activities. Treat the records as evidence of what they show, not as a certified exhaustive list or a certified final account of each Bill’s outcome.",
+        "taskIds": [
+          "t0-byrne-sponsorship",
+          "t0-byrne-bill-lifecycle"
+        ],
+        "requirements": {
+          "id": "r0",
+          "originalWording": "Could you give me an account of Malcolm Byrne's proposed legislation, identifying the Bills he sponsored and explaining how far the records show each got?",
+          "proposedConditions": [
+            {
+              "wording": "Identify Bills recorded as sponsored by Malcolm Byrne.",
+              "conditions": [
+                "Use exact Member sponsorship records.",
+                "The records do not establish other forms of involvement or whether a Bill was opposed."
+              ],
+              "disposition": "evidence pending",
+              "explanation": "A sponsorship lookup can identify recorded Bills with an exact sponsorship match. The result should not be represented as covering activity outside that record."
+            },
+            {
+              "wording": "Explain how far the records show each identified Bill got.",
+              "conditions": [
+                "Use recorded process status and dated activities for Bills returned by the sponsorship lookup.",
+                "Report Current or Lapsed as recorded, without treating either as proof of progress or a certified final outcome."
+              ],
+              "disposition": "evidence pending",
+              "explanation": "Lifecycle records can provide status and activity information for the identified Bills, subject to the available records and a maximum of 32 Bills per retrieval."
+            },
+            {
+              "wording": "Give an account of the proposed legislation and its outcome.",
+              "conditions": [
+                "The available tools do not provide debate content or certify final legislative outcomes.",
+                "Do not infer a final outcome from recorded status alone."
+              ],
+              "disposition": "partly supported",
+              "explanation": "The proposed legislation can be identified by recorded sponsorship, and recorded progress can be summarised. Any fuller account of debate or certified final outcomes remains outside the available evidence."
+            }
+          ],
+          "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+        }
+      }
+    ],
+    "unanswered": [],
+    "limitations": [
+      "These are findings from the available parliamentary records, not a certified complete account.",
+      "The source's last update and completeness are not established. Retrieval time is not source freshness.",
+      "Recorded Bill statuses and dated activities do not by themselves establish a final outcome.",
+      "Representation in separate Dáil terms does not establish continuous service or other parliamentary roles."
+    ],
+    "metrics": {
+      "firstValidatedSeconds": null,
+      "completedSeconds": null
+    },
+    "hasWork": true,
+    "evidence": {}
+  },
+  "modelCalls": [
+    {
+      "phase": "plan",
+      "turn": 0,
+      "seconds": 13.784,
+      "input": {
+        "originalBrief": "Could you give me an account of Malcolm Byrne's proposed legislation, identifying the Bills he sponsored and explaining how far the records show each got?",
+        "reportingDate": "2026-11-12",
+        "conversation": [
+          {
+            "role": "user",
+            "text": "Could you give me an account of Malcolm Byrne's proposed legislation, identifying the Bills he sponsored and explaining how far the records show each got?"
+          }
+        ],
+        "requirements": [],
+        "tasks": [],
+        "sections": [],
+        "facts": {},
+        "assertions": {},
+        "newMessage": "Could you give me an account of Malcolm Byrne's proposed legislation, identifying the Bills he sponsored and explaining how far the records show each got?"
+      },
+      "output": {
+        "title": "Malcolm Byrne’s sponsored Bills and recorded progress",
+        "interpretation": "Prepare a draft account of Bills recorded as sponsored by Malcolm Byrne and, for each identified Bill, describe the recorded process status and dated activities. Treat the records as evidence of what they show, not as a certified exhaustive list or a certified final account of each Bill’s outcome.",
+        "response": "I will check the recorded Bills with Malcolm Byrne as an exact sponsor match, then retrieve the available lifecycle records for those Bills. The results can support an account of recorded sponsorship and recorded progress. They cannot establish every form of legislative involvement, or certify a Bill’s final outcome.",
+        "clarification": null,
+        "requirements": [
+          {
+            "wording": "Identify Bills recorded as sponsored by Malcolm Byrne.",
+            "conditions": [
+              "Use exact Member sponsorship records.",
+              "The records do not establish other forms of involvement or whether a Bill was opposed."
+            ],
+            "disposition": "evidence pending",
+            "explanation": "A sponsorship lookup can identify recorded Bills with an exact sponsorship match. The result should not be represented as covering activity outside that record."
+          },
+          {
+            "wording": "Explain how far the records show each identified Bill got.",
+            "conditions": [
+              "Use recorded process status and dated activities for Bills returned by the sponsorship lookup.",
+              "Report Current or Lapsed as recorded, without treating either as proof of progress or a certified final outcome."
+            ],
+            "disposition": "evidence pending",
+            "explanation": "Lifecycle records can provide status and activity information for the identified Bills, subject to the available records and a maximum of 32 Bills per retrieval."
+          },
+          {
+            "wording": "Give an account of the proposed legislation and its outcome.",
+            "conditions": [
+              "The available tools do not provide debate content or certify final legislative outcomes.",
+              "Do not infer a final outcome from recorded status alone."
+            ],
+            "disposition": "partly supported",
+            "explanation": "The proposed legislation can be identified by recorded sponsorship, and recorded progress can be summarised. Any fuller account of debate or certified final outcomes remains outside the available evidence."
+          }
+        ],
+        "tasks": [
+          {
+            "id": "byrne-sponsorship",
+            "question": "Which Bills are recorded as sponsored by Malcolm Byrne, and what primary classifications and sponsor roles are recorded for them?",
+            "relevance": "Identifies the Bills on which to base the requested account and supplies the recorded classifications and sponsor roles.",
+            "role": "direct",
+            "tool": "sponsorship",
+            "member": "Malcolm Byrne",
+            "sourceTask": null
+          },
+          {
+            "id": "byrne-bill-lifecycle",
+            "question": "For the Bills returned by the Malcolm Byrne sponsorship lookup, what process statuses and dated activities are recorded?",
+            "relevance": "Provides the available evidence for describing how far the records show each identified Bill got, without certifying its final outcome.",
+            "role": "direct",
+            "tool": "lifecycle",
+            "member": null,
+            "sourceTask": "byrne-sponsorship"
+          }
+        ],
+        "revisionInstructions": "After retrieval, write a clear, Bill-by-Bill draft account. Attribute sponsorship, classifications, roles, statuses and activities to the records. Preserve any gaps or apparent inconsistencies, and do not infer debate content, opposition, continuous service, enactment or final outcome. If the lifecycle retrieval limit prevents coverage of all returned Bills, identify which Bills remain unassessed."
+      }
+    }
+  ]
+}

@@ -107,6 +107,57 @@ claims to prove from arbitrary prose.
   development. Existing RDFLib/FastAPI warnings remain; skipped tests are not
   counted as passes.
 
+### Configured end-to-end observation
+
+The final browser run used requested model identifier **`gpt-6-luna`**, the
+existing read-only Fuseki data and reporting/reference date **12 November 2026**.
+The source implementation is `13395aab06b3ca4e4c6911c3b03a9cc538dd6d35`;
+the retained manifest also pins the compiler content identity. The dataset was
+not reloaded or changed, and no immutable snapshot/freshness identity is claimed.
+
+- **R1:** actual LLM interpretation proposed sponsorship identification followed
+  by recorded progress/status research. The compiler returned **20 recorded
+  Bills**, retaining Primary/Supporting sponsorship flags and separately missing
+  role fields. All **20 exact Bill lifecycle lookups** were accepted. This was
+  **21 compiler operations / 22 actual reads**, producing **129 directly supported
+  record assertions and one approved distinct-Bill calculation**. These are finite
+  observations, not counts hard-coded into the application or live assertions.
+  The author wrote explanatory progress paragraphs, selected dated developments,
+  described Current/Lapsed as recorded labels, and left final outcomes open.
+- **Conversation:** “shorten the overview and explain why recorded status is not
+  final outcome” revised the same report without new compiler calls. “Show me
+  the evidence” produced an inspectable, provisional explanation of the two
+  matching Bill histories and asked which Bill was intended. Adding R3 retained
+  the existing Bill sections **exactly**, not merely their underlying evidence.
+- **R3:** one career operation added **four term-specific Dublin Central records
+  for the 31st–34th Dáileanna** and a separate LLM-authored career section. It did
+  not invent continuous tenure, offices or committee roles. Across the combined
+  session: **22 compiler operations / 25 reads / nine actual model calls**.
+- **R4/R5:** separate actual-model interactions dispatched **no irrelevant
+  queries** and explained the missing intersection/transcript evidence. These
+  are coverage-boundary demonstrations, **not successful factual reports**.
+- **Assertion framework:** actual drafts include Levels 1–4. Interpretations
+  carry provisional qualitative confidence and reviewable assumptions/conflicts;
+  hypotheses are questions in a distinct further-investigation section. Exact
+  conversational assertion inspection was also exercised against the retained
+  actual session, including keyboard activation and focus return.
+- **Browser:** the final strengthened verifier passed plan-before-dispatch,
+  lifecycle content in the report, editorial evidence reuse, exact unrelated
+  section preservation, evidence inspection, keyboard/modal focus, qualified
+  export and **1440/1024/768/390/320px** layouts. A **200% text-size** check and
+  narrow-width zoom-equivalent reflow passed. There were **no JavaScript errors**.
+  This is not formal WCAG or independent editorial/product acceptance.
+
+### Durable review material
+
+Start with [`v05-evidence/README.md`](v05-evidence/README.md). It distinguishes
+actual model/Fuseki research, AI-authored language inputs, injected UI controls
+and replayed compiler evidence. Representative generated reports, dialogue,
+assertion/evidence metadata, model proposals, query traces, full Markdown export,
+screenshots, test logs and hashes are retained there for human assessment.
+The complete disposable verifier output is also under
+`/tmp/oireachtasontology/research-v05-delivery/`; it is not a runtime dependency.
+
 ## Four product dimensions — human acceptance remains pending
 
 | Dimension | Implementation evidence | Human assessment required |

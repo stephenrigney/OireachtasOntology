@@ -1,0 +1,83 @@
+[
+  {
+    "case": "r1-p1",
+    "status": "Plan published",
+    "tools": [
+      "sponsorship",
+      "lifecycle"
+    ],
+    "interpretation": "Prepare a draft account of Bills recorded as sponsored by Malcolm Byrne and, for each identified Bill, describe the recorded process status and dated activities. Treat the records as evidence of what they show, not as a certified exhaustive list or a certified final account of each Bill’s outcome.",
+    "unanswered": []
+  },
+  {
+    "case": "r1-p2",
+    "status": "Plan published",
+    "tools": [
+      "sponsorship",
+      "lifecycle"
+    ],
+    "interpretation": "Prepare a reader-friendly note identifying Bills for which Malcolm Byrne is recorded as a sponsor, then summarising the recorded subsequent process and what the available records do—and do not—establish about each Bill's fate. No subject or date filter was specified.",
+    "unanswered": []
+  },
+  {
+    "case": "r3-p1",
+    "status": "Plan published",
+    "tools": [
+      "career",
+      "sponsorship"
+    ],
+    "interpretation": "Prepare a background note on the constituencies and Dáil terms recorded for Mary Lou McDonald, and on what the available parliamentary records can establish about the roles she held. Distinguish recorded sponsorship roles from offices or other roles that the available tools cannot verify.",
+    "unanswered": []
+  },
+  {
+    "case": "r3-p2",
+    "status": "Plan published",
+    "tools": [
+      "career",
+      "sponsorship"
+    ],
+    "interpretation": "Identify the constituencies and Dáil-term identities recorded for Mary Lou McDonald, then assess what the available records can establish about parliamentary responsibilities. The available responsibility-related evidence is limited to recorded Bill sponsorship and sponsor roles; it cannot establish a complete account of her parliamentary roles.",
+    "unanswered": []
+  },
+  {
+    "case": "housing",
+    "status": "Plan published",
+    "tools": [
+      "sponsorship"
+    ],
+    "interpretation": "Identify Bills recorded as sponsored by Malcolm Byrne that concern housing. The available sponsorship record can provide his recorded sponsored Bills, sponsor roles and primary classifications, but it has no subject-matter filter; the record may therefore not establish which Bills concern housing.",
+    "unanswered": []
+  },
+  {
+    "case": "opposition",
+    "status": "Completed with limitations",
+    "tools": [],
+    "interpretation": "The brief asks which Bills Malcolm Byrne opposed. “Opposed” could refer to voting against a Bill, speaking against it, or another form of opposition; the available records cannot establish any of these.",
+    "unanswered": [
+      "The available tools do not provide voting or debate evidence. Sponsorship records cannot establish opposition."
+    ]
+  },
+  {
+    "case": "senator-before",
+    "status": "Plan published",
+    "tools": [
+      "sponsorship"
+    ],
+    "interpretation": "Identify Bills recorded as sponsored by Malcolm Byrne, while checking whether the available records can establish that he sponsored them as a Senator and before 2024.",
+    "unanswered": [
+      "The sponsorship record does not identify a Senator-period or filter sponsorships by that period. Recorded sponsor roles may be reported, but they do not establish when the sponsorship occurred.",
+      "The sponsorship record has no before-date filter and cannot establish the date of each sponsorship. The requested time condition therefore remains unanswered."
+    ]
+  },
+  {
+    "case": "ministerial-period",
+    "status": "Plan published",
+    "tools": [
+      "career"
+    ],
+    "interpretation": "The question asks which constituencies Mary Lou McDonald represented while serving as a Minister. Establishing that requires identifying any ministerial service and its dates, then matching those dates to constituency representation. The available career record can provide supporting constituency and Dáil-term identities, but cannot establish ministerial offices, service dates, or an overlap.",
+    "unanswered": [
+      "The available tools do not record ministerial offices or service dates, and the career tool cannot establish an overlap between ministerial service and constituency representation."
+    ]
+  }
+]

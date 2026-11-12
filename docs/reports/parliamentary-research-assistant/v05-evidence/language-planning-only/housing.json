@@ -1,0 +1,149 @@
+{
+  "kind": "actual configured model planning only; no factual queries",
+  "caseOrigin": "AI-authored evaluation input",
+  "state": {
+    "id": "6c745e35a48941948cc055668614b827",
+    "brief": "Which housing Bills did Malcolm Byrne sponsor?",
+    "title": "Housing Bills sponsored by Malcolm Byrne",
+    "reportingDate": "2026-11-12",
+    "status": "Plan published",
+    "version": 0,
+    "interpretation": "Identify Bills recorded as sponsored by Malcolm Byrne that concern housing. The available sponsorship record can provide his recorded sponsored Bills, sponsor roles and primary classifications, but it has no subject-matter filter; the record may therefore not establish which Bills concern housing.",
+    "tasks": [
+      {
+        "id": "t0-sponsorship-byrne",
+        "question": "Which Bills are recorded as sponsored by Malcolm Byrne, and what primary classifications and sponsor roles are recorded for them?",
+        "relevance": "Provides the recorded sponsorship list and classifications to help identify any Bills that may concern housing. It does not independently establish the subject matter of each Bill.",
+        "role": "supporting",
+        "tool": "sponsorship",
+        "member": "Malcolm Byrne",
+        "sourceTask": null,
+        "title": "Which Bills are recorded as sponsored by Malcolm Byrne, and what primary classifications and sponsor roles are recorded for them?",
+        "state": "Pending",
+        "requirementId": "r0",
+        "toolMeaning": "All recorded Bill sponsorship for Malcolm Byrne; no subject, outcome, role-period or date filter."
+      }
+    ],
+    "sections": [],
+    "facts": {},
+    "assertions": {},
+    "messages": [
+      {
+        "role": "user",
+        "text": "Which housing Bills did Malcolm Byrne sponsor?"
+      },
+      {
+        "role": "assistant",
+        "text": "Draft — for review, not a certified exhaustive answer. I will retrieve Malcolm Byrne’s recorded sponsored Bills and their primary classifications and sponsor roles. Those records may help identify housing-related Bills, but the available research cannot independently verify a Bill’s subject matter where its classification does not make that clear."
+      }
+    ],
+    "requirements": [
+      {
+        "id": "r0",
+        "originalWording": "Which housing Bills did Malcolm Byrne sponsor?",
+        "proposedConditions": [
+          {
+            "wording": "Which housing Bills did Malcolm Byrne sponsor?",
+            "conditions": [
+              "The Bill concerns housing.",
+              "Malcolm Byrne is recorded as a sponsor."
+            ],
+            "disposition": "partly supported",
+            "explanation": "The sponsorship record can establish recorded sponsorship and provide primary classifications, but it does not filter or verify Bills by subject matter. Housing relevance may remain unclear for some records."
+          }
+        ],
+        "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+      }
+    ],
+    "plans": [
+      {
+        "version": 1,
+        "interpretation": "Identify Bills recorded as sponsored by Malcolm Byrne that concern housing. The available sponsorship record can provide his recorded sponsored Bills, sponsor roles and primary classifications, but it has no subject-matter filter; the record may therefore not establish which Bills concern housing.",
+        "taskIds": [
+          "t0-sponsorship-byrne"
+        ],
+        "requirements": {
+          "id": "r0",
+          "originalWording": "Which housing Bills did Malcolm Byrne sponsor?",
+          "proposedConditions": [
+            {
+              "wording": "Which housing Bills did Malcolm Byrne sponsor?",
+              "conditions": [
+                "The Bill concerns housing.",
+                "Malcolm Byrne is recorded as a sponsor."
+              ],
+              "disposition": "partly supported",
+              "explanation": "The sponsorship record can establish recorded sponsorship and provide primary classifications, but it does not filter or verify Bills by subject matter. Housing relevance may remain unclear for some records."
+            }
+          ],
+          "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+        }
+      }
+    ],
+    "unanswered": [],
+    "limitations": [
+      "These are findings from the available parliamentary records, not a certified complete account.",
+      "The source's last update and completeness are not established. Retrieval time is not source freshness.",
+      "Recorded Bill statuses and dated activities do not by themselves establish a final outcome.",
+      "Representation in separate Dáil terms does not establish continuous service or other parliamentary roles."
+    ],
+    "metrics": {
+      "firstValidatedSeconds": null,
+      "completedSeconds": null
+    },
+    "hasWork": true,
+    "evidence": {}
+  },
+  "modelCalls": [
+    {
+      "phase": "plan",
+      "turn": 0,
+      "seconds": 9.312,
+      "input": {
+        "originalBrief": "Which housing Bills did Malcolm Byrne sponsor?",
+        "reportingDate": "2026-11-12",
+        "conversation": [
+          {
+            "role": "user",
+            "text": "Which housing Bills did Malcolm Byrne sponsor?"
+          }
+        ],
+        "requirements": [],
+        "tasks": [],
+        "sections": [],
+        "facts": {},
+        "assertions": {},
+        "newMessage": "Which housing Bills did Malcolm Byrne sponsor?"
+      },
+      "output": {
+        "title": "Housing Bills sponsored by Malcolm Byrne",
+        "interpretation": "Identify Bills recorded as sponsored by Malcolm Byrne that concern housing. The available sponsorship record can provide his recorded sponsored Bills, sponsor roles and primary classifications, but it has no subject-matter filter; the record may therefore not establish which Bills concern housing.",
+        "response": "Draft — for review, not a certified exhaustive answer. I will retrieve Malcolm Byrne’s recorded sponsored Bills and their primary classifications and sponsor roles. Those records may help identify housing-related Bills, but the available research cannot independently verify a Bill’s subject matter where its classification does not make that clear.",
+        "clarification": null,
+        "requirements": [
+          {
+            "wording": "Which housing Bills did Malcolm Byrne sponsor?",
+            "conditions": [
+              "The Bill concerns housing.",
+              "Malcolm Byrne is recorded as a sponsor."
+            ],
+            "disposition": "partly supported",
+            "explanation": "The sponsorship record can establish recorded sponsorship and provide primary classifications, but it does not filter or verify Bills by subject matter. Housing relevance may remain unclear for some records."
+          }
+        ],
+        "tasks": [
+          {
+            "id": "sponsorship-byrne",
+            "question": "Which Bills are recorded as sponsored by Malcolm Byrne, and what primary classifications and sponsor roles are recorded for them?",
+            "relevance": "Provides the recorded sponsorship list and classifications to help identify any Bills that may concern housing. It does not independently establish the subject matter of each Bill.",
+            "role": "supporting",
+            "tool": "sponsorship",
+            "member": "Malcolm Byrne",
+            "sourceTask": null
+          }
+        ],
+        "revisionInstructions": "After retrieval, report the relevant recorded sponsorship evidence and its classifications. Keep any uncertainty about whether a Bill concerns housing visible; do not treat a classification alone as definitive where it does not establish the subject."
+      }
+    }
+  ]
+}

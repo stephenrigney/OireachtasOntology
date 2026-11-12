@@ -1,0 +1,129 @@
+{
+  "kind": "actual configured model planning only; no factual queries",
+  "caseOrigin": "AI-authored evaluation input",
+  "state": {
+    "id": "a9826a763c9a4dc9a33f937e1dba67ca",
+    "brief": "Which Bills did Malcolm Byrne oppose?",
+    "title": "Bills opposed by Malcolm Byrne",
+    "reportingDate": "2026-11-12",
+    "status": "Completed with limitations",
+    "version": 0,
+    "interpretation": "The brief asks which Bills Malcolm Byrne opposed. “Opposed” could refer to voting against a Bill, speaking against it, or another form of opposition; the available records cannot establish any of these.",
+    "tasks": [],
+    "sections": [],
+    "facts": {},
+    "assertions": {},
+    "messages": [
+      {
+        "role": "user",
+        "text": "Which Bills did Malcolm Byrne oppose?"
+      },
+      {
+        "role": "assistant",
+        "text": "Draft — for review: I cannot identify Bills Malcolm Byrne opposed from the available records. The available sponsorship records would show Bills he sponsored, not Bills he opposed, and sponsorship is not evidence of opposition. Establishing opposition would require relevant voting or debate records."
+      }
+    ],
+    "requirements": [
+      {
+        "id": "r0",
+        "originalWording": "Which Bills did Malcolm Byrne oppose?",
+        "proposedConditions": [
+          {
+            "wording": "Which Bills did Malcolm Byrne oppose?",
+            "conditions": [
+              "Identify Bills associated with opposition by Malcolm Byrne.",
+              "The brief does not specify whether opposition means voting against, speaking against, or another form of opposition."
+            ],
+            "disposition": "unavailable",
+            "explanation": "The available tools do not provide voting or debate evidence. Sponsorship records cannot establish opposition."
+          }
+        ],
+        "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+      }
+    ],
+    "plans": [
+      {
+        "version": 1,
+        "interpretation": "The brief asks which Bills Malcolm Byrne opposed. “Opposed” could refer to voting against a Bill, speaking against it, or another form of opposition; the available records cannot establish any of these.",
+        "taskIds": [],
+        "requirements": {
+          "id": "r0",
+          "originalWording": "Which Bills did Malcolm Byrne oppose?",
+          "proposedConditions": [
+            {
+              "wording": "Which Bills did Malcolm Byrne oppose?",
+              "conditions": [
+                "Identify Bills associated with opposition by Malcolm Byrne.",
+                "The brief does not specify whether opposition means voting against, speaking against, or another form of opposition."
+              ],
+              "disposition": "unavailable",
+              "explanation": "The available tools do not provide voting or debate evidence. Sponsorship records cannot establish opposition."
+            }
+          ],
+          "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+        }
+      }
+    ],
+    "unanswered": [
+      {
+        "state": "Unanswered / for review",
+        "requirement": "The available tools do not provide voting or debate evidence. Sponsorship records cannot establish opposition.",
+        "reason": "The available tools do not provide voting or debate evidence. Sponsorship records cannot establish opposition."
+      }
+    ],
+    "limitations": [
+      "These are findings from the available parliamentary records, not a certified complete account.",
+      "The source's last update and completeness are not established. Retrieval time is not source freshness.",
+      "Recorded Bill statuses and dated activities do not by themselves establish a final outcome.",
+      "Representation in separate Dáil terms does not establish continuous service or other parliamentary roles."
+    ],
+    "metrics": {
+      "firstValidatedSeconds": null,
+      "completedSeconds": null
+    },
+    "hasWork": false,
+    "evidence": {}
+  },
+  "modelCalls": [
+    {
+      "phase": "plan",
+      "turn": 0,
+      "seconds": 7.47,
+      "input": {
+        "originalBrief": "Which Bills did Malcolm Byrne oppose?",
+        "reportingDate": "2026-11-12",
+        "conversation": [
+          {
+            "role": "user",
+            "text": "Which Bills did Malcolm Byrne oppose?"
+          }
+        ],
+        "requirements": [],
+        "tasks": [],
+        "sections": [],
+        "facts": {},
+        "assertions": {},
+        "newMessage": "Which Bills did Malcolm Byrne oppose?"
+      },
+      "output": {
+        "title": "Bills opposed by Malcolm Byrne",
+        "interpretation": "The brief asks which Bills Malcolm Byrne opposed. “Opposed” could refer to voting against a Bill, speaking against it, or another form of opposition; the available records cannot establish any of these.",
+        "response": "Draft — for review: I cannot identify Bills Malcolm Byrne opposed from the available records. The available sponsorship records would show Bills he sponsored, not Bills he opposed, and sponsorship is not evidence of opposition. Establishing opposition would require relevant voting or debate records.",
+        "clarification": null,
+        "requirements": [
+          {
+            "wording": "Which Bills did Malcolm Byrne oppose?",
+            "conditions": [
+              "Identify Bills associated with opposition by Malcolm Byrne.",
+              "The brief does not specify whether opposition means voting against, speaking against, or another form of opposition."
+            ],
+            "disposition": "unavailable",
+            "explanation": "The available tools do not provide voting or debate evidence. Sponsorship records cannot establish opposition."
+          }
+        ],
+        "tasks": [],
+        "revisionInstructions": "To answer the question, obtain relevant voting or debate records. Do not treat Bills sponsored by Malcolm Byrne as Bills he opposed."
+      }
+    }
+  ]
+}
