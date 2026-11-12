@@ -16,7 +16,8 @@ from pydantic import Field
 
 from .config import load_local_environment
 from .fuseki import DEFAULT_FUSEKI_QUERY_URL, FUSEKI_QUERY_URL_ENV, FusekiQueryClient
-from .research import ResearchRun, create_research_planner
+from .research_collaborator import ResearchRun, create_collaborator
+from .research_tools import ResearchTools, CATALOGUE
 from .research_adapter import ClosedModel, ResearchAdapter, OperationRequest, OperationEnvelope, ROOT
 from .vocabulary import supported_predicates
 
@@ -29,9 +30,14 @@ class StepInput(ClosedModel):
     version: int = Field(ge=0)
 
 
-def create_app(*, planner_factory=create_research_planner, client_factory=None, reporting_date=None):
+class MessageInput(ClosedModel):
+    text: str = Field(min_length=1, max_length=2000)
+    sectionId: str | None = None
+
+
+def create_app(*, planner_factory=create_collaborator, client_factory=None, reporting_date=None, run_factory=ResearchRun):
     load_local_environment(ROOT)
-    application = FastAPI(title="Parliamentary Research · Phase 1", docs_url=None, redoc_url=None)
+    application = FastAPI(title="Parliamentary Research · Draft workspace", docs_url=None, redoc_url=None)
     assets = Path(__file__).parent / "research_ui"
     application.mount("/assets", StaticFiles(directory=assets), name="assets")
     runs, registry_lock = OrderedDict(), Lock()
@@ -75,7 +81,8 @@ def create_app(*, planner_factory=create_research_planner, client_factory=None, 
 
     @application.get("/contracts")
     def contracts():
-        return {"request": OperationRequest.model_json_schema(), "envelope": OperationEnvelope.model_json_schema()}
+        return {"request": OperationRequest.model_json_schema(), "envelope": OperationEnvelope.model_json_schema(),
+                "researchCatalogue": CATALOGUE}
 
     @application.post("/runs", status_code=201)
     def prepare(payload: BriefInput):
@@ -86,8 +93,9 @@ def create_app(*, planner_factory=create_research_planner, client_factory=None, 
         except ValueError as error:
             raise HTTPException(503, "OIR_NLQ_AS_OF_DATE must be an ISO date.") from error
         # Planning has no query client and cannot dispatch RDF operations.
-        run = ResearchRun(payload.brief, fixed_date, None, planner_factory)
-        run.adapter = ResearchAdapter(None, predicates, context_id=run.id, endpoint_id=endpoint_id)
+        run = run_factory(payload.brief, fixed_date, None, planner_factory)
+        adapter_type = ResearchTools if isinstance(run, ResearchRun) else ResearchAdapter
+        run.adapter = adapter_type(None, predicates, context_id=run.id, endpoint_id=endpoint_id)
         with registry_lock:
             for key, (old, _) in list(runs.items()):
                 if monotonic() - old.created > 3600:
@@ -137,6 +145,23 @@ def create_app(*, planner_factory=create_research_planner, client_factory=None, 
             if evidence_id not in run.evidence:
                 raise HTTPException(404, "Evidence not found.")
             return run.evidence[evidence_id]
+
+    @application.post("/runs/{run_id}/messages")
+    def message(run_id: str, payload: MessageInput):
+        run, lock = lookup(run_id)
+        with lock:
+            if not payload.text.strip():
+                raise HTTPException(422, "Write a research question or revision request.")
+            try:
+                return run.message(payload.text, payload.sectionId)
+            except ValueError as error:
+                raise HTTPException(429, str(error)) from error
+
+    @application.get("/runs/{run_id}/archive")
+    def archive(run_id: str):
+        run, lock = lookup(run_id)
+        with lock:
+            return {"state": run.view(), "evidence": run.evidence, "modelCalls": getattr(run, "modelCalls", [])}
 
     @application.get("/runs/{run_id}/report.md", response_class=PlainTextResponse)
     def export(run_id: str):

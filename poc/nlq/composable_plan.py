@@ -103,6 +103,7 @@ class BillSponsorshipProjection:
     incomplete_display: bool = False
     conflicting_evidence: bool = False
     diagnostics: tuple[str, ...] = ()
+    witnesses: tuple[dict[str, Any], ...] = ()
 
 
 def _validate_debate_plan(plan: dict[str, Any]) -> dict[str, Any]:
@@ -4424,6 +4425,13 @@ def readable_bill_sponsorship_result(result: QueryResult) -> BillSponsorshipProj
         incomplete_display=incomplete_display,
         conflicting_evidence=conflicting_evidence,
         diagnostics=tuple(sorted(diagnostics, key=lambda value: (value.casefold(), value))),
+        witnesses=tuple({"billIri": iri, "ownerGraph": b["graph"],
+                         "titles": sorted(b["titles"]), "numbers": sorted(b["numbers"]),
+                         "years": sorted(b["years"]),
+                         "participations": [{"participationIri": p, "primaryStatus": sorted(e["statuses"]),
+                                             "roles": sorted(e["roles"])}
+                                            for p, e in sorted(b["participations"].items())]}
+                        for iri, b in sorted(bills.items())),
     )
 
 
@@ -4958,6 +4966,8 @@ def _execute_bill_sponsorship_question(
     return PlanOutcome(
         status, plan=plan, sparql=answer_query, result=projection.result,
         diagnostic=" ".join(diagnostics),
+        accepted_evidence=({"memberIri": plan["referents"]["member"]["iri"],
+                            "bills": list(projection.witnesses)} if status == "success" else None),
     )
 
 

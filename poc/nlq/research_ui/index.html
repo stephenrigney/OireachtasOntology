@@ -22,13 +22,13 @@
   <div id="announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
   <main class="workspace" data-view="conversation">
     <section class="conversation" aria-labelledby="conversation-title">
-      <div class="panel-heading"><h1 id="conversation-title">Research conversation</h1><span>PHASE 1</span></div>
+      <div class="panel-heading"><h1 id="conversation-title">Research conversation</h1><span>DRAFT RESEARCH</span></div>
       <div id="conversation-log" class="conversation-log" role="log" aria-label="Research conversation" aria-live="off">
-        <div class="welcome"><p class="eyebrow">A CLEAR BRIEF. A TRACEABLE REPORT.</p><h2>What would you like<br>to investigate?</h2><p>Explore recorded party membership in the current Dáil. Your plan appears here before supported queries begin.</p><button id="example" class="example">Compare two parties’ recorded membership <span aria-hidden="true">↗</span></button><p class="metadata">Local records only. Coverage and freshness are not certified.</p></div>
+        <div class="welcome"><p class="eyebrow">A CLEAR BRIEF. A TRACEABLE REPORT.</p><h2>What would you like<br>to find out?</h2><p>Investigate a Member’s Bills and recorded progress, or explore constituency representation. Discuss and refine the same research draft.</p><button id="example" class="example">Prepare a briefing on a Member’s Bills <span aria-hidden="true">↗</span></button><p class="metadata">Drafts for human review. Source coverage and freshness are not certified.</p></div>
       </div>
       <form id="composer-form" class="composer">
-        <label for="brief">Your research objective</label>
-        <textarea id="brief" rows="4" maxlength="2000" placeholder="Prepare a short report comparing two named parties in the current Dáil…" aria-describedby="composer-hint"></textarea>
+        <label for="brief">What would you like to find out?</label>
+        <textarea id="brief" rows="4" maxlength="2000" placeholder="Prepare a briefing on the Bills sponsored by…" aria-describedby="composer-hint"></textarea>
         <p id="composer-hint" class="metadata">Enter to send · Shift+Enter for a new line</p>
         <div id="submission-error" role="alert"></div>
         <button id="submit" type="submit" class="primary" disabled>Start research <span aria-hidden="true">→</span></button>
@@ -39,7 +39,7 @@
       <div class="document-scroll" id="report-scroll" tabindex="0" aria-label="Scrollable research report">
         <article id="report" tabindex="-1">
           <div class="document-heading"><p class="eyebrow">PARLIAMENTARY RESEARCH NOTE</p><h1 id="report-heading">Your report will take shape here.</h1><p id="report-scope">Validated findings appear as research progresses. Every table and comparison links to its supporting evidence.</p><p id="report-status" class="document-status">Awaiting a research objective</p></div>
-          <section id="overview" hidden><h2>Overview</h2><p>Qualified findings from local RDF evidence, evaluated at one fixed reporting date. This is not a certified complete parliamentary roster.</p></section>
+          <section id="overview" hidden><h2>About this draft</h2><p>Recorded facts and calculations are separate from provisional model interpretations. This report is not automatically certified as exhaustive or editorially correct. Please review its findings and unanswered questions.</p></section>
           <div id="report-sections"></div>
           <section id="limitations" hidden><h2>Limitations &amp; unanswered questions</h2><ul id="limitation-list"></ul><div id="unanswered"></div></section>
           <footer id="report-footer" hidden>Research evidence is held in this server’s memory for one hour. Export to retain the report and its evidence. Reloading does not create a saved research library.</footer>

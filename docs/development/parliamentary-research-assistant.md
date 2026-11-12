@@ -1,145 +1,138 @@
-# Parliamentary Research Assistant — Phase 1
+# Parliamentary Research Assistant v0.5
 
-The local workspace implements the initial current-Dáil research journey from
-the [approved specification](../specifications/parliamentary-research-assistant.md).
-It does not implement Phase 2 conversational refinement or change the dataset.
+A local conversational application producing **Draft — for review** research.
+It does not certify exhaustive interpretation, source completeness or editorial
+acceptance. Human assessment is required under the
+[product](../specifications/parliamentary-research-assistant.md),
+[editorial](../specifications/parliamentary-research-assistant-editorial.md) and
+[acceptance](../specifications/parliamentary-research-assistant-acceptance.md)
+contracts.
 
 ## Launch
 
-From the repository root:
-
 ```sh
 uv sync --extra test --extra nlq
-# If your existing local settings are in .env.local, export them first:
-# set -a; source .env.local; set +a
+# Export existing local settings if kept here (do not commit credentials):
+set -a; source .env.local; set +a
 .venv/bin/python -m uvicorn poc.nlq.research_app:app --host 127.0.0.1 --port 8010
 ```
 
-Open <http://127.0.0.1:8010>. This is a **single-process local research tool**,
-not an authenticated public deployment. Use one worker. Existing `.env.local`
-configuration can be exported as above. The existing query-service loader
-automatically reads `.env` (not `.env.local`); process settings take precedence:
+Open <http://127.0.0.1:8010>. Use **one worker**, loopback only. This is not an
+authenticated public service. Configuration:
 
-- `NLQ_LLM_API_KEY`, `NLQ_LLM_BASE_URL`, `NLQ_LLM_MODEL`: the existing
-  Responses-compatible planner configuration. One bounded interpretation call
-  per new brief; no model-generated SPARQL or second query-planning call.
+- `NLQ_LLM_API_KEY`, `NLQ_LLM_BASE_URL`, `NLQ_LLM_MODEL`: existing
+  Responses-compatible structured-output model settings. The LLM interprets,
+  plans and writes/revises reports; it never generates authoritative SPARQL.
 - `NLQ_FUSEKI_QUERY_URL`, `OIR_FUSEKI_USER`, `OIR_FUSEKI_PASSWORD`: existing
-  read-only query configuration. No update, reload or publication is performed.
-- `OIR_NLQ_AS_OF_DATE`: optional ISO reporting date; otherwise the server's
-  calendar date. Frozen once per run. Future reporting dates are refused.
+  read-only query configuration; no reload, update or publication occurs.
+- `OIR_NLQ_AS_OF_DATE`: optional ISO reporting/reference date, otherwise server
+  date. This is **not** a source freshness date or an invented user time filter.
 
-For example, ask:
+For example:
 
-> Prepare a short report comparing Fine Gael and Fianna Fáil membership in the
-> current Dáil, including membership totals, the Members involved and a short
-> comparison.
+> Prepare a briefing on the Bills sponsored by Malcolm Byrne. What progress
+> have they made, and what happened to them?
 
-Other eligible named parties work through the same compiler identity resolver;
-the example names and observed counts are not application facts. A single-party
-list/count or a current-term-only brief also works. The bounded brief-language
-admission is intentionally conservative: unknown wording, missing explicit
-current/chamber scope, extra dates, relationships or conditions stay visible as
-unanswered rather than silently producing an easier report. Existing compiler
-name/intent guards remain authoritative; rejected wording is not rewritten.
-Comparison briefs need at least two named parties. A term-only brief must ask
-explicitly for the current Dáil term; person/office/representation wording is
-not silently converted into a term lookup.
+Then ask to shorten a section, explain a finding, reconsider an interpretation,
+show evidence, or add a background briefing on Mary Lou McDonald's constituencies
+and parliamentary roles. Names and Bill identities/counts are not hard-coded.
 
-## Using the workspace
+## Interaction and boundaries
 
-- The initial plan is returned without opening a query client, brought into the
-  conversation viewport, and painted before the browser automatically dispatches
-  its first execution step. No per-query approvals are required.
-- The report receives the independently validated term, each Member list, each
-  compiler-verified total, and finally a compatible deterministic comparison.
-  Lists can remain available if count verification or another party fails.
-- **Pause research** stops further dispatch; an in-flight read may finish.
-  **Resume research** continues the same versioned plan. A transport retry cannot
-  replay an already committed step.
-- **Research Activity** opens a keyboard-trapped dialog with plan status and
-  actual execution history. Evidence buttons open accepted identities, temporal
-  witnesses, original requests, plans and every executed query/page. Advanced
-  technical material is collapsed by default.
-- **Copy Markdown** / **Export .md** retains limitations, pending/failed states,
-  evidence references and complete retained evidence JSON. Export before closing
-  or restarting the server. Runs are in memory, capped at 32 and expire after an
-  hour. Browser reload does not restore a report library.
-- Mobile navigation switches between Conversation and Report without replacing
-  their state. Tables have independently scrollable regions. Enter sends;
-  Shift+Enter adds a line. All controls work with a keyboard.
-- Messages during a run are retained and explain the Phase 1 boundary. They do
-  not change the original objective or replace findings. Use **New research**
-  for a fresh brief. Section-context explanation is available; editing, approval
-  continuations and multi-turn scope/refinement workflows require Phase 2.
+The original brief, subsequent instructions, proposed requirements and plan
+versions remain in the same run. The model proposes research questions; the UI
+publishes interpretation and plan **before** automatically dispatching factual
+queries. Each tool's exact narrower meaning is shown separately from model prose.
+Supporting retrieval is not marked as satisfaction of the full original brief.
+Known gaps appear in the main report and export. Requirement dispositions are
+provisional model assessments, not an exhaustive semantic certification.
 
-## Evidence and authority
+Pause stops further dispatch after an in-flight step. Enter submits; Shift+Enter
+adds a line. Follow-ups go to the server and the model, not a canned browser
+response. Pure editorial turns reuse facts; factual additions retrieve affected
+evidence. Existing sections remain unless returned as explicit section revisions.
+Explicit revisions may change which facts are shown without deleting accepted
+facts or their source links from the evidence store. Export before restart or
+expiry: runs are in-memory, expire after one hour, capped at 32; each session has
+a twelve-turn, 24-task budget. There is no persistent cross-session library.
 
-`research_adapter.py` exposes only:
+### Verified tool catalogue
 
-1. `dail.current_term`
-2. `dail.party_members.current`
-3. `dail.party_member_count.current`
+`research_tools.py` is deliberately a small facade, not a general agent framework.
 
-`OperationRequest` rejects unknown fields, unknown operations, caller-supplied
-IRIs and invalid parameter shapes. `/contracts` exposes its JSON Schema and the
-accepted envelope schema. The in-process facade is `ResearchAdapter.execute`;
-there is deliberately no unrestricted query endpoint in this application.
+| Tool | Parameters and supported meaning | Explicit non-answers |
+|---|---|---|
+| `sponsorship` | Named Member mention; recorded Bill sponsorship via validated exact Member/BillParticipation identity; recorded primary classifications and sponsor roles | No housing/other subject filtering, opposition, Senator-period intersection, before-date filter or enactment |
+| `lifecycle` | Reference to a successful sponsorship task; one exact number/year lookup per accepted Bill, at most 32 per task | Recorded process status and dated activities, **not certified final outcomes**; no guessed Bill IDs or title join |
+| `career` | Named Member mention; recorded constituency/Dáil-term identities across career | No complete offices/committee discovery, continuous tenure, service dates, ministerial-period relationship or arbitrary historical filter |
 
-The explicit dispatch seam runs **after the existing compiler's shared
-whole-intent/date/interpretation preflight**, inside its existing read-only error
-boundary. Party drafts still pass existing admission, completion, final-plan
-validation, term/identity resolution, Stage C party cross-check, mapping/safety
-checks, bounded pagination and independent temporal evaluation. The adapter
-does not interpret raw candidate rows or reverse-parse rendered evidence.
+Requests use existing public compiler execution, fixed reviewed semantic drafts,
+identity resolution, plan validation, query safety, pagination/caps and evidence
+evaluation. Structured accepted evidence is exposed additively at existing
+projectors, not reconstructed from display prose. Exact Bill identity agreement
+is checked across sponsorship and lifecycle lookups. A failed/truncated/partial
+compiler result produces no established assertions. Earlier independent evidence
+survives. The Phase 1 party adapter remains for its existing regression suite,
+but its permitted-word coordinator is not the default application's entry point.
 
-The temporal projector additively retains accepted structured witnesses for
-the current single-term Dáil party shape, including count support. It does not
-change temporal selection. `selectedIRIs` is now declared in the final plan
-schema as a nonempty unique local-IRI list on `ParliamentaryParty` only, matching
-the existing executable validator; its stricter sorted/resolved-identity guards
-remain in Python. Selected identities are never dropped to obtain conformity.
-The two positional `QueryResult` debug-metadata errors identified in Phase 0
-are corrected without changing query semantics.
+No general web source, Debate-content tool, committee/party intersection or
+unrestricted query interface is advertised. Missing evidence is not zero or
+proof of absence. Compiler traces retain every actual read, returned cells,
+timing, graph scope, plan, source revision and failures. Freshness, loaded capture
+identity and common snapshot remain unknown; coverage remains uncertified.
 
-The coordinator independently requires a successful Stage A catalogue selection
-and exact term agreement before using party findings. Compiler counts and lists
-must agree by accepted Member identity **and witnesses**, not just raw row count.
-Comparison requires compatible dates, exact term, unit, validation, complete
-bounded enumeration, observation context, compiler content identity and coverage
-qualifications. A failed comparison does not invalidate independent findings.
+### Assertion and evidence-confidence contract
 
-No loaded snapshot identity is available. Comparisons are explicitly limited
-to **separately observed local query results**, not snapshot-consistent statements
-of real-world party strength. Coverage is uncertified; freshness is unknown.
-Per-row owner graphs remain null where not actually projected. Query traces
-retain actual fixed/variable graph scopes, untruncated returned cells (including
-datatype/language hints), timing, offsets and failures; they are not invented
-ETL capture provenance. A missing accepted witness or execution trace blocks
-dependent claims. No-match party evidence remains unavailable, never zero.
+`research_assertions.py` retains stable assertion identity, exact text/structured
+proposition, evidence references, reasoning, assumptions, conflicts, limitations,
+review status, and confidence only where permitted:
 
-## Verification
+1. **Directly supported:** compiler evidence projector emits the exact factual
+   statement. The LLM can select its ID but cannot change its wording or level.
+2. **Calculated:** approved distinct-Bill-identity cardinality over one accepted
+   sponsorship enumeration. Inputs and algorithm are retained. No temporal or
+   role joins, inferred outcomes, population estimates or model arithmetic.
+3. **Interpretation:** LLM-authored paragraph with accepted fact references,
+   provisional high/moderate/low confidence and a reviewable rationale discussing
+   evidence, assumptions, gaps and conflicts. These are **not calibrated** ratings.
+4. **Hypothesis:** explicitly unverified, only in a distinct further-questions
+   section; no confidence rating. Prefer a research question over speculation.
+
+The model cannot submit Level 1/2 prose or mark an assertion human-reviewed.
+Short model-facing fact handles resolve by exact registry lookup to stable
+assertion IDs; the mapping is archived. Substantive conversational explanations
+also carry exact-text Level 3 records and an evidence-inspection control.
+Reference checks do **not** certify unrestricted narrative truth; Level 3/4 prose
+remains a reviewable draft, not a factual verification badge. Main-text uncertainty
+and gaps supplement the unobtrusive keyboard-accessible evidence indicators.
+The inspector exposes sources, reasoning and qualifications. Markdown retains
+draft/class labels, confidence rationale, gaps, assertion IDs and full evidence.
+
+## Verification and artefacts
 
 ```sh
-.venv/bin/python -m pytest tests/test_research_workspace.py
-.venv/bin/python -m pytest tests
+.venv/bin/python -m pytest -q tests/test_research_v05.py tests/test_research_workspace.py
+.venv/bin/python -m pytest -q tests
 .venv/bin/python tests/validate.py
-
 uv sync --extra test --extra nlq --extra browser-test
 .venv/bin/python -m playwright install chromium
-.venv/bin/python tools/verify_research_browser.py
-# With the configured application above already running:
-.venv/bin/python tools/verify_research_browser.py --live-url http://127.0.0.1:8010
+# Against the configured app above:
+.venv/bin/python tools/verify_research_v05_browser.py
+# Fast, explicitly injected/replayed UI controls (no model or dataset network):
+.venv/bin/python tools/verify_research_v05_ui.py
 ```
 
-The browser check uses a disposable synthetic-RDF service with the **actual
-compiler**, exercises independent-operation failure and admission states, then
-optionally runs the genuine configured LLM/Fuseki journey. It checks visible
-plan-before-dispatch, progressive updates, table/count evidence, export,
-desktop/tablet/390px/320px layouts, independent report scrolling, keyboard/focus,
-dialog trapping and zoom-equivalent reflow. Disposable screenshots, reports and
-summaries are written under
-`/tmp/oireachtasontology/parliamentary-research-phase-1/`.
+New deterministic tests distinguish **injected model proposals** and exact saved
+compiler-response replay from live research. The browser verifier exercises the
+actual configured model/Fuseki interaction, saves transcripts, model proposals,
+assertions, reports and screenshots under `/tmp/oireachtasontology/research-v05/`
+by default, and checks R1, revisions, same-session R3, unsupported R4/R5, plan
+visibility, evidence controls, keyboard focus, narrow-screen layouts and export.
+Use `--output` to choose an artefact directory. `/runs/{id}/archive` provides a
+local JSON archive; it includes model inputs/outputs and source records, not API
+credentials. Assess generated drafts before sharing.
 
-These automated checks are not a formal WCAG certification or a multi-browser /
-assistive-technology audit. Query results are finite observations against the
-configured local dataset, never a certification of source completeness.
+The completion report records the actual observations and durable representative
+artefacts. Browser automation is Chromium-only, not formal WCAG conformance or a
+full assistive-technology audit. Human editorial/factual product acceptance remains
+the final gate; passing tests does not accept this application.

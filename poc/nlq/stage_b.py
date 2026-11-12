@@ -582,7 +582,19 @@ def execute_stage_b(plan: dict[str, Any], *, fuseki, supported_predicates) -> Pl
         notice += " The 100-row safety cap was reached; this readable partial view can omit additional Bills or evidence."
     if status == "source_data_unavailable":
         return PlanOutcome(status, plan=plan, sparql=query, result=readable, diagnostic=notice)
-    return PlanOutcome(status, plan=plan, sparql=query, result=readable, diagnostic=notice)
+    accepted = None
+    if family == "bill_lookup" and status == "success":
+        accepted = {"lifecycle": [
+            {"billIri": bill, "title": _cell(result, rows[0], "title"),
+             "processes": sorted({_cell(result, r, "process") for r in rows} - {"—"}),
+             "statusIri": _cell(result, rows[0], "status"),
+             "recordedStatus": _status_label(_cell(result, rows[0], "status")),
+             "events": [{"typeIri": kind, "label": _tail(kind), "date": day}
+                        for day, kind in sorted({(_cell(result, r, "eventDate"), _cell(result, r, "eventType"))
+                                                 for r in rows if _cell(result, r, "eventDate") != "—"})]}
+            for bill, rows in _group_bill_rows(result).items()]}
+    return PlanOutcome(status, plan=plan, sparql=query, result=readable, diagnostic=notice,
+                       accepted_evidence=accepted)
 
 
 def _tail(value: str) -> str:

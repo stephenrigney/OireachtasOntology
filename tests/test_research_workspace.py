@@ -18,6 +18,11 @@ from poc.nlq.research_adapter import (
 )
 from poc.nlq.research import ResearchRun, BriefProposal, account_brief, compatible
 from poc.nlq.research_app import create_app
+from functools import partial
+
+# Phase 1 regressions remain executable against their original coordinator.
+# The default application now uses the v0.5 collaborator, tested separately.
+create_app = partial(create_app, run_factory=ResearchRun)
 from poc.nlq.results import QueryResult
 from poc.nlq.vocabulary import supported_predicates
 from test_nlq_seanad_party_periods import _dail_party_fixture, _run_dail

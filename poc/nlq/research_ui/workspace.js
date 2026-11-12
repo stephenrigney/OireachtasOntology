@@ -1,9 +1,8 @@
 /* Phase 1: one original objective, explicit publication, automatic bounded steps. */
 "use strict";
 const $ = id => document.getElementById(id);
-let run = null, paused = false, generation = 0, busy = false, preparing = false, opener = null;
+let run = null, paused = false, generation = 0, busy = false, preparing = false, opener = null, messageCount = 0, sectionContext = null;
 const sectionVersions = new Map();
-const memberVersions = new Map();
 function node(tag, text, className) {
   const n = document.createElement(tag);
   if (text !== undefined) n.textContent = text;
@@ -15,10 +14,14 @@ function announce(text) { $("announcement").textContent = text; }
 function message(speaker, text) {
   const box = node("div", undefined, "message"); box.append(node("strong", speaker), node("div", text));
   $("conversation-log").append(box);
+  return box;
 }
 async function api(path, options = {}) {
   const response = await fetch(path, {headers: {"Content-Type": "application/json"}, ...options});
-  if (!response.ok) throw new Error(`Request failed (${response.status}). Your previous report and message are preserved.`);
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(`${typeof payload.detail === "string" ? payload.detail : `Request failed (${response.status}).`} Your previous report and message are preserved.`);
+  }
   return response.json();
 }
 function setView(view) {
@@ -31,11 +34,20 @@ $("show-report").onclick = () => setView("report");
 function openDrawer() { opener = document.activeElement; if (!$("activity-drawer").open) $("activity-drawer").showModal(); }
 $("close-activity").onclick = () => $("activity-drawer").close();
 $("activity-drawer").addEventListener("close", () => { if (opener?.isConnected) opener.focus(); });
+$("activity-drawer").addEventListener("keydown", event => {
+  if (event.key !== "Tab") return;
+  const controls = [...$("activity-drawer").querySelectorAll("button:not(:disabled), summary, a[href], [tabindex='0']")].filter(el => el.getClientRects().length);
+  const first = controls[0], last = controls.at(-1);
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+});
 $("activity").onclick = () => { renderActivity(); openDrawer(); };
 
 function taskList(tasks) {
   const ol = node("ol");
   tasks.forEach(task => { const li = node("li", task.title); li.append(node("span", task.state, "task-state"));
+    if (task.role) li.append(node("p", `${task.role === "supporting" ? "Supporting evidence" : task.role} · ${task.relevance}`, "metadata"));
+    if (task.toolMeaning) li.append(node("p", task.toolMeaning, "metadata"));
     if (task.reason) li.append(node("p", task.reason, "metadata")); ol.append(li); });
   return ol;
 }
@@ -44,11 +56,15 @@ function renderPlan() {
   if (!card) {
     card = node("section", undefined, "plan-card"); card.id = "plan-card"; $("conversation-log").append(card);
     const tasks = node("div"); tasks.id = "plan-tasks";
-    card.append(node("h2", "Research plan"), tasks, node("p", `Fixed reporting date: ${run.reportingDate}. Current means both parliamentary and party membership active on that date.`, "metadata"));
-    const details = node("details"); details.append(node("summary", "Scope & original requirement"), node("p", run.brief), node("p", "Each party request remains linked to this original brief. Unaccounted conditions are not discarded. Phase 2 conversational refinement is not enabled.")); card.append(details);
-    run.unanswered.forEach(item => card.append(node("p", `${item.state}: ${item.reason}`, "notice")));
+    const interpretation = node("p"); interpretation.id = "plan-interpretation";
+    card.append(node("h2", "Research plan"), interpretation, tasks, node("p", `Reporting date: ${run.reportingDate}. Historical records do not certify current real-world outcomes.`, "metadata"));
+    const details = node("details"); details.id = "requirements"; card.append(details);
   }
   $("plan-tasks").replaceChildren(taskList(run.tasks));
+  $("plan-interpretation").textContent = run.interpretation;
+  $("requirements").replaceChildren(node("summary", "Original brief & proposed requirement assessment"), node("p", run.brief));
+  (run.requirements || []).forEach(r => { $("requirements").append(node("h3", r.originalWording), node("p", r.assessment));
+    r.proposedConditions.forEach(c => $("requirements").append(node("p", `${c.wording} — ${c.disposition}: ${c.explanation}`), node("p", c.conditions.join("; "), "metadata"))); });
 }
 function evidenceButtons(refs, parent, member = null, offset = 0) {
   refs.forEach((ref, i) => parent.append(button(`Evidence ${i + offset + 1} · ${ref.slice(0, 10)}`, () => showEvidence(ref, member), "evidence-link")));
@@ -84,13 +100,20 @@ function renderActivity() {
   run.unanswered.forEach(u => content.append(node("p", `${u.state}: ${u.requirement} — ${u.reason}`, "notice")));
 }
 
-function memberSummary(section) {
-  const summary = node("div", undefined, "member-summary");
-  if (section.count !== null) {
-    const count = node("p", undefined, "finding-number"); count.append(node("strong", String(section.count)), document.createTextNode(" distinct recorded Members")); summary.append(count);
-    summary.append(node("p", "Compiler count agrees with the distinct accepted Member identities below. Local coverage is not certified.", "metadata"));
-  } else summary.append(node("p", "Accepted Member list available; compiler total is awaiting verification.", "metadata"));
-  return summary;
+const classLabel = {1: "Directly supported recorded fact", 2: "Approved calculation", 3: "Provisional interpretation", 4: "Unverified hypothesis / further question"};
+function showAssertion(ref) {
+  const a = run.assertions[ref] || run.facts[ref];
+  openDrawer();
+  const content = $("activity-content");
+  content.replaceChildren(button("← All research activity", renderActivity), node("h3", classLabel[a.level]), node("p", a.text),
+    node("p", `Assertion ${a.id} · Level ${a.level} · ${a.reviewStatus}`, "metadata"), node("h4", "Reasoning"), node("p", a.reasoning));
+  if (a.level === 3) content.append(node("p", `${a.confidence} qualitative confidence — provisional, not calibrated`), node("p", a.confidenceRationale));
+  for (const [key, title] of [["assumptions", "Assumptions"], ["conflicts", "Conflicts / contrary evidence"], ["limitations", "Limitations"]]) {
+    content.append(node("h4", title), node("p", a[key].length ? a[key].join(" ") : "None identified within the available evidence; not a completeness guarantee."));
+  }
+  content.append(node("h4", "Source records · freshness unknown, coverage uncertified"));
+  evidenceButtons(a.evidenceRefs, content);
+  content.append(button("Challenge or explain this assertion", () => { $("activity-drawer").close(); sectionContext = null; $("brief").value = `Please explain or reconsider assertion ${ref}: `; $("brief").dispatchEvent(new Event("input")); setView("conversation"); $("brief").focus(); }));
 }
 function renderSection(section) {
   // Stable section IDs and unchanged DOM preserve unrelated reading position.
@@ -98,51 +121,25 @@ function renderSection(section) {
   if (sectionVersions.get(section.id) === serialized) return;
   sectionVersions.set(section.id, serialized);
   let el = $("section-" + section.id);
-  const memberSignature = JSON.stringify(section.members);
-  if (el?.querySelector(".table-scroll") && memberVersions.get(section.id) === memberSignature) {
-    // A compiler-count update must not detach the table a reader is operating.
-    // Keep its open identities, keyboard focus and horizontal scroll position.
-    el.querySelector(".section-state").textContent = section.state;
-    el.querySelector(".member-summary").replaceWith(memberSummary(section));
-    let reason = el.querySelector(".section-reason");
-    if (section.reason) {
-      if (!reason) { reason = node("p", undefined, "notice section-reason"); el.append(reason); }
-      reason.textContent = section.reason;
-    } else reason?.remove();
-    const refs = el.querySelector(".evidence-links"), count = refs.children.length;
-    evidenceButtons(section.evidenceRefs.slice(count), refs, null, count);
-    return;
-  }
+  const focusedLabel = el?.contains(document.activeElement) ? document.activeElement.getAttribute("aria-label") : null;
+  const hadFocus = el?.contains(document.activeElement);
   if (!el) { el = node("section", undefined, "report-section"); el.id = "section-" + section.id; $("report-sections").append(el); }
-  memberVersions.set(section.id, memberSignature);
   const heading = node("div", undefined, "section-heading"); heading.append(node("h2", section.title), node("span", section.state, "section-state"));
   el.replaceChildren(heading);
-  if (section.term) {
-    const t = section.term; el.append(node("p", `${t.label} · reporting date ${run.reportingDate}`),
-      node("p", `Recorded start: ${t.start}. End: ${t.end || "not recorded (open-ended)"}. House dates identify the term, not a parliamentary sitting.`, "metadata"), node("p", t.iri, "term-iri"));
+  if (section.kind === "further_questions") el.append(node("p", "Unverified hypotheses and questions for further investigation", "notice"));
+  for (const ref of [...section.assertionRefs, ...section.factRefs]) {
+    const a = run.assertions[ref] || run.facts[ref], p = node("p", a.text);
+    if (a.level === 3) p.append(node("span", " Provisional interpretation.", "metadata"));
+    if (a.level === 4) p.append(node("span", " Unverified — for investigation.", "metadata"));
+    const indicator = button("Source & reasoning", () => showAssertion(ref), "evidence-link");
+    indicator.setAttribute("aria-label", `Evidence: ${classLabel[a.level]} · ${ref}`); p.append(indicator); el.append(p);
   }
-  if (section.members?.length) {
-    el.append(memberSummary(section));
-    const scroller = node("div", undefined, "table-scroll"); scroller.tabIndex = 0; scroller.setAttribute("role", "region"); scroller.setAttribute("aria-label", `${section.title} Member table`);
-    const table = node("table"); table.append(node("caption", `Recorded Members active on ${run.reportingDate} · exact term above`));
-    const thead = node("thead"), tr = node("tr"); ["Member", "Supporting evidence"].forEach(label => { const th = node("th", label); th.scope = "col"; tr.append(th); }); thead.append(tr); table.append(thead);
-    const tbody = node("tbody"); section.members.forEach(m => {
-      const row = node("tr"), name = node("td", m.displayName), evidence = node("td");
-      const identity = node("details"); identity.append(node("summary", "Member identity"), node("p", m.memberIri, "term-iri")); name.append(identity);
-      evidence.append(button("View accepted witnesses", () => showEvidence(section.evidenceRefs[0], m))); row.append(name, evidence); tbody.append(row);
-    }); table.append(tbody); scroller.append(table); el.append(scroller);
+  el.append(button("Refine this section", () => { sectionContext = section.id; $("brief").value = `Please revise “${section.title}”: `; $("brief").dispatchEvent(new Event("input")); setView("conversation"); $("brief").focus(); }, "evidence-link"));
+  if (hadFocus) {
+    const equivalent = [...el.querySelectorAll("button")].find(b => b.getAttribute("aria-label") === focusedLabel);
+    if (equivalent) equivalent.focus({preventScroll: true});
+    else { const h = el.querySelector("h2"); h.tabIndex = -1; h.focus({preventScroll: true}); }
   }
-  if (section.calculation) {
-    el.append(node("p", "A deterministic comparison of separately observed local query results—not a snapshot-consistent statement of real-world party strength."));
-    section.calculation.differences.forEach(d => el.append(node("p", `${d.left} minus ${d.right}: ${d.leftMinusRight} distinct recorded Member IRIs.`)));
-  }
-  if (section.reason) el.append(node("p", section.reason, "notice section-reason"));
-  if (section.state === "Pending") el.append(node("p", "Awaiting validated evidence.", "metadata"));
-  const refs = node("div", undefined, "evidence-links"); evidenceButtons(section.evidenceRefs, refs); el.append(refs);
-  if (section.evidenceRefs.length) el.append(button("Explain this finding", () => {
-    message("Assistant", `${section.title}: this section uses only the accepted evidence linked below it. Open its evidence references to inspect exact identities, time scope, validated witnesses and query history. Further conversational refinement requires Phase 2.`);
-    setView("conversation"); $("brief").focus();
-  }, "evidence-link"));
 }
 function render() {
   $("session-title").textContent = run.title;
@@ -150,13 +147,18 @@ function render() {
   $("report-heading").textContent = run.title;
   $("report-scope").textContent = `Reporting date: ${run.reportingDate}. Scope: ${run.brief}`;
   const incomplete = run.tasks.some(t => t.state !== "Validated") || run.unanswered.length;
-  $("report-status").textContent = `${run.status}${incomplete ? " · Incomplete findings" : " · Qualified local findings"}`;
+  $("report-status").textContent = `Draft — for review · ${run.status} · Qualified / incomplete findings`;
   $("overview").hidden = $("limitations").hidden = $("report-footer").hidden = false;
   renderPlan(); run.sections.forEach(renderSection);
+  (run.messages || []).slice(messageCount).forEach(m => {
+    const box = message(m.role === "user" ? "You" : "Assistant", m.text);
+    if (m.assertionRef) box.append(node("p", "Provisional explanation — for review", "metadata"), button("Evidence for this explanation", () => showAssertion(m.assertionRef), "evidence-link"));
+  });
+  messageCount = (run.messages || []).length;
   $("limitation-list").replaceChildren(...run.limitations.map(l => node("li", l)));
   $("unanswered").replaceChildren(...run.unanswered.map(u => node("p", `${u.state}: ${u.reason}`, "notice")),
     ...run.tasks.filter(t => !["Validated", "Pending"].includes(t.state)).map(t => node("p", `${t.title}: ${t.state}. ${t.reason || ""}`, "notice")));
-  $("pause").hidden = !run.tasks.some(t => ["Pending", "Running"].includes(t.state));
+  $("pause").hidden = !run.hasWork;
   $("pause").textContent = paused ? "Resume research" : "Pause research";
   $("copy").disabled = $("export").disabled = false;
   $("submit").textContent = "Send message";
@@ -165,18 +167,18 @@ async function executeSteps(myGeneration) {
   if (busy) return;
   busy = true;
   try {
-    while (run && !paused && generation === myGeneration && run.tasks.some(t => t.state === "Pending")) {
+    while (run && !paused && !preparing && generation === myGeneration && run.hasWork) {
       const task = run.tasks.find(t => t.state === "Pending");
-      task.state = "Running"; renderPlan(); announce(task.title + ": running");
+      announce(task ? task.title + ": retrieving records" : "Writing the research draft");
       const next = await api(`/runs/${run.id}/step`, {method: "POST", body: JSON.stringify({version: run.version})});
       if (generation !== myGeneration) break;
-      run = next; render(); announce(`${task.title}: ${run.tasks.find(t => t.id === task.id).state}`);
+      if (!run || next.version >= run.version) run = next;
+      render(); announce("Research draft and activity updated.");
       // A rendering opportunity between each accepted section, not one final
       // response pretending to be progressive research.
       await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 100)));
     }
-    if (run && generation === myGeneration && !run.tasks.some(t => ["Pending", "Running"].includes(t.state))) {
-      message("Assistant", "Initial research finished. Validated findings are in the report; coverage limitations and unanswered requirements remain visible. You can inspect the evidence or export the qualified report.");
+    if (run && generation === myGeneration && !run.hasWork) {
       announce("Initial research completed with limitations. Report updated.");
     }
   } catch (error) {
@@ -191,22 +193,18 @@ $("pause").onclick = () => { paused = !paused; render(); announce(paused ? "Paus
 $("brief").addEventListener("input", () => { $("submit").disabled = preparing || !$("brief").value.trim(); });
 $("brief").addEventListener("keydown", event => { if (event.key === "Enter" && !event.shiftKey && !event.isComposing) { event.preventDefault(); if (!$("submit").disabled) $("composer-form").requestSubmit(); } });
 $("example").onclick = () => {
-  $("brief").value = "Prepare a short report comparing Fine Gael and Fianna Fáil membership in the current Dáil, including membership totals, the Members involved and a short comparison.";
+   $("brief").value = "Prepare a briefing on the Bills sponsored by Malcolm Byrne. What progress have they made, and what happened to them?";
   $("brief").dispatchEvent(new Event("input")); $("brief").focus();
 };
 $("composer-form").addEventListener("submit", async event => {
   event.preventDefault(); const brief = $("brief").value; if (!brief.trim()) return;
   if (preparing) return;
-  if (run) {
-    message("You", brief); message("Assistant", "This Phase 1 workspace retains one original research objective. Your existing report is unchanged. Use New research for another brief; multi-turn scope changes and report refinement require Phase 2 authorisation.");
-    $("brief").value = ""; $("submit").disabled = true; return;
-  }
   preparing = true; $("submit").disabled = true; $("submission-error").textContent = "";
-  message("You", brief); message("Assistant", "Preparing the research plan. No factual queries have been dispatched.");
   announce("Preparing research plan.");
   try {
-    const next = await api("/runs", {method: "POST", body: JSON.stringify({brief})});
+    const next = await api(run ? `/runs/${run.id}/messages` : "/runs", {method: "POST", body: JSON.stringify(run ? {text: brief, sectionId: sectionContext} : {brief})});
     run = next; paused = false;
+    sectionContext = null;
     if ($("brief").value === brief) $("brief").value = "";
     render();
     message("Assistant", "The plan is published. Supported operations will now run automatically. The report will develop as findings are validated.");
@@ -215,7 +213,7 @@ $("composer-form").addEventListener("submit", async event => {
     // Two animation frames + a short visible interval ensure the initial plan
     // is painted BEFORE even the first factual-query dispatch.
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 350))));
-    executeSteps(generation);
+    preparing = false; executeSteps(generation);
   } catch (error) { $("submission-error").textContent = error.message; announce("Submission failed. Your message is preserved."); }
   finally { preparing = false; $("submit").disabled = !$("brief").value.trim(); }
 });
