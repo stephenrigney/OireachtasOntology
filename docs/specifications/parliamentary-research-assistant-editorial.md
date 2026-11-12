@@ -1,8 +1,8 @@
 # Parliamentary Research Assistant — Editorial and Plain-Language Contract
 
-**Version:** 1.1 · **Date:** 12 November 2026  
+**Version:** 1.2 · **Date:** 12 November 2026  
 **Status:** Approved design contract; implementation not authorised  
-**Parent:** [Parliamentary Research Assistant v0.4](parliamentary-research-assistant.md)  
+**Parent:** [Parliamentary Research Assistant v0.5](parliamentary-research-assistant.md)  
 **Companion:** [Research acceptance contract](parliamentary-research-assistant-acceptance.md)
 
 ## 1. Purpose and audience
@@ -19,7 +19,7 @@ These pages guide institutional language and tone. They are **not** a source of 
 
 ## 2. Writing requirements
 
-1. **Lead with the answer to the research question**, not with tool activity or database status. Briefly establish scope and date where they matter.
+1. **Lead with the strongest warranted answer or finding**, not with tool activity or database status. If the question remains partly unanswered, explain that plainly rather than implying exhaustive completion. Briefly establish scope and date where they matter.
 2. **Explain, don't merely list.** Use short paragraphs to connect findings to the purpose of the research; use tables only when comparison or detail warrants them.
 3. **Choose familiar parliamentary language.** Use *TD*, *Senator*, *Dáil*, *Seanad*, *Bill*, *Act*, *constituency*, *committee* and *Minister*, accurately. Explain more specialised terms on first use.
 4. **Be institutionally accurate.** A Bill is proposed legislation, not an Act. A TD's representation of a constituency is not the same as holding a ministerial office; a Dáil term is not a single sitting. Do not substitute seats for TDs or party affiliations for simultaneous membership.
@@ -27,9 +27,10 @@ These pages guide institutional language and tone. They are **not** a source of 
 6. **Keep qualifications understandable and visible.** Say what the available records establish and what is not known. Do not bury an important gap in a technical appendix; do not repeat a lengthy caveat after every sentence.
 7. **Distinguish research progress from a conclusion.** A relevant supporting search may establish some facts without answering all the conditions in the user's question. Say what was found and what has not yet been checked. Do not present retrieval success as answer completeness.
 8. **Do not invent context.** Historical, constitutional or procedural background is factual material and requires a suitable approved reference; model fluency is not evidence.
-9. **Keep uncertainty proportionate.** Avoid claiming source-wide completeness, absence, causation or changes over time without the required coverage and temporal evidence.
+9. **Keep uncertainty proportionate.** Avoid claiming source-wide completeness, absence, causation or changes over time without the required coverage and temporal evidence. A precise primary-source finding can coexist with incomplete source coverage or unknown freshness; these are separate qualifications, not one confidence score.
 10. **Keep prose readable.** Use informative headings, active voice, concise paragraphs, defined terms and neutral descriptions. Avoid jargon, padding, promotional claims, artificial confidence and repetitive boilerplate.
 11. **Write both the conversation and report in this style.** A friendly chat response is no excuse for technical report text.
+12. **Make the draft status clear.** The assistant's complete report and interpretative narrative are for researcher review. A compiler-supported figure does not make every explanatory sentence or the overall investigation independently certified.
 
 ## 3. Technical-to-editorial translation
 
@@ -53,7 +54,30 @@ Link important factual claims to readable evidence references (for example, “S
 
 When partial answers are all that is supported, write a useful explanation of **what was found**, **what remains unanswered** and **why that matters to the user's research**. Do not replace the entire report with a refusal.
 
-## 5. Worked editorial examples
+## 5. Evidence classes and confidence language
+
+The report uses four assertion classes internally. Readers encounter **natural parliamentary prose**, and unobtrusive evidence indicators beside substantive findings, not a technical badge on every sentence.
+
+| Evidence basis | Authority and report treatment | Appropriate language |
+|---|---|---|
+| **Level 1 — Directly supported** | Exact fact from accepted parliamentary records or a separately approved source; show evidence and date/scope. Compiler/reference authority, not LLM declaration. | “The available records identify [Member] as a sponsor of [Bill].” |
+| **Level 2 — Calculated or derived** | Approved reproducible calculation over accepted facts with compatible units, period and coverage. | “Of the Bills recorded here, [number] have [recorded status] and [number] have [other status].” |
+| **Level 3 — Evidence-based interpretation** | LLM-proposed reasoning from evidence; **provisional**, identifiable and reviewable, never described as a verified database fact. | “This pattern suggests…”, followed by what evidence supports the interpretation and what it does not show. |
+| **Level 4 — Hypothesis or unverified inference** | Unverified possibility, **only** in a distinctly identified discussion or further-investigation section; not an established finding. | “One question worth investigating is whether…”, without implying that this explanation has been established. |
+
+**Confidence applies only to provisional Level 3 interpretations**, and is qualitative:
+
+- **High:** Several directly relevant pieces of accepted evidence consistently support this particular interpretation; material contradictory evidence or assumptions are not known in the available scope.
+- **Moderate:** Evidence supports the interpretation but important assumptions, coverage gaps or plausible competing explanations remain.
+- **Low:** The interpretation relies on sparse, indirect or conflicting evidence; phrase it tentatively and consider presenting it as an unanswered research question.
+
+These are **assessment guidance, not calibrated probabilities**. A high rating must not be inferred from a model's fluent writing or self-assessed certainty. The model proposes the rating and reasons; the researcher can challenge or change it. If evidence is insufficient to motivate a Level 4 possibility, write a **question for further investigation** instead. Do not attach a confidence rating to Level 4, or numerical confidence percentages to any level in the initial implementation.
+
+The evidence inspector should explain the classification, cited facts, reasoning, assumptions, contrary or missing evidence, and review status. Primary text must also signal meaningful uncertainty through ordinary language; **do not hide all qualifications in the inspector**. Each substantive finding can have a small keyboard-accessible indicator that opens this detail, with an accompanying text label or accessible name rather than colour alone. Exported Markdown preserves relevant labels and qualifications without creating a badge-filled document.
+
+**Source quality is a separate dimension:** a Level 1 observation from incomplete, outdated or inconsistent data remains Level 1 *as a statement about that observed record*, not a definitive statement about real-world parliamentary status. Name scope, date and completeness limits in normal prose where material.
+
+## 6. Worked editorial examples
 
 ### A. Party representation — useful as supporting information, not the product's main research question
 
@@ -101,8 +125,20 @@ Do not manufacture a continuous career from disconnected recorded episodes.
 
 A report can include a correctly labelled **What the records show so far** section while leaving **What remains unanswered** explicit. The limitation belongs near the relevant finding, not solely in an advanced activity drawer.
 
-## 6. Acceptance and governance
+### F. Classifying a proposed interpretation or hypothesis
 
-Independently review report samples and conversation transcripts against [the acceptance scenarios](parliamentary-research-assistant-acceptance.md). A grammatically fluent report **fails** if it invents context, drops the research purpose, overstates completeness, uses unexplained technical language, or is only a sequence of query result tables.
+**Level 1, when retrieved and accepted:** “The records available for this report identify 15 Bills with a recorded process status of Current and five with a status of Lapsed.” This does **not** certify the real-world final outcome of all 20 Bills.
+
+**Level 2, when the relevant accepted values are compatible:** “Five of the 20 recorded Bills have the status Lapsed.” The value is a checked calculation, not an independently sourced claim about legislative history.
+
+**Level 3, provisional:** “The differences in recorded status suggest that the Bills did not all reach the same recorded point in the legislative process.” Explain that this interpretation uses only the recorded classifications and says nothing about political causes or certified final outcomes. The confidence rationale should be inspectable, but not displayed as a pseudo-precise percentage.
+
+**Level 4, in a separate ‘Questions for further investigation’ section:** “What factors influenced the progress of each Bill?” Do not write “Political support explains the differences” without evidence about support and causation.
+
+**Unacceptable:** “The 15 Current Bills are progressing and the five Lapsed Bills have failed.” The recorded statuses alone do not establish those stronger conclusions.
+
+## 7. Acceptance and governance
+
+Independently review report samples and conversation transcripts against [the acceptance scenarios](parliamentary-research-assistant-acceptance.md). A grammatically fluent report **fails** if it invents context, misrepresents evidence classes, elevates hypothesis to fact, drops the research purpose, overstates completeness, uses unexplained technical language, or is only a sequence of query result tables. A complete report must remain identified as a **research draft for human review**, even when individual facts are independently validated.
 
 The editor may simplify *language* but must never simplify away *evidence restrictions*. Raw RDF terms, graph identifiers, IRIs, execution traces and validation metadata remain available in the technical activity/evidence view, not as normal explanatory prose.
