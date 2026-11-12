@@ -9,7 +9,7 @@
 
 > **v0.6 UI decision (12 November 2026):** Replace the permanent two-pane workspace with a **single-column, writing-first research journey**, drawing on Drafter's interaction pattern rather than its drafting logic. The initial question occupies the central canvas; after submission, planning and then the research report become the primary content. A compact follow-up composer sits below the report, conversation history is available on demand, and research/evidence detail remains contextual in a drawer or dialog. Remove abstract promotional text and developer-facing disclaimers from the start screen. The existing v0.5 compiler, research, evidence-confidence and human-review authority contracts are unchanged. **This is a specification approval, not implementation or product acceptance.**
 
-> **v0.5 research authority decision (12 November 2026):** The assistant produces **evidence-grounded research drafts for human review**, not independently certified exhaustive answers to arbitrary ordinary-language questions. The LLM leads research and explanatory writing; the compiler validates factual operations; approved deterministic calculations derive bounded results. Substantive assertions are classified by their distance from evidence, with provisional qualitative confidence for interpretations. Model-authored prose and the completeness of the overall investigation remain reviewable, not automatically certified. The guarded compiler and factual evidence boundaries are not relaxed. **Implementation remains subject to a separate bounded authorisation.**
+> **v0.5 research authority decision (12 November 2026):** The assistant produces **evidence-grounded research drafts for human review**, not independently certified exhaustive answers to arbitrary ordinary-language questions. The LLM leads research and explanatory writing; the compiler validates factual operations; approved deterministic calculations derive bounded results. Substantive assertions are classified by their distance from evidence, with provisional qualitative confidence for interpretations. Model-authored prose and the completeness of the overall investigation remain reviewable, not automatically certified. The guarded compiler and factual evidence boundaries are not relaxed. The v0.5 implementation was subsequently authorised and delivered; the **new v0.6 UI design** still requires separate implementation authorisation.
 
 > **Earlier v0.4 decision retained:** Distinguish admissible supporting retrieval from satisfying the full original research question. A correctly scoped supporting search must never be represented as establishing a stronger relationship, filter or outcome that its evidence does not show.
 
@@ -645,6 +645,9 @@ Keep existing browser and accessibility safeguards while **replacing the layout-
 
 ### Core repository sources
 
+- **Drafter design reference only:** [`stephenrigney/Drafter/frontend/src/App.tsx`](https://github.com/stephenrigney/Drafter/blob/main/frontend/src/App.tsx) and [`frontend/src/components/WritingCanvas.tsx`](https://github.com/stephenrigney/Drafter/blob/main/frontend/src/components/WritingCanvas.tsx). Borrow the centred, writing-first composition and keyboard convention, **not** its prepared legislative workflow, storage model or visual palette.
+- `docs/reports/parliamentary-research-assistant/v05-implementation.md`
+- `docs/reports/parliamentary-research-assistant/v05-editorial-correction.md`
 - `docs/reports/parliamentary-research-assistant/phase-0-integration-feasibility.md`
 - `docs/reports/parliamentary-research-assistant/phase-1-vertical-slice.md`
 - `docs/reports/parliamentary-research-assistant/corrective-admission-review.md`
