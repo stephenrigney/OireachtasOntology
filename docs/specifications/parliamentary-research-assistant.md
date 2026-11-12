@@ -1,39 +1,44 @@
 # Parliamentary Research Assistant
-## Product, UI and Architecture Specification — v0.2
+## Product, UI and Architecture Specification — v0.3
 
 **Project:** OireachtasOntology  
-**Date:** 11 November 2026  
-**Status:** Approved specification; implementation not yet authorised  
-**Branch:** `parliamentary-research-assistant`
+**Date:** 12 November 2026  
+**Status:** Approved design decisions; implementation not authorised  
+**Branch:** `parliamentary-research-assistant`  
+**Companion contracts:** [Editorial and plain-language standard](parliamentary-research-assistant-editorial.md) · [Research acceptance scenarios](parliamentary-research-assistant-acceptance.md)
+
+> **v0.3 corrective direction:** The implemented Phase 1 demonstrated guarded compiler integration and progressive UI mechanics, but user assessment found it unusable as a research assistant. Party-name extraction, deterministic word-list admission, fixed party-count reports and technical narrative are **not accepted product behaviour**. Retain safe integration and evidence assets while redesigning interpretation, conversation and report writing.
 
 ---
 
 ## 1. Product Definition
 
-The Parliamentary Research Assistant is a conversational application for investigating parliamentary information and producing evidence-backed research reports.
+The Parliamentary Research Assistant is an **LLM-led, evidence-constrained research collaborator**. It works with a user to understand a useful parliamentary research question, identify subsidiary questions, obtain supported evidence, write a comprehensible report and refine that report through conversation.
 
-The application uses:
+- **LLM:** research dialogue, proposed questions, planning, tool selection, explanations and report authorship.
+- **Coordinator:** requirement tracking, validated execution, approval limits, dependency management and evidence-grounded revision.
+- **Existing compiler:** authoritative supported queries, identity resolution, temporal semantics, safe execution and factual evidence.
+- **User:** authority over research aims and decisions that materially change meaning or scope.
 
-- An LLM to understand research objectives, guide conversations, organise investigations and draft reports.
-- A deterministic research coordinator to track requirements, control execution and enforce approval boundaries.
-- The existing OireachtasOntology compiler and query service to retrieve validated factual information.
-- A persistent report workspace that progressively displays findings as they become available.
-
-The application is not intended to replace the compiler with unrestricted LLM-generated SPARQL.
+It must neither generate unrestricted authoritative SPARQL nor reduce the LLM to extracting names for predetermined reports.
 
 ### 1.1 Product objectives
 
-The user should be able to:
+Users should be able to ask substantive parliamentary research questions in ordinary language; discuss scope; view an understandable plan before execution; receive validated findings automatically; read reports with narrative substance; inspect evidence; and ask follow-ups that change or improve the same report.
 
-1. Describe a research objective in ordinary language.
-2. See what the assistant intends to investigate.
-3. Obtain results without supervising every query.
-4. Read and refine a progressively generated report.
-5. Inspect the evidence supporting factual statements.
-6. Understand which questions could not be answered.
-7. Change the research direction conversationally.
+Partial research can be useful, provided that unanswered questions and evidence limitations are explained. Merely refusing a multi-part brief when independent portions are answerable is not sufficient research assistance.
 
-The interface should make research activities understandable without requiring knowledge of RDF, SPARQL or compiler internals.
+### 1.2 Research-first domain selection
+
+Begin from real parliamentary needs, not the easiest compiler query. Expose **several domains with bounded, verified existing capabilities**: candidate areas include Members and representation, Bills and legislative progress, and parliamentary offices/careers. Availability must be verified operation by operation on the selected revision and dataset. Committee and Debate questions are useful explicit coverage-boundary tests.
+
+The current-Dáil party-count comparison remains an integration regression, not a meaningful primary product acceptance scenario.
+
+### 1.3 Contract hierarchy
+
+This document governs product, UI and architecture. The [editorial contract](parliamentary-research-assistant-editorial.md) governs visible language and report content; the [acceptance contract](parliamentary-research-assistant-acceptance.md) defines research scenarios and the independent product gate. Approved compiler contracts remain authoritative for executable semantics; these documents do not create new operations.
+
+The approved v0.2 two-pane layout, evidence access, responsiveness and accessibility requirements remain in effect unless explicitly strengthened here.
 
 ---
 
@@ -41,29 +46,23 @@ The interface should make research activities understandable without requiring k
 
 ### 2.1 Hybrid autonomy
 
-The assistant automatically executes supported research requests within the user's agreed objective.
+The LLM interprets research purpose, proposes relevant subsidiary questions and plans work; the coordinator automatically invokes verified in-scope tools. Material ambiguity, assistant-proposed changes of period/relationship/measure, or a new evidence source require a user decision. Explicit user-requested changes are already authorised.
 
-Material ambiguity, assistant-proposed scope changes and changes in factual interpretation require user approval.
+### 2.2 Visible research plan
 
-A change explicitly requested by the user is already authorised and should not trigger redundant approval.
+**Approved:** The assistant publishes a concise plan before initial factual query execution. Plan items are **research questions and expected findings**, not compiler function names. The plan is updated when the user refines the brief. Routine supported operations do not require separate approval.
 
-### 2.2 Research plan visibility
+### 2.3 Progressive report
 
-**Approved:** The research plan appears in the user interface before initial query execution.
+**Approved:** The report develops as validated findings are available. The LLM authors coherent explanatory prose from evidence; tables support the narrative rather than replace it. Pending, blocked and partially answerable requirements remain visible. Factual prose cannot precede accepted evidence.
 
-The user does not need to approve routine supported queries.
+### 2.4 Genuine ongoing conversation
 
-The application must publish the initial plan before dispatching its operations. Subsequent plan changes must remain visible.
+The user may ask why a finding matters, what remains unknown, request clearer explanations, challenge source evidence, introduce a new scope or revise a section. The assistant responds to the research context, updates affected plan/report items and reuses unaffected accepted evidence. Editorial changes must not require re-querying facts unnecessarily.
 
-### 2.3 Progressive report generation
+### 2.5 Safe understanding instead of a word-list gate
 
-**Approved:** The report develops progressively as findings are validated.
-
-Validated sections become available immediately. Other sections remain pending, blocked or unsupported, with their status clearly indicated.
-
-The interface must not imply that a partial report is complete.
-
----
+The ordinary-language interface must not depend on matching a fixed list of permissible brief words. The LLM's interpretations are **proposals**, not semantic authority. Retain the original brief and all material requirements in a structured ledger; before each atomic operation verify that selection and parameters preserve its associated full requirement. If equivalence is uncertain, clarify or mark unsupported rather than silently execute a weaker query. Model self-checking alone is not a substitute for deterministic admission and evidence validation.
 
 # Part A — User Interface Specification
 
@@ -177,84 +176,21 @@ The report remains visible while the assistant conducts further research.
 
 ### S1 — New Research
 
-**Purpose:** Allow the user to start a research task.
+**Purpose:** Invite a useful research objective, not a database exercise.
 
-Display a prominent input area with:
-
-- A short invitation to describe a research objective.
-- An expandable multiline composer.
-- A primary action labelled **Start research**.
-- A few optional examples illustrating the types of supported research.
-
-The report panel initially contains an understated empty state explaining that the report will appear as research progresses.
-
-Do not display a conventional dashboard of technical capabilities on the opening screen.
+Show a prominent multiline composer labelled **What would you like to find out?**, a **Start research** action and examples reflecting meaningful parliamentary research needs (e.g. a Member's Bills and their progress, or changes in constituency representation). Examples are research prompts, not promises that every part is supported. The report shows an understated document empty state.
 
 ### S2 — Preparing Research
 
-**Trigger:** The user submits an initial research objective.
-
-The assistant interprets the request and prepares a proposed research plan.
-
-The UI displays:
-
-- The original research request.
-- A concise indication that the assistant is preparing the plan.
-- Any material clarification required before proceeding.
-
-Once ready, the plan card appears.
-
-No initial factual queries are dispatched before the plan has been published.
+The LLM interprets the brief as a research purpose, identifies subsidiary questions and distinguishes genuinely material ambiguities. The assistant summarises what it intends to investigate in plain language; it does not just extract entity names. Unsupported requirements are retained. Publish the initial plan visibly before dispatching any factual query.
 
 ### S3 — Research in Progress
 
-This is the principal working state.
-
-The conversation displays the research plan with short, human-readable tasks.
-
-Example:
-
-**Research plan — Party representation**
-
-- Identify the relevant Dáil term.
-- Retrieve current Fine Gael membership.
-- Retrieve current Fianna Fáil membership.
-- Compare the verified membership figures.
-- Prepare the report and disclose limitations.
-
-Each item displays its progress state.
-
-Supported operations proceed automatically.
-
-The report panel begins displaying the report structure and progressively populated sections.
-
-The user can continue the conversation while research is underway.
+Plan items address research questions, such as "Which Bills are associated with this Member?" or "What documented stages can be established?", not operation identifiers. Supported factual requests run automatically, with accepted findings progressively written into coherent report sections. The user may discuss and refine the investigation during the run. Unanswerable items remain accounted for.
 
 ### S4 — Clarification Required
 
-**Trigger:** A material ambiguity or proposed semantic change requires a decision.
-
-Display a clarification card within the conversation.
-
-The card must explain:
-
-- What needs to be decided.
-- Why the distinction matters.
-- The available choices.
-- Which research tasks depend on the decision.
-
-Example:
-
-**Which membership period should I use?**
-
-- Membership at the current reporting date.
-- Membership at any point during the parliamentary term.
-
-These meanings can produce different results.
-
-The card offers explicit choices rather than accepting an automatically selected assumption.
-
-Only affected research tasks are blocked. Independent authorised tasks may continue.
+Explain the uncertainty, why its resolution changes the evidence selected, and grounded choices. Example: "Do you want the TDs representing Dublin Central at the start of each Dáil, or anyone who served during each term?" Do not select a materially different meaning without approval. Continue independent supported tasks.
 
 ### S5 — Initial Research Completed
 
@@ -305,20 +241,9 @@ The composer should encourage ordinary conversational requests rather than requi
 
 ### 6.2 Assistant messages
 
-Assistant responses should be concise and action-oriented.
+The assistant speaks as a helpful, impartial parliamentary research colleague. It discusses the purpose of the investigation, explains meaningful findings, asks necessary clarifications and supports follow-up questions that genuinely revise the research/report. It does not fill the conversation with query-completion notices. Advanced query details belong in Research Activity.
 
-Typical messages include:
-
-- Interpretation of the research objective.
-- Notice that the plan has been published.
-- Explanation of a necessary clarification.
-- Summary of newly validated findings.
-- Notice of incomplete or unsupported work.
-- Confirmation that a requested report revision has been applied.
-
-Routine query completion should not generate excessive conversational messages.
-
-Detailed execution progress belongs primarily in the research activity interface.
+All user-visible messages follow [the editorial standard](parliamentary-research-assistant-editorial.md). Responses that merely say "refinement requires Phase 2" are non-compliant with the intended v0.3 experience.
 
 ### 6.3 Research plan card
 
@@ -361,18 +286,9 @@ The selected section becomes the context of the next conversational request.
 
 ### 7.1 Report structure
 
-The report has a consistent document hierarchy:
+The LLM proposes a report structure that suits the user's research purpose. Typical elements are a meaningful title, scope, answer-oriented summary, thematic findings, tables/timelines where valuable, remaining questions and evidence references. A report does not have to follow one inflexible template.
 
-1. Title and research scope.
-2. Executive summary or overview.
-3. Findings organised into sections.
-4. Tables and comparisons where supported.
-5. Limitations and unanswered questions.
-6. Evidence references.
-
-The LLM may propose different report structures appropriate to the research objective.
-
-The interface must not force all reports into one fixed template.
+**Reports need narrative substance:** explain what was investigated, what the available records establish and what those findings mean **within the supported evidence**. Do not supply invented causes, political interpretations or institutional background. A list of Member totals and database rows, however accurate, is not an adequate research report.
 
 ### 7.2 Section states
 
@@ -419,13 +335,9 @@ The LLM must not introduce unsupported summary rows or totals.
 
 ### 7.5 Report editing
 
-**MVP behaviour:** conversational report editing, with section-specific refinement actions.
+**Required conversation-led refinement:** The user can question, clarify, redirect, shorten, expand or reorganise findings and the assistant updates the same plan/report rather than requiring a new research session. Section actions may include **Explain**, **View evidence**, **Rewrite clearly** and **Investigate further**.
 
-Direct rich-text editing is deferred initially to avoid ambiguity between user-authored prose and evidence-backed findings.
-
-Users can request stylistic changes, changes to structure or further factual investigation through the conversation.
-
-Later iterations may support direct editing with explicit treatment of manually modified factual claims.
+Factual scope changes invalidate only dependent findings and require fresh validated evidence; purely editorial revisions preserve supporting references. Distinguish user-authored text from evidence-backed claims. Direct rich-text editing remains out of scope for the next bounded slice.
 
 ### 7.6 Report export
 
@@ -495,13 +407,7 @@ Users must not have to inspect debugging controls to discover that a substantive
 
 ### 9.1 Visual direction
 
-The intended appearance is:
-
-**Professional, restrained, document-oriented and suitable for parliamentary research.**
-
-The design should feel closer to an interactive research document than a technical developer console.
-
-It should be visually compatible with the OireachtasOntology application's established professional identity, without mechanically reproducing the NLQ debugging dashboard.
+**Professional, restrained, document-oriented and readable in the editorial tradition of Oireachtas.ie.** Preserve the approved two-pane layout, activity drawer, responsive behaviour and accessible component states. The workspace is for research reading and dialogue, not a technical developer console. Plain language is an interface requirement, not optional post-processing.
 
 ### 9.2 Colour
 
@@ -619,281 +525,144 @@ Automatic research activity must not prevent the user from reading or operating 
 
 # Part B — Architecture and Control Contracts
 
-## 12. Application Components
+## 12. Responsibilities and Components
 
-The application comprises six logical components.
+### 12.1 Conversation and interface
 
-### 12.1 Conversational interface
+Maintain the visible research plan, ongoing dialogue, stable living report, decisions and optional detailed activity/evidence inspector. Conversation should survive multiple authorised research and editorial turns within one run.
 
-Manages conversation rendering, user input, plan presentation, clarifications and report refinement actions.
+### 12.2 LLM research collaborator
 
-### 12.2 LLM research planner
+The LLM interprets **the user's meaning and purpose**, not just strings naming parties. It proposes worthwhile subsidiary questions; identifies relevant candidate tools from a truthful verified catalogue; discusses results; requests material clarifications; and writes/revises report sections grounded in accepted evidence.
 
-Interprets the user's research brief, identifies material factual requirements, proposes supported operations and generates readable report text.
+A single entity-extraction call followed by deterministic vocabulary admission and templated count reporting **does not satisfy this role**. The LLM must not invent factual answers, parliamentary context, capability availability, citations or graph identities.
 
-LLM proposals are not authoritative query instructions.
+### 12.3 Coordinator and requirement ledger
 
-### 12.3 Research coordinator
+Retain the original question and subsequent authorised changes, stable requirement IDs, proposed subsidiary research questions, plan versions, approved scope, task dependencies, result statuses and claim/evidence dependencies.
 
-Maintains the research brief, plan, task dependencies, approved scope and execution state.
+For every material user requirement, preserve an explicit disposition: answered; evidence pending; needs clarification; unsupported; unavailable; or explicitly withdrawn by the user. Check complete intent **before invoking an atomic tool**. Do not drop a date, relationship, answer shape, exclusion or other material qualifier to make a request executable. A model-generated interpretation is not itself proof of semantic completeness. Unsupported or ambiguous work must not obstruct independent supported tasks.
 
-It enforces approval boundaries, schedules bounded operations and coordinates progressive report updates.
+The coordinator enforces bounded tool budgets, safe retries, user approvals and selective evidence/report invalidation on revisions.
 
-### 12.4 Query service adapter
+### 12.4 Typed query tools
 
-Provides a typed interface to verified compiler operations.
+Expose a curated catalogue of **actually executable** compiler operations, with typed parameters, supported entities/relations, approved temporal semantics, projection, error states, provenance and completeness requirements. Prefer several research domains with verified bounded operations over a larger untested catalogue.
 
-It validates parameters, invokes the existing service and normalises returned evidence.
+The LLM may propose and sequence tools, but execution must reuse existing compiler identity resolution, request admission, plan validation, SPARQL safety and evidence evaluation. The LLM cannot supply arbitrary SPARQL, graph IRIs or guessed identifiers. It cannot silently narrow a rejected request. Verify reachability and evidence on current code/data rather than inferring capability from a catalogue title.
 
-It must not bypass existing identity resolution, temporal semantics, query safety or evidence checks.
+### 12.5 Evidence and claim store
 
-### 12.5 Evidence store
+Keep accepted results, identities, temporal context, traces, coverage/freshness qualifications, tool/requirement IDs and claim dependencies outside the conversation transcript. A query's success is not proof that arbitrary LLM prose about it is correct.
 
-Retains validated results, originating requests, operation details, time scope, provenance and completeness qualifications.
+### 12.6 LLM report author
 
-### 12.6 Report assembler
+Author a coherent narrative from a controlled evidence package and, where appropriate, approved institutional background sources. Verify traceable support for every substantive factual claim or state explicitly that it is a limited interpretation. Never treat model memory as a source for parliamentary history, legal procedure or contemporary facts.
 
-Maintains stable report sections, associates findings with evidence and applies authorised content revisions.
+Maintain the [editorial language contract](parliamentary-research-assistant-editorial.md) in the report and conversation. Technical provenance is available in the activity drawer, but not inserted into the primary narrative.
 
-The conversation transcript must not be the sole authoritative store for research requirements or factual findings.
+## 13. Tool Selection and Research Loop
 
----
+**User brief → LLM interpretation → requirement ledger and subsidiary questions → visibly published plan → guarded typed tools → validated evidence → LLM-authored report → conversation/revision.** Only dependent work should rerun.
 
-## 13. Compiler Integration
+For each registered tool document its complete supported semantics, parameter schema, time policy, outcome shape, evidence/coverage metadata and known refusals. A tool-selection proposal is subject to deterministic operation/parameter admission and full-intent accounting. Do not advertise missing capabilities as working. Do not use LLM-generated SPARQL or unvalidated post-hoc joins.
 
-The preferred architecture uses a small catalogue of supported, typed query operations.
+For unsupported substantive Debate analysis or historical composition, make the gap clear and provide useful independently supported findings where possible. A new external evidence source requires explicit authorisation.
 
-Each operation requires:
+## 14. User, Model and Compiler Authority
 
-- Identifier and purpose.
-- Valid parameters.
-- Supported relationships and temporal meanings.
-- Expected result type.
-- Validation requirements.
-- Completeness rules.
-- Known limitations.
-- Regression verification.
+**Automatic:** research conversation and planning; verified in-scope tool selection/execution; supported finding explanation; evidence-grounded writing/revisions; bounded safe retries; compatible deterministic calculations.
 
-The catalogue must represent executable capability rather than merely advertised ontology relationships.
+**User decision:** material ambiguity, assistant-proposed scope/date/measure substitution, choice among conflicting meanings, access to an unapproved new source. Direct user instruction to change direction is itself approval.
 
-The existing `/ask` interface may be useful for early experimentation but adds a second natural-language interpretation stage.
+**Prohibited:** dropping user qualifications, unsupported joins, unrestricted SPARQL, invented citations/identities, missing evidence treated as evidence of absence, local-record results treated as certified complete rosters, or model self-validation overriding deterministic compiler safeguards.
 
-The first technical feasibility exercise must establish which current query-service operations can be safely invoked through a thin structured adapter.
+## 15. Evidence, Language and Safety Integrity
 
-No unrestricted LLM-generated SPARQL is permitted as the authoritative execution path.
+Three distinct requirements must hold: **faithful interpretation of the user's full intent; compiler-validated factual evidence; and comprehensible, accurate report prose**. Passing one does not establish the others.
 
----
+Every substantive claim links to accepted evidence, an approved deterministic calculation or independently supported reference background. Date/term meaning, uncertainty and incomplete source coverage must survive synthesis, revisions and export. Raw IRIs, graph names, accepted witnesses, pagination and status strings belong in technical disclosures. The [editorial contract](parliamentary-research-assistant-editorial.md) and [acceptance contract](parliamentary-research-assistant-acceptance.md) are normative.
 
-## 14. Authority and Approval Boundaries
+# Part C — Corrective Product Delivery
 
-### Automatically permitted
+## 16. Domain and Vertical-Slice Boundary
 
-- Interpret routine wording within the existing brief.
-- Select and execute supported operations.
-- Retry equivalent requests within resource bounds.
-- Summarise validated findings.
-- Prepare report sections and tables.
-- Perform approved deterministic calculations from complete, compatible evidence.
-- Make editorial revisions that preserve factual meaning.
+**The existing Phase 1 party-comparison implementation is a technical prototype, not an accepted user-facing MVP.** Preserve its safe adapter, structured evidence, compiler guardrails and progressive report mechanics if they remain suitable. Redesign or retire the narrow name extractor, fixed admissible-word list, predetermined party-report assembly and technical language.
 
-### Requires user decision
+The **next corrective vertical slice** must deliver real LLM-led interpretation, relevant subsidiary questions and LLM-authored prose on at least one meaningful parliamentary research brief from [the acceptance contract](parliamentary-research-assistant-acceptance.md), with a second bounded domain exercised and explicit truthful handling of unsupported composition/content. Do not choose a count-only demonstration as the product success case.
 
-- Material ambiguity of person, relationship or period.
-- Assistant-proposed changes to research scope.
-- Changes to the intended measure or relationship.
-- Unauthorised evidence sources.
-- Interpretations that would change the factual meaning of the report.
-
-### Prohibited
-
-- Silently weakening a research requirement.
-- Treating partial results as comprehensive.
-- Inventing facts or source provenance.
-- Using missing data as proof of absence.
-- Unsupported joins or temporal intersections.
-- Bypassing compiler validation.
-- Presenting LLM agreement or self-verification as factual proof.
-
-An unresolved decision blocks only dependent tasks.
-
----
-
-## 15. Factual Evidence Contract
-
-Every factual finding must retain:
-
-- Its originating research requirement.
-- The selected and executed operation.
-- Validated parameters and entity identities.
-- Relevant temporal scope.
-- Returned values and source references.
-- Validation outcome.
-- Completeness and uncertainty qualifications.
-
-The report assembler must distinguish direct findings, validated calculations and explanatory narrative.
-
-A successfully executed query does not, by itself, validate every statement in an LLM-generated report.
-
-Comparisons must use compatible measures, time periods and evidence coverage.
-
-A report section that depends on unavailable or unsupported evidence must remain visibly incomplete or unsupported.
-
----
-
-# Part C — Bounded MVP
-
-## 16. Initial Research Domain
-
-**Approved initial proposal:** Contemporary Dáil party representation.
-
-The first version should support a complete conversational report-building journey using a small set of verified existing query capabilities.
-
-Example brief:
-
-> Prepare a short report comparing Fine Gael and Fianna Fáil membership in the current Dáil, including membership totals, the Members involved and a short comparison.
-
-The application should:
-
-1. Establish and display the research plan.
-2. Execute supported operations automatically.
-3. Validate the membership evidence.
-4. Populate the report progressively.
-5. Show factual tables and qualified summaries.
-6. Permit conversational refinements.
-7. Preserve evidence and report limitations.
-
-Actual factual results must come from the query service.
-
----
+Candidate domains include Member/constituency history, Bill sponsorship/progress and officeholding. Whether a specific requested connection is executable remains a technical verification question. The target is a useful, honest report when full evidence is unavailable, not fabricated completeness.
 
 ## 17. MVP Feature Boundary
 
-### Included
+### Required for corrective acceptance
 
-- One research workspace.
-- Conversation panel.
-- Persistent report panel.
-- Research activity drawer.
-- Visible research plan.
-- Hybrid approval and clarification controls.
-- Bounded automatic query execution.
-- Progressive report sections.
-- Evidence references and inspection.
-- Conversational report refinement.
-- Basic compatible comparisons.
-- Copy or Markdown export.
-- Responsive and keyboard-accessible interface.
+- LLM-led conversational understanding and realistic planning rather than entity extraction alone.
+- A visible plan based on research purpose and material requirement accounting.
+- Bounded, typed, verified compiler tools spanning more than one domain where existing capability permits.
+- Automatic safe execution and evidence retention.
+- LLM-authored, readable, evidence-backed report with contextual explanation.
+- Genuine follow-up conversation and section/plan revision without restarting research.
+- Clear partial-answer, clarification and unsupported states.
+- Existing approved two-pane responsive, accessible UI and activity/evidence inspector.
+- Qualified export that preserves unsupported findings and sources.
 
-### Excluded
+### Outside the bounded slice
 
-- Arbitrary SPARQL generation.
-- General autonomous web research.
-- Unrestricted cross-capability composition.
-- General historical joins and unsupported statistical analysis.
-- Rich-text document editing.
-- Cross-session report libraries.
-- Collaborative document workflows.
-- Formal Word or PDF publishing.
-- Broad compiler redesign.
+- Unrestricted graph querying, generic complex joins, broad compiler replacement.
+- General autonomous external web research or unapproved data sources.
+- ETL/ontology/data changes made only to satisfy a demonstration.
+- Rich-text editing, collaborative document publication, cross-session report libraries.
+- Unbounded agent loops or sweeping generalisation across all parliamentary subjects.
 
-The first version should not depend on completing the wider NLQ architectural generalisation programme.
+## 18. Product and Technical Acceptance
 
----
+**A technically correct tool integration is necessary but insufficient.** Run the independent, realistic research scenarios in [the acceptance contract](parliamentary-research-assistant-acceptance.md), including ordinary paraphrases, partial/unsupported needs, a live multi-turn revision and editorial review.
 
-## 18. UI Verification and Acceptance
+The four independent assessment dimensions are:
 
-### 18.1 Required browser checks
+1. **Language understanding:** faithful interpretation, meaningful clarification, no silently omitted conditions.
+2. **Research usefulness:** intelligent subsidiary questions, helpful partial research, useful final document.
+3. **Editorial quality:** Oireachtas-style plain-English explanatory conversation/report, no unexplained compiler jargon.
+4. **Factual integrity:** every substantive claim grounded, appropriate uncertainty, no unsupported joins or invented facts.
 
-Test the new-research, planning, execution, clarification, partial-report, completed-report and failure states.
+All four dimensions must pass. A safe refusal does not count as a successful factual report. Independent human assessment is required in addition to automated tests.
 
-Verify at desktop, tablet, 390px and 320px viewport widths.
+Keep the v0.2 browser and accessibility requirements: plan visible before initial dispatch; progressive updates and reading-position stability; keyboard/focus; partial/failure retention; responsive desktop/tablet/390px/320px; evidence inspection and qualified Markdown export. Existing compiler regression tests remain mandatory.
 
-Check keyboard navigation, focus behaviour, screen-reader-relevant state updates, report scrolling, table overflow and activity-drawer operation.
+## 19. Implementation Guidance and Human Gate
 
-### 18.2 Required behavioural checks
+- First identify and register a small set of existing verified tools for the chosen realistic research briefs; do not broaden compiler semantics simply to produce an attractive demo.
+- Preserve working query/evidence infrastructure when it supports v0.3, but do not build further features on the rejected word-list interpretation/product flow.
+- Implement one thin meaningful research journey end-to-end, then demonstrate a second domain or honest bounded limitation.
+- Verify with actual user language and model behaviour, not canned report text or a known exact string only.
+- Stop for human review if reliable complete-intent admission, factual claim grounding or genuinely responsive dialogue cannot be demonstrated without changing the approved authority boundaries.
+- Do not automatically treat v0.3 approval as authorisation to implement the next tranche. A separate, bounded OpenCode implementation prompt and human gate are required.
 
-Verify that:
+## 20. References and Decision Record
 
-1. The research plan is published before initial query dispatch.
-2. Supported queries proceed without redundant approval.
-3. Material ambiguities produce explicit clarification cards.
-4. Independent tasks continue when another task requires clarification.
-5. Only validated findings populate factual report sections.
-6. Unsupported requirements remain visible.
-7. Progressive updates preserve reading position where possible.
-8. Section refinement affects only relevant content and evidence.
-9. Previously validated findings survive unrelated operation failures.
-10. Export preserves evidence qualifications and incomplete status.
+### Core repository sources
 
-### 18.3 Research quality checks
-
-Evaluate with realistic independently prepared research briefs.
-
-Measure factual accuracy, material omissions, unsupported-operation handling, unnecessary interruptions, query success, time to first validated finding and time to a usable report.
-
-Safe refusal and factual success must be scored separately.
-
----
-
-## 19. Proposed Delivery Sequence
-
-### Phase 0 — Integration feasibility
-
-Identify verified compiler operations and establish a viable structured adapter.
-
-**Exit:** Selected operations have tested parameter, execution and evidence contracts.
-
-### Phase 1 — Research workspace and vertical slice
-
-Implement the two-pane interface, visible plan, bounded automatic querying and progressively populated report for one coherent research brief.
-
-**Exit:** A complete end-to-end report can be generated and inspected.
-
-### Phase 2 — Hybrid decisions and refinement
-
-Implement clarification, approval, report-section refinement, state reuse and robust failure presentation.
-
-**Exit:** Users can conduct multi-turn research without losing scope, evidence or validated content.
-
-### Phase 3 — User assessment
-
-Evaluate varied real-world research briefs and compare the experience with direct NLQ query use.
-
-**Exit:** Demonstrated user value and an evidence-based decision on expansion.
-
----
-
-## 20. References and Design Decisions
-
-### Existing repository references
-
+- `docs/reports/parliamentary-research-assistant/phase-0-integration-feasibility.md`
+- `docs/reports/parliamentary-research-assistant/phase-1-vertical-slice.md`
 - `docs/reports/query-service/nlq-stage-2-executable-capability-inventory.md`
 - `docs/reports/query-service/nlq-stage-5-evidence-based-architectural-evaluation.md`
 - `poc/specs/composable-query-plan-contract.json`
 - `poc/specs/composable-query-plan-draft.schema.json`
 - `poc/specs/composable-query-plan.schema.json`
 
-### Approved product and UI decisions
+### Settled decisions (12 November 2026)
 
-- Hybrid conversational autonomy.
-- Research plan visible before query execution.
-- Automatic supported queries.
-- Progressive report generation.
-- User authority over material scope and semantic decisions.
-- Two-pane desktop workspace.
-- Conversation as the research control surface.
-- Report as the principal reading surface.
-- Research activity in an on-demand drawer.
-- Section-level report refinement.
-- Conversation-led editing rather than direct rich-text editing for MVP.
-- Responsive single-pane mobile interface.
-- Restrained parliamentary visual identity.
-- Markdown export in the initial release.
+1. Evaluate real parliamentary research needs, not mechanically convenient database operations.
+2. Give the LLM substantial initiative in interpretation, planning, dialogue and report writing; retain compiler and user authority boundaries.
+3. Expose multiple verified compiler domains through bounded typed tools, not general SPARQL.
+4. Adopt Oireachtas-style editorial and plain-language contract with worked examples.
+5. Make ongoing conversation and revision of the same report essential.
+6. Accept the application only on separate language, research usefulness, editorial and factual-integrity dimensions, using independently prepared realistic briefs.
 
-### Implementation status
+### Unchanged v0.2 UI foundations
 
-Approval of this specification does **not** authorise implementation.
+Two-pane desktop conversation/report; wider document pane; collapsible Research Activity drawer; visible plan before query dispatch; progressive findings; responsive mobile views; keyboard accessibility; evidence access; qualified Markdown export. These remain normative alongside the strengthened conversation and writing requirements.
 
-The next technical step is a bounded assessment of the existing query service's suitability for a structured research-operation adapter, followed by implementation of the approved first vertical slice only when separately authorised.
+**Status:** v0.3 and its two companion contracts are approved design specifications. They do **not** authorise implementation, a compiler expansion, external-source access or deployment.
 
-The overall design objective remains to provide a **useful, evidence-backed research workspace**, not merely another interface for submitting individual natural-language queries.
