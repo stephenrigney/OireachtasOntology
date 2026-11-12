@@ -72,6 +72,13 @@ corrected stale pending questions, main-report visibility of partly-supported
 requirements, editorial title drift, duplicated chat echoes, session-budget
 error handling and focus retention. These are implementation corrections, not
 a revival of semantic-completeness or model self-verification gates.
+The completed multi-domain trial also showed the author proposing edits to
+unrelated Bill sections while adding career research. Section requirement
+ownership now prevents those edits deterministically: new factual work adds its
+own sections, retaining earlier ones; an explicit section-context revision can
+change its target. The original research title remains stable when appending
+another domain. A synthetic regression and the configured browser assertion
+check exact preservation, not merely retention of raw source evidence.
 
 Live model trials also exposed mistyped long assertion IDs. Short model-facing
 fact handles now resolve by **exact** stable registry lookup; no fuzzy binding
@@ -90,7 +97,7 @@ claims to prove from arbitrary prose.
   recorded separately, not represented as a second full-suite run.
 - Ontology validation: **passed**, 2,586 triples, HermiT executed successfully.
 - Final affected suite after the report, handle and conversational corrections:
-  **207 passed**, including **26 new** injected/replay/coordinator tests and the
+  **208 passed**, including **27 new** injected/replay/coordinator tests and the
   relevant existing adapter, sponsorship, lifecycle and representation regressions.
 - Fast browser controls over an **injected model + exact compiler-response
   replay** passed plan-in-viewport-before-dispatch, pause/resume, modal Tab /

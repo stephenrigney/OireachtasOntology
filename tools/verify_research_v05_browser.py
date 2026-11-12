@@ -119,6 +119,9 @@ async def verify(url, output):
         r3 = await submit(R3 + " Add this as a separate career section and retain the earlier Bill research.")
         await retain("r3-same-session", r3)
         assert set(prior_evidence) <= set(r3["evidence"])
+        before_sections = {s["id"]: s for s in evidence_discussion["state"]["sections"]}
+        after_sections = {s["id"]: s for s in r3["state"]["sections"]}
+        assert all(after_sections[key] == value for key, value in before_sections.items()), "New career research must not rewrite unrelated Bill sections"
         assert any(e["request"]["operation"]["operation"] == "career" and e["outcome"] == "answer" for e in r3["evidence"].values())
         await page.screenshot(path=str(output / "r3-career.png"))
         for label, brief in [

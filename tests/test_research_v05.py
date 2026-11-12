@@ -330,3 +330,20 @@ def test_substantive_conversation_has_its_own_exact_provisional_assertion(compil
     narrative = paragraph(r.facts, text="A different companion statement.")
     with pytest.raises(ValueError):
         r._response_assertion("Unsupported stronger conversational assertion", Narrative.model_validate(narrative))
+
+
+def test_new_factual_domain_cannot_rewrite_unrelated_existing_sections(compiler_evidence):
+    career = sponsor_task() | {"id": "career", "tool": "career", "member": "Mary Lou McDonald"}
+    model = InjectedModel([plan([sponsor_task()]), plan([career])])
+    adapter = AcceptedAdapter(compiler_evidence["sponsorship"])
+    r = ResearchRun("Bills", AS_OF, adapter, lambda: model)
+    r.step(0); r.step(r.version)
+    before = copy.deepcopy(r.sections)
+    title = r.title
+    r.message("Add a career section, retain the Bill research")
+    adapter.env = compiler_evidence["career"]
+    r.step(r.version); r.step(r.version)
+    # Injected author tries to rewrite the old findings section; coordinator
+    # preserves it because it belongs to the earlier factual requirement.
+    assert r.sections == before and r.title == title
+    assert any(a["proposition"][0] == "representation" for a in r.facts.values())

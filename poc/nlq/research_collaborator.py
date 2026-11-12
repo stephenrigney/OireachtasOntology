@@ -118,6 +118,7 @@ class ResearchRun:
         self.tasks, self.sections, self.requirements, self.plans, self.modelCalls = [], [], [], [], []
         self.messages = [{"role": "user", "text": brief}]
         self.unanswered, self.report_unanswered = [], []
+        self.section_context, self.factual_turn = None, True
         self.title, self.interpretation, self.status = "Parliamentary research", "", "Preparing research"
         self.metrics = {"firstValidatedSeconds": None, "completedSeconds": None}
         self._plan(brief)
@@ -205,8 +206,9 @@ class ResearchRun:
                       "proposedConditions": [r.model_dump() for r in plan.requirements],
                       "assessment": "Provisional — researcher review required; no exhaustive completeness certification"}
             self.requirements.append(record)
-            if not self.sections or candidate_tasks:
+            if not self.sections:
                 self.title = plan.title
+            self.factual_turn = bool(candidate_tasks)
             self.interpretation = plan.interpretation
             self.revision = plan.revisionInstructions
             self.plans.append({"version": self.turn, "interpretation": plan.interpretation,
@@ -226,6 +228,7 @@ class ResearchRun:
         if self.turn >= 12:
             raise ValueError("This local session has reached its twelve-turn budget. Export the draft before starting another.")
         self.messages.append({"role": "user", "text": text, "sectionId": section_id})
+        self.section_context = section_id
         self._plan(text if not section_id else f"Regarding section {section_id}: {text}")
         self.version += 1
         return self.view()
@@ -255,10 +258,17 @@ class ResearchRun:
             raise ValueError("Duplicate section IDs: return each section ID only once. New progress findings need a distinct ID from further questions.")
         updates, assertions = [], {}
         for section in draft.sections:
+            old = next((s for s in self.sections if s["id"] == section.id), None)
+            # New factual investigations may add findings, but cannot rewrite
+            # unrelated prior research. Explicit section context authorises only
+            # that section; editorial-only turns may revise returned sections.
+            if old and ((self.section_context and section.id != self.section_context)
+                        or (self.factual_turn and not self.section_context
+                            and old.get("requirementId") != f"r{self.turn-1}")):
+                continue
             if len({p.key for p in section.narrative}) != len(section.narrative):
                 raise ValueError("Paragraph keys must be unique within a section.")
             selected_facts = self._canonical_refs(section.factRefs)
-            old = next((s for s in self.sections if s["id"] == section.id), None)
             old_by_key = {self.assertions[a].get("key"): self.assertions[a] for a in (old or {}).get("assertionRefs", []) if a in self.assertions}
             refs = []
             for paragraph in section.narrative:
@@ -273,6 +283,7 @@ class ResearchRun:
                 refs.append(a["id"])
             fact_refs = list(dict.fromkeys(selected_facts))
             updates.append({"id": section.id, "title": section.title, "kind": section.kind,
+                "requirementId": (old or {}).get("requirementId", f"r{self.turn-1}"),
                 "state": "Draft — for review", "factRefs": fact_refs, "assertionRefs": refs,
                 "evidenceRefs": sorted({e for ref in fact_refs for e in self.facts[ref]["evidenceRefs"]})})
         self.assertions.update(assertions)

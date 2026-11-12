@@ -51,6 +51,9 @@ Pause stops further dispatch after an in-flight step. Enter submits; Shift+Enter
 adds a line. Follow-ups go to the server and the model, not a canned browser
 response. Pure editorial turns reuse facts; factual additions retrieve affected
 evidence. Existing sections remain unless returned as explicit section revisions.
+New factual investigations cannot overwrite sections owned by earlier research;
+section-context revisions apply only to their selected section. The research
+title stays stable while new sections are appended.
 Explicit revisions may change which facts are shown without deleting accepted
 facts or their source links from the evidence store. Export before restart or
 expiry: runs are in-memory, expire after one hour, capped at 32; each session has
