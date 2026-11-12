@@ -1,8 +1,8 @@
 # Parliamentary Research Assistant — Editorial and Plain-Language Contract
 
-**Version:** 1.0 · **Date:** 12 November 2026  
+**Version:** 1.1 · **Date:** 12 November 2026  
 **Status:** Approved design contract; implementation not authorised  
-**Parent:** [Parliamentary Research Assistant v0.3](parliamentary-research-assistant.md)  
+**Parent:** [Parliamentary Research Assistant v0.4](parliamentary-research-assistant.md)  
 **Companion:** [Research acceptance contract](parliamentary-research-assistant-acceptance.md)
 
 ## 1. Purpose and audience
@@ -25,10 +25,11 @@ These pages guide institutional language and tone. They are **not** a source of 
 4. **Be institutionally accurate.** A Bill is proposed legislation, not an Act. A TD's representation of a constituency is not the same as holding a ministerial office; a Dáil term is not a single sitting. Do not substitute seats for TDs or party affiliations for simultaneous membership.
 5. **Use clear dates and units.** Distinguish “on 11 November 2026”, “at some point during the 34th Dáil”, and “throughout the term”. Avoid vague “currently” when the reporting date is material.
 6. **Keep qualifications understandable and visible.** Say what the available records establish and what is not known. Do not bury an important gap in a technical appendix; do not repeat a lengthy caveat after every sentence.
-7. **Do not invent context.** Historical, constitutional or procedural background is factual material and requires a suitable approved reference; model fluency is not evidence.
-8. **Keep uncertainty proportionate.** Avoid claiming source-wide completeness, absence, causation or changes over time without the required coverage and temporal evidence.
-9. **Keep prose readable.** Use informative headings, active voice, concise paragraphs, defined terms and neutral descriptions. Avoid jargon, padding, promotional claims, artificial confidence and repetitive boilerplate.
-10. **Write both the conversation and report in this style.** A friendly chat response is no excuse for technical report text.
+7. **Distinguish research progress from a conclusion.** A relevant supporting search may establish some facts without answering all the conditions in the user's question. Say what was found and what has not yet been checked. Do not present retrieval success as answer completeness.
+8. **Do not invent context.** Historical, constitutional or procedural background is factual material and requires a suitable approved reference; model fluency is not evidence.
+9. **Keep uncertainty proportionate.** Avoid claiming source-wide completeness, absence, causation or changes over time without the required coverage and temporal evidence.
+10. **Keep prose readable.** Use informative headings, active voice, concise paragraphs, defined terms and neutral descriptions. Avoid jargon, padding, promotional claims, artificial confidence and repetitive boilerplate.
+11. **Write both the conversation and report in this style.** A friendly chat response is no excuse for technical report text.
 
 ## 3. Technical-to-editorial translation
 
@@ -83,6 +84,22 @@ Do not manufacture a continuous career from disconnected recorded episodes.
 **Poor:** “Compiler does not support debate-topic aggregation. No output.”
 
 **Better:** “I can identify the parliamentary records available for the period, but these results do not establish how often the topic was discussed or what Members said about it. I have left that part of the report unanswered rather than treating record titles as a summary of the debates.”
+
+### E. Supporting research is not yet a complete answer
+
+**Original research question:** “Which housing Bills did Malcolm Byrne sponsor?”
+
+**Appropriate interim explanation, if a verified sponsorship listing was obtained:** “I have identified Bills linked to Malcolm Byrne's sponsorship in the available records. That does not yet tell us which of those Bills concern housing. I will need reliable subject evidence before treating any as housing Bills.”
+
+**Unacceptable:** “These are Malcolm Byrne's housing Bills,” followed by an unfiltered sponsorship list.
+
+**Original research question:** “Which Bills did Malcolm Byrne oppose?”
+
+**Unacceptable:** “He opposed these Bills,” supported only by sponsorship records.
+
+**Appropriate when opposition cannot be established:** “The available sponsorship records do not establish which Bills, if any, Malcolm Byrne opposed. That part of your question remains unanswered.”
+
+A report can include a correctly labelled **What the records show so far** section while leaving **What remains unanswered** explicit. The limitation belongs near the relevant finding, not solely in an advanced activity drawer.
 
 ## 6. Acceptance and governance
 
