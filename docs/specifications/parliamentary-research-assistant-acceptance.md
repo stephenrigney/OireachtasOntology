@@ -1,8 +1,8 @@
 # Parliamentary Research Assistant — Research Acceptance Contract
 
-**Version:** 1.0 · **Date:** 12 November 2026  
+**Version:** 1.1 · **Date:** 12 November 2026  
 **Status:** Approved design contract; implementation not authorised  
-**Parent:** [Parliamentary Research Assistant v0.3](parliamentary-research-assistant.md)  
+**Parent:** [Parliamentary Research Assistant v0.4](parliamentary-research-assistant.md)  
 **Companion:** [Editorial standard](parliamentary-research-assistant-editorial.md)
 
 ## 1. Purpose
@@ -79,7 +79,45 @@ For each realistically answerable research need, independently prepare at least 
 
 Exercise a multi-turn sequence: initial question → evidence-backed finding → “Why does that matter?” → “Show me the evidence” → a material scope change → revise an affected report section. Preserve unrelated findings and distinguish changes requiring approval from user-authorised changes.
 
-Include adversarial but realistic material qualifiers: another date, a different House, exclusion of a Member, a different sponsor role, or request for an unsupported combined relationship. A plan that omits a material condition must not execute as though complete. Include ambiguous identity, missing evidence, fail-closed query errors and a genuinely unsupported question.
+Include adversarial but realistic material qualifiers: another date, a different House, exclusion of a Member, a different sponsor role, or request for an unsupported combined relationship. A plan that omits a material condition may still execute a **relevant, accurately scoped supporting search**, but must not mark the original requirement as answered or describe that search as satisfying the omitted condition. Include ambiguous identity, missing evidence, fail-closed query errors and a genuinely unsupported question.
+
+## 3A. Admission versus requirement-satisfaction validation
+
+The [corrective admission investigation](../reports/parliamentary-research-assistant/corrective-admission-review.md) showed that eight of ten intentionally incomplete proposals were accepted by existing admission checks. They were **injected proposals**, not observed real-model error frequencies. The next bounded validation must keep retrieval admission, requirement satisfaction and report-claim acceptance separately observable.
+
+### Negative controls — no unsupported promotion
+
+| Original intent or condition | Possible supporting retrieval | Must **not** be treated as established |
+|---|---|---|
+| Which **housing** Bills did Malcolm Byrne sponsor? | All recorded Bills sponsored by the Member | Housing subject classification without independent subject evidence |
+| Which Bills did the Member **oppose**? | A separately justified sponsorship/background inquiry, if genuinely useful | Opposition inferred from sponsorship; absent a justified supporting purpose, skip irrelevant retrieval |
+| R1: sponsored Bills **and their progress/outcomes** | Sponsorship list | Stages, enactment or final outcomes until their own evidence exists |
+| R3: constituencies **and parliamentary roles** | Career constituency history | Officeholding and other roles |
+| Constituencies **during ministerial service** | All career constituencies | Ministerial-service temporal intersection |
+| Bills that **became law** | Recorded Bills/sponsorship | Enactment without accepted legislative evidence |
+| Bills sponsored **as a Senator** | General sponsorship | Senator-specific role or period |
+| Bills **primarily** sponsored | General sponsorship | Primary sponsor classification |
+| Before a stated date | Untimed historical listing, if independently useful | The requested date filter |
+| A second date-qualified request | A broader listing, if justified | The specified date relationship |
+
+The exact saved control payloads and two date-refusal outcomes remain in `docs/reports/parliamentary-research-assistant/corrective-admission-live.json`. Do not replace them with easier paraphrases or infer unsupported relationships from labels.
+
+**Pass conditions:** each accepted retrieval accurately describes its **own** verified operation and is relevant to an explicit subsidiary question; no material omitted condition is automatically closed; no resulting report claim wrongly adopts that condition; every unsupported parent condition retains a visible unmet disposition. If a tool is not genuinely relevant, declining to dispatch is a valid outcome. A blanket model-labelled “entailed” span, token coverage or a cited query result does not count as independent satisfaction proof.
+
+### Positive controls — useful supporting research
+
+- For **housing Bills**, a supported sponsorship listing can be admitted **as initial evidence**; housing classification remains unresolved until independently supported.
+- For **R1**, validated sponsorship evidence supports a list, and separate exact Bill lifecycle lookups support individual recorded stages. Neither is treated as certifying all outcomes or complete source coverage.
+- For **R3**, validated constituency/term history may support the representation portion even if discovery of other parliamentary roles remains unavailable.
+- When a directly supported complete requirement is asked (e.g. an exact supported party-Member count with compatible date and unit), the answer must not be unnecessarily blocked or require a per-query confirmation.
+
+Test ordinary wording and injected incomplete proposals separately. Measure erroneous **answer promotion** and unnecessary **user interruptions** as well as query success. A correct retrieval is not a complete research answer.
+
+### Evidence and report gate
+
+Require a proposed minimal, auditable representation of `research requirement → supporting operation → validated fact → claimed satisfaction/report claim`, including exact relation and time scope, evidence reference and unresolved conditions. Demonstrate that selected operation semantics and accepted result fields support the particular fact or simple approved deterministic derivation; do not rely on LLM self-verification or a citation alone. It is acceptable to withhold a conclusion when a general-language binding cannot be independently established. No universal natural-language equivalence or prose-verification theorem is required.
+
+The next OpenCode tranche is **design validation**, not corrective app delivery: reproduce negative/positive cases, propose and evaluate a narrow mechanism, and stop at a human gate. A zero-promotion result on this small frozen set establishes only bounded feasibility, not general safety or product acceptance.
 
 ## 4. Four independent acceptance dimensions
 
@@ -88,7 +126,7 @@ Include adversarial but realistic material qualifiers: another date, a different
 | **Language understanding** | Captures the research purpose, entities, time scope, comparison and all material qualifications across ordinary paraphrases; asks only meaningful clarifications. | Entity-name extraction only; rigid allowed-word list as normal entry point; unacknowledged dropped qualifier. |
 | **Research usefulness** | Proposes relevant subsidiary questions; pursues supported work automatically; provides an informative answer where possible, and makes outstanding questions clear. | Cosmetic report made of table cells; safe but unhelpful blanket refusal when independent evidence exists. |
 | **Editorial quality** | Coherent, explanatory, plain-English report and dialogue in the [editorial contract](parliamentary-research-assistant-editorial.md); parliamentary terms used accurately. | “Member IRIs”, “accepted witnesses”, internal status strings or jargon in normal report prose; meaningless comparison as primary research. |
-| **Factual integrity** | Every substantive claim traceable to accepted evidence/approved background; no unsupported joins, dates, causal claims or false completeness; limitations survive export. | A convincing but ungrounded report; silent downgrade to easier query; claiming a complete roster from uncertified local records. |
+| **Factual integrity** | Every substantive claim supported by accepted evidence/approved background; supporting retrieval is distinguished from satisfied requirements, with no unsupported joins, dates, causal claims or false completeness; limitations survive export. | A cited sponsorship list presented as answering opposition, housing, primary-sponsor or enactment questions; claiming a complete roster from uncertified local records. |
 
 **All four dimensions must pass.** Safe refusal is positive evidence of restraint, not proof the assistant completed the research. The LLM's own confidence or self-graded evaluation does not determine acceptance.
 
@@ -109,7 +147,7 @@ This is a **proposed gate**, not implementation authorisation:
 - Demonstrate **a second domain** through an independently checked research flow or a well-evidenced bounded limitation; a successful party-count comparison cannot be the only operational demonstration.
 - R4 and R5 demonstrate truthful, useful treatment of unsupported composition/content needs, without invented findings or silent simplification.
 - At least one real multi-turn refinement modifies an existing plan/report; unrelated accepted findings survive.
-- Every material original requirement is answered, explicitly pending/unsupported or clarified; no unsafe admission or materially unsupported report claim.
+- Every material original requirement is answered, partly supported with outstanding conditions visible, explicitly pending/unsupported, or clarified; no unsafe query admission or promotion of supporting evidence into an unsupported answer.
 - Independent reviewers accept editorial usefulness and comprehensibility. All required existing/new compiler safeguards and end-to-end browser checks pass.
 - Record remaining deficits rather than broadening compiler/ETL scope to chase every possible question. If genuine research dialogue or grounded narrative cannot be achieved with the chosen architecture, stop for design review rather than declaring success from integration tests.
 
@@ -117,4 +155,4 @@ Passing the adapter test suite, R6 or a polished UI alone does **not** meet this
 
 ## 7. Status and authority
 
-Phase 1's adapter, trace preservation and progressive rendering are technical assets, not proof the v0.3 experience is delivered. This contract defines the human/product gate to be used **after** separately authorised implementation. It does not approve Phase 2, a compiler expansion, a data reload, external source access or public deployment.
+Phase 1's adapter, trace preservation and progressive rendering are technical assets, not proof that the v0.4 experience is delivered. The mandatory **supporting-retrieval versus requirement-satisfaction design-validation gate** precedes a separately authorised corrective implementation. This contract also defines the later human/product acceptance gate. It does not approve a corrective app build, compiler expansion, data reload, external-source access or public deployment.
