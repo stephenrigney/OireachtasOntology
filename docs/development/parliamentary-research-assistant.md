@@ -116,7 +116,7 @@ The service's existing contracts/planner supply discovery guidance, admission,
 identity resolution, validation, compilation and evidence evaluation. There is
 no independently maintained research capability catalogue or unrestricted query
 interface. Advertised capabilities may still be conditional, unsupported for a
-particular wording/scope, or unsuitable for factual promotion.
+particular wording/scope, or unable to establish the requested finding.
 
 | Tool | Parameters and supported meaning | Explicit non-answers |
 |---|---|---|
@@ -126,11 +126,10 @@ particular wording/scope, or unsuitable for factual promotion.
 Legacy `sponsorship`/`career` requests remain replay-compatible; new research uses
 `query`, not a new subject-specific tool. Requests use public compiler execution,
 identity resolution, plan validation, query safety, pagination/caps and evidence
-evaluation, including its existing semantic planner when required. Only recognised
-existing structured accepted evidence is normalised by `research_evidence.py`;
-facts are not reconstructed from display prose. Successful service responses
-without accepted research evidence (currently including party history) stay
-inspectable in the evidence dialog with an explicit factual-promotion limitation.
+evaluation, including its existing semantic planner when required. Optional
+structured evidence is normalised by `research_evidence.py`; its absence does not
+block reporting. All successful validated service answers use the generic result
+path below. Facts are not reconstructed from model prose.
 Exact Bill identity agreement
 is checked across sponsorship and lifecycle lookups. A failed/truncated/partial
 compiler result produces no established assertions. Earlier independent evidence
@@ -148,6 +147,10 @@ timing, graph scope, plan, source revision and failures. Freshness, loaded captu
 identity and common snapshot remain unknown; coverage remains uncertified.
 
 ### Assertion and evidence-confidence contract
+
+The legacy mechanisms in this section remain available for existing evidence;
+they are not gates for the direct-result path. New query families do not need
+research evidence projectors or per-family adapters.
 
 `research_assertions.py` retains stable assertion identity, exact text/structured
 proposition, evidence references, reasoning, assumptions, conflicts, limitations,
@@ -181,22 +184,67 @@ and gaps supplement the unobtrusive keyboard-accessible evidence indicators.
 The inspector exposes sources, reasoning and qualifications. Markdown retains
 draft/class labels, confidence rationale, gaps, assertion IDs and full evidence.
 
+### Direct Query Service results
+
+`query(question)` uses the same public `execute_question` as the Query Service.
+The configured client is the existing `CompositionTransport` (also supporting
+ordinary queries); lazy HTTP execution and `QueryTrace` support both `query` and
+typed `select`. The service owns scope checks, semantic validation, pagination,
+timeouts and request budgets. Research does not run a second execution pipeline.
+
+`research_results.py` retains a small, family-independent `queryResult` record:
+original subsidiary question, SELECT columns/rows or ASK Boolean, validated plan,
+route/composition request, reporting date, selection status, qualifications and
+actual query references. The enclosing evidence retains the service result,
+SPARQL, full composition report/typed ledger, source context and execution details.
+Zero and false are successful values; an empty table is distinguished from a
+failed, unsupported, ambiguous or unavailable search. Absence from local results
+does not establish historical absence or exhaustive coverage.
+
+Successful answers appear immediately as unchanged result tables (or Boolean
+answers), even if optional factual evidence or report authoring is unavailable.
+The author receives `queryResults` with stable session handles, selects
+`section.resultRefs`, and writes ordinary `summaries` referencing those answers.
+Source column labels and cells are never model-authored. Summaries and comparisons
+are explicitly **AI-generated drafts for review**, not certified facts or
+calibrated interpretations. The model must preserve scope/qualifications and
+distinguish provisional comparison from returned information. It may not invent
+records, drop material conditions, infer continuous service, or imply exhaustive
+coverage. Existing assertion mechanisms remain optional, not prerequisites.
+
+Unincorporated successful answers stay visible in fallback result sections;
+partial failures, follow-ups and failed revisions retain their original records.
+Markdown and the evidence dialog expose the same source results and provenance.
+The UI/workflow is otherwise unchanged.
+
 ## Verification and artefacts
 
 ```sh
-.venv/bin/python -m pytest -q tests/test_research_v05.py tests/test_research_workspace.py
+.venv/bin/python -m pytest -q tests/test_research_direct_results.py \
+  tests/test_research_direct_results_browser.py tests/test_research_v05.py \
+  tests/test_research_workspace.py
 # Keep legacy deterministic tests from picking up configured live-model fallback:
 NLQ_LLM_API_KEY='' .venv/bin/python -m pytest -q tests
 .venv/bin/python tests/validate.py
 uv sync --extra test --extra nlq --extra browser-test
 .venv/bin/python -m playwright install chromium
-# Against the configured app above:
-.venv/bin/python tools/verify_research_v06_browser.py
+# Configured model/read-only Fuseki: original questions, full run archives/drafts:
+.venv/bin/python tools/verify_research_general_queries.py \
+  --output /tmp/oireachtasontology/research-direct-results/live \
+  --cases o-kildare-north p-wexford q-donegal
 # Fast, explicitly injected/replayed UI controls (no model or dataset network):
 .venv/bin/python tools/verify_research_v06_ui.py
 ```
 
-New deterministic tests distinguish **injected model proposals** and exact saved
+`test_research_direct_results_browser.py` uses real Chromium/application routes
+and synthetic compiler RDF with the optional projector disabled. It verifies
+immediate results, inspection, export and narrow reflow even during an injected
+author outage. The older `verify_research_v06_browser.py` retains legacy
+assertion-authoring expectations; those are no longer requirements for generic
+result reporting. The direct-result completion report separately records actual
+configured-model/Fuseki browser observations and their remaining limitations.
+
+Deterministic tests distinguish **injected model proposals** and exact saved
 compiler-response replay from live research. The browser verifier exercises the
 actual configured model/Fuseki interaction, saves transcripts, model proposals,
 assertions, reports and screenshots under `/tmp/oireachtasontology/research-v06/`

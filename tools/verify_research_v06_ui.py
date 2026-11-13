@@ -60,6 +60,7 @@ async def verify(url, output, slow_gate):
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         page = await browser.new_page(viewport={"width": 1440, "height": 1000})
+        authored = page.locator("#section-findings")
         await page.goto(url)
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
@@ -101,7 +102,7 @@ async def verify(url, output, slow_gate):
             elif len(calls) == 4:
                 # Read an unchanged finding while the author finishes a later,
                 # failing task. Automatic updates must leave focus/position alone.
-                target = page.get_by_role("button", name="Evidence: individual recorded facts").first
+                target = authored.get_by_role("button", name="Evidence: individual recorded facts").first
                 await target.focus()
                 await target.scroll_into_view_if_needed()
                 reading["y"] = (await target.bounding_box())["y"]
@@ -121,13 +122,14 @@ async def verify(url, output, slow_gate):
         await page.locator("#pause").click()
         await expect(page.locator("#overall-state")).to_have_text("Completed with unanswered questions")
         assert len(calls) == 3  # planning, one compiler operation, one author pass
-        assert await page.locator("#report-sections section").count() == 1
+        await expect(authored).to_be_visible()
+        assert await page.locator("#report-sections section").count() == 2  # Original result plus optional assertion draft.
         await page.locator("#plan-summary").click()
         await expect(page.locator("#plan-disclosure")).not_to_have_attribute("open", "")
         await page.locator("#reach-plan").click()
         await expect(page.locator("#plan-interpretation")).to_be_visible()
         await expect(page.locator("#plan-summary")).to_be_focused()
-        evidence = page.get_by_role("button", name="Evidence:").first
+        evidence = authored.get_by_role("button", name="Evidence:").first
         await evidence.focus(); await page.keyboard.press("Enter")
         await page.locator("#activity-drawer button").last.focus()
         await page.keyboard.press("Tab")
@@ -135,7 +137,7 @@ async def verify(url, output, slow_gate):
         await page.keyboard.press("Escape")
         assert await evidence.evaluate("el => el === document.activeElement")
         # Nested row → assertion → source → Escape returns to the original row.
-        row = page.get_by_role("button", name="Evidence: individual recorded facts").first
+        row = authored.get_by_role("button", name="Evidence: individual recorded facts").first
         await row.click()
         await page.locator("#activity-content button").nth(1).click()
         await page.locator("#activity-content .evidence-link").first.click()
@@ -146,14 +148,14 @@ async def verify(url, output, slow_gate):
         # source/assertion stays unchanged; only its section heading changes.
         await row.click()
         await page.evaluate("""() => {
-            window.originalSectionTitle = run.sections[0].title;
+            window.originalSectionTitle = run.sections.find(s => s.id === 'findings').title;
             window.detachedOpener = opener;
-            run.sections[0].title += ' — updated presentation'; render();
+            run.sections.find(s => s.id === 'findings').title += ' — updated presentation'; render();
         }""")
         assert await page.evaluate("!window.detachedOpener.isConnected")
         await page.keyboard.press("Escape")
         await expect(row).to_be_focused()
-        await page.evaluate("() => { run.sections[0].title = window.originalSectionTitle; render(); }")
+        await page.evaluate("() => { run.sections.find(s => s.id === 'findings').title = window.originalSectionTitle; render(); }")
         # Explicitly challenging a finding uses plain wording, not a hash ID.
         await evidence.click()
         await page.get_by_role("button", name="Challenge or explain this assertion").click()
@@ -162,14 +164,14 @@ async def verify(url, output, slow_gate):
         assert value.startswith("Please explain or reconsider this finding:")
         assert "assertion " not in value
         await page.locator("#brief").fill("")
-        await page.locator("#report-sections button", has_text="Refine this section").click()
+        await authored.locator("button", has_text="Refine this section").click()
         await expect(page.locator("#brief")).to_be_focused()
         await expect(page.locator("#section-context")).to_be_visible()
         await page.locator("#brief").fill("Preserve my unfinished revision")
         await page.locator("#clear-context").click()
         await expect(page.locator("#brief")).to_have_value("Preserve my unfinished revision")
         # A failed follow-up preserves the report, section context and draft.
-        await page.locator("#report-sections button", has_text="Refine this section").click()
+        await authored.locator("button", has_text="Refine this section").click()
         await page.route("**/runs/*/messages", lambda r: r.fulfill(status=503, json={"detail": "Injected follow-up endpoint unavailable."}))
         prior_report = await page.locator("#report-sections").inner_text()
         await page.locator("#brief").press("Control+Enter")

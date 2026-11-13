@@ -140,6 +140,42 @@ class AcceptedAdapter:
         return copy.deepcopy(self.env)
 
 
+def authored_findings(run):
+    # Successful service answers now have immediate result sections as well as
+    # these optional legacy assertion sections. Address the author's stable ID,
+    # not a positional assumption about the whole report.
+    return next(s for s in run.sections if s["id"] == "findings")
+
+
+def test_reportable_sponsorship_without_batch_ids_blocks_only_lifecycle(compiler_evidence):
+    # Inject loss of optional legacy batch metadata after a genuine compiler
+    # replay. The original successful result must remain reportable; no Bill
+    # identity may be guessed from display strings to dispatch another query.
+    env = copy.deepcopy(compiler_evidence["sponsorship"])
+    env["data"] = {"queryResult": env["data"]["queryResult"]}
+    source = sponsor_task()
+    lifecycle = source | {"id": "progress", "tool": "lifecycle", "member": None, "sourceTask": source["id"]}
+    class Author(InjectedModel):
+        def generate(self, phase, payload):
+            if phase == "report":
+                return {"response": "The returned Bill list is retained; the follow-up lookup could not proceed.",
+                        "responseNarrative": None, "sections": [], "unanswered": [], "resolvedQuestions": []}
+            return super().generate(phase, payload)
+    model = Author([plan([source, lifecycle])])
+    tools = AcceptedAdapter(env)
+    run = ResearchRun("Bills and recorded progress", AS_OF, tools, lambda: model)
+    for _ in range(10):
+        if not run.has_work():
+            break
+        run.step(run.version)
+    assert tools.calls == 1 and run.results and run.sections
+    assert run.tasks[0]["state"] == "Validated"
+    assert run.tasks[1]["state"] == "Incomplete"
+    assert run.tasks[1]["researchOutcome"]["kind"] == "evidence_incomplete"
+    assert "No identities were guessed" in run.tasks[1]["reason"]
+    assert run.view()["sections"][0]["results"][0]["rows"]
+
+
 def test_plan_before_dispatch_and_genuine_editorial_revision_reuses_facts(compiler_evidence):
     model = InjectedModel()
     adapter = AcceptedAdapter(compiler_evidence["sponsorship"])
@@ -150,11 +186,11 @@ def test_plan_before_dispatch_and_genuine_editorial_revision_reuses_facts(compil
     assert adapter.calls == 1 and r.facts
     r.step(r.version)
     before = copy.deepcopy(r.facts)
-    assertion_id = r.sections[0]["assertionRefs"][0]
+    assertion_id = authored_findings(r)["assertionRefs"][0]
     r.message("Shorten the explanation")
     r.step(r.version)
     assert adapter.calls == 1 and before == r.facts
-    assert r.sections[0]["assertionRefs"] == [assertion_id]
+    assert authored_findings(r)["assertionRefs"] == [assertion_id]
     assert r.assertions[assertion_id]["text"] == "The records suggest a starting point, not final outcomes."
     assert r.brief == "Investigate Bills and progress" and len(r.requirements) == 2
     exported = r.markdown()
@@ -350,7 +386,9 @@ def test_duplicate_section_ids_are_repaired_not_silently_overwritten(compiler_ev
     r = ResearchRun("Bills", AS_OF, AcceptedAdapter(compiler_evidence["sponsorship"]), lambda: model)
     r.step(0); r.step(r.version)
     assert len(outputs) == 2 and "structuralCorrection" in outputs[1]
-    assert len(r.sections) == 1 and r.sections[0]["assertionRefs"]
+    assert len([s for s in r.sections if not s.get("automaticResult")]) == 1
+    assert authored_findings(r)["assertionRefs"]
+    assert r.results and any(s.get("automaticResult") for s in r.sections)
 
 
 def test_editorial_title_and_unrelated_sections_survive(compiler_evidence):
@@ -373,7 +411,7 @@ def test_model_fact_handles_are_exact_and_stable_not_fuzzy_ids(compiler_evidence
     assert aliases["f1"] == next(iter(r.facts))
     assert set(r._context()["facts"]) == set(aliases)
     r.step(r.version)
-    assert r.sections[0]["factRefs"] == [aliases["f1"]]
+    assert authored_findings(r)["factRefs"] == [aliases["f1"]]
     assert all(ref in r.facts for a in r.assertions.values() for ref in a["factRefs"])
     assert r.modelCalls[-1]["factReferenceMap"] == aliases
     assert r._aliases() == aliases
@@ -432,7 +470,10 @@ def test_new_factual_domain_cannot_rewrite_unrelated_existing_sections(compiler_
     r.step(r.version); r.step(r.version)
     # Injected author tries to rewrite the old findings section; coordinator
     # preserves it because it belongs to the earlier factual requirement.
-    assert r.sections == before and r.title == title
+    assert all(s == next(after for after in r.sections if after["id"] == s["id"]) for s in before)
+    assert r.title == title
+    assert len(r.sections) == len(before) + 1  # New successful result remains reportable.
+    assert r.sections[-1]["automaticResult"]
     assert any(a["proposition"]["predicate"] == "representation" for a in r.facts.values())
 
 
@@ -473,9 +514,9 @@ def test_table_only_report_preserves_full_registry_and_exports_it(compiler_evide
     model.generate = table_author
     r = ResearchRun("Bills", AS_OF, AcceptedAdapter(compiler_evidence["sponsorship"]), lambda: model)
     r.step(0); r.step(r.version)
-    assert r.sections[0]["tables"] and not r.sections[0]["factRefs"]
-    assert r.sections[0]["evidenceRefs"]
-    before = copy.deepcopy(r.sections[0]["tables"])
+    assert authored_findings(r)["tables"] and not authored_findings(r)["factRefs"]
+    assert authored_findings(r)["evidenceRefs"]
+    before = copy.deepcopy(authored_findings(r)["tables"])
     facts = copy.deepcopy(r.facts)
     exported = r.markdown()
     body, appendix = exported.split("## Assertion evidence and reasoning")
@@ -484,7 +525,7 @@ def test_table_only_report_preserves_full_registry_and_exports_it(compiler_evide
     assert all(ref in appendix for ref in facts)
     r.message("Shorten overview, keep the table")
     r.step(r.version)
-    assert r.sections[0]["tables"] == before and r.facts == facts and r.adapter.calls == 1
+    assert authored_findings(r)["tables"] == before and r.facts == facts and r.adapter.calls == 1
 
 
 def test_question_accounting_separates_work_types_and_rejects_bad_refs(compiler_evidence):
@@ -609,13 +650,13 @@ def test_shortening_budget_repairs_overlong_prose_preserves_unrelated_and_tables
     model.generate = author
     r = ResearchRun("Bills", AS_OF, AcceptedAdapter(compiler_evidence["sponsorship"]), lambda: model)
     r.step(0); r.step(r.version)
-    old_text = r.assertions[r.sections[0]["assertionRefs"][0]]["text"]
+    old_text = r.assertions[authored_findings(r)["assertionRefs"][0]]["text"]
     r.sections.append({"id": "unrelated", "title": "Other findings", "kind": "findings", "assertionRefs": [], "factRefs": [], "tables": []})
     unrelated = copy.deepcopy(r.sections[-1])
     r.message("Make the overview shorter")
     r.step(r.version)
     assert len(revision_attempts) == 2 and "structuralCorrection" in revision_attempts[1]
-    new_text = r.assertions[r.sections[0]["assertionRefs"][0]]["text"]
+    new_text = r.assertions[authored_findings(r)["assertionRefs"][0]]["text"]
     assert len(new_text.split()) <= int(len(old_text.split()) * .65)
     assert r.sections[-1] == unrelated and r.adapter.calls == 1
 

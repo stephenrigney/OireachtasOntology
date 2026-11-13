@@ -31,7 +31,7 @@ CATALOGUE = """Research interface (read-only local Query Service; freshness unkn
 query(question): propose a concrete subsidiary question in ordinary language. It is passed UNCHANGED to the existing Query Service, which independently selects capabilities, resolves identities, validates and executes. member=null, sourceTask=null. Discovery guidance is supplied from the Query Service itself, not a Research Assistant capability catalogue. Advertisements are not guarantees of executable or promotable evidence.
 lifecycle(sourceTask): retained batch convenience ONLY for recorded status/activities of exact Bills from an accepted sponsorship enumeration. member=null. At most 32 Bills; every lookup independently passes the Query Service. This is not final-outcome certification.
 Use query for all other research, including sponsorship and constituency history. Do not supply plans, IRIs, SPARQL or guessed identities. Missing dates remain missing; separate episodes never imply continuous membership.
-After a limitation you may propose a different RELEVANT investigation, with its narrower scope explicit. Never silently remove material conditions or query irrelevant substitutes. A successful Query Service response without recognised accepted evidence is inspectable retrieval, NOT a research fact.
+After a limitation you may propose a different RELEVANT investigation, with its narrower scope explicit. Never silently remove material conditions or query irrelevant substitutes. Successful Query Service answers are available directly as queryResults, including tables, dates, counts and Boolean answers. Optional factual evidence is not required for reporting them faithfully.
 """
 
 
@@ -118,28 +118,38 @@ class ResearchTools:
         try:
             accepted = (outcome.status == "success" and outcome.interaction == "answer"
                         and outcome.plan is not None and validate_plan(outcome.plan) == outcome.plan
-                        and bool(outcome.accepted_evidence) and bool(trace.queries)
+                        and bool(trace.queries)
                         and all(q["outcome"] == "returned" for q in trace.queries))
             if bill is not None:
                 accepted = accepted and {x["billIri"] for x in (outcome.accepted_evidence or {}).get("lifecycle", [])} == {bill["billIri"]}
         except (ValueError, KeyError, TypeError):
             accepted = False
-        data = None
+        data, result_problem = None, None
         if accepted:
             from .research_evidence import accept_query_evidence
+            from .research_results import result_record
             data, _ = accept_query_evidence(outcome, trace.queries)
-            accepted = data is not None
+            data = data or {}
+            try:
+                data["queryResult"] = result_record(outcome, question=question, reporting_date=reporting_date, queries=trace.queries)
+            except (ValueError, KeyError, TypeError) as error:
+                accepted, data, result_problem = False, None, str(error)
+        status = "answer" if accepted else (outcome.interaction if outcome.interaction != "answer" else "validation_failure")
+        research_outcome = classify(PlanOutcome(status) if result_problem else outcome,
+            accepted=accepted, plan_validated=accepted, execution_completed=bool(trace.queries) and all(q["outcome"] == "returned" for q in trace.queries))
         return {"evidenceId": "e-" + uuid4().hex, "request": {"factualRequest": question,
+                    "subsidiaryQuestion": task.get("question", question),
                     "requirementId": task["requirementId"], "operation": {"operation": task["tool"]}},
-                "outcome": "answer" if accepted else (outcome.interaction if outcome.interaction != "answer" else "validation_failure"),
+                "outcome": status, "researchOutcome": research_outcome,
                 "compilerStatus": outcome.status, "validation": {"accepted": accepted},
-                "data": data, "plan": outcome.plan,
+                "data": data, "plan": outcome.plan, "routeId": outcome.route_id, "sparql": outcome.sparql,
+                "queryServiceResult": data["queryResult"]["result"] if accepted else None,
                 "execution": {**COMPILER_CONTEXT, "datasetContext": self.context, "startedAt": start,
                               "finishedAt": now(), "queries": trace.queries},
                 "resolvedScope": {"reportingDate": reporting_date, "temporalMeaning": "recorded_history_not_continuous_or_current_status"},
                 "completeness": {"enumeration": "bounded_query_completed" if accepted else "unknown",
                                  "sourceCoverage": "uncertified", "freshness": "unknown", "limitations": LIMITATIONS},
-                "error": None if accepted else {"message": "The requested records could not be safely established. This is not evidence that no such records exist.",
+                "error": None if accepted else {"message": research_outcome["description"], "technicalMessage": result_problem or outcome.diagnostic,
                                                 "code": outcome.status}, "diagnostic": outcome.diagnostic}
 
     def _query(self, task, reporting_date):
@@ -179,17 +189,36 @@ class ResearchTools:
             plan_ok = outcome.plan is not None and validate_plan(outcome.plan) == outcome.plan
         except (ValueError, KeyError, TypeError):
             pass
+        # Current composition deliberately has no composable-v2 plan. Its own
+        # admitted request and kernel report are the service's validation/result
+        # artifacts, not a reason to reject an otherwise successful answer.
+        composition_ok = (outcome.composition_request is not None
+                          and (outcome.composition_report or {}).get("status") == "answer")
+        service_validated = plan_ok or composition_ok
         executed = bool(trace.queries) and all(q["outcome"] == "returned" for q in trace.queries)
-        data, limitation = None, None
-        if outcome.interaction == "answer" and plan_ok and executed:
+        data, limitation, record = None, None, None
+        if outcome.interaction == "answer" and service_validated and executed:
+            from .research_results import result_record
+            try:
+                record = result_record(outcome, question=task["question"], reporting_date=reporting_date,
+                                       queries=trace.queries)
+            except (ValueError, KeyError, TypeError) as error:
+                limitation = str(error)
+            # Preserve useful optional evidence and legacy batch data. A missing
+            # or inapplicable projector must not veto a successful service answer.
             from .research_evidence import accept_query_evidence
-            data, limitation = accept_query_evidence(outcome, trace.queries)
-        accepted = data is not None
+            data, evidence_limitation = accept_query_evidence(outcome, trace.queries)
+            data = data or {}
+            if record is not None:
+                data["queryResult"] = record
+        else:
+            evidence_limitation = None
+        accepted = record is not None
         status = outcome.interaction
         if status == "answer" and not accepted:
-            status = "missing_or_unaccepted_evidence" if plan_ok and executed else "validation_failure"
+            status = "validation_failure"
         message = None if accepted else (limitation or outcome.diagnostic or "No accepted research evidence was established.")
-        research_outcome = classify(outcome, accepted=accepted, plan_validated=plan_ok, execution_completed=executed)
+        research_outcome = classify(outcome, accepted=accepted, plan_validated=service_validated, execution_completed=executed)
         # A thrown semantic-planner call leaves a traced proposal with no output;
         # distinguish that from a returned plan rejected by normal validation.
         if (not accepted and outcome.interaction == "validation_failure" and proposals
@@ -202,8 +231,13 @@ class ResearchTools:
             "compilerStatus": outcome.status,
             "researchOutcome": research_outcome, "factualEvidenceStatus": outcome.factual_evidence_status,
             "selectionOutcome": outcome.selection_outcome,
-            "validation": {"planValidated": plan_ok, "executionCompleted": executed, "accepted": accepted},
-            "data": data, "plan": copy.deepcopy(outcome.plan),
+            "validation": {"planValidated": plan_ok, "compositionValidated": composition_ok,
+                           "serviceValidated": service_validated, "executionCompleted": executed, "accepted": accepted},
+            "data": data if accepted else None, "plan": copy.deepcopy(outcome.plan),
+            "routeId": outcome.route_id, "sparql": outcome.sparql,
+            "compositionRequest": copy.deepcopy(outcome.composition_request),
+            "compositionReport": copy.deepcopy(outcome.composition_report),
+            "optionalEvidenceIssue": evidence_limitation,
             "queryServiceResult": ({"kind": outcome.result.kind, "columns": list(outcome.result.columns),
                                     "rows": [list(r) for r in outcome.result.rows],
                                     "boolean": outcome.result.boolean if outcome.result.kind == "ask" else None}

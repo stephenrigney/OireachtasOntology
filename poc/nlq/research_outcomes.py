@@ -42,6 +42,9 @@ def describe(kind):
 
 def classify(outcome, *, accepted, plan_validated, execution_completed):
     if accepted:
+        if outcome.selection_outcome == "no_matches" or (outcome.result is not None
+                and outcome.result.kind == "select" and not outcome.result.rows):
+            return describe("no_matching_records")
         return describe("findings_available")
     if outcome.interaction == "answer" and plan_validated and execution_completed:
         if outcome.selection_outcome == "no_matches":

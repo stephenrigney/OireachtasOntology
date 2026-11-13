@@ -222,6 +222,33 @@ class QueryTrace:
     """Uncapped actual reads, including resolution, every page and failures."""
     def __init__(self, client):
         self.client, self.queries = client, []
+        self.route_id = None
+
+    def select_route(self, route_id):
+        self.route_id = route_id
+
+    def select(self, lookup, query, offset):
+        """Trace the service's lossless composition transport, without rewriting.
+
+        The kernel still owns pagination, safety, timeouts and whole-plan budgets.
+        """
+        from .composition_transport import typed_json
+        item = {"queryId": f"q-{uuid4().hex}", "sha256": hashlib.sha256(query.encode()).hexdigest(),
+                "sparql": query, "stage": "typed_composition_select", "lookupKind": lookup.kind,
+                "offset": offset, "startedAt": now(), "outcome": "execution_failure", "result": None}
+        self.queries.append(item)
+        try:
+            result = self.client.select(lookup, query, offset)
+            item.update(outcome="returned", result=typed_json(result))
+            return result
+        except Exception as error:
+            import os
+            from .results import format_debug_text
+            item["technicalDiagnostic"] = format_debug_text(f"{type(error).__name__}: {error}",
+                secrets=tuple(os.getenv(k, "") for k in ("NLQ_LLM_API_KEY", "OIR_FUSEKI_PASSWORD")))
+            raise NLQError("The configured read-only composition query failed.") from error
+        finally:
+            item["finishedAt"] = now()
 
     def query(self, sparql):
         item = {"queryId": f"q-{uuid4().hex}", "sha256": hashlib.sha256(sparql.encode()).hexdigest(),

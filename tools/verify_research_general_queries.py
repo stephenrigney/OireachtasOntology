@@ -14,12 +14,16 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from poc.nlq.config import load_local_environment
-from poc.nlq.fuseki import FusekiQueryClient, FUSEKI_QUERY_URL_ENV, DEFAULT_FUSEKI_QUERY_URL
+from poc.nlq.fuseki import FUSEKI_QUERY_URL_ENV, DEFAULT_FUSEKI_QUERY_URL
+from poc.nlq.composition_transport import CompositionTransport
 from poc.nlq.research_collaborator import ResearchRun, PLAN_INSTRUCTIONS, AUTHOR_INSTRUCTIONS
 from poc.nlq.research_tools import ResearchTools, discovery_context
 from poc.nlq.vocabulary import supported_predicates
 
 CASES = {
+    "o-kildare-north": "Who were the TDs for Kildare North in the 33rd and 34th Dáil terms?",
+    "p-wexford": "Which Labour Party Members represented Wexford during the 31st Dáil?",
+    "q-donegal": "How did party membership change among TDs representing Donegal over the last 5 Dáil terms?",
     "j-committee-current": "Who are the current members of the Committee of Public Accounts?",
     "k-committee-history": "What is the membership history of the Committee of Public Accounts?",
     "l-chronology-independent": "When did each Dáil start and finish?",
@@ -54,7 +58,7 @@ def drain(run, output, key):
         run.step(run.version)
     archive(run, output, key)
     print(json.dumps({"case": key, "status": run.status, "tasks": [(t["question"], t["state"]) for t in run.tasks],
-        "facts": len(run.facts), "reads": sum(len(e["execution"]["queries"]) for e in run.evidence.values()),
+        "facts": len(run.facts), "results": len(run.results), "reads": sum(len(e["execution"]["queries"]) for e in run.evidence.values()),
         "modelCalls": len(run.modelCalls)}, ensure_ascii=False), flush=True)
 
 
@@ -64,10 +68,11 @@ def main():
     parser.add_argument("--cases", nargs="+", choices=list(CASES), default=list(CASES))
     parser.add_argument("--underlying", action="store_true")
     parser.add_argument("--followups", action="store_true")
+    parser.add_argument("--questions", nargs="+", help="Run these exact subsidiary questions directly through the Query Service; no research-author call.")
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     load_local_environment(ROOT)
-    client = FusekiQueryClient(os.getenv(FUSEKI_QUERY_URL_ENV, DEFAULT_FUSEKI_QUERY_URL),
+    client = CompositionTransport(os.getenv(FUSEKI_QUERY_URL_ENV, DEFAULT_FUSEKI_QUERY_URL),
         username=os.getenv("OIR_FUSEKI_USER"), password=os.getenv("OIR_FUSEKI_PASSWORD"))
     reporting = date.fromisoformat(os.getenv("OIR_NLQ_AS_OF_DATE", date.today().isoformat()))
     adapter = ResearchTools(client, supported_predicates(ROOT / "ontology"),
@@ -75,6 +80,13 @@ def main():
     (args.output / "instructions.json").write_text(json.dumps({"plan": PLAN_INSTRUCTIONS,
         "author": AUTHOR_INSTRUCTIONS, "queryServiceDiscovery": discovery_context()}, ensure_ascii=False, indent=2))
     try:
+        if args.questions:
+            for index, question in enumerate(args.questions):
+                env = adapter.execute({"tool": "query", "question": question, "requirementId": "direct-verification"}, reporting.isoformat())
+                (args.output / f"direct-{index}.json").write_text(json.dumps(env, ensure_ascii=False, indent=2))
+                print(json.dumps({"question": question, "outcome": env["outcome"], "route": env["routeId"],
+                    "result": env["queryServiceResult"], "researchOutcome": env["researchOutcome"]}, ensure_ascii=False), flush=True)
+            return
         if args.underlying:
             for key, question in {"a": "What parties was Stephen Donnelly a member of?",
                                   "d": CASES["d-party-members"]}.items():

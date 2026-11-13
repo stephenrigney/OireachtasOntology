@@ -100,7 +100,8 @@ def test_real_dated_selection_zero_is_not_mislabelled_records_found():
     assert env["queryServiceResult"]["rows"] == [["0"]]
     assert env["researchOutcome"]["kind"] == "no_matching_records"
     assert env["selectionOutcome"] == "no_matches"
-    assert "data may be incomplete" in env["error"]["message"]
+    assert env["outcome"] == "answer" and env["error"] is None
+    assert env["data"]["queryResult"]["result"]["rows"] == [["0"]]
     assert "not proof that no Member served" in env["diagnostic"]
     assert not facts_from(env)
 
@@ -136,7 +137,7 @@ def drain(run):
     raise AssertionError("Research did not finish")
 
 
-def test_missing_handoff_has_controlled_final_response_and_inspectable_technical_details(monkeypatch):
+def test_missing_optional_handoff_still_presents_original_result(monkeypatch):
     from poc.nlq import query_evidence
     original = query_evidence.finalize_evidence
     monkeypatch.setattr(query_evidence, "finalize_evidence", lambda out: original(replace(out, validated_facts=())))
@@ -144,12 +145,12 @@ def test_missing_handoff_has_controlled_final_response_and_inspectable_technical
     model = OutcomeAuthor([plan([query(CHRONOLOGY)])])
     run = ResearchRun(CHRONOLOGY, AS_OF, AcceptedAdapter(env), lambda: model)
     drain(run)
-    assert not run.facts and not run.sections
-    assert run.status == "Records found — report not completed"
-    assert "records were found" in run.messages[-1]["text"]
-    assert "couldn't be safely included" in run.messages[-1]["text"]
+    assert not run.facts and run.sections and run.results
+    assert run.status == "Findings available — some questions unanswered"
+    assert run.view()["sections"][0]["results"][0]["rows"]
+    assert "couldn't be safely included" not in run.markdown()
     assert "No parliamentary membership records exist" not in run.messages[-1]["text"]
-    assert "structured factual boundary" in json.dumps(run.evidence)
+    assert "structured factual boundary" in json.dumps(run.evidence)  # optional diagnostic only
     assert "structured factual boundary" not in json.dumps(run.view()["limitations"])
     assert "## Unanswered research questions\n\n##" not in run.markdown()
 
@@ -163,9 +164,10 @@ def test_unknown_selection_success_does_not_claim_records_were_found_in_run_stat
     model = OutcomeAuthor([plan([query(CHRONOLOGY)])])
     run = ResearchRun(CHRONOLOGY, AS_OF, AcceptedAdapter(env), lambda: model)
     drain(run)
-    assert run.status == "Search completed — result not included"
-    assert "records were found" not in run.messages[-1]["text"]
-    assert not run.facts and not run.sections
+    assert run.status == "Findings available — some questions unanswered"
+    assert not run.facts and run.sections and run.results
+    assert next(iter(run.results.values()))["selectionOutcome"] is None
+    assert run.view()["sections"][0]["results"][0]["columns"] == env["queryServiceResult"]["columns"]
 
 
 def test_execution_error_plain_message_keeps_exact_developer_diagnostic():

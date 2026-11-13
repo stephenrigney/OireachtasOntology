@@ -111,7 +111,8 @@ def test_unknown_version_shape_display_rows_and_missing_execution_are_not_author
 
 def test_successful_unprojected_operation_is_distinct_from_missing_data_or_unsupported_semantics(monkeypatch):
     # Inject a missing executor handoff, independently of current coverage.
-    # Successful readable rows must still never be used as factual authority.
+    # The successful answer remains reportable, but is not promoted into the
+    # optional typed-proposition/assertion path merely from display rows.
     from poc.nlq import query_evidence
     finalize = query_evidence.finalize_evidence
     monkeypatch.setattr(query_evidence, "finalize_evidence", lambda out: finalize(replace(out, validated_facts=())))
@@ -119,11 +120,13 @@ def test_successful_unprojected_operation_is_distinct_from_missing_data_or_unsup
                                            {"requirementId": "r0"}, AS_OF.isoformat())
     assert env["compilerStatus"] == "success" and env["queryServiceOutcome"] == "answer"
     assert env["queryServiceResult"]["rows"] and env["validation"]["planValidated"]
-    assert env["outcome"] == "missing_or_unaccepted_evidence" and env["data"] is None
+    assert env["outcome"] == "answer" and env["error"] is None
+    assert env["data"]["queryResult"]["result"] == env["queryServiceResult"]
+    assert env["data"]["queryResult"]["queryRefs"]
+    assert "evidence" not in env["data"]
     assert facts_from(env) == []
-    assert env["researchOutcome"]["kind"] == "integration_unavailable"
-    assert "records were found" in env["error"]["message"]
-    assert "no research fact was promoted" in env["error"]["technicalMessage"]
+    assert env["researchOutcome"]["kind"] == "findings_available"
+    assert "no research fact was promoted" in env["optionalEvidenceIssue"]
 
 
 def test_author_cannot_select_unknown_columns_or_mix_incompatible_field_meanings():

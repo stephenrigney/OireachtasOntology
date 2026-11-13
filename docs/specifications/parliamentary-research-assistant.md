@@ -7,6 +7,22 @@
 **Branch:** `parliamentary-research-assistant`  
 **Companion contracts:** [Editorial and plain-language standard](parliamentary-research-assistant-editorial.md) · [Research acceptance scenarios](parliamentary-research-assistant-acceptance.md)
 
+> **Direct-result reporting decision (13 November 2026):** Successful, validated
+> Query Service answers are reportable by default, irrespective of query family
+> or the availability of `factual_evidence`. Retain exact returned values, column
+> meanings, subsidiary questions, scope, qualifications and inspectable execution.
+> The LLM may organise and summarise these into draft prose/tables and make clearly
+> provisional comparisons. Earlier assertion/evidence mechanisms below remain
+> available for existing records, **not mandatory reporting gates**. No
+> capability-specific research projector, confidence rating or additional
+> certification is required. Partial findings survive failures and revisions.
+> Supporting retrieval still does not certify the full brief or exhaustive
+> coverage. Query Service admission, validation and execution safeguards are
+> unchanged; no new query capabilities are authorised. This supersedes contrary
+> reporting-gate requirements in earlier product/editorial/acceptance documents,
+> not their source-inspection or draft-review requirements. See the
+> [implementation guide](../development/parliamentary-research-assistant.md#direct-query-service-results).
+
 > **v0.6 UI decision (12 November 2026):** Replace the permanent two-pane workspace with a **single-column, writing-first research journey**, drawing on Drafter's interaction pattern rather than its drafting logic. The initial question occupies the central canvas; after submission, planning and then the research report become the primary content. A compact follow-up composer sits below the report, conversation history is available on demand, and research/evidence detail remains contextual in a drawer or dialog. Remove abstract promotional text and developer-facing disclaimers from the start screen. The existing v0.5 compiler, research, evidence-confidence and human-review authority contracts are unchanged. **This is a specification approval, not implementation or product acceptance.**
 
 > **v0.5 research authority decision (12 November 2026):** The assistant produces **evidence-grounded research drafts for human review**, not independently certified exhaustive answers to arbitrary ordinary-language questions. The LLM leads research and explanatory writing; the compiler validates factual operations; approved deterministic calculations derive bounded results. Substantive assertions are classified by their distance from evidence, with provisional qualitative confidence for interpretations. Model-authored prose and the completeness of the overall investigation remain reviewable, not automatically certified. The guarded compiler and factual evidence boundaries are not relaxed. The v0.5 implementation was subsequently authorised and delivered; the **new v0.6 UI design** still requires separate implementation authorisation.

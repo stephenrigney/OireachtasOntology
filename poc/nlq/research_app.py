@@ -15,7 +15,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 
 from .config import load_local_environment
-from .fuseki import DEFAULT_FUSEKI_QUERY_URL, FUSEKI_QUERY_URL_ENV, FusekiQueryClient
+from .fuseki import DEFAULT_FUSEKI_QUERY_URL, FUSEKI_QUERY_URL_ENV
+from .composition_transport import CompositionTransport
 from .research_collaborator import ResearchRun, create_collaborator
 from .research_tools import ResearchTools, CATALOGUE, ToolTask
 from .research_adapter import ClosedModel, ResearchAdapter, OperationRequest, OperationEnvelope, ROOT
@@ -56,7 +57,7 @@ def create_app(*, planner_factory=create_collaborator, client_factory=None, repo
     endpoint_id = "injected-test-client" if client_factory else "query-endpoint-sha256:" + hashlib.sha256(query_url.encode()).hexdigest()
 
     def client():
-        return (client_factory() if client_factory else FusekiQueryClient(
+        return (client_factory() if client_factory else CompositionTransport(
             query_url, username=username, password=password))
 
     def lookup(run_id):
@@ -215,6 +216,11 @@ def create_app(*, planner_factory=create_collaborator, client_factory=None, repo
                     if self.instance is None:
                         self.instance = client()
                     return self.instance.query(sparql)
+
+                def select(self, lookup, query, offset):
+                    if self.instance is None:
+                        self.instance = client()
+                    return self.instance.select(lookup, query, offset)
 
                 def close(self):
                     close = getattr(self.instance, "close", None)

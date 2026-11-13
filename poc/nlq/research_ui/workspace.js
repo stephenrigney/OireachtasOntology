@@ -228,7 +228,7 @@ async function showEvidence(ref, member = null) {
     if (e.error) content.append(node("p", e.error.message, "notice"));
     if (e.queryServiceResult) {
       const response = node("details");
-      response.append(node("summary", "Query Service response · not automatically a research fact"),
+      response.append(node("summary", "Query Service response · original returned values"),
         node("pre", JSON.stringify(e.queryServiceResult, null, 2)));
       content.append(response);
     }
@@ -253,7 +253,7 @@ function renderActivity() {
     const item = node("div", undefined, "notice"); item.append(node("p", e.request.factualRequest), node("p", `${e.outcome} · ${e.queryCount} actual read-only queries`, "metadata"));
     if (e.error) item.append(node("p", e.error.message)); evidenceButtons([e.evidenceId], item); content.append(item);
   });
-  content.append(node("h3", "Evidence"), node("p", "Only accepted compiler findings populate report claims. Deterministic calculations retain their input evidence references. Model interpretation is not factual proof.", "metadata"));
+  content.append(node("h3", "Evidence"), node("p", "Successful Query Service answers are shown at their returned scope. Original results and execution details remain inspectable. AI-generated summaries and comparisons are drafts for review, not factual certification.", "metadata"));
   run.unanswered.forEach(u => content.append(node("p", `${u.state}: ${u.requirement} — ${u.reason}`, "notice")));
   (run.clarifications || []).forEach(t => content.append(node("p", `Clarification: ${t}`, "notice")));
   const diagnostics = [...(run.technicalDiagnostics || []), ...pendingDiagnostics];
@@ -313,8 +313,8 @@ function renderTable(data) {
   const body = node("tbody");
   data.rows.forEach(row => {
     const tr = node("tr");
-    row.cells.forEach((cell, i) => { const td = node(i === 0 ? "th" : "td", cell.text || "No accepted value shown"); if (i === 0) td.scope = "row"; tr.append(td); });
-    const td = node("td"), inspect = button("Source records", () => showRowEvidence(row), "evidence-link");
+    row.cells.forEach((cell, i) => { const td = node(i === 0 ? "th" : "td", row.evidenceRef ? cell.text : (cell.text || "No accepted value shown")); if (i === 0) td.scope = "row"; tr.append(td); });
+    const td = node("td"), inspect = button("Source records", () => row.evidenceRef ? showEvidence(row.evidenceRef) : showRowEvidence(row), "evidence-link");
     inspect.setAttribute("aria-label", `Evidence: individual recorded facts · ${row.cells[0].text}`);
     td.append(inspect); tr.append(td); body.append(tr);
   });
@@ -334,6 +334,18 @@ function renderSection(section) {
   const heading = node("div", undefined, "section-heading"); heading.append(node("h2", section.title), node("span", section.state, "section-state"));
   el.replaceChildren(heading);
   if (section.kind === "further_questions") el.append(node("p", "Unverified hypotheses and questions for further investigation", "notice"));
+  (section.summaries || []).forEach(summary => {
+    const p = node("p", summary.text);
+    p.append(node("span", " AI-generated draft summary / comparison — for review.", "metadata"));
+    evidenceButtons(summary.resultRefs, p); el.append(p);
+  });
+  (section.results || []).forEach(result => {
+    el.append(renderTable(result));
+    if (result.empty) el.append(node("p", "No matching rows returned within this query scope. This is not proof of absence from parliamentary history.", "notice"));
+    if (result.qualification) el.append(node("p", result.qualification, "metadata"));
+    el.append(node("p", result.scope, "metadata"));
+    evidenceButtons([result.evidenceRef], el);
+  });
   for (const ref of [...section.assertionRefs, ...section.factRefs]) {
     const a = run.assertions[ref] || run.facts[ref], p = node("p", a.text);
     if (a.level === 3) p.append(node("span", " Provisional interpretation.", "metadata"));
@@ -382,7 +394,12 @@ function render() {
   $("original-brief").textContent = run.brief;
   $("report-scope").textContent = `Reporting date: ${run.reportingDate}. ${run.brief}`;
   $("report-status").textContent = `Draft — for review · ${displayedState}`;
-  renderPlan(); run.sections.forEach(renderSection);
+  renderPlan();
+  const liveSections = new Set(run.sections.map(s => "section-" + s.id));
+  $("report-sections").querySelectorAll(".report-section").forEach(el => {
+    if (!liveSections.has(el.id)) { sectionVersions.delete(el.id.slice(8)); el.remove(); }
+  });
+  run.sections.forEach(renderSection);
   (run.messages || []).slice(messageCount).forEach(m => {
     const box = message(m.role === "user" ? "You" : "Assistant", m.text);
     if (m.assertionRef) box.append(node("p", "Provisional explanation — for review", "metadata"), button("Evidence for this explanation", () => showAssertion(m.assertionRef), "evidence-link"));

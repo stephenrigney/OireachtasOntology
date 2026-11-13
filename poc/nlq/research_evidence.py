@@ -1,4 +1,4 @@
-"""Consume the Query Service contract without interpreting query families."""
+"""Retain optional structured evidence, never gate direct result reporting."""
 from __future__ import annotations
 
 import copy
@@ -30,3 +30,7 @@ def accept_query_evidence(outcome, queries):
         return data, None
     except (ValueError, KeyError, TypeError, IndexError) as error:
         return None, f"Accepted evidence validation failed: {type(error).__name__}: {error}"
+    except Exception as error:
+        # This optional compatibility record cannot veto a successful service
+        # answer. Keep the original returned result and trace independently.
+        return None, f"Optional structured evidence could not be retained ({type(error).__name__})."
