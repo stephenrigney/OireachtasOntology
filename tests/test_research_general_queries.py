@@ -28,14 +28,18 @@ def adapter(client, **kwargs):
                          endpoint_id="synthetic", **kwargs)
 
 
-def test_general_party_history_reaches_existing_compiler_but_cannot_promote_rendered_rows():
+def test_general_party_history_consumes_validated_episodes_without_inventing_dates():
     env = adapter(Q06Fixture(missing_affiliation_dates=True)).execute(query() | {"requirementId": "r0"}, AS_OF.isoformat())
     assert env["compilerStatus"] == "success" and env["queryServiceOutcome"] == "answer"
-    assert env["outcome"] == "missing_or_unaccepted_evidence"
+    assert env["outcome"] == "answer"
     assert env["validation"]["planValidated"] and env["validation"]["executionCompleted"]
     assert env["queryServiceResult"]["columns"] == ["Political affiliation", "Supporting membership episodes"]
     assert "dates not recorded" in str(env["queryServiceResult"])
-    assert env["data"] is None and facts_from(env) == []
+    facts = facts_from(env)
+    assert len(facts) == 3 and {f["level"] for f in facts} == {1}
+    assert all(f["proposition"]["intervals"][0]["start"] is None for f in facts)
+    assert all(f["proposition"]["intervals"][0]["endMeaning"] == "not_recorded" for f in facts)
+    assert all(f["queryRefs"] for f in facts)
     assert len(env["execution"]["queries"]) == 2
     assert not env["resolvedScope"]["parentRequirementSatisfied"]
 
@@ -60,9 +64,9 @@ def test_general_sponsorship_reuses_existing_accepted_compiler_witnesses():
     env = adapter(replay).execute(query(SPONSOR) | {"requirementId": "r0"}, AS_OF.isoformat())
     assert env["outcome"] == "answer", env
     facts = facts_from(env)
-    assert {f["proposition"][0] for f in facts} == {"sponsorship", "distinct_bill_count"}
+    assert {f["proposition"]["predicate"] for f in facts} == {"sponsorship", "distinct_bill_count"}
     assert all("Malcolm Byrne" in f["text"] for f in facts if f["level"] == 1)
-    assert env["data"]["memberName"] == "Malcolm Byrne"
+    assert all(f["proposition"]["participants"]["member"]["label"] == "Malcolm Byrne" for f in facts if f["level"] == 1)
 
 
 def test_generic_query_uses_existing_semantic_selector_and_retains_proposal():
@@ -106,7 +110,7 @@ def test_after_a_limitation_model_can_publish_another_relevant_question_before_d
                         "resolvedQuestions": []}
             return super().generate(phase, payload)
 
-    env = adapter(Q06Fixture()).execute(query() | {"requirementId": "r0"}, AS_OF.isoformat())
+    env = adapter(Q06Fixture(missing_identity=True)).execute(query() | {"requirementId": "r0"}, AS_OF.isoformat())
     evidence = AcceptedAdapter(env)
     model = Model([plan([query()])])
     run = ResearchRun("Party history and constituency background", AS_OF, evidence, lambda: model)
@@ -152,9 +156,9 @@ def test_existing_current_party_witness_authority_survives_general_discovery_and
     facts = facts_from(env)
     assert len(facts) == 2  # separate accepted episodes, no invented count/calculation
     assert {f["level"] for f in facts} == {1}
-    assert all(f["proposition"][0] == "dated_party_membership" for f in facts)
-    assert all("2026-11-13" in f["text"] and "complete roster" in f["text"] for f in facts)
-    assert all(f["proposition"][3]["queryRefs"] for f in facts)
+    assert all(f["proposition"]["predicate"] == "dated_party_membership" for f in facts)
+    assert all("2026-11-13" in f["text"] and "complete roster" in str(f["limitations"]) for f in facts)
+    assert all(f["queryRefs"] for f in facts)
 
 
 def test_cache_does_not_confuse_legacy_parameter_changes_with_identical_questions():
@@ -217,12 +221,12 @@ def test_general_http_evidence_inspection_archive_and_qualified_export():
         state = client.post(f"/runs/{run_id}/step", json={"version": prepared["version"]}).json()
         ref = next(iter(state["evidence"]))
         env = client.get(f"/runs/{run_id}/evidence/{ref}").json()
-        assert env["queryServiceOutcome"] == "answer" and env["outcome"] == "missing_or_unaccepted_evidence"
-        assert env["queryServiceResult"]["rows"] and state["facts"] == {}
+        assert env["queryServiceOutcome"] == "answer" and env["outcome"] == "answer"
+        assert env["queryServiceResult"]["rows"] and len(state["facts"]) == 3
         assert client.get(f"/runs/{run_id}/archive").json()["modelCalls"]
         exported = client.get(f"/runs/{run_id}/report.md").text
         assert "Draft — for review" in exported and "queryServiceResult" in exported
-        assert "no research fact was promoted" in exported
+        assert "party_membership_episode" in exported and "queryRefs" in exported
 
 
 def test_generic_fact_table_preserves_exact_wording_without_capability_mapping():

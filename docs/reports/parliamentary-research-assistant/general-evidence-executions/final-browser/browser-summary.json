@@ -1,0 +1,36 @@
+{
+  "kind": "fresh configured-model and read-only Fuseki browser execution",
+  "question": "Could you trace Stephen Donnelly's recorded political party affiliations, showing the membership dates where available?",
+  "followup": "Also tell me which constituency Mary Lou McDonald represents now, keeping Stephen Donnelly's party history unchanged.",
+  "initialFacts": 4,
+  "addedFacts": 1,
+  "earlierFactsAndSectionsPreserved": true,
+  "dispatches": [
+    {
+      "planVisibleBeforeDispatch": true,
+      "plan": "Could you trace Stephen Donnelly's recorded political party affiliations, showing the membership dates where available?\nPending\n\ndirect · Directly investigates the recorded affiliations and available membership dates requested.\n\nExact subsidiary question submitted unchanged to Query Service admission; evidence and full-question satisfaction are separate."
+    },
+    {
+      "planVisibleBeforeDispatch": true,
+      "plan": "Could you trace Stephen Donnelly's recorded political party affiliations, showing the membership dates where available?\nValidated\n\ndirect · Directly investigates the recorded affiliations and available membership dates requested.\n\nExact subsidiary question submitted unchanged to Query Service admission; evidence and full-question satisfaction are separate."
+    },
+    {
+      "planVisibleBeforeDispatch": true,
+      "plan": "Could you trace Stephen Donnelly's recorded political party affiliations, showing the membership dates where available?\nValidated\n\ndirect · Directly investigates the recorded affiliations and available membership dates requested.\n\nExact subsidiary question submitted unchanged to Query Service admission; evidence and full-question satisfaction are separate."
+    },
+    {
+      "planVisibleBeforeDispatch": true,
+      "plan": "Could you trace Stephen Donnelly's recorded political party affiliations, showing the membership dates where available?\nValidated\n\ndirect · Directly investigates the recorded affiliations and available membership dates requested.\n\nExact subsidiary question submitted unchanged to Query Service admission; evidence and full-question satisfaction are separate.\n\nWhich constituency does Mary Lou McDonald represent now?\nPending\n\ndirect · Directly investigates the requested current constituency without relying on historical representation.\n\nExact subsidiary question submitted unchanged to Query Service admission; evidence and full-question satisfaction are separate."
+    },
+    {
+      "planVisibleBeforeDispatch": true,
+      "plan": "Could you trace Stephen Donnelly's recorded political party affiliations, showing the membership dates where available?\nValidated\n\ndirect · Directly investigates the recorded affiliations and available membership dates requested.\n\nExact subsidiary question submitted unchanged to Query Service admission; evidence and full-question satisfaction are separate.\n\nWhich constituency does Mary Lou McDonald represent now?\nValidated\n\ndirect · Directly investigates the requested current constituency without relying on historical representation.\n\nExact subsidiary question submitted unchanged to Query Service admission; evidence and full-question satisfaction are separate."
+    },
+    {
+      "planVisibleBeforeDispatch": true,
+      "plan": "Could you trace Stephen Donnelly's recorded political party affiliations, showing the membership dates where available?\nValidated\n\ndirect · Directly investigates the recorded affiliations and available membership dates requested.\n\nExact subsidiary question submitted unchanged to Query Service admission; evidence and full-question satisfaction are separate.\n\nWhich constituency does Mary Lou McDonald represent now?\nValidated\n\ndirect · Directly investigates the requested current constituency without relying on historical representation.\n\nExact subsidiary question submitted unchanged to Query Service admission; evidence and full-question satisfaction are separate."
+    }
+  ],
+  "javascriptErrors": [],
+  "humanAcceptance": "not assessed"
+}

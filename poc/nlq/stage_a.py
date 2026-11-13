@@ -739,12 +739,25 @@ def execute_stage_a(request: StageARequest, *, as_of: date, fuseki, supported_pr
                                   item["end"] or "Open-ended (no end date recorded)", item["iri"])
                                  for item in matches)
             scope_text = (scope["date"] if scope["kind"] == "onDate"
-                          else f"{calendar.month_name[scope['month']]} {scope['year']} "
-                               f"({lower.isoformat()} through {upper.isoformat()})")
+                           else f"{calendar.month_name[scope['month']]} {scope['year']} "
+                                f"({lower.isoformat()} through {upper.isoformat()})")
+            # Independent evidence-shape holdout: project the accepted exact
+            # identity selection, not the readable table. No research adapter.
+            from .query_evidence import EntityFact, base, bundle, entity, fields, date_text
+            answer_query = _dail_temporal_selection_query(supported_predicates=supported_predicates)
+            result = QueryResult("select", ("Dáil term", "House start", "House end", "Term identity"), display_rows, raw_json=raw.raw_json)
+            facts = [EntityFact(**base("house_term_calendar_selection",
+                f"The House-owned records identify {item['label']} as overlapping {scope_text}.",
+                fields(term=("Dáil term", item["label"]), start=("House start", date_text(item["start"])),
+                       end=("House end", date_text(item["end"]) if item["end"] else "Open-ended (no end date recorded)")),
+                {"meaning": "house_date_overlap_not_actual_sitting", "selector": selector,
+                 "start": item["start"], "end": item["end"]},
+                [row for row in rows if row["term"] == item["iri"]],
+                ["A term-date match does not establish that a parliamentary sitting occurred."]),
+                entity=entity(item["iri"], item["label"], "DailTerm")).model_dump() for item in matches]
             return PlanOutcome(
                 "success", plan=plan,
-                sparql=_dail_temporal_selection_query(supported_predicates=supported_predicates),
-                result=QueryResult("select", ("Dáil term", "House start", "House end", "Term identity"), display_rows, raw_json=raw.raw_json),
+                sparql=answer_query, result=result, factual_evidence=bundle(plan, answer_query, facts, result),
                 diagnostic=(f"Selected exact DailTerm identities whose House-owned date intervals overlap {scope_text}. "
                             "A term-date match does not establish that a parliamentary sitting occurred."),
                 request_family="house_terms",

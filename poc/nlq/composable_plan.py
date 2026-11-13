@@ -75,6 +75,7 @@ class PlanOutcome:
     debug_source: str | None = None
     clarification: dict[str, Any] | None = None
     accepted_evidence: dict[str, Any] | None = None
+    factual_evidence: dict[str, Any] | None = None
 
     @property
     def interaction(self) -> str:
@@ -4551,7 +4552,7 @@ def compile_affiliation_answer_query(plan: dict[str, Any], *, supported_predicat
     preferred_label = _pattern_predicate(identity_pattern, "?identity", "?englishPreferredLabel")
     if preferred_label != label:
         raise PlanError("Political-affiliation preferred-label mappings disagree across reviewed contracts.")
-    return _query(_PREFIXES + f'''SELECT DISTINCT ?member ?episode ?identity ?affiliationLabel ?start ?end WHERE {{
+    return _query(_PREFIXES + f'''SELECT DISTINCT ?member ?episode ?identity ?affiliationLabel ?start ?end ?party ?membership ?term ?dateRange ?memberGraph WHERE {{
   VALUES ?member {{ <{member_iri}> }}
   GRAPH ?memberGraph {{
     <{member_iri}> a {member_type} ; {member_membership} ?episode .
@@ -7116,7 +7117,12 @@ def _execute_affiliation_question(plan, *, fuseki, supported_predicates):
         result = readable_affiliation_result(raw_result)
     except (PlanError, NLQError) as error:
         return PlanOutcome("source_data_unavailable", plan=plan, sparql=query, diagnostic=str(error))
-    return PlanOutcome("success", plan=plan, sparql=query, result=result,
+    from .query_evidence import affiliation_evidence
+    try:
+        evidence = affiliation_evidence(plan, query, raw_result, result)
+    except (ValueError, NLQError, KeyError, TypeError) as error:
+        return PlanOutcome("source_data_unavailable", plan=plan, sparql=query, diagnostic=str(error))
+    return PlanOutcome("success", plan=plan, sparql=query, result=result, factual_evidence=evidence,
                        diagnostic="Affiliations are grouped by reviewed local identity; dated source episodes remain separate.")
 
 
@@ -7144,12 +7150,24 @@ def execute_question(
         if continuation is not None:
             from .stage_a import StageARequest, execute_stage_a
             request, selected = continuation
-            return execute_stage_a(StageARequest(**request), as_of=as_of, fuseki=ReadOnlyExecution(),
-                                   supported_predicates=supported_predicates, selected_member_iri=selected)
-        return _execute_question(question, as_of=as_of, fuseki=ReadOnlyExecution(),
-                                 supported_predicates=supported_predicates,
-                                 semantic_plan_generator_factory=semantic_plan_generator_factory,
-                                 current_dail_operation=_current_dail_operation)
+            outcome = execute_stage_a(StageARequest(**request), as_of=as_of, fuseki=ReadOnlyExecution(),
+                                    supported_predicates=supported_predicates, selected_member_iri=selected)
+        else:
+            outcome = _execute_question(question, as_of=as_of, fuseki=ReadOnlyExecution(),
+                                  supported_predicates=supported_predicates,
+                                  semantic_plan_generator_factory=semantic_plan_generator_factory,
+                                  current_dail_operation=_current_dail_operation)
+        # The service owns factual interpretation. A projection failure is not a
+        # licence for consumers to infer evidence from successful display rows.
+        if outcome.interaction == "answer" and outcome.factual_evidence is None:
+            from dataclasses import replace
+            from .query_evidence import project_legacy
+            try:
+                outcome = replace(outcome, factual_evidence=project_legacy(outcome))
+            except (ValueError, KeyError, TypeError, IndexError, AttributeError):
+                outcome = replace(outcome, diagnostic=(outcome.diagnostic or "") +
+                    " Structured factual evidence could not be validated; display results are not factual authority.")
+        return outcome
     except QueryExecutionFailure as error:
         cause = error.__cause__
         return PlanOutcome("execution_failure", diagnostic=f"The local read-only query failed: {error}",

@@ -27,6 +27,10 @@ CASES = {
     "d-party-members": "Who are the Labour Deputies in the current Dáil?",
     "e-unsupported": "What did Mary Lou McDonald say about housing in Dáil debates last year? Quote her speeches.",
     "a-paraphrase": "Could you trace Stephen Donnelly's recorded political party affiliations, showing the membership dates where available?",
+    "f-multi-domain": "Give me a short account of Stephen Donnelly's recorded party affiliations with dates, and the constituencies he represented. Keep those separate relationships clear; do not infer that every party episode coincided with an entire Dáil term.",
+    "g-calendar-holdout": "Which Dáil was in office during June 1994?",
+    "h-mixed-relationships": "What parties was Stephen Donnelly a member of, and when? Also, what constituency does Mary Lou McDonald represent?",
+    "i-bill-evidence-smoke": "Tell me about Bill 11 from 2020",
 }
 
 

@@ -17,6 +17,11 @@ R1 = "Prepare a briefing on the Bills sponsored by Malcolm Byrne. What progress 
 R3 = "Prepare a background briefing on Mary Lou McDonald's parliamentary career, including constituencies represented and parliamentary roles."
 
 
+def predicate(fact):
+    p = fact["proposition"]
+    return p["predicate"] if isinstance(p, dict) else p[0]
+
+
 async def opening_checks(page, output):
     posts = []
     page.on("request", lambda r: posts.append(r.url) if r.method == "POST" else None)
@@ -134,11 +139,11 @@ async def verify(url, output, resume=False):
         displayed = {ref for s in r1["state"]["sections"] for ref in s["factRefs"]}
         displayed.update(ref for s in r1["state"]["sections"] for t in s.get("tables", []) for row in t["rows"] for ref in row["assertionRefs"])
         tables = [t for s in r1["state"]["sections"] for t in s.get("tables", []) if t["specification"]["kind"] == "bills"]
-        sponsors = {ref for ref, a in r1["state"]["facts"].items() if a["proposition"][0] == "sponsorship"}
+        sponsors = {ref for ref, a in r1["state"]["facts"].items() if predicate(a) == "sponsorship"}
         assert sponsors == {ref for t in tables for ref in t["specification"]["factRefs"]}, "Compact table must retain all sponsorship findings"
         assert r1["state"]["unanswered"], "Final-outcome research must remain explicitly unanswered, not disappear into a generic limitation"
-        assert any(r1["state"]["facts"][ref]["proposition"][0] == "recorded_status" for ref in displayed), "Completed briefing must show lifecycle evidence, not only interim sponsorship"
-        assert any(a["level"] == 3 and any(r1["state"]["facts"][ref]["proposition"][0] in {"recorded_status", "recorded_activity"} for ref in a["factRefs"]) for a in r1["state"]["assertions"].values()), "LLM must explain retrieved progress evidence"
+        assert any(predicate(r1["state"]["facts"][ref]) == "recorded_status" for ref in displayed), "Completed briefing must show lifecycle evidence, not only interim sponsorship"
+        assert any(a["level"] == 3 and any(predicate(r1["state"]["facts"][ref]) in {"recorded_status", "recorded_activity"} for ref in a["factRefs"]) for a in r1["state"]["assertions"].values()), "LLM must explain retrieved progress evidence"
         if not resume:
             assert progressive, "Report must appear before all research steps finish"
             assert all(p["focus"] == "plan-summary" for p in progressive), "Progressive findings must not steal initial focus"

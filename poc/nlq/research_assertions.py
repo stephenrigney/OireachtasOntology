@@ -45,6 +45,26 @@ def facts_from(env):
         return []
     data, eid, facts = env["data"], env["evidenceId"], []
 
+    if "evidence" in data:
+        from .query_evidence import AcceptedEvidence
+        evidence = AcceptedEvidence.model_validate(data["evidence"])
+        for fact in evidence.facts:
+            proposition = fact.model_dump()
+            facts.append(Assertion(id=stable_id([eid, proposition]), text=fact.text,
+                level=2 if fact.kind == "measure" else 1,
+                evidenceRefs=[eid], factRefs=[], reasoning=(
+                    "Approved calculation: cardinality of this accepted distinct identity selection."
+                    if fact.kind == "measure" else "Exact Query Service accepted proposition."),
+                assumptions=[], conflicts=[], limitations=list(dict.fromkeys(
+                    env["completeness"]["limitations"] + fact.qualifications)),
+                confidence=None, confidenceRationale=None).model_dump()
+                | {"proposition": proposition, "display": {"fields": {k: v.model_dump() for k, v in fact.fields.items()}},
+                   "queryRefs": data["queryRefs"]})
+        return facts
+
+    # Retained legacy sessions only. New general queries always use the shared
+    # contract above; no additional family adapters belong in this consumer.
+
     def add(proposition, text, level=1, reasoning="Exact accepted compiler proposition.", display=None):
         facts.append(Assertion(id=stable_id([eid, proposition]), text=text, level=level,
             evidenceRefs=[eid], factRefs=[], reasoning=reasoning, assumptions=[], conflicts=[],

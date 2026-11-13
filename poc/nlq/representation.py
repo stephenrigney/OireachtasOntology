@@ -420,9 +420,10 @@ def execute_representation(plan, *, fuseki, supported_predicates, resolved_membe
         result = QueryResult("select", columns, tuple(sorted(rows)), raw_json=raw.raw_json)
         return PlanOutcome("success", plan=plan, sparql=query, result=result,
                            accepted_evidence={"representation": [
-                               {key: row[key] for key in ("member", "membership", "constituency", "term")}
-                               | {key: row[key].removesuffix("@en") for key in ("name", "label", "termLabel")}
-                               for row in records]},
+                                {key: row[key] for key in ("member", "membership", "constituency", "term")}
+                                | {key: row[key].removesuffix("@en") for key in ("name", "label", "termLabel")}
+                                | ({key: row[key] for key in ("range", "start", "end")} if current else {})
+                                for row in records]},
                            diagnostic=(f"Recorded representation evidence{' at ' + as_of.isoformat() if current else ' in the latest House-dated Dáil term' if latest_recorded else ' across recorded Dáil terms'}. "
                                        "The latest term is selected by exact HouseTerm identity and House-owned start dates; local source completeness is not certified."))
     except (AmbiguousMember, AmbiguousConstituency) as error:

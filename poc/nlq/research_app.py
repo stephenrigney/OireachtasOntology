@@ -81,7 +81,9 @@ def create_app(*, planner_factory=create_collaborator, client_factory=None, repo
 
     @application.get("/contracts")
     def contracts():
+        from .query_evidence import AcceptedEvidence
         return {"request": OperationRequest.model_json_schema(), "envelope": OperationEnvelope.model_json_schema(),
+                "queryServiceEvidence": AcceptedEvidence.model_json_schema(),
                 "researchCatalogue": CATALOGUE, "researchQueryTask": ToolTask.model_json_schema()}
 
     @application.post("/runs", status_code=201)

@@ -36,7 +36,9 @@ class UIModel(InjectedModel):
             return plan() | {"clarification": "Which Dáil term would you like to investigate?"}
         result = super().generate(phase, payload)
         if phase == "report":
-            refs = [key for key, fact in payload["facts"].items() if fact["proposition"][0] == "sponsorship"]
+            refs = [key for key, fact in payload["facts"].items() if
+                    (fact["proposition"].get("predicate") if isinstance(fact["proposition"], dict)
+                     else fact["proposition"][0]) == "sponsorship"]
             result["sections"][0]["factRefs"] = []
             result["sections"][0]["tables"] = [{"caption": "Recorded Bills", "kind": "bills", "factRefs": refs, "activityRefs": []}]
         return result

@@ -112,11 +112,16 @@ class ResearchTools:
                 accepted = accepted and {x["billIri"] for x in (outcome.accepted_evidence or {}).get("lifecycle", [])} == {bill["billIri"]}
         except (ValueError, KeyError, TypeError):
             accepted = False
+        data = None
+        if accepted:
+            from .research_evidence import accept_query_evidence
+            data, _ = accept_query_evidence(outcome, trace.queries)
+            accepted = data is not None
         return {"evidenceId": "e-" + uuid4().hex, "request": {"factualRequest": question,
                     "requirementId": task["requirementId"], "operation": {"operation": task["tool"]}},
                 "outcome": "answer" if accepted else (outcome.interaction if outcome.interaction != "answer" else "validation_failure"),
                 "compilerStatus": outcome.status, "validation": {"accepted": accepted},
-                "data": copy.deepcopy(outcome.accepted_evidence) if accepted else None, "plan": outcome.plan,
+                "data": data, "plan": outcome.plan,
                 "execution": {**COMPILER_CONTEXT, "datasetContext": self.context, "startedAt": start,
                               "finishedAt": now(), "queries": trace.queries},
                 "resolvedScope": {"reportingDate": reporting_date, "temporalMeaning": "recorded_history_not_continuous_or_current_status"},
@@ -168,7 +173,7 @@ class ResearchTools:
         status = outcome.interaction
         if status == "answer" and not accepted:
             status = "missing_or_unaccepted_evidence" if plan_ok and executed else "validation_failure"
-        message = limitation or outcome.diagnostic or "No accepted research evidence was established."
+        message = None if accepted else (limitation or outcome.diagnostic or "No accepted research evidence was established.")
         return {"evidenceId": "e-" + uuid4().hex,
             "request": {"factualRequest": task["question"], "requirementId": task["requirementId"],
                         "operation": {"operation": "query"}},
@@ -186,7 +191,7 @@ class ResearchTools:
                               "intent": (outcome.plan or {}).get("intent"), "parentRequirementSatisfied": False},
             "completeness": {"enumeration": "bounded_query_completed" if accepted else "unknown",
                              "sourceCoverage": "uncertified", "freshness": "unknown",
-                             "limitations": LIMITATIONS[:2] + [message]},
+                              "limitations": LIMITATIONS[:2] + ([message] if message else [])},
             "error": None if accepted else {"code": "research_evidence_unavailable" if limitation else outcome.status,
                 "message": message, "candidates": list(outcome.candidates), "clarification": outcome.clarification},
             "diagnostic": outcome.diagnostic}

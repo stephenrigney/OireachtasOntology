@@ -56,10 +56,15 @@ def test_authority_projection_has_no_stronger_predicates_and_reproducible_count(
     assert {a["level"] for a in facts} == {1, 2}
     assert all(a["confidence"] is None and a["reviewStatus"] == "provisional" for a in facts)
     assert all(a["evidenceRefs"] and a["limitations"] for a in facts)
-    assert {a["proposition"][0] for a in facts} == {"sponsorship", "distinct_bill_count", "recorded_status", "recorded_activity", "representation"}
+    assert {a["proposition"]["predicate"] for a in facts} == {"sponsorship", "distinct_bill_count", "recorded_status", "recorded_activity", "representation"}
     count = next(a for a in facts if a["level"] == 2)
-    assert len(count["proposition"][1]) == len(compiler_evidence["sponsorship"]["data"]["bills"])
+    assert len(count["proposition"]["identities"]) == len(compiler_evidence["sponsorship"]["data"]["bills"])
     assert "cardinality" in count["reasoning"]
+    # Legacy lifecycle observations establish Bill + activity type/date, not an
+    # individual activity IRI. Never relabel the Bill IRI as the activity resource.
+    events = [a["proposition"] for a in facts if a["proposition"]["predicate"] == "recorded_activity"]
+    assert events and all(e["intervals"][0]["resourceIri"] is None for e in events)
+    assert all(e["witnesses"][1]["typeIri"] for e in events)
     failed = copy.deepcopy(compiler_evidence["sponsorship"])
     failed["outcome"] = "execution_failure"
     assert facts_from(failed) == []
@@ -347,14 +352,14 @@ def test_new_factual_domain_cannot_rewrite_unrelated_existing_sections(compiler_
     # Injected author tries to rewrite the old findings section; coordinator
     # preserves it because it belongs to the earlier factual requirement.
     assert r.sections == before and r.title == title
-    assert any(a["proposition"][0] == "representation" for a in r.facts.values())
+    assert any(a["proposition"]["predicate"] == "representation" for a in r.facts.values())
 
 
 def test_compact_table_exact_cells_and_all_individual_evidence(compiler_evidence):
     from poc.nlq.research_presentation import project_table
     facts = {a["id"]: a for e in compiler_evidence.values() for a in facts_from(e)}
-    sponsors = [ref for ref, a in facts.items() if a["proposition"][0] == "sponsorship"]
-    events = [ref for ref, a in facts.items() if a["proposition"][0] == "recorded_activity"]
+    sponsors = [ref for ref, a in facts.items() if a["proposition"]["predicate"] == "sponsorship"]
+    events = [ref for ref, a in facts.items() if a["proposition"]["predicate"] == "recorded_activity"]
     table = project_table({"kind": "bills", "caption": "Recorded Bills", "factRefs": sponsors, "activityRefs": events[:1]}, facts)
     assert len(table["rows"]) == len(sponsors)
     row = next(r for r in table["rows"] if events[0] in r["assertionRefs"])
@@ -366,7 +371,7 @@ def test_compact_table_exact_cells_and_all_individual_evidence(compiler_evidence
     # A matching title is not identity, and no unknown/sibling event is admitted.
     unrelated = copy.deepcopy(facts[events[0]])
     unrelated["id"] = "other-event"
-    unrelated["proposition"][1] = "https://example.test/different-bill"
+    unrelated["proposition"]["participants"]["bill"]["iri"] = "https://example.test/different-bill"
     facts[unrelated["id"]] = unrelated
     with pytest.raises(ValueError):
         project_table({"kind": "bills", "caption": "Bad", "factRefs": sponsors, "activityRefs": [unrelated["id"]]}, facts)
@@ -381,7 +386,7 @@ def test_table_only_report_preserves_full_registry_and_exports_it(compiler_evide
         if phase == "report":
             draft["sections"][0].update(factRefs=[], narrative=[], tables=[{
                 "caption": "Legislative findings", "kind": "bills", "activityRefs": [],
-                "factRefs": [ref for ref, a in payload["facts"].items() if a["proposition"][0] == "sponsorship"]}])
+                "factRefs": [ref for ref, a in payload["facts"].items() if a["proposition"]["predicate"] == "sponsorship"]}])
         return draft
 
     model.generate = table_author

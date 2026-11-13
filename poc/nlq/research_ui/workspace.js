@@ -149,6 +149,12 @@ function showAssertion(ref) {
     content.append(node("h4", title), node("p", a[key].length ? a[key].join(" ") : "None identified within the available evidence; not a completeness guarantee."));
   }
   content.append(node("h4", "Source records · freshness unknown, coverage uncertified"));
+  if (a.proposition && !Array.isArray(a.proposition)) {
+    const proposition = node("details");
+    proposition.append(node("summary", "Exact accepted proposition, intervals and witnesses"),
+      node("pre", JSON.stringify({proposition: a.proposition, queryRefs: a.queryRefs}, null, 2)));
+    content.append(proposition);
+  }
   evidenceButtons(a.evidenceRefs, content);
   content.append(button("Challenge or explain this assertion", () => {
     if (!replaceDraft(`Please explain or reconsider this finding: “${a.text}”`)) return;
