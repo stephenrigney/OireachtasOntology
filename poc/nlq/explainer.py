@@ -379,3 +379,33 @@ def explain_execution(*, attempted, result, status=None, error=None, plan=None):
     else:
         summary = f"Returned {len(result.rows)} result {'row' if len(result.rows) == 1 else 'rows'}. Rows are not necessarily distinct people or a complete historical answer."
     return {"status": state, "summary": summary}
+
+
+def explain_validated_composition(request: dict, report: dict, *, question: str = "") -> dict:
+    """Present an admitted composition request and only its recorded query evidence."""
+    roles = {"R": "Dáil constituency representation", "P": "party membership", "K": "committee membership"}
+    selections = request.get("requiredSelections", [])
+    entities = []
+    for selection in selections:
+        role = selection.get("role")
+        target = selection.get("constituency", selection.get("affiliation", selection.get("committee", {})))
+        entities.append({"label": target.get("mention", roles.get(role, "requested relationship")),
+                         "resolution": "Validated request; resolved evidence is reported only after admission and execution."})
+    answer = request.get("answer", {})
+    projection = ("A count of distinct matching Members." if answer.get("shape") == "count"
+                  else "A list of distinct matching Members.")
+    relationships = [roles[s.get("role")] for s in selections if s.get("role") in roles]
+    conditions = ["All requested relationships must bind to the exact same Member identity."]
+    if "R.parliamentaryMembership=P.containingMembership" in request.get("exactSharedBindings", []):
+        conditions.append("Representation and party membership must use the same exact containing parliamentary membership and term.")
+    conditions.extend(f"The {role.split('.', 1)[0]} {role.split('.', 1)[1]} interval must independently contain {request.get('asOf')}."
+                      for role in request.get("currentAtRoles", []))
+    ledger = report.get("ledger", [])
+    queries = [entry.get("query") for entry in ledger if isinstance(entry, dict) and entry.get("query")]
+    return {"summary": "Find the requested Members using the admitted composition relationships.",
+            "entities": entities, "relationships": relationships, "conditions": conditions,
+            "assumptions": [f"Reference date: {request.get('asOf')}; current relationships are evaluated against this date."],
+            "answer_text": projection, "target": projection,
+            "construction": [projection, "Repeated witnesses are grouped by exact Member identity."],
+            "gaps": [], "unresolved": False, "queries": queries,
+            "specification": "The validated composition specification is distinct from the SELECT requests recorded during execution."}

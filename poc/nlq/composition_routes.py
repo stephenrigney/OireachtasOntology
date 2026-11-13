@@ -66,7 +66,7 @@ def install_composition_routes(app, render, *, proposer_factory=None, transport_
         if origin and origin != str(request.base_url).rstrip("/"):
             raise HTTPException(403, "Cross-origin composition submission refused.")
 
-    def present_execution(request, *, question, structured, report, result, confirmed=False):
+    def present_execution(request, *, question, structured, report, result, confirmed=False, dashboard=False):
         """One evidence/result adapter shared by /ask and the comparison route."""
         owner = session(request)
         evidence_token = token_urlsafe(32)
@@ -87,11 +87,12 @@ def install_composition_routes(app, render, *, proposer_factory=None, transport_
         kwargs = dict(question=question, result=result, interpretation=interpretation(structured),
                       execution_attempted=bool(report["ledger"]), composition_report=artifact["report"],
                       composition_evidence_token=evidence_token, interaction_status=status,
+                      composition_request=structured,
                       error=report.get("error") if result is None else None,
                       result_notice=f"Recorded evidence as of {structured['asOf']}; not a certified complete roster. Missing ends remain open-ended. Multiple source-recorded names are shown together for the same exact Member identity.")
         if confirmed:
             return page(request, owner=owner, **kwargs)
-        response = render(request, composition_direct=True, **kwargs)
+        response = render(request, composition_direct=not dashboard, **kwargs)
         response.headers["Cache-Control"] = "no-store"
         response.set_cookie(COOKIE, owner, httponly=True, samesite="strict",
                             secure=request.url.scheme == "https", max_age=TTL_SECONDS)
@@ -184,4 +185,8 @@ def install_composition_routes(app, render, *, proposer_factory=None, transport_
         return JSONResponse(saved["artifact"], headers={"Cache-Control": "no-store",
                             "Content-Disposition": 'attachment; filename="composition-evidence.json"'})
 
-    return present_execution
+    def present_composition(request, *, question, structured, report, result, dashboard=False):
+        return present_execution(request, question=question, structured=structured, report=report,
+                                 result=result, dashboard=dashboard)
+
+    return present_composition

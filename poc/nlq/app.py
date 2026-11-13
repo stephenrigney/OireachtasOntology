@@ -35,7 +35,7 @@ from .schema import build_schema_context
 from .vocabulary import supported_predicates
 from .feedback import FeedbackError, FeedbackStore
 from .performance import QueryPerformance
-from .explainer import explain_validated_plan, explain_execution
+from .explainer import explain_validated_plan, explain_execution, explain_validated_composition
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -162,10 +162,12 @@ def create_app(
                  clarification=None, execution_attempted: bool = False,
                   explanation_plan: dict | None = None,
                   composition: bool = False, composition_direct: bool = False, composition_confirmation=None,
-                  composition_report=None, composition_evidence_token=None):
+                   composition_report=None, composition_evidence_token=None, composition_request=None):
         # Only the caller's already-validated structured plan may support prose.
         # Do not reparse capped debug JSON or infer execution from SPARQL.
-        explainer = (explain_validated_plan(explanation_plan, question=question)
+        explainer = (explain_validated_composition(composition_request, composition_report, question=question)
+                     if composition_request is not None and composition_report is not None else
+                     explain_validated_plan(explanation_plan, question=question)
                      if explanation_plan is not None else None)
         execution_explanation = explain_execution(
             attempted=execution_attempted, result=result, status=interaction_status,
@@ -224,6 +226,7 @@ def create_app(
             "composition_confirmation": composition_confirmation,
             "composition_report": composition_report,
             "composition_evidence_token": composition_evidence_token,
+            "composition_request": composition_request,
         })
 
     from .composition_routes import install_composition_routes
@@ -385,7 +388,7 @@ def create_app(
                 request.state.query_outcome = outcome.interaction
                 if outcome.composition_report is not None:
                     return present_composition(request, question=question, structured=outcome.composition_request,
-                                               report=outcome.composition_report, result=outcome.result)
+                                               report=outcome.composition_report, result=outcome.result, dashboard=True)
                 execution_attempted = (
                     outcome.result is not None
                     or outcome.status in {"execution_failure", "query_execution_failed"}
