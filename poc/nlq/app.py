@@ -402,6 +402,9 @@ def create_app(
                 performance = request.state.query_performance
 
                 class TimedFuseki:
+                    def select_route(self, route_id):
+                        request.state.query_method = build_query_method(route=route_id, selected=True)
+
                     def select(self, lookup, query, offset):
                         nonlocal typed_fuseki
                         if typed_fuseki is None:
@@ -460,14 +463,8 @@ def create_app(
                     except (ValueError, TypeError, KeyError):
                         plan_is_validated = False
                 request.state.proposal_evidence = outcome.proposal_evidence
-                if plan_is_validated:
-                    selected_plan = outcome.plan or {}
-                    selected_family = selected_plan.get("family") or outcome.request_family
-                    capability = selected_plan.get("capability")
-                    request.state.query_method = build_query_method(
-                        family=selected_family, capability=capability,
-                        selected=True,
-                    )
+                if outcome.route_id:
+                    request.state.query_method = build_query_method(route=outcome.route_id, selected=True)
                 plan_json = format_debug_payload(outcome.plan) if plan_is_validated else None
                 explanation_plan = outcome.plan if plan_is_validated else None
                 is_q06 = bool(outcome.plan and outcome.plan.get("answer", {}).get("referent") == "affiliation")

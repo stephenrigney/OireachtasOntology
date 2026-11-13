@@ -227,6 +227,7 @@ def test_q15_one_identity_union_query_and_member_deduplication(monkeypatch):
     assert generator.calls == [Q15]
     outcome = execute(set_fixture(), set_draft(), Q15)
     assert outcome.status == "success", outcome.diagnostic
+    assert outcome.route_id == "member_relationship_composition"
     assert {row[0] for row in outcome.result.rows} == {"Recorded East", "Recorded West", "Recorded Both"}
     assert len(outcome.result.rows) == 3
     assert "VALUES ?constituency" in outcome.sparql

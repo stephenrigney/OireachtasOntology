@@ -42,6 +42,7 @@ _ROUTE_NAMES = {
     "current_collection": ("Current parliamentary collection query", "Checked recorded collection membership at the configured reference date."),
     "house_terms": ("House-term query", "Retrieved recorded House-term date evidence."),
     "dail_all": ("Dáil Member list", "Retrieved distinct Member identities with recorded Dáil membership."),
+    "dail_parties_and_groups": ("Dáil party query", "Retrieved parliamentary-party records for the selected Dáil."),
     "bill_lookup": ("Bill lookup", "Looked up the requested Bill in local Bill records."),
     "bills_published": ("Published Bills query", "Selected Bills with recorded Published activity in the requested year."),
     "non_enacted_bills": ("Bill status query", "Classified Bills using their recorded process status."),
@@ -56,14 +57,18 @@ _ROUTE_NAMES = {
     "shared_dail_terms": ("Shared Dáil-term query", "Compared two Members’ recorded membership paths for the same Dáil term."),
     "constituency_representation": ("Constituency representation", "Looked up recorded Member and constituency representation."),
     "government_party_members": ("Government and party membership", "Matched recorded Cabinet and party-membership relationships."),
-    "bill_lookup": ("Bill lookup", "Looked up the requested Bill in local Bill records."),
     "bill_sponsors": ("Bill sponsorship query", "Matched recorded Bill sponsorship and Member identities."),
-    "current_office_constituency": ("Officeholder constituency query", "Joined the selected officeholder to recorded Dáil representation."),
-    "office_holding_evidence": ("Office-holding evidence query", "Retrieved accepted local office-holding evidence."),
-    "office_holding_window": ("Dated office query", "Checked accepted office-holding evidence for the requested date or period."),
     "debate_lookup": ("Debate record query", "Looked for a matching sitting and official debate record."),
     "member_party_history": ("Party history query", "Retrieved recorded political-affiliation episodes."),
     "capability_selection": ("Validated capability query", "Dispatched to an existing validated query capability."),
+    "current_office_constituency": ("Officeholder constituency query", "Joined the selected officeholder to recorded Dáil representation."),
+    "office_holding_evidence": ("Office-holding evidence query", "Retrieved accepted local office-holding evidence."),
+    "office_holding_window": ("Dated office query", "Checked accepted office-holding evidence for the requested date or period."),
+    "member_bill_sponsorship": ("Bill sponsorship query", "Matched recorded Bill sponsorship and Member identities."),
+    "bill_votes": ("Bill voting evidence boundary", "Checked the reviewed boundary for Bill-linked voting evidence."),
+    "debate_transcript": ("Debate transcript evidence boundary", "Checked the reviewed boundary for transcript content."),
+    "committee_topic_latest": ("Committee topic evidence boundary", "Checked the reviewed Committee-topic and coverage evidence."),
+    "previous_constituency_representation": ("Previous Dáil constituency query", "Resolved the previous Dáil and returned recorded constituency Members."),
 }
 
 
@@ -71,13 +76,16 @@ def query_method(*, family=None, capability=None, route=None, selected=False):
     """Readable method labels for the actual dispatch route, never answer inference."""
     if not selected:
         return {"name": "No query method selected", "description": "The question was rejected or stopped before an execution route was selected.", "identifier": None}
+    actual_route = route or capability or family
+    if isinstance(actual_route, str) and actual_route.startswith("capability:"):
+        capability = actual_route.split(":", 1)[1]
     key = capability or family or route
     if key == "phase1":
         return {"name": "Direct SPARQL translation", "description": "Translated the question to SPARQL and applied the existing local safety checks.", "identifier": "phase1_direct_sparql"}
     name, description = _ROUTE_NAMES.get(key, ("Validated query capability", "Used the selected existing query capability."))
     if capability:
         description += f" Selected capability: {capability.replace('_', ' ')}."
-    return {"name": name, "description": description, "identifier": key}
+    return {"name": name, "description": description, "identifier": actual_route}
 
 
 def result_presentation(result, *, error=None, notice=None, context=None, answer_kind=None):
@@ -96,8 +104,7 @@ def result_presentation(result, *, error=None, notice=None, context=None, answer
         return {"kind": "boolean", "heading": "Answer", "summary": answer,
                 "columns": (), "rows": (), "actual": actual}
     columns = tuple(result.columns)
-    rows = tuple(tuple(_readable_cell(value, columns[index] if index < len(columns) else "")
-                       for index, value in enumerate(row)) for row in result.rows)
+    rows = tuple(tuple(_readable_cell(value) for value in row) for row in result.rows)
     is_count = (answer_kind == "count" or len(columns) == 1
                 and columns[0].casefold() in {"count", "total", "number"})
     if rows:
@@ -122,14 +129,10 @@ def result_presentation(result, *, error=None, notice=None, context=None, answer
             "columns": columns, "rows": rows, "actual": actual}
 
 
-def _readable_cell(value, column=""):
-    # Raw RDF identifiers belong in technical evidence, not the answer view.
-    if column == "Official debate" and isinstance(value, str) and value.startswith("https://data.oireachtas.ie/akn/ie/debateRecord/"):
-        return value
-    if column == "Official Bill" and isinstance(value, str) and value.startswith("https://data.oireachtas.ie/ie/oireachtas/bill/"):
-        return value
-    if isinstance(value, str) and value.startswith(("http://", "https://", "urn:")):
-        return "Linked record (identifier in evidence)"
+def _readable_cell(value):
+    # No approved label adapter exists for an arbitrary URI. Preserve the
+    # identifier rather than collapsing distinct records to one placeholder;
+    # the technical evidence panel still exposes the complete returned fields.
     return str(value)
 
 

@@ -8,7 +8,7 @@ table, never from question text.
 from __future__ import annotations
 
 import calendar
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
 import json
@@ -77,6 +77,7 @@ class PlanOutcome:
     composition_request: dict[str, Any] | None = None
     composition_report: dict[str, Any] | None = None
     proposal_evidence: dict[str, Any] | None = None
+    route_id: str | None = None
 
     @property
     def interaction(self) -> str:
@@ -94,6 +95,13 @@ class PlanOutcome:
         if self.status in {"execution_failure", "query_execution_failed"}:
             return "execution_failure"
         return "missing_or_unaccepted_evidence"
+
+
+def _select_route(fuseki, route_id: str) -> None:
+    """Record route at the real dispatch boundary, without affecting execution."""
+    selector = getattr(fuseki, "select_route", None)
+    if callable(selector):
+        selector(route_id)
 
 
 @dataclass(frozen=True)
@@ -6592,6 +6600,7 @@ def _execute_shared_dail_terms_question(
         )
     if draft_plan.get("family") == "current_member_composition":
         from .composition_admission import execute_plan
+        _select_route(fuseki, "current_member_composition")
         return execute_plan(draft_plan, question=question, as_of=as_of, transport=fuseki)
     # A hint can route here before legacy preflight; an older family still owns
     # its original preflight, including historical dates/group/term boundaries.
@@ -6601,6 +6610,7 @@ def _execute_shared_dail_terms_question(
     if draft_plan.get("family") == "capability_selection":
         capability = draft_plan["capability"]
         parameters = draft_plan["parameters"]
+        _select_route(fuseki, f"capability:{capability}")
         if capability == "current_office_constituency":
             from .office_representation import execute_office_representation
             return execute_office_representation(parameters["office"], as_of=as_of, fuseki=fuseki,
@@ -6688,10 +6698,13 @@ def _execute_shared_dail_terms_question(
         )
 
     if plan["referents"].get("participation", {}).get("type") == "BillParticipation":
+        _select_route(fuseki, plan.get("family", "member_bill_sponsorship"))
         return _execute_bill_sponsorship_question(plan, fuseki=fuseki, supported_predicates=supported_predicates)
     if plan["referents"].get("affiliation", {}).get("type") == "PoliticalAffiliationIdentity" and "family" not in plan:
+        _select_route(fuseki, "member_party_history")
         return _execute_affiliation_question(plan, fuseki=fuseki, supported_predicates=supported_predicates)
     family = plan["family"]
+    _select_route(fuseki, family)
     if family == "constituency_representation":
         from .representation import execute_representation
         return execute_representation(plan, fuseki=fuseki, supported_predicates=supported_predicates)
@@ -7158,6 +7171,14 @@ def execute_question(
     from .errors import QueryExecutionFailure, QueryLimitError
 
     class ReadOnlyExecution:
+        route_id = None
+
+        def select_route(self, route_id):
+            self.route_id = route_id
+            selector = getattr(fuseki, "select_route", None)
+            if callable(selector):
+                selector(route_id)
+
         @property
         def timeout(self):
             from .composition_kernel import REQUEST_TIMEOUT
@@ -7176,19 +7197,26 @@ def execute_question(
         if continuation is not None:
             from .stage_a import StageARequest, execute_stage_a
             request, selected = continuation
-            return execute_stage_a(StageARequest(**request), as_of=as_of, fuseki=ReadOnlyExecution(),
-                                   supported_predicates=supported_predicates, selected_member_iri=selected)
-        return _execute_question(question, as_of=as_of, fuseki=ReadOnlyExecution(),
-                                 supported_predicates=supported_predicates,
-                                 semantic_plan_generator_factory=semantic_plan_generator_factory)
+            read_only = ReadOnlyExecution()
+            _select_route(read_only, "member_lookup")
+            outcome = execute_stage_a(StageARequest(**request), as_of=as_of, fuseki=read_only,
+                                      supported_predicates=supported_predicates, selected_member_iri=selected)
+            return replace(outcome, route_id=outcome.route_id or read_only.route_id)
+        read_only = ReadOnlyExecution()
+        outcome = _execute_question(question, as_of=as_of, fuseki=read_only,
+                                    supported_predicates=supported_predicates,
+                                    semantic_plan_generator_factory=semantic_plan_generator_factory)
+        return replace(outcome, route_id=outcome.route_id or read_only.route_id)
     except QueryExecutionFailure as error:
         cause = error.__cause__
         return PlanOutcome("execution_failure", diagnostic=f"The local read-only query failed: {error}",
                            request_family="composable_semantic", debug_source="Fuseki",
+                           route_id=locals().get("read_only").route_id if locals().get("read_only") else None,
                            debug_output=format_debug_payload({"failed_read_only_query": error.query,
                                                               "endpoint_debug": getattr(cause, "debug_output", None)}))
     except QueryLimitError as error:
-        return PlanOutcome("validation_failure", diagnostic=str(error), request_family="composable_semantic")
+        return PlanOutcome("validation_failure", diagnostic=str(error), request_family="composable_semantic",
+                           route_id=locals().get("read_only").route_id if locals().get("read_only") else None)
 
 
 def _clarify_constituency_set(question, area, *, as_of, fuseki, supported_predicates):
@@ -7320,10 +7348,12 @@ def _execute_question(
     from .government import plan_government_question, execute_government
     government = plan_government_question(question, as_of=as_of)
     if government is not None:
+        _select_route(fuseki, "government_party_members")
         return execute_government(government, fuseki=fuseki, supported_predicates=supported_predicates)
     from .stage_b import plan_stage_b, handle_stage_b
     boundary = plan_stage_b(question, as_of=as_of)
     if boundary is not None and boundary.get("family") in {"committee_chair", "committee_conflict"}:
+        _select_route(fuseki, boundary["family"])
         return handle_stage_b(question, as_of=as_of, fuseki=fuseki, supported_predicates=supported_predicates)
 
     # Current reusable composition has its own whole-question admission/default
@@ -7374,23 +7404,27 @@ def _execute_question(
                 return _execute_shared_dail_terms_question(question, as_of=as_of, fuseki=fuseki,
                                                          supported_predicates=supported_predicates,
                                                          planner_generator_factory=semantic_plan_generator_factory)
+        _select_route(fuseki, "constituency_representation")
         return execute_representation(representation_plan, fuseki=fuseki,
                                       supported_predicates=supported_predicates)
     stage_a_request = parse_stage_a_question(question)
     if stage_a_request is not None:
+        _select_route(fuseki, stage_a_request.family)
         return execute_stage_a(
             stage_a_request, as_of=as_of, fuseki=fuseki,
             supported_predicates=supported_predicates,
         )
     from .stage_c import handle_stage_c
     stage_c_outcome = handle_stage_c(question, as_of=as_of, fuseki=fuseki,
-                                     supported_predicates=supported_predicates)
+                                     supported_predicates=supported_predicates,
+                                     on_route_selected=lambda route: _select_route(fuseki, route))
     if stage_c_outcome is not None:
         return stage_c_outcome
     from .stage_b import handle_stage_b
     stage_b_outcome = handle_stage_b(
         question, as_of=as_of, fuseki=fuseki,
         supported_predicates=supported_predicates,
+        on_route_selected=lambda route: _select_route(fuseki, route),
     )
     if stage_b_outcome is not None:
         return stage_b_outcome
@@ -7427,12 +7461,15 @@ def _execute_question(
     except PlanError as error:
         return PlanOutcome("unsupported_capability", diagnostic=str(error))
     if plan["referents"].get("participation", {}).get("type") == "BillParticipation":
+        _select_route(fuseki, "member_bill_sponsorship")
         return _execute_bill_sponsorship_question(
             plan, fuseki=fuseki, supported_predicates=supported_predicates,
         )
     if plan["referents"].get("holding", {}).get("type") == "OfficeHolding":
+        _select_route(fuseki, plan.get("family", "office_holding_evidence"))
         return _execute_office_question(plan, fuseki=fuseki, supported_predicates=supported_predicates)
     if plan["referents"].get("sitting", {}).get("type") == "DebateSitting":
+        _select_route(fuseki, "debate_lookup")
         try:
             query = compile_debate_answer_query(plan, supported_predicates=supported_predicates)
             raw_result = fuseki.query(query)
@@ -7453,7 +7490,9 @@ def _execute_question(
         return PlanOutcome("success", plan=plan, sparql=query, result=result,
                            diagnostic="Matched an actual DebateSitting through its produced DebateRecord and reviewed graph-route chamber identity.")
     if plan["answer"]["referent"] == "affiliation":
+        _select_route(fuseki, "member_party_history")
         return _execute_affiliation_question(plan, fuseki=fuseki, supported_predicates=supported_predicates)
+    _select_route(fuseki, "previous_constituency_representation")
     try:
         term_result = fuseki.query(previous_dail_term_query(as_of, supported_predicates=supported_predicates))
         previous_term, current_term = resolve_previous_dail(term_result, as_of)

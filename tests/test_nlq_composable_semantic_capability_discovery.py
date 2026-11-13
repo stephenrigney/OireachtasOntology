@@ -194,6 +194,8 @@ def test_integrated_ask_selects_existing_validated_capability(
 
     assert response.status_code == 200
     assert "Validated composable query plan" in response.text
+    assert f'capability:{capability}' in response.text
+    assert "Query method:" in response.text
     assert generator.calls == [question]
     assert generator.closed
     assert len(fixture.queries) == (2 if capability == "seanad_entry" else 1)
@@ -212,6 +214,29 @@ def test_integrated_ask_selects_existing_validated_capability(
         assert "SERVICE" not in fixture.queries[-1].upper()
         assert "FROM NAMED" not in fixture.queries[-1].upper()
     assert deterministic in {"stage_a", "stage_b"}
+
+
+def test_selected_capability_is_reported_when_its_executor_fails(monkeypatch):
+    from poc.nlq import app as app_module
+    from poc.nlq.errors import NLQError
+
+    class FailingFixture(CapabilityFixture):
+        def query(self, query):
+            self.queries.append(query)
+            raise NLQError("synthetic local query failure")
+
+    question = "What is the official title of the Bill numbered 23 in 2025?"
+    fixture = FailingFixture()
+    generator = FixedPlanGenerator(_selection("bill_lookup", {"billNumber": "23", "billYear": 2025}))
+    monkeypatch.setenv("OIR_NLQ_AS_OF_DATE", AS_OF.isoformat())
+    monkeypatch.setattr(app_module, "FusekiQueryClient", lambda *args, **kwargs: fixture)
+    response = TestClient(app_module.create_app(
+        repository_root=ROOT, semantic_plan_generator_factory=lambda: generator,
+    )).post("/ask", data={"question": question, "mode": "phase2"})
+    assert response.status_code == 200
+    assert "Query method: Bill lookup" in response.text
+    assert "capability:bill_lookup" in response.text
+    assert "No query method selected" not in response.text
 
 
 @pytest.mark.parametrize(("question", "draft"), [
