@@ -11,6 +11,7 @@ from poc.nlq import app as app_module
 from poc.nlq.composable_plan import PlanOutcome, validate_plan
 from poc.nlq.explainer import RELATIONS, explain_execution, explain_validated_plan
 from poc.nlq.results import QueryResult
+from poc.nlq.presentation import result_presentation
 from poc.nlq.stage_b import plan_stage_b
 from poc.nlq.stage_c import plan_stage_c
 from test_nlq_composable_party_temporal import (
@@ -155,6 +156,57 @@ def test_no_plan_does_not_claim_a_validated_interpretation(monkeypatch, status):
     assert "Interpretation validated" not in panel(page, "interpreted", default=True)
     assert "disabled" in tab(page, "executed")
     assert "disabled" in tab(page, "compiled")
+
+
+def test_rejected_shared_constituency_proposal_is_explicitly_unvalidated(monkeypatch):
+    question = "Who are the other TDs in Joe Neville's constituency in the previous Dáil?"
+    outcome = PlanOutcome(
+        "validation_failure", diagnostic="The requested independent Member/shared-constituency operator is absent; no simplified plan is accepted.",
+        proposal_evidence={"validated": False, "intent": "Find other TDs sharing Joe Neville's constituency in the previous Dáil.",
+                           "family": "member_relationship_composition", "recognized": [
+                               {"role": "anchor", "type": "Member", "label": "Joe Neville"},
+                               {"role": "term", "type": "DailTerm", "label": "previous Dáil"}],
+                           "reason": "The proposal omitted the validated shared-constituency operator; the validator requires the explicit wording 'same' or 'shared'."},
+    )
+    page = render_outcome(monkeypatch, outcome, question)
+    interpreted = panel(page, "interpreted", default=True)
+    assert "Unvalidated AI proposal" in interpreted
+    assert "Joe Neville" in interpreted and "previous Dáil" in interpreted
+    assert "Why processing stopped" in interpreted
+    assert "No query method selected" in page
+    assert "Query method: Relationship composition" not in page
+    assert "Interpretation validated" not in interpreted
+
+
+def test_validated_plan_identifies_relationship_compiler_route(monkeypatch):
+    from dataclasses import replace
+    outcome = replace(emitted_history(), route_id="member_relationship_composition")
+    page = render_outcome(monkeypatch, outcome)
+    assert "Query method: Relationship composition" in page
+    assert "Internal route identifier" in page
+    assert "member_relationship_composition" in page
+
+
+def test_uri_only_results_remain_distinct_and_feedback_uses_the_displayed_identifiers():
+    first = "https://data.example/entity/one"
+    second = "https://data.example/entity/two"
+    displayed = result_presentation(QueryResult("select", ("Identity",), ((first,), (second,))))
+    assert displayed["rows"] == ((first,), (second,))
+    assert first in displayed["actual"] and second in displayed["actual"]
+
+
+def test_mixed_labelled_and_uri_only_results_keep_both_values():
+    unresolved = "urn:unlabelled:record-two"
+    displayed = result_presentation(QueryResult(
+        "select", ("Name", "Identity"), (("Alice Example", "urn:alice"), ("—", unresolved))))
+    assert displayed["rows"] == (("Alice Example", "urn:alice"), ("—", unresolved))
+    assert "Alice Example" in displayed["actual"] and unresolved in displayed["actual"]
+
+
+def test_existing_readable_labels_are_not_replaced_by_uri_formatting():
+    displayed = result_presentation(QueryResult("select", ("Member",), (("Alice Example",),)))
+    assert displayed["rows"] == (("Alice Example",),)
+    assert "Alice Example" in displayed["actual"]
 
 
 def test_ambiguous_identity_can_have_valid_structure_but_not_a_success_badge(monkeypatch):

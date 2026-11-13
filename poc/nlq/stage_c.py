@@ -402,7 +402,8 @@ def _debate_query(as_of: date, debate_date: str, *, supported_predicates) -> tup
     return compile_debate_answer_query(inner, supported_predicates=supported_predicates), inner
 
 
-def handle_stage_c(question: str, *, as_of: date, fuseki, supported_predicates) -> PlanOutcome | None:
+def handle_stage_c(question: str, *, as_of: date, fuseki, supported_predicates,
+                   on_route_selected=None) -> PlanOutcome | None:
     request_family = stage_c_request_family(question)
     if request_family is None:
         return None
@@ -414,6 +415,8 @@ def handle_stage_c(question: str, *, as_of: date, fuseki, supported_predicates) 
         return PlanOutcome("unsupported_mapping", diagnostic=str(error), request_family=request_family)
     if plan is None:
         return PlanOutcome("unsupported_capability", diagnostic="The recognized Stage C request could not be planned.", request_family=request_family)
+    if callable(on_route_selected):
+        on_route_selected(plan.get("family", request_family))
     return execute_stage_c(plan, as_of=as_of, fuseki=fuseki, supported_predicates=supported_predicates)
 
 

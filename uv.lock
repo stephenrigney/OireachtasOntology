@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -1042,6 +1042,7 @@ test = [
     { name = "pytest" },
     { name = "python-dotenv" },
     { name = "python-multipart" },
+    { name = "uvicorn" },
 ]
 
 [package.metadata]
@@ -1063,6 +1064,7 @@ requires-dist = [
     { name = "python-multipart", marker = "extra == 'test'", specifier = ">=0.0.9,<1" },
     { name = "rdflib", specifier = ">=7.6,<8" },
     { name = "uvicorn", marker = "extra == 'nlq'", specifier = ">=0.30,<1" },
+    { name = "uvicorn", marker = "extra == 'test'", specifier = ">=0.30,<1" },
 ]
 provides-extras = ["test", "semantic-enrichment", "nlq"]
 

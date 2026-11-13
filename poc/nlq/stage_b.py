@@ -887,7 +887,8 @@ def _readable_bill_result(family: str, result: QueryResult) -> tuple[QueryResult
     return readable, notice
 
 
-def handle_stage_b(question: str, *, as_of: date, fuseki, supported_predicates) -> PlanOutcome | None:
+def handle_stage_b(question: str, *, as_of: date, fuseki, supported_predicates,
+                   on_route_selected=None) -> PlanOutcome | None:
     plan = plan_stage_b(question, as_of=as_of)
     if plan is None:
         return None
@@ -897,6 +898,8 @@ def handle_stage_b(question: str, *, as_of: date, fuseki, supported_predicates) 
         return PlanOutcome("unsupported_capability",
                            diagnostic=f"Stage B plan failed its closed semantic validator: {error}")
     family = _family(plan)
+    if callable(on_route_selected):
+        on_route_selected(family)
     if family in {"office_overlap", "office_point"}:
         from .composable_plan import _execute_office_question, plan_question, validate_plan
         office_mention = _ref(plan, "office")["mention"]

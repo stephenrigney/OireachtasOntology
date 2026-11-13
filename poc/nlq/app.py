@@ -35,6 +35,7 @@ from .schema import build_schema_context
 from .vocabulary import supported_predicates
 from .feedback import FeedbackError, FeedbackStore
 from .performance import QueryPerformance
+from .presentation import QueryPresentation, query_method as build_query_method, result_presentation
 from .explainer import (
     explain_validated_plan, explain_execution, explain_validated_composition,
     explain_composition_execution, composition_answer_display,
@@ -166,7 +167,7 @@ def create_app(
                   explanation_plan: dict | None = None,
                   composition: bool = False, composition_direct: bool = False, composition_confirmation=None,
                    composition_report=None, composition_evidence_token=None, composition_request=None,
-                   composition_dashboard: bool = False):
+                composition_dashboard: bool = False):
         # Only the caller's already-validated structured plan may support prose.
         # Do not reparse capped debug JSON or infer execution from SPARQL.
         explainer = (explain_validated_composition(composition_request, composition_report, question=question)
@@ -189,6 +190,31 @@ def create_app(
                 result=result, status=interaction_status, error=error,
             ) if composition_dashboard and composition_request is not None and composition_report is not None else None
         )
+        route_info = getattr(request.state, "query_method", None)
+        if route_info is None and composition_dashboard:
+            route_info = build_query_method(family="composition_workflow", selected=True)
+            route_info.update(name="Relationship composition", identifier="relationship_composition",
+                              description="Combined parliamentary relationships to find people satisfying the confirmed conditions.")
+        route_info = route_info or build_query_method(selected=False)
+        answer_display = (result_presentation(result, error=error, notice=result_notice,
+                                              context=(explainer or {}).get("summary"),
+                                              answer_kind=((explanation_plan or {}).get("answer", {}).get("kind")
+                                                           or ((explainer or {}).get("answer_text", "").split(" ", 1)[0].lower()
+                                                               if (explainer or {}).get("answer_text", "").startswith("A count") else None)))
+                          if composition_answer is None else {
+                              "kind": "composition" if composition_answer["answerable"] else "refusal",
+                              "heading": "Answer" if composition_answer["answerable"] else "Unable to answer",
+                              "summary": "" if composition_answer["answerable"] else composition_answer["actual"],
+                              "columns": (), "rows": (), "actual": composition_answer["actual"],
+                          })
+        presentation = QueryPresentation(
+            query_method=route_info,
+            interpretation={"status": "validated" if explainer else "partial_or_unvalidated",
+                            "accepted": bool(explainer), "summary": (explainer or {}).get("summary")},
+            compilation={"reached": bool(sparql or plan_json or (explainer and explainer.get("queries")))},
+            execution={"attempted": execution_attempted, "status": interaction_status},
+            answer=answer_display,
+        )
         performance = getattr(request.state, "query_performance", None)
         if readiness is None and not (composition or composition_direct):
             readiness = (performance.measure("readiness_check", check_fuseki_readiness)
@@ -199,7 +225,7 @@ def create_app(
             performance_diagnostics = performance.diagnostics(outcome_name)
             logger.info("nlq_query_performance %s", json.dumps(performance_diagnostics, sort_keys=True))
         feedback_actual = (composition_answer["actual"] if composition_answer is not None else
-                           _displayed_answer_text(
+                           answer_display["actual"] if result is not None or error else _displayed_answer_text(
             error=error, result=result, result_notice=result_notice,
             ambiguity=ambiguity, entity_outcomes=entity_outcomes,
             clarification=clarification,
@@ -246,6 +272,10 @@ def create_app(
             "composition_request": composition_request,
             "composition_dashboard": composition_dashboard,
             "composition_answer": composition_answer,
+            "answer_display": answer_display,
+            "presentation": presentation,
+            "query_method": route_info,
+            "proposal_evidence": getattr(request.state, "proposal_evidence", None),
         })
 
     from .composition_routes import install_composition_routes
@@ -372,6 +402,9 @@ def create_app(
                 performance = request.state.query_performance
 
                 class TimedFuseki:
+                    def select_route(self, route_id):
+                        request.state.query_method = build_query_method(route=route_id, selected=True)
+
                     def select(self, lookup, query, offset):
                         nonlocal typed_fuseki
                         if typed_fuseki is None:
@@ -429,6 +462,9 @@ def create_app(
                         plan_is_validated = validate_plan(outcome.plan) == outcome.plan
                     except (ValueError, TypeError, KeyError):
                         plan_is_validated = False
+                request.state.proposal_evidence = outcome.proposal_evidence
+                if outcome.route_id:
+                    request.state.query_method = build_query_method(route=outcome.route_id, selected=True)
                 plan_json = format_debug_payload(outcome.plan) if plan_is_validated else None
                 explanation_plan = outcome.plan if plan_is_validated else None
                 is_q06 = bool(outcome.plan and outcome.plan.get("answer", {}).get("referent") == "affiliation")
@@ -1078,6 +1114,7 @@ def create_app(
                 if fuseki is not None:
                     fuseki.close()
 
+        request.state.query_method = build_query_method(route="phase1", selected=True)
         translation = None
         translator = fuseki = None
         phase = "LLM translation"
