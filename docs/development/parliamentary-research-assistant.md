@@ -1,4 +1,4 @@
-# Parliamentary Research Assistant v0.5
+# Parliamentary Research Assistant v0.6
 
 A local conversational application producing **Draft — for review** research.
 It does not certify exhaustive interpretation, source completeness or editorial
@@ -18,7 +18,10 @@ set -a; source .env.local; set +a
 ```
 
 Open <http://127.0.0.1:8010>. Use **one worker**, loopback only. This is not an
-authenticated public service. Configuration:
+authenticated public service. Restart the Python process after updating this
+branch; an already-running server may still hold older coordinator code even
+though the browser loads new static assets. Use another loopback port if an
+existing research process must remain undisturbed. Configuration:
 
 - `NLQ_LLM_API_KEY`, `NLQ_LLM_BASE_URL`, `NLQ_LLM_MODEL`: existing
   Responses-compatible structured-output model settings. The LLM interprets,
@@ -47,8 +50,20 @@ Supporting retrieval is not marked as satisfaction of the full original brief.
 Known gaps appear in the main report and export. Requirement dispositions are
 provisional model assessments, not an exhaustive semantic certification.
 
-Pause stops further dispatch after an in-flight step. Enter submits; Shift+Enter
-adds a line. Follow-ups go to the server and the model, not a canned browser
+The opening canvas asks **What would you like to find out?** Select an example
+to fill the field without submitting, or write your own multiline brief, then
+choose **Start research**. **Enter adds a line; Ctrl/⌘+Enter submits**, on both
+the opening and follow-up composers. Empty messages cannot be submitted.
+
+Question, interpretation, plan and progressive report use one column at every
+screen width. The plan is visibly published before factual dispatch and remains
+available through **Research plan** / **View research plan**. It is not closed
+automatically while you may be reading it. Once findings arrive the report is
+the main document. **Ask a follow-up** in the compact reading navigation reaches
+the composer below the report; **Conversation history** reveals all previous
+exchanges. Research Activity and evidence remain contextual dialogs, not columns.
+
+Pause stops further dispatch after an in-flight step. Follow-ups go to the server and the model, not a canned browser
 response. Pure editorial turns reuse facts; factual additions retrieve affected
 evidence. Existing sections remain unless returned as explicit section revisions.
 New factual investigations cannot overwrite sections owned by earlier research;
@@ -156,22 +171,29 @@ draft/class labels, confidence rationale, gaps, assertion IDs and full evidence.
 
 ```sh
 .venv/bin/python -m pytest -q tests/test_research_v05.py tests/test_research_workspace.py
-.venv/bin/python -m pytest -q tests
+# Keep legacy deterministic tests from picking up configured live-model fallback:
+NLQ_LLM_API_KEY='' .venv/bin/python -m pytest -q tests
 .venv/bin/python tests/validate.py
 uv sync --extra test --extra nlq --extra browser-test
 .venv/bin/python -m playwright install chromium
 # Against the configured app above:
-.venv/bin/python tools/verify_research_v05_browser.py
+.venv/bin/python tools/verify_research_v06_browser.py
 # Fast, explicitly injected/replayed UI controls (no model or dataset network):
-.venv/bin/python tools/verify_research_v05_ui.py
+.venv/bin/python tools/verify_research_v06_ui.py
 ```
 
 New deterministic tests distinguish **injected model proposals** and exact saved
 compiler-response replay from live research. The browser verifier exercises the
 actual configured model/Fuseki interaction, saves transcripts, model proposals,
-assertions, reports and screenshots under `/tmp/oireachtasontology/research-v05/`
+assertions, reports and screenshots under `/tmp/oireachtasontology/research-v06/`
 by default, and checks R1, revisions, same-session R3, unsupported R4/R5, plan
 visibility, evidence controls, keyboard focus, narrow-screen layouts and export.
+The v0.6 checks also cover the writing-first opening at all five target widths,
+example selection without submission, multiline shortcuts, section-context
+revision, exact chronological history, retained drafts on failed submission,
+interruption/retry and 200% text-size / 400% zoom-equivalent reflow. The `v05`
+browser entry points forward to the current checks for compatibility; the older
+Phase 1 split-pane verifier is historical, not a v0.6 acceptance command.
 Use `--output` to choose an artefact directory. `/runs/{id}/archive` provides a
 local JSON archive; it includes model inputs/outputs and source records, not API
 credentials. Assess generated drafts before sharing.

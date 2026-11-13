@@ -8,44 +8,62 @@
   <script src="/assets/workspace.js" defer></script>
 </head>
 <body>
-  <a class="skip" href="#report">Skip to report</a>
+  <a class="skip" href="#workspace">Skip to research workspace</a>
   <header class="app-header">
     <div class="identity"><span class="identity-mark" aria-hidden="true">O</span><div><strong>Parliamentary Research</strong><span class="eyebrow">OIREACHTAS · RESEARCH WORKSPACE</span></div></div>
-    <div class="session"><span id="session-title">New research</span><span id="overall-state">Ready to begin</span></div>
-    <nav aria-label="Workspace controls">
+    <div class="session" id="session" hidden><span id="session-title"></span><span id="overall-state"></span></div>
+    <nav id="workspace-controls" aria-label="Workspace controls" hidden>
       <button id="pause" hidden>Pause research</button>
       <button id="activity">Research Activity</button>
+      <button id="copy" hidden>Copy Markdown</button>
+      <button id="export" hidden>Export .md</button>
       <button id="new-research">New research</button>
     </nav>
   </header>
-  <nav class="mobile-nav" aria-label="Workspace views"><button id="show-conversation" aria-pressed="true">Conversation</button><button id="show-report" aria-pressed="false">Report</button></nav>
   <div id="announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-  <main class="workspace" data-view="conversation">
-    <section class="conversation" aria-labelledby="conversation-title">
-      <div class="panel-heading"><h1 id="conversation-title">Research conversation</h1><span>DRAFT RESEARCH</span></div>
-      <div id="conversation-log" class="conversation-log" role="log" aria-label="Research conversation" aria-live="off">
-        <div class="welcome"><p class="eyebrow">A CLEAR BRIEF. A TRACEABLE REPORT.</p><h2>What would you like<br>to find out?</h2><p>Investigate a Member’s Bills and recorded progress, or explore constituency representation. Discuss and refine the same research draft.</p><button id="example" class="example">Prepare a briefing on a Member’s Bills <span aria-hidden="true">↗</span></button><p class="metadata">Drafts for human review. Source coverage and freshness are not certified.</p></div>
-      </div>
+  <main id="workspace" class="workspace" tabindex="-1">
+    <section id="start-canvas" class="start-canvas" aria-labelledby="question-heading">
+      <h1 id="question-heading">What would you like to find out?</h1>
+      <p class="start-introduction">Ask a question about the Oireachtas. Explore the findings and refine your report as you go.</p>
       <form id="composer-form" class="composer">
-        <label for="brief">What would you like to find out?</label>
-        <textarea id="brief" rows="4" maxlength="2000" placeholder="Prepare a briefing on the Bills sponsored by…" aria-describedby="composer-hint"></textarea>
-        <p id="composer-hint" class="metadata">Enter to send · Shift+Enter for a new line</p>
+        <label id="composer-label" class="sr-only" for="brief">What would you like to find out?</label>
+        <div id="section-context" class="context-note" hidden><span id="context-label"></span><button id="clear-context" type="button">Clear section context</button></div>
+        <textarea id="brief" rows="7" maxlength="2000" aria-describedby="composer-hint" aria-keyshortcuts="Control+Enter Meta+Enter"></textarea>
+        <div class="composer-actions"><p id="composer-hint" class="metadata">Enter for a new line · Ctrl/⌘+Enter to submit</p><button id="submit" type="submit" class="primary" disabled>Start research <span aria-hidden="true">→</span></button></div>
         <div id="submission-error" role="alert"></div>
-        <button id="submit" type="submit" class="primary" disabled>Start research <span aria-hidden="true">→</span></button>
       </form>
-    </section>
-    <section class="report-pane" aria-labelledby="report-heading">
-      <div class="report-toolbar"><span class="eyebrow">LIVING REPORT</span><div><button id="copy" disabled>Copy Markdown</button><button id="export" disabled>Export .md</button></div></div>
-      <div class="document-scroll" id="report-scroll" tabindex="0" aria-label="Scrollable research report">
-        <article id="report" tabindex="-1">
-          <div class="document-heading"><p class="eyebrow">PARLIAMENTARY RESEARCH NOTE</p><h1 id="report-heading">Your report will take shape here.</h1><p id="report-scope">Validated findings appear as research progresses. Every table and comparison links to its supporting evidence.</p><p id="report-status" class="document-status">Awaiting a research objective</p></div>
-          <section id="overview" hidden><h2>About this draft</h2><p>Recorded facts and calculations are separate from provisional model interpretations. This report is not automatically certified as exhaustive or editorially correct. Please review its findings and unanswered questions.</p></section>
-          <div id="report-sections"></div>
-          <section id="limitations" hidden><h2>Limitations &amp; unanswered questions</h2><ul id="limitation-list"></ul><div id="unanswered"></div></section>
-          <footer id="report-footer" hidden>Research evidence is held in this server’s memory for one hour. Export to retain the report and its evidence. Reloading does not create a saved research library.</footer>
-        </article>
+      <div class="examples"><h2>Example questions</h2><p class="metadata">Select a question to edit it before starting research.</p>
+        <button id="example" class="example" type="button">What happened to the Bills sponsored by Malcolm Byrne?</button>
+        <button id="example-career" class="example" type="button">Which constituencies has Mary Lou McDonald represented?</button>
       </div>
     </section>
+    <div id="research-canvas" class="research-canvas" hidden>
+      <h1 id="planning-title" class="sr-only">Research workspace</h1>
+      <details id="original-question" open><summary>Your original question</summary><p id="original-brief" class="verbatim"></p></details>
+      <section id="plan-card" class="plan-card">
+        <details id="plan-disclosure" open><summary id="plan-summary">Research plan</summary>
+          <div id="plan-body"><p id="plan-interpretation"></p><div id="plan-tasks"></div><p id="plan-date" class="metadata"></p>
+            <details id="requirements"><summary>Original brief &amp; proposed requirement assessment</summary><div id="requirement-content"></div></details>
+          </div>
+        </details>
+      </section>
+      <div id="research-notices"></div>
+      <p id="research-progress" class="metadata"></p>
+      <nav class="reading-tools" aria-label="Research navigation"><button id="reach-composer">Ask a follow-up ↓</button><button id="reach-plan">View research plan ↑</button></nav>
+      <article id="report" tabindex="-1" aria-labelledby="report-heading" hidden>
+          <div class="document-heading"><p class="eyebrow">Research report</p><h1 id="report-heading"></h1><p id="report-scope"></p><p id="report-status" class="document-status"></p></div>
+          <section id="overview"><h2>About this draft</h2><p>Recorded facts and calculations are separate from provisional interpretations. Please review the findings and unanswered questions.</p></section>
+          <div id="report-sections"></div>
+          <section id="limitations"><h2>Limitations &amp; unanswered questions</h2><ul id="limitation-list"></ul><div id="unanswered"></div></section>
+          <footer id="report-footer">Research evidence is held in this server’s memory for one hour. Export to retain the report and its evidence.</footer>
+      </article>
+      <section id="follow-up" class="follow-up" aria-label="Follow-up and conversation">
+        <div id="latest-reply" class="latest-reply"></div>
+        <div id="follow-up-composer"></div>
+        <details id="conversation-history"><summary>Conversation history</summary><div id="conversation-log" aria-label="Previous exchanges"></div></details>
+        <a id="return-report" href="#report" hidden>Return to the research report</a>
+      </section>
+    </div>
   </main>
   <dialog id="activity-drawer" aria-labelledby="activity-title">
     <div class="drawer-heading"><div><p class="eyebrow">BEHIND THE FINDINGS</p><h2 id="activity-title">Research Activity</h2></div><button id="close-activity" autofocus>Close</button></div>

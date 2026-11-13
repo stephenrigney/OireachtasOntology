@@ -35,6 +35,9 @@ def retain(source: Path, destination: Path, earlier_trials=()):
             "> Unedited generated report body. Full assertion/source appendices are retained in the review bundle and full combined export.\n\n" + body + "\n")
     shutil.copyfile(source / "r3-same-session.md", destination / "full-combined-export.md")
     shutil.copyfile(source / "browser-summary.json", destination / "browser-summary.json")
+    observations = source / "plan-dispatch-observations.json"
+    if observations.exists():
+        shutil.copyfile(observations, destination / observations.name)
     (destination / "screenshots").mkdir(exist_ok=True)
     for path in source.glob("*.png"):
         shutil.copyfile(path, destination / "screenshots" / path.name)
@@ -43,7 +46,8 @@ def retain(source: Path, destination: Path, earlier_trials=()):
     manifest = {"implementationBase": bundle["implementationBase"],
                 "applicationDiffSha256": hashlib.sha256(subprocess.check_output(["git", "diff", "--", "poc/nlq"])).hexdigest(),
                 "applicationFiles": {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in (
-                    Path("poc/nlq/research_collaborator.py"), Path("poc/nlq/research_assertions.py"),
+                     Path("poc/nlq/research_collaborator.py"), Path("poc/nlq/research_assertions.py"),
+                     Path("poc/nlq/research_ui/index.html"),
                     Path("poc/nlq/research_presentation.py"), Path("poc/nlq/research_ui/workspace.js"),
                     Path("poc/nlq/research_ui/workspace.css"))},
                 "artefacts": {str(p.relative_to(destination)): hashlib.sha256(p.read_bytes()).hexdigest()
