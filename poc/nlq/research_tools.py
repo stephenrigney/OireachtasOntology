@@ -18,7 +18,7 @@ from .composable_plan import PlanOutcome, execute_question, plan_question, valid
 from .representation import representation_plan
 from .research_adapter import ClosedModel, QueryTrace, COMPILER_CONTEXT, now
 from .composable_semantic_planner import create_composable_plan_generator, build_composable_planner_instructions
-from .research_outcomes import classify
+from .research_outcomes import classify, describe
 from .results import format_debug_text
 
 LIMITATIONS = [
@@ -171,7 +171,8 @@ class ResearchTools:
             # Retain even already-completed reads on unexpected planner/projection
             # failure. Never convert a failed projection to success-shaped data.
             import os
-            outcome = PlanOutcome("validation_failure", diagnostic=format_debug_text(
+            failure = "execution_failure" if any(q["outcome"] == "execution_failure" for q in trace.queries) else "validation_failure"
+            outcome = PlanOutcome(failure, diagnostic=format_debug_text(
                 f"{type(error).__name__}: {error}", secrets=tuple(os.getenv(k, "") for k in ("NLQ_LLM_API_KEY", "OIR_FUSEKI_PASSWORD"))))
         plan_ok = False
         try:
@@ -189,6 +190,11 @@ class ResearchTools:
             status = "missing_or_unaccepted_evidence" if plan_ok and executed else "validation_failure"
         message = None if accepted else (limitation or outcome.diagnostic or "No accepted research evidence was established.")
         research_outcome = classify(outcome, accepted=accepted, plan_validated=plan_ok, execution_completed=executed)
+        # A thrown semantic-planner call leaves a traced proposal with no output;
+        # distinguish that from a returned plan rejected by normal validation.
+        if (not accepted and outcome.interaction == "validation_failure" and proposals
+                and proposals[-1].get("output") is None):
+            research_outcome = describe("planner_failure")
         return {"evidenceId": "e-" + uuid4().hex,
             "request": {"factualRequest": task["question"], "requirementId": task["requirementId"],
                         "operation": {"operation": "query"}},

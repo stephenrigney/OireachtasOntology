@@ -1,0 +1,21 @@
+{
+  "kind": "actual configured model and read-only Fuseki; separate R1 editorial attempt",
+  "question": "Prepare a briefing on the Bills sponsored by Malcolm Byrne. What progress have they made, and what happened to them?",
+  "requestedModel": "gpt-6-luna",
+  "initialAcceptedFacts": 130,
+  "evidenceCountBeforeAndAfter": [
+    23,
+    23
+  ],
+  "sameEvidencePreserved": true,
+  "sectionId": "sponsor-bills-findings-01",
+  "initialOverviewWords": 49,
+  "revisedOverviewWords": 41,
+  "requiredMaximumWords": 34.3,
+  "reductionPercent": 16.33,
+  "editorialAcceptance": "failed; revised overview did not meet the required 30% reduction",
+  "initialText": "The available sponsorship records identify Malcolm Byrne as a sponsor of 20 distinct Bills. The table gives the recorded Bill titles and classifications; the selection is not certified as exhaustive. “Supporting” is a recorded classification, not evidence of opposition or of a particular role beyond what the records state.",
+  "revisedText": "The available records identify Malcolm Byrne as a sponsor of the Bills listed below; the selection is not certified as exhaustive. Recorded status labels and dated activity entries describe what the records show, but do not certify each Bill’s final outcome.",
+  "r1BrowserRunDidNotReachWexford": true,
+  "limitation": "This live R1 attempt is independent of the earlier retained R1 browser evidence; it is not a successful editorial revision."
+}

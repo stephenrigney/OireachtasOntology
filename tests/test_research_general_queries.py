@@ -140,6 +140,36 @@ def test_general_transport_failure_retains_failed_read():
     assert env["execution"]["queries"][0]["outcome"] == "execution_failure"
 
 
+def test_unexpected_exception_after_a_failed_read_is_classified_as_execution_failure(monkeypatch):
+    from poc.nlq import research_tools
+
+    class Broken:
+        def query(self, sparql):
+            raise RuntimeError("injected transport detail after planning")
+
+    class Fixed:
+        def generate(self, prompt):
+            return json.dumps({"version": 2, "supported": False, "family": None,
+                "unsupportedReason": "Injected control only.", "intent": "Injected control only.",
+                "referents": None, "relations": [], "constraints": [], "answer": None})
+
+    def fail_after_planner(question, *, as_of, fuseki, supported_predicates, semantic_plan_generator_factory):
+        semantic_plan_generator_factory().generate("injected validated plan")
+        try:
+            fuseki.query("SELECT * WHERE { ?subject ?predicate ?object }")
+        except Exception as error:
+            raise RuntimeError("unexpected exception after the read failed") from error
+        raise AssertionError("the injected read should fail")
+
+    monkeypatch.setattr(research_tools, "execute_question", fail_after_planner)
+    env = adapter(Broken(), semantic_plan_generator_factory=Fixed).execute(
+        query() | {"requirementId": "r0"}, AS_OF.isoformat())
+    assert env["researchOutcome"]["kind"] == "execution_failure"
+    assert env["researchOutcome"]["retryable"] is True
+    assert env["execution"]["queries"][0]["outcome"] == "execution_failure"
+    assert "unexpected exception" in env["diagnostic"]
+
+
 def test_existing_current_party_witness_authority_survives_general_discovery_and_normalisation():
     from test_research_workspace import fixture
     from poc.nlq.research_adapter import current_party_draft
@@ -216,6 +246,8 @@ def test_general_http_evidence_inspection_archive_and_qualified_export():
     model = InjectedModel([plan([query()])])
     with TestClient(create_app(planner_factory=lambda: model, client_factory=lambda: fixture, reporting_date=AS_OF)) as client:
         prepared = client.post("/runs", json={"brief": "Party history"}).json()
+        assert prepared["status"] == "Understanding the request" and not prepared["tasks"]
+        prepared = client.post(f"/runs/{prepared['id']}/step", json={"version": prepared["version"]}).json()
         assert prepared["tasks"][0]["tool"] == "query" and not fixture.queries
         run_id = prepared["id"]
         state = client.post(f"/runs/{run_id}/step", json={"version": prepared["version"]}).json()

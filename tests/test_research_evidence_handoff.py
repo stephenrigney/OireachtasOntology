@@ -71,7 +71,7 @@ def test_shared_boundary_never_projects_arbitrary_rows_or_untyped_model_facts():
     ("not_found", None, False, "identity_unresolved"),
     ("source_data_unavailable", None, False, "evidence_incomplete"),
     ("execution_failure", None, False, "execution_failure"),
-    ("validation_failure", None, False, "execution_failure"),
+    ("validation_failure", None, False, "query_validation_failure"),
 ])
 def test_structured_outcomes_have_distinct_plain_descriptions(status, result, accepted, expected):
     outcome = classify(PlanOutcome(status, result=result, diagnostic="compiler status / SPARQL exploded",
@@ -147,7 +147,7 @@ def test_missing_handoff_has_controlled_final_response_and_inspectable_technical
     assert not run.facts and not run.sections
     assert run.status == "Records found — report not completed"
     assert "records were found" in run.messages[-1]["text"]
-    assert "couldn't include them" in run.messages[-1]["text"]
+    assert "couldn't be safely included" in run.messages[-1]["text"]
     assert "No parliamentary membership records exist" not in run.messages[-1]["text"]
     assert "structured factual boundary" in json.dumps(run.evidence)
     assert "structured factual boundary" not in json.dumps(run.view()["limitations"])
@@ -174,7 +174,7 @@ def test_execution_error_plain_message_keeps_exact_developer_diagnostic():
             raise RuntimeError("injected transport detail 457")
     env = adapter(Broken()).execute(query() | {"requirementId": "r0"}, AS_OF.isoformat())
     assert env["researchOutcome"]["kind"] == "execution_failure"
-    assert "search couldn't be completed" in env["error"]["message"]
+    assert "search could not be completed" in env["error"]["message"]
     assert "457" not in env["error"]["message"]
     assert "457" in json.dumps(env["execution"])
 
@@ -207,6 +207,40 @@ def test_partial_research_keeps_findings_first_and_unanswered_separately():
     assert exported.index("Jane") < exported.index("## Evidence limitations") < exported.index("## Unanswered research questions")
     assert "unsupported capability" not in exported.split("## Assertion evidence and reasoning")[0].lower()
     assert "proposition" in exported and "queryRefs" in exported
+
+
+def test_unrelated_followup_does_not_mark_validated_section_as_populating():
+    current, _, _ = committee_env()
+
+    def committee_plan(task):
+        result = plan([task])
+        result["requirements"] = [{"kind": "research_question", "wording": CURRENT,
+            "conditions": ["committee membership", "reporting date"], "disposition": "partly supported",
+            "explanation": "The available records identify committee membership at the reporting date."}]
+        return result
+
+    class SectionAuthor(InjectedModel):
+        def generate(self, phase, payload):
+            if phase == "report":
+                refs = list(payload["facts"])
+                question_id = payload["requirements"][0]["proposedConditions"][0]["id"]
+                return {"response": "The available records identify these members at the reporting date.",
+                    "responseNarrative": None,
+                    "sections": [{"id": "current-members", "title": "Recorded current members", "kind": "findings",
+                        "factRefs": refs, "narrative": [], "tables": []}],
+                    "unanswered": [], "resolvedQuestions": [{"requirementRef": question_id,
+                        "explanation": "The accepted records identify these members at the stated date.", "factRefs": refs}]}
+            return super().generate(phase, payload)
+
+    model = SectionAuthor([committee_plan(query(CURRENT)), committee_plan(query(HISTORY, id="history"))])
+    run = ResearchRun(CURRENT, AS_OF, AcceptedAdapter(current), lambda: model)
+    run.step(run.version)  # First accepted search.
+    run.step(run.version)  # Publish a section backed by the accepted records.
+    assert run.view()["sections"][0]["state"] == "Validated"
+    run.message("Also investigate a separate historical membership question.")
+    state = run.view()
+    assert state["hasWork"] and any(task["state"] == "Pending" for task in state["tasks"])
+    assert state["sections"] and state["sections"][0]["state"] == "Validated"
 
 
 @pytest.mark.parametrize("text", ["evidence shape", "factual boundary", "promoted fact", "compiler status",

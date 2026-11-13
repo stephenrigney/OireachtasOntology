@@ -2,7 +2,9 @@
 "use strict";
 const $ = id => document.getElementById(id);
 let run = null, paused = false, generation = 0, busy = false, preparing = false, opener = null, messageCount = 0, sectionContext = null;
-let planVersion = "", latestReplyVersion = "", interruption = "";
+let planVersion = "", latestReplyVersion = "", interruption = "", serverProgress = null, progressLastSeen = 0;
+let progressPollToken = 0, requestStartedAt = 0, requestPhase = "", requestOperation = "";
+let pendingSubmission = null, observedStages = [], pendingDiagnostics = [];
 let pauseVersion = 0, inspectorVersion = 0, openerTarget = null;
 const sectionVersions = new Map();
 function node(tag, text, className) {
@@ -23,12 +25,132 @@ function message(speaker, text) {
   return box;
 }
 async function api(path, options = {}) {
-  const response = await fetch(path, {headers: {"Content-Type": "application/json"}, ...options});
+  let response;
+  try { response = await fetch(path, {headers: {"Content-Type": "application/json"}, ...options}); }
+  catch (error) {
+    error.requestPath = path;
+    error.technicalDiagnostic = `${error.name || "NetworkError"}: ${error.message || "Request communication failed"}`;
+    throw error;
+  }
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(`${typeof payload.detail === "string" ? payload.detail : `Request failed (${response.status}).`} Your previous report and message are preserved.`);
+    const error = new Error(typeof payload.detail === "string" ? payload.detail : `Request failed (${response.status}).`);
+    error.status = response.status; error.payload = payload; error.requestPath = path;
+    error.technicalDiagnostic = `HTTP ${response.status}: ${error.message}`;
+    throw error;
   }
   return response.json();
+}
+function newRequestId() { return crypto.randomUUID().replaceAll("-", "").toLowerCase(); }
+function elapsed(seconds) {
+  const value = Math.max(0, Math.floor(seconds || 0));
+  return value < 60 ? `${value}s` : `${Math.floor(value / 60)}m ${value % 60}s`;
+}
+function mergeStages(stages = []) {
+  for (const stage of stages) {
+    const label = stage.label || stage.phase;
+    if (label && observedStages.at(-1) !== label) observedStages.push(label);
+  }
+  observedStages = observedStages.slice(-12);
+  const history = $("processing-history");
+  history.hidden = !observedStages.length;
+  history.textContent = observedStages.length > 1 ? `Stages observed: ${observedStages.join(" → ")}` : "";
+}
+function runStateLabel(processing = run?.processing) {
+  if (!processing) return run?.status || "";
+  if (paused && run?.hasWork) return "Paused";
+  return processing.label || run?.status || "";
+}
+function stageForNextStep() {
+  if (!run) return "understanding";
+  const nextPhase = serverProgress?.active ? null : (serverProgress?.nextPhase || run.processing?.nextPhase);
+  if (nextPhase) return nextPhase;
+  if (!run.plans?.length && !run.tasks?.length && run.status === "Understanding the request") return "understanding";
+  if (run.tasks?.some(task => task.state === "Pending")) return "retrieving";
+  if (run.sections?.length || Object.keys(run.facts || {}).length) return "writing";
+  return "assessing";
+}
+function progressText(processing = serverProgress || run?.processing) {
+  if (preparing && !run) return `${requestPhase || "Understanding the request"} · ${elapsed((Date.now()-requestStartedAt)/1000)}`;
+  if (!run) return "";
+  if (paused) {
+    return processing?.active
+      ? `Paused after this operation · ${processing.phaseLabel}: ${processing.activeOperation || "Research work"} · ${elapsed(processing.elapsedSeconds)} elapsed. It may finish; no further step will be dispatched.`
+      : "Research paused. Earlier findings remain available; choose Resume research to continue.";
+  }
+  if (preparing && !run.id) return `${requestPhase || "Understanding the request"} · ${elapsed((Date.now()-requestStartedAt)/1000)}`;
+  if (processing?.active) {
+    const stale = progressLastSeen && Date.now()-progressLastSeen > 6000;
+    const current = `${processing.phaseLabel || "Processing"}${processing.activeOperation ? ` · ${processing.activeOperation}` : ""} · ${elapsed(processing.elapsedSeconds)} elapsed`;
+    const waiting = preparing ? " Your follow-up is waiting for this operation to finish." : "";
+    return stale ? `Progress check delayed. Last confirmed: ${current}; the research has not been marked complete.${waiting}` : current + waiting;
+  }
+  if (preparing) return `${requestPhase || "Understanding the request"} · ${elapsed((Date.now()-requestStartedAt)/1000)}`;
+  if (busy && run.hasWork) {
+    const phase = stageForNextStep();
+    const labels = {understanding: "Understanding the request", retrieving: "Retrieving parliamentary records", assessing: "Assessing results", writing: "Writing or revising the report"};
+    return `${labels[phase]} · next operation starting`;
+  }
+  return runStateLabel(run.processing);
+}
+function acceptRunState(next) {
+  if (!run || next.id !== run.id || next.version >= run.version) run = next;
+  mergeStages(next.processing?.stages || []);
+}
+function startProgressPolling() {
+  if (!run) return;
+  const token = ++progressPollToken, runId = run.id, myGeneration = generation;
+  const poll = async () => {
+    if (token !== progressPollToken || myGeneration !== generation || !run || run.id !== runId) return;
+    try {
+      const response = await fetch(`/runs/${runId}/progress`, {signal: AbortSignal.timeout(5000), cache: "no-store"});
+      if (!response.ok) throw new Error(`Progress request returned HTTP ${response.status}`);
+      serverProgress = await response.json(); progressLastSeen = Date.now();
+      mergeStages(serverProgress.stages || []);
+      await flushClientDiagnostics(runId);
+      renderProcessing();
+      if (token === progressPollToken && (busy || preparing || serverProgress.active || pendingDiagnostics.length)) setTimeout(poll, 750);
+    } catch (error) {
+      renderProcessing();
+      if (token === progressPollToken && (busy || preparing || serverProgress?.active || pendingDiagnostics.length)) setTimeout(poll, 1250);
+    }
+  };
+  poll();
+}
+function stopProgressPolling() { progressPollToken++; }
+async function flushClientDiagnostics(runId) {
+  const pending = pendingDiagnostics.splice(0);
+  for (const item of pending) {
+    try {
+      const response = await fetch(`/runs/${runId}/diagnostics`, {method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(item), signal: AbortSignal.timeout(3000)});
+      if (!response.ok) throw new Error(`Diagnostic request returned HTTP ${response.status}`);
+      const accepted = await response.json();
+      if (run?.id === runId) {
+        run.technicalDiagnostics = [...(run.technicalDiagnostics || []).filter(entry => entry.requestId !== accepted.requestId), accepted];
+        renderActivityIfOpen();
+      }
+    } catch { pendingDiagnostics.push(item); }
+  }
+}
+function renderProcessing() {
+  if (!run) return;
+  $("research-progress").textContent = progressText();
+  const label = paused && run.hasWork ? "Paused" : preparing ? "Understanding the request"
+    : busy && run.hasWork && !serverProgress?.active ? "Processing" : runStateLabel(serverProgress?.active ? serverProgress : run.processing);
+  $("overall-state").textContent = label;
+  $("report-status").textContent = `Draft — for review · ${label}`;
+  if ($("activity-drawer").open) {
+    const active = serverProgress?.active ? serverProgress : run.processing;
+    const marker = $("activity-content").querySelector("#activity-live-progress");
+    if (marker) marker.textContent = active?.active ? progressText(active) : `Current state: ${label}`;
+  }
+  if (serverProgress?.active && serverProgress.phase === "writing") {
+    for (const id of serverProgress.targetSectionIds || []) {
+      const section = $("section-" + id);
+      if (section) section.querySelector(".section-state").textContent = "Populating";
+    }
+  }
 }
 function reachComposer() { $("brief").focus(); }
 $("reach-composer").onclick = reachComposer;
@@ -71,7 +193,7 @@ function taskList(tasks, technical = false) {
 }
 function renderPlan() {
   const completed = run.tasks.filter(t => t.state !== "Pending").length;
-  $("plan-summary").textContent = `Research plan · ${completed} of ${run.tasks.length} steps finished`;
+  $("plan-summary").textContent = completed ? `Research plan · ${completed} research tasks completed` : "Research plan";
   const serialized = JSON.stringify([run.tasks, run.interpretation, run.requirements, run.questionAssessments]);
   if (planVersion === serialized) return;
   planVersion = serialized;
@@ -120,6 +242,9 @@ function renderActivity() {
   inspectorVersion++;
   const content = $("activity-content"); content.replaceChildren();
   if (!run) { content.append(node("p", "Start research to see its plan, execution history and evidence.")); return; }
+  const progress = serverProgress?.active ? serverProgress : run.processing;
+  content.append(node("h3", "Current processing"), node("p", progress?.active ? progressText(progress) : `Current state: ${runStateLabel(progress)}`, "metadata"));
+  content.lastChild.id = "activity-live-progress";
   content.append(node("h3", "Research plan"), taskList(run.tasks, true), node("h3", "Execution history"));
   const history = node("details"); history.append(node("summary", "Plan versions and original requests"));
   (run.plans || []).forEach(p => { const version = node("section"); version.append(node("h4", `Plan ${p.version}`), node("p", p.requirements.originalWording, "verbatim"), node("p", p.interpretation), taskList(run.tasks.filter(t => p.taskIds.includes(t.id)))); history.append(version); });
@@ -130,12 +255,18 @@ function renderActivity() {
   });
   content.append(node("h3", "Evidence"), node("p", "Only accepted compiler findings populate report claims. Deterministic calculations retain their input evidence references. Model interpretation is not factual proof.", "metadata"));
   run.unanswered.forEach(u => content.append(node("p", `${u.state}: ${u.requirement} — ${u.reason}`, "notice")));
-  (run.processMessages || []).forEach(t => content.append(node("p", t, "notice")));
   (run.clarifications || []).forEach(t => content.append(node("p", `Clarification: ${t}`, "notice")));
+  const diagnostics = [...(run.technicalDiagnostics || []), ...pendingDiagnostics];
+  if (diagnostics.length) {
+    const advanced = node("details"); advanced.append(node("summary", "Advanced: exact redacted technical diagnostics"));
+    diagnostics.forEach(item => advanced.append(node("pre", JSON.stringify(item, null, 2))));
+    content.append(advanced);
+  }
   const facts = node("details"); facts.append(node("summary", "All individual factual assertions"));
   Object.values(run.facts).forEach(a => facts.append(button(a.text, () => showAssertion(a.id), "evidence-link")));
   content.append(facts);
 }
+function renderActivityIfOpen() { if ($("activity-drawer").open) renderActivity(); }
 
 const classLabel = {1: "Directly supported recorded fact", 2: "Approved calculation", 3: "Provisional interpretation", 4: "Unverified hypothesis / further question"};
 function showAssertion(ref) {
@@ -245,11 +376,12 @@ function render() {
   $("planning-title").hidden = hasReport;
   $("return-report").hidden = !hasReport;
   $("session-title").textContent = run.title;
-  $("overall-state").textContent = paused && run.hasWork ? "Paused · previous findings retained" : run.status;
+  const displayedState = runStateLabel(serverProgress?.active ? serverProgress : run.processing);
+  $("overall-state").textContent = displayedState;
   $("report-heading").textContent = run.title;
   $("original-brief").textContent = run.brief;
   $("report-scope").textContent = `Reporting date: ${run.reportingDate}. ${run.brief}`;
-  $("report-status").textContent = `Draft — for review · ${run.status}`;
+  $("report-status").textContent = `Draft — for review · ${displayedState}`;
   renderPlan(); run.sections.forEach(renderSection);
   (run.messages || []).slice(messageCount).forEach(m => {
     const box = message(m.role === "user" ? "You" : "Assistant", m.text);
@@ -262,8 +394,13 @@ function render() {
   }
   // Findings lead. Completed search limitations appear once beside the report,
   // not also as a stack of progress notices above its answer.
-  const notices = [...(run.clarifications || []), ...(!hasReport ? (run.processMessages || []) : []), interruption]
-    .filter(text => text && text !== latest?.text);
+  const summary = interruption || run.outcomeSummary || "";
+  $("report-outcome").hidden = !hasReport || !summary;
+  $("report-outcome").textContent = hasReport ? summary : "";
+  const summaryIsLatestReply = Boolean(summary && latest?.text === summary && !hasReport && !interruption);
+  $("workspace-outcome").hidden = hasReport || !summary || summaryIsLatestReply;
+  $("workspace-outcome").textContent = hasReport || summaryIsLatestReply ? "" : summary;
+  const notices = [];
   const serializedNotices = JSON.stringify(notices);
   if ($("research-notices").dataset.version !== serializedNotices) {
     $("research-notices").dataset.version = serializedNotices;
@@ -271,51 +408,81 @@ function render() {
   }
   $("limitation-list").replaceChildren(...run.limitations.map(l => node("li", l)));
   $("unanswered").replaceChildren(...(run.unanswered.length ? [node("h3", "Unanswered research questions"), ...run.unanswered.map(u => node("p", u.reason, "notice"))] : []));
+  $("unanswered-without-report").hidden = hasReport || !run.unanswered.length;
+  $("unanswered-without-report").replaceChildren(...(!hasReport && run.unanswered.length ? [node("h2", "Unanswered research questions"), ...run.unanswered.map(u => node("p", u.requirement, "notice"))] : []));
   $("pause").hidden = !run.hasWork;
   $("pause").textContent = paused ? "Resume research" : "Pause research";
-  if (paused) $("research-progress").textContent = "Research paused. An in-flight step may finish; choose Resume research to continue.";
   $("copy").hidden = $("export").hidden = !hasReport;
   $("submit").textContent = "Send follow-up";
+  const latestReply = $("latest-reply");
+  latestReply.hidden = Boolean(hasReport && summary && latest?.text === summary);
   renderContext();
+  renderProcessing();
 }
 async function executeSteps(myGeneration) {
   if (busy) return;
   busy = true;
+  startProgressPolling();
   try {
     while (run && !paused && !preparing && generation === myGeneration && run.hasWork) {
       const task = run.tasks.find(t => t.state === "Pending");
-      const progress = task ? `${task.title} — retrieving records` : "Writing the research draft";
-      $("research-progress").textContent = progress;
-      if (executeSteps.lastProgress !== progress) { announce(progress); executeSteps.lastProgress = progress; }
+      const previousPlanCount = run.plans?.length || 0;
+      requestPhase = stageForNextStep();
+      requestOperation = task?.title || serverProgress?.nextOperation || run.processing?.nextOperation
+        || (requestPhase === "writing" ? "Research report" : "Reviewing research outcomes");
+      requestStartedAt = Date.now();
+      renderProcessing();
+      if (executeSteps.lastProgress !== requestOperation) {
+        const labels = {understanding: "Understanding the request", retrieving: "Retrieving parliamentary records", assessing: "Assessing results", writing: "Writing or revising the report"};
+        announce(`${labels[requestPhase]}${requestOperation ? `: ${requestOperation}` : ""}`);
+        executeSteps.lastProgress = requestOperation;
+      }
       const previousSections = JSON.stringify(run.sections);
-      const next = await api(`/runs/${run.id}/step`, {method: "POST", body: JSON.stringify({version: run.version})});
+      const requestVersion = run.version;
+      const next = await api(`/runs/${run.id}/step`, {method: "POST", body: JSON.stringify({version: requestVersion})});
       if (generation !== myGeneration) break;
       interruption = "";
-      if (!run || next.version >= run.version) run = next;
+      acceptRunState(next); serverProgress = next.processing; progressLastSeen = Date.now();
+      if (next.planningIssue && !$("brief").value.trim()) {
+        const lastUserMessage = [...(next.messages || [])].reverse().find(item => item.role === "user");
+        $("brief").value = lastUserMessage?.text || next.brief;
+        $("submit").disabled = false;
+      }
       render();
       if (JSON.stringify(run.sections) !== previousSections) announce("New findings are available in the research report.");
+      if ((next.plans?.length || 0) > previousPlanCount && run.tasks.some(t => t.state === "Pending")) {
+        // Paint every newly published plan before dispatching its first query.
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 350))));
+      }
       // A rendering opportunity between each accepted section, not one final
       // response pretending to be progressive research.
       await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 100)));
     }
     if (run && generation === myGeneration && !run.hasWork) {
-      $("research-progress").textContent = run.status;
-      announce(run.status === "Needs clarification" ? "Clarification required. Read the assistant’s question below." : run.sections.length ? `${run.status}. Read the research report and latest assistant reply.` : run.status);
+      const state = runStateLabel(run.processing);
+      announce(run.processing.state === "awaiting_clarification" ? "Clarification required. Read the assistant’s question below." : `${state}. Read the report and outcome summary.`);
     }
   } catch (error) {
     if (run && generation === myGeneration) {
       paused = true;
-      run.tasks.filter(t => t.state === "Running").forEach(t => t.state = "Pending");
-      interruption = error.message + " Resume to retry the same bounded step.";
-      render(); announce("Research interrupted. Earlier validated findings preserved.");
+      const operation = requestOperation || "Research step";
+      pendingDiagnostics.push({requestId: newRequestId(), operation,
+        diagnostic: `${error.technicalDiagnostic || `${error.name || "Error"}: ${error.message || "Request failed"}`} · endpoint ${error.requestPath || "unknown"}`});
+      interruption = error.status
+        ? "The research service could not confirm this step. Earlier findings remain available; resume to check the same version safely."
+        : "The connection was lost before this step was confirmed. It may still be running; check Research Activity. Earlier findings remain available, and resuming checks the same version safely.";
+      render(); renderActivityIfOpen(); announce("The browser could not confirm the research step. Earlier findings are preserved.");
+      startProgressPolling();
     }
   } finally {
     busy = false;
+    requestPhase = ""; requestOperation = "";
+    if (!serverProgress?.active && !interruption && !pendingDiagnostics.length) stopProgressPolling();
     // A follow-up may publish a new plan while the preceding step finishes.
     if (run?.hasWork && !paused && !preparing && generation === myGeneration) queueMicrotask(() => executeSteps(myGeneration));
   }
 }
-$("pause").onclick = () => { pauseVersion++; paused = !paused; render(); announce(paused ? "Paused. The in-flight query may finish; no further query will be dispatched." : "Research resumed."); if (!paused) executeSteps(generation); };
+$("pause").onclick = () => { pauseVersion++; paused = !paused; render(); announce(paused ? "Paused. The current operation may finish; no further step will be dispatched." : "Research resumed."); if (!paused) executeSteps(generation); };
 $("brief").addEventListener("input", () => { $("submit").disabled = preparing || !$("brief").value.trim(); });
 $("brief").addEventListener("keydown", event => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && !event.isComposing) { event.preventDefault(); if (!$("submit").disabled) $("composer-form").requestSubmit(); } });
 for (const id of ["example", "example-career"]) $(id).onclick = () => { if (replaceDraft($(id).textContent)) reachComposer(); };
@@ -323,13 +490,24 @@ $("composer-form").addEventListener("submit", async event => {
   event.preventDefault(); const brief = $("brief").value; if (!brief.trim()) return;
   if (preparing) return;
   const initial = !run;
+  if (!pendingSubmission || pendingSubmission.text !== brief || pendingSubmission.initial !== initial) {
+    pendingSubmission = {id: newRequestId(), text: brief, initial};
+  }
+  const requestId = pendingSubmission.id;
   const submittedPauseVersion = pauseVersion;
   preparing = true; $("submit").disabled = true; $("submission-error").textContent = "";
   $("submit").textContent = initial ? "Preparing research…" : "Preparing follow-up…";
+  requestPhase = "Understanding the request"; requestOperation = brief; requestStartedAt = Date.now();
+  if (run) startProgressPolling();
+  renderProcessing();
   announce("Preparing research plan.");
   try {
-    const next = await api(run ? `/runs/${run.id}/messages` : "/runs", {method: "POST", body: JSON.stringify(run ? {text: brief, sectionId: sectionContext} : {brief})});
-    run = next;
+    const body = run ? {text: brief, sectionId: sectionContext, requestId} : {brief, requestId};
+    const next = await api(run ? `/runs/${run.id}/messages` : "/runs", {method: "POST", body: JSON.stringify(body)});
+    if (!run || next.id !== run.id) { observedStages = []; serverProgress = next.processing; }
+    acceptRunState(next); serverProgress = next.processing; progressLastSeen = Date.now();
+    pendingSubmission = null;
+    if (!next.hasWork) interruption = "";
     // An explicit new request resumes automatic work, as in v0.5. A Pause
     // pressed while that request is preparing still takes precedence.
     if (pauseVersion === submittedPauseVersion) paused = false;
@@ -341,13 +519,32 @@ $("composer-form").addEventListener("submit", async event => {
       // findings arrive or a section-context editorial revision completes.
       $("plan-summary").focus();
     }
-    announce(run.status === "Research planning interrupted" ? "Research planning interrupted. Your request is retained." : paused ? "Your follow-up is ready. Research remains paused; choose Resume research to continue." : run.hasWork ? "Research plan published. The draft will now be updated." : run.status);
-    // Two animation frames + a short visible interval ensure the initial plan
-    // is painted BEFORE even the first factual-query dispatch.
+    announce(run.status === "Research planning interrupted" ? "Research planning interrupted. Your request is retained." : paused ? "Your follow-up is ready. Research remains paused; choose Resume research to continue." : run.hasWork ? "Research request accepted. The plan will be shown before any search." : run.status);
+    // Initial planning is a separate, observable step. For a follow-up the
+    // new plan itself is displayed before its next search is dispatched.
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 350))));
-    preparing = false; executeSteps(generation);
-  } catch (error) { $("submission-error").textContent = error.message; announce("Submission failed. Your message is preserved."); }
-  finally { preparing = false; $("submit").disabled = !$("brief").value.trim(); $("submit").textContent = run ? "Send follow-up" : "Start research"; }
+    preparing = false; requestPhase = ""; requestOperation = "";
+    renderProcessing(); executeSteps(generation);
+  } catch (error) {
+    if (run && error.status !== 409) {
+      pendingDiagnostics.push({requestId: newRequestId(), operation: "Follow-up request",
+        diagnostic: `${error.technicalDiagnostic || `${error.name || "Error"}: ${error.message || "Request failed"}`} · endpoint ${error.requestPath || "unknown"}`});
+      startProgressPolling(); renderActivityIfOpen();
+      $("submission-error").textContent = error.status
+        ? "The follow-up could not be accepted. Your text is preserved; check Research Activity, then try again."
+        : "The connection was lost before this follow-up was confirmed. Your text is preserved; retrying this same submission is safe.";
+    } else {
+      $("submission-error").textContent = error.status === 409 ? error.message : "The request could not be sent. Your full text is preserved; check your connection and try again.";
+      if (error.technicalDiagnostic) pendingDiagnostics.push({requestId: newRequestId(), operation: initial ? "Start research" : "Follow-up request", diagnostic: error.technicalDiagnostic});
+    }
+    announce("Submission failed. Your message is preserved.");
+  }
+  finally {
+    preparing = false; requestPhase = ""; requestOperation = "";
+    $("submit").disabled = !$("brief").value.trim(); $("submit").textContent = run ? "Send follow-up" : "Start research";
+    renderProcessing();
+    if (run && !serverProgress?.active && !busy && !pendingDiagnostics.length && !interruption) stopProgressPolling();
+  }
 });
 $("new-research").onclick = () => {
   if (run && !confirm("Start a new research workspace? Export this report first if you want to keep it. Any in-flight read may finish, but no further queries will be dispatched.")) return;

@@ -5,6 +5,7 @@ import copy
 import json
 import os
 from datetime import date
+from threading import Lock
 from time import monotonic
 from typing import Literal
 from uuid import uuid4
@@ -152,7 +153,14 @@ def create_collaborator():
 
 
 class ResearchRun:
-    def __init__(self, brief, reporting_date, adapter=None, planner_factory=create_collaborator):
+    PHASE_LABELS = {
+        "understanding": "Understanding the request",
+        "retrieving": "Retrieving parliamentary records",
+        "assessing": "Assessing results",
+        "writing": "Writing or revising the report",
+    }
+
+    def __init__(self, brief, reporting_date, adapter=None, planner_factory=create_collaborator, *, defer_planning=False):
         self.id, self.created = uuid4().hex, monotonic()
         self.brief, self.date, self.adapter = brief, reporting_date.isoformat(), adapter
         self.model = planner_factory()
@@ -165,10 +173,126 @@ class ResearchRun:
         self.section_context, self.factual_turn = None, True
         self.revision_targets = []
         self.investigation_pending, self.investigation_rounds = False, 0
-        self.report_problem = None
-        self.title, self.interpretation, self.status = "Parliamentary research", "", "Preparing research"
+        self.report_problem, self.report_failure = None, None
+        self.plan_problem, self.plan_failure = None, None
+        self.processing_issues = []
+        self.message_requests = {}
+        self.client_diagnostics = []
+        self.plan_pending = defer_planning
+        self._processing_lock = Lock()
+        self._processing = {"active": False, "requestId": None, "phase": None, "operation": None,
+                            "started": None, "phaseStarted": None, "stages": [],
+                            "targetSectionIds": [], "lastDurationSeconds": None,
+                            "nextPhase": "understanding" if defer_planning else None,
+                            "nextOperation": brief if defer_planning else None}
+        self.title, self.interpretation, self.status = "Parliamentary research", "", "Understanding the request" if defer_planning else "Preparing research"
         self.metrics = {"firstValidatedSeconds": None, "completedSeconds": None}
-        self._plan(brief)
+        if not defer_planning:
+            self._plan(brief)
+
+    def begin_processing(self, phase, operation=None):
+        request_id = uuid4().hex
+        now = monotonic()
+        with self._processing_lock:
+            self._processing = {"active": True, "requestId": request_id, "phase": phase,
+                "operation": operation, "started": now, "phaseStarted": now,
+                "stages": [], "targetSectionIds": self._target_section_ids(),
+                "lastDurationSeconds": None}
+            self._record_processing_stage(phase, operation, now)
+        return request_id
+
+    def set_processing_phase(self, phase, operation=None):
+        now = monotonic()
+        with self._processing_lock:
+            if not self._processing["active"]:
+                return
+            if phase != self._processing["phase"] or operation != self._processing["operation"]:
+                self._processing["phase"], self._processing["operation"] = phase, operation
+                self._processing["phaseStarted"] = now
+                self._record_processing_stage(phase, operation, now)
+            self._processing["targetSectionIds"] = self._target_section_ids()
+
+    def _record_processing_stage(self, phase, operation, now):
+        self._processing["stages"].append({"phase": phase, "label": self.PHASE_LABELS[phase],
+            "operation": operation, "elapsedSeconds": round(max(0, now-self._processing["started"]), 3)})
+
+    def _target_section_ids(self):
+        known = {section["id"] for section in self.sections}
+        targets = [target["sectionId"] for target in self.revision_targets if target["sectionId"] in known]
+        if self.section_context in known and self.section_context not in targets:
+            targets.append(self.section_context)
+        return targets
+
+    def finish_processing(self, request_id):
+        with self._processing_lock:
+            if not self._processing["active"] or self._processing["requestId"] != request_id:
+                pass
+            else:
+                now = monotonic()
+                elapsed = round(max(0, now-self._processing["started"]), 3)
+                completed = dict(self._processing)
+                completed.update(active=False, lastDurationSeconds=elapsed)
+                self._processing = completed
+                self._processing["state"] = self._processing_state()
+                self._processing["label"] = self._processing_label(self._processing["state"])
+                self._processing["nextPhase"], self._processing["nextOperation"] = self.next_processing()
+        return self.processing_view()
+
+    @staticmethod
+    def _processing_label(state):
+        return {
+            "active": "Processing", "ready": "Ready to continue",
+            "completed_with_findings": "Completed with findings",
+            "completed_with_unanswered": "Completed with unanswered questions",
+            "awaiting_clarification": "Awaiting clarification", "interrupted": "Interrupted",
+        }[state]
+
+    def _processing_state(self):
+        if self._processing.get("active"):
+            return "active"
+        if self.has_work():
+            return "ready"
+        if self.status == "Needs clarification" or self.status == "Clarification needed":
+            return "awaiting_clarification"
+        if self.plan_problem or self.report_problem or (self.processing_issues and not self.facts):
+            return "interrupted"
+        if self.status in {"Research planning interrupted", "Research interrupted", "Findings retrieved — report not completed"}:
+            return "interrupted"
+        if self.facts and not (self._outstanding() or self.processing_issues or any(t["state"] == "Incomplete" for t in self.tasks)):
+            return "completed_with_findings"
+        return "completed_with_unanswered"
+
+    def processing_view(self):
+        with self._processing_lock:
+            processing = self._processing
+            now = monotonic()
+            phase = processing.get("phase")
+            active = bool(processing.get("active"))
+            elapsed = round(max(0, now-processing["started"]), 1) if active else 0
+            phase_elapsed = round(max(0, now-processing["phaseStarted"]), 1) if active and phase else 0
+            state = "active" if active else processing.get("state", self._processing_state())
+            return {"state": state, "label": self._processing_label(state), "active": active,
+                "phase": phase if active else None,
+                "phaseLabel": self.PHASE_LABELS.get(phase) if active else None,
+                "activeOperation": processing.get("operation") if active else None,
+                "elapsedSeconds": elapsed, "phaseElapsedSeconds": phase_elapsed,
+                "lastDurationSeconds": processing.get("lastDurationSeconds"),
+                "requestId": processing.get("requestId"),
+                "stages": copy.deepcopy(processing.get("stages", [])),
+                "nextPhase": processing.get("nextPhase"), "nextOperation": processing.get("nextOperation"),
+                "targetSectionIds": list(processing.get("targetSectionIds", []))}
+
+    def next_processing(self):
+        if self.plan_pending:
+            return "understanding", self.brief
+        if self.author_pending:
+            return "writing", "Research report"
+        if self.investigation_pending:
+            return "assessing", "Reviewing findings and deciding what remains"
+        task = next((task for task in self.tasks if task["state"] == "Pending"), None)
+        if task:
+            return "retrieving", task["question"]
+        return None, None
 
     def _call(self, phase, payload):
         start = monotonic()
@@ -277,6 +401,9 @@ class ResearchRun:
         return candidates
 
     def _plan(self, message):
+        self.set_processing_phase("understanding", message)
+        self.plan_problem = None
+        self.plan_failure = None
         try:
             plan = Plan.model_validate(self._call("plan", self._context() | {"newMessage": message,
                                                                           "queryServiceDiscovery": discovery_context()}))
@@ -312,22 +439,49 @@ class ResearchRun:
                 self.messages.append({"role": "assistant", "text": plan.clarification})
             self.author_pending = bool(self.facts) and not candidate_tasks
             self.status = "Plan published" if candidate_tasks or self.author_pending else "Needs clarification" if plan.clarification else self._completed_status()
-        except Exception:
+        except Exception as error:
             self.author_pending = False
+            self.plan_problem = "I couldn't prepare a research plan. Your question and earlier findings are retained; clarify or rephrase it, or try again."
+            self.plan_failure = {"kind": "planning_failure", "stage": "research_planning",
+                "message": self.plan_problem, "technicalDiagnostic": self._diagnostic(error), "retryable": True}
             self.status = "Research planning interrupted"
-            self.messages.append({"role": "assistant", "text": "I could not prepare a usable research plan. Your request and earlier findings are retained; please clarify or try again."})
+            self.messages.append({"role": "assistant", "text": self.plan_problem})
 
-    def message(self, text, section_id=None):
+    def message(self, text, section_id=None, request_id=None):
+        if request_id and request_id in self.message_requests:
+            return self.view()
         if self.turn >= 12:
             raise ValueError("This local session has reached its twelve-turn budget. Export the draft before starting another.")
+        if self.plan_pending:
+            raise ValueError("The initial research plan is still being prepared. Keep your follow-up and send it again when the plan is ready.")
         self.messages.append({"role": "user", "text": text, "sectionId": section_id})
         self.section_context = section_id
         self._plan(text if not section_id else f"Regarding section {section_id}: {text}")
         self.version += 1
-        return self.view()
+        state = self.view()
+        if request_id:
+            self.message_requests[request_id] = True
+        return state
+
+    @staticmethod
+    def _diagnostic(error):
+        secrets = tuple(os.getenv(key, "") for key in ("NLQ_LLM_API_KEY", "OIR_FUSEKI_PASSWORD"))
+        return format_debug_text(f"{type(error).__name__}: {error}", secrets=secrets)[:2000]
+
+    def record_client_diagnostic(self, request_id, operation, diagnostic):
+        secrets = tuple(os.getenv(key, "") for key in ("NLQ_LLM_API_KEY", "OIR_FUSEKI_PASSWORD"))
+        entry = {"requestId": request_id, "operation": operation,
+                 "diagnostic": format_debug_text(diagnostic, secrets=secrets)[:2000]}
+        with self._processing_lock:
+            if not any(item["requestId"] == request_id for item in self.client_diagnostics):
+                self.client_diagnostics.append(entry)
+                self.client_diagnostics = self.client_diagnostics[-30:]
+        return copy.deepcopy(entry)
 
     def _author(self):
         self.report_problem = None
+        self.report_failure = None
+        self.set_processing_phase("writing", "Research report")
         payload = self._context() | {"revisionInstructions": self.revision,
             "editorialTargets": self._editorial_targets(),
             "knownUnanswered": self.view()["unanswered"]}
@@ -341,14 +495,16 @@ class ResearchRun:
                 payload["structuralCorrection"] = str(error)[:500]
                 if attempt:
                     self.report_problem = "The application couldn't update the report. Earlier findings and source records are retained."
-                    self.messages.append({"role": "assistant", "text": "I could not safely update the research draft. Earlier evidence and report sections are preserved. You can ask me to try revising again."})
-            except Exception:
+                    self.report_failure = {"kind": "report_generation_failure", "stage": "report_authoring",
+                        "message": "The report could not be safely updated. Earlier findings and sections remain available; ask for another update to try again.",
+                        "technicalDiagnostic": self._diagnostic(error), "retryable": True}
+            except Exception as error:
                 self.report_problem = "Report writing was interrupted. Earlier findings and source records are retained."
-                self.messages.append({"role": "assistant", "text": "The report-writing service was interrupted. Earlier evidence and report sections are preserved."})
+                self.report_failure = {"kind": "report_generation_failure", "stage": "report_authoring",
+                    "message": "The report could not be updated. Earlier findings and sections remain available; ask for another update to try again.",
+                    "technicalDiagnostic": self._diagnostic(error), "retryable": True}
                 break
         self.author_pending = False
-        if not self.facts and self.evidence:
-            self._append_response(self._outcome_summary(), None)
 
     def _consider_investigation(self):
         self.investigation_pending = False
@@ -367,8 +523,10 @@ class ResearchRun:
                 self.plans.append({"version": len(self.plans)+1, "interpretation": proposal.explanation,
                     "taskIds": [t["id"] for t in candidates], "requirements": self.requirements[-1],
                     "clarification": None, "revisionTargets": []})
-        except Exception:
-            self.unanswered.append("Further investigation could not be planned safely; earlier findings and unanswered requirements are retained.")
+        except Exception as error:
+            self.processing_issues.append({"stage": "investigation_planning",
+                "message": "I couldn't plan a useful next search. Earlier findings and unanswered questions remain available.",
+                "technicalDiagnostic": self._diagnostic(error), "retryable": True})
 
     def _author_attempt(self, payload):
         draft = ReportDraft.model_validate(self._call("report", payload))
@@ -494,14 +652,24 @@ class ResearchRun:
     def step(self, version):
         if version != self.version:
             return self.view()
+        if self.plan_pending:
+            self.set_processing_phase("understanding", self.brief)
+            self.plan_pending = False
+            self._plan(self.brief)
+            self.version += 1
+            if not self.has_work():
+                self.metrics["completedSeconds"] = round(monotonic()-self.created, 3)
+            return self.view()
         if self.author_pending:
             self._author()
         elif self.investigation_pending:
+            self.set_processing_phase("assessing", "Reviewing findings and deciding what remains")
             self._consider_investigation()
         else:
             task = next((t for t in self.tasks if t["state"] == "Pending"), None)
             if task is None:
                 return self.view()
+            self.set_processing_phase("retrieving", task["question"])
             try:
                 bill = None
                 if task["tool"] == "lifecycle":
@@ -523,6 +691,7 @@ class ResearchRun:
                         return self.view()
                     bill = bills[len(done)]
                 env = self.adapter.execute(task, self.date, bill=bill)
+                self.set_processing_phase("assessing", task["question"])
                 self.evidence[env["evidenceId"]] = env
                 task.setdefault("evidenceRefs", []).append(env["evidenceId"])
                 for fact in facts_from(env):
@@ -543,29 +712,35 @@ class ResearchRun:
                 if env["outcome"] == "answer" and self.metrics["firstValidatedSeconds"] is None:
                     self.metrics["firstValidatedSeconds"] = round(monotonic()-self.created, 3)
             except Exception as error:
-                secrets = tuple(os.getenv(k, "") for k in ("NLQ_LLM_API_KEY", "OIR_FUSEKI_PASSWORD"))
+                diagnostic = self._diagnostic(error)
                 task.update(state="Incomplete", researchOutcome=describe("execution_failure"),
                             outcomeLabel=describe("execution_failure")["label"],
-                            technicalDiagnostic=format_debug_text(f"{type(error).__name__}: {error}", secrets=secrets),
+                            technicalDiagnostic=diagnostic,
                             reason=describe("execution_failure")["description"])
                 self.unanswered.append(task["question"] + ": " + task["reason"])
         self.version += 1
         self.status = "Research in progress" if self.has_work() else self._completed_status()
         if not self.has_work():
             self.metrics["completedSeconds"] = round(monotonic()-self.created, 3)
+            if not self.facts:
+                outcome_summary = self._outcome_summary()
+                if outcome_summary:
+                    self._append_response(outcome_summary, None)
         return self.view()
 
     def has_work(self):
-        return self.author_pending or self.investigation_pending or any(t["state"] == "Pending" for t in self.tasks)
+        return self.plan_pending or self.author_pending or self.investigation_pending or any(t["state"] == "Pending" for t in self.tasks)
 
     def _question_registry(self):
         return {q["id"]: q for record in self.requirements for q in record["proposedConditions"]}
 
     def _completed_status(self):
+        if self.plan_problem:
+            return "Research planning interrupted"
         if self.report_problem:
             return "Findings available — report update interrupted" if self.sections else "Findings retrieved — report not completed" if self.facts else "Research interrupted"
         if self.facts:
-            return "Findings available — some questions unanswered" if self._outstanding() or any(
+            return "Findings available — some questions unanswered" if self._outstanding() or self.processing_issues or any(
                 t["state"] == "Incomplete" for t in self.tasks) else "Findings available"
         kinds = {t.get("researchOutcome", {}).get("kind") for t in self.tasks}
         if "integration_unavailable" in kinds:
@@ -581,8 +756,53 @@ class ResearchRun:
         return "Question not answered"
 
     def _outcome_summary(self):
-        outcomes = list(dict.fromkeys(t.get("researchOutcome", {}).get("description", "") for t in self.tasks))
-        return " ".join(s for s in outcomes if s) or "No findings have been established for this question."
+        if self.has_work():
+            return ""
+        if self.report_failure:
+            return self.report_failure["message"]
+        if self.plan_problem:
+            return ""
+        if self.facts:
+            incomplete = self._outstanding() or any(t["state"] == "Incomplete" for t in self.tasks) or self.processing_issues
+            if incomplete:
+                outcomes = {t.get("researchOutcome", {}).get("kind") for t in self.tasks}
+                if "execution_failure" in outcomes:
+                    reason = "One records search could not be completed. Its reason has not been established; review Research Activity before deciding whether to try again."
+                elif "query_validation_failure" in outcomes:
+                    reason = "A follow-up question could not be checked safely; clarify or narrow it rather than retrying unchanged."
+                elif "integration_unavailable" in outcomes:
+                    reason = "A search result could not be safely included. Review the issue in Research Activity; this does not mean no records exist."
+                elif self.processing_issues:
+                    reason = self.processing_issues[-1]["message"]
+                else:
+                    reason = "Some research questions remain unanswered."
+                return ("Findings are available for part of this investigation. Earlier findings remain available; "
+                        f"{reason} See the unanswered questions for the parts that could not be established.")
+            return ""
+
+        outcomes = {t.get("researchOutcome", {}).get("kind") for t in self.tasks}
+        if "execution_failure" in outcomes:
+            return describe("execution_failure")["description"]
+        if "planner_failure" in outcomes:
+            return describe("planner_failure")["description"]
+        if "query_validation_failure" in outcomes:
+            return describe("query_validation_failure")["description"]
+        if "integration_unavailable" in outcomes:
+            outcome = next((t["researchOutcome"] for t in self.tasks
+                            if t.get("researchOutcome", {}).get("kind") == "integration_unavailable"), None)
+            return outcome["description"] if outcome else describe("integration_unavailable")["description"]
+        if "clarification_required" in outcomes or "identity_unresolved" in outcomes:
+            return ""
+        if outcomes == {"no_matching_records"}:
+            return describe("no_matching_records")["description"]
+        if "unsupported_question" in outcomes:
+            return ("The available queries could not answer this question, so no findings were established. "
+                    "A narrower or differently scoped question may be useful.")
+        if "evidence_incomplete" in outcomes:
+            return describe("evidence_incomplete")["description"]
+        if self.processing_issues:
+            return self.processing_issues[-1]["message"] + " No findings were established by that search."
+        return "No findings have been established for this question."
 
     def _outstanding(self):
         return [{"id": key, "state": "Unanswered / for review", "requirement": q["wording"],
@@ -590,21 +810,75 @@ class ResearchRun:
                 for key, q in self._question_registry().items()
                 if key not in self.question_assessments and q["kind"] == "research_question" and (q["disposition"] in {"partly supported", "unsupported", "unavailable"}
                      or (q["disposition"] == "evidence pending" and (key in self.report_unanswered
-                         or any(t["tool"] == "query" and t["requirementId"] == key.rsplit("-q", 1)[0]
-                                and t["state"] == "Incomplete" for t in self.tasks))))]
+                          or any(t["tool"] == "query" and t["requirementId"] == key.rsplit("-q", 1)[0]
+                                 and t["state"] == "Incomplete" for t in self.tasks))))]
+
+    def _section_state(self, section, processing):
+        requirement_id = section.get("requirementId")
+        latest_requirement = self.requirements[-1]["id"] if self.requirements else None
+        targeted = section["id"] in processing["targetSectionIds"]
+        relevant_ids = {requirement_id} if requirement_id else set()
+        if targeted and latest_requirement:
+            relevant_ids.add(latest_requirement)
+        related_tasks = [task for task in self.tasks if task.get("requirementId") in relevant_ids]
+
+        fact_refs = set(section.get("factRefs", []))
+        for table in section.get("tables", []):
+            fact_refs.update(table.get("specification", {}).get("factRefs", []))
+            for row in table.get("rows", []):
+                fact_refs.update(row.get("assertionRefs", []))
+        for assertion_id in section.get("assertionRefs", []):
+            assertion = self.assertions.get(assertion_id, {})
+            fact_refs.update(assertion.get("factRefs", []))
+        has_accepted_facts = any(ref in self.facts for ref in fact_refs)
+
+        has_pending_tasks = any(task["state"] == "Pending" for task in related_tasks)
+        targeted_pending = targeted and any(
+            task["state"] == "Pending" and task.get("requirementId") == latest_requirement
+            for task in self.tasks)
+        assessing = not has_accepted_facts and requirement_id == latest_requirement and (
+            self.investigation_pending or (processing["active"] and processing["phase"] == "assessing"))
+        targeted_writing = targeted and processing["active"] and processing["phase"] == "writing"
+        if (has_pending_tasks or targeted_pending or assessing or targeted_writing or (targeted and self.author_pending)):
+            return "Populating" if has_accepted_facts else "Pending"
+
+        unresolved = any(
+            any(item["id"].startswith(req_id + "-") for req_id in relevant_ids)
+            for item in self._outstanding())
+        incomplete_tasks = [task for task in related_tasks if task["state"] in {"Incomplete", "Blocked"}]
+        outcomes = {task.get("researchOutcome", {}).get("kind") for task in related_tasks}
+        if has_accepted_facts:
+            if unresolved or incomplete_tasks or section.get("kind") == "further_questions":
+                return "Incomplete"
+            return "Validated"
+
+        if outcomes and outcomes <= {"unsupported_question"}:
+            return "Unsupported"
+        if outcomes & {"execution_failure", "query_validation_failure", "planner_failure",
+                       "clarification_required", "identity_unresolved"}:
+            return "Blocked"
+        if outcomes or unresolved or incomplete_tasks or related_tasks:
+            return "Incomplete"
+        return "Pending"
 
     def view(self):
         sections = copy.deepcopy(self.sections)
+        processing = self.processing_view()
         for section in sections:
-            section["state"] = "Populating" if self.has_work() else "Findings available" if self.facts else "Incomplete"
+            section["state"] = self._section_state(section, processing)
         return copy.deepcopy({"id": self.id, "brief": self.brief, "title": self.title, "reportingDate": self.date,
             "status": self.status, "outcomeSummary": self._outcome_summary(), "version": self.version, "interpretation": self.interpretation,
+            "processing": processing,
             "tasks": self.tasks, "sections": sections, "facts": self.facts, "assertions": self.assertions,
             "messages": self.messages, "requirements": self.requirements, "plans": self.plans,
             "questionAssessments": self.question_assessments,
-            "unanswered": self._outstanding(), "reportIssue": self.report_problem, "processMessages": list(dict.fromkeys(self.unanswered + ([self.report_problem] if self.report_problem else []) + [
-                t["researchOutcome"]["description"] for t in self.tasks
-                if not self.facts and t.get("researchOutcome") and t["researchOutcome"]["kind"] != "findings_available"])),
+            "unanswered": self._outstanding(), "reportIssue": self.report_problem,
+            "reportFailure": self.report_failure, "planningIssue": self.plan_failure,
+            "processMessages": [self._outcome_summary()] if self._outcome_summary() else [],
+            "technicalDiagnostics": [
+                {"phase": call["phase"], "turn": call["turn"], "seconds": call["seconds"], "error": call["error"]}
+                for call in self.modelCalls if call.get("error")
+            ] + ([self.plan_failure] if self.plan_failure else []) + [issue for issue in self.processing_issues] + ([self.report_failure] if self.report_failure else []) + copy.deepcopy(self.client_diagnostics),
             "clarifications": ([self.plans[-1]["clarification"]] if self.plans and self.plans[-1].get("clarification") else []),
             "limitations": self._limitations(), "metrics": self.metrics, "hasWork": self.has_work(),
             "evidence": {eid: {"evidenceId": eid, "outcome": e["outcome"], "request": e["request"], "compilerStatus": e["compilerStatus"],

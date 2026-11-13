@@ -5,11 +5,12 @@ Not live-model research or editorial acceptance. No network dataset access.
 import asyncio
 import argparse
 import json
+import re
 import socket
 import sys
 from datetime import date
 from pathlib import Path
-from threading import Thread
+from threading import Event, Thread
 
 import uvicorn
 from playwright.async_api import async_playwright, expect
@@ -24,7 +25,17 @@ from tools.verify_research_v06_browser import opening_checks
 
 
 class UIModel(InjectedModel):
+    def __init__(self, plans=None, slow_gate=None):
+        super().__init__(plans)
+        self.slow_gate = slow_gate
+
     def generate(self, phase, payload):
+        if phase == "plan" and payload["newMessage"].startswith("Slow progress UI control"):
+            entered, release = self.slow_gate
+            entered.set()
+            if not release.wait(20):
+                raise RuntimeError("Injected slow planning control timed out")
+            return plan([sponsor_task()])
         if phase == "plan" and payload["newMessage"].startswith("Unsupported UI control"):
             p = plan()
             p["requirements"][0].update(disposition="unsupported", explanation="Speech content cannot be established by this tool.")
@@ -44,7 +55,7 @@ class UIModel(InjectedModel):
         return result
 
 
-async def verify(url, output):
+async def verify(url, output, slow_gate):
     output.mkdir(parents=True, exist_ok=True)
     async with async_playwright() as p:
         browser = await p.chromium.launch()
@@ -78,9 +89,12 @@ async def verify(url, output):
 
         async def gate(route):
             calls.append(route.request.url)
-            if len(calls) == 1:
+            if len(calls) == 2:
+                # The first /step prepares and publishes the plan. Hold the
+                # actual retrieval dispatch until the visible plan is checked.
+                await expect(page.locator("#plan-interpretation")).to_contain_text("Investigate sponsorship")
+                await expect(page.locator("#plan-tasks li").first).to_be_in_viewport()
                 await expect(page.locator("#plan-summary")).to_be_in_viewport()
-                await expect(page.locator("#plan-interpretation")).to_be_in_viewport()
                 await page.screenshot(path=str(output / "injected-plan-before-dispatch.png"))
                 held.set()
                 await release.wait()
@@ -101,12 +115,12 @@ async def verify(url, output):
         async with page.expect_response(lambda r: r.url.endswith("/step")):
             release.set()
         await expect(page.locator("#pause")).to_have_text("Resume research")
-        # A model-free server read confirms the one in-flight step completed;
-        # no author step can dispatch while the UI is paused.
-        assert len(calls) == 1
+        # The in-flight compiler operation completed; no author step can
+        # dispatch while the UI is paused.
+        assert len(calls) == 2
         await page.locator("#pause").click()
-        await expect(page.locator("#overall-state")).to_have_text("Findings available — some questions unanswered")
-        assert len(calls) == 2  # one compiler operation, one injected author pass
+        await expect(page.locator("#overall-state")).to_have_text("Completed with unanswered questions")
+        assert len(calls) == 3  # planning, one compiler operation, one author pass
         assert await page.locator("#report-sections section").count() == 1
         await page.locator("#plan-summary").click()
         await expect(page.locator("#plan-disclosure")).not_to_have_attribute("open", "")
@@ -171,11 +185,12 @@ async def verify(url, output):
         async with page.expect_response(lambda r: r.url.endswith("/messages")):
             await page.locator("#brief").press("Control+Enter")
         await expect(page.locator("#plan-tasks")).to_contain_text("Unresolved Person")
-        await expect(page.locator("#overall-state")).to_have_text("Findings available — some questions unanswered")
+        await expect(page.locator("#overall-state")).to_have_text("Completed with unanswered questions")
         await expect(row).to_be_focused()
         assert abs((await row.bounding_box())["y"] - reading["y"]) <= 2, "Unrelated update moved the reading position"
         await page.locator("#activity").click()
-        await expect(page.locator("#activity-content")).to_contain_text("The search couldn't be completed")
+        await expect(page.locator("#activity-content")).to_contain_text("records search could not be completed")
+        await expect(page.locator("#activity-content")).to_contain_text("HTTP 503")
         await page.keyboard.press("Escape")
         assert await page.locator("#report-sections section").count() >= 1
         assert await page.locator("#report-sections").get_by_role("button", name="Evidence:").count() > 0
@@ -190,7 +205,7 @@ async def verify(url, output):
         await page.route("**/runs/*/step", lambda r: r.fulfill(status=503, json={"detail": "Injected query service unavailable."}))
         await page.locator("#brief").fill("Shorten the explanation without changing facts")
         await page.locator("#brief").press("Control+Enter")
-        await expect(page.locator("#research-notices")).to_contain_text("Resume to retry")
+        await expect(page.locator("#report-outcome")).to_contain_text("resume to check the same version safely")
         await expect(page.locator("#pause")).to_have_text("Resume research")
         assert await page.locator("#report-sections section").count() >= 1
         await page.unroute("**/runs/*/step")
@@ -199,16 +214,16 @@ async def verify(url, output):
         observed_retry = []
         retry_started = asyncio.Event()
         async def retry_gate(route):
-            observed_retry.append(await page.locator("#research-notices").inner_text())
+            observed_retry.append(await page.locator("#report-outcome").inner_text())
             retry_started.set()
             await route.continue_()
         await page.route("**/runs/*/step", retry_gate)
         await page.locator("#brief").fill("Please shorten the explanation and keep the evidence")
         await page.locator("#brief").press("Control+Enter")
         await asyncio.wait_for(retry_started.wait(), 30)
-        await expect(page.locator("#overall-state")).to_have_text("Findings available — some questions unanswered")
-        assert observed_retry and "Injected query service unavailable" in observed_retry[0]
-        await expect(page.locator("#research-notices")).not_to_contain_text("Resume to retry")
+        await expect(page.locator("#overall-state")).to_have_text("Completed with unanswered questions")
+        assert observed_retry and "could not confirm this step" in observed_retry[0]
+        await expect(page.locator("#report-outcome")).not_to_contain_text("The browser could not confirm the research step")
         # Unsupported and planning failures have no pretend report surface.
         for label, question in [("unsupported", "Unsupported UI control: what did Members say about housing?"),
                                 ("planning-failure", "Planning failure UI control: preserve this exact question"),
@@ -216,17 +231,33 @@ async def verify(url, output):
             await page.goto(url)
             await page.locator("#brief").fill(question)
             await page.locator("#brief").press("Control+Enter")
-            await expect(page.locator("#latest-reply")).to_contain_text({"unsupported": "cannot establish", "planning-failure": "could not prepare", "clarification": "Which Dáil term"}[label])
+            await expect(page.locator("#latest-reply")).to_be_visible()
+            await expect(page.locator("#latest-reply")).to_contain_text({"unsupported": "cannot establish", "planning-failure": "couldn't prepare", "clarification": "Which Dáil term"}[label])
             assert not await page.locator("#report").is_visible()
             await expect(page.locator("#original-brief")).to_have_text(question)
             if label == "planning-failure":
                 await expect(page.locator("#brief")).to_have_value(question)
-                await expect(page.locator("#research-progress")).to_have_text("Research planning interrupted")
-                await expect(page.locator("#announcement")).to_have_text("Research planning interrupted")
+                await expect(page.locator("#research-progress")).to_have_text("Interrupted")
+                await expect(page.locator("#announcement")).to_have_text("Interrupted. Read the report and outcome summary.")
             if label == "clarification":
-                await expect(page.locator("#research-progress")).to_have_text("Needs clarification")
+                await expect(page.locator("#research-progress")).to_have_text("Awaiting clarification")
                 await expect(page.locator("#announcement")).to_contain_text("Clarification required")
             await page.screenshot(path=str(output / f"injected-{label}.png"))
+        # A real server-side slow model call must remain inspectable through the
+        # lock-independent progress endpoint, including elapsed time.
+        await page.goto(url)
+        await page.locator("#brief").fill("Slow progress UI control: hold planning while progress is inspected")
+        await page.locator("#brief").press("Control+Enter")
+        await expect(page.locator("#research-progress")).to_contain_text(
+            re.compile(r"Understanding the request.*[1-9]\d*s elapsed"), timeout=10000)
+        assert slow_gate[0].is_set()
+        progress = await page.evaluate("serverProgress")
+        assert progress["active"] and progress["elapsedSeconds"] >= 1
+        await expect(page.locator("#research-progress")).to_contain_text("Understanding the request")
+        await expect(page.locator("#research-progress")).to_contain_text("elapsed")
+        await page.screenshot(path=str(output / "injected-slow-progress.png"))
+        slow_gate[1].set()
+        await expect(page.locator("#overall-state")).to_have_text("Completed with unanswered questions", timeout=30000)
         assert not errors, errors
         await browser.close()
         return opening | {"kind": "injected model + exact compiler-response replay", "planInViewportBeforeDispatch": True,
@@ -235,6 +266,7 @@ async def verify(url, output):
                  "nestedSourceFocusReturn": True, "sectionContext": True, "unsupportedAndPlanningFailure": True,
                  "stepNetworkInterruptionRetry": True, "pausedFollowUpResumes": True, "interruptionRetainedUntilRetry": True,
                  "redrawnOpenerFocusReturn": True, "stableReadingPosition": True,
+                 "serverProgressDuringSlowModelCall": progress,
                  "javascriptErrors": errors, "humanAcceptance": "not assessed"}
 
 
@@ -243,14 +275,15 @@ def main():
     parser.add_argument("--output", type=Path, default=Path("/tmp/oireachtasontology/research-v06-ui"))
     args = parser.parse_args()
     record = next(r for r in load_bundle()["live"] if r["question"] == SPONSOR and r["controlledProposal"] is None)
-    models = lambda: UIModel([plan([sponsor_task()]), plan([sponsor_task() | {"id": "different", "member": "Unresolved Person", "question": "Which Bills did Unresolved Person sponsor?"}]), plan(revision="Shorten the explanation without changing facts"), plan(revision="Shorten the explanation without changing facts")])
+    slow_gate = (Event(), Event())
+    models = lambda: UIModel([plan([sponsor_task()]), plan([sponsor_task() | {"id": "different", "member": "Unresolved Person", "question": "Which Bills did Unresolved Person sponsor?"}]), plan(revision="Shorten the explanation without changing facts"), plan(revision="Shorten the explanation without changing facts")], slow_gate)
     app = create_app(planner_factory=models, client_factory=lambda: Replay(record["queries"]), reporting_date=date(2026, 11, 12))
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0)); port = s.getsockname()[1]
     server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error"))
     thread = Thread(target=server.run, daemon=True); thread.start()
     try:
-        result = asyncio.run(verify(f"http://127.0.0.1:{port}", args.output))
+        result = asyncio.run(verify(f"http://127.0.0.1:{port}", args.output, slow_gate))
         (args.output / "browser-summary.json").write_text(json.dumps(result, indent=2))
         print(json.dumps(result, indent=2))
     finally:

@@ -3,6 +3,7 @@
 These are not actual model-generated research or independent editorial acceptance.
 """
 import copy
+import json
 from datetime import date
 
 import pytest
@@ -184,13 +185,93 @@ def test_unrelated_or_guessed_lifecycle_is_not_dispatched():
 def test_http_plan_is_query_free_and_multiturn_endpoint(compiler_evidence):
     model = InjectedModel()
     with TestClient(create_app(planner_factory=lambda: model, client_factory=lambda: pytest.fail("No query during planning"), reporting_date=AS_OF)) as c:
-        initial = c.post("/runs", json={"brief": "Bills and progress"}).json()
-        assert initial["status"] == "Plan published" and initial["evidence"] == {}
-        response = c.post(f"/runs/{initial['id']}/messages", json={"text": "Shorten the report", "sectionId": None})
+        start_id = "a" * 32
+        initial = c.post("/runs", json={"brief": "Bills and progress", "requestId": start_id}).json()
+        assert initial["status"] == "Understanding the request" and not initial["tasks"]
+        assert initial["evidence"] == {} and model.calls == []
+        # A lost response/retry with the same request id returns the same run.
+        duplicate = c.post("/runs", json={"brief": "Bills and progress", "requestId": start_id}).json()
+        assert duplicate["id"] == initial["id"] and model.calls == []
+        planned = c.post(f"/runs/{initial['id']}/step", json={"version": initial["version"]}).json()
+        assert planned["status"] == "Plan published" and planned["tasks"]
+        assert planned["evidence"] == {} and model.calls == ["plan"]
+        stale = c.post(f"/runs/{initial['id']}/step", json={"version": initial["version"]}).json()
+        assert stale["version"] == planned["version"]
+        assert stale["processing"]["stages"] == planned["processing"]["stages"]
+        response_id = "b" * 32
+        response = c.post(f"/runs/{initial['id']}/messages", json={"text": "Shorten the report", "sectionId": None, "requestId": response_id})
         assert response.status_code == 200
         assert len(response.json()["messages"]) == 4
+        duplicate_message = c.post(f"/runs/{initial['id']}/messages", json={"text": "Shorten the report", "sectionId": None, "requestId": response_id})
+        assert duplicate_message.status_code == 200
+        assert len(duplicate_message.json()["messages"]) == 4 and model.calls == ["plan", "plan"]
         assert c.get(f"/runs/{initial['id']}/archive").json()["modelCalls"]
         assert c.post("/runs", json={"brief": "Bills"}, headers={"origin": "https://untrusted.test"}).status_code == 403
+
+
+def test_progress_endpoint_reads_slow_operation_without_waiting_for_run_lock():
+    from threading import Event, Thread
+    record = next(r for r in load_bundle()["live"] if r["question"] == SPONSOR and r["controlledProposal"] is None)
+    replay = Replay(record["queries"])
+    entered, release = Event(), Event()
+
+    class SlowReplay:
+        def query(self, sparql):
+            entered.set()
+            if not release.wait(5):
+                raise RuntimeError("slow-query test timed out")
+            return replay.query(sparql)
+
+    model = InjectedModel([plan([sponsor_task()])])
+    with TestClient(create_app(planner_factory=lambda: model, client_factory=lambda: SlowReplay(), reporting_date=AS_OF)) as c:
+        initial = c.post("/runs", json={"brief": "Bills and progress"}).json()
+        planned = c.post(f"/runs/{initial['id']}/step", json={"version": initial["version"]}).json()
+        response = []
+        worker = Thread(target=lambda: response.append(
+            c.post(f"/runs/{initial['id']}/step", json={"version": planned["version"]})))
+        worker.start()
+        assert entered.wait(5), "the slow compiler read did not start"
+        progress_response = []
+        reader = Thread(target=lambda: progress_response.append(c.get(f"/runs/{initial['id']}/progress")))
+        reader.start()
+        reader.join(timeout=1)
+        try:
+            assert not reader.is_alive(), "progress inspection blocked behind the in-flight research lock"
+            progress = progress_response[0].json()
+            assert progress["active"] and progress["phase"] == "retrieving"
+            assert progress["phaseLabel"] == "Retrieving parliamentary records"
+            assert "sponsorship" in progress["activeOperation"].lower()
+        finally:
+            release.set()
+            worker.join(timeout=10)
+            reader.join(timeout=10)
+        assert not worker.is_alive() and response[0].status_code == 200
+        finished = response[0].json()["processing"]
+        assert not finished["active"] and finished["lastDurationSeconds"] is not None
+        assert [stage["phase"] for stage in finished["stages"]] == ["retrieving", "assessing"]
+
+
+def test_http_200_execution_failure_is_not_reported_as_empty_success():
+    class Broken:
+        def query(self, sparql):
+            raise RuntimeError("injected transport detail 457")
+
+    model = InjectedModel([plan([sponsor_task()])])
+    with TestClient(create_app(planner_factory=lambda: model, client_factory=Broken, reporting_date=AS_OF)) as c:
+        initial = c.post("/runs", json={"brief": "Bills and progress"}).json()
+        planned = c.post(f"/runs/{initial['id']}/step", json={"version": initial["version"]}).json()
+        response = c.post(f"/runs/{initial['id']}/step", json={"version": planned["version"]})
+        assert response.status_code == 200
+        state = response.json()
+        task = state["tasks"][0]
+        assert task["state"] == "Incomplete"
+        assert task["researchOutcome"]["kind"] == "execution_failure"
+        assert state["processing"]["state"] == "interrupted"
+        assert "could not be completed" in state["outcomeSummary"]
+        assert "457" not in state["outcomeSummary"]
+        evidence_id = next(iter(state["evidence"]))
+        evidence = c.get(f"/runs/{initial['id']}/evidence/{evidence_id}").json()
+        assert "457" in json.dumps(evidence["execution"])
 
 
 def test_no_iri_or_extra_tool_fields():

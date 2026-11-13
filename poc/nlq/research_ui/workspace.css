@@ -61,6 +61,8 @@ details p { max-width: 80ch; }
 .task-state { display: block; font-size: .875rem; color: var(--muted); font-weight: 600; }
 .notice { padding: .8rem 1rem; border-left: 3px solid #9b742b; background: #fbf6ec; margin: .8rem 0; }
 #research-progress { min-height: 1.5em; }
+.outcome-summary { margin: 1rem 0; padding: .85rem 1rem; border-inline-start: 3px solid var(--gold); background: #fff; }
+#processing-history { margin-top: -.5rem; }
 article { background: white; border: 1px solid #e1e1d9; padding: clamp(1rem, 3vw, 2.5rem); box-shadow: 0 2px 6px #172d3d05; min-width: 0; }
 article p, article ul { max-width: 80ch; }
 .document-heading { border-bottom: 1px solid var(--line); padding-bottom: 1.4rem; margin-bottom: 1.8rem; }

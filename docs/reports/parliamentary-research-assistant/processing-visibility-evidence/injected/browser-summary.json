@@ -1,0 +1,52 @@
+{
+  "exampleWithoutSubmission": true,
+  "enterNewline": true,
+  "openingWidths": [
+    1440,
+    1024,
+    768,
+    390,
+    320
+  ],
+  "kind": "injected model + exact compiler-response replay",
+  "planInViewportBeforeDispatch": true,
+  "pauseResume": true,
+  "modalTabEscapeFocus": true,
+  "independentFailureRetainsReport": true,
+  "singleUserMessageEcho": true,
+  "controlAndMetaSubmit": true,
+  "multilineSubmissionFailurePreserved": true,
+  "nestedSourceFocusReturn": true,
+  "sectionContext": true,
+  "unsupportedAndPlanningFailure": true,
+  "stepNetworkInterruptionRetry": true,
+  "pausedFollowUpResumes": true,
+  "interruptionRetainedUntilRetry": true,
+  "redrawnOpenerFocusReturn": true,
+  "stableReadingPosition": true,
+  "serverProgressDuringSlowModelCall": {
+    "state": "active",
+    "label": "Processing",
+    "active": true,
+    "phase": "understanding",
+    "phaseLabel": "Understanding the request",
+    "activeOperation": "Slow progress UI control: hold planning while progress is inspected",
+    "elapsedSeconds": 1.5,
+    "phaseElapsedSeconds": 1.5,
+    "lastDurationSeconds": null,
+    "requestId": "cb89274ba06140a99a00ae2475b0297d",
+    "stages": [
+      {
+        "phase": "understanding",
+        "label": "Understanding the request",
+        "operation": "Slow progress UI control: hold planning while progress is inspected",
+        "elapsedSeconds": 0
+      }
+    ],
+    "nextPhase": null,
+    "nextOperation": null,
+    "targetSectionIds": []
+  },
+  "javascriptErrors": [],
+  "humanAcceptance": "not assessed"
+}

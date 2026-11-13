@@ -1,0 +1,30 @@
+[
+  {
+    "brief": "Which Labour Party Members represented Wexford during the 31st Dáil?",
+    "planVisible": true,
+    "interpretation": "Identify Members recorded as representing Wexford in the 31st Dáil and affiliated with the Labour Party during that term.",
+    "tasks": "Which Labour Party Members represented Wexford during the 31st Dáil?Pendingdirect · Directly checks the requested party, constituency and Dáil-term relationships.",
+    "atBrowserDispatch": 1794586409998
+  },
+  {
+    "brief": "Which Labour Party Members represented Wexford during the 31st Dáil?",
+    "planVisible": true,
+    "interpretation": "Identify Members recorded as representing Wexford in the 31st Dáil and affiliated with the Labour Party during that term.",
+    "tasks": "Which Labour Party Members represented Wexford during the 31st Dáil?Result not includeddirect · Directly checks the requested party, constituency and Dáil-term relationships.Which Members represented Wexford during the 31st Dáil?PendingSupporting evidence · Identifies the Members associated with the specified constituency and Dáil term, providing supporting evidence for the requested party-qualified list.Which political parties are recorded for Members who represented Wexford during the 31st Dáil?Pendingdirect · Checks the recorded party affiliations linked to those term-specific Wexford representation episodes, including whether Labour is recorded.",
+    "atBrowserDispatch": 1794586429053
+  },
+  {
+    "brief": "Which Labour Party Members represented Wexford during the 31st Dáil?",
+    "planVisible": true,
+    "interpretation": "Identify Members recorded as representing Wexford in the 31st Dáil and affiliated with the Labour Party during that term.",
+    "tasks": "Which Labour Party Members represented Wexford during the 31st Dáil?Result not includeddirect · Directly checks the requested party, constituency and Dáil-term relationships.Which Members represented Wexford during the 31st Dáil?Results could not be includedSupporting evidence · Identifies the Members associated with the specified constituency and Dáil term, providing supporting evidence for the requested party-qualified list.Which political parties are recorded for Members who represented Wexford during the 31st Dáil?Pendingdirect · Checks the recorded party affiliations linked to those term-specific Wexford representation episodes, including whether Labour is recorded.",
+    "atBrowserDispatch": 1794586436572
+  },
+  {
+    "brief": "Which Labour Party Members represented Wexford during the 31st Dáil?",
+    "planVisible": true,
+    "interpretation": "Identify Members recorded as representing Wexford in the 31st Dáil and affiliated with the Labour Party during that term.",
+    "tasks": "Which Labour Party Members represented Wexford during the 31st Dáil?Result not includeddirect · Directly checks the requested party, constituency and Dáil-term relationships.Which Members represented Wexford during the 31st Dáil?Results could not be includedSupporting evidence · Identifies the Members associated with the specified constituency and Dáil term, providing supporting evidence for the requested party-qualified list.Which political parties are recorded for Members who represented Wexford during the 31st Dáil?Result not includeddirect · Checks the recorded party affiliations linked to those term-specific Wexford representation episodes, including whether Labour is recorded.Which political parties are recorded in the 31st Dáil?PendingSupporting evidence · Checks whether Labour is recorded as a party in the specified Dáil term; this may clarify the party-identity evidence, but does not identify Wexford representatives or establish their party affiliation.",
+    "atBrowserDispatch": 1794586455180
+  }
+]

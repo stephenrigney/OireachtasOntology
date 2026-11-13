@@ -15,6 +15,7 @@ from playwright.async_api import async_playwright, expect
 
 R1 = "Prepare a briefing on the Bills sponsored by Malcolm Byrne. What progress have they made, and what happened to them?"
 R3 = "Prepare a background briefing on Mary Lou McDonald's parliamentary career, including constituencies represented and parliamentary roles."
+WEXFORD_PROBE = "Which Labour Party Members represented Wexford during the 31st Dáil?"
 
 
 def predicate(fact):
@@ -78,6 +79,13 @@ async def verify(url, output, resume=False):
         page.on("pageerror", lambda error: errors.append(str(error)))
 
         async def before_step(route):
+            next_phase = await page.evaluate("serverProgress?.active ? serverProgress.phase : (serverProgress?.nextPhase || run.processing?.nextPhase)")
+            if next_phase != "retrieving":
+                # Initial planning and investigation assessment are observable
+                # steps too, but only retrieval is the factual-query boundary.
+                await route.continue_()
+                return
+            current_brief = await page.locator("#original-brief").inner_text()
             visible = await page.locator("#plan-card").is_visible()
             assert visible, "Plan must be visible before any step dispatch"
             if not dispatches:
@@ -85,11 +93,15 @@ async def verify(url, output, resume=False):
                 await expect(page.locator("#plan-tasks li").first).to_be_in_viewport()
                 await expect(page.locator("#original-brief")).to_have_text(R1)
                 await page.screenshot(path=str(output / ("resume-plan-before-dispatch.png" if resume else "r1-plan-before-dispatch.png")))
+            if current_brief == WEXFORD_PROBE:
+                await expect(page.locator("#plan-interpretation")).not_to_be_empty()
+                await expect(page.locator("#plan-tasks li").first).to_be_in_viewport()
+                await page.screenshot(path=str(output / "wexford-plan-before-dispatch.png"))
             if await page.locator("#report").is_visible():
                 progressive.append({"sections": await page.locator("#report-sections > section").count(),
                                     "focus": await page.evaluate("document.activeElement.id"),
                                     "report": await page.locator("#report-heading").inner_text()})
-            dispatches.append({"planVisible": visible, "planOpen": await page.locator("#plan-disclosure").evaluate("el => el.open"),
+            dispatches.append({"brief": current_brief, "planVisible": visible, "planOpen": await page.locator("#plan-disclosure").evaluate("el => el.open"),
                                "atBrowserDispatch": await page.evaluate("Date.now()"),
                                "interpretation": await page.locator("#plan-interpretation").text_content(),
                                "tasks": await page.locator("#plan-tasks").text_content()})
@@ -112,7 +124,8 @@ async def verify(url, output, resume=False):
                 (output / "planning-interrupted.json").write_text(json.dumps(await archive_response.json(), ensure_ascii=False, indent=2))
                 raise AssertionError("Configured planning interrupted; retained archive, no research success claimed")
             await expect(page.locator("#plan-interpretation")).to_have_text(state["interpretation"])
-            await expect(page.locator("#overall-state")).to_have_text(re.compile(r"Findings available.*|Question not answered|Needs clarification|Records found.*|Research interrupted"), timeout=900000)
+            await expect(page.locator("#overall-state")).to_have_text(re.compile(
+                r"Completed.*|Findings available.*|Question not answered|Needs clarification|Awaiting clarification|Records found.*|Research interrupted|Interrupted"), timeout=900000)
             archive_response = await page.request.get(f"{url}/runs/{state['id']}/archive")
             return await archive_response.json()
 
@@ -134,13 +147,16 @@ async def verify(url, output, resume=False):
         if not resume:
             await retain("r1-initial", r1)
         assert r1["state"]["facts"] and r1["state"]["sections"], r1["state"]
-        assert {e["request"]["operation"]["operation"] for e in r1["evidence"].values()} == {"sponsorship", "lifecycle"}
+        assert {e["request"]["operation"]["operation"] for e in r1["evidence"].values()} == {"query", "lifecycle"}
         assert any(a["level"] == 3 for a in r1["state"]["assertions"].values())
         displayed = {ref for s in r1["state"]["sections"] for ref in s["factRefs"]}
         displayed.update(ref for s in r1["state"]["sections"] for t in s.get("tables", []) for row in t["rows"] for ref in row["assertionRefs"])
-        tables = [t for s in r1["state"]["sections"] for t in s.get("tables", []) if t["specification"]["kind"] == "bills"]
+        tables = [t for s in r1["state"]["sections"] for t in s.get("tables", [])
+                  if t["specification"]["kind"] == "records"]
+        sponsorship_tables = [t for t in tables if "classification" in t["specification"].get("columns", [])]
         sponsors = {ref for ref, a in r1["state"]["facts"].items() if predicate(a) == "sponsorship"}
-        assert sponsors == {ref for t in tables for ref in t["specification"]["factRefs"]}, "Compact table must retain all sponsorship findings"
+        assert len(sponsorship_tables) == 1
+        assert sponsors == set(sponsorship_tables[0]["specification"]["factRefs"]), "Compact table must retain all sponsorship findings"
         assert r1["state"]["unanswered"], "Final-outcome research must remain explicitly unanswered, not disappear into a generic limitation"
         assert any(predicate(r1["state"]["facts"][ref]) == "recorded_status" for ref in displayed), "Completed briefing must show lifecycle evidence, not only interim sponsorship"
         assert any(a["level"] == 3 and any(predicate(r1["state"]["facts"][ref]) in {"recorded_status", "recorded_activity"} for ref in a["factRefs"]) for a in r1["state"]["assertions"].values()), "LLM must explain retrieved progress evidence"
@@ -250,7 +266,7 @@ async def verify(url, output, resume=False):
         await (await download.value).save_as(str(output / "browser-export.md"))
         exported = (output / "browser-export.md").read_text()
         assert "Draft — for review" in exported and "Provisional interpretation" in exported and "freshness" in exported
-        assert "| Bill | Recorded sponsorship" in exported
+        assert "| Bill | Recorded classification" in exported
         assert all(ref in exported for ref in revision["state"]["facts"])
         await page.context.grant_permissions(["clipboard-read", "clipboard-write"])
         await page.locator("#copy").click()
@@ -269,7 +285,11 @@ async def verify(url, output, resume=False):
         after_sections = {s["id"]: s for s in r3["state"]["sections"]}
         assert all(after_sections[key] == value for key, value in before_sections.items()), "New career research must not rewrite unrelated Bill sections"
         assert all(u in r3["state"]["unanswered"] for u in evidence_discussion["state"]["unanswered"]), "New career research must preserve earlier substantive questions"
-        assert any(e["request"]["operation"]["operation"] == "career" and e["outcome"] == "answer" for e in r3["evidence"].values())
+        representation_refs = {ref for ref, fact in r3["state"]["facts"].items() if predicate(fact) == "representation"}
+        representation_evidence = {eid for ref in representation_refs for eid in r3["state"]["facts"][ref]["evidenceRefs"]}
+        assert representation_refs and any(
+            r3["evidence"][eid]["request"]["operation"]["operation"] in {"query", "career"}
+            and r3["evidence"][eid]["outcome"] == "answer" for eid in representation_evidence)
         await page.locator("#report-sections section").last.scroll_into_view_if_needed()
         await page.screenshot(path=str(output / "r3-career.png"))
         for label, brief in [
@@ -281,6 +301,21 @@ async def verify(url, output, resume=False):
             archive = await submit(brief)
             await retain(label, archive)
             assert not archive["evidence"], "No supported tool for these content/intersection questions"
+        # Frozen, previously scoped regional/party probe. This is an independent
+        # Wexford control, not a reconstruction of the unlocated original report.
+        await page.goto(url)
+        wexford_dispatch_start = len(dispatches)
+        wexford = await submit(WEXFORD_PROBE)
+        await retain("wexford-frozen-probe", wexford)
+        if await page.locator("#report").is_visible():
+            await page.locator("#report").scroll_into_view_if_needed()
+        elif await page.locator("#workspace-outcome").is_visible():
+            await page.locator("#workspace-outcome").scroll_into_view_if_needed()
+        else:
+            await page.locator("#research-canvas").scroll_into_view_if_needed()
+        await page.screenshot(path=str(output / "wexford-frozen-probe.png"), full_page=True)
+        (output / "wexford-plan-dispatch-observations.json").write_text(json.dumps(
+            dispatches[wexford_dispatch_start:], ensure_ascii=False, indent=2))
         assert not errors, errors
         (output / "plan-dispatch-observations.json").write_text(json.dumps(dispatches, ensure_ascii=False, indent=2))
         summary = {"kind": "actual configured model and read-only Fuseki", "planVisibleBeforeDispatch": bool(dispatches),
@@ -291,13 +326,95 @@ async def verify(url, output, resume=False):
                        allFactsExported=True, keyboardHorizontalTableScroll=True, rowAndIndividualEvidence=True,
                         resumedBrowserVerification=resume)
         summary.update(opening, progressiveReportBeforeCompletion=bool(progressive) if not resume else "Passed in the original live R1 leg before verifier interruption; see original-leg log",
-                       progressiveFocusPreserved=True,
-                       sectionContextRevision=True, exactConversationHistory=True, textSizePercent=200, zoomEquivalentPercent=400,
-                       copyMarkdown=True, reducedMotion=True)
+                        progressiveFocusPreserved=True,
+                        sectionContextRevision=True, exactConversationHistory=True, textSizePercent=200, zoomEquivalentPercent=400,
+                        copyMarkdown=True, reducedMotion=True)
+        summary["wexfordProbe"] = {
+            "question": WEXFORD_PROBE,
+            "status": wexford["state"]["status"],
+            "processingState": wexford["state"].get("processing", {}).get("state"),
+            "taskOutcomes": [task.get("researchOutcome", {}).get("kind") for task in wexford["state"]["tasks"]],
+            "acceptedFacts": len(wexford["state"]["facts"]),
+            "evidenceOperations": [entry["request"]["operation"]["operation"] for entry in wexford["evidence"].values()],
+            "note": "Separate frozen Wexford control; not a reconstruction of the originally reported question, which was not found in retained archives.",
+        }
         if resume:
             summary["resumptionContext"] = "R1/revision/discussion snapshots are exact rendering of the same original model/Fuseki run; R3 continues that live server session. Not another R1 factual trial."
         (output / "browser-summary.json").write_text(json.dumps(summary, indent=2))
         print(json.dumps(summary, indent=2))
+        await browser.close()
+
+
+async def verify_wexford_only(url, output):
+    """Run the frozen Wexford control independently of R1 editorial checks."""
+    output.mkdir(parents=True, exist_ok=True)
+    async with async_playwright() as p:
+        browser = await p.chromium.launch()
+        page = await browser.new_page(viewport={"width": 1440, "height": 1000})
+        page.set_default_timeout(240000)
+        errors, dispatches = [], []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+
+        async def before_step(route):
+            next_phase = await page.evaluate(
+                "serverProgress?.active ? serverProgress.phase : (serverProgress?.nextPhase || run.processing?.nextPhase)")
+            if next_phase != "retrieving":
+                await route.continue_()
+                return
+            await expect(page.locator("#original-brief")).to_have_text(WEXFORD_PROBE)
+            await expect(page.locator("#plan-card")).to_be_visible()
+            await expect(page.locator("#plan-interpretation")).to_be_in_viewport()
+            await expect(page.locator("#plan-tasks li").first).to_be_in_viewport()
+            await page.screenshot(path=str(output / "wexford-plan-before-dispatch.png"))
+            dispatches.append({"brief": WEXFORD_PROBE, "planVisible": True,
+                "interpretation": await page.locator("#plan-interpretation").text_content(),
+                "tasks": await page.locator("#plan-tasks").text_content(),
+                "atBrowserDispatch": await page.evaluate("Date.now()")})
+            (output / "wexford-plan-dispatch-observations.json").write_text(
+                json.dumps(dispatches, ensure_ascii=False, indent=2))
+            await route.continue_()
+
+        await page.route("**/runs/*/step", before_step)
+        await page.goto(url)
+        await expect(page.get_by_role("heading", name="What would you like to find out?", exact=True)).to_be_visible()
+        await page.locator("#brief").fill(WEXFORD_PROBE)
+        async with page.expect_response(lambda r: r.request.method == "POST" and r.url.endswith("/runs")) as pending:
+            await page.locator("#brief").press("Control+Enter")
+        response = await pending.value
+        assert response.ok, await response.text()
+        prepared = await response.json()
+        await expect(page.locator("#original-brief")).to_have_text(WEXFORD_PROBE)
+        await expect(page.locator("#overall-state")).to_have_text(re.compile(
+            r"Completed.*|Findings available.*|Question not answered|Needs clarification|Awaiting clarification|"
+            r"Records found.*|Research interrupted|Interrupted"), timeout=900000)
+        archive_response = await page.request.get(f"{url}/runs/{prepared['id']}/archive")
+        assert archive_response.ok
+        archive = await archive_response.json()
+        assert archive["state"]["brief"] == WEXFORD_PROBE
+        (output / "wexford-frozen-probe.json").write_text(json.dumps(archive, ensure_ascii=False, indent=2))
+        report_response = await page.request.get(f"{url}/runs/{prepared['id']}/report.md")
+        assert report_response.ok
+        (output / "wexford-frozen-probe.md").write_text(await report_response.text())
+        if await page.locator("#report").is_visible():
+            await page.locator("#report").scroll_into_view_if_needed()
+        elif await page.locator("#workspace-outcome").is_visible():
+            await page.locator("#workspace-outcome").scroll_into_view_if_needed()
+        else:
+            await page.locator("#research-canvas").scroll_into_view_if_needed()
+        await page.screenshot(path=str(output / "wexford-frozen-probe.png"), full_page=True)
+        assert not errors, errors
+        summary = {"kind": "actual configured model and read-only Fuseki",
+            "question": WEXFORD_PROBE, "status": archive["state"]["status"],
+            "processingState": archive["state"].get("processing", {}).get("state"),
+            "planVisibleBeforeFactualDispatch": bool(dispatches),
+            "dispatches": dispatches,
+            "taskOutcomes": [task.get("researchOutcome", {}).get("kind") for task in archive["state"]["tasks"]],
+            "acceptedFacts": len(archive["state"]["facts"]),
+            "evidenceOperations": [item["request"]["operation"]["operation"] for item in archive["evidence"].values()],
+            "javascriptErrors": errors, "humanAcceptance": "pending",
+            "limitation": "This frozen probe is separate from the originally reported Wexford question, which was not located in the reviewed archives; it does not establish that question's original cause."}
+        (output / "wexford-browser-summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2))
+        print(json.dumps(summary, ensure_ascii=False, indent=2))
         await browser.close()
 
 
@@ -306,5 +423,9 @@ if __name__ == "__main__":
     parser.add_argument("--url", default="http://127.0.0.1:8010")
     parser.add_argument("--output", type=Path, default=Path("/tmp/oireachtasontology/research-v06"))
     parser.add_argument("--resume", action="store_true", help="Reuse exact retained R1 snapshots and continue the same live session after a verifier interruption")
+    parser.add_argument("--wexford-only", action="store_true", help="Run only the frozen Wexford configured-model/Fuseki control")
     args = parser.parse_args()
-    asyncio.run(verify(args.url.rstrip("/"), args.output, args.resume))
+    if args.wexford_only:
+        asyncio.run(verify_wexford_only(args.url.rstrip("/"), args.output))
+    else:
+        asyncio.run(verify(args.url.rstrip("/"), args.output, args.resume))
