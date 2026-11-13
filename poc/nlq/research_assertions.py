@@ -53,7 +53,7 @@ def facts_from(env):
 
     member = env["request"]["factualRequest"]
     if "bills" in data:
-        name = member.removeprefix("Which Bills did ").removesuffix(" sponsor?")
+        name = data.get("memberName") or member.removeprefix("Which Bills did ").removesuffix(" sponsor?")
         for b in data["bills"]:
             title = " / ".join(b["titles"])
             for p in b["participations"]:
@@ -77,6 +77,17 @@ def facts_from(env):
             add(["representation", key], f"The available records identify {r['name']} as representing {r['label']} in the {r['termLabel']}. This term-specific finding does not establish uninterrupted tenure or other parliamentary roles.",
                 display={"name": r["name"], "constituency": r["label"], "term": r["termLabel"]})
             seen.add(key)
+    if "partyScope" in data:
+        scope = data["partyScope"]
+        for m in data["members"]:
+            for w in m["witnesses"]:
+                add(["dated_party_membership", m["memberIri"], scope, w],
+                    f"The available records identify {m['displayName']} as a {scope['label']} TD on {scope['asOf']}. "
+                    f"The separately recorded parliamentary membership starts {w['membership']['start']} "
+                    f"and has recorded end {w['membership']['end'] or 'not recorded (open-ended)'}; "
+                    f"the party membership episode starts {w['episode']['start']} "
+                    f"and has recorded end {w['episode']['end'] or 'not recorded (open-ended)'}. "
+                    "Both intervals contain the reporting date. This is not a certified complete roster or continuous career history.")
     return facts
 
 

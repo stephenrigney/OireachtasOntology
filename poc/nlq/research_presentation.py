@@ -10,7 +10,7 @@ from .research_adapter import ClosedModel
 
 class FactTable(ClosedModel):
     caption: str
-    kind: Literal["bills", "representation"]
+    kind: Literal["bills", "representation", "facts"]
     factRefs: list[str] = Field(min_length=1)
     activityRefs: list[str]
 
@@ -27,7 +27,13 @@ def project_table(table, facts):
     for ref in table["factRefs"]:
         a = facts[ref]
         p = a["proposition"]
-        if table["kind"] == "bills":
+        if table["kind"] == "facts":
+            # Capability-independent presentation: exact established wording,
+            # never model-authored labels, joins, field mappings or calculations.
+            if a["level"] not in (1, 2) or activities:
+                raise ValueError("Exact-fact tables require established facts and activityRefs=[].")
+            rows.append({"cells": [{"text": a["text"], "refs": [ref]}], "assertionRefs": [ref]})
+        elif table["kind"] == "bills":
             if p[0] != "sponsorship":
                 raise ValueError("Bill table rows require exact sponsorship facts.")
             b, participation = p[2:4]
@@ -44,14 +50,18 @@ def project_table(table, facts):
             rows.append({"cells": cells, "assertionRefs": [ref] + [f["id"] for f in related]})
         else:
             if p[0] != "representation":
-                raise ValueError("Career table rows require exact representation facts.")
+                raise ValueError("Career table rows require exact representation facts. Use kind=facts for other accepted fact types, with activityRefs=[].")
             # The display fields are taken from the same accepted record that
             # authorised this assertion, not parsed out of model-written prose.
             d = a["display"]
             rows.append({"cells": [{"text": d[k], "refs": [ref]} for k in ("name", "constituency", "term")], "assertionRefs": [ref]})
     if activities - {ref for row in rows for ref in row["assertionRefs"] if facts[ref]["proposition"][0] == "recorded_activity"}:
         raise ValueError("Selected activities must belong to the exact Bills in this table.")
-    return {"caption": table["caption"], "columns": (["Bill", "Recorded sponsorship", "Recorded status", "Selected recorded developments"]
-            if table["kind"] == "bills" else ["Member", "Constituency", "Dáil term"]), "rows": rows,
-            "qualification": ("Recorded status and selected activities are not final outcomes or necessarily the latest developments. Full histories are available in each row's evidence."
-                              if table["kind"] == "bills" else "Separate term records do not establish service dates, continuous tenure or parliamentary roles.")}
+    columns = {"bills": ["Bill", "Recorded sponsorship", "Recorded status", "Selected recorded developments"],
+               "representation": ["Member", "Constituency", "Dáil term"], "facts": ["Recorded finding"]}
+    qualifications = {
+        "bills": "Recorded status and selected activities are not final outcomes or necessarily the latest developments. Full histories are available in each row's evidence.",
+        "representation": "Separate term records do not establish service dates, continuous tenure or parliamentary roles.",
+        "facts": "Exact accepted findings at their recorded scope; source coverage and freshness are not certified. Each row retains its evidence and qualifications."}
+    return {"caption": table["caption"], "columns": columns[table["kind"]], "rows": rows,
+            "qualification": qualifications[table["kind"]]}

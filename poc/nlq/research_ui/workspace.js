@@ -102,6 +102,13 @@ async function showEvidence(ref, member = null) {
       const accepted = e.data?.members?.find(m => m.memberIri === member.memberIri);
       if (accepted) { content.append(node("h3", accepted.displayName), node("p", accepted.memberIri, "term-iri"), node("pre", JSON.stringify(accepted.witnesses, null, 2))); }
     }
+    if (e.error) content.append(node("p", e.error.message, "notice"));
+    if (e.queryServiceResult) {
+      const response = node("details");
+      response.append(node("summary", "Query Service response · not automatically a research fact"),
+        node("pre", JSON.stringify(e.queryServiceResult, null, 2)));
+      content.append(response);
+    }
     content.append(node("h3", "Provenance & qualifications"));
     e.completeness.limitations.forEach(l => content.append(node("p", l, "metadata")));
     content.append(node("p", "RDF resource references and actual query results are retained. Exact per-row owner graphs are unknown where not projected. No ETL capture or refresh timestamp is invented.", "metadata"));

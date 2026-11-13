@@ -108,24 +108,38 @@ registry and source evidence**, even when facts are not expanded in the document
 The technical appendix is intentionally large. It is not necessary to read it
 linearly to use the report.
 
-### Verified tool catalogue
+### General guarded Query Service interface
 
-`research_tools.py` is deliberately a small facade, not a general agent framework.
+`research_tools.py` passes concrete `query(question)` subsidiary questions
+unchanged to the existing Query Service's general composable-v2 execution path.
+The service's existing contracts/planner supply discovery guidance, admission,
+identity resolution, validation, compilation and evidence evaluation. There is
+no independently maintained research capability catalogue or unrestricted query
+interface. Advertised capabilities may still be conditional, unsupported for a
+particular wording/scope, or unsuitable for factual promotion.
 
 | Tool | Parameters and supported meaning | Explicit non-answers |
 |---|---|---|
-| `sponsorship` | Named Member mention; recorded Bill sponsorship via validated exact Member/BillParticipation identity; recorded primary classifications and sponsor roles | No housing/other subject filtering, opposition, Senator-period intersection, before-date filter or enactment |
+| `query` | A concrete subsidiary question, relevance and direct/supporting/exploratory role; independently admitted by the existing Query Service | No model SPARQL, guessed identities, silent dropping of conditions or promotion of unsupported evidence |
 | `lifecycle` | Reference to a successful sponsorship task; one exact number/year lookup per accepted Bill, at most 32 per task | Recorded process status and dated activities, **not certified final outcomes**; no guessed Bill IDs or title join |
-| `career` | Named Member mention; recorded constituency/Dáil-term identities across career | No complete offices/committee discovery, continuous tenure, service dates, ministerial-period relationship or arbitrary historical filter |
 
-Requests use existing public compiler execution, fixed reviewed semantic drafts,
+Legacy `sponsorship`/`career` requests remain replay-compatible; new research uses
+`query`, not a new subject-specific tool. Requests use public compiler execution,
 identity resolution, plan validation, query safety, pagination/caps and evidence
-evaluation. Structured accepted evidence is exposed additively at existing
-projectors, not reconstructed from display prose. Exact Bill identity agreement
+evaluation, including its existing semantic planner when required. Only recognised
+existing structured accepted evidence is normalised by `research_evidence.py`;
+facts are not reconstructed from display prose. Successful service responses
+without accepted research evidence (currently including party history) stay
+inspectable in the evidence dialog with an explicit factual-promotion limitation.
+Exact Bill identity agreement
 is checked across sponsorship and lifecycle lookups. A failed/truncated/partial
 compiler result produces no established assertions. Earlier independent evidence
 survives. The Phase 1 party adapter remains for its existing regression suite,
 but its permitted-word coordinator is not the default application's entry point.
+
+After completed results/limitations the research LLM may publish additional
+relevant investigations before dispatch, with at most three continuation rounds
+per user turn and 24 tasks per session. Editorial requests reuse retained facts.
 
 No general web source, Debate-content tool, committee/party intersection or
 unrestricted query interface is advertised. Missing evidence is not zero or

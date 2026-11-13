@@ -1,4 +1,8 @@
-"""Small verified research catalogue; no model-generated plans, IRIs or SPARQL."""
+"""Guarded subsidiary questions through the existing Query Service.
+
+Legacy typed requests remain compatible with retained sessions/replay controls;
+they are not the admission boundary for new research.
+"""
 from __future__ import annotations
 
 import copy
@@ -10,9 +14,10 @@ from uuid import uuid4
 
 from pydantic import Field, field_validator
 
-from .composable_plan import execute_question, plan_question, validate_plan
+from .composable_plan import PlanOutcome, execute_question, plan_question, validate_plan
 from .representation import representation_plan
 from .research_adapter import ClosedModel, QueryTrace, COMPILER_CONTEXT, now
+from .composable_semantic_planner import create_composable_plan_generator, build_composable_planner_instructions
 
 LIMITATIONS = [
     "These are findings from the available parliamentary records, not a certified complete account.",
@@ -20,12 +25,19 @@ LIMITATIONS = [
     "Recorded Bill statuses and dated activities do not by themselves establish a final outcome.",
     "Representation in separate Dáil terms does not establish continuous service or other parliamentary roles.",
 ]
-CATALOGUE = """Verified tools (all read-only; bounded local records, freshness unknown):
-sponsorship(member): all recorded Bills with exact Member sponsorship, Primary/Supporting sponsorship flags (NOT subject classifications) and any separately recorded sponsor roles. No subject, opposition, Senator-period, before-date or enactment filter.
-lifecycle(sourceTask): exact number/year lookups ONLY for Bills accepted from that sponsorship task. Recorded process status and dated activities, not certified final outcomes. At most 32 Bills per turn; retained identities must agree.
-career(member): recorded constituency and Dáil-term identities across the named Member's recorded career. No service dates, continuous tenure, offices, committee roles, or ministerial-period intersection.
-No debate-content, committee/party intersection or general role-discovery tool exists. Partial supporting research is allowed; missing conditions remain unanswered. Do not query irrelevant tools.
+CATALOGUE = """Research interface (read-only local Query Service; freshness unknown):
+query(question): propose a concrete subsidiary question in ordinary language. It is passed UNCHANGED to the existing Query Service, which independently selects capabilities, resolves identities, validates and executes. member=null, sourceTask=null. Discovery guidance is supplied from the Query Service itself, not a Research Assistant capability catalogue. Advertisements are not guarantees of executable or promotable evidence.
+lifecycle(sourceTask): retained batch convenience ONLY for recorded status/activities of exact Bills from an accepted sponsorship enumeration. member=null. At most 32 Bills; every lookup independently passes the Query Service. This is not final-outcome certification.
+Use query for all other research, including sponsorship and constituency history. Do not supply plans, IRIs, SPARQL or guessed identities. Missing dates remain missing; separate episodes never imply continuous membership.
+After a limitation you may propose a different RELEVANT investigation, with its narrower scope explicit. Never silently remove material conditions or query irrelevant substitutes. A successful Query Service response without recognised accepted evidence is inspectable retrieval, NOT a research fact.
 """
+
+
+def discovery_context():
+    """Single source of discovery guidance, identical to the service planner's."""
+    from .composable_semantic_planner import _plan_contract
+    return {"questionFamilies": _plan_contract()["questionFamilies"],
+            "semanticPlannerGuidance": build_composable_planner_instructions()}
 
 
 class ToolTask(ClosedModel):
@@ -33,7 +45,7 @@ class ToolTask(ClosedModel):
     question: str = Field(min_length=1, max_length=500)
     relevance: str = Field(min_length=1, max_length=500)
     role: Literal["direct", "supporting", "exploratory"]
-    tool: Literal["sponsorship", "lifecycle", "career"]
+    tool: Literal["query", "sponsorship", "lifecycle", "career"]
     member: str | None
     sourceTask: str | None
 
@@ -61,13 +73,17 @@ def draft_for(tool, member, as_of):
 
 
 class ResearchTools:
-    def __init__(self, client, predicates, *, context_id, endpoint_id):
+    def __init__(self, client, predicates, *, context_id, endpoint_id,
+                 semantic_plan_generator_factory=create_composable_plan_generator):
         self.client, self.predicates = client, predicates
         self.context = {"observationContextId": context_id, "endpointId": endpoint_id, "snapshotId": None}
+        self.planner_factory = semantic_plan_generator_factory
 
     def execute(self, task, reporting_date, bill=None):
         """Canonical request is the tool's own exact question, never a rewritten rejected brief."""
         as_of = date.fromisoformat(reporting_date)
+        if task["tool"] == "query":
+            return self._query(task, reporting_date)
         if task["tool"] == "lifecycle":
             if bill is None or len(bill["numbers"]) != 1 or len(bill["years"]) != 1:
                 raise ValueError("Exact accepted Bill number/year required.")
@@ -108,3 +124,69 @@ class ResearchTools:
                                  "sourceCoverage": "uncertified", "freshness": "unknown", "limitations": LIMITATIONS},
                 "error": None if accepted else {"message": "The requested records could not be safely established. This is not evidence that no such records exist.",
                                                 "code": outcome.status}, "diagnostic": outcome.diagnostic}
+
+    def _query(self, task, reporting_date):
+        """No rewriting, fixed drafts, direct compiler calls or Phase-1 fallback."""
+        trace, start, proposals = QueryTrace(self.client), now(), []
+
+        def planner():
+            generator = self.planner_factory()
+
+            class TracedPlanner:
+                def generate(self, prompt):
+                    record = {"prompt": prompt, "output": None}
+                    proposals.append(record)
+                    output = generator.generate(prompt)
+                    record["output"] = output
+                    return output
+
+                def close(self):
+                    close = getattr(generator, "close", None)
+                    if close:
+                        close()
+
+            return TracedPlanner()
+
+        try:
+            outcome = execute_question(task["question"], as_of=date.fromisoformat(reporting_date),
+                fuseki=trace, supported_predicates=self.predicates, semantic_plan_generator_factory=planner)
+        except Exception:
+            # Retain even already-completed reads on unexpected planner/projection
+            # failure. Never convert a failed projection to success-shaped data.
+            outcome = PlanOutcome("validation_failure", diagnostic="The Query Service could not safely validate or retain this response. No research facts were accepted.")
+        plan_ok = False
+        try:
+            plan_ok = outcome.plan is not None and validate_plan(outcome.plan) == outcome.plan
+        except (ValueError, KeyError, TypeError):
+            pass
+        executed = bool(trace.queries) and all(q["outcome"] == "returned" for q in trace.queries)
+        data, limitation = None, None
+        if outcome.interaction == "answer" and plan_ok and executed:
+            from .research_evidence import accept_query_evidence
+            data, limitation = accept_query_evidence(outcome, trace.queries)
+        accepted = data is not None
+        status = outcome.interaction
+        if status == "answer" and not accepted:
+            status = "missing_or_unaccepted_evidence" if plan_ok and executed else "validation_failure"
+        message = limitation or outcome.diagnostic or "No accepted research evidence was established."
+        return {"evidenceId": "e-" + uuid4().hex,
+            "request": {"factualRequest": task["question"], "requirementId": task["requirementId"],
+                        "operation": {"operation": "query"}},
+            "outcome": status, "queryServiceOutcome": outcome.interaction,
+            "compilerStatus": outcome.status,
+            "validation": {"planValidated": plan_ok, "executionCompleted": executed, "accepted": accepted},
+            "data": data, "plan": copy.deepcopy(outcome.plan),
+            "queryServiceResult": ({"kind": outcome.result.kind, "columns": list(outcome.result.columns),
+                                    "rows": [list(r) for r in outcome.result.rows],
+                                    "boolean": outcome.result.boolean if outcome.result.kind == "ask" else None}
+                                   if outcome.result is not None else None),
+            "execution": {**COMPILER_CONTEXT, "datasetContext": self.context, "startedAt": start,
+                          "finishedAt": now(), "queries": trace.queries, "plannerProposals": proposals},
+            "resolvedScope": {"reportingDate": reporting_date, "temporalMeaning": "compiler_plan_scope_only",
+                              "intent": (outcome.plan or {}).get("intent"), "parentRequirementSatisfied": False},
+            "completeness": {"enumeration": "bounded_query_completed" if accepted else "unknown",
+                             "sourceCoverage": "uncertified", "freshness": "unknown",
+                             "limitations": LIMITATIONS[:2] + [message]},
+            "error": None if accepted else {"code": "research_evidence_unavailable" if limitation else outcome.status,
+                "message": message, "candidates": list(outcome.candidates), "clarification": outcome.clarification},
+            "diagnostic": outcome.diagnostic}

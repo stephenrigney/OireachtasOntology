@@ -518,7 +518,7 @@ Maintain the visible research plan, ongoing dialogue, stable **research report**
 
 ### 12.2 LLM research collaborator
 
-The LLM interprets **the user's meaning and purpose**, not just strings naming parties. It proposes worthwhile subsidiary questions; identifies relevant candidate tools from a truthful verified catalogue; discusses results; requests material clarifications; and writes/revises report sections grounded in accepted evidence.
+The LLM interprets **the user's meaning and purpose**, not just strings naming parties. It proposes worthwhile subsidiary questions using discovery guidance derived from the existing Query Service; discusses results; requests material clarifications; and writes/revises report sections grounded in accepted evidence. Query Service advertisements are not guarantees of executable operations or promotable research evidence.
 
 A single entity-extraction call followed by deterministic vocabulary admission and templated count reporting **does not satisfy this role**. The LLM must not invent factual answers, parliamentary context, capability availability, citations or graph identities.
 
@@ -536,11 +536,17 @@ The coordinator may describe a **bounded finding as answered at its verified sco
 
 The coordinator enforces bounded tool budgets, safe retries, user approvals and selective evidence/report invalidation on revisions. Neither initial plan publication nor standing consent waives future requirements.
 
-### 12.4 Typed query tools
+### 12.4 Guarded research-query interface
 
-Expose a curated catalogue of **actually executable** compiler operations, with typed parameters, supported entities/relations, approved temporal semantics, projection, error states, provenance and completeness requirements. Prefer several research domains with verified bounded operations over a larger untested catalogue.
+**General Query Service integration (13 November 2026):** The research LLM proposes a concrete subsidiary `query(question)` with its relevance and direct/supporting/exploratory role. Pass that exact question unchanged through `composable_plan.execute_question`, including the service's existing composable semantic planner where needed. The service alone selects/adapts capabilities, resolves identities, validates semantics, compiles guarded read-only queries and evaluates evidence. Do not maintain a second Research Assistant capability catalogue. Discovery context is derived from the service's current contract and planner guidance, not older inventory reports.
 
 The LLM may propose and sequence tools, but execution must reuse existing compiler identity resolution, request admission, plan validation, SPARQL safety and evidence evaluation. The LLM cannot supply arbitrary SPARQL, graph IRIs or guessed identifiers. A supporting tool may deliberately answer a **narrower subsidiary question** without replacing the parent requirement. Do not misrepresent the tool's own scope, or automatically relabel a rejected parent question as answered by a weaker selection. Verify reachability and evidence on current code/data rather than inferring capability from a catalogue title.
+
+`research_evidence.accept_query_evidence` normalises only recognised **existing accepted-evidence shapes**, preserving scope and exact witnesses. Rendered result rows are not an alternative factual authority. A valid service response with no accepted research evidence remains inspectable, with an explicit `missing_or_unaccepted_evidence` research outcome and separate successful Query Service outcome; no Level 1/2 facts are invented. Unknown evidence shapes also fail closed. Accepted facts retain their source plans, all actual resolution/answer reads, proposals, dataset observation context and qualifications. No common snapshot or source freshness is inferred.
+
+Legacy sponsorship/career requests remain replay-compatible, and the existing exact-Bill lifecycle batch remains a bounded convenience over accepted Bill identities, not the boundary of discoverable research. New subject matter does not require a new Research Assistant tool. The existing four assertion classes, approved calculations, selective revision and qualified export remain unchanged.
+
+For accepted propositions without a specialised existing table, a capability-independent `facts` table presents exact established assertion wording and source references. It does not infer columns, join results, calculate values or admit new evidence. Bill and constituency tables retain their stricter proposition-specific requirements.
 
 ### 12.5 Evidence and claim store
 
@@ -562,7 +568,7 @@ Maintain the [editorial language contract](parliamentary-research-assistant-edit
 
 **User brief → LLM interpretation → requirement ledger and subsidiary questions → visibly published plan → guarded typed tools → validated evidence → LLM-authored report → conversation/revision.** Only dependent work should rerun.
 
-For each registered tool document its complete supported semantics, parameter schema, time policy, outcome shape, evidence/coverage metadata and known refusals. A tool-selection proposal is subject to deterministic operation/parameter admission and truthful **supporting/direct** task attribution. Separately track satisfaction of the full user requirement; do not infer that from operation success. Do not advertise missing capabilities as working. Do not use LLM-generated SPARQL or unvalidated post-hoc joins.
+The Query Service's existing contracts document supported semantics, parameters, time policy and refusals. Every proposed question is independently admitted there. After completed queries, the research LLM may propose further relevant questions based on accepted facts and structured outcomes, including after a limitation. Publish each continuation plan before dispatch. Allow at most three continuation rounds per user turn within the existing 24-task session and 32-Bill batch bounds; suppress repeated identical investigations. Editorial turns reuse facts without automatic new research. Separately track satisfaction of the full user requirement; never infer that from operation success. Do not use LLM-generated SPARQL or unvalidated post-hoc joins.
 
 For unsupported substantive Debate analysis or historical composition, make the gap clear and provide useful independently supported findings where possible. A new external evidence source requires explicit authorisation.
 
@@ -685,4 +691,3 @@ Keep existing browser and accessibility safeguards while **replacing the layout-
 **Superseded:** permanent two-pane desktop split, split resizing, independent conversation/report scrolling, empty report panel on first load, mandatory mobile view toggles, and technical/motto copy on the welcome screen. These are **not** normative acceptance requirements. Retained: accessible source evidence, progressive findings, original question/plan preservation, responsive reflow and human-reviewed research drafts.
 
 **Status:** v0.6 updates the **UI/interaction contract only**. v0.5 research authority, evidence classification and qualitative confidence remain settled. The v0.5 implementation and bounded editorial correction have been completed on this branch, but **human product acceptance is pending**. This specification does **not** itself authorise the v0.6 UI implementation, merge to `master`, compiler expansion, external-source access or deployment.
-

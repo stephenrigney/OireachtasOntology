@@ -1,0 +1,29 @@
+{
+  "exampleWithoutSubmission": true,
+  "enterNewline": true,
+  "openingWidths": [
+    1440,
+    1024,
+    768,
+    390,
+    320
+  ],
+  "kind": "injected model + exact compiler-response replay",
+  "planInViewportBeforeDispatch": true,
+  "pauseResume": true,
+  "modalTabEscapeFocus": true,
+  "independentFailureRetainsReport": true,
+  "singleUserMessageEcho": true,
+  "controlAndMetaSubmit": true,
+  "multilineSubmissionFailurePreserved": true,
+  "nestedSourceFocusReturn": true,
+  "sectionContext": true,
+  "unsupportedAndPlanningFailure": true,
+  "stepNetworkInterruptionRetry": true,
+  "pausedFollowUpResumes": true,
+  "interruptionRetainedUntilRetry": true,
+  "redrawnOpenerFocusReturn": true,
+  "stableReadingPosition": true,
+  "javascriptErrors": [],
+  "humanAcceptance": "not assessed"
+}

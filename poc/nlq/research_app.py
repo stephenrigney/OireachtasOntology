@@ -17,7 +17,7 @@ from pydantic import Field
 from .config import load_local_environment
 from .fuseki import DEFAULT_FUSEKI_QUERY_URL, FUSEKI_QUERY_URL_ENV, FusekiQueryClient
 from .research_collaborator import ResearchRun, create_collaborator
-from .research_tools import ResearchTools, CATALOGUE
+from .research_tools import ResearchTools, CATALOGUE, ToolTask
 from .research_adapter import ClosedModel, ResearchAdapter, OperationRequest, OperationEnvelope, ROOT
 from .vocabulary import supported_predicates
 
@@ -82,7 +82,7 @@ def create_app(*, planner_factory=create_collaborator, client_factory=None, repo
     @application.get("/contracts")
     def contracts():
         return {"request": OperationRequest.model_json_schema(), "envelope": OperationEnvelope.model_json_schema(),
-                "researchCatalogue": CATALOGUE}
+                "researchCatalogue": CATALOGUE, "researchQueryTask": ToolTask.model_json_schema()}
 
     @application.post("/runs", status_code=201)
     def prepare(payload: BriefInput):

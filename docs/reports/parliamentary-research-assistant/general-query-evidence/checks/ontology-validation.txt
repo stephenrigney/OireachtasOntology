@@ -1,0 +1,12 @@
+* Owlready2 * Running HermiT...
+    java -Xmx2000M -cp /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/owlready2/hermit:/var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/owlready2/hermit/HermiT.jar org.semanticweb.HermiT.cli.CommandLine -c -O -D -I file:////tmp/tmpufhmj2sr -Y
+* Owlready2 * HermiT took 0.7290768623352051 seconds
+* Owlready * Reparenting members.isPartyMembershipOf: {members.memberOfCollection, owl.ObjectProperty} => {members.memberOfCollection}
+* Owlready * Reparenting ontology.statuteBookURI: {terms.relation, owl.ObjectProperty} => {terms.relation}
+* Owlready * Reparenting ontology.responsibleTo: {org.reportsTo, owl.ObjectProperty} => {org.reportsTo}
+* Owlready * Reparenting members.constituencyInHouseTerm: {owl.ObjectProperty, members.inHouseTerm} => {members.inHouseTerm}
+* Owlready * Reparenting members.MinisterialTitle: {owl.DatatypeProperty, 0.1.title} => {0.1.title}
+* Owlready * Reparenting members.DeputyTitle: {owl.DatatypeProperty, 0.1.title} => {0.1.title}
+* Owlready * Reparenting members.SenatorTitle: {owl.DatatypeProperty, 0.1.title} => {0.1.title}
+* Owlready * (NB: only changes on entities loaded in Python are shown, other changes are done but not listed)
+Ontology validation passed: 2586 triples from /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/ontology
