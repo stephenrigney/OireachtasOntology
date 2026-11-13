@@ -15,6 +15,60 @@ The development form also retains the Phase 1 direct NL→SPARQL path as an opti
 
 This is an experimental query interface. It is separate from the deterministic ETL pipeline and never writes to Fuseki.
 
+## Opt-in confirmed committee + constituency composition
+
+The home-page **Opt in to experimental, user-confirmed committee + constituency
+composition** link opens `/composition`; the default `/ask` path is unchanged.
+For example:
+
+> Which members of the Committee on Public Accounts currently represent Kildare North?
+
+1. Enter the ordinary English question and select **Propose interpretation**.
+2. Inspect both named relationships, the displayed date and distinct-Member list
+   answer form. No RDF queries run on this page before confirmation.
+3. Select **Confirm interpretation and execute**, or **Reject interpretation**
+   and edit/re-propose the question. Confirmation uses the stored interpretation,
+   not another model proposal or browser-supplied plan.
+4. Read the names and dated relationship witnesses. Expand either relationship
+   for original RDF facts/actual source graphs, or download the complete typed
+   evidence and bounded SELECT ledger while it remains available (up to ten minutes).
+   All source-recorded names for one Member identity are shown together; no
+   preference between `showAs` and `fullName` is inferred from `foaf:name`.
+
+The backend uses `OIR_NLQ_AS_OF_DATE=YYYY-MM-DD`, or its current calendar date;
+dates are strictly validated and cannot be changed through confirmation forms.
+Every relationship, committee incarnation and own House term is evaluated
+independently with inclusive calendar-day endpoints. Only exact Member identity
+is shared between K and R; their terms are not implicitly equated.
+
+This first slice accepts bounded present/current list wordings, one full grounded
+committee name and one full grounded Dáil constituency name. Other names work
+through the same primitives; there are no example-specific templates. Only the
+existing initial Committee on/of connector equivalence is supported. Canonically
+equivalent Unicode mentions are normalized to NFC for matching NFC source labels. Acronyms,
+fuzzy aliases, historical/explicit question dates, counts, parties, additional
+conditions and extra answer fields are not silently simplified. Unsupported
+wording requires clarification even if a human could readily understand it.
+Independent scope checks are deliberately conservative; confirmation is **not**
+a solution to unattended natural-language admission or a completeness certificate.
+
+Limits remain two relationship selections, eight SELECT requests including
+resolution/names/all pagination probes, 100 raw rows per response and 100
+primitive/join witnesses. HTTP requests retain the operative 15-second timeout;
+responses additionally have a 2 MiB byte ceiling. Budget exhaustion, ambiguous
+identity, uncertain required evidence and empty selections return no factual
+answer. Absence of an end remains open-ended. Results describe positive local
+recorded evidence, **not a certified complete current roster**, source capture
+identity, upstream completeness or a transactional dataset snapshot.
+
+Confirmation is single-use, browser-session/question/date-bound, server-held,
+and expires after ten minutes. New proposal attempts supersede older ones.
+State is bounded and process-local (128 entries per store; 32 MiB serialized
+evidence in total, with whole older artifacts evicted rather than truncated):
+use one application worker for this attended
+experiment; restart, expiry, eviction or worker mismatch requires asking again.
+Cookies must be enabled. No state is placed in the default query service.
+
 ## Quick start
 
 Run all commands from the repository root. The launcher needs `uv`, Docker with

@@ -106,6 +106,8 @@ def create_app(
     *,
     repository_root: Path = ROOT,
     semantic_plan_generator_factory=None,
+    composition_proposer_factory=None,
+    composition_transport_factory=None,
     feedback_directory: Path | None = None,
 ) -> FastAPI:
     load_local_environment(repository_root)
@@ -158,7 +160,9 @@ def create_app(
                 plan_json: str | None = None, plan_heading: str | None = None,
                 entity_outcomes: tuple[dict, ...] = (), plan_explanation=None,
                  clarification=None, execution_attempted: bool = False,
-                 explanation_plan: dict | None = None):
+                  explanation_plan: dict | None = None,
+                  composition: bool = False, composition_confirmation=None,
+                  composition_report=None, composition_evidence_token=None):
         # Only the caller's already-validated structured plan may support prose.
         # Do not reparse capped debug JSON or infer execution from SPARQL.
         explainer = (explain_validated_plan(explanation_plan, question=question)
@@ -168,7 +172,7 @@ def create_app(
             error=error, plan=explanation_plan,
         )
         performance = getattr(request.state, "query_performance", None)
-        if readiness is None:
+        if readiness is None and not composition:
             readiness = (performance.measure("readiness_check", check_fuseki_readiness)
                          if performance is not None else check_fuseki_readiness())
         performance_diagnostics = None
@@ -215,7 +219,15 @@ def create_app(
             "feedback_actual": feedback_actual,
             "feedback_available": bool(question and feedback_actual and feedback_recording),
             "performance": performance_diagnostics,
+            "composition": composition,
+            "composition_confirmation": composition_confirmation,
+            "composition_report": composition_report,
+            "composition_evidence_token": composition_evidence_token,
         })
+
+    from .composition_routes import install_composition_routes
+    install_composition_routes(app, render, proposer_factory=composition_proposer_factory,
+                               transport_factory=composition_transport_factory)
 
     @app.post("/feedback/sessions")
     def start_feedback_session():
