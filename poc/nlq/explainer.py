@@ -379,3 +379,106 @@ def explain_execution(*, attempted, result, status=None, error=None, plan=None):
     else:
         summary = f"Returned {len(result.rows)} result {'row' if len(result.rows) == 1 else 'rows'}. Rows are not necessarily distinct people or a complete historical answer."
     return {"status": state, "summary": summary}
+
+
+def explain_validated_composition(request: dict, report: dict, *, question: str = "") -> dict:
+    """Present an admitted composition request and only its recorded query evidence."""
+    roles = {"R": "represent", "P": "belong to", "K": "serve on"}
+    kinds = {"R": "Constituency", "P": "Political party", "K": "Committee"}
+    mentioned = {"R": "Constituency mentioned", "P": "Party mentioned", "K": "Committee mentioned"}
+    selections = request.get("requiredSelections", [])
+    entities = []
+    named = {}
+    for selection in selections:
+        role = selection.get("role")
+        target = selection.get("constituency", selection.get("affiliation", selection.get("committee", {})))
+        label = target.get("mention", "the requested entity") if isinstance(target, dict) else str(target)
+        named[role] = label
+        entities.append({"kind": (kinds if report.get("status") == "answer" else mentioned).get(role, "Entity"),
+                         "label": label})
+    answer = request.get("answer", {})
+    subject = "TDs" if "R" in named else "Members"
+    relationship_text = " and ".join(f"{roles[role]} {named[role]}" for role in ("R", "P", "K") if role in named)
+    verb = "Count" if answer.get("shape") == "count" else "Find"
+    projection = (f"A count of distinct matching {subject}." if answer.get("shape") == "count"
+                  else f"A list of matching {subject}.")
+    summary = f"{verb} {subject} who {relationship_text}."
+    as_of = request.get("asOf", "the configured reference date")
+    conditions = [f"The requested relationships must belong to the same person and be current on {as_of}."]
+    evidence_links = [phrase for role, phrase in (
+        ("R", f"representation for {named.get('R')}"),
+        ("P", f"party membership with {named.get('P')}"),
+        ("K", f"committee membership of {named.get('K')}"),
+    ) if role in named]
+    answer_relationship = (f"The returned {subject} have recorded "
+                          + " and ".join(evidence_links) + f" as of {as_of}.")
+    ledger = report.get("ledger", [])
+    queries = [entry.get("query") for entry in ledger if isinstance(entry, dict) and entry.get("query")]
+    exact_bindings = request.get("exactSharedBindings", [])
+    technical_requirements = ["Exact identity bindings: " + "; ".join(exact_bindings)] if exact_bindings else []
+    temporal_roles = request.get("currentAtRoles", [])
+    if temporal_roles:
+        technical_requirements.append("Independently checked current-date roles: " + "; ".join(temporal_roles))
+    return {"summary": summary, "entities": entities, "relationships": [], "conditions": conditions,
+            "assumptions": [], "answer_text": projection, "target": projection,
+            "construction": [], "gaps": [], "unresolved": False, "queries": queries,
+            "compiled_summary": (f"The application prepared a query to find {subject.lower()} who {relationship_text}. "
+                                 "It matches the results to the same person and checks the recorded dates for the requested current status."),
+            "answer_relationship": answer_relationship,
+            "technical_requirements": technical_requirements,
+            "specification": "This describes the validated request; the individual SELECT queries below are the requests recorded during execution."}
+
+
+def explain_composition_execution(*, attempted: bool, request: dict, report: dict | None,
+                                  result=None, status=None, error=None) -> dict:
+    """Describe only the composition report and execution evidence actually supplied."""
+    if not attempted:
+        return {"status": "The query was not run.", "summary": "No execution result is available."}
+    if status in {"execution_failure", "query_execution_failed"} or error:
+        return {"status": "The query could not be completed.",
+                "summary": error or "Execution failed; no answer is available."}
+    if not report or result is None:
+        return {"status": "The query ran, but no answer was returned.",
+                "summary": (report or {}).get("error", "The available evidence does not establish a successful result.")}
+    if report.get("status") != "answer":
+        return {"status": "The query ran, but the available records did not support an answer.",
+                "summary": report.get("error", "No complete matching result could be established.")}
+    shape = request.get("answer", {}).get("shape")
+    subject = "TDs" if any(s.get("role") == "R" for s in request.get("requiredSelections", [])) else "Members"
+    if shape == "count":
+        count = report.get("answer", {}).get("distinctCount")
+        return {"status": "The query completed successfully.",
+                "summary": f"The records returned a count of {count} distinct {subject}."}
+    count = len(report.get("answer", {}).get("members", []))
+    return {"status": "The query completed successfully.",
+            "summary": f"The records returned {count} matching {subject}; the readable answer is shown above."}
+
+
+def composition_answer_display(*, request: dict, report: dict, explanation: dict,
+                                result=None, status=None, error=None) -> dict:
+    """Shared, user-facing answer fields and exact feedback text for /ask compositions."""
+    qualification = "These results reflect locally recorded evidence; the available records may not be complete."
+    answerable = (report.get("status") == "answer" and result is not None and not error
+                  and status not in {"execution_failure", "query_execution_failed"})
+    if not answerable:
+        refusal = error or report.get("error") or "No answer was established from the available records."
+        return {"answerable": False, "actual": str(refusal)}
+
+    is_td_answer = any(selection.get("role") == "R"
+                       for selection in request.get("requiredSelections", []))
+    noun = "TD" if is_td_answer else "Member"
+    if request.get("answer", {}).get("shape") == "count":
+        count = report.get("answer", {}).get("distinctCount")
+        count_label = f"{count} matching {noun if count == 1 else noun + 's'}"
+        names = ()
+        answer_lines = [count_label]
+    else:
+        count_label = None
+        names = tuple(sorted(report.get("names", {}).values()))
+        answer_lines = list(names)
+
+    relationship = explanation["answer_relationship"]
+    actual = "\n".join(("Answer", *answer_lines, relationship, qualification))
+    return {"answerable": True, "count_label": count_label, "names": names,
+            "relationship": relationship, "qualification": qualification,
+            "actual": actual}

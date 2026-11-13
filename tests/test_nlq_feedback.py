@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import pytest
 
 from fastapi.testclient import TestClient
 
@@ -11,6 +12,7 @@ from poc.nlq import feedback as feedback_module
 from poc.nlq.app import _displayed_answer_text
 from poc.nlq.member_resolution import MemberAmbiguity, MemberCandidate
 from poc.nlq.results import QueryResult
+from poc.nlq.explainer import composition_answer_display
 
 
 ROOT = app_module.ROOT
@@ -43,6 +45,22 @@ def test_actual_feedback_includes_ambiguity_candidates_and_warnings_without_debu
     assert "34th Dáil" in actual
     assert "Candidate A — urn:candidate:a" in actual
     assert "The local source coverage is incomplete." in actual
+
+
+@pytest.mark.parametrize("status,message", [
+    ("ambiguous", "Several committees matched; no committee was selected."),
+    ("source_data_unavailable", "Required source evidence was unavailable."),
+])
+def test_composition_nonanswer_feedback_captures_refusal_without_fabricated_answer(status, message):
+    request = {"answer": {"shape": "list"}, "requiredSelections": [{"role": "K"}]}
+    report = {"status": status, "error": message, "ledger": [], "candidates": ["urn:internal:candidate"]}
+    display = composition_answer_display(
+        request=request, report=report, explanation={"answer_relationship": "not used"},
+        result=None, status=status, error=message,
+    )
+    assert display["answerable"] is False
+    assert display["actual"] == message
+    assert "urn:" not in display["actual"] and "matching Members" not in display["actual"]
 
 
 def test_feedback_form_locks_after_success_and_keeps_values_on_failure():
@@ -169,7 +187,7 @@ def test_dashboard_initial_state_and_stage_accessibility(tmp_path):
     assert 'name="correct"' in template
     assert "html { min-height:100%; background:var(--page); }" in template
     assert "background:transparent;" in template
-    assert "{% set compiled_ready = sparql or plan_json %}" in template
+    assert "{% set compiled_ready = sparql or plan_json or (explainer and explainer.queries) %}" in template
 
 
 def test_blocked_query_stage_does_not_claim_compilation_or_execution(tmp_path, monkeypatch):

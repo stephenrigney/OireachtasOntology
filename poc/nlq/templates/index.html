@@ -76,6 +76,8 @@
     .mode-toggle label { position:relative; display:inline-flex; align-items:center; min-height:44px; padding:9px 14px; color:var(--ink); background:var(--inset); border:1px solid var(--border); border-radius:6px; cursor:pointer; }
     .mode-toggle input { margin:0 8px 0 0; accent-color:var(--gold); }
     .mode-toggle label:has(input:checked) { color:var(--gold-hover); background:#fff; border-color:var(--gold); box-shadow:inset 0 0 0 1px var(--gold); }
+    #composition-evidence { overflow-wrap:anywhere; min-width:0; }
+    #composition-evidence table { display:block; max-width:100%; overflow-x:auto; }
     @media(max-width:650px) { body { padding:16px 14px 36px; } body > section, body > form, main > section, main > form { padding:16px; margin:16px 0; } .stage-tabs { grid-template-columns:1fr; } table { display:block; overflow-x:auto; } }
     @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; } }
   </style>
@@ -83,6 +85,7 @@
 <body>
   <header><p class="eyebrow">OIREACHTAS ONTOLOGY</p><h1>Natural language queries</h1><p>Explore Oireachtas data through ordinary language</p></header>
   <p class="mast-link"><a href="/capabilities">Browse the query capability catalogue</a></p>
+  <p class="mast-link">{% if composition %}<a href="/">Return to the main query interface</a>{% else %}<a href="/composition">Comparison: confirmed committee + constituency workflow</a>{% endif %}</p>
   <section aria-label="Optional evidence collection" class="session-controls">
     <button type="button" class="session-start" id="start-evidence">Start Evidence Session</button>
     <button type="button" class="session-stop" id="stop-evidence" hidden>Stop Evidence Session</button>
@@ -91,17 +94,34 @@
   {% if readiness and readiness.state == "unavailable" %}
   <p class="readiness-warning" role="alert"><strong>Fuseki is currently unavailable.</strong> Queries may not run. <a href="#system-status">View system status</a> for details.</p>
   {% endif %}
-  <form method="post" action="/ask">
-    <h2>Ask a question</h2>
+  <form method="post" action="{{ '/composition/propose' if composition else '/ask' }}">
+    <h2>{{ 'Experimental composition — propose an interpretation' if composition else 'Ask a question' }}</h2>
+    {% if composition %}<p>Current committee membership intersected with current Dáil constituency representation only. Nothing executes until you confirm. Edit your question to change the interpretation.</p>{% endif %}
     <label for="question"><strong>Your question</strong></label>
     <textarea id="question" name="question" required maxlength="2000">{{ question }}</textarea>
-    <fieldset id="mode-toggle" class="mode-toggle">
+    {% if not composition %}<fieldset id="mode-toggle" class="mode-toggle">
       <legend>Development Query Path</legend>
       <label><input type="radio" name="mode" value="phase2" {% if mode == "phase2" %}checked{% endif %}>Composable semantic query plan (default)</label>
       <label><input type="radio" name="mode" value="phase1" {% if mode == "phase1" %}checked{% endif %}>Phase 1 direct NL→SPARQL (comparison)</label>
-    </fieldset>
-    <button type="submit">Ask</button>
+    </fieldset>{% endif %}
+    <button type="submit">{{ 'Propose interpretation' if composition else 'Ask' }}</button>
   </form>
+
+  {% if composition_confirmation %}
+  <section aria-labelledby="composition-confirmation-title">
+    <h2 id="composition-confirmation-title">Inspect the interpretation before execution</h2>
+    <p id="confirmed-interpretation">{{ composition_confirmation.text }}</p>
+    <p>This interpretation is a proposal, not an independently certified reading of English. Confirm only if it preserves your entire question. Otherwise reject it and edit the question above.</p>
+    <form action="/composition/confirm" method="post">
+      <input type="hidden" name="token" value="{{ composition_confirmation.token }}">
+      <button type="submit" name="decision" value="confirm">Confirm interpretation and execute</button>
+      <button type="submit" name="decision" value="reject">Reject interpretation</button>
+    </form>
+  </section>
+  {% endif %}
+  {% if composition and interpretation %}<section><h2>Confirmed interpretation</h2><p>{{ interpretation }}</p></section>{% endif %}
+  {% if composition_direct and not composition_dashboard and interpretation %}<section aria-label="Composition interpretation"><h2>Interpretation</h2><p>{{ interpretation }}</p></section>{% endif %}
+  {% if (composition or composition_direct) and result_notice and not result %}<p role="status">{{ result_notice }}</p>{% endif %}
 
   {% if error and interaction_status %}
   <section class="{% if interaction_status in ['clarification_required', 'ambiguous_entity', 'unresolved_entity', 'ambiguous', 'identity_collision'] %}ambiguity{% else %}error{% endif %}" role="alert" aria-live="polite">
@@ -156,7 +176,7 @@
   </section>
   {% endif %}
 
-  {% if outcome_kind %}<p class="query-outcome" data-outcome="{{ outcome_kind }}">Outcome: {{ outcome_kind|replace('_', ' ') }}</p>{% endif %}
+  {% if outcome_kind and not composition_dashboard %}<p class="query-outcome" data-outcome="{{ outcome_kind }}">Outcome: {{ outcome_kind|replace('_', ' ') }}</p>{% endif %}
   {% if clarification %}
   <section class="ambiguity" aria-live="polite">
     <h2>Choose a grounded Member identity</h2>
@@ -176,6 +196,16 @@
 
   {% if result %}
   <section id="query-results" aria-live="polite">
+    {% if composition_dashboard and composition_answer and composition_answer.answerable %}
+    <h2>Answer</h2>
+    {% if composition_answer.count_label %}
+    <p class="composition-answer"><strong>{{ composition_answer.count_label }}</strong></p>
+    {% else %}
+    <ul class="composition-answer">{% for name in composition_answer.names %}<li>{{ name }}</li>{% endfor %}</ul>
+    {% endif %}
+    <p>{{ composition_answer.relationship }}</p>
+    <p class="result-notice">{{ composition_answer.qualification }}</p>
+    {% else %}
     <h2>Results</h2>
     {% if result.kind == "ask" %}
       <p><strong>{{ "Yes" if result.boolean else "No" }}</strong></p>
@@ -190,10 +220,37 @@
       <p>No matching records were found in the local dataset. This result does not establish historical completeness.</p>
     {% endif %}
     {% if result_notice %}<p class="result-notice">{{ result_notice }}</p>{% endif %}
+    {% endif %}
   </section>
   {% endif %}
 
-  {% if question %}
+  {% if composition_report %}
+  <section id="composition-evidence">
+    <h2>Supporting relationships and source evidence</h2>
+    {% if composition_dashboard %}<details><summary>Supporting relationships, RDF identifiers and source evidence</summary>{% endif %}
+    <p>{{ composition_report.ledger|length }} bounded SELECT requests, including resolution, pagination and names. Source/run completeness and a transactional dataset snapshot are not established.</p>
+    <p><a href="/composition/evidence/{{ composition_evidence_token }}">Download source evidence and request ledger (JSON; available for up to 10 minutes, subject to bounded storage)</a></p>
+    {% if composition_report.candidates %}<p>Grounded current identity candidates; none was selected:</p><ul aria-label="Grounded identity candidates">{% for candidate in composition_report.candidates %}<li><a href="{{ candidate }}">{{ candidate }}</a></li>{% endfor %}</ul>{% endif %}
+    {% if composition_report.status == 'answer' %}
+    {% for pair in composition_report.answer.witnesses %}
+      <h3>{{ composition_report.names[pair[0].bindings.Member.iri] }}</h3>
+      {% for witness in pair %}
+      <details class="relationship-witness">
+        <summary>{{ 'Committee membership' if witness.role == 'K' else 'Party membership' if witness.role == 'P' else 'Dáil constituency representation' }} — source-backed witness</summary>
+        <p>{% if witness.role == 'K' %}Committee: {{ witness.bindings.committee.iri }}{% elif witness.role == 'P' %}Party affiliation: {{ witness.bindings.affiliation.iri }}; containing membership: {{ witness.bindings.containingMembership.iri }}{% else %}Constituency: {{ witness.bindings.constituency.iri }}{% endif %}</p>
+        <ul>{% for interval in witness.intervals %}<li>{{ interval.role }}: {{ interval.start.value }} through {{ interval.end.value if interval.end else 'open-ended (no end recorded)' }}. Independently active on {{ composition_report.answer.asOf }}: {{ 'yes' if interval.currentAtAsOf else 'no' }}. Resource: {{ interval.resource }}; range: {{ interval.range }}; actual source graph: {{ interval.graph }}.</li>{% endfor %}</ul>
+        <table><thead><tr><th>Subject</th><th>Predicate</th><th>Object (original RDF term)</th><th>Actual source graph</th></tr></thead><tbody>
+        {% for fact in witness.facts %}<tr><td>{{ fact.subject.value }}</td><td>{{ fact.predicate.value }}</td><td>{{ fact.object.value }}{% if fact.object.datatype %} ({{ fact.object.datatype }}){% elif fact.object['xml:lang'] %} @{{ fact.object['xml:lang'] }}{% endif %}</td><td>{{ fact.graph.value }}</td></tr>{% endfor %}
+        </tbody></table>
+      </details>
+      {% endfor %}
+    {% endfor %}
+    {% endif %}
+    {% if composition_dashboard %}</details>{% endif %}
+  </section>
+  {% endif %}
+
+  {% if question and ((not composition and not composition_direct) or composition_dashboard) %}
   <section id="query-processing">
     <h2>How this query was processed</h2>
     {% if performance %}
@@ -212,8 +269,8 @@
       <p>Elapsed time stops immediately before HTML rendering and HTTP response delivery. The query pipeline span includes the LLM and Fuseki time shown separately; do not add these values together. Readiness checks are timed separately and excluded from query-request counts. Phase 2 internal resolution, validation, compilation and projection boundaries are not independently separated.</p>
     </details>
     {% endif %}
-    {% set interpreted_ready = interpretation or plan_explanation or error or ambiguity or clarification or entity_outcomes %}
-    {% set compiled_ready = sparql or plan_json %}
+    {% set interpreted_ready = interpretation or plan_explanation or composition_request or error or ambiguity or clarification or entity_outcomes %}
+    {% set compiled_ready = sparql or plan_json or (explainer and explainer.queries) %}
     {% set executed_ready = execution_attempted %}
     {% set initial_stage = "interpreted" if interpreted_ready else ("compiled" if compiled_ready else ("executed" if executed_ready else "interpreted")) %}
     <div class="stage-tabs" role="tablist" aria-label="Query processing stages">
@@ -223,45 +280,57 @@
     </div>
     <div class="stage-panel" role="tabpanel" id="panel-interpreted" aria-labelledby="tab-interpreted" {% if initial_stage != 'interpreted' %}hidden{% endif %}>
       <h3>Your question was understood as</h3>
-      {% if explainer %}
-      <p>{{ explainer.summary }}</p><p><strong>{% if explainer.unresolved or interaction_status in ['ambiguous', 'clarification_required'] %}Plan structure validated; identity selection is incomplete.{% else %}Interpretation validated.{% endif %}</strong> This confirms the plan's supported structure, not that every identity was resolved or that an answer is complete.</p>
+      {% if composition_dashboard and explainer %}
+      <p>{{ explainer.summary }}</p>
+      {% if explainer.entities %}<ul>{% for entity in explainer.entities %}<li><strong>{{ entity.kind }}:</strong> {{ entity.label }}</li>{% endfor %}</ul>{% endif %}
+      <p><strong>Date:</strong> {{ composition_request.asOf }} — no date was specified, so current relationships are evaluated using this reference date.</p>
+      <p><strong>Answer:</strong> {{ ('Count of matching ' ~ ('TDs' if composition_request.requiredSelections|selectattr('role', 'equalto', 'R')|list else 'Members')) if composition_request.answer.shape == 'count' else ('List of matching ' ~ ('TDs' if composition_request.requiredSelections|selectattr('role', 'equalto', 'R')|list else 'Members')) }}.</p>
+      {% elif explainer %}
+      <p>{{ explainer.summary }}</p><p><strong>{% if composition_request %}Composition request admitted and validated.{% elif explainer.unresolved or interaction_status in ['ambiguous', 'clarification_required'] %}Plan structure validated; identity selection is incomplete.{% else %}Interpretation validated.{% endif %}</strong> This confirms the supported request structure, not that every identity was resolved or that an answer is complete.</p>
       {% if explainer.entities %}<h3>Identified entities</h3><ul>{% for entity in explainer.entities %}<li><strong>{{ entity.label }}</strong> — {{ entity.resolution }}</li>{% endfor %}</ul>{% endif %}
       {% if explainer.conditions %}<h3>Conditions</h3><ul>{% for condition in explainer.conditions %}<li>{{ condition }}</li>{% endfor %}</ul>{% endif %}
       {% if explainer.assumptions %}<h3>Temporal assumptions</h3>{% for assumption in explainer.assumptions %}<p class="explanation-note">{{ assumption }}</p>{% endfor %}{% endif %}
       <h3>What the results will contain</h3><p>{{ explainer.answer_text }}</p>
+      {% if composition_request and not composition_dashboard %}<p>Reference date {{ composition_request.asOf }}. No time was specified; current relationships use this configured reference date.</p>{% endif %}
       {% for gap in explainer.gaps %}<p class="explanation-note">{{ gap }}</p>{% endfor %}
       {% elif mode == 'phase1' and interpretation %}<p>{{ interpretation }}</p><p>This is a direct-query interpretation, not a validated structured plan.</p>
       {% elif error %}<p>No executable interpretation was accepted, or essential evidence is unavailable. {{ error }}</p>
       {% else %}<p>Interpretation available; no validated plan was produced.</p>{% endif %}
       {% if entity_outcomes or clarification or ambiguity %}<p>Entity resolution or clarification evidence is shown in the result above.</p>{% endif %}
-      {% if interpretation or plan_explanation %}<details><summary>Further interpretation evidence — original formatter notes</summary><p>These notes are not a compiler trace.{% if not explainer %} No validated structured plan is available for these notes.{% endif %}</p><p>{{ interpretation or plan_explanation.summary }}</p>{% if plan_explanation and plan_explanation.answer_text %}<p>{{ plan_explanation.answer_text }}</p>{% endif %}</details>{% endif %}
+      {% if (interpretation or plan_explanation) and not composition_dashboard %}<details><summary>Further interpretation evidence — original formatter notes</summary><p>These notes are not a compiler trace.{% if not explainer %} No validated structured plan is available for these notes.{% endif %}</p><p>{{ interpretation or plan_explanation.summary }}</p>{% if plan_explanation and plan_explanation.answer_text %}<p>{{ plan_explanation.answer_text }}</p>{% endif %}</details>{% endif %}
       {% if not executed_ready and (debug_output or debug_message) %}<details><summary>{% if debug_source == "Local Member resolution" %}Local Member resolution evidence{% else %}Resolution diagnostics{% if debug_source %} — {{ debug_source }}{% endif %}{% endif %}</summary>{% if debug_message %}<p>{{ debug_message }}</p>{% endif %}{% if debug_output %}<pre><code>{{ debug_output }}</code></pre>{% endif %}</details>{% endif %}
     </div>
     <div class="stage-panel" role="tabpanel" id="panel-compiled" aria-labelledby="tab-compiled" {% if initial_stage != 'compiled' %}hidden{% endif %}>
-      <h3>What the query plan specifies</h3>
-      {% if explainer %}
+      <h3>How the application prepared the query</h3>
+      {% if composition_dashboard and explainer %}
+      <p>{{ explainer.compiled_summary }}</p>
+      <p>{{ explainer.specification }}</p>
+      {% if explainer.technical_requirements %}<details><summary>Technical query details</summary><ul>{% for item in explainer.technical_requirements %}<li>{{ item }}</li>{% endfor %}</ul></details>{% endif %}
+      {% elif explainer %}
       <p>These are components of the validated plan, not a chronological record of compiler operations.</p>
       <h3>Answer target</h3><p>{{ explainer.target }}</p>
       {% if explainer.entities %}<h3>Identified entities</h3><ul>{% for entity in explainer.entities %}<li><strong>{{ entity.label }}</strong> — {{ entity.resolution }}</li>{% endfor %}</ul>{% endif %}
       {% if explainer.relationships %}<h3>Relationships in the plan</h3><ul>{% for relationship in explainer.relationships %}<li>{{ relationship }}</li>{% endfor %}</ul><p>Shared entities connect these relationships by exact identity, not by matching names. Optional display evidence is not a required match.</p>{% endif %}
       {% if explainer.conditions %}<h3>Conditions</h3><ul>{% for condition in explainer.conditions %}<li>{{ condition }}</li>{% endfor %}</ul>{% endif %}
       <h3>Result construction</h3><ul>{% for item in explainer.construction %}<li>{{ item }}</li>{% endfor %}</ul>
+      {% if composition_request and not composition_dashboard %}<p>{{ explainer.specification }}</p>{% endif %}
       {% for gap in explainer.gaps %}<p class="explanation-note">{{ gap }}</p>{% endfor %}
       {% elif sparql %}<p>Generated SPARQL is available, but no validated structured plan is available to explain its components.</p>{% else %}<p>Compilation was not reached; no validated plan or SPARQL was produced.</p>{% endif %}
       {% if plan_json %}<details><summary>Technical query plan — JSON and identifiers</summary><p>{{ plan_heading or "Validated query plan" }}</p><pre><code>{{ plan_json }}</code></pre></details>{% endif %}
       {% if sparql %}<details><summary>Generated SPARQL</summary><p>SPARQL was generated. Its availability alone does not establish execution.</p><pre><code>{{ sparql }}</code></pre></details>{% elif plan_json %}<p>No generated SPARQL is available; a validated plan alone does not establish compilation or execution.</p>{% endif %}
+      {% if explainer and explainer.queries %}<details><summary>Recorded generated SPARQL SELECT requests</summary><p>These are individual requests recorded in the execution evidence; no combined query or chronology is implied.</p>{% for query in explainer.queries %}<pre><code>{{ query }}</code></pre>{% endfor %}</details>{% endif %}
     </div>
     <div class="stage-panel" role="tabpanel" id="panel-executed" aria-labelledby="tab-executed" {% if initial_stage != 'executed' %}hidden{% endif %}>
       <h3>Execution and returned results</h3>
       <p><strong>{{ execution_explanation.status }}</strong></p><p>{{ execution_explanation.summary }}</p>
-      {% if execution_attempted and interaction_status %}<p>Outcome classification: {{ interaction_status|replace('_', ' ') }}.</p>{% endif %}
+      {% if execution_attempted and interaction_status and not composition_dashboard %}<p>Outcome classification: {{ interaction_status|replace('_', ' ') }}.</p>{% endif %}
       {% if result and execution_attempted %}
-      <p>Query result is shown above. <a href="#query-results">View returned results</a>.</p>
-      <h3>Evidence and limitations</h3>
+      {% if not composition_dashboard %}<p>Query result is shown above. <a href="#query-results">View returned results</a>.</p>{% endif %}
+      {% if not composition_dashboard %}<h3>Evidence and limitations</h3>
       <p>Successful execution does not establish that the requested answer is complete. Only returned records and available diagnostics support this result; no additional evidence trail is inferred.</p>
-      {% if result_notice %}<p class="explanation-note">{{ result_notice }}</p>{% endif %}
+      {% if result_notice %}<p class="explanation-note">{{ result_notice }}</p>{% endif %}{% endif %}
       {% if error %}<p class="explanation-note">{{ error }}</p>{% endif %}
-      {% if result.columns %}<details><summary>Returned evidence fields</summary><ul>{% for column in result.columns %}<li>{{ column }}</li>{% endfor %}</ul><p>These are the fields actually returned, not a promise of full source coverage.</p></details>{% endif %}
+      {% if result.columns and not composition_dashboard %}<details><summary>Returned evidence fields</summary><ul>{% for column in result.columns %}<li>{{ column }}</li>{% endfor %}</ul><p>These are the fields actually returned, not a promise of full source coverage.</p></details>{% endif %}
       {% endif %}
       {% if debug_output or debug_message %}<details><summary>{% if debug_source == "Local Member resolution" %}Local Member resolution evidence{% else %}Execution diagnostics{% if debug_source %} — {{ debug_source }}{% endif %}{% endif %}</summary>{% if debug_message %}<p>{{ debug_message }}</p>{% endif %}{% if debug_output %}<pre><code>{{ debug_output }}</code></pre>{% endif %}</details>{% endif %}
       {% if sparql and execution_attempted %}<details><summary>Execution query — SPARQL</summary><pre><code>{{ sparql }}</code></pre></details>{% endif %}
