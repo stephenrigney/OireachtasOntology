@@ -1,0 +1,9 @@
+{
+  "allSnapshotTableAndAssertionReferencesResolve": true,
+  "allFactsExported": true,
+  "r1SectionsExactlyPreservedAfterR3": true,
+  "configuredCredentialScan": "passed",
+  "acceptedFactualAssertions": 134,
+  "actualOperations": 22,
+  "readOnlyQueries": 25
+}

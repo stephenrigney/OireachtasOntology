@@ -1,0 +1,43 @@
+{
+  "kind": "actual configured model and read-only Fuseki",
+  "planVisibleBeforeDispatch": true,
+  "stepDispatches": 28,
+  "responsiveWidths": [
+    1440,
+    1024,
+    768,
+    390,
+    320
+  ],
+  "keyboardEvidenceEscapeFocus": true,
+  "editorialEvidencePreserved": true,
+  "sameSessionSecondaryDomain": true,
+  "markdownExportQualified": true,
+  "javascriptErrors": [],
+  "humanAcceptance": "pending",
+  "initialOverviewWords": 150,
+  "revisedOverviewWords": 85,
+  "allBillRowsPresent": true,
+  "allFactsExported": true,
+  "keyboardHorizontalTableScroll": true,
+  "rowAndIndividualEvidence": true,
+  "resumedBrowserVerification": true,
+  "exampleWithoutSubmission": true,
+  "enterNewline": true,
+  "openingWidths": [
+    1440,
+    1024,
+    768,
+    390,
+    320
+  ],
+  "progressiveReportBeforeCompletion": "Passed in the original live R1 leg before verifier interruption; see original-leg log",
+  "progressiveFocusPreserved": true,
+  "sectionContextRevision": true,
+  "exactConversationHistory": true,
+  "textSizePercent": 200,
+  "zoomEquivalentPercent": 400,
+  "copyMarkdown": true,
+  "reducedMotion": true,
+  "resumptionContext": "R1/revision/discussion snapshots are exact rendering of the same original model/Fuseki run; R3 continues that live server session. Not another R1 factual trial."
+}

@@ -1,0 +1,164 @@
+{
+  "r1-initial": [
+    {
+      "role": "user",
+      "text": "Prepare a briefing on the Bills sponsored by Malcolm Byrne. What progress have they made, and what happened to them?"
+    },
+    {
+      "role": "assistant",
+      "text": "I’ll first retrieve the recorded sponsorship list, then check available process statuses and dated activities for the Bills accepted from that list. Final outcomes may remain unanswered because the available records do not certify them."
+    },
+    {
+      "role": "assistant",
+      "text": "I have prepared the draft briefing from the available sponsorship records. The lifecycle evidence is still pending."
+    },
+    {
+      "role": "assistant",
+      "text": "I have updated the draft briefing."
+    }
+  ],
+  "r1-revision": [
+    {
+      "role": "user",
+      "text": "Prepare a briefing on the Bills sponsored by Malcolm Byrne. What progress have they made, and what happened to them?"
+    },
+    {
+      "role": "assistant",
+      "text": "I’ll first retrieve the recorded sponsorship list, then check available process statuses and dated activities for the Bills accepted from that list. Final outcomes may remain unanswered because the available records do not certify them."
+    },
+    {
+      "role": "assistant",
+      "text": "I have prepared the draft briefing from the available sponsorship records. The lifecycle evidence is still pending."
+    },
+    {
+      "role": "assistant",
+      "text": "I have updated the draft briefing."
+    },
+    {
+      "role": "user",
+      "text": "Please make this section’s explanatory prose much shorter: at most 80 words in total across its narrative paragraphs. Explain why recorded status is not final outcome. Keep every factual table, Bill finding and evidence reference.",
+      "sectionId": "byrne-bills-findings"
+    },
+    {
+      "role": "assistant",
+      "text": "I’ll shorten the section’s explanatory prose to the requested limit while preserving its factual content and evidence references."
+    },
+    {
+      "role": "assistant",
+      "text": "I’ve shortened the explanatory prose while preserving the factual table and its evidence references."
+    }
+  ],
+  "r1-evidence-discussion": [
+    {
+      "role": "user",
+      "text": "Prepare a briefing on the Bills sponsored by Malcolm Byrne. What progress have they made, and what happened to them?"
+    },
+    {
+      "role": "assistant",
+      "text": "I’ll first retrieve the recorded sponsorship list, then check available process statuses and dated activities for the Bills accepted from that list. Final outcomes may remain unanswered because the available records do not certify them."
+    },
+    {
+      "role": "assistant",
+      "text": "I have prepared the draft briefing from the available sponsorship records. The lifecycle evidence is still pending."
+    },
+    {
+      "role": "assistant",
+      "text": "I have updated the draft briefing."
+    },
+    {
+      "role": "user",
+      "text": "Please make this section’s explanatory prose much shorter: at most 80 words in total across its narrative paragraphs. Explain why recorded status is not final outcome. Keep every factual table, Bill finding and evidence reference.",
+      "sectionId": "byrne-bills-findings"
+    },
+    {
+      "role": "assistant",
+      "text": "I’ll shorten the section’s explanatory prose to the requested limit while preserving its factual content and evidence references."
+    },
+    {
+      "role": "assistant",
+      "text": "I’ve shortened the explanatory prose while preserving the factual table and its evidence references."
+    },
+    {
+      "role": "user",
+      "text": "Show me the evidence for the Bill with a lapsed event and a later recorded stage. What can and cannot be concluded?",
+      "sectionId": null
+    },
+    {
+      "role": "assistant",
+      "text": "At least two Bills fit that description. Two examples highlighted in the draft are:\n\n- Seanad Electoral (University Members) (Amendment) Bill 2020: a Bill Lapsed Event is recorded on 29 January 2025; Committee Stage is also recorded on that date and again on 27 March 2025. The recorded status is Current. [f26–f28; f22]\n- Protection of Private Residences (Against Targeted Picketing) Bill 2021: Fifth Stage and Report Stage are recorded on 4 July 2024; a Bill Lapsed Event and Second Stage are recorded on 8 November 2024; a further Second Stage is recorded on 1 May 2025. The recorded status is Current. [f34–f38; f29]\n\nThese records establish that the entries coexist; they do not explain the apparent inconsistencies or establish either Bill’s final outcome. “Current” is not proof of progress or enactment, and a lapsed event is not a certified final outcome. Which Bill did you mean, if you want a closer evidence walk-through?",
+      "assertionRef": "a-5c299020ef2cdd93933e"
+    },
+    {
+      "role": "assistant",
+      "text": "Which Bill did you mean? At least two Bills fit the description; the response gives evidence for the two examples highlighted in the draft."
+    },
+    {
+      "role": "assistant",
+      "text": "The records show two Bills matching that description, so I have included both examples. They establish that a Bill Lapsed Event and later-stage entries are recorded; they do not explain how those entries relate or establish either Bill’s final outcome. The recorded status “Current” is not a certified outcome. [f22, f26–f29, f34–f38]",
+      "assertionRef": "a-230c650c573766698bd8"
+    }
+  ],
+  "r3-same-session": [
+    {
+      "role": "user",
+      "text": "Prepare a briefing on the Bills sponsored by Malcolm Byrne. What progress have they made, and what happened to them?"
+    },
+    {
+      "role": "assistant",
+      "text": "I’ll first retrieve the recorded sponsorship list, then check available process statuses and dated activities for the Bills accepted from that list. Final outcomes may remain unanswered because the available records do not certify them."
+    },
+    {
+      "role": "assistant",
+      "text": "I have prepared the draft briefing from the available sponsorship records. The lifecycle evidence is still pending."
+    },
+    {
+      "role": "assistant",
+      "text": "I have updated the draft briefing."
+    },
+    {
+      "role": "user",
+      "text": "Please make this section’s explanatory prose much shorter: at most 80 words in total across its narrative paragraphs. Explain why recorded status is not final outcome. Keep every factual table, Bill finding and evidence reference.",
+      "sectionId": "byrne-bills-findings"
+    },
+    {
+      "role": "assistant",
+      "text": "I’ll shorten the section’s explanatory prose to the requested limit while preserving its factual content and evidence references."
+    },
+    {
+      "role": "assistant",
+      "text": "I’ve shortened the explanatory prose while preserving the factual table and its evidence references."
+    },
+    {
+      "role": "user",
+      "text": "Show me the evidence for the Bill with a lapsed event and a later recorded stage. What can and cannot be concluded?",
+      "sectionId": null
+    },
+    {
+      "role": "assistant",
+      "text": "At least two Bills fit that description. Two examples highlighted in the draft are:\n\n- Seanad Electoral (University Members) (Amendment) Bill 2020: a Bill Lapsed Event is recorded on 29 January 2025; Committee Stage is also recorded on that date and again on 27 March 2025. The recorded status is Current. [f26–f28; f22]\n- Protection of Private Residences (Against Targeted Picketing) Bill 2021: Fifth Stage and Report Stage are recorded on 4 July 2024; a Bill Lapsed Event and Second Stage are recorded on 8 November 2024; a further Second Stage is recorded on 1 May 2025. The recorded status is Current. [f34–f38; f29]\n\nThese records establish that the entries coexist; they do not explain the apparent inconsistencies or establish either Bill’s final outcome. “Current” is not proof of progress or enactment, and a lapsed event is not a certified final outcome. Which Bill did you mean, if you want a closer evidence walk-through?",
+      "assertionRef": "a-5c299020ef2cdd93933e"
+    },
+    {
+      "role": "assistant",
+      "text": "Which Bill did you mean? At least two Bills fit the description; the response gives evidence for the two examples highlighted in the draft."
+    },
+    {
+      "role": "assistant",
+      "text": "The records show two Bills matching that description, so I have included both examples. They establish that a Bill Lapsed Event and later-stage entries are recorded; they do not explain how those entries relate or establish either Bill’s final outcome. The recorded status “Current” is not a certified outcome. [f22, f26–f29, f34–f38]",
+      "assertionRef": "a-230c650c573766698bd8"
+    },
+    {
+      "role": "user",
+      "text": "Prepare a background briefing on Mary Lou McDonald's parliamentary career, including constituencies represented and parliamentary roles. Add this as a separate career section and retain the earlier Bill research.",
+      "sectionId": null
+    },
+    {
+      "role": "assistant",
+      "text": "I’ll add a separate career section and leave the earlier Bill research in place. The available career records can support research on recorded constituencies and Dáil terms, but not a full history of parliamentary roles."
+    },
+    {
+      "role": "assistant",
+      "text": "Added a separate career section for Mary Lou McDonald. The earlier Malcolm Byrne Bill research is retained."
+    }
+  ]
+}

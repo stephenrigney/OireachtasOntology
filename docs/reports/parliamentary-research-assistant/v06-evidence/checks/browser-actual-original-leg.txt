@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/tools/verify_research_v06_browser.py", line 297, in <module>
+    asyncio.run(verify(args.url.rstrip("/"), args.output, args.resume))
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/home/stephen/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/lib/python3.13/asyncio/runners.py", line 196, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/var/home/stephen/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/lib/python3.13/asyncio/runners.py", line 119, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/var/home/stephen/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/lib/python3.13/asyncio/base_events.py", line 726, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/tools/verify_research_v06_browser.py", line 248, in verify
+    assert await page.evaluate("navigator.clipboard.readText()") == exported
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

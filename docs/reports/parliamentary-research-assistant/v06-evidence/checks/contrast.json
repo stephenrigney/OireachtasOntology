@@ -1,0 +1,65 @@
+{
+  "method": "WCAG relative luminance of source CSS palette; not a full accessibility audit",
+  "pairs": {
+    "body on warm": {
+      "foreground": "#172d3d",
+      "background": "#f4f3ee",
+      "ratio": 12.78,
+      "required": 4.5
+    },
+    "document text": {
+      "foreground": "#172d3d",
+      "background": "#ffffff",
+      "ratio": 14.2,
+      "required": 4.5
+    },
+    "metadata on warm": {
+      "foreground": "#56636b",
+      "background": "#f4f3ee",
+      "ratio": 5.57,
+      "required": 4.5
+    },
+    "metadata on paper": {
+      "foreground": "#56636b",
+      "background": "#ffffff",
+      "ratio": 6.19,
+      "required": 4.5
+    },
+    "evidence link": {
+      "foreground": "#254d64",
+      "background": "#edf1f0",
+      "ratio": 7.93,
+      "required": 4.5
+    },
+    "primary action": {
+      "foreground": "#ffffff",
+      "background": "#172d3d",
+      "ratio": 14.2,
+      "required": 4.5
+    },
+    "primary hover": {
+      "foreground": "#ffffff",
+      "background": "#294b60",
+      "ratio": 9.25,
+      "required": 4.5
+    },
+    "submission error": {
+      "foreground": "#943f29",
+      "background": "#ffffff",
+      "ratio": 6.99,
+      "required": 4.5
+    },
+    "focus on paper": {
+      "foreground": "#336c91",
+      "background": "#ffffff",
+      "ratio": 5.68,
+      "required": 3
+    },
+    "focus on warm": {
+      "foreground": "#336c91",
+      "background": "#f4f3ee",
+      "ratio": 5.12,
+      "required": 3
+    }
+  }
+}

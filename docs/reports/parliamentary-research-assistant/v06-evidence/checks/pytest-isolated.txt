@@ -1,0 +1,486 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collected 2590 items
+
+tests/test_alerts.py .....                                               [  0%]
+tests/test_api.py ..........                                             [  0%]
+tests/test_bill_classification.py .....................                  [  1%]
+tests/test_bill_local_ambiguity.py .                                     [  1%]
+tests/test_bill_local_cli_evidence.py ...                                [  1%]
+tests/test_bill_local_fuseki.py ss                                       [  1%]
+tests/test_bill_local_multisponsor.py ...                                [  1%]
+tests/test_bill_local_publication.py ....                                [  1%]
+tests/test_bill_sponsor_reconciliation.py ...........                    [  2%]
+tests/test_bills_etl.py ................................................ [  4%]
+........................................................................ [  6%]
+........................................................................ [  9%]
+..................................................................       [ 12%]
+tests/test_cli_operations.py ...............                             [ 12%]
+tests/test_committees.py .......                                         [ 13%]
+tests/test_core_state.py ...............................                 [ 14%]
+tests/test_debates_competency.py ..............                          [ 14%]
+tests/test_debates_etl.py ............................s                  [ 15%]
+tests/test_debates_fallback_runtime.py ....                              [ 16%]
+tests/test_debates_graph_boundary.py ...........                         [ 16%]
+tests/test_debates_identity_contract.py ..........                       [ 16%]
+tests/test_debates_integration_validation.py ......................      [ 17%]
+tests/test_debates_mapping_contract.py .......                           [ 18%]
+tests/test_debates_ontology_contract.py ....                             [ 18%]
+tests/test_debates_owner_integration.py .......                          [ 18%]
+tests/test_debates_owner_snapshot_tool.py ..                             [ 18%]
+tests/test_debates_readiness.py ........                                 [ 18%]
+tests/test_debates_reference_outcomes.py ...............                 [ 19%]
+tests/test_debates_scope_assessment.py ..                                [ 19%]
+tests/test_debates_source_contract.py ......                             [ 19%]
+tests/test_debates_source_fixtures.py .                                  [ 19%]
+tests/test_debates_staging_acceptance.py s                               [ 19%]
+tests/test_debates_transform.py ..............                           [ 20%]
+tests/test_debates_validation.py ..........................              [ 21%]
+tests/test_dev_nlq_launcher.py ........................                  [ 22%]
+tests/test_development_bootstrap.py ....................s                [ 23%]
+tests/test_external_http_resilience.py ........                          [ 23%]
+tests/test_external_refresh_integration.py ......................        [ 24%]
+tests/test_fuseki_integration.py sssssssss                               [ 24%]
+tests/test_houses_etl.py .................                               [ 25%]
+tests/test_incremental_refresh.py .......                                [ 25%]
+tests/test_installed_cli.py ..                                           [ 25%]
+tests/test_institution_reconciliation.py ............................... [ 26%]
+                                                                         [ 26%]
+tests/test_institutional_model.py .......                                [ 27%]
+tests/test_loader.py ..                                                  [ 27%]
+tests/test_mapping_integrity.py .....                                    [ 27%]
+tests/test_member_office_publication.py ..............                   [ 27%]
+tests/test_member_reconciliation.py ..............................       [ 29%]
+tests/test_members_etl.py .............................................. [ 30%]
+.................................                                        [ 32%]
+tests/test_nlq_ambiguity.py .........                                    [ 32%]
+tests/test_nlq_benchmark.py .................................            [ 33%]
+tests/test_nlq_bounded_composition.py .................................. [ 35%]
+.................................                                        [ 36%]
+tests/test_nlq_committee_members.py ................................     [ 37%]
+tests/test_nlq_composable_current_house_membership.py .................. [ 38%]
+..........................                                               [ 39%]
+tests/test_nlq_composable_debates.py ..............                      [ 39%]
+tests/test_nlq_composable_member_relationship_composition.py ........... [ 40%]
+..............................................                           [ 42%]
+tests/test_nlq_composable_office_evidence.py .......................     [ 42%]
+tests/test_nlq_composable_party_temporal.py ............................ [ 43%]
+..........................                                               [ 44%]
+tests/test_nlq_composable_q06.py .........                               [ 45%]
+tests/test_nlq_composable_q09.py ..........................              [ 46%]
+tests/test_nlq_composable_q23.py .........................               [ 47%]
+tests/test_nlq_composable_q35.py .................                       [ 47%]
+tests/test_nlq_composable_semantic_capability_discovery.py ...........   [ 48%]
+tests/test_nlq_composable_shared_dail_terms.py ..................        [ 49%]
+tests/test_nlq_composable_stage_a.py ................................... [ 50%]
+...........................................                              [ 52%]
+tests/test_nlq_contract.py ..............                                [ 52%]
+tests/test_nlq_explainer.py .................................            [ 53%]
+tests/test_nlq_explainer_browser.py ....                                 [ 54%]
+tests/test_nlq_feedback.py ............                                  [ 54%]
+tests/test_nlq_government_membership.py .....................            [ 55%]
+tests/test_nlq_human_readable.py .....                                   [ 55%]
+tests/test_nlq_interpretation_clarification.py ......................... [ 56%]
+................                                                         [ 57%]
+tests/test_nlq_latest_office_episode.py ..............................   [ 58%]
+tests/test_nlq_office_representation.py ................................ [ 59%]
+.........                                                                [ 59%]
+tests/test_nlq_performance.py .....                                      [ 60%]
+tests/test_nlq_plan_benchmark.py ................                        [ 60%]
+tests/test_nlq_plan_phase2_evaluation.py ........                        [ 60%]
+tests/test_nlq_plan_sparql.py .......................................... [ 62%]
+                                                                         [ 62%]
+tests/test_nlq_plan_sparql_fuseki.py s                                   [ 62%]
+tests/test_nlq_poc.py .............................................      [ 64%]
+tests/test_nlq_prefixes.py ....................                          [ 65%]
+tests/test_nlq_present_time_defaults.py ................................ [ 66%]
+.............                                                            [ 66%]
+tests/test_nlq_query_plan.py ........................................... [ 68%]
+........................................................                 [ 70%]
+tests/test_nlq_question_failures.py ..................................s  [ 72%]
+tests/test_nlq_seanad_party_periods.py .............................     [ 73%]
+tests/test_nlq_stage_b.py ...........................................    [ 74%]
+tests/test_nlq_stage_c.py .............................................. [ 76%]
+...................                                                      [ 77%]
+tests/test_nlq_structured_planner.py ................................... [ 78%]
+........................................................................ [ 81%]
+................................                                         [ 82%]
+tests/test_office_external_reconciliation.py ....................s       [ 83%]
+tests/test_office_reconciliation.py ..............................       [ 84%]
+tests/test_office_registry.py ................                           [ 85%]
+tests/test_ontology_validation.py ........                               [ 85%]
+tests/test_operational_state.py ............                             [ 86%]
+tests/test_operations.py ............                                    [ 86%]
+tests/test_party_reconciliation.py .......................               [ 87%]
+tests/test_political_affiliations.py .......                             [ 87%]
+tests/test_political_affiliations_fuseki.py sssssss                      [ 87%]
+tests/test_production_deployment.py .....................                [ 88%]
+tests/test_production_release_acceptance.py s                            [ 88%]
+tests/test_projection_rebuild.py ........                                [ 89%]
+tests/test_provenance_catalog.py .................                       [ 89%]
+tests/test_publication_verification.py ......                            [ 90%]
+tests/test_query_service_phase2_bootstrap.py ..............s             [ 90%]
+tests/test_raw_captures.py ..............                                [ 91%]
+tests/test_reference_coverage.py ................                        [ 91%]
+tests/test_reference_etl.py ...........................................  [ 93%]
+tests/test_reference_publication.py ........                             [ 93%]
+tests/test_research_v05.py ......................................        [ 95%]
+tests/test_research_workspace.py ....................................... [ 96%]
+.................                                                        [ 97%]
+tests/test_resource_budget.py .....                                      [ 97%]
+tests/test_retrieval_satisfaction_diagnostic.py ........................ [ 98%]
+......                                                                   [ 98%]
+tests/test_semantic_enrichment_poc.py ........                           [ 98%]
+tests/test_serialization.py ..                                           [ 99%]
+tests/test_shared_entity_lineage.py .....                                [ 99%]
+tests/test_source_contract.py ...................                        [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_bill_classification.py: 1 warning
+tests/test_bills_etl.py: 17 warnings
+tests/test_core_state.py: 2 warnings
+tests/test_debates_scope_assessment.py: 2 warnings
+tests/test_debates_transform.py: 10 warnings
+tests/test_houses_etl.py: 4 warnings
+tests/test_institution_reconciliation.py: 2 warnings
+tests/test_member_office_publication.py: 1 warning
+tests/test_member_reconciliation.py: 2 warnings
+tests/test_members_etl.py: 6 warnings
+tests/test_office_external_reconciliation.py: 1 warning
+tests/test_office_registry.py: 6 warnings
+tests/test_party_reconciliation.py: 2 warnings
+tests/test_publication_verification.py: 1 warning
+tests/test_query_service_phase2_bootstrap.py: 15 warnings
+tests/test_reference_etl.py: 7 warnings
+tests/test_serialization.py: 3 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/rdflib/plugins/serializers/nquads.py:41: DeprecationWarning: Dataset.contexts is deprecated, use Dataset.graphs instead.
+    for context in self.store.contexts():
+
+tests/test_bill_classification.py: 20 warnings
+tests/test_bill_local_cli_evidence.py: 2 warnings
+tests/test_bill_local_multisponsor.py: 1 warning
+tests/test_bill_local_publication.py: 2 warnings
+tests/test_bills_etl.py: 109 warnings
+tests/test_cli_operations.py: 2 warnings
+tests/test_committees.py: 3 warnings
+tests/test_core_state.py: 14 warnings
+tests/test_debates_competency.py: 1 warning
+tests/test_debates_etl.py: 55 warnings
+tests/test_debates_owner_integration.py: 30 warnings
+tests/test_debates_owner_snapshot_tool.py: 15 warnings
+tests/test_development_bootstrap.py: 32 warnings
+tests/test_external_refresh_integration.py: 18 warnings
+tests/test_houses_etl.py: 11 warnings
+tests/test_incremental_refresh.py: 7 warnings
+tests/test_member_office_publication.py: 28 warnings
+tests/test_member_reconciliation.py: 1 warning
+tests/test_members_etl.py: 64 warnings
+tests/test_nlq_composable_q23.py: 1 warning
+tests/test_nlq_government_membership.py: 20 warnings
+tests/test_nlq_plan_sparql.py: 3 warnings
+tests/test_nlq_stage_b.py: 1 warning
+tests/test_publication_verification.py: 16 warnings
+tests/test_query_service_phase2_bootstrap.py: 16 warnings
+tests/test_reference_coverage.py: 1 warning
+tests/test_reference_etl.py: 34 warnings
+tests/test_reference_publication.py: 5 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/pyshacl/rdfutil/load.py:356: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    target_ds.default_context.namespace_manager = target_ds.namespace_manager
+
+tests/test_bill_classification.py: 20 warnings
+tests/test_bill_local_cli_evidence.py: 2 warnings
+tests/test_bill_local_multisponsor.py: 1 warning
+tests/test_bill_local_publication.py: 2 warnings
+tests/test_bills_etl.py: 109 warnings
+tests/test_cli_operations.py: 2 warnings
+tests/test_committees.py: 3 warnings
+tests/test_core_state.py: 14 warnings
+tests/test_debates_competency.py: 1 warning
+tests/test_debates_etl.py: 55 warnings
+tests/test_debates_owner_integration.py: 30 warnings
+tests/test_debates_owner_snapshot_tool.py: 15 warnings
+tests/test_development_bootstrap.py: 32 warnings
+tests/test_external_refresh_integration.py: 18 warnings
+tests/test_houses_etl.py: 11 warnings
+tests/test_incremental_refresh.py: 7 warnings
+tests/test_member_office_publication.py: 28 warnings
+tests/test_member_reconciliation.py: 1 warning
+tests/test_members_etl.py: 64 warnings
+tests/test_nlq_composable_q23.py: 1 warning
+tests/test_nlq_government_membership.py: 20 warnings
+tests/test_nlq_plan_sparql.py: 3 warnings
+tests/test_nlq_stage_b.py: 1 warning
+tests/test_publication_verification.py: 16 warnings
+tests/test_query_service_phase2_bootstrap.py: 16 warnings
+tests/test_reference_coverage.py: 1 warning
+tests/test_reference_etl.py: 34 warnings
+tests/test_reference_publication.py: 5 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/pyshacl/rdfutil/load.py:357: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    default_g = target_ds.default_context
+
+tests/test_bill_classification.py: 20 warnings
+tests/test_bill_local_cli_evidence.py: 2 warnings
+tests/test_bill_local_multisponsor.py: 1 warning
+tests/test_bill_local_publication.py: 2 warnings
+tests/test_bills_etl.py: 109 warnings
+tests/test_cli_operations.py: 2 warnings
+tests/test_committees.py: 3 warnings
+tests/test_core_state.py: 14 warnings
+tests/test_debates_competency.py: 1 warning
+tests/test_debates_etl.py: 55 warnings
+tests/test_debates_owner_integration.py: 30 warnings
+tests/test_debates_owner_snapshot_tool.py: 15 warnings
+tests/test_development_bootstrap.py: 32 warnings
+tests/test_external_refresh_integration.py: 18 warnings
+tests/test_houses_etl.py: 11 warnings
+tests/test_incremental_refresh.py: 7 warnings
+tests/test_member_office_publication.py: 28 warnings
+tests/test_member_reconciliation.py: 1 warning
+tests/test_members_etl.py: 64 warnings
+tests/test_nlq_composable_q23.py: 1 warning
+tests/test_nlq_government_membership.py: 20 warnings
+tests/test_nlq_plan_sparql.py: 3 warnings
+tests/test_nlq_stage_b.py: 1 warning
+tests/test_publication_verification.py: 16 warnings
+tests/test_query_service_phase2_bootstrap.py: 16 warnings
+tests/test_reference_coverage.py: 1 warning
+tests/test_reference_etl.py: 34 warnings
+tests/test_reference_publication.py: 5 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/pyshacl/rdfutil/load.py:497: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    dest_g = target_g.default_context
+
+tests/test_bill_classification.py: 20 warnings
+tests/test_bill_local_cli_evidence.py: 2 warnings
+tests/test_bill_local_multisponsor.py: 1 warning
+tests/test_bill_local_publication.py: 2 warnings
+tests/test_bills_etl.py: 109 warnings
+tests/test_cli_operations.py: 2 warnings
+tests/test_committees.py: 3 warnings
+tests/test_core_state.py: 14 warnings
+tests/test_debates_competency.py: 1 warning
+tests/test_debates_etl.py: 55 warnings
+tests/test_debates_owner_integration.py: 30 warnings
+tests/test_debates_owner_snapshot_tool.py: 15 warnings
+tests/test_development_bootstrap.py: 32 warnings
+tests/test_external_refresh_integration.py: 18 warnings
+tests/test_houses_etl.py: 11 warnings
+tests/test_incremental_refresh.py: 7 warnings
+tests/test_member_office_publication.py: 28 warnings
+tests/test_member_reconciliation.py: 1 warning
+tests/test_members_etl.py: 64 warnings
+tests/test_nlq_composable_q23.py: 1 warning
+tests/test_nlq_government_membership.py: 20 warnings
+tests/test_nlq_plan_sparql.py: 3 warnings
+tests/test_nlq_stage_b.py: 1 warning
+tests/test_publication_verification.py: 16 warnings
+tests/test_query_service_phase2_bootstrap.py: 16 warnings
+tests/test_reference_coverage.py: 1 warning
+tests/test_reference_etl.py: 34 warnings
+tests/test_reference_publication.py: 5 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/pyshacl/shapes_graph.py:75: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    g = self.graph.default_context
+
+tests/test_bill_classification.py: 16032 warnings
+tests/test_bill_local_cli_evidence.py: 1606 warnings
+tests/test_bill_local_multisponsor.py: 806 warnings
+tests/test_bill_local_publication.py: 1606 warnings
+tests/test_bills_etl.py: 74524 warnings
+tests/test_cli_operations.py: 1606 warnings
+tests/test_committees.py: 632 warnings
+tests/test_core_state.py: 4324 warnings
+tests/test_debates_competency.py: 803 warnings
+tests/test_debates_etl.py: 32921 warnings
+tests/test_debates_owner_integration.py: 17931 warnings
+tests/test_debates_owner_snapshot_tool.py: 8970 warnings
+tests/test_development_bootstrap.py: 21060 warnings
+tests/test_external_refresh_integration.py: 5268 warnings
+tests/test_houses_etl.py: 6953 warnings
+tests/test_incremental_refresh.py: 5621 warnings
+tests/test_member_office_publication.py: 28488 warnings
+tests/test_member_reconciliation.py: 956 warnings
+tests/test_members_etl.py: 56693 warnings
+tests/test_nlq_composable_q23.py: 806 warnings
+tests/test_nlq_government_membership.py: 12640 warnings
+tests/test_nlq_plan_sparql.py: 2418 warnings
+tests/test_nlq_stage_b.py: 803 warnings
+tests/test_publication_verification.py: 3197 warnings
+tests/test_query_service_phase2_bootstrap.py: 9106 warnings
+tests/test_reference_coverage.py: 160 warnings
+tests/test_reference_etl.py: 9131 warnings
+tests/test_reference_publication.py: 890 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/rdflib/graph.py:2340: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    if context == self.default_context:
+
+tests/test_bill_classification.py: 40 warnings
+tests/test_bills_etl.py: 30 warnings
+tests/test_committees.py: 12 warnings
+tests/test_debates_integration_validation.py: 344 warnings
+tests/test_houses_etl.py: 54 warnings
+tests/test_members_etl.py: 12 warnings
+tests/test_reference_etl.py: 6 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/rdflib/graph.py:804: DeprecationWarning: Dataset.identifier is deprecated and will be removed in future versions.
+    return hash(self.identifier)
+
+tests/test_bill_classification.py: 46 warnings
+tests/test_bills_etl.py: 30 warnings
+tests/test_cli_operations.py: 19 warnings
+tests/test_committees.py: 1 warning
+tests/test_debates_competency.py: 13 warnings
+tests/test_external_refresh_integration.py: 43 warnings
+tests/test_houses_etl.py: 3 warnings
+tests/test_incremental_refresh.py: 22 warnings
+tests/test_institution_reconciliation.py: 2 warnings
+tests/test_institutional_model.py: 2 warnings
+tests/test_member_office_publication.py: 49 warnings
+tests/test_member_reconciliation.py: 2 warnings
+tests/test_members_etl.py: 80 warnings
+tests/test_nlq_bounded_composition.py: 161 warnings
+tests/test_nlq_committee_members.py: 38 warnings
+tests/test_nlq_composable_current_house_membership.py: 74 warnings
+tests/test_nlq_composable_debates.py: 6 warnings
+tests/test_nlq_composable_member_relationship_composition.py: 159 warnings
+tests/test_nlq_composable_office_evidence.py: 40 warnings
+tests/test_nlq_composable_party_temporal.py: 127 warnings
+tests/test_nlq_composable_q06.py: 13 warnings
+tests/test_nlq_composable_q09.py: 9 warnings
+tests/test_nlq_composable_q23.py: 51 warnings
+tests/test_nlq_composable_q35.py: 29 warnings
+tests/test_nlq_composable_shared_dail_terms.py: 31 warnings
+tests/test_nlq_composable_stage_a.py: 161 warnings
+tests/test_nlq_explainer.py: 58 warnings
+tests/test_nlq_explainer_browser.py: 16 warnings
+tests/test_nlq_government_membership.py: 102 warnings
+tests/test_nlq_interpretation_clarification.py: 146 warnings
+tests/test_nlq_latest_office_episode.py: 68 warnings
+tests/test_nlq_office_representation.py: 134 warnings
+tests/test_nlq_plan_sparql.py: 10 warnings
+tests/test_nlq_present_time_defaults.py: 51 warnings
+tests/test_nlq_question_failures.py: 186 warnings
+tests/test_nlq_seanad_party_periods.py: 96 warnings
+tests/test_nlq_stage_b.py: 123 warnings
+tests/test_nlq_stage_c.py: 44 warnings
+tests/test_publication_verification.py: 38 warnings
+tests/test_reference_coverage.py: 13 warnings
+tests/test_reference_etl.py: 24 warnings
+tests/test_reference_publication.py: 5 warnings
+tests/test_research_workspace.py: 375 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/rdflib/graph.py:1721: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    query_graph = self.default_context.identifier
+
+tests/test_debates_competency.py: 11 warnings
+tests/test_external_refresh_integration.py: 25 warnings
+tests/test_institution_reconciliation.py: 4 warnings
+tests/test_members_etl.py: 20 warnings
+tests/test_nlq_bounded_composition.py: 97 warnings
+tests/test_nlq_committee_members.py: 15 warnings
+tests/test_nlq_composable_current_house_membership.py: 27 warnings
+tests/test_nlq_composable_debates.py: 6 warnings
+tests/test_nlq_composable_member_relationship_composition.py: 88 warnings
+tests/test_nlq_composable_office_evidence.py: 27 warnings
+tests/test_nlq_composable_party_temporal.py: 38 warnings
+tests/test_nlq_composable_q06.py: 13 warnings
+tests/test_nlq_composable_q09.py: 2 warnings
+tests/test_nlq_composable_q23.py: 51 warnings
+tests/test_nlq_composable_q35.py: 15 warnings
+tests/test_nlq_composable_shared_dail_terms.py: 42 warnings
+tests/test_nlq_composable_stage_a.py: 118 warnings
+tests/test_nlq_explainer.py: 22 warnings
+tests/test_nlq_explainer_browser.py: 4 warnings
+tests/test_nlq_government_membership.py: 50 warnings
+tests/test_nlq_interpretation_clarification.py: 107 warnings
+tests/test_nlq_latest_office_episode.py: 46 warnings
+tests/test_nlq_office_representation.py: 51 warnings
+tests/test_nlq_plan_sparql.py: 13 warnings
+tests/test_nlq_present_time_defaults.py: 17 warnings
+tests/test_nlq_question_failures.py: 126 warnings
+tests/test_nlq_seanad_party_periods.py: 26 warnings
+tests/test_nlq_stage_b.py: 87 warnings
+tests/test_nlq_stage_c.py: 11 warnings
+tests/test_publication_verification.py: 20 warnings
+tests/test_reference_coverage.py: 13 warnings
+tests/test_reference_etl.py: 15 warnings
+tests/test_research_workspace.py: 161 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/rdflib/plugins/sparql/evaluate.py:233: DeprecationWarning: Dataset.contexts is deprecated, use Dataset.graphs instead.
+    for graph in ctx.dataset.contexts():
+
+tests/test_debates_competency.py: 132 warnings
+tests/test_external_refresh_integration.py: 110 warnings
+tests/test_institution_reconciliation.py: 12 warnings
+tests/test_members_etl.py: 65 warnings
+tests/test_nlq_bounded_composition.py: 1079 warnings
+tests/test_nlq_committee_members.py: 267 warnings
+tests/test_nlq_composable_current_house_membership.py: 912 warnings
+tests/test_nlq_composable_debates.py: 15 warnings
+tests/test_nlq_composable_member_relationship_composition.py: 2814 warnings
+tests/test_nlq_composable_office_evidence.py: 83 warnings
+tests/test_nlq_composable_party_temporal.py: 241 warnings
+tests/test_nlq_composable_q06.py: 67 warnings
+tests/test_nlq_composable_q09.py: 10 warnings
+tests/test_nlq_composable_q23.py: 173 warnings
+tests/test_nlq_composable_q35.py: 230 warnings
+tests/test_nlq_composable_shared_dail_terms.py: 174 warnings
+tests/test_nlq_composable_stage_a.py: 1662 warnings
+tests/test_nlq_explainer.py: 134 warnings
+tests/test_nlq_explainer_browser.py: 24 warnings
+tests/test_nlq_government_membership.py: 700 warnings
+tests/test_nlq_interpretation_clarification.py: 1058 warnings
+tests/test_nlq_latest_office_episode.py: 148 warnings
+tests/test_nlq_office_representation.py: 267 warnings
+tests/test_nlq_plan_sparql.py: 45 warnings
+tests/test_nlq_present_time_defaults.py: 99 warnings
+tests/test_nlq_question_failures.py: 5532 warnings
+tests/test_nlq_seanad_party_periods.py: 571 warnings
+tests/test_nlq_stage_b.py: 251 warnings
+tests/test_nlq_stage_c.py: 35 warnings
+tests/test_publication_verification.py: 45 warnings
+tests/test_reference_coverage.py: 63 warnings
+tests/test_reference_etl.py: 60 warnings
+tests/test_research_workspace.py: 11849 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/rdflib/plugins/sparql/evaluate.py:235: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    if graph == ctx.dataset.default_context:
+
+tests/test_external_refresh_integration.py: 20 warnings
+tests/test_members_etl.py: 72 warnings
+tests/test_publication_verification.py: 60 warnings
+tests/test_reference_coverage.py: 12 warnings
+tests/test_reference_etl.py: 114 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/rdflib/plugins/sparql/operators.py:257: DeprecationWarning: 'count' is passed as positional argument
+    re.sub(str(pattern), replacement, text, cFlag),
+
+tests/test_institutional_model.py: 18 warnings
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/rdflib/graph.py:2344: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    context = self.default_context
+
+tests/test_nlq_stage_b.py::test_q22_boolean_decode_is_strict_and_row_cap_is_readable_partial
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/rdflib/term.py:1862: UserWarning: Parsing weird boolean, 'not-a-boolean' does not map to True or False
+    warnings.warn(
+
+tests/test_nlq_stage_c.py::test_q16_reads_authoritative_seats_from_existing_expected_houses_graph
+tests/test_nlq_stage_c.py::test_q16_ask_renders_source_backed_seat_answer
+tests/test_serialization.py::test_nquads_uses_valid_escaped_lexical_forms_and_is_deterministic
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/rdflib/graph.py:2508: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    context = self.default_context
+
+tests/test_query_service_phase2_bootstrap.py::test_local_development_bootstrap_does_not_require_or_modify_core_state
+tests/test_query_service_phase2_bootstrap.py::test_benchmark_candidate_nquads_is_deterministic_and_inventoried
+tests/test_query_service_phase2_bootstrap.py::test_benchmark_candidate_nquads_is_deterministic_and_inventoried
+tests/test_serialization.py::test_nquads_uses_valid_escaped_lexical_forms_and_is_deterministic
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/rdflib/plugins/parsers/nquads.py:80: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    ds_default = ds.default_context  # the DEFAULT_DATASET_GRAPH_ID
+
+tests/test_query_service_phase2_bootstrap.py::test_local_development_bootstrap_does_not_require_or_modify_core_state
+tests/test_query_service_phase2_bootstrap.py::test_benchmark_candidate_nquads_is_deterministic_and_inventoried
+tests/test_query_service_phase2_bootstrap.py::test_benchmark_candidate_nquads_is_deterministic_and_inventoried
+tests/test_serialization.py::test_nquads_uses_valid_escaped_lexical_forms_and_is_deterministic
+  /var/home/stephen/Projects/OireachtasOntology-worktrees/query-service-ui/.venv/lib/python3.13/site-packages/rdflib/plugins/parsers/nquads.py:91: DeprecationWarning: Dataset.default_context is deprecated, use Dataset.default_graph instead.
+    ds.default_context = new_default_context
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======== 2564 passed, 26 skipped, 361883 warnings in 781.94s (0:13:01) =========

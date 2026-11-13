@@ -1,0 +1,14 @@
+{
+  "kind": "Final-asset browser rendering of exact retained generated R1/R3 state; no new model/compiler calls",
+  "sourceSnapshot": "r3-same-session.json",
+  "sourceSnapshotSha256": "907ab05538472c37165b0737b283014fe47b08830d5e9e395906b3d75668d589",
+  "widths": [
+    1440,
+    390,
+    320
+  ],
+  "allConversationMessagesPreserved": true,
+  "sourceButtonNotLetterWrapped": true,
+  "rowInspectorFocusReturn": true,
+  "javascriptErrors": []
+}
