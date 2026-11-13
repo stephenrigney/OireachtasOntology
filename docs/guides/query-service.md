@@ -15,10 +15,55 @@ The development form also retains the Phase 1 direct NL→SPARQL path as an opti
 
 This is an experimental query interface. It is separate from the deterministic ETL pipeline and never writes to Fuseki.
 
+## Current relationship composition in `/ask`
+
+The default semantic query path now directly answers current Member selections
+using any two of constituency representation (R), named-party membership (P)
+and named-committee membership (K). No interpretation confirmation is required.
+The semantic planner selects typed relationships, exact mentions, current scope
+and list/count answer form; local code independently checks the complete question
+before resolving names or executing the reusable typed composition kernel.
+
+Examples (ordinary variants and reversed clauses are supported, not only these
+sentences):
+
+- Which Sinn Féin TDs represent Dublin Central?
+- Tell me the number of Sinn Féin TDs representing Dublin Central.
+- Who on the Committee of Public Accounts belongs to Fianna Fáil?
+- Which Fianna Fáil members serve on Public Accounts?
+- For Galway East, show me the TDs who serve on Public Accounts.
+
+All three pairs support distinct-Member **lists**. R + P also supports distinct
+recorded Member **counts**, preserving the exact containing parliamentary
+membership/term join. Committee-containing counts and yes/no projections are
+not supported: the application explains this rather than substituting a list.
+
+The backend `OIR_NLQ_AS_OF_DATE` (or today's date) supplies current scope; every
+required interval is checked independently. Explicit dates, historical scope,
+negation, unsupported conditions and extra answer fields cannot be omitted to
+enter this current-only path. Existing historical/other handlers remain available
+where they already support the complete request. Unrecognized vocabulary or
+ambiguous meaning may still require rephrasing: this is bounded language admission,
+not arbitrary English or a model certifying its own interpretation.
+
+Party aliases use the reviewed identity register and are resolved **within the
+selected current House term(s)**, so historical same-name identities are not
+merged. Committee short names must match a whole source-labelled name core;
+PAC is an already human-reviewed alias. If, for example, a short name matches
+both a Joint and Select committee, neither identity is chosen.
+
+Answers show the interpretation, requested date, readable names and separate
+relationship witnesses, with original typed RDF facts/actual owner graphs and
+a downloadable bounded SELECT ledger. Counts and lists describe local recorded
+evidence, never a certified complete parliamentary roster. Whole-plan budgets
+include entity resolution, pagination and display names. The previous attended
+`/composition` route remains temporarily for comparison.
+
 ## Opt-in confirmed committee + constituency composition
 
-The home-page **Opt in to experimental, user-confirmed committee + constituency
-composition** link opens `/composition`; the default `/ask` path is unchanged.
+The home-page **Comparison: confirmed committee + constituency workflow**
+link opens the temporary `/composition` comparison route; the
+main `/ask` workflow above executes independently validated questions directly.
 For example:
 
 > Which members of the Committee on Public Accounts currently represent Kildare North?
@@ -44,7 +89,8 @@ is shared between K and R; their terms are not implicitly equated.
 This first slice accepts bounded present/current list wordings, one full grounded
 committee name and one full grounded Dáil constituency name. Other names work
 through the same primitives; there are no example-specific templates. Only the
-existing initial Committee on/of connector equivalence is supported. Canonically
+existing initial Committee on/of connector equivalence, whole source-backed
+committee cores and the reviewed PAC alias are supported. Canonically
 equivalent Unicode mentions are normalized to NFC for matching NFC source labels. Acronyms,
 fuzzy aliases, historical/explicit question dates, counts, parties, additional
 conditions and extra answer fields are not silently simplified. Unsupported
@@ -63,7 +109,7 @@ identity, upstream completeness or a transactional dataset snapshot.
 
 Confirmation is single-use, browser-session/question/date-bound, server-held,
 and expires after ten minutes. New proposal attempts supersede older ones.
-State is bounded and process-local (128 entries per store; 32 MiB serialized
+Comparison confirmation state is bounded and process-local (128 entries per store; 32 MiB serialized
 evidence in total, with whole older artifacts evicted rather than truncated):
 use one application worker for this attended
 experiment; restart, expiry, eviction or worker mismatch requires asking again.

@@ -163,7 +163,7 @@ def parse_semantics(spec):
                 raise ValueError("Unsupported primitive requirement")
             target = s[parameter]
             if isinstance(target, dict):
-                if (role not in {"K", "R"} or set(target) != {"mention"}
+                if (set(target) != {"mention"}
                         or not isinstance(target["mention"], str)
                         or not 1 <= len(target["mention"].strip()) <= 200):
                     raise ValueError("Invalid named resource requirement")
@@ -305,7 +305,16 @@ def owner_lookup(selection, current):
     target = selection[parameter]
     family = "constituencies" if role == "R" else "committees"
     if isinstance(target, dict):
-        anchor = "VALUES ?lookupLabel { " + Literal(unicodedata.normalize("NFC", target["mention"]), lang="en").n3() + " } "
+        mention = unicodedata.normalize("NFC", target["mention"])
+        if role == "K":
+            mention = re.sub(r"^the\s+", "", mention, count=1, flags=re.I)
+        # PAC is an explicitly reviewed alias in query-service-questions-approved.md,
+        # Q30. Other short names must equal a whole source-provided committee core;
+        # this is not substring/fuzzy matching, and all matching IRIs survive.
+        if role == "K" and mention.casefold() == "pac":
+            mention = "Committee of Public Accounts"
+        short_committee = role == "K" and not re.match(r"^(?:(?:joint|select)\s+)?committee\b", mention, re.I)
+        anchor = "VALUES ?lookupLabel { " + Literal(mention, lang="en").n3() + " } "
     else:
         anchor = (f"GRAPH {graph(family).n3()} {{ {URIRef(target).n3()} {iri('skos:prefLabel').n3()} ?lookupLabel . }} "
                   f"FILTER(LANG(?lookupLabel) = 'en') ")
@@ -318,8 +327,12 @@ def owner_lookup(selection, current):
     # Match the existing resolver's source-grounded connector variants, not names
     # assembled from IRIs. Resource identities remain separate after matching.
     if role == "K":
-        anchor += ('FILTER(REPLACE(LCASE(STR(?matchedLabel)), "^committee (on|of) ", "committee ") = '
-                   'REPLACE(LCASE(STR(?lookupLabel)), "^committee (on|of) ", "committee "))')
+        if isinstance(target, dict) and short_committee:
+            anchor += ('FILTER(REPLACE(LCASE(STR(?matchedLabel)), "^(joint |select )?committee (on|of) (the )?", "") = '
+                       'LCASE(STR(?lookupLabel)))')
+        else:
+            anchor += ('FILTER(REPLACE(LCASE(STR(?matchedLabel)), "^committee (on|of) ", "committee ") = '
+                       'REPLACE(LCASE(STR(?lookupLabel)), "^committee (on|of) ", "committee "))')
     elif isinstance(target, dict):
         anchor += "FILTER(LCASE(STR(?matchedLabel)) = LCASE(STR(?lookupLabel)))"
     else:
@@ -333,6 +346,60 @@ def owner_lookup(selection, current):
     if role == "K":
         patterns.append(r.interval("owner", "ownerRange", committee=True))
     return Lookup("owner", tuple(patterns), anchor, {"anchor": "owner", "role": role, "target": str(target)})
+
+
+def affiliation_lookup(current, houses):
+    """Enumerate term-scoped party identities without filtering to an answer seed."""
+    r = Read()
+    anchor = ("VALUES ?resolutionTerm { " + " ".join(current[h].n3() for h in sorted(houses)) + " } "
+              f"GRAPH {graph('parties').n3()} {{ ?party {RDF.type.n3()} {iri('members:ParliamentaryParty').n3()} ; "
+              f"{iri('members:activeDuringTerm').n3()} ?resolutionTerm . }}")
+    return Lookup("affiliation", (r.type("party", "members:ParliamentaryParty"),
+                  r.p("party", "skos:prefLabel", "partyLabel"),
+                  r.p("party", "members:activeDuringTerm", "partyTerm"),
+                  r.p("party", "members:hasPoliticalAffiliationIdentity", "affiliation",
+                      r.type("affiliation", "members:PoliticalAffiliationIdentity"),
+                      r.p("affiliation", "skos:prefLabel", "affiliationLabel"))),
+                  anchor, {"anchor": "term-scoped political affiliation", "terms": [str(current[h]) for h in sorted(houses)]})
+
+
+def resolve_affiliation(facts, rows, mention, as_of):
+    # Reuse the reviewed alias register AND exact term-scoped ambiguity policy,
+    # rather than globally selecting one of the historical Sinn Féin identities.
+    from .composable_plan import _resolve_term_scoped_affiliation, AmbiguousPoliticalAffiliation
+    from .results import QueryResult
+    records = set()
+    for party in {row["party"] for row in rows}:
+        e = Evidence(facts, as_of)
+        e.local(party)
+        e.type(party, "members:ParliamentaryParty", graph("parties"))
+        labels = e.values(party, "skos:prefLabel", graph("parties"))
+        if any(not isinstance(v, Literal) or not str(v).strip() for v in labels):
+            raise NLQError("Malformed party label evidence")
+        english = {str(v) for v in labels if v.language == "en"}
+        if len(english) > 1:
+            raise NLQError("Conflicting English party labels")
+        label = next(iter(english), "")
+        identities = e.values(party, "members:hasPoliticalAffiliationIdentity", graph("political-affiliations"))
+        if len(identities) > 1:
+            raise NLQError("Conflicting party affiliation identity links")
+        if not identities:
+            records.add((str(party), label, "", ""))
+        for identity in identities:
+            e.local(identity)
+            e.type(identity, "members:PoliticalAffiliationIdentity", graph("political-affiliations"))
+            labels = e.values(identity, "skos:prefLabel", graph("political-affiliations"))
+            if any(not isinstance(v, Literal) or not str(v).strip() for v in labels):
+                raise NLQError("Malformed affiliation label evidence")
+            preferred = {str(v) for v in labels if v.language == "en"}
+            for name in preferred or {""}:
+                records.add((str(party), label, str(identity), name))
+    try:
+        identity, _ = _resolve_term_scoped_affiliation(
+            QueryResult("select", ("party", "partyLabel", "affiliation", "affiliationLabel"), tuple(sorted(records))), mention)
+        return identity
+    except AmbiguousPoliticalAffiliation as error:
+        raise AmbiguousIdentity([item["iri"] for item in error.candidates]) from error
 
 
 def relationship_lookup(selection, *, members=()):
@@ -501,7 +568,7 @@ def retrieve(lookup, transport, budget):
             if columns is not None and columns != response["columns"]:
                 raise NLQError("Pagination columns changed")
             columns = response["columns"]
-            anchors = {"terms": ("term",), "owner": ("owner",), "display": ("member",), "P": ("member", "relationship")}.get(
+            anchors = {"terms": ("term",), "owner": ("owner",), "affiliation": ("party",), "display": ("member",), "P": ("member", "relationship")}.get(
                 lookup.kind, ("relationship",))
             if not set(anchors) <= set(columns):
                 raise NLQError("Required SELECT anchor columns are absent")
@@ -741,6 +808,10 @@ def execute(request, transport, *, budget=None):
                 facts, rows = retrieve(owner_lookup(s, current), transport, budget)
                 owner = resolve_owner(s, facts, rows, terms, current, as_of)
                 s[SIGNATURES[s["role"]][1]] = str(owner[0])
+            if s["role"] == "P" and isinstance(s["affiliation"], dict):
+                party_scope = [s["house"]] if "house" in s else s["houses"]
+                facts, rows = retrieve(affiliation_lookup(current, party_scope), transport, budget)
+                s["affiliation"] = resolve_affiliation(facts, rows, s["affiliation"]["mention"], as_of)
             report["resolvedSelections"].append(s)
             members = {w.get("Member").value for ws in audited.values() for w in ws}
             if s["role"] == "P" and not members:

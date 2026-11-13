@@ -85,7 +85,7 @@
 <body>
   <header><p class="eyebrow">OIREACHTAS ONTOLOGY</p><h1>Natural language queries</h1><p>Explore Oireachtas data through ordinary language</p></header>
   <p class="mast-link"><a href="/capabilities">Browse the query capability catalogue</a></p>
-  <p class="mast-link">{% if composition %}<a href="/">Return to the unchanged default query path</a>{% else %}<a href="/composition">Opt in to experimental, user-confirmed committee + constituency composition</a>{% endif %}</p>
+  <p class="mast-link">{% if composition %}<a href="/">Return to the main query interface</a>{% else %}<a href="/composition">Comparison: confirmed committee + constituency workflow</a>{% endif %}</p>
   <section aria-label="Optional evidence collection" class="session-controls">
     <button type="button" class="session-start" id="start-evidence">Start Evidence Session</button>
     <button type="button" class="session-stop" id="stop-evidence" hidden>Stop Evidence Session</button>
@@ -120,7 +120,8 @@
   </section>
   {% endif %}
   {% if composition and interpretation %}<section><h2>Confirmed interpretation</h2><p>{{ interpretation }}</p></section>{% endif %}
-  {% if composition and result_notice and not result %}<p role="status">{{ result_notice }}</p>{% endif %}
+  {% if composition_direct and interpretation %}<section aria-label="Composition interpretation"><h2>Interpretation</h2><p>{{ interpretation }}</p></section>{% endif %}
+  {% if (composition or composition_direct) and result_notice and not result %}<p role="status">{{ result_notice }}</p>{% endif %}
 
   {% if error and interaction_status %}
   <section class="{% if interaction_status in ['clarification_required', 'ambiguous_entity', 'unresolved_entity', 'ambiguous', 'identity_collision'] %}ambiguity{% else %}error{% endif %}" role="alert" aria-live="polite">
@@ -223,8 +224,8 @@
       <h3>{{ composition_report.names[pair[0].bindings.Member.iri] }}</h3>
       {% for witness in pair %}
       <details class="relationship-witness">
-        <summary>{{ 'Committee membership' if witness.role == 'K' else 'Dáil constituency representation' }} — source-backed witness</summary>
-        <p>{% if witness.role == 'K' %}Committee: {{ witness.bindings.committee.iri }}{% else %}Constituency: {{ witness.bindings.constituency.iri }}{% endif %}</p>
+        <summary>{{ 'Committee membership' if witness.role == 'K' else 'Party membership' if witness.role == 'P' else 'Dáil constituency representation' }} — source-backed witness</summary>
+        <p>{% if witness.role == 'K' %}Committee: {{ witness.bindings.committee.iri }}{% elif witness.role == 'P' %}Party affiliation: {{ witness.bindings.affiliation.iri }}; containing membership: {{ witness.bindings.containingMembership.iri }}{% else %}Constituency: {{ witness.bindings.constituency.iri }}{% endif %}</p>
         <ul>{% for interval in witness.intervals %}<li>{{ interval.role }}: {{ interval.start.value }} through {{ interval.end.value if interval.end else 'open-ended (no end recorded)' }}. Independently active on {{ composition_report.answer.asOf }}: {{ 'yes' if interval.currentAtAsOf else 'no' }}. Resource: {{ interval.resource }}; range: {{ interval.range }}; actual source graph: {{ interval.graph }}.</li>{% endfor %}</ul>
         <table><thead><tr><th>Subject</th><th>Predicate</th><th>Object (original RDF term)</th><th>Actual source graph</th></tr></thead><tbody>
         {% for fact in witness.facts %}<tr><td>{{ fact.subject.value }}</td><td>{{ fact.predicate.value }}</td><td>{{ fact.object.value }}{% if fact.object.datatype %} ({{ fact.object.datatype }}){% elif fact.object['xml:lang'] %} @{{ fact.object['xml:lang'] }}{% endif %}</td><td>{{ fact.graph.value }}</td></tr>{% endfor %}
@@ -236,7 +237,7 @@
   </section>
   {% endif %}
 
-  {% if question and not composition %}
+  {% if question and not composition and not composition_direct %}
   <section id="query-processing">
     <h2>How this query was processed</h2>
     {% if performance %}

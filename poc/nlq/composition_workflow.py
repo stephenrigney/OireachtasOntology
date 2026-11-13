@@ -129,20 +129,24 @@ def propose(question, as_of, factory=None):
 
 
 def interpretation(request):
-    selections = {s["role"]: s for s in request["requiredSelections"]}
+    requirements = []
+    for selection in request["requiredSelections"]:
+        role = selection["role"]
+        target = selection[SIGNATURES[role][1]]
+        name = target["mention"] if isinstance(target, dict) else target
+        requirements.append({"K": "serve on ", "R": "represent in the Dáil: ", "P": "belong to "}[role] + name)
+    shape = "Count distinct recorded Members" if request["answer"]["shape"] == "count" else "List distinct Members"
     return (
-        f"List distinct Members who, on {request['asOf']}, both serve on "
-        f"{selections['K']['committee']['mention']} and represent "
-        f"{selections['R']['constituency']['mention']} in the Dáil. "
-        "Check each CommitteeMembership, committee incarnation and its own House term, "
-        "and each Dáil representation membership and its own term independently at that date "
-        "(inclusive endpoints; absent ends remain open-ended). Join only the exact Member identity. "
-        "Return readable names with both supporting relationships and source evidence. "
+        f"{shape} who, on {request['asOf']}, " + " and ".join(requirements) + ". "
+        "Check each relationship, containing membership, owner and own House term independently at that date "
+        "(inclusive endpoints; absent ends remain open-ended). Join exact Member identities, retaining "
+        "any explicitly required shared containing membership and term identities. "
+        "Return readable names with the supporting relationships and source evidence. "
         "This is positive local recorded evidence, not a certified complete roster."
     )
 
 
-def execute_confirmed(request, transport, *, budget=None):
+def execute_request(request, transport, *, budget=None):
     budget = budget if budget is not None else Budget()
     report = execute(request, transport, budget=budget)
     result = None
@@ -185,10 +189,18 @@ def execute_confirmed(request, transport, *, budget=None):
         report["displayEvidence"] = display
         report["names"] = names
         report["recordedNames"] = recorded_names
-        result = QueryResult("select", ("Member", "Member identity", "As of"),
-                             tuple(sorted((names[m], m, request["asOf"]) for m in members)))
+        if request["answer"]["shape"] == "count":
+            result = QueryResult("select", ("Distinct recorded Members", "As of"),
+                                 ((str(report["answer"]["distinctCount"]), request["asOf"]),))
+        else:
+            result = QueryResult("select", ("Member", "Member identity", "As of"),
+                                 tuple(sorted((names[m], m, request["asOf"]) for m in members)))
     except NLQError as error:
         report.update(status="nonanswer", error=str(error))
         # No projected answer may escape a presentation/evidence failure.
         report.pop("answer", None)
     return report, result
+
+
+# Compatibility for the temporary attended comparison route and its tests.
+execute_confirmed = execute_request

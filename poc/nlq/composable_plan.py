@@ -74,6 +74,8 @@ class PlanOutcome:
     debug_output: str | None = None
     debug_source: str | None = None
     clarification: dict[str, Any] | None = None
+    composition_request: dict[str, Any] | None = None
+    composition_report: dict[str, Any] | None = None
 
     @property
     def interaction(self) -> str:
@@ -6537,6 +6539,14 @@ def _execute_shared_dail_terms_question(
             "unsupported_request", diagnostic=unsupported_reason,
             request_family=family,
         )
+    if draft_plan.get("family") == "current_member_composition":
+        from .composition_admission import execute_plan
+        return execute_plan(draft_plan, question=question, as_of=as_of, transport=fuseki)
+    # A hint can route here before legacy preflight; an older family still owns
+    # its original preflight, including historical dates/group/term boundaries.
+    legacy_preflight = _composable_interpretation_preflight(question, as_of)
+    if legacy_preflight is not None:
+        return legacy_preflight
     if draft_plan.get("family") == "capability_selection":
         capability = draft_plan["capability"]
         parameters = draft_plan["parameters"]
@@ -7097,6 +7107,14 @@ def execute_question(
     from .errors import QueryExecutionFailure, QueryLimitError
 
     class ReadOnlyExecution:
+        @property
+        def timeout(self):
+            from .composition_kernel import REQUEST_TIMEOUT
+            return REQUEST_TIMEOUT
+
+        def select(self, lookup, query, offset):
+            return fuseki.select(lookup, query, offset)
+
         def query(self, query):
             try:
                 return fuseki.query(query)
@@ -7240,6 +7258,33 @@ def _execute_question(
                 request_family="composable_semantic",
             )
 
+    implicit_set = re.search(r"\b(?:two|three|four|[2-4])\s+(?P<area>[\w -]+?)\s+constituencies\b", question, re.I)
+    if implicit_set:
+        return _clarify_constituency_set(question, implicit_set["area"], as_of=as_of,
+                                         fuseki=fuseki, supported_predicates=supported_predicates)
+
+    # Preserve existing whole-intent Government selection and reviewed committee
+    # diagnostic boundaries before broad semantic routing hints. These are the
+    # established planners/executors, not new surface forms or composition code.
+    from .government import plan_government_question, execute_government
+    government = plan_government_question(question, as_of=as_of)
+    if government is not None:
+        return execute_government(government, fuseki=fuseki, supported_predicates=supported_predicates)
+    from .stage_b import plan_stage_b, handle_stage_b
+    boundary = plan_stage_b(question, as_of=as_of)
+    if boundary is not None and boundary.get("family") in {"committee_chair", "committee_conflict"}:
+        return handle_stage_b(question, as_of=as_of, fuseki=fuseki, supported_predicates=supported_predicates)
+
+    # Current reusable composition has its own whole-question admission/default
+    # checks. Do not let an older sentence recognizer demand a numbered term
+    # before semantic planning has interpreted a present-time paraphrase.
+    if semantic_plan_generator_factory is not None:
+        from .composition_admission import routing_hint
+        if routing_hint(question, current_only=True):
+            return _execute_shared_dail_terms_question(
+                question, as_of=as_of, fuseki=fuseki, supported_predicates=supported_predicates,
+                planner_generator_factory=semantic_plan_generator_factory)
+
     preflight = _composable_interpretation_preflight(question, as_of)
     if preflight is not None:
         return preflight
@@ -7251,11 +7296,6 @@ def _execute_question(
     )
     if current_office_outcome is not None:
         return current_office_outcome
-
-    implicit_set = re.search(r"\b(?:two|three|four|[2-4])\s+(?P<area>[\w -]+?)\s+constituencies\b", question, re.I)
-    if implicit_set:
-        return _clarify_constituency_set(question, implicit_set["area"], as_of=as_of,
-                                         fuseki=fuseki, supported_predicates=supported_predicates)
 
     if semantic_composition_scope(question):
         if semantic_plan_generator_factory is None:
@@ -7285,11 +7325,6 @@ def _execute_question(
                                                          planner_generator_factory=semantic_plan_generator_factory)
         return execute_representation(representation_plan, fuseki=fuseki,
                                       supported_predicates=supported_predicates)
-    from .government import plan_government_question, execute_government
-    government = plan_government_question(question, as_of=as_of)
-    if government is not None:
-        return execute_government(government, fuseki=fuseki, supported_predicates=supported_predicates)
-
     stage_a_request = parse_stage_a_question(question)
     if stage_a_request is not None:
         return execute_stage_a(

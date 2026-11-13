@@ -66,6 +66,37 @@ def install_composition_routes(app, render, *, proposer_factory=None, transport_
         if origin and origin != str(request.base_url).rstrip("/"):
             raise HTTPException(403, "Cross-origin composition submission refused.")
 
+    def present_execution(request, *, question, structured, report, result, confirmed=False):
+        """One evidence/result adapter shared by /ask and the comparison route."""
+        owner = session(request)
+        evidence_token = token_urlsafe(32)
+        artifact = typed_json({"question": question, "request": structured, "report": report,
+                               **({"confirmedRequest": structured} if confirmed else {})})
+        byte_size = len(json.dumps(artifact, ensure_ascii=False).encode("utf-8"))
+        if byte_size > MAX_EVIDENCE_BYTES:
+            raise NLQError("Evidence storage byte budget exceeded; no partial answer returned.")
+        with lock:
+            evidence[evidence_token] = {"owner": owner, "artifact": artifact, "created": monotonic(), "bytes": byte_size}
+            trim(evidence)
+            retained = sum(item["bytes"] for item in evidence.values())
+            while retained > MAX_EVIDENCE_BYTES:
+                _, evicted = evidence.popitem(last=False)
+                retained -= evicted["bytes"]
+        status = ("clarification_required" if report["status"] == "ambiguous" else
+                  "source_data_unavailable" if result is None else "answer")
+        kwargs = dict(question=question, result=result, interpretation=interpretation(structured),
+                      execution_attempted=bool(report["ledger"]), composition_report=artifact["report"],
+                      composition_evidence_token=evidence_token, interaction_status=status,
+                      error=report.get("error") if result is None else None,
+                      result_notice=f"Recorded evidence as of {structured['asOf']}; not a certified complete roster. Missing ends remain open-ended. Multiple source-recorded names are shown together for the same exact Member identity.")
+        if confirmed:
+            return page(request, owner=owner, **kwargs)
+        response = render(request, composition_direct=True, **kwargs)
+        response.headers["Cache-Control"] = "no-store"
+        response.set_cookie(COOKIE, owner, httponly=True, samesite="strict",
+                            secure=request.url.scheme == "https", max_age=TTL_SECONDS)
+        return response
+
     @app.get("/composition", response_class=HTMLResponse)
     def index(request: Request):
         return page(request)
@@ -134,25 +165,8 @@ def install_composition_routes(app, render, *, proposer_factory=None, transport_
                 os.getenv(FUSEKI_QUERY_URL_ENV, DEFAULT_FUSEKI_QUERY_URL),
                 username=os.getenv("OIR_FUSEKI_USER"), password=os.getenv("OIR_FUSEKI_PASSWORD"))
             report, result = await run_in_threadpool(execute_confirmed, structured, transport)
-            evidence_token = token_urlsafe(32)
-            artifact = typed_json({"question": saved["question"], "confirmedRequest": structured, "report": report})
-            byte_size = len(json.dumps(artifact, ensure_ascii=False).encode("utf-8"))
-            if byte_size > MAX_EVIDENCE_BYTES:
-                raise NLQError("Evidence storage byte budget exceeded; no partial answer returned.")
-            with lock:
-                evidence[evidence_token] = {"owner": owner, "artifact": artifact, "created": monotonic(), "bytes": byte_size}
-                trim(evidence)
-                retained = sum(item["bytes"] for item in evidence.values())
-                while retained > MAX_EVIDENCE_BYTES:
-                    _, evicted = evidence.popitem(last=False)
-                    retained -= evicted["bytes"]
-            return page(request, question=saved["question"], result=result,
-                        interpretation=interpretation(structured), execution_attempted=True,
-                        composition_report=artifact["report"], composition_evidence_token=evidence_token,
-                        interaction_status=("clarification_required" if report["status"] == "ambiguous" else
-                                            "source_data_unavailable" if result is None else "answer"),
-                        error=report.get("error") if result is None else None,
-                        result_notice=f"Recorded evidence as of {saved['as_of']}; not a certified complete roster. Missing ends are open-ended, not proof of permanent service. Multiple recorded names, when present, are shown together for the same exact Member identity.")
+            return present_execution(request, question=saved["question"], structured=structured,
+                                     report=report, result=result, confirmed=True)
         except (ValueError, NLQError) as error:
             return page(request, question=saved["question"], error=str(error))
         finally:
@@ -166,6 +180,8 @@ def install_composition_routes(app, render, *, proposer_factory=None, transport_
             saved = evidence.get(token)
         owner = request.cookies.get(COOKIE, "")
         if saved is None or not TOKEN.fullmatch(owner) or not compare_digest(saved["owner"], owner):
-            raise HTTPException(404, "Evidence is unavailable or expired. Run a newly confirmed question.")
+            raise HTTPException(404, "Evidence is unavailable or expired. Ask the question again.")
         return JSONResponse(saved["artifact"], headers={"Cache-Control": "no-store",
                             "Content-Disposition": 'attachment; filename="composition-evidence.json"'})
+
+    return present_execution

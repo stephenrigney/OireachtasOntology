@@ -101,6 +101,28 @@ def build_composable_planner_instructions() -> str:
     )
     return f"""Interpret one user question as a semantic proposal for composable query plan v2.
 
+PRIORITY for present/current two-relationship Member questions: use family
+"current_member_composition" for any TWO DISTINCT selections among R (Dáil
+constituency representation), P (named party membership), K (named committee
+membership). This is the reusable typed composition kernel, not a sentence
+recognizer. Interpret paraphrases, reversed clauses and implicit party adjectives
+semantically. referents is exactly {{"selections":[{{"role":"R|P|K","mention":"exact full name text from question"}},{{"role":"R|P|K","mention":"exact full name text from question"}}],"shape":"list|count|boolean","temporal":"current"}}.
+relations=[], constraints=[], answer=null. Mentions must be verbatim; preserve
+short committee mentions such as Public Accounts or PAC, never expand them or
+invent IRIs. Code resolves grounded names and reports ambiguity. R+P supports
+Member lists and distinct-Member counts; K-containing pairs support lists only.
+Boolean questions (e.g. Are there...?) must retain shape=boolean, which code will
+explain as unsupported; NEVER substitute a list. Ordinary present tense defaults
+to backend asOf; code checks all independent intervals and exact identities.
+All requested conditions and answer fields remain obligatory. If a third role,
+negation, historic/explicit date, office, election or another condition is requested,
+do NOT omit it to propose this current-only family. Use an existing supported
+historical/anchored family below if it preserves the whole question; otherwise
+return unsupported for the entire request. Single relationships and existing
+capabilities still use their existing families below. This priority supersedes
+the older current named-party/constituency Member-list guidance only for this
+two-role current selection; it does not replace historical or anchored queries.
+
 Approved present-time policy: ordinary unqualified present-tense requests for an existing current-time parliamentary relationship mean current at configured asOf. This applies to both Dáil and Seanad named-party membership, current Dáil representation, current named-committee membership, current named-office holders, officeholder-to-constituency and constitutional Government/party membership. Use the existing current selector/operation without inventing a date; local code supplies asOf and validates each relationship's own temporal evidence. Explicit dates, numbered terms, past/future expressions, negation and additional requirements cannot be replaced by a default. latestRecorded is NOT current. This does not add standalone House rosters, generic current Senator representation, current cross-House simultaneous service, chairs or other unsupported operations. Family-specific completeness guards remain mandatory.
 
 Interpretation contract: for the one-term, one-constituency Member list/count, the explicit phrase "in this Dáil" selects the exact House-date-resolved current term and is term-wide, regardless of whether the question says "represent" or "represented". It overrides only the implicit present-tense-as-of default: do not require an asOf membership interval unless the user explicitly asks for current representation (for example, "currently", "now", "today", or "as of now/today"). A literal calendar date remains its exact membership-date point. Without the explicit "this Dáil" scope, an unqualified present-tense constituency request defaults to representation at the query date; an explicit current-point request also requires the DailMembership interval to contain asOf. Dated party/representation composition retains its separate rule that currentTerm requires both party and DailMembership intervals to contain asOf. Never default numbered-term, other dated, historical, or election questions. The plain term-scoped constituency Member projection supports one explicit membership calendar-date point; preserve it as a membershipInterval constraint, never as a HouseTerm date or election event. For a Member's latest recorded Dáil term and constituency, use the constituency_representation family with selector "latestRecorded" when the question explicitly asks for the latest recorded term, the most recent term, or the last term (including "last term in the Dáil"). Local code selects from that Member's accepted DailMembership identities and House-owned chronology, and fails closed on missing/tied/conflicting dates or representation evidence. This is not an election-date answer.
@@ -241,6 +263,12 @@ def validate_composable_plan_draft(
     reason = unsupported_whole_intent(question)
     if reason:
         raise InvalidComposableDraft(reason)
+    if value["family"] == "current_member_composition":
+        from .composition_admission import validate_draft
+        try:
+            return validate_draft(value, question), None
+        except ValueError as error:
+            raise UnsupportedComposableRequest(str(error)) from error
     count_intent = bool(re.search(r"\b(?:how many|count|number of|total of)\b", question, re.I))
     if (count_intent and re.search(r"\bseats?\b", question, re.I)
             and value["family"] == "member_relationship_composition"):
@@ -264,6 +292,18 @@ def validate_composable_plan_draft(
         return _validate_capability_selection_draft(value, question=question), None
 
     if value["family"] in {"constituency_representation", "member_party_history", "member_bill_sponsorship", "government_party_members"}:
+        if value["family"] == "constituency_representation":
+            refs = value.get("referents")
+            if (isinstance(refs, dict) and isinstance(refs.get("constituency"), dict)
+                    and isinstance(refs["constituency"].get("mention"), str)
+                    and isinstance(refs.get("term"), dict) and refs["term"].get("selector") == "currentTerm"):
+                from .composition_admission import routing_hint, validate_requirements
+                if routing_hint(question):
+                    try:
+                        validate_requirements(question, [{"role": "R", "mention": refs["constituency"]["mention"]}],
+                                              "list", "current", expected_selections=1)
+                    except ValueError as error:
+                        raise UnsupportedComposableRequest(str(error)) from error
         return _validate_existing_capability_draft(value, question=question), None
 
     if value["family"] == "member_relationship_composition":
@@ -703,6 +743,17 @@ def _validate_member_party_composition_draft(
         r"\b(?:which|what)\s+(?:political\s+)?part(?:y|ies)\b", question, re.IGNORECASE,
     ))
     affiliation_mention = normalized["affiliation"]["mention"]
+    if not party_only and term_selector["kind"] == "currentTerm" and affiliation_mention is not None and not party_list_question:
+        # An older schema family must not provide a side door around the new
+        # whole-question checks when the model chooses that representation.
+        from .composition_admission import validate_legacy_current_requirements
+        try:
+            validate_legacy_current_requirements(question, [
+                {"role": "R", "mention": normalized["constituency"]["mention"]},
+                {"role": "P", "mention": affiliation_mention}],
+                "count" if count_intent else "list")
+        except ValueError as error:
+            raise UnsupportedComposableRequest(str(error)) from error
     if party_only and party_list_question:
         raise UnsupportedComposableRequest("The party-only term shape requires one named party and a Member answer.")
     if party_list_question and affiliation_mention is not None:
@@ -1727,6 +1778,15 @@ def _validate_member_relationship_draft(
         raise InvalidComposableDraft("The explicit Member service date cannot be dropped from the plan.")
     elif re.search(r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+[0-9]{4}\b", question, re.I):
         raise UnsupportedComposableRequest("Member representation supports a calendar-date point, not an arbitrary month filter.")
+
+    if current_terms and len(constituency_mentions) == 1:
+        from .composition_admission import routing_hint, validate_requirements
+        if routing_hint(question):
+            try:
+                validate_requirements(question, [{"role": "R", "mention": next(iter(constituency_mentions.values()))}],
+                                      "count" if count_intent else "list", "current", expected_selections=1)
+            except ValueError as error:
+                raise UnsupportedComposableRequest(str(error)) from error
 
     relation_defs = {item["id"]: item for item in _plan_contract()["relations"]}
     relation_types = {

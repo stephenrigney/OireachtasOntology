@@ -161,7 +161,7 @@ def create_app(
                 entity_outcomes: tuple[dict, ...] = (), plan_explanation=None,
                  clarification=None, execution_attempted: bool = False,
                   explanation_plan: dict | None = None,
-                  composition: bool = False, composition_confirmation=None,
+                  composition: bool = False, composition_direct: bool = False, composition_confirmation=None,
                   composition_report=None, composition_evidence_token=None):
         # Only the caller's already-validated structured plan may support prose.
         # Do not reparse capped debug JSON or infer execution from SPARQL.
@@ -172,7 +172,7 @@ def create_app(
             error=error, plan=explanation_plan,
         )
         performance = getattr(request.state, "query_performance", None)
-        if readiness is None and not composition:
+        if readiness is None and not (composition or composition_direct):
             readiness = (performance.measure("readiness_check", check_fuseki_readiness)
                          if performance is not None else check_fuseki_readiness())
         performance_diagnostics = None
@@ -185,7 +185,7 @@ def create_app(
             ambiguity=ambiguity, entity_outcomes=entity_outcomes,
             clarification=clarification,
             interpretation=(explainer["summary"] if explainer else
-                            interpretation if mode == "phase1" else None),
+                             interpretation if mode == "phase1" or composition or composition_direct else None),
             plan_explanation=({"answer_text": explainer["answer_text"]} if explainer else None),
         )
         feedback_session_id = request.cookies.get("oireachtas_nlq_feedback_session", "")
@@ -220,14 +220,15 @@ def create_app(
             "feedback_available": bool(question and feedback_actual and feedback_recording),
             "performance": performance_diagnostics,
             "composition": composition,
+            "composition_direct": composition_direct,
             "composition_confirmation": composition_confirmation,
             "composition_report": composition_report,
             "composition_evidence_token": composition_evidence_token,
         })
 
     from .composition_routes import install_composition_routes
-    install_composition_routes(app, render, proposer_factory=composition_proposer_factory,
-                               transport_factory=composition_transport_factory)
+    present_composition = install_composition_routes(app, render, proposer_factory=composition_proposer_factory,
+                                                    transport_factory=composition_transport_factory)
 
     @app.post("/feedback/sessions")
     def start_feedback_session():
@@ -320,9 +321,11 @@ def create_app(
 
         if mode == "phase2":
             fuseki = None
+            typed_fuseki = None
             try:
                 try:
-                    as_of = date.fromisoformat(os.getenv("OIR_NLQ_AS_OF_DATE", date.today().isoformat()))
+                    from .composition_kernel import validate_as_of
+                    as_of = validate_as_of(os.getenv("OIR_NLQ_AS_OF_DATE", date.today().isoformat()))
                 except ValueError:
                     request.state.query_outcome = "validation_failure"
                     return render(request, question=question, mode=mode,
@@ -347,6 +350,15 @@ def create_app(
                 performance = request.state.query_performance
 
                 class TimedFuseki:
+                    def select(self, lookup, query, offset):
+                        nonlocal typed_fuseki
+                        if typed_fuseki is None:
+                            from .composition_transport import CompositionTransport
+                            typed_fuseki = (composition_transport_factory or CompositionTransport)(
+                                os.getenv(FUSEKI_QUERY_URL_ENV, DEFAULT_FUSEKI_QUERY_URL),
+                                username=os.getenv("OIR_FUSEKI_USER"), password=os.getenv("OIR_FUSEKI_PASSWORD"))
+                        return performance.fuseki(lambda: typed_fuseki.select(lookup, query, offset))
+
                     def query(self, sparql):
                         return performance.fuseki(lambda: fuseki.query(sparql))
 
@@ -371,6 +383,9 @@ def create_app(
                     semantic_plan_generator_factory=timed_planner_factory,
                 ))
                 request.state.query_outcome = outcome.interaction
+                if outcome.composition_report is not None:
+                    return present_composition(request, question=question, structured=outcome.composition_request,
+                                               report=outcome.composition_report, result=outcome.result)
                 execution_attempted = (
                     outcome.result is not None
                     or outcome.status in {"execution_failure", "query_execution_failed"}
@@ -1036,6 +1051,8 @@ def create_app(
                     debug_source="Structured query",
                 )
             finally:
+                if typed_fuseki is not None:
+                    typed_fuseki.close()
                 if fuseki is not None:
                     fuseki.close()
 
