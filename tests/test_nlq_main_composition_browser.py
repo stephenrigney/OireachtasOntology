@@ -27,6 +27,7 @@ def test_browser_main_ask_direct_answers_and_supporting_paths(monkeypatch, tmp_p
     assert "not a certified complete roster" in page.locator("#query-results").inner_text()
     assert "2026-05-01" in page.locator("#query-results").inner_text()
     assert planner.calls == 1
+    page.locator("#composition-evidence > details > summary").click()
     for detail in page.locator(".relationship-witness summary").all(): detail.click()
     assert "Alice Example" in page.locator("#composition-evidence").inner_text()
     assert "Actual source graph" in page.locator("#composition-evidence").inner_text()
@@ -37,6 +38,67 @@ def test_browser_main_ask_direct_answers_and_supporting_paths(monkeypatch, tmp_p
     assert "confirmedRequest" not in artifact
     assert len(artifact["report"]["ledger"]) == 6
     assert {w["role"] for w in artifact["report"]["answer"]["witnesses"][0]} == set(pair)
+    page.close()
+
+
+@pytest.mark.parametrize("pair,shape,variation", [
+    ("RP", "list", 0), ("RP", "count", 1), ("KP", "list", 5), ("KR", "list", 9),
+])
+@pytest.mark.parametrize("width", [1240, 320])
+def test_browser_main_ask_composition_three_stage_dashboard(
+        monkeypatch, tmp_path, serve, browser, pair, shape, variation, width):
+    """The real /ask UI separates admitted specs, recorded SELECTs and execution evidence."""
+    question, _, _ = VARIATIONS[variation]
+    app, _ = make_app(monkeypatch, tmp_path, proposal(question, pair, shape))
+    url = serve(app)
+    page = browser.new_page(viewport={"width": width, "height": 900})
+    page.goto(url)
+    page.get_by_label("Your question", exact=True).fill(question)
+    page.get_by_role("button", name="Ask", exact=True).click()
+
+    tabs = page.get_by_role("tablist", name="Query processing stages")
+    assert tabs.get_by_role("tab").all_text_contents() == ["01Interpreted", "02Compiled", "03Executed"]
+    assert page.locator("#panel-interpreted").is_visible()
+    interpreted = page.locator("#panel-interpreted").inner_text()
+    assert "Composition request admitted and validated" in interpreted
+    assert "Kildare North" in interpreted if "R" in pair else "Public Accounts" in interpreted
+    assert "Fianna Fáil" in interpreted if "P" in pair else "Kildare North" in interpreted
+    assert "2026-05-01" in interpreted
+    assert ("count of distinct" in interpreted.lower()) == (shape == "count")
+
+    page.locator("#tab-interpreted").focus()
+    page.keyboard.press("ArrowRight")
+    assert page.locator("#tab-compiled").get_attribute("aria-selected") == "true"
+    assert page.locator("#tab-compiled").evaluate("el => el === document.activeElement")
+    compiled = page.locator("#panel-compiled")
+    assert "validated composition specification" in compiled.inner_text().lower()
+    queries = compiled.get_by_text("Recorded generated SPARQL SELECT requests", exact=True)
+    assert queries.count() == 1
+    queries.click()
+    assert compiled.locator("pre code").count() >= 1
+    assert all("SELECT" in text.upper() for text in compiled.locator("pre code").all_text_contents())
+    assert "no combined query or chronology is implied" in compiled.inner_text().lower()
+    assert page.locator("#panel-executed").locator("pre code").count() == 0
+
+    page.locator("#tab-compiled").focus()
+    page.keyboard.press("ArrowRight")
+    assert page.locator("#panel-executed").is_visible()
+    executed = page.locator("#panel-executed").inner_text().lower()
+    assert "execution was attempted and completed successfully" in executed
+    if shape == "count":
+        assert "distinct recorded members" in page.locator("#query-results").inner_text().lower()
+        assert "1" in page.locator("#query-results").inner_text()
+    else:
+        assert "alice example" in page.locator("#query-results").inner_text().lower()
+    assert "not a certified complete roster" in page.locator("#query-results").inner_text().lower()
+    page.locator("#composition-evidence > details > summary").click()
+    assert "alice example" in page.locator("#composition-evidence").inner_text().lower()
+    evidence_link = page.get_by_role("link", name="Download source evidence", exact=False)
+    assert evidence_link.is_visible()
+    artifact = page.request.get(url + evidence_link.get_attribute("href")).json()
+    assert artifact["report"]["status"] == "answer"
+    assert artifact["report"]["ledger"]
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
     page.close()
 
 
@@ -69,8 +131,18 @@ def test_browser_main_ask_safe_outcomes_not_answers(monkeypatch, tmp_path, serve
     page.get_by_role("button", name="Ask", exact=True).click()
     assert page.get_by_role("alert").is_visible()
     assert page.locator("#query-results").count() == 0
+    if fault in {"extra", "date", "negation", "boolean", "committee_count"}:
+        assert page.locator("#tab-interpreted").is_enabled()
+        assert page.locator("#tab-compiled").is_disabled()
+        assert page.locator("#tab-executed").is_disabled()
+        assert page.locator("#panel-interpreted").is_visible()
+        assert "Compilation was not reached" in page.locator("#panel-compiled").inner_text()
+        assert "Execution was not reached" in page.locator("#panel-executed").inner_text()
+        assert page.locator("#panel-compiled details").count() == 0
     if fault == "boolean": assert "Yes/no composition is not supported" in page.get_by_role("alert").inner_text()
-    if fault == "ambiguous": assert "none was selected" in page.locator("#composition-evidence").inner_text()
+    if fault == "ambiguous":
+        page.locator("#composition-evidence > details > summary").click()
+        assert "none was selected" in page.locator("#composition-evidence").inner_text()
     page.close()
 
 

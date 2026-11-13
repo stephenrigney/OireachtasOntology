@@ -88,6 +88,7 @@ def install_composition_routes(app, render, *, proposer_factory=None, transport_
                       execution_attempted=bool(report["ledger"]), composition_report=artifact["report"],
                       composition_evidence_token=evidence_token, interaction_status=status,
                       composition_request=structured,
+                      composition_dashboard=dashboard,
                       error=report.get("error") if result is None else None,
                       result_notice=f"Recorded evidence as of {structured['asOf']}; not a certified complete roster. Missing ends remain open-ended. Multiple source-recorded names are shown together for the same exact Member identity.")
         if confirmed:

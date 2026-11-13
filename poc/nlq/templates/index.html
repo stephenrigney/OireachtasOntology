@@ -120,7 +120,7 @@
   </section>
   {% endif %}
   {% if composition and interpretation %}<section><h2>Confirmed interpretation</h2><p>{{ interpretation }}</p></section>{% endif %}
-  {% if composition_direct and interpretation %}<section aria-label="Composition interpretation"><h2>Interpretation</h2><p>{{ interpretation }}</p></section>{% endif %}
+  {% if (composition_direct or composition_dashboard) and interpretation %}<section aria-label="Composition interpretation"><h2>Interpretation</h2><p>{{ interpretation }}</p></section>{% endif %}
   {% if (composition or composition_direct) and result_notice and not result %}<p role="status">{{ result_notice }}</p>{% endif %}
 
   {% if error and interaction_status %}
@@ -216,7 +216,7 @@
   {% if composition_report %}
   <section id="composition-evidence">
     <h2>Supporting relationships and source evidence</h2>
-    {% if composition_request %}<details><summary>Supporting relationships, RDF identifiers and source evidence</summary>{% endif %}
+    {% if composition_dashboard %}<details><summary>Supporting relationships, RDF identifiers and source evidence</summary>{% endif %}
     <p>{{ composition_report.ledger|length }} bounded SELECT requests, including resolution, pagination and names. Source/run completeness and a transactional dataset snapshot are not established.</p>
     <p><a href="/composition/evidence/{{ composition_evidence_token }}">Download source evidence and request ledger (JSON; available for up to 10 minutes, subject to bounded storage)</a></p>
     {% if composition_report.candidates %}<p>Grounded current identity candidates; none was selected:</p><ul aria-label="Grounded identity candidates">{% for candidate in composition_report.candidates %}<li><a href="{{ candidate }}">{{ candidate }}</a></li>{% endfor %}</ul>{% endif %}
@@ -235,11 +235,11 @@
       {% endfor %}
     {% endfor %}
     {% endif %}
-    {% if composition_request %}</details>{% endif %}
+    {% if composition_dashboard %}</details>{% endif %}
   </section>
   {% endif %}
 
-  {% if question and not composition_direct %}
+  {% if question and ((not composition and not composition_direct) or composition_dashboard) %}
   <section id="query-processing">
     <h2>How this query was processed</h2>
     {% if performance %}
@@ -298,6 +298,7 @@
       {% elif sparql %}<p>Generated SPARQL is available, but no validated structured plan is available to explain its components.</p>{% else %}<p>Compilation was not reached; no validated plan or SPARQL was produced.</p>{% endif %}
       {% if plan_json %}<details><summary>Technical query plan — JSON and identifiers</summary><p>{{ plan_heading or "Validated query plan" }}</p><pre><code>{{ plan_json }}</code></pre></details>{% endif %}
       {% if sparql %}<details><summary>Generated SPARQL</summary><p>SPARQL was generated. Its availability alone does not establish execution.</p><pre><code>{{ sparql }}</code></pre></details>{% elif plan_json %}<p>No generated SPARQL is available; a validated plan alone does not establish compilation or execution.</p>{% endif %}
+      {% if explainer and explainer.queries %}<details><summary>Recorded generated SPARQL SELECT requests</summary><p>These are individual requests recorded in the execution evidence; no combined query or chronology is implied.</p>{% for query in explainer.queries %}<pre><code>{{ query }}</code></pre>{% endfor %}</details>{% endif %}
     </div>
     <div class="stage-panel" role="tabpanel" id="panel-executed" aria-labelledby="tab-executed" {% if initial_stage != 'executed' %}hidden{% endif %}>
       <h3>Execution and returned results</h3>
@@ -313,7 +314,6 @@
       {% endif %}
       {% if debug_output or debug_message %}<details><summary>{% if debug_source == "Local Member resolution" %}Local Member resolution evidence{% else %}Execution diagnostics{% if debug_source %} — {{ debug_source }}{% endif %}{% endif %}</summary>{% if debug_message %}<p>{{ debug_message }}</p>{% endif %}{% if debug_output %}<pre><code>{{ debug_output }}</code></pre>{% endif %}</details>{% endif %}
       {% if sparql and execution_attempted %}<details><summary>Execution query — SPARQL</summary><pre><code>{{ sparql }}</code></pre></details>{% endif %}
-      {% if explainer and explainer.queries %}<details><summary>Recorded generated SPARQL SELECT requests</summary><p>These individual requests were recorded by execution; no combined query or chronology is implied.</p>{% for query in explainer.queries %}<pre><code>{{ query }}</code></pre>{% endfor %}</details>{% endif %}
     </div>
   </section>
   {% endif %}

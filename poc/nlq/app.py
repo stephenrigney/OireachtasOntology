@@ -162,7 +162,8 @@ def create_app(
                  clarification=None, execution_attempted: bool = False,
                   explanation_plan: dict | None = None,
                   composition: bool = False, composition_direct: bool = False, composition_confirmation=None,
-                   composition_report=None, composition_evidence_token=None, composition_request=None):
+                   composition_report=None, composition_evidence_token=None, composition_request=None,
+                   composition_dashboard: bool = False):
         # Only the caller's already-validated structured plan may support prose.
         # Do not reparse capped debug JSON or infer execution from SPARQL.
         explainer = (explain_validated_composition(composition_request, composition_report, question=question)
@@ -227,6 +228,7 @@ def create_app(
             "composition_report": composition_report,
             "composition_evidence_token": composition_evidence_token,
             "composition_request": composition_request,
+            "composition_dashboard": composition_dashboard,
         })
 
     from .composition_routes import install_composition_routes
