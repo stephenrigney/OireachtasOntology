@@ -135,15 +135,26 @@ def test_browser_composition_feedback_matches_visible_answer_and_persists(
     page.get_by_label("Your question", exact=True).fill(question)
     page.get_by_role("button", name="Ask", exact=True).click()
     answer = page.locator("#query-results")
-    displayed_lines = [line.strip() for line in answer.inner_text().splitlines() if line.strip()]
+    # Compare feedback with the substantive rendered answer, not the separate
+    # expandable RDF/evidence disclosure included inside #query-results.
+    heading = answer.locator(":scope > h2").inner_text().strip()
+    values = answer.locator(":scope > .composition-answer").inner_text().strip()
+    relationship = answer.locator(
+        ":scope > p:not(.composition-answer):not(.result-notice)"
+    ).inner_text().strip()
+    qualification = answer.locator(":scope > p.result-notice").inner_text().strip()
+    substantive_answer = "\n".join((heading, values, relationship, qualification))
     actual = page.locator('#feedback-form input[name="actual"]').input_value()
-    assert actual == "\n".join(displayed_lines)
+    assert actual == substantive_answer
+    assert heading == "Answer"
+    assert relationship.startswith("The returned ") and "have recorded" in relationship
+    assert qualification == "These results reflect locally recorded evidence; the available records may not be complete."
     assert "http://" not in actual
     assert "available records may not be complete" in actual
     if shape == "count":
-        assert "1 matching TD" in actual
+        assert values == "1 matching TD"
     else:
-        assert "Alice Example" in actual
+        assert values == "Alice Example"
 
     page.get_by_label("Yes", exact=True).check()
     page.get_by_role("button", name="Save feedback").click()
@@ -151,6 +162,7 @@ def test_browser_composition_feedback_matches_visible_answer_and_persists(
     assert "Feedback saved immediately" in page.locator(".feedback-message").inner_text()
     saved = json.loads((tmp_path / f"{session_id}.jsonl").read_text().splitlines()[0])
     assert saved["actual"] == actual
+    assert saved["actual"] == substantive_answer
     assert saved["question"] == question and saved["correct"] is True
     evidence_link = page.get_by_role("link", name="Download source evidence", exact=False)
     page.locator("#composition-evidence > details > summary").click()
@@ -192,10 +204,18 @@ def test_browser_main_ask_safe_outcomes_not_answers(monkeypatch, tmp_path, serve
         assert page.locator("#tab-interpreted").is_enabled()
         assert page.locator("#tab-compiled").is_disabled()
         assert page.locator("#tab-executed").is_disabled()
-        assert page.locator("#panel-interpreted").is_visible()
-        assert "Compilation was not reached" in page.locator("#panel-compiled").inner_text()
-        assert "Execution was not reached" in page.locator("#panel-executed").inner_text()
-        assert page.locator("#panel-compiled details").count() == 0
+        interpreted = page.locator("#panel-interpreted")
+        compiled = page.locator("#panel-compiled")
+        executed = page.locator("#panel-executed")
+        assert interpreted.is_visible()
+        assert "No validated interpretation was accepted" in interpreted.inner_text()
+        assert "The proposal was rejected before compilation." in compiled.inner_text()
+        assert "No validated plan or generated query was produced." in compiled.inner_text()
+        assert compiled.locator("details").count() == 0
+        assert compiled.locator("pre code").count() == 0
+        assert "Execution was not reached." in executed.inner_text()
+        assert "No execution outcome is available." in executed.inner_text()
+        assert page.locator("#query-results").count() == 0
     if fault == "boolean": assert "Yes/no composition is not supported" in page.get_by_role("alert").inner_text()
     if fault == "ambiguous":
         page.locator("#composition-evidence > details > summary").click()
