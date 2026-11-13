@@ -1,0 +1,1442 @@
+{
+  "kind": "injected model/compiler fixture control",
+  "state": {
+    "id": "5a9c51154ca74930adeaaaf0e1f045c2",
+    "brief": "What is the membership history of the Committee of Public Accounts?",
+    "title": "Committee membership",
+    "reportingDate": "2026-11-13",
+    "status": "Question not answered",
+    "outcomeSummary": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist.",
+    "version": 3,
+    "interpretation": "Check current membership and any requested earlier membership.",
+    "tasks": [
+      {
+        "id": "t0-0-investigation",
+        "question": "What is the membership history of the Committee of Public Accounts?",
+        "relevance": "Investigate the requested parliamentary records.",
+        "role": "direct",
+        "tool": "query",
+        "member": null,
+        "sourceTask": null,
+        "title": "What is the membership history of the Committee of Public Accounts?",
+        "state": "Incomplete",
+        "requirementId": "r0",
+        "toolMeaning": "Investigate this question using the available parliamentary records.",
+        "evidenceRefs": [
+          "e-2da3547d9f17457fbc5ee873fe9ccc3a"
+        ],
+        "researchOutcome": {
+          "kind": "unsupported_question",
+          "label": "Question not answered",
+          "description": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+        },
+        "outcomeLabel": "Question not answered",
+        "reason": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+      }
+    ],
+    "sections": [],
+    "facts": {},
+    "assertions": {},
+    "messages": [
+      {
+        "role": "user",
+        "text": "What is the membership history of the Committee of Public Accounts?"
+      },
+      {
+        "role": "assistant",
+        "text": "I will check the available membership records."
+      },
+      {
+        "role": "assistant",
+        "text": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+      }
+    ],
+    "requirements": [
+      {
+        "id": "r0",
+        "originalWording": "What is the membership history of the Committee of Public Accounts?",
+        "proposedConditions": [
+          {
+            "kind": "research_question",
+            "wording": "What is the membership history of the Committee of Public Accounts?",
+            "conditions": [
+              "What is the membership history of the Committee of Public Accounts?"
+            ],
+            "disposition": "evidence pending",
+            "explanation": "Check available records.",
+            "id": "r0-q0"
+          }
+        ],
+        "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+      }
+    ],
+    "plans": [
+      {
+        "version": 1,
+        "interpretation": "Check current membership and any requested earlier membership.",
+        "taskIds": [
+          "t0-0-investigation"
+        ],
+        "requirements": {
+          "id": "r0",
+          "originalWording": "What is the membership history of the Committee of Public Accounts?",
+          "proposedConditions": [
+            {
+              "kind": "research_question",
+              "wording": "What is the membership history of the Committee of Public Accounts?",
+              "conditions": [
+                "What is the membership history of the Committee of Public Accounts?"
+              ],
+              "disposition": "evidence pending",
+              "explanation": "Check available records.",
+              "id": "r0-q0"
+            }
+          ],
+          "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+        },
+        "clarification": null,
+        "revisionTargets": []
+      }
+    ],
+    "questionAssessments": {},
+    "unanswered": [
+      {
+        "id": "r0-q0",
+        "state": "Unanswered / for review",
+        "requirement": "What is the membership history of the Committee of Public Accounts?",
+        "reason": "What is the membership history of the Committee of Public Accounts?"
+      }
+    ],
+    "reportIssue": null,
+    "processMessages": [
+      "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+    ],
+    "clarifications": [],
+    "limitations": [],
+    "metrics": {
+      "firstValidatedSeconds": null,
+      "completedSeconds": 0.633
+    },
+    "hasWork": false,
+    "evidence": {
+      "e-2da3547d9f17457fbc5ee873fe9ccc3a": {
+        "evidenceId": "e-2da3547d9f17457fbc5ee873fe9ccc3a",
+        "outcome": "unsupported_capability",
+        "request": {
+          "factualRequest": "What is the membership history of the Committee of Public Accounts?",
+          "requirementId": "r0",
+          "operation": {
+            "operation": "query"
+          }
+        },
+        "compilerStatus": "unsupported_request",
+        "error": {
+          "code": "unsupported_request",
+          "message": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist.",
+          "technicalMessage": "Historical committee retrieval is not available.",
+          "candidates": [],
+          "clarification": null
+        },
+        "queryCount": 0
+      }
+    }
+  },
+  "evidence": {
+    "e-2da3547d9f17457fbc5ee873fe9ccc3a": {
+      "evidenceId": "e-2da3547d9f17457fbc5ee873fe9ccc3a",
+      "request": {
+        "factualRequest": "What is the membership history of the Committee of Public Accounts?",
+        "requirementId": "r0",
+        "operation": {
+          "operation": "query"
+        }
+      },
+      "outcome": "unsupported_capability",
+      "queryServiceOutcome": "unsupported_capability",
+      "compilerStatus": "unsupported_request",
+      "researchOutcome": {
+        "kind": "unsupported_question",
+        "label": "Question not answered",
+        "description": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+      },
+      "factualEvidenceStatus": "not_applicable",
+      "selectionOutcome": null,
+      "validation": {
+        "planValidated": false,
+        "executionCompleted": false,
+        "accepted": false
+      },
+      "data": null,
+      "plan": null,
+      "queryServiceResult": null,
+      "execution": {
+        "compilerRevision": "sha256:fcec8d199e8347842145951acc231d5026dfb2872872d3571cc561956dad050a",
+        "contractVersions": {
+          "composable-query-plan-contract": "2.30.0",
+          "query-schema-contract": "2.12.0"
+        },
+        "datasetContext": {
+          "observationContextId": "5a9c51154ca74930adeaaaf0e1f045c2",
+          "endpointId": "injected-test-client",
+          "snapshotId": null
+        },
+        "startedAt": "2026-11-13T13:22:09.998699+00:00",
+        "finishedAt": "2026-11-13T13:22:09.999115+00:00",
+        "queries": [],
+        "plannerProposals": [
+          {
+            "prompt": "What is the membership history of the Committee of Public Accounts?",
+            "output": "{\"version\": 2, \"supported\": false, \"family\": null, \"unsupportedReason\": \"Historical committee retrieval is not available.\", \"intent\": \"What is the membership history of the Committee of Public Accounts?\", \"referents\": null, \"relations\": [], \"constraints\": [], \"answer\": null}"
+          }
+        ]
+      },
+      "resolvedScope": {
+        "reportingDate": "2026-11-13",
+        "temporalMeaning": "compiler_plan_scope_only",
+        "intent": null,
+        "parentRequirementSatisfied": false
+      },
+      "completeness": {
+        "enumeration": "unknown",
+        "sourceCoverage": "uncertified",
+        "freshness": "unknown",
+        "limitations": [
+          "These are findings from the available parliamentary records, not a certified complete account.",
+          "The records' last update is unknown. Separate searches may reflect different updates to the data.",
+          "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+        ]
+      },
+      "error": {
+        "code": "unsupported_request",
+        "message": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist.",
+        "technicalMessage": "Historical committee retrieval is not available.",
+        "candidates": [],
+        "clarification": null
+      },
+      "diagnostic": "Historical committee retrieval is not available.",
+      "debugOutput": null,
+      "debugSource": null
+    }
+  },
+  "modelCalls": [
+    {
+      "phase": "plan",
+      "turn": 0,
+      "seconds": 0.0,
+      "input": {
+        "originalBrief": "What is the membership history of the Committee of Public Accounts?",
+        "reportingDate": "2026-11-13",
+        "conversation": [
+          {
+            "role": "user",
+            "text": "What is the membership history of the Committee of Public Accounts?"
+          }
+        ],
+        "requirements": [],
+        "tasks": [],
+        "sections": [],
+        "questionAssessments": {},
+        "facts": {},
+        "assertions": {},
+        "operationOutcomes": [],
+        "newMessage": "What is the membership history of the Committee of Public Accounts?",
+        "queryServiceDiscovery": {
+          "questionFamilies": [
+            {
+              "id": "current_office_constituency",
+              "cases": [],
+              "referentType": "DailConstituency",
+              "patterns": [
+                "conditionally-resolved-office-holdings",
+                "named-office-description",
+                "member-house-membership",
+                "representation-reference",
+                "constituency-term-occurrence",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Closed NamedOffice → unique accepted current OfficeHolding → exact Member → independently current Dáil representation chain at configured asOf. Preserve source identities and intervals; absence or uncertainty in either relationship fails closed without historical substitution or completeness claims."
+            },
+            {
+              "id": "current_committee_members",
+              "cases": [],
+              "referentType": "Member",
+              "patterns": [
+                "committee-membership-reference",
+                "committee-description",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Closed named-committee Member-list capability at configured asOf; Committee owner, HouseTerm and each CommitteeMembership must independently contain the reference date. Preserve exact identities, date ranges, endpoints and source graphs; locally recorded roster only, not completeness certification."
+            },
+            {
+              "id": "government_party_members",
+              "cases": [],
+              "referentType": "Member",
+              "patterns": [
+                "derived-cabinet-membership",
+                "party-membership-episode",
+                "party-term-occurrence",
+                "reviewed-political-affiliation-identities",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Return recorded constitutional Government members of an exactly resolved enduring party identity at asOf. Require CabinetMembership and PartyMembership intervals containing the same reference date, plus containing parliamentary membership and HouseTerm date evidence. Minister-of-State-only cases and GovernmentExecutive are not Cabinet membership. Preserve source episodes and explicitly state that incomplete current-office/party coverage is not a complete Government roster; no matches is not a certified empty roster."
+            },
+            {
+              "id": "constituency_representation",
+              "cases": [],
+              "referentType": "DailConstituency",
+              "patterns": [
+                "member-house-membership",
+                "representation-reference",
+                "constituency-term-occurrence",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Project a named Member's current or career-wide constituency occurrences with their exact Dáil terms, or return current TDs for one named constituency. Current Dáil is uniquely resolved from House-owned term dates at asOf, never an ordinal. Current membership requires its own mapped date interval spanning asOf, within that term. Historical answers preserve term-scoped constituency identities. No source completeness claim is implied."
+            },
+            {
+              "id": "member_lookup",
+              "cases": [
+                "Q01",
+                "Q32",
+                "Q34"
+              ],
+              "referentType": "Member",
+              "patterns": [
+                "member-description"
+              ],
+              "semantics": "Grounded name tokens resolve to zero, one, or a set of distinct local Member IRIs; ambiguity is not collapsed."
+            },
+            {
+              "id": "previous_service",
+              "cases": [
+                "Q02"
+              ],
+              "referentType": "DailMembership",
+              "patterns": [
+                "member-house-membership",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Previous Dáil is selected from HouseTerm start/end evidence relative to explicit asOf; membership is tested in that term."
+            },
+            {
+              "id": "dail_duration",
+              "cases": [
+                "Q03"
+              ],
+              "referentType": "DailMembership",
+              "patterns": [
+                "member-house-membership"
+              ],
+              "semantics": "Cumulative service is the union of dated membership intervals through asOf; gaps are preserved and open ends are not unbounded."
+            },
+            {
+              "id": "term_count",
+              "cases": [
+                "Q04",
+                "T01"
+              ],
+              "referentType": "DailTerm",
+              "patterns": [
+                "member-house-membership",
+                "house-term-description"
+              ],
+              "semantics": "Count distinct HouseTerm resource identities, never membership rows or replacement people."
+            },
+            {
+              "id": "seanad_entry",
+              "cases": [
+                "Q05"
+              ],
+              "referentType": "SeanadMembership",
+              "patterns": [
+                "member-house-membership",
+                "constituency-term-occurrence"
+              ],
+              "semantics": "Earliest dated Seanad membership and later episodes remain distinct; representation is displayed only as the source-provided designation."
+            },
+            {
+              "id": "current_collection",
+              "cases": [
+                "Q07",
+                "Q08"
+              ],
+              "referentType": "ParliamentaryMemberCollection",
+              "patterns": [
+                "member-collection-membership",
+                "party-term-occurrence"
+              ],
+              "semantics": "Dated collection membership is evaluated at asOf; IndependentMemberCollection is a parliamentary status, not a political party."
+            },
+            {
+              "id": "seanad_representation",
+              "cases": [
+                "Q10"
+              ],
+              "referentType": "SeanadRepresentation",
+              "patterns": [
+                "member-house-membership",
+                "representation-reference",
+                "constituency-term-occurrence"
+              ],
+              "semantics": "Report the term-scoped mapped representation resource/designation without coercing panel, university constituency, or an unmapped Taoiseach nomination category into one another."
+            },
+            {
+              "id": "committee_boolean",
+              "cases": [
+                "Q11"
+              ],
+              "referentType": "Committee",
+              "patterns": [
+                "committee-membership-reference",
+                "committee-description",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Unscoped committee names default to a uniquely evidenced incarnation current at asOf; absent/ambiguous current-date evidence is unavailable, not yes/no."
+            },
+            {
+              "id": "committee_count",
+              "cases": [
+                "Q13"
+              ],
+              "referentType": "Committee",
+              "patterns": [
+                "committee-membership-reference"
+              ],
+              "semantics": "Count distinct Committee IRI identities, not repeated CommitteeMembership records."
+            },
+            {
+              "id": "house_terms",
+              "cases": [
+                "Q15"
+              ],
+              "referentType": "DailTerm",
+              "patterns": [
+                "house-term-description",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Chronological House-owned start/end evidence distinguishes a current open term from an unclassified missing end. Date-point and full-month selection preserve the original time scope and every selected exact term identity; term existence is not evidence of a sitting."
+            },
+            {
+              "id": "dail_all",
+              "cases": [
+                "Q33"
+              ],
+              "referentType": "Member",
+              "patterns": [
+                "member-description",
+                "member-house-membership"
+              ],
+              "semantics": "Set-valued exact-name resolution returns every distinct Member identity with DáilMembership evidence."
+            },
+            {
+              "id": "bill_title_search",
+              "cases": [
+                "Q18"
+              ],
+              "referentType": "Bill",
+              "patterns": [
+                "bill-lifecycle"
+              ],
+              "semantics": "Resolve a supplied title mention; the approved AI abbreviation expands to Artificial Intelligence; retain multiple distinct Bill identities as candidates and never choose by guess."
+            },
+            {
+              "id": "bills_published",
+              "cases": [
+                "Q19"
+              ],
+              "referentType": "BillActivity",
+              "patterns": [
+                "bill-lifecycle"
+              ],
+              "semantics": "Use any typed BillActivity with exact Published type and mapped xsd:date in the requested calendar year; legislativeYear is not a publication-date fallback."
+            },
+            {
+              "id": "non_enacted_bills",
+              "cases": [
+                "Q20"
+              ],
+              "referentType": "Bill",
+              "patterns": [
+                "bill-lifecycle"
+              ],
+              "semantics": "Include every known status other than Enacted, report grouped local counts, and fail closed on missing or conflicting process statuses."
+            },
+            {
+              "id": "bill_status_history",
+              "cases": [
+                "Q21"
+              ],
+              "referentType": "Bill",
+              "patterns": [
+                "bill-lifecycle"
+              ],
+              "semantics": "Resolve the supplied Bill title mention; report source-backed status and queryable dated lifecycle activities, never infer a next step."
+            },
+            {
+              "id": "bill_sponsors",
+              "cases": [
+                "Q22"
+              ],
+              "referentType": "BillParticipation",
+              "patterns": [
+                "bill-sponsor-reference",
+                "member-description"
+              ],
+              "semantics": "Return all Bill-owned Participation records including unknown primary and role-only evidence; Member labels join only by exact RDF IRI through the reviewed Member owner graph."
+            },
+            {
+              "id": "member_bill_sponsorship",
+              "cases": [
+                "Q23"
+              ],
+              "referentType": "Bill",
+              "patterns": [
+                "bill-sponsor-reference",
+                "bill-lifecycle",
+                "member-description"
+              ],
+              "semantics": "Resolve one exact Member IRI, traverse BillDelivery created_a_realization_of Bill and forms_part_of the same Bill-owned LegislativeProcess containing sponsor Participations, and join participant-person only by exact Member RDF identity. Return distinct Bill IRIs and preserve all participation role/primary evidence. The bounded count projection additionally requires source-backed typed Published activities with valid xsd:date dates in exactly one calendar year, deduplicates by Bill identity, and fails closed for missing/unavailable evidence; it never uses legislative year or version/document dates."
+            },
+            {
+              "id": "bill_lookup",
+              "cases": [
+                "Q24A"
+              ],
+              "referentType": "Bill",
+              "patterns": [
+                "bill-lifecycle",
+                "bill-document-work-links"
+              ],
+              "semantics": "Resolve exact Bill number/year; display English title, mapped status, official link, available dated activity evidence, and only typed explanatory-memorandum rendition chains recorded in the same Bill-owned graph."
+            },
+            {
+              "id": "committee_chair",
+              "cases": [
+                "Q12"
+              ],
+              "referentType": "Committee",
+              "patterns": [
+                "committee-description"
+              ],
+              "semantics": "Resolve a uniquely dated current Committee owner first; report chair evidence gap because no chair/office-holder predicate is queryable; do not infer from membership."
+            },
+            {
+              "id": "committee_conflict",
+              "cases": [
+                "Q14"
+              ],
+              "referentType": "Committee",
+              "patterns": [],
+              "semantics": "Report the reviewed development source conflict/quarantine as a coverage failure, not a planning failure or current roster."
+            },
+            {
+              "id": "office_month_overlap",
+              "cases": [
+                "Q25"
+              ],
+              "referentType": "OfficeHolding",
+              "patterns": [
+                "conditionally-resolved-office-holdings",
+                "named-office-description",
+                "member-description"
+              ],
+              "semantics": "Reuse the accepted inclusive calendar-window OfficeHolding path; resolve the named Member to one exact local Member IRI, bind the Member referent by identity (never display label), and show tenure start/end evidence."
+            },
+            {
+              "id": "office_current_coverage",
+              "cases": [
+                "Q26"
+              ],
+              "referentType": "OfficeHolding",
+              "patterns": [
+                "conditionally-resolved-office-holdings",
+                "named-office-description"
+              ],
+              "semantics": "Require complete current coverage; the incomplete development holding sample and office aliases do not establish a current holder."
+            },
+            {
+              "id": "office_date_point",
+              "cases": [
+                "Q27"
+              ],
+              "referentType": "OfficeHolding",
+              "patterns": [
+                "conditionally-resolved-office-holdings",
+                "named-office-description"
+              ],
+              "semantics": "Reuse accepted inclusive calendar-date OfficeHolding evidence for the requested point date."
+            },
+            {
+              "id": "dail_seats",
+              "cases": [
+                "Q16"
+              ],
+              "referentType": "DailTerm",
+              "patterns": [
+                "house-term-seat-complement"
+              ],
+              "semantics": "Resolve one typed DailTerm by its exact numeric term ordinal and report its authoritative agents:seats value; never count Member records."
+            },
+            {
+              "id": "dail_parties_and_groups",
+              "cases": [
+                "Q17"
+              ],
+              "referentType": "ParliamentaryParty",
+              "patterns": [
+                "party-term-occurrence",
+                "house-term-ordinal"
+              ],
+              "semantics": "Resolve one typed DailTerm first, then list term-scoped ParliamentaryParty records for that exact identity, preserving rows with missing labels; separately report ParliamentaryGroup coverage as missing because no current group instances are emitted."
+            },
+            {
+              "id": "bill_quarantine",
+              "cases": [
+                "Q24"
+              ],
+              "referentType": "Bill",
+              "patterns": [
+                "bill-lifecycle"
+              ],
+              "semantics": "Check only the exact Bill-owned graph for 2024/48; an absent graph is explained by the reviewed source quarantine, not ordinary title-resolution failure or proof of nonexistence."
+            },
+            {
+              "id": "debate_lookup",
+              "cases": [
+                "Q31"
+              ],
+              "referentType": "DebateSitting",
+              "patterns": [
+                "debate-sitting-record"
+              ],
+              "semantics": "Reuse the reviewed actual-sitting to produced DebateRecord path and graph-route chamber identity; local absence is not a claim that no debate occurred."
+            },
+            {
+              "id": "committee_topic_latest",
+              "cases": [
+                "Q30"
+              ],
+              "referentType": "Committee",
+              "patterns": [],
+              "semantics": "Resolve the reviewed alias PAC to Committee of Public Accounts, but do not infer substantive HSE examination or latest coverage from the pinned metadata-only hearing."
+            },
+            {
+              "id": "bill_votes",
+              "cases": [
+                "Q36"
+              ],
+              "referentType": "Bill",
+              "patterns": [],
+              "semantics": "Bill-linked voting is unavailable; sponsorship participation is not voting evidence."
+            },
+            {
+              "id": "debate_transcript",
+              "cases": [
+                "Q37"
+              ],
+              "referentType": "DebateSitting",
+              "patterns": [],
+              "semantics": "Transcript speech content is unavailable because no approved transcript retrieval path exists; Debate metadata and links are not speech content."
+            },
+            {
+              "id": "current_cross_house_membership_intersection",
+              "cases": [
+                "Q19"
+              ],
+              "referentType": "Member",
+              "patterns": [
+                "member-description",
+                "member-house-membership",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Select one current DailTerm and one current SeanadTerm independently from House-owned dates at asOf, then intersect exact Member identities across separate DailMembership and SeanadMembership paths to those exact term IRIs. The result means recorded membership in each current term; display each mapped interval as evidence but do not require overlap or claim simultaneous/current service. Missing, conflicting, capped or truncated term, identity or membership-interval evidence fails closed; local historical completeness is not certified."
+            },
+            {
+              "id": "current_seanad_prior_dail_membership",
+              "cases": [
+                "Q20"
+              ],
+              "referentType": "Member",
+              "patterns": [
+                "member-description",
+                "member-house-membership",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Resolve exactly one current SeanadTerm from Houses-owned dates at asOf, then join exact Member identities through independent typed SeanadMembership and DailMembership paths to typed HouseTerm identities. A SeanadMembership qualifies only when its own accepted inclusive interval contains asOf. A DailMembership is prior evidence only when its accepted EndDate is finite and strictly earlier than the StartDate of that same qualifying SeanadMembership; equal endpoints and open-ended Dáil intervals do not qualify, and ordinal ordering is not a substitute. Preserve both membership and term identities and intervals. List and distinct Member count share complete bounded pagination and interval validation. Missing, conflicting, malformed, capped or truncated identity/date evidence fails closed. Report positive local matches only; local historical completeness is not certified and an absent path is not proof that a person never served."
+            },
+            {
+              "id": "current_seanad_party_members",
+              "cases": [
+                "Q23"
+              ],
+              "referentType": "Member",
+              "patterns": [
+                "member-description",
+                "member-house-membership",
+                "party-membership-episode",
+                "party-term-occurrence",
+                "reviewed-political-affiliation-identities",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Resolve the current SeanadTerm from House-owned dates at asOf. Select term-scoped ParliamentaryParty and exact reviewed PoliticalAffiliationIdentity records; join each typed PartyMembership episode to its exact SeanadMembership. Both the SeanadMembership-owned interval and PartyMembership-owned interval must independently contain asOf using inclusive endpoints. The Member list and distinct-identity count use the same fully paginated selection; missing/conflicting identity or interval evidence and capped/truncated pages fail closed. Local current roster completeness is not certified."
+            },
+            {
+              "id": "shared_dail_terms",
+              "cases": [],
+              "referentType": "DailTerm",
+              "patterns": [
+                "member-house-membership",
+                "house-term-description"
+              ],
+              "semantics": "Resolve exactly two Member identities independently. Each must have its own DailMembership linked to the same shared DailTerm RDF identity. Return the intersection by that shared resource identity; label equality is not a join. This family does not imply complete historical source coverage or support additional filters, temporal constraints, Seanad terms, or other relationships."
+            },
+            {
+              "id": "member_relationship_composition",
+              "cases": [],
+              "referentType": "Member",
+              "patterns": [
+                "member-description",
+                "member-house-membership",
+                "party-membership-episode",
+                "party-term-occurrence",
+                "reviewed-political-affiliation-identities",
+                "representation-reference",
+                "house-term-ordinal",
+                "house-term-temporal-reference",
+                "constituency-term-occurrence",
+                "conditionally-resolved-office-holdings",
+                "named-office-description"
+              ],
+              "operators": [
+                "identitySet",
+                "sharedResource",
+                "commonIntersection"
+              ],
+              "semantics": "Return distinct identities by joining typed Member relationship paths to exact HouseTerm resource identities. Supports: (1) one Member with membership in each of exactly two explicitly numbered Dáil terms; (2) Members whose membership represents one named constituency occurrence in exactly one explicitly numbered Dáil term; and (3) those constituency representatives with PartyMembership episodes linked to the exact same OireachtasMembership, term-scoped ParliamentaryParty and reviewed PoliticalAffiliationIdentity, either during one explicitly numbered Dáil or at the reference date in the uniquely date-resolved current Dáil. For (3), the PartyMembership-owned date interval must overlap the containing DailMembership-owned representation interval using inclusive xsd:dateTime endpoints; when currentTerm is selected, both intervals must independently contain asOf as well. An absent EndDate is open-ended, while an absent range/start or invalid/conflicting dates makes temporal evaluation uncertain and the answer fails closed. Only typed PartyMembership episodes count; Independent collection membership is not a political party. The party/representation join is by exact RDF identities, never label equality or undated/current-affiliation shortcuts. The declared bounded compositionOperators additionally permit a finite constituency identity OR set, or independent anchor/answer Member paths sharing exact constituency and term resources with distinct Members and a common accepted-office/representation/party interval intersection. The latter needs no guessed numbered-term selector and preserves partial accepted-evidence coverage. Other filters, calendar-window operators, Seanad relations, or source-completeness claims are not implied."
+            }
+          ],
+          "semanticPlannerGuidance": "Interpret one user question as a semantic proposal for composable query plan v2.\n\nApproved present-time policy: ordinary unqualified present-tense requests for an existing current-time parliamentary relationship mean current at configured asOf. This applies to both Dáil and Seanad named-party membership, current Dáil representation, current named-committee membership, current named-office holders, officeholder-to-constituency and constitutional Government/party membership. Use the existing current selector/operation without inventing a date; local code supplies asOf and validates each relationship's own temporal evidence. Explicit dates, numbered terms, past/future expressions, negation and additional requirements cannot be replaced by a default. latestRecorded is NOT current. This does not add standalone House rosters, generic current Senator representation, current cross-House simultaneous service, chairs or other unsupported operations. Family-specific completeness guards remain mandatory.\n\nInterpretation contract: for the one-term, one-constituency Member list/count, the explicit phrase \"in this Dáil\" selects the exact House-date-resolved current term and is term-wide, regardless of whether the question says \"represent\" or \"represented\". It overrides only the implicit present-tense-as-of default: do not require an asOf membership interval unless the user explicitly asks for current representation (for example, \"currently\", \"now\", \"today\", or \"as of now/today\"). A literal calendar date remains its exact membership-date point. Without the explicit \"this Dáil\" scope, an unqualified present-tense constituency request defaults to representation at the query date; an explicit current-point request also requires the DailMembership interval to contain asOf. Dated party/representation composition retains its separate rule that currentTerm requires both party and DailMembership intervals to contain asOf. Never default numbered-term, other dated, historical, or election questions. The plain term-scoped constituency Member projection supports one explicit membership calendar-date point; preserve it as a membershipInterval constraint, never as a HouseTerm date or election event. For a Member's latest recorded Dáil term and constituency, use the constituency_representation family with selector \"latestRecorded\" when the question explicitly asks for the latest recorded term, the most recent term, or the last term (including \"last term in the Dáil\"). Local code selects from that Member's accepted DailMembership identities and House-owned chronology, and fails closed on missing/tied/conflicting dates or representation evidence. This is not an election-date answer.\nFor partial-name person lookup use capability_selection member_lookup with parameters {\"member\":\"exact name mention\",\"house\":\"Dail\"} for Deputy/TD, \"Seanad\" for Senator, or null for unqualified Member. Local code offers grounded alternatives; never expand a surname to an assumed full name.\nFor a numbered-Dáil party listing use capability_selection dail_parties_and_groups with parameters {\"termNumber\":N,\"includeGroups\":false}; true only if groups are also requested. This reuses the existing party compiler, not the constituency composition.\n\nFor a present/current list of the members of one named committee, use capability_selection current_committee_members with parameters exactly {\"committee\":\"the exact committee name mention\"}. This includes \"Who are the members of the Committee on Public Accounts?\" and \"Which members serve on the Committee of Public Accounts?\". Do not supply a term, date, person, chair or inferred committee identity. Local code selects one current Committee incarnation using accepted owner and HouseTerm date evidence at configured asOf, then tests each exact CommitteeMembership interval independently. Preserve the whole user-mentioned committee name; only the initial generic Committee on/of connector may vary in source-label matching. Results are distinct local Member identities with separate dated membership evidence, not a certified complete current roster, attendance or chairmanship. Historical scope, counts, party filters, additional conditions or answer fields remain unsupported as a whole.\n\nFor the current constituency of a named officeholder, e.g. \"What constituency does the Tánaiste represent?\", use capability_selection current_office_constituency with parameters exactly {\"office\":\"the exact office name mention\"}. An office title is a NamedOffice, NEVER a Member name. Do not name an assumed holder or invent a date. Code resolves one reviewed office and requires one accepted current OfficeHolding at configured asOf, then uses its exact Member identity for the independently dated current Dáil representation capability. Preserve both relationships and all identity/date evidence. Do not assume the holder is a TD or substitute former officeholders/historical constituencies. Missing, conflicting or ambiguous accepted evidence fails closed; neither local office nor government roster completeness is certified. Historical dates, extra conditions, counts and additional answer fields are unsupported as a whole.\nFor an unfiltered question asking when/for what dates or periods one named person held one named office, also accepting \"When did [member] serve as [office]?\" and \"During what period was [member] [office]?\", use capability_selection office_holding_evidence with parameters {\"member\":\"exact mention\",\"office\":\"exact office mention\"}. This returns each separately recorded accepted local OfficeHolding episode for the exact identities with its validated interval, explicitly labeled incomplete local-recorded evidence—not a complete career timeline. Do not merge episodes or infer first start, final end, total duration, election events, or absence from gaps; unreviewed observations cannot answer. Election, first-event, duration, and extra-filter requests remain unsupported.\n\nFor the same named-person/office period request qualified by \"last\" or \"most recently\" (including \"When was [member] last [office]?\" and \"When did [member] last serve as [office]?\"), reuse office_holding_evidence with parameters {\"member\":\"exact mention\",\"office\":\"exact office mention\",\"selection\":\"latestRecorded\"}. Do not reject this as an election-event request or claim complete career history. Local code reads every accepted episode and may return only a uniquely latest recorded episode by validated StartDate, with an explicit NOT proven historically last tenure qualification. Tied latest starts, earlier open/overlapping intervals, future starts or any uncertain interval fail closed; no IRI tie-break determines chronology. A missing end remains open-ended, not a completed tenure. Do not omit selection for last/most-recently wording or add it to an all-episodes request. Extra dates, parties, election events and relationships remain unsupported as a whole.\n\nFor who held a named office on a calendar date, during a complete month/year, or over an explicit month-to-month window, use capability_selection office_holding_window with exactly one of {\"office\":\"exact mention\",\"date\":\"1994-06-01\"}, {\"office\":\"exact mention\",\"year\":1994}, or {\"office\":\"exact mention\",\"startMonth\":6,\"startYear\":1994,\"endMonth\":6,\"endYear\":1994}. Preserve date-point vs full-window semantics. Local code reuses the accepted dated OfficeHolding compiler and incomplete-coverage qualification; an overlap does not mean service throughout the window.\n\nFor a date-less present/current question asking who is a named office-holder (for example, \"Who is the Taoiseach?\" or \"Who is the current Taoiseach?\"), use capability_selection office_holding_window with parameters exactly {\"office\":\"exact office mention from the question\"}. Do not put a date or period in the proposal: local code injects the configured asOf as an inclusive one-day point and reuses the accepted OfficeHolding interval evaluator. Resolve any generic office only through its existing reviewed NamedOffice identity; do not hardcode an office or infer a holder from its alias. Return only locally evidenced accepted holdings, preserve their exact start/end dates, and state that current-office coverage is not certified. Missing, conflicting, uncertain or absent holding evidence fails closed; an empty result is not evidence that the office has no holder. A date-less past-tense question is not current and must not be defaulted to asOf. This point lookup is not a complete current roster or office-tenure duration/election query.\n\nBounded operators extend the SAME member_relationship_composition graph below, not new families. Dispatch priority: when the question asks for other/another named-party TDs or Deputies sharing the same constituency as a named Member while/when/during that Member held a named office, use the independent anchor/answer shared-constituency operator below, not the ordinary single-member party/representation shape. Keep separate membership paths for the anchor and answer Member and join them to the same exact constituency and term identities. Preserve all nine edges in the base party/representation graph below, including constituency_in_term, then append the five anchor/office edges in the anchor operator for fourteen relations total; do not drop or replace any base edge. The named office episode anchors the common time intersection; do not invent or require a numbered-term selector.\n- For one explicitly numbered or House-date-resolved current Dáil and one named constituency, a distinct-Member count uses the exact same referents, relationships and optional membership-date point as the entity-list projection. Use answer {\"kind\":\"count\",\"referent\":\"member\",\"distinctBy\":\"identity\"} only when asked for a count; count recorded Member RDF identities, not seats or election events. In this non-party projection, unqualified \"in this Dáil\" means term-wide membership regardless of \"represent\"/\"represented\"; it overrides the implicit present-tense asOf default. Explicit \"currently\"/\"now\"/\"today\" or \"as of now/today\" requests additionally require the DailMembership interval to contain asOf. A literal date remains its exact date constraint. Never count a partial/truncated page or drop a date/constituency/term condition to return a number.\n- For any one-term, one-constituency non-party Member list or count—including \"this Dáil\"—prefer family \"member_relationship_composition\" with referents member, membership, term, constituency and the four exact representation edges, rather than family \"constituency_representation\". The list answer is exactly {\"kind\":\"entities\",\"referent\":\"member\",\"distinctBy\":\"identity\",\"display\":[\"name\"],\"details\":[],\"preserveEvidence\":false}; only an explicit count uses {\"kind\":\"count\",\"referent\":\"member\",\"distinctBy\":\"identity\"}. This keeps the list and count on the same bounded selection. Select the exact House-date current Dáil for \"this Dáil\"; add the asOf membership interval only for an explicit current-point request or the ordinary unqualified present-tense default without \"this Dáil\". Do not use this exception for numbered, explicitly dated, election, or party-filtered requests.\n- For an explicitly named OR set of two to four constituencies, replace constituency with {\"type\":\"DailConstituency\",\"members\":[{\"type\":\"DailConstituency\",\"mention\":\"exact first mention\"},{\"type\":\"DailConstituency\",\"mention\":\"exact second mention\"}]}. All existing edges and the party/membership overlap constraint and Member evidence answer remain unchanged. Local code resolves each occurrence in the same selected term and compiles one VALUES identity set; never merge string results. Never infer a set from 'the two Galway constituencies'; that is ambiguous (Roscommon-Galway may also be relevant).\n- For other named-party TDs sharing a constituency with a named anchor Member while that anchor held a named office, keep member, membership, episode, party, affiliation and their edges as below; term is {\"type\":\"DailTerm\",\"mention\":null} and constituency is {\"type\":\"DailConstituency\",\"mention\":null} (unselected shared resource identities). Add anchor (Member, exact named mention), anchor_membership (DailMembership, null mention), holding (OfficeHolding, null mention), office (NamedOffice, exact office mention). Add edges member_has_membership anchor→anchor_membership, membership_in_term anchor_membership→term, membership_represents anchor_membership→constituency, member_has_office_holding anchor→holding, office_holding_of_office holding→office. Keep both independent membership paths to the SAME exact constituency and term. No numbered-term clarification is needed: the accepted office episode anchors time. Constraints are exactly [{\"referent\":\"episode\",\"field\":\"partyEpisodeInterval\",\"operator\":\"overlaps\",\"value\":\"membership\"},{\"referent\":\"member\",\"field\":\"identity\",\"operator\":\"distinctFrom\",\"value\":\"anchor\"},{\"referent\":\"holding\",\"field\":\"interval\",\"operator\":\"commonIntersection\",\"value\":[\"holding\",\"anchor_membership\",\"membership\",\"episode\"]}]. The answer is exactly {\"kind\":\"entities\",\"referent\":\"member\",\"distinctBy\":\"identity\",\"display\":[\"name\"],\"details\":[{\"referent\":\"affiliation\",\"display\":[\"label\"]},{\"referent\":\"episode\",\"display\":[\"start\",\"end\"]},{\"referent\":\"membership\",\"display\":[\"start\",\"end\"]},{\"referent\":\"holding\",\"display\":[\"start\",\"end\"]},{\"referent\":\"anchor_membership\",\"display\":[\"start\",\"end\"]},{\"referent\":\"constituency\",\"display\":[\"label\"]}],\"preserveEvidence\":true}. Local code requires one common inclusive intersection of ALL four independently owned intervals, not merely pairwise overlaps, and reports partial accepted-evidence coverage, never a complete roster. Additional filters or projections remain unsupported as a whole.\n\nFor another/other TDs sharing a named Member's constituency in one exact Dáil, use the bounded shared-constituency form of \"member_relationship_composition\": referents member (answer Member), membership, term, constituency, anchorMember (exact name), and anchorMembership. The anchor and answer have independent DailMembership paths to the exact same DailTerm and DailConstituency identities, and that constituency occurrence links to the selected term. Use a termNumber selector only for the exact numbered Dáil, or previousTerm for a globally previous/last Dáil relative to asOf; never substitute the anchor's latestRecorded term or a fixed ordinal. Set constraints to [] and use the exact entity-list answer, or the distinct Member-IRI count only for an explicit count. Local execution resolves the anchor uniquely, validates one accepted constituency identity in the selected term, excludes the anchor by Member IRI, and paginates the complete shared selection before count/list output. Meaning is term-wide recorded co-membership, not simultaneous service. Do not drop party, office, election, explicit-date, simultaneity or any other requested condition; those requests remain unsupported.\n\nExisting shared-term capability: Resolve exactly two Member identities independently. Each must have its own DailMembership linked to the same shared DailTerm RDF identity. Return the intersection by that shared resource identity; label equality is not a join. This family does not imply complete historical source coverage or support additional filters, temporal constraints, Seanad terms, or other relationships.\n\nReusable Member relationship capability: Return distinct identities by joining typed Member relationship paths to exact HouseTerm resource identities. Supports: (1) one Member with membership in each of exactly two explicitly numbered Dáil terms; (2) Members whose membership represents one named constituency occurrence in exactly one explicitly numbered Dáil term; and (3) those constituency representatives with PartyMembership episodes linked to the exact same OireachtasMembership, term-scoped ParliamentaryParty and reviewed PoliticalAffiliationIdentity, either during one explicitly numbered Dáil or at the reference date in the uniquely date-resolved current Dáil. For (3), the PartyMembership-owned date interval must overlap the containing DailMembership-owned representation interval using inclusive xsd:dateTime endpoints; when currentTerm is selected, both intervals must independently contain asOf as well. An absent EndDate is open-ended, while an absent range/start or invalid/conflicting dates makes temporal evaluation uncertain and the answer fails closed. Only typed PartyMembership episodes count; Independent collection membership is not a political party. The party/representation join is by exact RDF identities, never label equality or undated/current-affiliation shortcuts. The declared bounded compositionOperators additionally permit a finite constituency identity OR set, or independent anchor/answer Member paths sharing exact constituency and term resources with distinct Members and a common accepted-office/representation/party interval intersection. The latter needs no guessed numbered-term selector and preserves partial accepted-evidence coverage. Other filters, calendar-window operators, Seanad relations, or source-completeness claims are not implied.\n\nFor the exact question shape asking who was a Senator in the current Seanad and a Deputy in the current Dáil, use family \"member_relationship_composition\" with referents member, seanad_membership, seanad_term, dail_membership, and dail_term. Use independent Member→SeanadMembership→SeanadTerm and Member→DailMembership→DailTerm paths, with facts member_has_seanad_membership, seanad_membership_in_term, member_has_membership, and membership_in_term. Both term selectors are {\"kind\":\"currentTerm\"}; local code resolves each exact term independently from House-owned date evidence. Set constraints to [] and answer exactly {\"kind\":\"entities\",\"referent\":\"member\",\"distinctBy\":\"identity\",\"display\":[\"name\"],\"details\":[],\"preserveEvidence\":false}. This means term-wide recorded membership in both terms. Do not require intervals to overlap, do not describe a Member as currently serving in either House, and do not claim simultaneous service; the executor displays each House's separate mapped membership intervals. If the user asks for simultaneous/concurrent/current-point service, a historical period, a date, a party, or any additional filter, return unsupported for the whole request rather than dropping it.\n\nThe Seanad party-only shape below also supports one explicitly numbered Seanad with term selector {\"kind\":\"termNumber\",\"number\":N}. Keep the SAME seven typed edges and partySeanadEpisodeInterval overlap constraint; local code resolves the exact SeanadTerm and validates inclusive party/membership interval overlap, without imposing today's party or membership. Preserve all matching separate episodes, including changes of party during the term. An unqualified present-tense named-party Senator request (\"Who are the [party] Senators?\", \"Which [party] Senators are there?\", or \"How many [party] Senators are there?\") instead uses currentTerm: local code records the scoped asOf default and enforces both active intervals. Never default a past-tense, explicitly numbered, dated or additionally filtered request. A numbered Seanad and current Seanad are distinct temporal meanings; unsupported extra dates/relationships must not be dropped.\n\nFor a request for current Senators who previously served in the Dáil (Q20), use the same five typed roles and four exact Member→membership→HouseTerm edges, but select only seanad_term with selector {\"kind\":\"currentTerm\"}; dail_term is an unselected DailTerm because the Dáil is selected by its exact membership path, not by a guessed prior ordinal. An ordinary unqualified present-tense Senator head in this same bounded request also defaults to current: the separate explicitly prior Dáil clause remains historical and must NEVER be replaced by current Dáil service. Require the current SeanadMembership's own accepted interval to contain the configured asOf inclusively, and return a Member only when a finite accepted DailMembership EndDate is strictly earlier than that same SeanadMembership StartDate. Equal endpoints do not qualify; an open-ended DailMembership is not prior-service evidence. Use the evidence-preserving Member list answer with details for both membership intervals and both HouseTerm identities, or the distinct Member count only when explicitly requested. Count/list share the same complete bounded pagination and exact Member-identity join. Unknown, missing, conflicting, malformed or capped identity/date evidence fails closed. This is a positive local-record result only: do not claim complete career/history coverage or infer that anyone never served from an absent path. Refuse party, panel, office, election, simultaneity, dated/ordinal or other additional conditions as a whole.\n\nFor a named-party Member count/list in the explicitly current Seanad, use the party-only shape with member, membership (SeanadMembership), term (SeanadTerm selector {\"kind\":\"currentTerm\"}), episode, party, and affiliation. Use member_has_seanad_membership, seanad_membership_in_term, member_party_membership, party_episode_in_seanad_membership, episode_in_parliamentary_party, party_active_during_seanad_term, and parliamentary_party_has_affiliation_identity. Preserve the exact party mention as the PoliticalAffiliationIdentity filter and require constraints exactly [{\"referent\":\"episode\",\"field\":\"partySeanadEpisodeInterval\",\"operator\":\"overlaps\",\"value\":\"membership\"}]. Local code resolves the unique current SeanadTerm by Houses-owned dates and requires both each SeanadMembership interval and its PartyMembership interval independently to contain asOf; the overlap does not replace either active-point test. A count answer is {\"kind\":\"count\",\"referent\":\"member\",\"distinctBy\":\"identity\"}; a list uses the same Member selection and preserves separate identity/episode/membership evidence. Exact identities, typed PartyMembership records, and complete pagination are mandatory; missing/conflicting dates or identity evidence fail closed. State that results reflect local records and do not certify a complete current Seanad roster. Do not use current Seanad membership alone as a substitute for active party evidence or answer a generic unfiltered Senator count.\n\nExisting validated capabilities available through capability_selection:\n- Existing capability \"current_office_constituency\" (composable_office_representation; input office_mention): Resolve one reviewed NamedOffice, read complete accepted dated OfficeHolding evidence and require exactly one current relationship at configured asOf. Pass the resulting exact Member IRI, never its display name, to the existing independently dated current Dáil representation capability. Preserve office, holding, Member, membership, constituency, term and date-range identities and dates. No assumption that an officeholder is a TD; absent current representation is unavailable, never a historical substitution. Conflicting or incomplete evidence fails closed. This is positive local evidence, not a complete government/current-office roster. Historical periods, party filters, counts and extra fields remain unsupported.\n- Existing capability \"current_committee_members\" (composable_committee_members; input committee_mention): List distinct Members with accepted CommitteeMembership intervals containing configured asOf. Resolve one current typed Committee incarnation from its owner interval and typed HouseTerm dates; preserve all identities, source graphs and separate membership/range intervals. Whole source labels only; the initial generic Committee on/of connector may vary without dropping any subject words. Multiple matching current identities stay ambiguous. No chairmanship, attendance, historical scope, party filters, counts or extra projections. Missing/conflicting identity or interval evidence and incomplete pagination fail closed. Local positive evidence is not a certified complete current roster.\n- Existing capability \"member_lookup\" (stage_a; input member_and_house): Ground exact full-name or whole-name-token partial mentions without assuming a full name. Deputy/TD requires recorded DailMembership; Senator requires Seanad service. Distinct people remain candidates. An opaque choice resumes this same validated lookup after rechecking source identities.\n- Existing capability \"dail_parties_and_groups\" (stage_c; input term_number_and_group_scope): List recorded ParliamentaryParty identities in exactly one explicitly numbered Dáil using the existing term-scoped compiler. Only report missing ParliamentaryGroup data if groups were requested.\n- Existing capability \"office_holding_evidence\" (composable_office_evidence; input member_and_office): Resolve one exact Member and one reviewed NamedOffice identity, then return locally recorded accepted OfficeHolding episodes for that exact pair with validated intervals using complete bounded pagination. Accept unfiltered when/date/period questions, 'When did [member] serve as [office]?', or 'During what period was [member] [office]?'. Last/most recently qualifiers require parameters.selection latestRecorded; otherwise return every separate episode. Latest selects the unique greatest validated StartDate only after validating every episode; ties, earlier open ends/overlaps, future starts or uncertain evidence fail closed, never use an IRI tie-break to choose chronology. Preserve exact Member, NamedOffice, OfficeHolding and DateRange identities in the latest result. Missing end dates remain open, not evidence of a completed tenure. Results are explicitly incomplete local-recorded evidence, not proven historically last tenure or complete career history. Do not infer first/final boundaries, total duration, a merged tenure or absence from gaps. Unreviewed observations are not holdings. Election events, durations and extra filters remain unsupported.\n- Existing capability \"office_holding_window\" (composable_office; input office_and_calendar_period_or_current_office_point): Reuse accepted dated OfficeHolding overlap for an explicit calendar-date point, full calendar month, full calendar year, explicit month-to-month window, or a date-less present/current named-office question whose local executor injects configured asOf as one inclusive calendar-date point. The planner must not invent that date. Date and calendar-window semantics remain distinct; a partial-window match is not service throughout. Preserve exact accepted holding intervals and fail closed on missing/conflicting/uncertain evidence; absent matches do not imply no holder. A current-point result is only locally evidenced holdings and never certifies a complete current-office roster.\n- Existing capability \"seanad_entry\" (stage_a; input member_mention): Return the earliest evidenced Seanad membership start date and preserve later distinct Seanad episodes. This does not answer Dáil service or a Seanad representation question.\n- Existing capability \"bill_lookup\" (stage_b; input bill_number_and_year): Resolve one exact Bill identity by its explicitly supplied number and legislative year. Return the existing lookup projection: English title, mapped process status, official link, every locally recorded typed dated activity, and only a complete typed explanatory-memorandum rendition chain. Dated activity coverage is not certified complete; do not substitute sponsorship, voting, or a predicted next step.\n\nWhen one of those existing capabilities directly answers the request, use family \"capability_selection\", put its exact ID in referents.capability, and provide only the matching semantic inputs in referents.parameters. For seanad_entry use {\"member\":\"the exact grounded Member name\"}. For bill_lookup use {\"billNumber\":\"the explicitly supplied Bill number\",\"billYear\":2025}. Set relations to [], constraints to [], and answer to null. Local code checks the inputs against the question, then invokes the same validated Stage A/B/C plan builder and executor used by deterministic recognition, or the named evidence-boundary resolver. Never use this route to answer another relationship or drop a requested condition.\n\nUse the existing semantic relationship identifiers below; these are proposals, not authority decisions:\n- member_has_membership: Member to DailMembership\n- membership_in_term: DailMembership to DailTerm\n- membership_represents: DailMembership to DailConstituency\n- constituency_in_term: DailConstituency to DailTerm\n- member_party_membership: Member to PartyMembershipEpisode\n- party_episode_in_membership: PartyMembershipEpisode to DailMembership\n- episode_in_parliamentary_party: PartyMembershipEpisode to ParliamentaryParty\n- party_active_during_term: ParliamentaryParty to DailTerm\n- parliamentary_party_has_affiliation_identity: ParliamentaryParty to PoliticalAffiliationIdentity\n\nFor the existing shared-term capability, use family \"shared_dail_terms\" and fixed referent keys member_a, membership_a, member_b, membership_b, and shared_term. Member entries use exact user-supplied labels. Each Member has an independent DailMembership path to the same shared DailTerm identity; set \"constraints\": [] and set \"answer\" to exactly {\"kind\":\"entities\",\"referent\":\"shared_term\",\"distinctBy\":\"identity\",\"display\":[\"label\"],\"details\":[],\"preserveEvidence\":false}.\n\nFor the reusable Member relationship capability, use family \"member_relationship_composition\" and one Member answer referent with a null mention for ordinary projections. Every ordinary DailTerm referent must carry selector {\"kind\":\"termNumber\",\"number\":N} for an explicitly requested numeric Dáil ordinal. The separately described anchored shared-constituency operator may use previousTerm for the globally previous Dáil. For a one-term, one-constituency non-party Member selection, use selector {\"kind\":\"currentTerm\"} for an explicit current/now request, the approved unqualified present-tense default, or \"this Dáil\"; local code selects one exact House-dated term. In this exact shape, unqualified \"in this Dáil\" is term-wide regardless of represent/represented and overrides the implicit present-tense asOf condition. Explicit currently/now/today/as-of-current requests still preserve the appropriate membership interval; explicit calendar dates remain exact date points. This does not change numbered or election questions. In this family, selector is always an object: never use the string \"currentTerm\" or \"latestRecorded\". Use selector {\"kind\":\"currentTerm\"} in the dated party/representation shape only for explicit current/now or the approved unqualified present-tense default; there, both episode and representation intervals must contain asOf. Use one of these complete typed graph shapes only:\n- keys member, membership_a, term_a, membership_b, and term_b: two distinct selected DailTerms, each reached from the same answer Member through a separate DailMembership; this returns Members with recorded membership in both exact term identities;\n- keys member, membership, term, and constituency: one selected DailTerm and one exact user-mentioned DailConstituency, where the same DailMembership links the Member to that term and constituency, and the constituency occurrence links to that same term identity.\n- keys member, membership, term, constituency, anchorMember, and anchorMembership: one exact named anchor plus a separate answer Member path, with both DailMemberships linked to the same selected DailTerm and exact DailConstituency identity, and that constituency occurrence linked to the same term. The term is a numbered term or previousTerm only. This term-wide shape returns other Members only; local execution excludes the anchor by Member IRI and does not claim simultaneous service.\nUse distinct referent IDs for separate membership/term resources. Do not substitute matching labels for RDF identity joins. Preserve every selected term and the constituency when required. For the two-term intersection, use \"constraints\": [] and the exact entity-list answer. For one term-scoped constituency selection, preserve an explicit date point with exactly one constraint {\"referent\":\"membership\",\"field\":\"membershipInterval\",\"operator\":\"on\",\"value\":\"1994-06-01\"}; otherwise use an empty constraints list. Local code supplies the asOf date point for an approved current-representation request; do not invent a date in the draft. Return an entity list with the exact answer value {\"kind\":\"entities\",\"referent\":\"member\",\"distinctBy\":\"identity\",\"display\":[\"name\"],\"details\":[],\"preserveEvidence\":false}, or, only for an explicit how-many/count request, use {\"kind\":\"count\",\"referent\":\"member\",\"distinctBy\":\"identity\"}. Counts are distinct recorded Member IRIs from the same selection as the list, not seats or election events; never count a truncated or uncertain result.\n\nFor a dated political-party/constituency composition, use family \"member_relationship_composition\" and exactly the referents member, membership, term, constituency, episode, party, and affiliation. Connect member→membership→term, membership→constituency, constituency→term, member→episode, episode→membership, episode→party, party→term, and party→affiliation using their exact reviewed fact IDs. The episode must point to the exact same DailMembership that represents the constituency in the selected term. Set \"constraints\" to exactly [{\"referent\":\"episode\",\"field\":\"partyEpisodeInterval\",\"operator\":\"overlaps\",\"value\":\"membership\"}] (inclusive xsd:dateTime endpoints; an absent end is open-ended; missing interval/start means uncertain, never a positive or negative match). When selector is \"currentTerm\", the local executor additionally requires both the DailMembership and PartyMembership intervals independently to contain the supplied asOf date; the model must not substitute only term membership for current service. Only typed PartyMembership records count; Independent is not a party. For \"which parties\" questions, use a null affiliation mention and set \"answer\" to exactly {\"kind\":\"entities\",\"referent\":\"affiliation\",\"distinctBy\":\"identity\",\"display\":[\"label\"],\"details\":[{\"referent\":\"member\",\"display\":[\"name\"]},{\"referent\":\"episode\",\"display\":[\"start\",\"end\"]},{\"referent\":\"membership\",\"display\":[\"start\",\"end\"]}],\"preserveEvidence\":true}. For every named-party TD list, keep the exact named affiliation mention as a required identity filter and set \"answer\" to exactly {\"kind\":\"entities\",\"referent\":\"member\",\"distinctBy\":\"identity\",\"display\":[\"name\"],\"details\":[{\"referent\":\"affiliation\",\"display\":[\"label\"]},{\"referent\":\"episode\",\"display\":[\"start\",\"end\"]},{\"referent\":\"membership\",\"display\":[\"start\",\"end\"]}],\"preserveEvidence\":true}. Never use party-label equality or term context as a substitute for the dated episode and exact identity links.\n\nFor a named-party TD list or count with no constituency requested, use the Dáil-only party shape with exactly member, membership, term, episode, party, and affiliation referents and these seven edges: member→membership→term; member→episode→membership; episode→party→term; party→affiliation. Omit constituency and representation edges because they were not requested. Require the same exact PartyMembership/DailMembership identity join and inclusive interval-overlap constraint above. Resolve the named PoliticalAffiliationIdentity only among ParliamentaryParty identities active in the exact selected term, using the existing term-scoped party listing path; count distinct Member IRIs only after the exact party filter and temporal validation. Select an explicitly numbered term for a numbered request. For an explicitly current/as-of request OR an ordinary unqualified present-tense named-party TD/Deputy request, select currentTerm; local code resolves one exact DailTerm from House-owned dates and additionally requires both DailMembership and PartyMembership intervals independently to contain asOf. The same present-time default applies to named-party Senators. The list answer is exactly {\"kind\":\"entities\",\"referent\":\"member\",\"distinctBy\":\"identity\",\"display\":[\"name\"],\"details\":[{\"referent\":\"affiliation\",\"display\":[\"label\"]},{\"referent\":\"episode\",\"display\":[\"start\",\"end\"]},{\"referent\":\"membership\",\"display\":[\"start\",\"end\"]}],\"preserveEvidence\":true}; only an explicit count uses {\"kind\":\"count\",\"referent\":\"member\",\"distinctBy\":\"identity\"}. Do not count ParliamentaryParty records, seats, or elections; missing/conflicting intervals, identity links, or truncated evidence fail closed, and recorded counts do not imply a complete roster.\n\nAdditional implemented capabilities (do not declare these unsupported):\nBill sponsorship uses the separate family \"member_bill_sponsorship\", never capability_selection. Its supported graph and bounded Published-year count are described below.\n- Party history, including ordinary 'join', 'belonged to', 'member of', and questions asking WHEN memberships occurred, uses family \"member_party_history\", referents member (named Member), episode (PartyMembershipEpisode), party (ParliamentaryParty), affiliation (PoliticalAffiliationIdentity). Only member has a non-null mention. Edges are member_party_membership member→episode, episode_in_parliamentary_party episode→party, parliamentary_party_has_affiliation_identity party→affiliation. Answer affiliation with display [\"label\"], details [], preserveEvidence true. The local evidence projection ALREADY includes separate source membership episodes with their recorded start/end dates and gaps; details=[] does NOT mean dates are unavailable. Requests to SHOW the recorded dates do not add a temporal filter and must not be refused as an unsupported date projection. Missing dates stay missing, not inferred from House terms. This is not an exact joining-event answer, continuous tenure, current status, or a before/after/date-window selection; those stronger semantics cannot be substituted. Independent is not a party.\n- Bills sponsored by a named Member uses family \"member_bill_sponsorship\", referents member (named Member), bill (Bill), participation (BillParticipation). Only member has a non-null mention. Edges are bill_has_sponsor_participation bill→participation and participation_has_participant participation→member. Answer bill with display [\"label\"], details [], preserveEvidence true. Local projection supplies Bill titles/numbers/links and primary, supporting or unknown-primary evidence; never restrict to primary sponsorship. For the exact bounded request \"How many Bills did [Member] sponsor that were published in [calendar year]?\", use referents member, bill, participation, process, activity; edges bill_process_cocontained bill→process, process_has_participation process→participation, participation_has_participant participation→member, and activity_forms_part_of_process activity→process. Add exactly one constraint {\"referent\":\"activity\",\"field\":\"publishedDate\",\"operator\":\"inCalendarYear\",\"value\":YEAR}, answer {\"kind\":\"count\",\"referent\":\"bill\",\"distinctBy\":\"identity\"}. Never use legislative year or document/version dates; missing or malformed Published dates make the aggregate unavailable, not zero.\n - Constituency representation uses family \"constituency_representation\", referents member, membership (DailMembership), term (DailTerm), constituency (DailConstituency). Exactly one of member/constituency has a user-mentioned label; all others have null mentions. term may use selector \"currentTerm\" for present-tense/current questions, \"latestRecorded\" only for a named Member's latest House-dated Dáil term, or null for a named Member's career-wide/historical constituencies. Connect member_has_membership member→membership, membership_in_term membership→term, membership_represents membership→constituency, constituency_in_term constituency→term. Answer the unmentioned member (display [\"name\"]) or constituency (display [\"label\"]), details [{\"referent\":\"term\",\"display\":[\"label\"]}], preserveEvidence true. Current is date-relative, never a guessed ordinal.\nFor the three additional entity-history capabilities, constraints is []. Constituency representation supports only the explicit membership date point stated above; the bounded Member count is the only aggregate allowed for that same one-term, one-constituency selection. Preserve all other conditions; extra party, office, temporal-window or aggregate projections are not supported by these slices.\n\nConstitutional Government members of a named party at the reference date are also implemented: family \"government_party_members\"; referents member (Member), cabinet (CabinetMembership), government (Government), episode (PartyMembershipEpisode), party (ParliamentaryParty), affiliation (PoliticalAffiliationIdentity). Only affiliation has a non-null user-mentioned label. Use member_has_cabinet_membership member→cabinet, cabinet_membership_of_government cabinet→government, member_party_membership member→episode, episode_in_parliamentary_party episode→party, parliamentary_party_has_affiliation_identity party→affiliation. Use constraints []; local code supplies the reference-date point constraints. Answer member, display [\"name\"], details [{\"referent\":\"affiliation\",\"display\":[\"label\"]},{\"referent\":\"cabinet\",\"display\":[\"start\",\"end\"]},{\"referent\":\"episode\",\"display\":[\"start\",\"end\"]}], preserveEvidence true. This is constitutional Cabinet membership, not the wider GovernmentExecutive or Government benches; Ministers of State alone do not qualify. Completeness cannot be inferred from the optional office dataset. Requests for the wider executive or additional conditions remain unsupported.\n\nIf a question asks for any other relationship, more or fewer terms than the supported shapes, an extra filter, temporal restriction, different answer, or anything outside these capabilities, return supported=false with a concise unsupportedReason, null family, null referents, empty relations, \"constraints\": [], and null answer. The unsupportedReason must describe the missing capability actually requested (for example, voting evidence, or an unsupported Member relationship). Do not describe every unsupported question as a Member-relationship limitation, and do not mention Dáil or Member capabilities when they are unrelated to the question. For unrelated topics, state briefly that the question is outside the local parliamentary query scope. Never simplify an unsupported request by dropping an essential relation or constraint.\n\nSemantic interpretation only. Never output SPARQL, predicates, graph names, variables, endpoints, URLs, IRIs, candidates, or resolution decisions. Do not decide whether a mapping is authoritative; local code checks all proposed relation IDs against the reviewed v2 and query-schema contracts. Do not add assumptions about source completeness.\n\nReturn only the JSON object required by the strict composable-plan-v2 draft schema. All schema fields are required; family, unsupportedReason, referents, and answer are null when not applicable."
+        }
+      },
+      "output": {
+        "title": "Committee membership",
+        "interpretation": "Check current membership and any requested earlier membership.",
+        "response": "I will check the available membership records.",
+        "responseNarrative": null,
+        "clarification": null,
+        "requirements": [
+          {
+            "kind": "research_question",
+            "wording": "What is the membership history of the Committee of Public Accounts?",
+            "conditions": [
+              "What is the membership history of the Committee of Public Accounts?"
+            ],
+            "disposition": "evidence pending",
+            "explanation": "Check available records."
+          }
+        ],
+        "tasks": [
+          {
+            "id": "investigation",
+            "question": "What is the membership history of the Committee of Public Accounts?",
+            "relevance": "Investigate the requested parliamentary records.",
+            "role": "direct",
+            "tool": "query",
+            "member": null,
+            "sourceTask": null
+          }
+        ],
+        "revisionInstructions": "Write a useful bounded briefing",
+        "revisionTargets": []
+      },
+      "factReferenceMap": {}
+    },
+    {
+      "phase": "report",
+      "turn": 1,
+      "seconds": 0.0,
+      "input": {
+        "originalBrief": "What is the membership history of the Committee of Public Accounts?",
+        "reportingDate": "2026-11-13",
+        "conversation": [
+          {
+            "role": "user",
+            "text": "What is the membership history of the Committee of Public Accounts?"
+          },
+          {
+            "role": "assistant",
+            "text": "I will check the available membership records."
+          }
+        ],
+        "requirements": [
+          {
+            "id": "r0",
+            "originalWording": "What is the membership history of the Committee of Public Accounts?",
+            "proposedConditions": [
+              {
+                "kind": "research_question",
+                "wording": "What is the membership history of the Committee of Public Accounts?",
+                "conditions": [
+                  "What is the membership history of the Committee of Public Accounts?"
+                ],
+                "disposition": "evidence pending",
+                "explanation": "Check available records.",
+                "id": "r0-q0"
+              }
+            ],
+            "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "t0-0-investigation",
+            "question": "What is the membership history of the Committee of Public Accounts?",
+            "relevance": "Investigate the requested parliamentary records.",
+            "role": "direct",
+            "tool": "query",
+            "member": null,
+            "sourceTask": null,
+            "title": "What is the membership history of the Committee of Public Accounts?",
+            "state": "Incomplete",
+            "requirementId": "r0",
+            "toolMeaning": "Investigate this question using the available parliamentary records.",
+            "evidenceRefs": [
+              "e-2da3547d9f17457fbc5ee873fe9ccc3a"
+            ],
+            "researchOutcome": {
+              "kind": "unsupported_question",
+              "label": "Question not answered",
+              "description": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+            },
+            "outcomeLabel": "Question not answered",
+            "reason": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+          }
+        ],
+        "sections": [],
+        "questionAssessments": {},
+        "facts": {},
+        "assertions": {},
+        "operationOutcomes": [
+          {
+            "question": "What is the membership history of the Committee of Public Accounts?",
+            "researchOutcome": {
+              "kind": "unsupported_question",
+              "label": "Question not answered",
+              "description": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+            },
+            "resolvedScope": {
+              "reportingDate": "2026-11-13",
+              "temporalMeaning": "compiler_plan_scope_only",
+              "intent": null,
+              "parentRequirementSatisfied": false
+            },
+            "clarificationCandidates": []
+          }
+        ],
+        "revisionInstructions": "Write a useful bounded briefing",
+        "editorialTargets": [],
+        "knownUnanswered": [
+          {
+            "id": "r0-q0",
+            "state": "Unanswered / for review",
+            "requirement": "What is the membership history of the Committee of Public Accounts?",
+            "reason": "What is the membership history of the Committee of Public Accounts?"
+          }
+        ]
+      },
+      "output": {
+        "response": "The report shows the available findings and any unanswered questions.",
+        "responseNarrative": null,
+        "sections": [],
+        "unanswered": [],
+        "resolvedQuestions": []
+      },
+      "factReferenceMap": {}
+    },
+    {
+      "phase": "investigate",
+      "turn": 1,
+      "seconds": 0.0,
+      "input": {
+        "originalBrief": "What is the membership history of the Committee of Public Accounts?",
+        "reportingDate": "2026-11-13",
+        "conversation": [
+          {
+            "role": "user",
+            "text": "What is the membership history of the Committee of Public Accounts?"
+          },
+          {
+            "role": "assistant",
+            "text": "I will check the available membership records."
+          },
+          {
+            "role": "assistant",
+            "text": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+          }
+        ],
+        "requirements": [
+          {
+            "id": "r0",
+            "originalWording": "What is the membership history of the Committee of Public Accounts?",
+            "proposedConditions": [
+              {
+                "kind": "research_question",
+                "wording": "What is the membership history of the Committee of Public Accounts?",
+                "conditions": [
+                  "What is the membership history of the Committee of Public Accounts?"
+                ],
+                "disposition": "evidence pending",
+                "explanation": "Check available records.",
+                "id": "r0-q0"
+              }
+            ],
+            "assessment": "Provisional — researcher review required; no exhaustive completeness certification"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "t0-0-investigation",
+            "question": "What is the membership history of the Committee of Public Accounts?",
+            "relevance": "Investigate the requested parliamentary records.",
+            "role": "direct",
+            "tool": "query",
+            "member": null,
+            "sourceTask": null,
+            "title": "What is the membership history of the Committee of Public Accounts?",
+            "state": "Incomplete",
+            "requirementId": "r0",
+            "toolMeaning": "Investigate this question using the available parliamentary records.",
+            "evidenceRefs": [
+              "e-2da3547d9f17457fbc5ee873fe9ccc3a"
+            ],
+            "researchOutcome": {
+              "kind": "unsupported_question",
+              "label": "Question not answered",
+              "description": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+            },
+            "outcomeLabel": "Question not answered",
+            "reason": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+          }
+        ],
+        "sections": [],
+        "questionAssessments": {},
+        "facts": {},
+        "assertions": {},
+        "operationOutcomes": [
+          {
+            "question": "What is the membership history of the Committee of Public Accounts?",
+            "researchOutcome": {
+              "kind": "unsupported_question",
+              "label": "Question not answered",
+              "description": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+            },
+            "resolvedScope": {
+              "reportingDate": "2026-11-13",
+              "temporalMeaning": "compiler_plan_scope_only",
+              "intent": null,
+              "parentRequirementSatisfied": false
+            },
+            "clarificationCandidates": []
+          }
+        ],
+        "queryServiceDiscovery": {
+          "questionFamilies": [
+            {
+              "id": "current_office_constituency",
+              "cases": [],
+              "referentType": "DailConstituency",
+              "patterns": [
+                "conditionally-resolved-office-holdings",
+                "named-office-description",
+                "member-house-membership",
+                "representation-reference",
+                "constituency-term-occurrence",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Closed NamedOffice → unique accepted current OfficeHolding → exact Member → independently current Dáil representation chain at configured asOf. Preserve source identities and intervals; absence or uncertainty in either relationship fails closed without historical substitution or completeness claims."
+            },
+            {
+              "id": "current_committee_members",
+              "cases": [],
+              "referentType": "Member",
+              "patterns": [
+                "committee-membership-reference",
+                "committee-description",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Closed named-committee Member-list capability at configured asOf; Committee owner, HouseTerm and each CommitteeMembership must independently contain the reference date. Preserve exact identities, date ranges, endpoints and source graphs; locally recorded roster only, not completeness certification."
+            },
+            {
+              "id": "government_party_members",
+              "cases": [],
+              "referentType": "Member",
+              "patterns": [
+                "derived-cabinet-membership",
+                "party-membership-episode",
+                "party-term-occurrence",
+                "reviewed-political-affiliation-identities",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Return recorded constitutional Government members of an exactly resolved enduring party identity at asOf. Require CabinetMembership and PartyMembership intervals containing the same reference date, plus containing parliamentary membership and HouseTerm date evidence. Minister-of-State-only cases and GovernmentExecutive are not Cabinet membership. Preserve source episodes and explicitly state that incomplete current-office/party coverage is not a complete Government roster; no matches is not a certified empty roster."
+            },
+            {
+              "id": "constituency_representation",
+              "cases": [],
+              "referentType": "DailConstituency",
+              "patterns": [
+                "member-house-membership",
+                "representation-reference",
+                "constituency-term-occurrence",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Project a named Member's current or career-wide constituency occurrences with their exact Dáil terms, or return current TDs for one named constituency. Current Dáil is uniquely resolved from House-owned term dates at asOf, never an ordinal. Current membership requires its own mapped date interval spanning asOf, within that term. Historical answers preserve term-scoped constituency identities. No source completeness claim is implied."
+            },
+            {
+              "id": "member_lookup",
+              "cases": [
+                "Q01",
+                "Q32",
+                "Q34"
+              ],
+              "referentType": "Member",
+              "patterns": [
+                "member-description"
+              ],
+              "semantics": "Grounded name tokens resolve to zero, one, or a set of distinct local Member IRIs; ambiguity is not collapsed."
+            },
+            {
+              "id": "previous_service",
+              "cases": [
+                "Q02"
+              ],
+              "referentType": "DailMembership",
+              "patterns": [
+                "member-house-membership",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Previous Dáil is selected from HouseTerm start/end evidence relative to explicit asOf; membership is tested in that term."
+            },
+            {
+              "id": "dail_duration",
+              "cases": [
+                "Q03"
+              ],
+              "referentType": "DailMembership",
+              "patterns": [
+                "member-house-membership"
+              ],
+              "semantics": "Cumulative service is the union of dated membership intervals through asOf; gaps are preserved and open ends are not unbounded."
+            },
+            {
+              "id": "term_count",
+              "cases": [
+                "Q04",
+                "T01"
+              ],
+              "referentType": "DailTerm",
+              "patterns": [
+                "member-house-membership",
+                "house-term-description"
+              ],
+              "semantics": "Count distinct HouseTerm resource identities, never membership rows or replacement people."
+            },
+            {
+              "id": "seanad_entry",
+              "cases": [
+                "Q05"
+              ],
+              "referentType": "SeanadMembership",
+              "patterns": [
+                "member-house-membership",
+                "constituency-term-occurrence"
+              ],
+              "semantics": "Earliest dated Seanad membership and later episodes remain distinct; representation is displayed only as the source-provided designation."
+            },
+            {
+              "id": "current_collection",
+              "cases": [
+                "Q07",
+                "Q08"
+              ],
+              "referentType": "ParliamentaryMemberCollection",
+              "patterns": [
+                "member-collection-membership",
+                "party-term-occurrence"
+              ],
+              "semantics": "Dated collection membership is evaluated at asOf; IndependentMemberCollection is a parliamentary status, not a political party."
+            },
+            {
+              "id": "seanad_representation",
+              "cases": [
+                "Q10"
+              ],
+              "referentType": "SeanadRepresentation",
+              "patterns": [
+                "member-house-membership",
+                "representation-reference",
+                "constituency-term-occurrence"
+              ],
+              "semantics": "Report the term-scoped mapped representation resource/designation without coercing panel, university constituency, or an unmapped Taoiseach nomination category into one another."
+            },
+            {
+              "id": "committee_boolean",
+              "cases": [
+                "Q11"
+              ],
+              "referentType": "Committee",
+              "patterns": [
+                "committee-membership-reference",
+                "committee-description",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Unscoped committee names default to a uniquely evidenced incarnation current at asOf; absent/ambiguous current-date evidence is unavailable, not yes/no."
+            },
+            {
+              "id": "committee_count",
+              "cases": [
+                "Q13"
+              ],
+              "referentType": "Committee",
+              "patterns": [
+                "committee-membership-reference"
+              ],
+              "semantics": "Count distinct Committee IRI identities, not repeated CommitteeMembership records."
+            },
+            {
+              "id": "house_terms",
+              "cases": [
+                "Q15"
+              ],
+              "referentType": "DailTerm",
+              "patterns": [
+                "house-term-description",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Chronological House-owned start/end evidence distinguishes a current open term from an unclassified missing end. Date-point and full-month selection preserve the original time scope and every selected exact term identity; term existence is not evidence of a sitting."
+            },
+            {
+              "id": "dail_all",
+              "cases": [
+                "Q33"
+              ],
+              "referentType": "Member",
+              "patterns": [
+                "member-description",
+                "member-house-membership"
+              ],
+              "semantics": "Set-valued exact-name resolution returns every distinct Member identity with DáilMembership evidence."
+            },
+            {
+              "id": "bill_title_search",
+              "cases": [
+                "Q18"
+              ],
+              "referentType": "Bill",
+              "patterns": [
+                "bill-lifecycle"
+              ],
+              "semantics": "Resolve a supplied title mention; the approved AI abbreviation expands to Artificial Intelligence; retain multiple distinct Bill identities as candidates and never choose by guess."
+            },
+            {
+              "id": "bills_published",
+              "cases": [
+                "Q19"
+              ],
+              "referentType": "BillActivity",
+              "patterns": [
+                "bill-lifecycle"
+              ],
+              "semantics": "Use any typed BillActivity with exact Published type and mapped xsd:date in the requested calendar year; legislativeYear is not a publication-date fallback."
+            },
+            {
+              "id": "non_enacted_bills",
+              "cases": [
+                "Q20"
+              ],
+              "referentType": "Bill",
+              "patterns": [
+                "bill-lifecycle"
+              ],
+              "semantics": "Include every known status other than Enacted, report grouped local counts, and fail closed on missing or conflicting process statuses."
+            },
+            {
+              "id": "bill_status_history",
+              "cases": [
+                "Q21"
+              ],
+              "referentType": "Bill",
+              "patterns": [
+                "bill-lifecycle"
+              ],
+              "semantics": "Resolve the supplied Bill title mention; report source-backed status and queryable dated lifecycle activities, never infer a next step."
+            },
+            {
+              "id": "bill_sponsors",
+              "cases": [
+                "Q22"
+              ],
+              "referentType": "BillParticipation",
+              "patterns": [
+                "bill-sponsor-reference",
+                "member-description"
+              ],
+              "semantics": "Return all Bill-owned Participation records including unknown primary and role-only evidence; Member labels join only by exact RDF IRI through the reviewed Member owner graph."
+            },
+            {
+              "id": "member_bill_sponsorship",
+              "cases": [
+                "Q23"
+              ],
+              "referentType": "Bill",
+              "patterns": [
+                "bill-sponsor-reference",
+                "bill-lifecycle",
+                "member-description"
+              ],
+              "semantics": "Resolve one exact Member IRI, traverse BillDelivery created_a_realization_of Bill and forms_part_of the same Bill-owned LegislativeProcess containing sponsor Participations, and join participant-person only by exact Member RDF identity. Return distinct Bill IRIs and preserve all participation role/primary evidence. The bounded count projection additionally requires source-backed typed Published activities with valid xsd:date dates in exactly one calendar year, deduplicates by Bill identity, and fails closed for missing/unavailable evidence; it never uses legislative year or version/document dates."
+            },
+            {
+              "id": "bill_lookup",
+              "cases": [
+                "Q24A"
+              ],
+              "referentType": "Bill",
+              "patterns": [
+                "bill-lifecycle",
+                "bill-document-work-links"
+              ],
+              "semantics": "Resolve exact Bill number/year; display English title, mapped status, official link, available dated activity evidence, and only typed explanatory-memorandum rendition chains recorded in the same Bill-owned graph."
+            },
+            {
+              "id": "committee_chair",
+              "cases": [
+                "Q12"
+              ],
+              "referentType": "Committee",
+              "patterns": [
+                "committee-description"
+              ],
+              "semantics": "Resolve a uniquely dated current Committee owner first; report chair evidence gap because no chair/office-holder predicate is queryable; do not infer from membership."
+            },
+            {
+              "id": "committee_conflict",
+              "cases": [
+                "Q14"
+              ],
+              "referentType": "Committee",
+              "patterns": [],
+              "semantics": "Report the reviewed development source conflict/quarantine as a coverage failure, not a planning failure or current roster."
+            },
+            {
+              "id": "office_month_overlap",
+              "cases": [
+                "Q25"
+              ],
+              "referentType": "OfficeHolding",
+              "patterns": [
+                "conditionally-resolved-office-holdings",
+                "named-office-description",
+                "member-description"
+              ],
+              "semantics": "Reuse the accepted inclusive calendar-window OfficeHolding path; resolve the named Member to one exact local Member IRI, bind the Member referent by identity (never display label), and show tenure start/end evidence."
+            },
+            {
+              "id": "office_current_coverage",
+              "cases": [
+                "Q26"
+              ],
+              "referentType": "OfficeHolding",
+              "patterns": [
+                "conditionally-resolved-office-holdings",
+                "named-office-description"
+              ],
+              "semantics": "Require complete current coverage; the incomplete development holding sample and office aliases do not establish a current holder."
+            },
+            {
+              "id": "office_date_point",
+              "cases": [
+                "Q27"
+              ],
+              "referentType": "OfficeHolding",
+              "patterns": [
+                "conditionally-resolved-office-holdings",
+                "named-office-description"
+              ],
+              "semantics": "Reuse accepted inclusive calendar-date OfficeHolding evidence for the requested point date."
+            },
+            {
+              "id": "dail_seats",
+              "cases": [
+                "Q16"
+              ],
+              "referentType": "DailTerm",
+              "patterns": [
+                "house-term-seat-complement"
+              ],
+              "semantics": "Resolve one typed DailTerm by its exact numeric term ordinal and report its authoritative agents:seats value; never count Member records."
+            },
+            {
+              "id": "dail_parties_and_groups",
+              "cases": [
+                "Q17"
+              ],
+              "referentType": "ParliamentaryParty",
+              "patterns": [
+                "party-term-occurrence",
+                "house-term-ordinal"
+              ],
+              "semantics": "Resolve one typed DailTerm first, then list term-scoped ParliamentaryParty records for that exact identity, preserving rows with missing labels; separately report ParliamentaryGroup coverage as missing because no current group instances are emitted."
+            },
+            {
+              "id": "bill_quarantine",
+              "cases": [
+                "Q24"
+              ],
+              "referentType": "Bill",
+              "patterns": [
+                "bill-lifecycle"
+              ],
+              "semantics": "Check only the exact Bill-owned graph for 2024/48; an absent graph is explained by the reviewed source quarantine, not ordinary title-resolution failure or proof of nonexistence."
+            },
+            {
+              "id": "debate_lookup",
+              "cases": [
+                "Q31"
+              ],
+              "referentType": "DebateSitting",
+              "patterns": [
+                "debate-sitting-record"
+              ],
+              "semantics": "Reuse the reviewed actual-sitting to produced DebateRecord path and graph-route chamber identity; local absence is not a claim that no debate occurred."
+            },
+            {
+              "id": "committee_topic_latest",
+              "cases": [
+                "Q30"
+              ],
+              "referentType": "Committee",
+              "patterns": [],
+              "semantics": "Resolve the reviewed alias PAC to Committee of Public Accounts, but do not infer substantive HSE examination or latest coverage from the pinned metadata-only hearing."
+            },
+            {
+              "id": "bill_votes",
+              "cases": [
+                "Q36"
+              ],
+              "referentType": "Bill",
+              "patterns": [],
+              "semantics": "Bill-linked voting is unavailable; sponsorship participation is not voting evidence."
+            },
+            {
+              "id": "debate_transcript",
+              "cases": [
+                "Q37"
+              ],
+              "referentType": "DebateSitting",
+              "patterns": [],
+              "semantics": "Transcript speech content is unavailable because no approved transcript retrieval path exists; Debate metadata and links are not speech content."
+            },
+            {
+              "id": "current_cross_house_membership_intersection",
+              "cases": [
+                "Q19"
+              ],
+              "referentType": "Member",
+              "patterns": [
+                "member-description",
+                "member-house-membership",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Select one current DailTerm and one current SeanadTerm independently from House-owned dates at asOf, then intersect exact Member identities across separate DailMembership and SeanadMembership paths to those exact term IRIs. The result means recorded membership in each current term; display each mapped interval as evidence but do not require overlap or claim simultaneous/current service. Missing, conflicting, capped or truncated term, identity or membership-interval evidence fails closed; local historical completeness is not certified."
+            },
+            {
+              "id": "current_seanad_prior_dail_membership",
+              "cases": [
+                "Q20"
+              ],
+              "referentType": "Member",
+              "patterns": [
+                "member-description",
+                "member-house-membership",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Resolve exactly one current SeanadTerm from Houses-owned dates at asOf, then join exact Member identities through independent typed SeanadMembership and DailMembership paths to typed HouseTerm identities. A SeanadMembership qualifies only when its own accepted inclusive interval contains asOf. A DailMembership is prior evidence only when its accepted EndDate is finite and strictly earlier than the StartDate of that same qualifying SeanadMembership; equal endpoints and open-ended Dáil intervals do not qualify, and ordinal ordering is not a substitute. Preserve both membership and term identities and intervals. List and distinct Member count share complete bounded pagination and interval validation. Missing, conflicting, malformed, capped or truncated identity/date evidence fails closed. Report positive local matches only; local historical completeness is not certified and an absent path is not proof that a person never served."
+            },
+            {
+              "id": "current_seanad_party_members",
+              "cases": [
+                "Q23"
+              ],
+              "referentType": "Member",
+              "patterns": [
+                "member-description",
+                "member-house-membership",
+                "party-membership-episode",
+                "party-term-occurrence",
+                "reviewed-political-affiliation-identities",
+                "house-term-temporal-reference"
+              ],
+              "semantics": "Resolve the current SeanadTerm from House-owned dates at asOf. Select term-scoped ParliamentaryParty and exact reviewed PoliticalAffiliationIdentity records; join each typed PartyMembership episode to its exact SeanadMembership. Both the SeanadMembership-owned interval and PartyMembership-owned interval must independently contain asOf using inclusive endpoints. The Member list and distinct-identity count use the same fully paginated selection; missing/conflicting identity or interval evidence and capped/truncated pages fail closed. Local current roster completeness is not certified."
+            },
+            {
+              "id": "shared_dail_terms",
+              "cases": [],
+              "referentType": "DailTerm",
+              "patterns": [
+                "member-house-membership",
+                "house-term-description"
+              ],
+              "semantics": "Resolve exactly two Member identities independently. Each must have its own DailMembership linked to the same shared DailTerm RDF identity. Return the intersection by that shared resource identity; label equality is not a join. This family does not imply complete historical source coverage or support additional filters, temporal constraints, Seanad terms, or other relationships."
+            },
+            {
+              "id": "member_relationship_composition",
+              "cases": [],
+              "referentType": "Member",
+              "patterns": [
+                "member-description",
+                "member-house-membership",
+                "party-membership-episode",
+                "party-term-occurrence",
+                "reviewed-political-affiliation-identities",
+                "representation-reference",
+                "house-term-ordinal",
+                "house-term-temporal-reference",
+                "constituency-term-occurrence",
+                "conditionally-resolved-office-holdings",
+                "named-office-description"
+              ],
+              "operators": [
+                "identitySet",
+                "sharedResource",
+                "commonIntersection"
+              ],
+              "semantics": "Return distinct identities by joining typed Member relationship paths to exact HouseTerm resource identities. Supports: (1) one Member with membership in each of exactly two explicitly numbered Dáil terms; (2) Members whose membership represents one named constituency occurrence in exactly one explicitly numbered Dáil term; and (3) those constituency representatives with PartyMembership episodes linked to the exact same OireachtasMembership, term-scoped ParliamentaryParty and reviewed PoliticalAffiliationIdentity, either during one explicitly numbered Dáil or at the reference date in the uniquely date-resolved current Dáil. For (3), the PartyMembership-owned date interval must overlap the containing DailMembership-owned representation interval using inclusive xsd:dateTime endpoints; when currentTerm is selected, both intervals must independently contain asOf as well. An absent EndDate is open-ended, while an absent range/start or invalid/conflicting dates makes temporal evaluation uncertain and the answer fails closed. Only typed PartyMembership episodes count; Independent collection membership is not a political party. The party/representation join is by exact RDF identities, never label equality or undated/current-affiliation shortcuts. The declared bounded compositionOperators additionally permit a finite constituency identity OR set, or independent anchor/answer Member paths sharing exact constituency and term resources with distinct Members and a common accepted-office/representation/party interval intersection. The latter needs no guessed numbered-term selector and preserves partial accepted-evidence coverage. Other filters, calendar-window operators, Seanad relations, or source-completeness claims are not implied."
+            }
+          ],
+          "semanticPlannerGuidance": "Interpret one user question as a semantic proposal for composable query plan v2.\n\nApproved present-time policy: ordinary unqualified present-tense requests for an existing current-time parliamentary relationship mean current at configured asOf. This applies to both Dáil and Seanad named-party membership, current Dáil representation, current named-committee membership, current named-office holders, officeholder-to-constituency and constitutional Government/party membership. Use the existing current selector/operation without inventing a date; local code supplies asOf and validates each relationship's own temporal evidence. Explicit dates, numbered terms, past/future expressions, negation and additional requirements cannot be replaced by a default. latestRecorded is NOT current. This does not add standalone House rosters, generic current Senator representation, current cross-House simultaneous service, chairs or other unsupported operations. Family-specific completeness guards remain mandatory.\n\nInterpretation contract: for the one-term, one-constituency Member list/count, the explicit phrase \"in this Dáil\" selects the exact House-date-resolved current term and is term-wide, regardless of whether the question says \"represent\" or \"represented\". It overrides only the implicit present-tense-as-of default: do not require an asOf membership interval unless the user explicitly asks for current representation (for example, \"currently\", \"now\", \"today\", or \"as of now/today\"). A literal calendar date remains its exact membership-date point. Without the explicit \"this Dáil\" scope, an unqualified present-tense constituency request defaults to representation at the query date; an explicit current-point request also requires the DailMembership interval to contain asOf. Dated party/representation composition retains its separate rule that currentTerm requires both party and DailMembership intervals to contain asOf. Never default numbered-term, other dated, historical, or election questions. The plain term-scoped constituency Member projection supports one explicit membership calendar-date point; preserve it as a membershipInterval constraint, never as a HouseTerm date or election event. For a Member's latest recorded Dáil term and constituency, use the constituency_representation family with selector \"latestRecorded\" when the question explicitly asks for the latest recorded term, the most recent term, or the last term (including \"last term in the Dáil\"). Local code selects from that Member's accepted DailMembership identities and House-owned chronology, and fails closed on missing/tied/conflicting dates or representation evidence. This is not an election-date answer.\nFor partial-name person lookup use capability_selection member_lookup with parameters {\"member\":\"exact name mention\",\"house\":\"Dail\"} for Deputy/TD, \"Seanad\" for Senator, or null for unqualified Member. Local code offers grounded alternatives; never expand a surname to an assumed full name.\nFor a numbered-Dáil party listing use capability_selection dail_parties_and_groups with parameters {\"termNumber\":N,\"includeGroups\":false}; true only if groups are also requested. This reuses the existing party compiler, not the constituency composition.\n\nFor a present/current list of the members of one named committee, use capability_selection current_committee_members with parameters exactly {\"committee\":\"the exact committee name mention\"}. This includes \"Who are the members of the Committee on Public Accounts?\" and \"Which members serve on the Committee of Public Accounts?\". Do not supply a term, date, person, chair or inferred committee identity. Local code selects one current Committee incarnation using accepted owner and HouseTerm date evidence at configured asOf, then tests each exact CommitteeMembership interval independently. Preserve the whole user-mentioned committee name; only the initial generic Committee on/of connector may vary in source-label matching. Results are distinct local Member identities with separate dated membership evidence, not a certified complete current roster, attendance or chairmanship. Historical scope, counts, party filters, additional conditions or answer fields remain unsupported as a whole.\n\nFor the current constituency of a named officeholder, e.g. \"What constituency does the Tánaiste represent?\", use capability_selection current_office_constituency with parameters exactly {\"office\":\"the exact office name mention\"}. An office title is a NamedOffice, NEVER a Member name. Do not name an assumed holder or invent a date. Code resolves one reviewed office and requires one accepted current OfficeHolding at configured asOf, then uses its exact Member identity for the independently dated current Dáil representation capability. Preserve both relationships and all identity/date evidence. Do not assume the holder is a TD or substitute former officeholders/historical constituencies. Missing, conflicting or ambiguous accepted evidence fails closed; neither local office nor government roster completeness is certified. Historical dates, extra conditions, counts and additional answer fields are unsupported as a whole.\nFor an unfiltered question asking when/for what dates or periods one named person held one named office, also accepting \"When did [member] serve as [office]?\" and \"During what period was [member] [office]?\", use capability_selection office_holding_evidence with parameters {\"member\":\"exact mention\",\"office\":\"exact office mention\"}. This returns each separately recorded accepted local OfficeHolding episode for the exact identities with its validated interval, explicitly labeled incomplete local-recorded evidence—not a complete career timeline. Do not merge episodes or infer first start, final end, total duration, election events, or absence from gaps; unreviewed observations cannot answer. Election, first-event, duration, and extra-filter requests remain unsupported.\n\nFor the same named-person/office period request qualified by \"last\" or \"most recently\" (including \"When was [member] last [office]?\" and \"When did [member] last serve as [office]?\"), reuse office_holding_evidence with parameters {\"member\":\"exact mention\",\"office\":\"exact office mention\",\"selection\":\"latestRecorded\"}. Do not reject this as an election-event request or claim complete career history. Local code reads every accepted episode and may return only a uniquely latest recorded episode by validated StartDate, with an explicit NOT proven historically last tenure qualification. Tied latest starts, earlier open/overlapping intervals, future starts or any uncertain interval fail closed; no IRI tie-break determines chronology. A missing end remains open-ended, not a completed tenure. Do not omit selection for last/most-recently wording or add it to an all-episodes request. Extra dates, parties, election events and relationships remain unsupported as a whole.\n\nFor who held a named office on a calendar date, during a complete month/year, or over an explicit month-to-month window, use capability_selection office_holding_window with exactly one of {\"office\":\"exact mention\",\"date\":\"1994-06-01\"}, {\"office\":\"exact mention\",\"year\":1994}, or {\"office\":\"exact mention\",\"startMonth\":6,\"startYear\":1994,\"endMonth\":6,\"endYear\":1994}. Preserve date-point vs full-window semantics. Local code reuses the accepted dated OfficeHolding compiler and incomplete-coverage qualification; an overlap does not mean service throughout the window.\n\nFor a date-less present/current question asking who is a named office-holder (for example, \"Who is the Taoiseach?\" or \"Who is the current Taoiseach?\"), use capability_selection office_holding_window with parameters exactly {\"office\":\"exact office mention from the question\"}. Do not put a date or period in the proposal: local code injects the configured asOf as an inclusive one-day point and reuses the accepted OfficeHolding interval evaluator. Resolve any generic office only through its existing reviewed NamedOffice identity; do not hardcode an office or infer a holder from its alias. Return only locally evidenced accepted holdings, preserve their exact start/end dates, and state that current-office coverage is not certified. Missing, conflicting, uncertain or absent holding evidence fails closed; an empty result is not evidence that the office has no holder. A date-less past-tense question is not current and must not be defaulted to asOf. This point lookup is not a complete current roster or office-tenure duration/election query.\n\nBounded operators extend the SAME member_relationship_composition graph below, not new families. Dispatch priority: when the question asks for other/another named-party TDs or Deputies sharing the same constituency as a named Member while/when/during that Member held a named office, use the independent anchor/answer shared-constituency operator below, not the ordinary single-member party/representation shape. Keep separate membership paths for the anchor and answer Member and join them to the same exact constituency and term identities. Preserve all nine edges in the base party/representation graph below, including constituency_in_term, then append the five anchor/office edges in the anchor operator for fourteen relations total; do not drop or replace any base edge. The named office episode anchors the common time intersection; do not invent or require a numbered-term selector.\n- For one explicitly numbered or House-date-resolved current Dáil and one named constituency, a distinct-Member count uses the exact same referents, relationships and optional membership-date point as the entity-list projection. Use answer {\"kind\":\"count\",\"referent\":\"member\",\"distinctBy\":\"identity\"} only when asked for a count; count recorded Member RDF identities, not seats or election events. In this non-party projection, unqualified \"in this Dáil\" means term-wide membership regardless of \"represent\"/\"represented\"; it overrides the implicit present-tense asOf default. Explicit \"currently\"/\"now\"/\"today\" or \"as of now/today\" requests additionally require the DailMembership interval to contain asOf. A literal date remains its exact date constraint. Never count a partial/truncated page or drop a date/constituency/term condition to return a number.\n- For any one-term, one-constituency non-party Member list or count—including \"this Dáil\"—prefer family \"member_relationship_composition\" with referents member, membership, term, constituency and the four exact representation edges, rather than family \"constituency_representation\". The list answer is exactly {\"kind\":\"entities\",\"referent\":\"member\",\"distinctBy\":\"identity\",\"display\":[\"name\"],\"details\":[],\"preserveEvidence\":false}; only an explicit count uses {\"kind\":\"count\",\"referent\":\"member\",\"distinctBy\":\"identity\"}. This keeps the list and count on the same bounded selection. Select the exact House-date current Dáil for \"this Dáil\"; add the asOf membership interval only for an explicit current-point request or the ordinary unqualified present-tense default without \"this Dáil\". Do not use this exception for numbered, explicitly dated, election, or party-filtered requests.\n- For an explicitly named OR set of two to four constituencies, replace constituency with {\"type\":\"DailConstituency\",\"members\":[{\"type\":\"DailConstituency\",\"mention\":\"exact first mention\"},{\"type\":\"DailConstituency\",\"mention\":\"exact second mention\"}]}. All existing edges and the party/membership overlap constraint and Member evidence answer remain unchanged. Local code resolves each occurrence in the same selected term and compiles one VALUES identity set; never merge string results. Never infer a set from 'the two Galway constituencies'; that is ambiguous (Roscommon-Galway may also be relevant).\n- For other named-party TDs sharing a constituency with a named anchor Member while that anchor held a named office, keep member, membership, episode, party, affiliation and their edges as below; term is {\"type\":\"DailTerm\",\"mention\":null} and constituency is {\"type\":\"DailConstituency\",\"mention\":null} (unselected shared resource identities). Add anchor (Member, exact named mention), anchor_membership (DailMembership, null mention), holding (OfficeHolding, null mention), office (NamedOffice, exact office mention). Add edges member_has_membership anchor→anchor_membership, membership_in_term anchor_membership→term, membership_represents anchor_membership→constituency, member_has_office_holding anchor→holding, office_holding_of_office holding→office. Keep both independent membership paths to the SAME exact constituency and term. No numbered-term clarification is needed: the accepted office episode anchors time. Constraints are exactly [{\"referent\":\"episode\",\"field\":\"partyEpisodeInterval\",\"operator\":\"overlaps\",\"value\":\"membership\"},{\"referent\":\"member\",\"field\":\"identity\",\"operator\":\"distinctFrom\",\"value\":\"anchor\"},{\"referent\":\"holding\",\"field\":\"interval\",\"operator\":\"commonIntersection\",\"value\":[\"holding\",\"anchor_membership\",\"membership\",\"episode\"]}]. The answer is exactly {\"kind\":\"entities\",\"referent\":\"member\",\"distinctBy\":\"identity\",\"display\":[\"name\"],\"details\":[{\"referent\":\"affiliation\",\"display\":[\"label\"]},{\"referent\":\"episode\",\"display\":[\"start\",\"end\"]},{\"referent\":\"membership\",\"display\":[\"start\",\"end\"]},{\"referent\":\"holding\",\"display\":[\"start\",\"end\"]},{\"referent\":\"anchor_membership\",\"display\":[\"start\",\"end\"]},{\"referent\":\"constituency\",\"display\":[\"label\"]}],\"preserveEvidence\":true}. Local code requires one common inclusive intersection of ALL four independently owned intervals, not merely pairwise overlaps, and reports partial accepted-evidence coverage, never a complete roster. Additional filters or projections remain unsupported as a whole.\n\nFor another/other TDs sharing a named Member's constituency in one exact Dáil, use the bounded shared-constituency form of \"member_relationship_composition\": referents member (answer Member), membership, term, constituency, anchorMember (exact name), and anchorMembership. The anchor and answer have independent DailMembership paths to the exact same DailTerm and DailConstituency identities, and that constituency occurrence links to the selected term. Use a termNumber selector only for the exact numbered Dáil, or previousTerm for a globally previous/last Dáil relative to asOf; never substitute the anchor's latestRecorded term or a fixed ordinal. Set constraints to [] and use the exact entity-list answer, or the distinct Member-IRI count only for an explicit count. Local execution resolves the anchor uniquely, validates one accepted constituency identity in the selected term, excludes the anchor by Member IRI, and paginates the complete shared selection before count/list output. Meaning is term-wide recorded co-membership, not simultaneous service. Do not drop party, office, election, explicit-date, simultaneity or any other requested condition; those requests remain unsupported.\n\nExisting shared-term capability: Resolve exactly two Member identities independently. Each must have its own DailMembership linked to the same shared DailTerm RDF identity. Return the intersection by that shared resource identity; label equality is not a join. This family does not imply complete historical source coverage or support additional filters, temporal constraints, Seanad terms, or other relationships.\n\nReusable Member relationship capability: Return distinct identities by joining typed Member relationship paths to exact HouseTerm resource identities. Supports: (1) one Member with membership in each of exactly two explicitly numbered Dáil terms; (2) Members whose membership represents one named constituency occurrence in exactly one explicitly numbered Dáil term; and (3) those constituency representatives with PartyMembership episodes linked to the exact same OireachtasMembership, term-scoped ParliamentaryParty and reviewed PoliticalAffiliationIdentity, either during one explicitly numbered Dáil or at the reference date in the uniquely date-resolved current Dáil. For (3), the PartyMembership-owned date interval must overlap the containing DailMembership-owned representation interval using inclusive xsd:dateTime endpoints; when currentTerm is selected, both intervals must independently contain asOf as well. An absent EndDate is open-ended, while an absent range/start or invalid/conflicting dates makes temporal evaluation uncertain and the answer fails closed. Only typed PartyMembership episodes count; Independent collection membership is not a political party. The party/representation join is by exact RDF identities, never label equality or undated/current-affiliation shortcuts. The declared bounded compositionOperators additionally permit a finite constituency identity OR set, or independent anchor/answer Member paths sharing exact constituency and term resources with distinct Members and a common accepted-office/representation/party interval intersection. The latter needs no guessed numbered-term selector and preserves partial accepted-evidence coverage. Other filters, calendar-window operators, Seanad relations, or source-completeness claims are not implied.\n\nFor the exact question shape asking who was a Senator in the current Seanad and a Deputy in the current Dáil, use family \"member_relationship_composition\" with referents member, seanad_membership, seanad_term, dail_membership, and dail_term. Use independent Member→SeanadMembership→SeanadTerm and Member→DailMembership→DailTerm paths, with facts member_has_seanad_membership, seanad_membership_in_term, member_has_membership, and membership_in_term. Both term selectors are {\"kind\":\"currentTerm\"}; local code resolves each exact term independently from House-owned date evidence. Set constraints to [] and answer exactly {\"kind\":\"entities\",\"referent\":\"member\",\"distinctBy\":\"identity\",\"display\":[\"name\"],\"details\":[],\"preserveEvidence\":false}. This means term-wide recorded membership in both terms. Do not require intervals to overlap, do not describe a Member as currently serving in either House, and do not claim simultaneous service; the executor displays each House's separate mapped membership intervals. If the user asks for simultaneous/concurrent/current-point service, a historical period, a date, a party, or any additional filter, return unsupported for the whole request rather than dropping it.\n\nThe Seanad party-only shape below also supports one explicitly numbered Seanad with term selector {\"kind\":\"termNumber\",\"number\":N}. Keep the SAME seven typed edges and partySeanadEpisodeInterval overlap constraint; local code resolves the exact SeanadTerm and validates inclusive party/membership interval overlap, without imposing today's party or membership. Preserve all matching separate episodes, including changes of party during the term. An unqualified present-tense named-party Senator request (\"Who are the [party] Senators?\", \"Which [party] Senators are there?\", or \"How many [party] Senators are there?\") instead uses currentTerm: local code records the scoped asOf default and enforces both active intervals. Never default a past-tense, explicitly numbered, dated or additionally filtered request. A numbered Seanad and current Seanad are distinct temporal meanings; unsupported extra dates/relationships must not be dropped.\n\nFor a request for current Senators who previously served in the Dáil (Q20), use the same five typed roles and four exact Member→membership→HouseTerm edges, but select only seanad_term with selector {\"kind\":\"currentTerm\"}; dail_term is an unselected DailTerm because the Dáil is selected by its exact membership path, not by a guessed prior ordinal. An ordinary unqualified present-tense Senator head in this same bounded request also defaults to current: the separate explicitly prior Dáil clause remains historical and must NEVER be replaced by current Dáil service. Require the current SeanadMembership's own accepted interval to contain the configured asOf inclusively, and return a Member only when a finite accepted DailMembership EndDate is strictly earlier than that same SeanadMembership StartDate. Equal endpoints do not qualify; an open-ended DailMembership is not prior-service evidence. Use the evidence-preserving Member list answer with details for both membership intervals and both HouseTerm identities, or the distinct Member count only when explicitly requested. Count/list share the same complete bounded pagination and exact Member-identity join. Unknown, missing, conflicting, malformed or capped identity/date evidence fails closed. This is a positive local-record result only: do not claim complete career/history coverage or infer that anyone never served from an absent path. Refuse party, panel, office, election, simultaneity, dated/ordinal or other additional conditions as a whole.\n\nFor a named-party Member count/list in the explicitly current Seanad, use the party-only shape with member, membership (SeanadMembership), term (SeanadTerm selector {\"kind\":\"currentTerm\"}), episode, party, and affiliation. Use member_has_seanad_membership, seanad_membership_in_term, member_party_membership, party_episode_in_seanad_membership, episode_in_parliamentary_party, party_active_during_seanad_term, and parliamentary_party_has_affiliation_identity. Preserve the exact party mention as the PoliticalAffiliationIdentity filter and require constraints exactly [{\"referent\":\"episode\",\"field\":\"partySeanadEpisodeInterval\",\"operator\":\"overlaps\",\"value\":\"membership\"}]. Local code resolves the unique current SeanadTerm by Houses-owned dates and requires both each SeanadMembership interval and its PartyMembership interval independently to contain asOf; the overlap does not replace either active-point test. A count answer is {\"kind\":\"count\",\"referent\":\"member\",\"distinctBy\":\"identity\"}; a list uses the same Member selection and preserves separate identity/episode/membership evidence. Exact identities, typed PartyMembership records, and complete pagination are mandatory; missing/conflicting dates or identity evidence fail closed. State that results reflect local records and do not certify a complete current Seanad roster. Do not use current Seanad membership alone as a substitute for active party evidence or answer a generic unfiltered Senator count.\n\nExisting validated capabilities available through capability_selection:\n- Existing capability \"current_office_constituency\" (composable_office_representation; input office_mention): Resolve one reviewed NamedOffice, read complete accepted dated OfficeHolding evidence and require exactly one current relationship at configured asOf. Pass the resulting exact Member IRI, never its display name, to the existing independently dated current Dáil representation capability. Preserve office, holding, Member, membership, constituency, term and date-range identities and dates. No assumption that an officeholder is a TD; absent current representation is unavailable, never a historical substitution. Conflicting or incomplete evidence fails closed. This is positive local evidence, not a complete government/current-office roster. Historical periods, party filters, counts and extra fields remain unsupported.\n- Existing capability \"current_committee_members\" (composable_committee_members; input committee_mention): List distinct Members with accepted CommitteeMembership intervals containing configured asOf. Resolve one current typed Committee incarnation from its owner interval and typed HouseTerm dates; preserve all identities, source graphs and separate membership/range intervals. Whole source labels only; the initial generic Committee on/of connector may vary without dropping any subject words. Multiple matching current identities stay ambiguous. No chairmanship, attendance, historical scope, party filters, counts or extra projections. Missing/conflicting identity or interval evidence and incomplete pagination fail closed. Local positive evidence is not a certified complete current roster.\n- Existing capability \"member_lookup\" (stage_a; input member_and_house): Ground exact full-name or whole-name-token partial mentions without assuming a full name. Deputy/TD requires recorded DailMembership; Senator requires Seanad service. Distinct people remain candidates. An opaque choice resumes this same validated lookup after rechecking source identities.\n- Existing capability \"dail_parties_and_groups\" (stage_c; input term_number_and_group_scope): List recorded ParliamentaryParty identities in exactly one explicitly numbered Dáil using the existing term-scoped compiler. Only report missing ParliamentaryGroup data if groups were requested.\n- Existing capability \"office_holding_evidence\" (composable_office_evidence; input member_and_office): Resolve one exact Member and one reviewed NamedOffice identity, then return locally recorded accepted OfficeHolding episodes for that exact pair with validated intervals using complete bounded pagination. Accept unfiltered when/date/period questions, 'When did [member] serve as [office]?', or 'During what period was [member] [office]?'. Last/most recently qualifiers require parameters.selection latestRecorded; otherwise return every separate episode. Latest selects the unique greatest validated StartDate only after validating every episode; ties, earlier open ends/overlaps, future starts or uncertain evidence fail closed, never use an IRI tie-break to choose chronology. Preserve exact Member, NamedOffice, OfficeHolding and DateRange identities in the latest result. Missing end dates remain open, not evidence of a completed tenure. Results are explicitly incomplete local-recorded evidence, not proven historically last tenure or complete career history. Do not infer first/final boundaries, total duration, a merged tenure or absence from gaps. Unreviewed observations are not holdings. Election events, durations and extra filters remain unsupported.\n- Existing capability \"office_holding_window\" (composable_office; input office_and_calendar_period_or_current_office_point): Reuse accepted dated OfficeHolding overlap for an explicit calendar-date point, full calendar month, full calendar year, explicit month-to-month window, or a date-less present/current named-office question whose local executor injects configured asOf as one inclusive calendar-date point. The planner must not invent that date. Date and calendar-window semantics remain distinct; a partial-window match is not service throughout. Preserve exact accepted holding intervals and fail closed on missing/conflicting/uncertain evidence; absent matches do not imply no holder. A current-point result is only locally evidenced holdings and never certifies a complete current-office roster.\n- Existing capability \"seanad_entry\" (stage_a; input member_mention): Return the earliest evidenced Seanad membership start date and preserve later distinct Seanad episodes. This does not answer Dáil service or a Seanad representation question.\n- Existing capability \"bill_lookup\" (stage_b; input bill_number_and_year): Resolve one exact Bill identity by its explicitly supplied number and legislative year. Return the existing lookup projection: English title, mapped process status, official link, every locally recorded typed dated activity, and only a complete typed explanatory-memorandum rendition chain. Dated activity coverage is not certified complete; do not substitute sponsorship, voting, or a predicted next step.\n\nWhen one of those existing capabilities directly answers the request, use family \"capability_selection\", put its exact ID in referents.capability, and provide only the matching semantic inputs in referents.parameters. For seanad_entry use {\"member\":\"the exact grounded Member name\"}. For bill_lookup use {\"billNumber\":\"the explicitly supplied Bill number\",\"billYear\":2025}. Set relations to [], constraints to [], and answer to null. Local code checks the inputs against the question, then invokes the same validated Stage A/B/C plan builder and executor used by deterministic recognition, or the named evidence-boundary resolver. Never use this route to answer another relationship or drop a requested condition.\n\nUse the existing semantic relationship identifiers below; these are proposals, not authority decisions:\n- member_has_membership: Member to DailMembership\n- membership_in_term: DailMembership to DailTerm\n- membership_represents: DailMembership to DailConstituency\n- constituency_in_term: DailConstituency to DailTerm\n- member_party_membership: Member to PartyMembershipEpisode\n- party_episode_in_membership: PartyMembershipEpisode to DailMembership\n- episode_in_parliamentary_party: PartyMembershipEpisode to ParliamentaryParty\n- party_active_during_term: ParliamentaryParty to DailTerm\n- parliamentary_party_has_affiliation_identity: ParliamentaryParty to PoliticalAffiliationIdentity\n\nFor the existing shared-term capability, use family \"shared_dail_terms\" and fixed referent keys member_a, membership_a, member_b, membership_b, and shared_term. Member entries use exact user-supplied labels. Each Member has an independent DailMembership path to the same shared DailTerm identity; set \"constraints\": [] and set \"answer\" to exactly {\"kind\":\"entities\",\"referent\":\"shared_term\",\"distinctBy\":\"identity\",\"display\":[\"label\"],\"details\":[],\"preserveEvidence\":false}.\n\nFor the reusable Member relationship capability, use family \"member_relationship_composition\" and one Member answer referent with a null mention for ordinary projections. Every ordinary DailTerm referent must carry selector {\"kind\":\"termNumber\",\"number\":N} for an explicitly requested numeric Dáil ordinal. The separately described anchored shared-constituency operator may use previousTerm for the globally previous Dáil. For a one-term, one-constituency non-party Member selection, use selector {\"kind\":\"currentTerm\"} for an explicit current/now request, the approved unqualified present-tense default, or \"this Dáil\"; local code selects one exact House-dated term. In this exact shape, unqualified \"in this Dáil\" is term-wide regardless of represent/represented and overrides the implicit present-tense asOf condition. Explicit currently/now/today/as-of-current requests still preserve the appropriate membership interval; explicit calendar dates remain exact date points. This does not change numbered or election questions. In this family, selector is always an object: never use the string \"currentTerm\" or \"latestRecorded\". Use selector {\"kind\":\"currentTerm\"} in the dated party/representation shape only for explicit current/now or the approved unqualified present-tense default; there, both episode and representation intervals must contain asOf. Use one of these complete typed graph shapes only:\n- keys member, membership_a, term_a, membership_b, and term_b: two distinct selected DailTerms, each reached from the same answer Member through a separate DailMembership; this returns Members with recorded membership in both exact term identities;\n- keys member, membership, term, and constituency: one selected DailTerm and one exact user-mentioned DailConstituency, where the same DailMembership links the Member to that term and constituency, and the constituency occurrence links to that same term identity.\n- keys member, membership, term, constituency, anchorMember, and anchorMembership: one exact named anchor plus a separate answer Member path, with both DailMemberships linked to the same selected DailTerm and exact DailConstituency identity, and that constituency occurrence linked to the same term. The term is a numbered term or previousTerm only. This term-wide shape returns other Members only; local execution excludes the anchor by Member IRI and does not claim simultaneous service.\nUse distinct referent IDs for separate membership/term resources. Do not substitute matching labels for RDF identity joins. Preserve every selected term and the constituency when required. For the two-term intersection, use \"constraints\": [] and the exact entity-list answer. For one term-scoped constituency selection, preserve an explicit date point with exactly one constraint {\"referent\":\"membership\",\"field\":\"membershipInterval\",\"operator\":\"on\",\"value\":\"1994-06-01\"}; otherwise use an empty constraints list. Local code supplies the asOf date point for an approved current-representation request; do not invent a date in the draft. Return an entity list with the exact answer value {\"kind\":\"entities\",\"referent\":\"member\",\"distinctBy\":\"identity\",\"display\":[\"name\"],\"details\":[],\"preserveEvidence\":false}, or, only for an explicit how-many/count request, use {\"kind\":\"count\",\"referent\":\"member\",\"distinctBy\":\"identity\"}. Counts are distinct recorded Member IRIs from the same selection as the list, not seats or election events; never count a truncated or uncertain result.\n\nFor a dated political-party/constituency composition, use family \"member_relationship_composition\" and exactly the referents member, membership, term, constituency, episode, party, and affiliation. Connect member→membership→term, membership→constituency, constituency→term, member→episode, episode→membership, episode→party, party→term, and party→affiliation using their exact reviewed fact IDs. The episode must point to the exact same DailMembership that represents the constituency in the selected term. Set \"constraints\" to exactly [{\"referent\":\"episode\",\"field\":\"partyEpisodeInterval\",\"operator\":\"overlaps\",\"value\":\"membership\"}] (inclusive xsd:dateTime endpoints; an absent end is open-ended; missing interval/start means uncertain, never a positive or negative match). When selector is \"currentTerm\", the local executor additionally requires both the DailMembership and PartyMembership intervals independently to contain the supplied asOf date; the model must not substitute only term membership for current service. Only typed PartyMembership records count; Independent is not a party. For \"which parties\" questions, use a null affiliation mention and set \"answer\" to exactly {\"kind\":\"entities\",\"referent\":\"affiliation\",\"distinctBy\":\"identity\",\"display\":[\"label\"],\"details\":[{\"referent\":\"member\",\"display\":[\"name\"]},{\"referent\":\"episode\",\"display\":[\"start\",\"end\"]},{\"referent\":\"membership\",\"display\":[\"start\",\"end\"]}],\"preserveEvidence\":true}. For every named-party TD list, keep the exact named affiliation mention as a required identity filter and set \"answer\" to exactly {\"kind\":\"entities\",\"referent\":\"member\",\"distinctBy\":\"identity\",\"display\":[\"name\"],\"details\":[{\"referent\":\"affiliation\",\"display\":[\"label\"]},{\"referent\":\"episode\",\"display\":[\"start\",\"end\"]},{\"referent\":\"membership\",\"display\":[\"start\",\"end\"]}],\"preserveEvidence\":true}. Never use party-label equality or term context as a substitute for the dated episode and exact identity links.\n\nFor a named-party TD list or count with no constituency requested, use the Dáil-only party shape with exactly member, membership, term, episode, party, and affiliation referents and these seven edges: member→membership→term; member→episode→membership; episode→party→term; party→affiliation. Omit constituency and representation edges because they were not requested. Require the same exact PartyMembership/DailMembership identity join and inclusive interval-overlap constraint above. Resolve the named PoliticalAffiliationIdentity only among ParliamentaryParty identities active in the exact selected term, using the existing term-scoped party listing path; count distinct Member IRIs only after the exact party filter and temporal validation. Select an explicitly numbered term for a numbered request. For an explicitly current/as-of request OR an ordinary unqualified present-tense named-party TD/Deputy request, select currentTerm; local code resolves one exact DailTerm from House-owned dates and additionally requires both DailMembership and PartyMembership intervals independently to contain asOf. The same present-time default applies to named-party Senators. The list answer is exactly {\"kind\":\"entities\",\"referent\":\"member\",\"distinctBy\":\"identity\",\"display\":[\"name\"],\"details\":[{\"referent\":\"affiliation\",\"display\":[\"label\"]},{\"referent\":\"episode\",\"display\":[\"start\",\"end\"]},{\"referent\":\"membership\",\"display\":[\"start\",\"end\"]}],\"preserveEvidence\":true}; only an explicit count uses {\"kind\":\"count\",\"referent\":\"member\",\"distinctBy\":\"identity\"}. Do not count ParliamentaryParty records, seats, or elections; missing/conflicting intervals, identity links, or truncated evidence fail closed, and recorded counts do not imply a complete roster.\n\nAdditional implemented capabilities (do not declare these unsupported):\nBill sponsorship uses the separate family \"member_bill_sponsorship\", never capability_selection. Its supported graph and bounded Published-year count are described below.\n- Party history, including ordinary 'join', 'belonged to', 'member of', and questions asking WHEN memberships occurred, uses family \"member_party_history\", referents member (named Member), episode (PartyMembershipEpisode), party (ParliamentaryParty), affiliation (PoliticalAffiliationIdentity). Only member has a non-null mention. Edges are member_party_membership member→episode, episode_in_parliamentary_party episode→party, parliamentary_party_has_affiliation_identity party→affiliation. Answer affiliation with display [\"label\"], details [], preserveEvidence true. The local evidence projection ALREADY includes separate source membership episodes with their recorded start/end dates and gaps; details=[] does NOT mean dates are unavailable. Requests to SHOW the recorded dates do not add a temporal filter and must not be refused as an unsupported date projection. Missing dates stay missing, not inferred from House terms. This is not an exact joining-event answer, continuous tenure, current status, or a before/after/date-window selection; those stronger semantics cannot be substituted. Independent is not a party.\n- Bills sponsored by a named Member uses family \"member_bill_sponsorship\", referents member (named Member), bill (Bill), participation (BillParticipation). Only member has a non-null mention. Edges are bill_has_sponsor_participation bill→participation and participation_has_participant participation→member. Answer bill with display [\"label\"], details [], preserveEvidence true. Local projection supplies Bill titles/numbers/links and primary, supporting or unknown-primary evidence; never restrict to primary sponsorship. For the exact bounded request \"How many Bills did [Member] sponsor that were published in [calendar year]?\", use referents member, bill, participation, process, activity; edges bill_process_cocontained bill→process, process_has_participation process→participation, participation_has_participant participation→member, and activity_forms_part_of_process activity→process. Add exactly one constraint {\"referent\":\"activity\",\"field\":\"publishedDate\",\"operator\":\"inCalendarYear\",\"value\":YEAR}, answer {\"kind\":\"count\",\"referent\":\"bill\",\"distinctBy\":\"identity\"}. Never use legislative year or document/version dates; missing or malformed Published dates make the aggregate unavailable, not zero.\n - Constituency representation uses family \"constituency_representation\", referents member, membership (DailMembership), term (DailTerm), constituency (DailConstituency). Exactly one of member/constituency has a user-mentioned label; all others have null mentions. term may use selector \"currentTerm\" for present-tense/current questions, \"latestRecorded\" only for a named Member's latest House-dated Dáil term, or null for a named Member's career-wide/historical constituencies. Connect member_has_membership member→membership, membership_in_term membership→term, membership_represents membership→constituency, constituency_in_term constituency→term. Answer the unmentioned member (display [\"name\"]) or constituency (display [\"label\"]), details [{\"referent\":\"term\",\"display\":[\"label\"]}], preserveEvidence true. Current is date-relative, never a guessed ordinal.\nFor the three additional entity-history capabilities, constraints is []. Constituency representation supports only the explicit membership date point stated above; the bounded Member count is the only aggregate allowed for that same one-term, one-constituency selection. Preserve all other conditions; extra party, office, temporal-window or aggregate projections are not supported by these slices.\n\nConstitutional Government members of a named party at the reference date are also implemented: family \"government_party_members\"; referents member (Member), cabinet (CabinetMembership), government (Government), episode (PartyMembershipEpisode), party (ParliamentaryParty), affiliation (PoliticalAffiliationIdentity). Only affiliation has a non-null user-mentioned label. Use member_has_cabinet_membership member→cabinet, cabinet_membership_of_government cabinet→government, member_party_membership member→episode, episode_in_parliamentary_party episode→party, parliamentary_party_has_affiliation_identity party→affiliation. Use constraints []; local code supplies the reference-date point constraints. Answer member, display [\"name\"], details [{\"referent\":\"affiliation\",\"display\":[\"label\"]},{\"referent\":\"cabinet\",\"display\":[\"start\",\"end\"]},{\"referent\":\"episode\",\"display\":[\"start\",\"end\"]}], preserveEvidence true. This is constitutional Cabinet membership, not the wider GovernmentExecutive or Government benches; Ministers of State alone do not qualify. Completeness cannot be inferred from the optional office dataset. Requests for the wider executive or additional conditions remain unsupported.\n\nIf a question asks for any other relationship, more or fewer terms than the supported shapes, an extra filter, temporal restriction, different answer, or anything outside these capabilities, return supported=false with a concise unsupportedReason, null family, null referents, empty relations, \"constraints\": [], and null answer. The unsupportedReason must describe the missing capability actually requested (for example, voting evidence, or an unsupported Member relationship). Do not describe every unsupported question as a Member-relationship limitation, and do not mention Dáil or Member capabilities when they are unrelated to the question. For unrelated topics, state briefly that the question is outside the local parliamentary query scope. Never simplify an unsupported request by dropping an essential relation or constraint.\n\nSemantic interpretation only. Never output SPARQL, predicates, graph names, variables, endpoints, URLs, IRIs, candidates, or resolution decisions. Do not decide whether a mapping is authoritative; local code checks all proposed relation IDs against the reviewed v2 and query-schema contracts. Do not add assumptions about source completeness.\n\nReturn only the JSON object required by the strict composable-plan-v2 draft schema. All schema fields are required; family, unsupportedReason, referents, and answer are null when not applicable."
+        },
+        "remainingTasks": 23,
+        "remainingContinuationRounds": 2
+      },
+      "output": {
+        "tasks": [],
+        "explanation": "No further queries are needed for this control."
+      },
+      "factReferenceMap": {}
+    }
+  ],
+  "dispatches": [
+    {
+      "planVisibleBeforeDispatch": true,
+      "text": "What is the membership history of the Committee of Public Accounts?\nPending\n\ndirect · Investigate the requested parliamentary records."
+    },
+    {
+      "planVisibleBeforeDispatch": true,
+      "text": "What is the membership history of the Committee of Public Accounts?\nQuestion not answered\n\ndirect · Investigate the requested parliamentary records."
+    },
+    {
+      "planVisibleBeforeDispatch": true,
+      "text": "What is the membership history of the Committee of Public Accounts?\nQuestion not answered\n\ndirect · Investigate the requested parliamentary records."
+    }
+  ],
+  "javascriptErrors": []
+}

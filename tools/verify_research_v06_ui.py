@@ -105,7 +105,7 @@ async def verify(url, output):
         # no author step can dispatch while the UI is paused.
         assert len(calls) == 1
         await page.locator("#pause").click()
-        await expect(page.locator("#overall-state")).to_have_text("Completed with limitations")
+        await expect(page.locator("#overall-state")).to_have_text("Findings available — some questions unanswered")
         assert len(calls) == 2  # one compiler operation, one injected author pass
         assert await page.locator("#report-sections section").count() == 1
         await page.locator("#plan-summary").click()
@@ -171,11 +171,11 @@ async def verify(url, output):
         async with page.expect_response(lambda r: r.url.endswith("/messages")):
             await page.locator("#brief").press("Control+Enter")
         await expect(page.locator("#plan-tasks")).to_contain_text("Unresolved Person")
-        await expect(page.locator("#overall-state")).to_have_text("Completed with limitations")
+        await expect(page.locator("#overall-state")).to_have_text("Findings available — some questions unanswered")
         await expect(row).to_be_focused()
         assert abs((await row.bounding_box())["y"] - reading["y"]) <= 2, "Unrelated update moved the reading position"
         await page.locator("#activity").click()
-        await expect(page.locator("#activity-content")).to_contain_text("could not be safely established")
+        await expect(page.locator("#activity-content")).to_contain_text("The search couldn't be completed")
         await page.keyboard.press("Escape")
         assert await page.locator("#report-sections section").count() >= 1
         assert await page.locator("#report-sections").get_by_role("button", name="Evidence:").count() > 0
@@ -206,7 +206,7 @@ async def verify(url, output):
         await page.locator("#brief").fill("Please shorten the explanation and keep the evidence")
         await page.locator("#brief").press("Control+Enter")
         await asyncio.wait_for(retry_started.wait(), 30)
-        await expect(page.locator("#overall-state")).to_have_text("Completed with limitations")
+        await expect(page.locator("#overall-state")).to_have_text("Findings available — some questions unanswered")
         assert observed_retry and "Injected query service unavailable" in observed_retry[0]
         await expect(page.locator("#research-notices")).not_to_contain_text("Resume to retry")
         # Unsupported and planning failures have no pretend report surface.
@@ -243,7 +243,7 @@ def main():
     parser.add_argument("--output", type=Path, default=Path("/tmp/oireachtasontology/research-v06-ui"))
     args = parser.parse_args()
     record = next(r for r in load_bundle()["live"] if r["question"] == SPONSOR and r["controlledProposal"] is None)
-    models = lambda: UIModel([plan([sponsor_task()]), plan([sponsor_task() | {"id": "different", "member": "Unresolved Person"}]), plan(revision="Shorten the explanation without changing facts"), plan(revision="Shorten the explanation without changing facts")])
+    models = lambda: UIModel([plan([sponsor_task()]), plan([sponsor_task() | {"id": "different", "member": "Unresolved Person", "question": "Which Bills did Unresolved Person sponsor?"}]), plan(revision="Shorten the explanation without changing facts"), plan(revision="Shorten the explanation without changing facts")])
     app = create_app(planner_factory=models, client_factory=lambda: Replay(record["queries"]), reporting_date=date(2026, 11, 12))
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0)); port = s.getsockname()[1]

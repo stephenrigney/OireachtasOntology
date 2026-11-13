@@ -54,8 +54,11 @@ def project_table(table, facts):
             labels = headings
             qualifications.extend(a["proposition"]["qualifications"])
             rows.append({"cells": [{"text": display[k]["text"], "refs": [ref]} for k in keys], "assertionRefs": [ref]})
+        # General coverage/freshness qualifications appear once for the report.
+        # All exact qualifications remain in the linked accepted proposition.
+        from .query_evidence import QUALIFICATIONS
         return {"caption": table["caption"], "columns": labels, "rows": rows,
-                "qualification": " ".join(dict.fromkeys(qualifications))}
+                "qualification": " ".join(q for q in dict.fromkeys(qualifications) if q not in QUALIFICATIONS)}
 
     # Compatibility for previously authored specialised tables. The new author
     # can use records for any shape; these projections introduce no new authority.

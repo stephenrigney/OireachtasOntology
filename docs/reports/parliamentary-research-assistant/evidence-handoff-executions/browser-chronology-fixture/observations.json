@@ -1,0 +1,16 @@
+[
+  {
+    "case": "chronology-fixture",
+    "facts": 34,
+    "status": "Findings available",
+    "outcomes": [
+      {
+        "kind": "findings_available",
+        "label": "Findings available",
+        "description": "The recorded findings and their sources are available in the report."
+      }
+    ],
+    "planBeforeDispatch": true,
+    "javascriptErrors": []
+  }
+]

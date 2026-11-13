@@ -112,7 +112,7 @@ async def verify(url, output, resume=False):
                 (output / "planning-interrupted.json").write_text(json.dumps(await archive_response.json(), ensure_ascii=False, indent=2))
                 raise AssertionError("Configured planning interrupted; retained archive, no research success claimed")
             await expect(page.locator("#plan-interpretation")).to_have_text(state["interpretation"])
-            await expect(page.locator("#overall-state")).to_have_text(re.compile(r"Completed with limitations|Needs clarification"), timeout=900000)
+            await expect(page.locator("#overall-state")).to_have_text(re.compile(r"Findings available.*|Question not answered|Needs clarification|Records found.*|Research interrupted"), timeout=900000)
             archive_response = await page.request.get(f"{url}/runs/{state['id']}/archive")
             return await archive_response.json()
 

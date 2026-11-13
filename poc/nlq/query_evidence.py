@@ -152,6 +152,39 @@ def base(predicate, text, display, scope, witnesses, qualifications=()):
             "witnesses": witnesses, "qualifications": QUALIFICATIONS + list(qualifications)}
 
 
+def finalize_evidence(outcome):
+    """Default service handoff for executor-issued propositions, not query rows.
+
+    Coverage is conditional on a semantic executor issuing facts. There is no
+    capability allowlist and no claim that a successful read establishes facts.
+    Existing specialised projectors and legacy accepted payloads stay compatible.
+    """
+    from dataclasses import replace
+    if outcome.interaction != "answer":
+        return replace(outcome, factual_evidence_status="not_applicable")
+    try:
+        evidence = outcome.factual_evidence
+        if evidence is None and outcome.validated_facts:
+            if not all(isinstance(f, (EntityFact, RelationshipFact, EpisodeFact, MeasureFact))
+                       for f in outcome.validated_facts):
+                raise ValueError("Executor propositions must be typed accepted facts.")
+            evidence = bundle(outcome.plan, outcome.sparql,
+                              [f.model_dump() for f in outcome.validated_facts], outcome.result)
+        if evidence is None:
+            evidence = project_legacy(outcome)
+        if evidence is not None:
+            accepted = AcceptedEvidence.model_validate(evidence)
+            if (accepted.plan != outcome.plan or accepted.answerQuery != outcome.sparql
+                    or accepted.resultDigest != result_digest(outcome.result)):
+                raise ValueError("Executor evidence/result binding mismatch.")
+        return replace(outcome, factual_evidence=evidence,
+                       factual_evidence_status="available" if evidence else "unavailable")
+    except (ValueError, KeyError, TypeError, IndexError, AttributeError) as error:
+        return replace(outcome, factual_evidence=None, factual_evidence_status="invalid",
+                       diagnostic=(outcome.diagnostic or "") +
+                       f" Structured factual evidence could not be validated: {type(error).__name__}: {error}")
+
+
 def project_legacy(outcome):
     """Service-side migration of already accepted payloads; never display rows.
 

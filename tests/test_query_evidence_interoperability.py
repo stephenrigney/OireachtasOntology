@@ -109,15 +109,21 @@ def test_unknown_version_shape_display_rows_and_missing_execution_are_not_author
     assert accept_query_evidence(replace(outcome, factual_evidence=bad), [])[0] is None
 
 
-def test_successful_unprojected_operation_is_distinct_from_missing_data_or_unsupported_semantics():
-    # Calendar selection is projected; the existing full chronology operation is
-    # deliberately NOT added just to pass this negative coverage control.
+def test_successful_unprojected_operation_is_distinct_from_missing_data_or_unsupported_semantics(monkeypatch):
+    # Inject a missing executor handoff, independently of current coverage.
+    # Successful readable rows must still never be used as factual authority.
+    from poc.nlq import query_evidence
+    finalize = query_evidence.finalize_evidence
+    monkeypatch.setattr(query_evidence, "finalize_evidence", lambda out: finalize(replace(out, validated_facts=())))
     env = adapter(StageAFixture()).execute(query("When did each Dáil start and finish?") |
                                            {"requirementId": "r0"}, AS_OF.isoformat())
     assert env["compilerStatus"] == "success" and env["queryServiceOutcome"] == "answer"
     assert env["queryServiceResult"]["rows"] and env["validation"]["planValidated"]
     assert env["outcome"] == "missing_or_unaccepted_evidence" and env["data"] is None
-    assert facts_from(env) == [] and "no research fact was promoted" in env["error"]["message"]
+    assert facts_from(env) == []
+    assert env["researchOutcome"]["kind"] == "integration_unavailable"
+    assert "records were found" in env["error"]["message"]
+    assert "no research fact was promoted" in env["error"]["technicalMessage"]
 
 
 def test_author_cannot_select_unknown_columns_or_mix_incompatible_field_meanings():

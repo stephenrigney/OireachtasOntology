@@ -113,8 +113,9 @@ def resolve_committee(result, mention, as_of):
             current.append({"iri": iri, "label": next(iter(entry["labels"])),
                             "range": next(iter(entry["owners"]))[0], "start": owner_start.isoformat(),
                             "end": owner_end.isoformat() if owner_end else "open-ended",
-                            "term": term, "period": period, "termStart": term_start.isoformat(),
-                            "termEnd": term_end.isoformat() if term_end else "open-ended"})
+                             "term": term, "period": period, "termStart": term_start.isoformat(),
+                             "termEnd": term_end.isoformat() if term_end else "open-ended",
+                             "witnesses": [r for r in records if r["committee"] == iri]})
     return current
 
 
@@ -135,7 +136,7 @@ def compile_members_query(committee, *, supported_predicates):
 }} ORDER BY ?member ?membership ?committee ?range ?start ?end ?name ?memberGraph LIMIT 100''', supported_predicates)
 
 
-def project_members(raw, owner, as_of):
+def project_members(raw, owner, as_of, *, facts=None):
     records = _records(raw, ("memberGraph", "member", "name", "membership", "committee", "range", "start", "end"))
     memberships = {}
     for row in records:
@@ -149,6 +150,7 @@ def project_members(raw, owner, as_of):
         entry["graphs"].add(row["memberGraph"])
         entry["ranges"].add((row["range"], row["start"], row["end"]))
     members = {}
+    accepted = []
     for membership, entry in memberships.items():
         start, end = _mapped_member_interval(entry["ranges"], label="CommitteeMembership")
         if any(len(entry[k]) != 1 for k in ("members", "names", "graphs")) or entry["names"] & {"—", ""}:
@@ -159,6 +161,28 @@ def project_members(raw, owner, as_of):
             item = members.setdefault(member, {"names": set(), "evidence": set()})
             item["names"].add(name)
             item["evidence"].add(f"{membership} | {next(iter(entry['ranges']))[0]} | {start.isoformat()} – {end.isoformat() if end else 'open-ended'} | source graph: {next(iter(entry['graphs']))}")
+            # Preserve validated structures before rendering. Text is never read
+            # back as factual authority by this or any research consumer.
+            from .query_evidence import EpisodeFact, Interval, base, entity, fields, date_text
+            accepted.append(EpisodeFact(**base("current_committee_membership",
+                f"The available records identify {name} as a member of {owner['label']} on {as_of.isoformat()}.",
+                fields(member=("Member", name), committee=("Committee", owner["label"]),
+                       as_of=("Reporting date", date_text(as_of.isoformat()))),
+                {"meaning": "committee_membership_owner_and_house_term_contain_as_of", "asOf": as_of.isoformat(),
+                 "committeeOwner": owner},
+                [r for r in records if r["membership"] == membership],
+                ["The records do not establish a complete roster, chairmanship or attendance."]),
+                participants={"member": entity(member, name, "Member"),
+                              "committee": entity(owner["iri"], owner["label"], "Committee")},
+                intervals=[Interval(resourceIri=membership, rangeIri=next(iter(entry["ranges"]))[0],
+                    start=start.isoformat(), end=end.isoformat() if end else None,
+                    endMeaning="recorded" if end else "open_ended", meaning="committee_membership"),
+                    Interval(resourceIri=owner["iri"], rangeIri=owner["range"], start=owner["start"],
+                             end=None if owner["end"] == "open-ended" else owner["end"],
+                             endMeaning="open_ended" if owner["end"] == "open-ended" else "recorded", meaning="committee_owner"),
+                    Interval(resourceIri=owner["term"], rangeIri=owner["period"], start=owner["termStart"],
+                             end=None if owner["termEnd"] == "open-ended" else owner["termEnd"],
+                             endMeaning="open_ended" if owner["termEnd"] == "open-ended" else "recorded", meaning="house_term")]))
     if not members:
         raise NLQError("No current CommitteeMembership is locally evidenced; this is not a certified empty roster.")
     rows = []
@@ -168,6 +192,8 @@ def project_members(raw, owner, as_of):
         rows.append((next(iter(item["names"])), member, owner["label"], owner["iri"],
                      "\n".join(sorted(item["evidence"])), owner["range"], owner["start"], owner["end"],
                      owner["term"], owner["period"], owner["termStart"], owner["termEnd"], as_of.isoformat()))
+    if facts is not None:
+        facts.extend(accepted)
     return QueryResult("select", ("Member", "Member identity", "Committee", "Committee identity", "Membership evidence",
                                   "Committee date range", "Committee start", "Committee end", "HouseTerm identity",
                                   "HouseTerm period", "HouseTerm start", "HouseTerm end", "As of"), tuple(sorted(rows)), raw_json=raw.raw_json)
@@ -188,8 +214,11 @@ def execute_committee_members(mention, *, as_of, fuseki, supported_predicates):
             raise NLQError("No uniquely evidenced current Committee incarnation exists at asOf.")
         query = compile_members_query(current[0]["iri"], supported_predicates=supported_predicates)
         raw = select_pages(query, fuseki=fuseki, supported_predicates=supported_predicates)
-        result = project_members(raw, current[0], as_of)
+        facts = []
+        result = project_members(raw, current[0], as_of, facts=facts)
         return PlanOutcome("success", plan=plan, sparql=query, result=result, request_family=FAMILY,
+                           validated_facts=tuple(facts),
+                           selection_outcome="matches",
                            diagnostic=f"Locally recorded CommitteeMemberships active at {as_of.isoformat()}; not a certified complete current roster. "
                                       "The Committee and its HouseTerm independently contain asOf. Membership does not establish chairmanship or attendance; missing end dates remain open-ended.")
     except NLQError as error:

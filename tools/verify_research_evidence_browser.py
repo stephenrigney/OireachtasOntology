@@ -50,7 +50,7 @@ async def verify(url, output):
             assert response.ok, await response.text()
             prepared = await response.json()
             await expect(page.locator("#overall-state")).to_have_text(
-                re.compile(r"Completed with limitations|Needs clarification|Research planning interrupted"), timeout=900000)
+                re.compile(r"Findings available.*|Question not answered|Needs clarification|Records found.*|Research interrupted|Research planning interrupted"), timeout=900000)
             archive = await (await page.request.get(f"{url}/runs/{prepared['id']}/archive")).json()
             (output / f"{key}.json").write_text(json.dumps(archive, ensure_ascii=False, indent=2))
             report = await page.request.get(f"{url}/runs/{prepared['id']}/report.md")

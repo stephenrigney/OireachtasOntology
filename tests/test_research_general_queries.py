@@ -100,7 +100,7 @@ def test_after_a_limitation_model_can_publish_another_relevant_question_before_d
         def generate(self, phase, payload):
             if phase == "investigate":
                 assert payload["originalBrief"] == "Party history and constituency background"
-                assert payload["operationOutcomes"][0]["outcome"] == "missing_or_unaccepted_evidence"
+                assert payload["operationOutcomes"][0]["researchOutcome"]["kind"] == "evidence_incomplete"
                 self.calls.append(phase)
                 return {"tasks": [query("Which constituencies did Stephen Donnelly represent?", id="background", role="supporting")],
                         "explanation": "Investigate the independently requested constituency background, not party dates."}

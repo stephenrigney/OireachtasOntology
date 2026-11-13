@@ -16,6 +16,7 @@ from .research_adapter import ClosedModel
 from .research_assertions import Narrative, accept_narrative, facts_from
 from .research_tools import CATALOGUE, LIMITATIONS, ToolTask, discovery_context
 from .research_presentation import FactTable, project_table
+from .research_outcomes import describe, require_plain_language
 from .results import format_debug_text
 from .structured_planner import ResponsesPlanGenerator, parse_draft_json
 
@@ -79,6 +80,7 @@ class ReportDraft(ClosedModel):
 
 
 EDITORIAL = """You are an impartial parliamentary research colleague writing in clear Oireachtas.ie-style English.
+Lead with useful findings, then concise material limitations and separately unanswered questions. Never lead with software mechanisms. Use researchOutcome descriptions for system-determined outcomes; do not invent technical causes. Records found but not incorporated is not absence of parliamentary information. Avoid implementation jargon in plans, conversation, reports and unanswered summaries. Technical details remain in Research Activity. Do not repeat generic caveats or create empty report headings.
 Produce an evidence-grounded Draft — for review, not a certified exhaustive answer. Explain findings, do not merely list rows.
 No model-memory facts, invented history, institutional background, causal accounts, dates, offices or citations.
 When naming a Bill in prose, copy its exact accepted title INCLUDING its Bill year. Never substitute an activity year for the Bill's title year, or conflate similarly named editions. Shortening must not lose that distinction.
@@ -163,6 +165,7 @@ class ResearchRun:
         self.section_context, self.factual_turn = None, True
         self.revision_targets = []
         self.investigation_pending, self.investigation_rounds = False, 0
+        self.report_problem = None
         self.title, self.interpretation, self.status = "Parliamentary research", "", "Preparing research"
         self.metrics = {"firstValidatedSeconds": None, "completedSeconds": None}
         self._plan(brief)
@@ -206,6 +209,8 @@ class ResearchRun:
         return accept_narrative(proposal, self.facts, "findings")
 
     def _append_response(self, text, assertion):
+        if assertion is None and self.messages and self.messages[-1] == {"role": "assistant", "text": text}:
+            return
         message = {"role": "assistant", "text": text}
         if assertion is not None:
             from .research_assertions import stable_id
@@ -227,13 +232,13 @@ class ResearchRun:
                 for key in ("factRefs", "activityRefs"):
                     table["specification"][key] = [reverse[ref] for ref in table["specification"][key]]
         return {"originalBrief": self.brief, "reportingDate": self.date, "conversation": self.messages,
-                "requirements": self.requirements, "tasks": self.tasks, "sections": sections,
+                "requirements": self.requirements, "tasks": [{k: v for k, v in t.items() if k != "technicalDiagnostic"} for t in self.tasks], "sections": sections,
                 "questionAssessments": copy.deepcopy(self.question_assessments),
                 "facts": {alias: {"id": alias, "text": self.facts[key]["text"], "level": self.facts[key]["level"], "proposition": self.facts[key]["proposition"], "display": self.facts[key].get("display")}
                           for alias, key in aliases.items()}, "assertions": assertions,
-                "operationOutcomes": [{"question": e["request"]["factualRequest"], "outcome": e["outcome"],
-                    "queryServiceOutcome": e.get("queryServiceOutcome"), "compilerStatus": e["compilerStatus"],
-                    "error": e["error"], "resolvedScope": e["resolvedScope"], "diagnostic": e.get("diagnostic")}
+                "operationOutcomes": [{"question": e["request"]["factualRequest"],
+                    "researchOutcome": e.get("researchOutcome"), "resolvedScope": e["resolvedScope"],
+                    "clarificationCandidates": (e.get("error") or {}).get("candidates", [])}
                     for e in self.evidence.values()]}
 
     def _tasks(self, proposed):
@@ -258,7 +263,7 @@ class ResearchRun:
             elif p.member is None or p.sourceTask is not None:
                 raise ValueError("A named Member is required.")
             task["toolMeaning"] = {
-                "query": "Exact subsidiary question submitted unchanged to Query Service admission; evidence and full-question satisfaction are separate.",
+                "query": "Investigate this question using the available parliamentary records.",
                 "sponsorship": f"All recorded Bill sponsorship for {p.member}; no subject, outcome, role-period or date filter.",
                 "career": f"Recorded constituency/Dáil-term relationships for {p.member}; no offices or continuous tenure.",
                 "lifecycle": "Recorded status and dated activities for exact Bills from accepted sponsorship; not definitive outcomes."}[p.tool]
@@ -274,7 +279,11 @@ class ResearchRun:
     def _plan(self, message):
         try:
             plan = Plan.model_validate(self._call("plan", self._context() | {"newMessage": message,
-                                                                         "queryServiceDiscovery": discovery_context()}))
+                                                                          "queryServiceDiscovery": discovery_context()}))
+            for text in [plan.title, plan.interpretation, plan.response, plan.clarification or ""] + [
+                    text for r in plan.requirements for text in (r.wording, r.explanation)] + [
+                    text for t in plan.tasks for text in (t.question, t.relevance)]:
+                require_plain_language(text)
             known_sections = {s["id"] for s in self.sections}
             if any(t.sectionId not in known_sections for t in plan.revisionTargets):
                 raise ValueError("Revision targets must reference existing sections.")
@@ -302,7 +311,7 @@ class ResearchRun:
             if plan.clarification:
                 self.messages.append({"role": "assistant", "text": plan.clarification})
             self.author_pending = bool(self.facts) and not candidate_tasks
-            self.status = "Plan published" if candidate_tasks or self.author_pending else "Needs clarification" if plan.clarification else "Completed with limitations"
+            self.status = "Plan published" if candidate_tasks or self.author_pending else "Needs clarification" if plan.clarification else self._completed_status()
         except Exception:
             self.author_pending = False
             self.status = "Research planning interrupted"
@@ -318,6 +327,7 @@ class ResearchRun:
         return self.view()
 
     def _author(self):
+        self.report_problem = None
         payload = self._context() | {"revisionInstructions": self.revision,
             "editorialTargets": self._editorial_targets(),
             "knownUnanswered": self.view()["unanswered"]}
@@ -330,11 +340,15 @@ class ResearchRun:
             except (ValueError, KeyError, TypeError) as error:
                 payload["structuralCorrection"] = str(error)[:500]
                 if attempt:
+                    self.report_problem = "The application couldn't update the report. Earlier findings and source records are retained."
                     self.messages.append({"role": "assistant", "text": "I could not safely update the research draft. Earlier evidence and report sections are preserved. You can ask me to try revising again."})
             except Exception:
+                self.report_problem = "Report writing was interrupted. Earlier findings and source records are retained."
                 self.messages.append({"role": "assistant", "text": "The report-writing service was interrupted. Earlier evidence and report sections are preserved."})
                 break
         self.author_pending = False
+        if not self.facts and self.evidence:
+            self._append_response(self._outcome_summary(), None)
 
     def _consider_investigation(self):
         self.investigation_pending = False
@@ -343,6 +357,10 @@ class ResearchRun:
             proposal = Investigation.model_validate(self._call("investigate", self._context() | {
                 "queryServiceDiscovery": discovery_context(), "remainingTasks": 24-len(self.tasks),
                 "remainingContinuationRounds": 3-self.investigation_rounds}))
+            require_plain_language(proposal.explanation)
+            for t in proposal.tasks:
+                require_plain_language(t.question)
+                require_plain_language(t.relevance)
             candidates = self._tasks(proposal.tasks)
             self.tasks.extend(candidates)
             if candidates:
@@ -354,7 +372,10 @@ class ResearchRun:
 
     def _author_attempt(self, payload):
         draft = ReportDraft.model_validate(self._call("report", payload))
-        response_assertion = self._response_assertion(draft.response, draft.responseNarrative)
+        for text in [draft.response] + [q.question for q in draft.unanswered] + [
+                text for s in draft.sections for text in [s.title] + [p.text for p in s.narrative] + [t.caption for t in s.tables]]:
+            require_plain_language(text)
+        response_assertion = self._response_assertion(draft.response, draft.responseNarrative) if self.facts else None
         if len({s.id for s in draft.sections}) != len(draft.sections):
             raise ValueError("Duplicate section IDs: return each section ID only once. New progress findings need a distinct ID from further questions.")
         updates, assertions = [], {}
@@ -362,6 +383,8 @@ class ResearchRun:
         if targets and not self.factual_turn and set(targets) - {s.id for s in draft.sections}:
             raise ValueError("Return the requested editorial target sections; do not leave the requested revision unapplied.")
         for section in draft.sections:
+            if not (section.factRefs or section.narrative or section.tables):
+                continue
             old = next((s for s in self.sections if s["id"] == section.id), None)
             if targets and not self.factual_turn and section.id not in targets:
                 continue
@@ -451,7 +474,11 @@ class ResearchRun:
         self.question_assessments.update(resolved_updates)
         for key in resolved_updates:
             self.report_unanswered.pop(key, None)
-        self._append_response(draft.response, response_assertion)
+        # No-evidence conclusions are system-determined, not model explanations
+        # of a technical cause or parliamentary absence. Authored reports with
+        # accepted findings keep the normal evidence-linked authorship controls.
+        if self.facts:
+            self._append_response(draft.response, response_assertion)
 
     def _editorial_targets(self):
         targets = []
@@ -485,6 +512,8 @@ class ResearchRun:
                     done = task.setdefault("billResults", [])
                     if len(done) >= min(len(bills), 32):
                         task["state"] = "Validated" if len(bills) <= 32 and all(d["outcome"] == "answer" for d in done) else "Incomplete"
+                        task["researchOutcome"] = describe("findings_available" if task["state"] == "Validated" else "evidence_incomplete")
+                        task["outcomeLabel"] = task["researchOutcome"]["label"]
                         if len(bills) > 32:
                             self.unanswered.append("The 32-Bill research limit was reached; some recorded Bills have not had lifecycle lookups.")
                         self.author_pending = bool(self.facts)
@@ -500,20 +529,28 @@ class ResearchRun:
                     self.facts[fact["id"]] = fact
                 if task["tool"] == "lifecycle":
                     task["billResults"].append({"billIri": bill["billIri"], "outcome": env["outcome"]})
+                    if env["outcome"] != "answer":
+                        self.unanswered.append(f"{task['question']} — {env['error']['message']}")
                 else:
                     task["state"] = "Validated" if env["outcome"] == "answer" else "Incomplete"
+                    task["researchOutcome"] = env.get("researchOutcome", describe("findings_available" if env["outcome"] == "answer" else "evidence_incomplete"))
+                    task["outcomeLabel"] = task["researchOutcome"]["label"]
+                    if env["outcome"] != "answer":
+                        task["reason"] = task["researchOutcome"]["description"]
                     self.author_pending = bool(self.facts) or task["tool"] == "query"
                     if task["tool"] == "query" and not any(t["state"] == "Pending" for t in self.tasks):
                         self.investigation_pending = self.investigation_rounds < 3 and len(self.tasks) < 24
-                if env["outcome"] != "answer":
-                    self.unanswered.append(f"{task['question']} — {env['error']['message']}")
-                elif self.metrics["firstValidatedSeconds"] is None:
+                if env["outcome"] == "answer" and self.metrics["firstValidatedSeconds"] is None:
                     self.metrics["firstValidatedSeconds"] = round(monotonic()-self.created, 3)
-            except Exception:
-                task.update(state="Incomplete", reason="The required evidence could not be retrieved safely. Earlier findings remain available.")
+            except Exception as error:
+                secrets = tuple(os.getenv(k, "") for k in ("NLQ_LLM_API_KEY", "OIR_FUSEKI_PASSWORD"))
+                task.update(state="Incomplete", researchOutcome=describe("execution_failure"),
+                            outcomeLabel=describe("execution_failure")["label"],
+                            technicalDiagnostic=format_debug_text(f"{type(error).__name__}: {error}", secrets=secrets),
+                            reason=describe("execution_failure")["description"])
                 self.unanswered.append(task["question"] + ": " + task["reason"])
         self.version += 1
-        self.status = "Research in progress" if self.has_work() else "Completed with limitations"
+        self.status = "Research in progress" if self.has_work() else self._completed_status()
         if not self.has_work():
             self.metrics["completedSeconds"] = round(monotonic()-self.created, 3)
         return self.view()
@@ -523,6 +560,29 @@ class ResearchRun:
 
     def _question_registry(self):
         return {q["id"]: q for record in self.requirements for q in record["proposedConditions"]}
+
+    def _completed_status(self):
+        if self.report_problem:
+            return "Findings available — report update interrupted" if self.sections else "Findings retrieved — report not completed" if self.facts else "Research interrupted"
+        if self.facts:
+            return "Findings available — some questions unanswered" if self._outstanding() or any(
+                t["state"] == "Incomplete" for t in self.tasks) else "Findings available"
+        kinds = {t.get("researchOutcome", {}).get("kind") for t in self.tasks}
+        if "integration_unavailable" in kinds:
+            records_found = any(e.get("selectionOutcome") == "matches"
+                and e.get("researchOutcome", {}).get("kind") == "integration_unavailable" for e in self.evidence.values())
+            return "Records found — report not completed" if records_found else "Search completed — result not included"
+        if "execution_failure" in kinds:
+            return "Research interrupted"
+        if "clarification_required" in kinds or "identity_unresolved" in kinds:
+            return "Needs clarification"
+        if kinds == {"no_matching_records"}:
+            return "No matching records found"
+        return "Question not answered"
+
+    def _outcome_summary(self):
+        outcomes = list(dict.fromkeys(t.get("researchOutcome", {}).get("description", "") for t in self.tasks))
+        return " ".join(s for s in outcomes if s) or "No findings have been established for this question."
 
     def _outstanding(self):
         return [{"id": key, "state": "Unanswered / for review", "requirement": q["wording"],
@@ -536,19 +596,23 @@ class ResearchRun:
     def view(self):
         sections = copy.deepcopy(self.sections)
         for section in sections:
-            section["state"] = "Populating" if self.has_work() else "Incomplete"
+            section["state"] = "Populating" if self.has_work() else "Findings available" if self.facts else "Incomplete"
         return copy.deepcopy({"id": self.id, "brief": self.brief, "title": self.title, "reportingDate": self.date,
-            "status": self.status, "version": self.version, "interpretation": self.interpretation,
+            "status": self.status, "outcomeSummary": self._outcome_summary(), "version": self.version, "interpretation": self.interpretation,
             "tasks": self.tasks, "sections": sections, "facts": self.facts, "assertions": self.assertions,
             "messages": self.messages, "requirements": self.requirements, "plans": self.plans,
             "questionAssessments": self.question_assessments,
-            "unanswered": self._outstanding(), "processMessages": list(dict.fromkeys(self.unanswered)),
+            "unanswered": self._outstanding(), "reportIssue": self.report_problem, "processMessages": list(dict.fromkeys(self.unanswered + ([self.report_problem] if self.report_problem else []) + [
+                t["researchOutcome"]["description"] for t in self.tasks
+                if not self.facts and t.get("researchOutcome") and t["researchOutcome"]["kind"] != "findings_available"])),
             "clarifications": ([self.plans[-1]["clarification"]] if self.plans and self.plans[-1].get("clarification") else []),
             "limitations": self._limitations(), "metrics": self.metrics, "hasWork": self.has_work(),
             "evidence": {eid: {"evidenceId": eid, "outcome": e["outcome"], "request": e["request"], "compilerStatus": e["compilerStatus"],
                                 "error": e["error"], "queryCount": len(e["execution"]["queries"])} for eid, e in self.evidence.items()}})
 
     def _limitations(self):
+        if not self.facts:
+            return []  # outcome summary explains why there is no report finding
         tools = {t["tool"] for t in self.tasks}
         query_limits = [e["error"]["message"] for e in self.evidence.values()
                         if e["request"]["operation"]["operation"] == "query" and e.get("error")]
@@ -558,7 +622,7 @@ class ResearchRun:
     def markdown(self):
         def safe(s):
             return str(s).replace("<", "&lt;").replace(">", "&gt;").replace("[", "\\[").replace("]", "\\]").replace("|", "\\|")
-        lines = ["# " + safe(self.title).replace("\n", " "), "", "**Draft — for review** · Incomplete / qualified research", "",
+        lines = ["# " + safe(self.title).replace("\n", " "), "", "**Draft — for review** · " + self.status, "",
                  "Original brief: " + safe(self.brief), "Reporting date: " + self.date, ""]
         active = {}
         table_sources = {}
@@ -572,16 +636,20 @@ class ResearchRun:
                 label = {1: "Directly supported recorded fact", 2: "Approved calculation", 3: "Provisional interpretation", 4: "Unverified hypothesis / further question"}[a["level"]]
                 lines += [safe(a["text"]) + f" [{ref}]", f"_{label}" + (f" — {a['confidence']} qualitative confidence (provisional)" if a["level"] == 3 else "") + "_", ""]
             for table in s.get("tables", []):
-                lines += ["### " + safe(table["caption"]), "", safe(table["qualification"]), "",
+                lines += ["### " + safe(table["caption"]), "",
                           "| " + " | ".join(table["columns"]) + " | Evidence |",
                           "| " + " | ".join(["---"] * (len(table["columns"]) + 1)) + " |"]
                 for row in table["rows"]:
                     anchor = "records-" + row["assertionRefs"][0]
                     table_sources[anchor] = row["assertionRefs"]
                     lines.append("| " + " | ".join(safe(c["text"]) or "No accepted value shown" for c in row["cells"]) + f" | [Source records](#{anchor}) |")
-                lines.append("")
-        lines += ["## Evidence limitations", ""] + ["- " + safe(l) for l in self._limitations()]
-        lines += ["", "## Unanswered research questions", ""] + ["- " + safe(q["reason"]) for q in self._outstanding()]
+                lines += ["", safe(table["qualification"]), ""]
+        if not self.sections:
+            lines += [safe(self._outcome_summary()), ""]
+        if self._limitations():
+            lines += ["## Evidence limitations", ""] + ["- " + safe(l) for l in self._limitations()]
+        if self._outstanding():
+            lines += ["", "## Unanswered research questions", ""] + ["- " + safe(q["reason"]) for q in self._outstanding()]
         # Evidence is not discarded merely because a report is made shorter.
         active = self.facts | active
         lines += ["", "## Assertion evidence and reasoning", ""]

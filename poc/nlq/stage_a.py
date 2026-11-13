@@ -790,6 +790,7 @@ def execute_stage_a(request: StageARequest, *, as_of: date, fuseki, supported_pr
                        for item, _start, end in parsed):
                     current_open = candidate["term"]
             out = []
+            facts = []
             for item, start, end in parsed:
                 _require_local_iri(item["term"], "Dáil term")
                 if start is None:
@@ -800,9 +801,26 @@ def execute_stage_a(request: StageARequest, *, as_of: date, fuseki, supported_pr
                 else:
                     end_text = end.isoformat()
                 out.append((item["label"].removesuffix("@en"), start.isoformat(), end_text))
+                from .query_evidence import EpisodeFact, Interval, base, entity, fields, date_text
+                label = item["label"].removesuffix("@en")
+                facts.append(EpisodeFact(**base("recorded_house_term_dates",
+                    f"The House-owned records give {label} a start of {date_text(start.isoformat())} and "
+                    + (f"an end of {date_text(end.isoformat())}." if end else "no recorded end date."),
+                    fields(term=("Dáil term", label), start=("House start", date_text(start.isoformat())),
+                           end=("House end", date_text(end.isoformat()) if end else end_text)),
+                    {"meaning": "recorded_house_term_dates_not_sittings", "asOf": as_of.isoformat(),
+                     "currentOpenTerm": current_open}, [item],
+                    ["Term dates do not establish actual sittings or a complete parliamentary history."]),
+                    participants={"term": entity(item["term"], label, "DailTerm")},
+                    intervals=[Interval(resourceIri=item["term"], rangeIri=None,
+                        start=item["start"].split("^^", 1)[0], end=item["end"].split("^^", 1)[0] if end else None,
+                        endMeaning="recorded" if end else "open_ended" if item["term"] == current_open else "not_recorded",
+                        meaning="house_term_dates")]))
             result = QueryResult("select", ("Dáil term", "Start", "End"), tuple(out), raw.raw_json)
             plan = _validated_simple_plan({"version": 2, "asOf": as_of.isoformat(), "family": "house_terms", "referents": {"term": {"type": "DailTerm", "answer": True}}, "relations": [], "answer": {"kind": "values", "referent": "term"}})
             return PlanOutcome("success", plan=plan, sparql=_term_query("Dail", supported_predicates=supported_predicates), result=result,
+                               validated_facts=tuple(facts),
+                               selection_outcome="matches",
                                diagnostic="House-owned term dates; absent end dates are shown explicitly and only the term spanning the supplied as-of date is called current.")
         except NLQError as error:
             return PlanOutcome("source_data_unavailable", diagnostic=str(error))

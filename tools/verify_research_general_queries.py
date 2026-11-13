@@ -20,6 +20,11 @@ from poc.nlq.research_tools import ResearchTools, discovery_context
 from poc.nlq.vocabulary import supported_predicates
 
 CASES = {
+    "j-committee-current": "Who are the current members of the Committee of Public Accounts?",
+    "k-committee-history": "What is the membership history of the Committee of Public Accounts?",
+    "l-chronology-independent": "When did each Dáil start and finish?",
+    "m-partial-committee": "Who are the current members of the Committee of Public Accounts, and how has its membership changed since 2020?",
+    "n-partial-multi-domain": "Who are the current members of the Committee of Public Accounts? Also, what did those members say about housing in Dáil debates last year?",
     "a-party-history": "What parties was Stephen Donnelly a member of, and when?",
     "b-r1": "Prepare a briefing on the Bills sponsored by Malcolm Byrne. What progress have they made, and what happened to them?",
     "c-career": "Prepare a background briefing on Mary Lou McDonald's parliamentary career, including constituencies represented and parliamentary roles.",

@@ -544,6 +544,17 @@ The LLM may propose and sequence tools, but execution must reuse existing compil
 
 **Shared evidence boundary (13 November 2026):** The Query Service issues the versioned [typed factual-evidence contract](query-service-evidence.md) on `PlanOutcome.factual_evidence`. Its execution/evidence projectors own entity, relationship, episode and approved measure semantics. `research_evidence.accept_query_evidence` consumes that contract generically, validating its exact plan/query/result binding and attaching actual read references; it does not interpret individual query families. Rendered result rows are not an alternative factual authority. A valid service response with no accepted evidence remains inspectable, with an explicit `missing_or_unaccepted_evidence` research outcome and separate successful Query Service outcome; no Level 1/2 facts are invented. Unknown versions/variants also fail closed. Accepted facts retain their source plans, all actual resolution/answer reads, proposals, dataset observation context and qualifications. No common snapshot or source freshness is inferred. Coverage is bounded to implemented service projectors, not every executable compiler family.
 
+**Reliable handoff and outcome presentation (13 November 2026):** The service now
+binds executor-issued typed propositions through a default shared handoff;
+semantic projection coverage remains conditional as specified in the evidence
+contract. Research execution additionally records a controlled `researchOutcome`
+separating findings, a completed result that could not be incorporated, unsupported
+questions, valid empty selections, clarification/unresolved identity, incomplete
+evidence and execution/application failure. Legacy compiler and interaction codes
+remain diagnostic metadata, not ordinary user-facing explanations. Only a service
+selection assessment can establish a no-match outcome. Partial investigations
+retain useful findings first and identify unanswered requirements separately.
+
 Legacy sponsorship/career requests remain replay-compatible, and the existing exact-Bill lifecycle batch remains a bounded convenience over accepted Bill identities, not the boundary of discoverable research. New subject matter does not require a new Research Assistant tool. The existing four assertion classes, approved calculations, selective revision and qualified export remain unchanged.
 
 For shared accepted propositions, the LLM can select compact `records` table columns from compiler-owned field keys. Labels/values remain exact accepted views; missing fields, incompatible column meanings, new joins/calculations and non-established facts are rejected. This supports lists, timelines and comparisons without a research presentation per capability. Standalone exact facts and authored explanatory prose remain available. Full propositions, intervals, witnesses and qualifications are inspectable/exported without repeating them in every cell. Legacy `facts`, Bill and constituency tables remain compatible; their existing restrictions are unchanged.

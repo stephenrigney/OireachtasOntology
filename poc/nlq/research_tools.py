@@ -18,10 +18,12 @@ from .composable_plan import PlanOutcome, execute_question, plan_question, valid
 from .representation import representation_plan
 from .research_adapter import ClosedModel, QueryTrace, COMPILER_CONTEXT, now
 from .composable_semantic_planner import create_composable_plan_generator, build_composable_planner_instructions
+from .research_outcomes import classify
+from .results import format_debug_text
 
 LIMITATIONS = [
     "These are findings from the available parliamentary records, not a certified complete account.",
-    "The source's last update and completeness are not established. Retrieval time is not source freshness.",
+    "The records' last update is unknown. Separate searches may reflect different updates to the data.",
     "Recorded Bill statuses and dated activities do not by themselves establish a final outcome.",
     "Representation in separate Dáil terms does not establish continuous service or other parliamentary roles.",
 ]
@@ -80,6 +82,16 @@ class ResearchTools:
         self.planner_factory = semantic_plan_generator_factory
 
     def execute(self, task, reporting_date, bill=None):
+        env = self._execute(task, reporting_date, bill)
+        if "researchOutcome" not in env:
+            env["researchOutcome"] = classify(PlanOutcome(env["compilerStatus"]),
+                accepted=env["outcome"] == "answer", plan_validated=False, execution_completed=False)
+            if env.get("error"):
+                env["error"]["technicalMessage"] = env["error"]["message"]
+                env["error"]["message"] = env["researchOutcome"]["description"]
+        return env
+
+    def _execute(self, task, reporting_date, bill=None):
         """Canonical request is the tool's own exact question, never a rewritten rejected brief."""
         as_of = date.fromisoformat(reporting_date)
         if task["tool"] == "query":
@@ -155,10 +167,12 @@ class ResearchTools:
         try:
             outcome = execute_question(task["question"], as_of=date.fromisoformat(reporting_date),
                 fuseki=trace, supported_predicates=self.predicates, semantic_plan_generator_factory=planner)
-        except Exception:
+        except Exception as error:
             # Retain even already-completed reads on unexpected planner/projection
             # failure. Never convert a failed projection to success-shaped data.
-            outcome = PlanOutcome("validation_failure", diagnostic="The Query Service could not safely validate or retain this response. No research facts were accepted.")
+            import os
+            outcome = PlanOutcome("validation_failure", diagnostic=format_debug_text(
+                f"{type(error).__name__}: {error}", secrets=tuple(os.getenv(k, "") for k in ("NLQ_LLM_API_KEY", "OIR_FUSEKI_PASSWORD"))))
         plan_ok = False
         try:
             plan_ok = outcome.plan is not None and validate_plan(outcome.plan) == outcome.plan
@@ -174,11 +188,14 @@ class ResearchTools:
         if status == "answer" and not accepted:
             status = "missing_or_unaccepted_evidence" if plan_ok and executed else "validation_failure"
         message = None if accepted else (limitation or outcome.diagnostic or "No accepted research evidence was established.")
+        research_outcome = classify(outcome, accepted=accepted, plan_validated=plan_ok, execution_completed=executed)
         return {"evidenceId": "e-" + uuid4().hex,
             "request": {"factualRequest": task["question"], "requirementId": task["requirementId"],
                         "operation": {"operation": "query"}},
             "outcome": status, "queryServiceOutcome": outcome.interaction,
             "compilerStatus": outcome.status,
+            "researchOutcome": research_outcome, "factualEvidenceStatus": outcome.factual_evidence_status,
+            "selectionOutcome": outcome.selection_outcome,
             "validation": {"planValidated": plan_ok, "executionCompleted": executed, "accepted": accepted},
             "data": data, "plan": copy.deepcopy(outcome.plan),
             "queryServiceResult": ({"kind": outcome.result.kind, "columns": list(outcome.result.columns),
@@ -191,7 +208,8 @@ class ResearchTools:
                               "intent": (outcome.plan or {}).get("intent"), "parentRequirementSatisfied": False},
             "completeness": {"enumeration": "bounded_query_completed" if accepted else "unknown",
                              "sourceCoverage": "uncertified", "freshness": "unknown",
-                              "limitations": LIMITATIONS[:2] + ([message] if message else [])},
+                              "limitations": LIMITATIONS[:2] + ([research_outcome["description"]] if message else [])},
             "error": None if accepted else {"code": "research_evidence_unavailable" if limitation else outcome.status,
-                "message": message, "candidates": list(outcome.candidates), "clarification": outcome.clarification},
-            "diagnostic": outcome.diagnostic}
+                "message": research_outcome["description"], "technicalMessage": message,
+                "candidates": list(outcome.candidates), "clarification": outcome.clarification},
+            "diagnostic": outcome.diagnostic, "debugOutput": outcome.debug_output, "debugSource": outcome.debug_source}

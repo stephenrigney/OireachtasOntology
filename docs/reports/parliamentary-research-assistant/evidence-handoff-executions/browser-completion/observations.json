@@ -1,0 +1,45 @@
+[
+  {
+    "case": "history",
+    "facts": 13,
+    "status": "Findings available — some questions unanswered",
+    "outcomes": [
+      {
+        "kind": "unsupported_question",
+        "label": "Question not answered",
+        "description": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+      },
+      {
+        "kind": "findings_available",
+        "label": "Findings available",
+        "description": "The recorded findings and their sources are available in the report."
+      }
+    ],
+    "planBeforeDispatch": true,
+    "javascriptErrors": []
+  },
+  {
+    "case": "partial",
+    "facts": 13,
+    "status": "Findings available — some questions unanswered",
+    "outcomes": [
+      {
+        "kind": "findings_available",
+        "label": "Findings available",
+        "description": "The recorded findings and their sources are available in the report."
+      },
+      {
+        "kind": "unsupported_question",
+        "label": "Question not answered",
+        "description": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+      },
+      {
+        "kind": "unsupported_question",
+        "label": "Question not answered",
+        "description": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+      }
+    ],
+    "planBeforeDispatch": true,
+    "javascriptErrors": []
+  }
+]

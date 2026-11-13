@@ -46,6 +46,22 @@ These pages guide institutional language and tone. They are **not** a source of 
 
 The examples illustrate **wording**, not a new factual certification. Do not substitute a simpler sentence if it loses a material limitation.
 
+System-determined outcomes use controlled plain-English descriptions derived from
+structured execution state, not copied diagnostic strings or model-invented
+technical causes. For example, records found but not incorporated is an application
+limitation, not evidence that parliamentary records are absent. A completed
+scalar/boolean result without accepted facts does not itself establish matching
+records or their absence. Full diagnostics remain in Research Activity. The
+ordinary-language boundary is enforced for model-authored plans, report prose,
+unanswered summaries and conversational responses as well as prompt guidance.
+
+With findings, status labels say **Findings available**, or **Findings available —
+some questions unanswered** where appropriate. With no accepted facts, the final
+response uses the controlled outcome explanation rather than a generated factual
+conclusion. Show general source coverage/freshness qualifications once for the
+report; retain exact per-fact qualifications in source inspection and export.
+Place factual tables before their detailed qualifications and omit empty headings.
+
 ## 3A. Starting screen and contextual UI language — v0.6
 
 The first screen is a **question-writing surface**, not a marketing introduction, technical status panel or empty document preview.

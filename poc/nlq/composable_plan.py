@@ -15,7 +15,7 @@ import json
 import re
 import unicodedata
 from pathlib import Path
-from typing import Any
+from typing import Any, TYPE_CHECKING, Literal as TypingLiteral
 from urllib.parse import quote, unquote
 
 from rdflib import Literal, URIRef
@@ -28,6 +28,9 @@ from .member_resolution import (
 )
 from .results import QueryResult, format_debug_payload
 from .safety import MAX_RESULT_OFFSET, MAX_RESULT_ROWS, validate_sparql
+
+if TYPE_CHECKING:
+    from .query_evidence import Proposition
 
 
 PLAN_VERSION = 2
@@ -76,6 +79,12 @@ class PlanOutcome:
     clarification: dict[str, Any] | None = None
     accepted_evidence: dict[str, Any] | None = None
     factual_evidence: dict[str, Any] | None = None
+    # Executor-owned typed propositions, issued at semantic validation, never
+    # reconstructed from the readable result. Shared boundary binds the envelope.
+    validated_facts: tuple[Proposition, ...] = ()
+    factual_evidence_status: TypingLiteral["available", "unavailable", "invalid", "not_applicable"] = "unavailable"
+    # Optional executor assessment, not inferred from rendered rows/scalars.
+    selection_outcome: TypingLiteral["matches", "no_matches"] | None = None
 
     @property
     def interaction(self) -> str:
@@ -6485,8 +6494,9 @@ def _execute_member_relationship_composition_plan(
                       if len(page_offsets) > 1 else "")
                     + "Members are deduplicated by exact RDF identity." + composition_note
                     + date_note + count_note + empty_note
-                    + " Results reflect local records; historical source completeness is not certified."),
+                     + " Results reflect local records; historical source completeness is not certified."),
         request_family="member_relationship_composition",
+        selection_outcome="matches" if names_by_member else "no_matches",
     )
 
 
@@ -7159,14 +7169,8 @@ def execute_question(
                                   current_dail_operation=_current_dail_operation)
         # The service owns factual interpretation. A projection failure is not a
         # licence for consumers to infer evidence from successful display rows.
-        if outcome.interaction == "answer" and outcome.factual_evidence is None:
-            from dataclasses import replace
-            from .query_evidence import project_legacy
-            try:
-                outcome = replace(outcome, factual_evidence=project_legacy(outcome))
-            except (ValueError, KeyError, TypeError, IndexError, AttributeError):
-                outcome = replace(outcome, diagnostic=(outcome.diagnostic or "") +
-                    " Structured factual evidence could not be validated; display results are not factual authority.")
+        from .query_evidence import finalize_evidence
+        outcome = finalize_evidence(outcome)
         return outcome
     except QueryExecutionFailure as error:
         cause = error.__cause__

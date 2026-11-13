@@ -41,6 +41,26 @@ Scope and source witness dictionaries deliberately retain operation-specific
 semantics; they are not an invitation for a consumer to interpret a new family.
 Adding another service projector requires its own focused semantic tests.
 
+### Default handoff, conditional semantic coverage
+
+Executors may issue typed `PlanOutcome.validated_facts` at their existing semantic
+validation step, before readable rendering. The shared service boundary
+`query_evidence.finalize_evidence` binds these propositions to the exact plan,
+answer query and result digest by default. No capability registry or consumer-side
+row interpretation participates. Existing direct envelopes and reviewed legacy
+payload projections remain compatible. `factual_evidence_status` distinguishes
+`available`, `unavailable`, `invalid` and `not_applicable`; successful retrieval
+remains successful even if a handoff is unavailable or fails validation.
+
+Semantic coverage is **conditional**, not automatic for every successful query.
+An executor must establish the propositions it issues; relationships, independent
+intervals, measures and source qualifications still require service-owned meaning.
+`selection_outcome`, when supplied by an executor, distinguishes a validated
+matching selection from a valid empty selection (`matches` / `no_matches`). A
+consumer must not infer a negative finding from absent accepted evidence, an
+unknown selection, or an arbitrary scalar/boolean result. Selection outcomes are
+execution metadata, not a replacement for accepted Level 1/2 propositions.
+
 Intervals preserve source date/dateTime precision and source lexical values in
 witnesses. Resource/range identities are nullable where the authoritative
 projection does not expose them: legacy lifecycle observations establish Bill
@@ -66,6 +86,14 @@ Current implemented projections:
   certified final outcomes or necessarily latest developments.
 - Independent holdout, House-term calendar selection: exact House-owned dated
   entity selection, preserving date/full-month selector and non-sitting meaning.
+- Current committee membership: exact Member/Committee relationships, separate
+  membership, committee-owner and House-term intervals containing the reporting
+  date, raw owner/member witnesses and source graphs; not a complete roster,
+  chairmanship or attendance finding.
+- Independent additional slice, full Dáil chronology: recorded House-owned term
+  dates with exact term identities and source witnesses. Unexposed period
+  identities remain null; missing ends do not become recorded finishes. Neither
+  sitting dates nor completeness of parliamentary history is inferred.
 
 This is not universal compiler-family coverage. Other successful operations may
 still lack a projector. No consumer may fill that gap from their result tables.

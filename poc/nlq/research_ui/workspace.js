@@ -60,12 +60,13 @@ $("activity-drawer").addEventListener("keydown", event => {
 });
 $("activity").onclick = () => { $("activity").focus({preventScroll: true}); renderActivity(); openDrawer(); };
 
-function taskList(tasks) {
+function taskList(tasks, technical = false) {
   const ol = node("ol");
-  tasks.forEach(task => { const li = node("li", task.title); li.append(node("span", task.state, "task-state"));
+  tasks.forEach(task => { const li = node("li", task.title); li.append(node("span", task.outcomeLabel || task.state, "task-state"));
     if (task.role) li.append(node("p", `${task.role === "supporting" ? "Supporting evidence" : task.role} · ${task.relevance}`, "metadata"));
-    if (task.toolMeaning) li.append(node("p", task.toolMeaning, "metadata"));
-    if (task.reason) li.append(node("p", task.reason, "metadata")); ol.append(li); });
+    if (technical && task.toolMeaning) li.append(node("p", task.toolMeaning, "metadata"));
+    if (technical && task.technicalDiagnostic) li.append(node("pre", task.technicalDiagnostic));
+    if (task.reason && (technical || !task.researchOutcome)) li.append(node("p", task.reason, "metadata")); ol.append(li); });
   return ol;
 }
 function renderPlan() {
@@ -76,7 +77,7 @@ function renderPlan() {
   planVersion = serialized;
   $("plan-tasks").replaceChildren(taskList(run.tasks));
   $("plan-interpretation").textContent = run.interpretation;
-  $("plan-date").textContent = `Reporting date: ${run.reportingDate}. Recorded developments are not necessarily final outcomes.`;
+  $("plan-date").textContent = `Reporting date: ${run.reportingDate}.`;
   const requirements = $("requirement-content"); requirements.replaceChildren();
   (run.requirements || []).forEach((r, i) => { requirements.append(node("h3", `${i ? "Added request" : "Original question"}: ${r.originalWording}`), node("p", r.assessment));
     r.proposedConditions.forEach(c => { requirements.append(node("p", `${c.wording} — ${c.disposition}: ${c.explanation}`), node("p", c.conditions.join("; "), "metadata"));
@@ -119,7 +120,7 @@ function renderActivity() {
   inspectorVersion++;
   const content = $("activity-content"); content.replaceChildren();
   if (!run) { content.append(node("p", "Start research to see its plan, execution history and evidence.")); return; }
-  content.append(node("h3", "Research plan"), taskList(run.tasks), node("h3", "Execution history"));
+  content.append(node("h3", "Research plan"), taskList(run.tasks, true), node("h3", "Execution history"));
   const history = node("details"); history.append(node("summary", "Plan versions and original requests"));
   (run.plans || []).forEach(p => { const version = node("section"); version.append(node("h4", `Plan ${p.version}`), node("p", p.requirements.originalWording, "verbatim"), node("p", p.interpretation), taskList(run.tasks.filter(t => p.taskIds.includes(t.id)))); history.append(version); });
   content.insertBefore(history, content.children[2]);
@@ -209,7 +210,7 @@ function renderSection(section) {
     const indicator = button("Source & reasoning", () => showAssertion(ref), "evidence-link");
     indicator.setAttribute("aria-label", `Evidence: ${classLabel[a.level]} · ${ref}`); p.append(indicator); el.append(p);
   }
-  (section.tables || []).forEach(table => { el.append(node("p", table.qualification, "metadata"), renderTable(table)); });
+  (section.tables || []).forEach(table => { el.append(renderTable(table), node("p", table.qualification, "metadata")); });
   el.append(button("Refine this section", () => {
     sectionContext = section.id; renderContext(); reachComposer();
   }, "evidence-link"));
@@ -248,7 +249,7 @@ function render() {
   $("report-heading").textContent = run.title;
   $("original-brief").textContent = run.brief;
   $("report-scope").textContent = `Reporting date: ${run.reportingDate}. ${run.brief}`;
-  $("report-status").textContent = `Draft — for review · ${run.status} · Qualified / incomplete findings`;
+  $("report-status").textContent = `Draft — for review · ${run.status}`;
   renderPlan(); run.sections.forEach(renderSection);
   (run.messages || []).slice(messageCount).forEach(m => {
     const box = message(m.role === "user" ? "You" : "Assistant", m.text);
@@ -259,14 +260,17 @@ function render() {
   if (latest && latestReplyVersion !== JSON.stringify(latest)) {
     latestReplyVersion = JSON.stringify(latest); replyContent($("latest-reply"), latest);
   }
-  const notices = [...(run.clarifications || []), ...(run.processMessages || []), interruption];
+  // Findings lead. Completed search limitations appear once beside the report,
+  // not also as a stack of progress notices above its answer.
+  const notices = [...(run.clarifications || []), ...(!hasReport ? (run.processMessages || []) : []), interruption]
+    .filter(text => text && text !== latest?.text);
   const serializedNotices = JSON.stringify(notices);
   if ($("research-notices").dataset.version !== serializedNotices) {
     $("research-notices").dataset.version = serializedNotices;
     $("research-notices").replaceChildren(...notices.filter(Boolean).map(t => node("p", t, "notice")));
   }
   $("limitation-list").replaceChildren(...run.limitations.map(l => node("li", l)));
-  $("unanswered").replaceChildren(node("h3", "Unanswered research questions"), ...run.unanswered.map(u => node("p", u.reason, "notice")));
+  $("unanswered").replaceChildren(...(run.unanswered.length ? [node("h3", "Unanswered research questions"), ...run.unanswered.map(u => node("p", u.reason, "notice"))] : []));
   $("pause").hidden = !run.hasWork;
   $("pause").textContent = paused ? "Resume research" : "Pause research";
   if (paused) $("research-progress").textContent = "Research paused. An in-flight step may finish; choose Resume research to continue.";

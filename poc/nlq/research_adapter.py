@@ -239,7 +239,13 @@ class QueryTrace:
                         "rows": [list(row) for row in result.rows], "boolean": result.boolean if result.kind == "ask" else None})
             return result
         except Exception as error:
-            # Do not include endpoint credentials/transport debug in the UI.
+            # Preserve exact developer diagnostics separately from ordinary copy,
+            # redacting configured credentials before any archive/disclosure.
+            import os
+            from .results import format_debug_text
+            secrets = tuple(os.getenv(k, "") for k in ("NLQ_LLM_API_KEY", "OIR_FUSEKI_PASSWORD"))
+            item["technicalDiagnostic"] = format_debug_text(f"{type(error).__name__}: {error}", secrets=secrets)
+            item["debugOutput"] = format_debug_text(getattr(error, "debug_output", "") or "", secrets=secrets)
             item["error"] = "The read-only query failed."
             raise NLQError("The configured read-only query failed.") from error
         finally:

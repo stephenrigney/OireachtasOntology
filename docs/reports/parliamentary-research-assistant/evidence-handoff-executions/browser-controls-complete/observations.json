@@ -1,0 +1,119 @@
+[
+  {
+    "case": "current",
+    "facts": 2,
+    "status": "Findings available",
+    "outcomes": [
+      {
+        "kind": "findings_available",
+        "label": "Findings available",
+        "description": "The recorded findings and their sources are available in the report."
+      }
+    ],
+    "planBeforeDispatch": true,
+    "javascriptErrors": []
+  },
+  {
+    "case": "history",
+    "facts": 0,
+    "status": "Question not answered",
+    "outcomes": [
+      {
+        "kind": "unsupported_question",
+        "label": "Question not answered",
+        "description": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+      }
+    ],
+    "planBeforeDispatch": true,
+    "javascriptErrors": []
+  },
+  {
+    "case": "partial",
+    "facts": 2,
+    "status": "Findings available — some questions unanswered",
+    "outcomes": [
+      {
+        "kind": "findings_available",
+        "label": "Findings available",
+        "description": "The recorded findings and their sources are available in the report."
+      },
+      {
+        "kind": "unsupported_question",
+        "label": "Question not answered",
+        "description": "I couldn't establish this from the available queries. This does not show that no such parliamentary records exist."
+      }
+    ],
+    "planBeforeDispatch": true,
+    "javascriptErrors": []
+  },
+  {
+    "case": "handoff",
+    "facts": 0,
+    "status": "Records found — report not completed",
+    "outcomes": [
+      {
+        "kind": "integration_unavailable",
+        "label": "Records found; not included",
+        "description": "Relevant records were found, but the application couldn't include them in this report. This does not mean that no records exist."
+      }
+    ],
+    "planBeforeDispatch": true,
+    "javascriptErrors": []
+  },
+  {
+    "case": "result-only",
+    "facts": 0,
+    "status": "Search completed — result not included",
+    "outcomes": [
+      {
+        "kind": "integration_unavailable",
+        "label": "Result not included",
+        "description": "The search completed, but the application couldn't include its result in this report. No research findings were established by this search."
+      }
+    ],
+    "planBeforeDispatch": true,
+    "javascriptErrors": []
+  },
+  {
+    "case": "failure",
+    "facts": 0,
+    "status": "Research interrupted",
+    "outcomes": [
+      {
+        "kind": "execution_failure",
+        "label": "Search interrupted",
+        "description": "The search couldn't be completed. No findings were established by this search."
+      }
+    ],
+    "planBeforeDispatch": true,
+    "javascriptErrors": []
+  },
+  {
+    "case": "empty",
+    "facts": 0,
+    "status": "No matching records found",
+    "outcomes": [
+      {
+        "kind": "no_matching_records",
+        "label": "No matching records",
+        "description": "No matching records were found in the available data. The data may be incomplete."
+      }
+    ],
+    "planBeforeDispatch": true,
+    "javascriptErrors": []
+  },
+  {
+    "case": "ambiguous",
+    "facts": 0,
+    "status": "Needs clarification",
+    "outcomes": [
+      {
+        "kind": "clarification_required",
+        "label": "Clarification needed",
+        "description": "Please clarify the person, organisation or period intended before this question can be answered."
+      }
+    ],
+    "planBeforeDispatch": true,
+    "javascriptErrors": []
+  }
+]

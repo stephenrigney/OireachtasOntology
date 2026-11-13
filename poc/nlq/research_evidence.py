@@ -28,5 +28,5 @@ def accept_query_evidence(outcome, queries):
         data["evidence"] = evidence.model_dump()
         data["queryRefs"] = [q["queryId"] for q in queries]
         return data, None
-    except (ValueError, KeyError, TypeError, IndexError):
-        return None, "The accepted evidence did not agree with its compiler scope or result; no research facts were promoted."
+    except (ValueError, KeyError, TypeError, IndexError) as error:
+        return None, f"Accepted evidence validation failed: {type(error).__name__}: {error}"
