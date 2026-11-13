@@ -196,17 +196,15 @@
 
   {% if result %}
   <section id="query-results" aria-live="polite">
-    {% if composition_dashboard and composition_report and composition_report.status == 'answer' %}
+    {% if composition_dashboard and composition_answer and composition_answer.answerable %}
     <h2>Answer</h2>
-    {% if composition_request.answer.shape == 'count' %}
-    {% set is_td_answer = composition_request.requiredSelections|selectattr('role', 'equalto', 'R')|list %}
-    {% set count_label = ('TD' if composition_report.answer.distinctCount == 1 else 'TDs') if is_td_answer else ('Member' if composition_report.answer.distinctCount == 1 else 'Members') %}
-    <p class="composition-answer"><strong>{{ composition_report.answer.distinctCount }} matching {{ count_label }}</strong></p>
+    {% if composition_answer.count_label %}
+    <p class="composition-answer"><strong>{{ composition_answer.count_label }}</strong></p>
     {% else %}
-    <ul class="composition-answer">{% for name in composition_report.names.values()|sort %}<li>{{ name }}</li>{% endfor %}</ul>
+    <ul class="composition-answer">{% for name in composition_answer.names %}<li>{{ name }}</li>{% endfor %}</ul>
     {% endif %}
-    <p>{{ explainer.answer_relationship }}</p>
-    <p class="result-notice">These results reflect locally recorded evidence; the available records may not be complete.</p>
+    <p>{{ composition_answer.relationship }}</p>
+    <p class="result-notice">{{ composition_answer.qualification }}</p>
     {% else %}
     <h2>Results</h2>
     {% if result.kind == "ask" %}

@@ -117,6 +117,48 @@ def test_browser_main_ask_composition_three_stage_dashboard(
     page.close()
 
 
+@pytest.mark.parametrize("pair,shape,variation", [
+    ("RP", "list", 0), ("RP", "count", 1), ("KP", "list", 5), ("KR", "list", 9),
+])
+def test_browser_composition_feedback_matches_visible_answer_and_persists(
+        monkeypatch, tmp_path, serve, browser, pair, shape, variation):
+    question, _, _ = VARIATIONS[variation]
+    app, _ = make_app(monkeypatch, tmp_path, proposal(question, pair, shape))
+    url = serve(app)
+    page = browser.new_page(viewport={"width": 1240, "height": 900})
+    page.goto(url)
+    page.get_by_role("button", name="Start Evidence Session").click()
+    page.wait_for_function("localStorage.getItem('oireachtas-nlq-evidence-session') !== null")
+    session_id = page.evaluate("localStorage.getItem('oireachtas-nlq-evidence-session')")
+    assert session_id
+
+    page.get_by_label("Your question", exact=True).fill(question)
+    page.get_by_role("button", name="Ask", exact=True).click()
+    answer = page.locator("#query-results")
+    displayed_lines = [line.strip() for line in answer.inner_text().splitlines() if line.strip()]
+    actual = page.locator('#feedback-form input[name="actual"]').input_value()
+    assert actual == "\n".join(displayed_lines)
+    assert "http://" not in actual
+    assert "available records may not be complete" in actual
+    if shape == "count":
+        assert "1 matching TD" in actual
+    else:
+        assert "Alice Example" in actual
+
+    page.get_by_label("Yes", exact=True).check()
+    page.get_by_role("button", name="Save feedback").click()
+    page.wait_for_function("document.querySelector('.feedback-message')?.textContent.length > 0")
+    assert "Feedback saved immediately" in page.locator(".feedback-message").inner_text()
+    saved = json.loads((tmp_path / f"{session_id}.jsonl").read_text().splitlines()[0])
+    assert saved["actual"] == actual
+    assert saved["question"] == question and saved["correct"] is True
+    evidence_link = page.get_by_role("link", name="Download source evidence", exact=False)
+    page.locator("#composition-evidence > details > summary").click()
+    assert evidence_link.is_visible()
+    assert page.request.get(url + evidence_link.get_attribute("href")).status == 200
+    page.close()
+
+
 @pytest.mark.parametrize("fault", ["extra", "date", "negation", "boolean", "committee_count", "ambiguous"])
 def test_browser_main_ask_safe_outcomes_not_answers(monkeypatch, tmp_path, serve, browser, fault):
     q = "Which Fianna Fáil members serve on Public Accounts?"

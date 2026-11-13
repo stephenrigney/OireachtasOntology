@@ -37,7 +37,7 @@ from .feedback import FeedbackError, FeedbackStore
 from .performance import QueryPerformance
 from .explainer import (
     explain_validated_plan, explain_execution, explain_validated_composition,
-    explain_composition_execution,
+    explain_composition_execution, composition_answer_display,
 )
 
 
@@ -183,6 +183,12 @@ def create_app(
                 error=error, plan=explanation_plan,
             )
         )
+        composition_answer = (
+            composition_answer_display(
+                request=composition_request, report=composition_report, explanation=explainer,
+                result=result, status=interaction_status, error=error,
+            ) if composition_dashboard and composition_request is not None and composition_report is not None else None
+        )
         performance = getattr(request.state, "query_performance", None)
         if readiness is None and not (composition or composition_direct):
             readiness = (performance.measure("readiness_check", check_fuseki_readiness)
@@ -192,14 +198,15 @@ def create_app(
             outcome_name = getattr(request.state, "query_outcome", None) or ("failure" if error else "completed")
             performance_diagnostics = performance.diagnostics(outcome_name)
             logger.info("nlq_query_performance %s", json.dumps(performance_diagnostics, sort_keys=True))
-        feedback_actual = _displayed_answer_text(
+        feedback_actual = (composition_answer["actual"] if composition_answer is not None else
+                           _displayed_answer_text(
             error=error, result=result, result_notice=result_notice,
             ambiguity=ambiguity, entity_outcomes=entity_outcomes,
             clarification=clarification,
             interpretation=(explainer["summary"] if explainer else
-                             interpretation if mode == "phase1" or composition or composition_direct else None),
+                              interpretation if mode == "phase1" or composition or composition_direct else None),
             plan_explanation=({"answer_text": explainer["answer_text"]} if explainer else None),
-        )
+        ))
         feedback_session_id = request.cookies.get("oireachtas_nlq_feedback_session", "")
         try:
             feedback_recording = bool(feedback_session_id and feedback_store.status(feedback_session_id))
@@ -238,6 +245,7 @@ def create_app(
             "composition_evidence_token": composition_evidence_token,
             "composition_request": composition_request,
             "composition_dashboard": composition_dashboard,
+            "composition_answer": composition_answer,
         })
 
     from .composition_routes import install_composition_routes

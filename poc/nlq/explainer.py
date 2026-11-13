@@ -452,3 +452,33 @@ def explain_composition_execution(*, attempted: bool, request: dict, report: dic
     count = len(report.get("answer", {}).get("members", []))
     return {"status": "The query completed successfully.",
             "summary": f"The records returned {count} matching {subject}; the readable answer is shown above."}
+
+
+def composition_answer_display(*, request: dict, report: dict, explanation: dict,
+                                result=None, status=None, error=None) -> dict:
+    """Shared, user-facing answer fields and exact feedback text for /ask compositions."""
+    qualification = "These results reflect locally recorded evidence; the available records may not be complete."
+    answerable = (report.get("status") == "answer" and result is not None and not error
+                  and status not in {"execution_failure", "query_execution_failed"})
+    if not answerable:
+        refusal = error or report.get("error") or "No answer was established from the available records."
+        return {"answerable": False, "actual": str(refusal)}
+
+    is_td_answer = any(selection.get("role") == "R"
+                       for selection in request.get("requiredSelections", []))
+    noun = "TD" if is_td_answer else "Member"
+    if request.get("answer", {}).get("shape") == "count":
+        count = report.get("answer", {}).get("distinctCount")
+        count_label = f"{count} matching {noun if count == 1 else noun + 's'}"
+        names = ()
+        answer_lines = [count_label]
+    else:
+        count_label = None
+        names = tuple(sorted(report.get("names", {}).values()))
+        answer_lines = list(names)
+
+    relationship = explanation["answer_relationship"]
+    actual = "\n".join(("Answer", *answer_lines, relationship, qualification))
+    return {"answerable": True, "count_label": count_label, "names": names,
+            "relationship": relationship, "qualification": qualification,
+            "actual": actual}
