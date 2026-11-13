@@ -9,12 +9,22 @@
   "properties": {
     "version": {"type": "integer", "const": 2},
     "supported": {"type": "boolean"},
-    "family": {"type": ["string", "null"], "enum": ["shared_dail_terms", "member_relationship_composition", "constituency_representation", "member_party_history", "member_bill_sponsorship", "government_party_members", "capability_selection", null]},
+    "family": {"type": ["string", "null"], "enum": ["current_member_composition", "shared_dail_terms", "member_relationship_composition", "constituency_representation", "member_party_history", "member_bill_sponsorship", "government_party_members", "capability_selection", null]},
     "unsupportedReason": {"type": ["string", "null"]},
     "intent": {"type": "string", "minLength": 1},
     "referents": {
       "anyOf": [
         {"type": "null"},
+        {"type": "object", "additionalProperties": false,
+         "required": ["selections", "shape", "temporal"],
+         "properties": {
+           "selections": {"type": "array", "minItems": 2, "maxItems": 2,
+             "items": {"type": "object", "additionalProperties": false,
+               "required": ["role", "mention"], "properties": {
+                 "role": {"type": "string", "enum": ["R", "P", "K"]},
+                 "mention": {"type": "string", "minLength": 1, "maxLength": 200}}}},
+           "shape": {"type": "string", "enum": ["list", "count", "boolean"]},
+           "temporal": {"type": "string", "enum": ["current"]}}},
         {"type": "object", "additionalProperties": false,
          "required": ["member", "membership", "term", "constituency", "episode", "party", "affiliation", "anchor", "anchor_membership", "holding", "office"],
          "properties": {

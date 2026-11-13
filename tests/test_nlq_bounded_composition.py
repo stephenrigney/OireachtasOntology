@@ -185,6 +185,22 @@ def test_shared_constituency_prompt_prioritizes_the_independent_anchor_operator(
     assert "do not invent or require a numbered-term selector" in instructions
 
 
+def test_joe_neville_shared_constituency_attempt_is_preserved_but_not_accepted():
+    from test_nlq_composable_member_relationship_composition import _anchored_shared_constituency_draft
+    question = "Who are the other TDs in Joe Neville's constituency in the previous Dáil?"
+    fixture = set_fixture()
+    outcome = execute(fixture, _anchored_shared_constituency_draft(anchor="Joe Neville", previous=True), question)
+    assert outcome.status == "validation_failure"
+    assert outcome.sparql is None and not fixture.queries
+    assert outcome.proposal_evidence
+    assert outcome.proposal_evidence["validated"] is False
+    assert outcome.proposal_evidence["intent"]
+    assert any(item["label"] == "Joe Neville" for item in outcome.proposal_evidence["recognized"])
+    assert any(item["role"] == "term" and "previous" in item["label"]
+               for item in outcome.proposal_evidence["recognized"])
+    assert "same" in outcome.diagnostic.lower() or "shared" in outcome.diagnostic.lower()
+
+
 @pytest.mark.parametrize("question", [
     Q3,
     "Which other Fianna Fáil Deputies shared the same constituency as Bertie Ahern while he served as Taoiseach?",
@@ -211,6 +227,7 @@ def test_q15_one_identity_union_query_and_member_deduplication(monkeypatch):
     assert generator.calls == [Q15]
     outcome = execute(set_fixture(), set_draft(), Q15)
     assert outcome.status == "success", outcome.diagnostic
+    assert outcome.route_id == "member_relationship_composition"
     assert {row[0] for row in outcome.result.rows} == {"Recorded East", "Recorded West", "Recorded Both"}
     assert len(outcome.result.rows) == 3
     assert "VALUES ?constituency" in outcome.sparql

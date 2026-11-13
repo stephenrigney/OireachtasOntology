@@ -8,7 +8,7 @@ table, never from question text.
 from __future__ import annotations
 
 import calendar
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
 import json
@@ -85,6 +85,10 @@ class PlanOutcome:
     factual_evidence_status: TypingLiteral["available", "unavailable", "invalid", "not_applicable"] = "unavailable"
     # Optional executor assessment, not inferred from rendered rows/scalars.
     selection_outcome: TypingLiteral["matches", "no_matches"] | None = None
+    composition_request: dict[str, Any] | None = None
+    composition_report: dict[str, Any] | None = None
+    proposal_evidence: dict[str, Any] | None = None
+    route_id: str | None = None
 
     @property
     def interaction(self) -> str:
@@ -104,6 +108,13 @@ class PlanOutcome:
         return "missing_or_unaccepted_evidence"
 
 
+def _select_route(fuseki, route_id: str) -> None:
+    """Record route at the real dispatch boundary, without affecting execution."""
+    selector = getattr(fuseki, "select_route", None)
+    if callable(selector):
+        selector(route_id)
+
+
 @dataclass(frozen=True)
 class BillSponsorshipProjection:
     """Readable one-row-per-Bill projection with participation evidence retained."""
@@ -114,6 +125,53 @@ class BillSponsorshipProjection:
     conflicting_evidence: bool = False
     diagnostics: tuple[str, ...] = ()
     witnesses: tuple[dict[str, Any], ...] = ()
+
+
+def _safe_proposal_evidence(draft: Any, reason: str | None) -> dict[str, Any] | None:
+    """Keep bounded, explicitly unvalidated interpretation evidence for refusals.
+
+    This is presentation evidence only: it does not complete, resolve, validate,
+    or execute the proposal. Never expose the raw model payload here.
+    """
+    if not isinstance(draft, dict):
+        return None
+    intent = draft.get("intent")
+    intent = intent.strip()[:1000] if isinstance(intent, str) else None
+    family = draft.get("family")
+    family = family[:100] if isinstance(family, str) else None
+    referents = draft.get("referents")
+    recognized = []
+    if isinstance(referents, dict):
+        for key, value in list(referents.items())[:12]:
+            if not isinstance(value, dict):
+                continue
+            label = value.get("mention")
+            typ = value.get("type")
+            selector = value.get("selector")
+            selector_label = None
+            if isinstance(selector, dict):
+                selector_kind = selector.get("kind")
+                selector_value = selector.get("number", selector.get("house", selector.get("date")))
+                if isinstance(selector_kind, str):
+                    selector_label = selector_kind.replace("_", " ")
+                    if selector_value is not None:
+                        selector_label += f" {str(selector_value)[:80]}"
+            if typ or isinstance(label, str) or selector_label:
+                display = label.strip() if isinstance(label, str) and label.strip() else selector_label or str(typ or "entity")
+                recognized.append({"role": str(key)[:80], "type": str(typ)[:80] if typ else "entity",
+                                   "label": display[:200]})
+    selection = draft.get("capability")
+    if isinstance(selection, str):
+        recognized.append({"role": "capability", "type": "capability", "label": selection[:100]})
+    parameters = draft.get("parameters")
+    if isinstance(parameters, dict):
+        for key, value in list(parameters.items())[:12]:
+            if isinstance(value, str) and value.strip():
+                recognized.append({"role": str(key)[:80], "type": "proposed input", "label": value.strip()[:200]})
+    if not intent and not family and not recognized:
+        return None
+    return {"validated": False, "intent": intent, "family": family,
+            "recognized": recognized, "reason": str(reason or "The proposal could not be validated.")[:1000]}
 
 
 def _validate_debate_plan(plan: dict[str, Any]) -> dict[str, Any]:
@@ -6553,6 +6611,7 @@ def _execute_shared_dail_terms_question(
             "unsupported_request", diagnostic=str(error), request_family=family,
             debug_output=format_debug_payload({"draft": output, "diagnostic": str(error)}),
             debug_source="Composable semantic planner",
+            proposal_evidence=_safe_proposal_evidence(locals().get("draft"), str(error)),
         )
     except InvalidComposableOutput as error:
         return PlanOutcome(
@@ -6567,6 +6626,7 @@ def _execute_shared_dail_terms_question(
             request_family=family,
             debug_output=format_debug_payload({"draft": output, "diagnostic": str(error)}),
             debug_source="Composable plan validation",
+            proposal_evidence=_safe_proposal_evidence(locals().get("draft"), str(error)),
         )
     except Exception as error:
         return PlanOutcome(
@@ -6583,10 +6643,21 @@ def _execute_shared_dail_terms_question(
         return PlanOutcome(
             "unsupported_request", diagnostic=unsupported_reason,
             request_family=family,
+            proposal_evidence=_safe_proposal_evidence(draft, unsupported_reason),
         )
+    if draft_plan.get("family") == "current_member_composition":
+        from .composition_admission import execute_plan
+        _select_route(fuseki, "current_member_composition")
+        return execute_plan(draft_plan, question=question, as_of=as_of, transport=fuseki)
+    # A hint can route here before legacy preflight; an older family still owns
+    # its original preflight, including historical dates/group/term boundaries.
+    legacy_preflight = _composable_interpretation_preflight(question, as_of)
+    if legacy_preflight is not None:
+        return legacy_preflight
     if draft_plan.get("family") == "capability_selection":
         capability = draft_plan["capability"]
         parameters = draft_plan["parameters"]
+        _select_route(fuseki, f"capability:{capability}")
         if capability == "current_office_constituency":
             from .office_representation import execute_office_representation
             return execute_office_representation(parameters["office"], as_of=as_of, fuseki=fuseki,
@@ -6674,10 +6745,13 @@ def _execute_shared_dail_terms_question(
         )
 
     if plan["referents"].get("participation", {}).get("type") == "BillParticipation":
+        _select_route(fuseki, plan.get("family", "member_bill_sponsorship"))
         return _execute_bill_sponsorship_question(plan, fuseki=fuseki, supported_predicates=supported_predicates)
     if plan["referents"].get("affiliation", {}).get("type") == "PoliticalAffiliationIdentity" and "family" not in plan:
+        _select_route(fuseki, "member_party_history")
         return _execute_affiliation_question(plan, fuseki=fuseki, supported_predicates=supported_predicates)
     family = plan["family"]
+    _select_route(fuseki, family)
     if family == "constituency_representation":
         from .representation import execute_representation
         return execute_representation(plan, fuseki=fuseki, supported_predicates=supported_predicates)
@@ -7150,6 +7224,22 @@ def execute_question(
     from .errors import QueryExecutionFailure, QueryLimitError
 
     class ReadOnlyExecution:
+        route_id = None
+
+        def select_route(self, route_id):
+            self.route_id = route_id
+            selector = getattr(fuseki, "select_route", None)
+            if callable(selector):
+                selector(route_id)
+
+        @property
+        def timeout(self):
+            from .composition_kernel import REQUEST_TIMEOUT
+            return REQUEST_TIMEOUT
+
+        def select(self, lookup, query, offset):
+            return fuseki.select(lookup, query, offset)
+
         def query(self, query):
             try:
                 return fuseki.query(query)
@@ -7160,26 +7250,31 @@ def execute_question(
         if continuation is not None:
             from .stage_a import StageARequest, execute_stage_a
             request, selected = continuation
-            outcome = execute_stage_a(StageARequest(**request), as_of=as_of, fuseki=ReadOnlyExecution(),
-                                    supported_predicates=supported_predicates, selected_member_iri=selected)
+            read_only = ReadOnlyExecution()
+            _select_route(read_only, "member_lookup")
+            outcome = execute_stage_a(StageARequest(**request), as_of=as_of, fuseki=read_only,
+                                      supported_predicates=supported_predicates, selected_member_iri=selected)
         else:
-            outcome = _execute_question(question, as_of=as_of, fuseki=ReadOnlyExecution(),
-                                  supported_predicates=supported_predicates,
-                                  semantic_plan_generator_factory=semantic_plan_generator_factory,
-                                  current_dail_operation=_current_dail_operation)
-        # The service owns factual interpretation. A projection failure is not a
-        # licence for consumers to infer evidence from successful display rows.
+            read_only = ReadOnlyExecution()
+            outcome = _execute_question(question, as_of=as_of, fuseki=read_only,
+                                    supported_predicates=supported_predicates,
+                                    semantic_plan_generator_factory=semantic_plan_generator_factory,
+                                    current_dail_operation=_current_dail_operation)
+        # Preserve optional structured evidence alongside the current service's
+        # route/composition result. Reporting does not depend on a projector.
         from .query_evidence import finalize_evidence
         outcome = finalize_evidence(outcome)
-        return outcome
+        return replace(outcome, route_id=outcome.route_id or read_only.route_id)
     except QueryExecutionFailure as error:
         cause = error.__cause__
         return PlanOutcome("execution_failure", diagnostic=f"The local read-only query failed: {error}",
                            request_family="composable_semantic", debug_source="Fuseki",
+                           route_id=locals().get("read_only").route_id if locals().get("read_only") else None,
                            debug_output=format_debug_payload({"failed_read_only_query": error.query,
                                                               "endpoint_debug": getattr(cause, "debug_output", None)}))
     except QueryLimitError as error:
-        return PlanOutcome("validation_failure", diagnostic=str(error), request_family="composable_semantic")
+        return PlanOutcome("validation_failure", diagnostic=str(error), request_family="composable_semantic",
+                           route_id=locals().get("read_only").route_id if locals().get("read_only") else None)
 
 
 def _clarify_constituency_set(question, area, *, as_of, fuseki, supported_predicates):
@@ -7301,6 +7396,35 @@ def _execute_question(
                 request_family="composable_semantic",
             )
 
+    implicit_set = re.search(r"\b(?:two|three|four|[2-4])\s+(?P<area>[\w -]+?)\s+constituencies\b", question, re.I)
+    if implicit_set:
+        return _clarify_constituency_set(question, implicit_set["area"], as_of=as_of,
+                                         fuseki=fuseki, supported_predicates=supported_predicates)
+
+    # Preserve existing whole-intent Government selection and reviewed committee
+    # diagnostic boundaries before broad semantic routing hints. These are the
+    # established planners/executors, not new surface forms or composition code.
+    from .government import plan_government_question, execute_government
+    government = plan_government_question(question, as_of=as_of)
+    if government is not None:
+        _select_route(fuseki, "government_party_members")
+        return execute_government(government, fuseki=fuseki, supported_predicates=supported_predicates)
+    from .stage_b import plan_stage_b, handle_stage_b
+    boundary = plan_stage_b(question, as_of=as_of)
+    if boundary is not None and boundary.get("family") in {"committee_chair", "committee_conflict"}:
+        _select_route(fuseki, boundary["family"])
+        return handle_stage_b(question, as_of=as_of, fuseki=fuseki, supported_predicates=supported_predicates)
+
+    # Current reusable composition has its own whole-question admission/default
+    # checks. Do not let an older sentence recognizer demand a numbered term
+    # before semantic planning has interpreted a present-time paraphrase.
+    if semantic_plan_generator_factory is not None:
+        from .composition_admission import routing_hint
+        if routing_hint(question, current_only=True):
+            return _execute_shared_dail_terms_question(
+                question, as_of=as_of, fuseki=fuseki, supported_predicates=supported_predicates,
+                planner_generator_factory=semantic_plan_generator_factory)
+
     preflight = _composable_interpretation_preflight(question, as_of)
     if preflight is not None:
         return preflight
@@ -7321,11 +7445,6 @@ def _execute_question(
     )
     if current_office_outcome is not None:
         return current_office_outcome
-
-    implicit_set = re.search(r"\b(?:two|three|four|[2-4])\s+(?P<area>[\w -]+?)\s+constituencies\b", question, re.I)
-    if implicit_set:
-        return _clarify_constituency_set(question, implicit_set["area"], as_of=as_of,
-                                         fuseki=fuseki, supported_predicates=supported_predicates)
 
     if semantic_composition_scope(question):
         if semantic_plan_generator_factory is None:
@@ -7353,28 +7472,27 @@ def _execute_question(
                 return _execute_shared_dail_terms_question(question, as_of=as_of, fuseki=fuseki,
                                                          supported_predicates=supported_predicates,
                                                          planner_generator_factory=semantic_plan_generator_factory)
+        _select_route(fuseki, "constituency_representation")
         return execute_representation(representation_plan, fuseki=fuseki,
                                       supported_predicates=supported_predicates)
-    from .government import plan_government_question, execute_government
-    government = plan_government_question(question, as_of=as_of)
-    if government is not None:
-        return execute_government(government, fuseki=fuseki, supported_predicates=supported_predicates)
-
     stage_a_request = parse_stage_a_question(question)
     if stage_a_request is not None:
+        _select_route(fuseki, stage_a_request.family)
         return execute_stage_a(
             stage_a_request, as_of=as_of, fuseki=fuseki,
             supported_predicates=supported_predicates,
         )
     from .stage_c import handle_stage_c
     stage_c_outcome = handle_stage_c(question, as_of=as_of, fuseki=fuseki,
-                                     supported_predicates=supported_predicates)
+                                     supported_predicates=supported_predicates,
+                                     on_route_selected=lambda route: _select_route(fuseki, route))
     if stage_c_outcome is not None:
         return stage_c_outcome
     from .stage_b import handle_stage_b
     stage_b_outcome = handle_stage_b(
         question, as_of=as_of, fuseki=fuseki,
         supported_predicates=supported_predicates,
+        on_route_selected=lambda route: _select_route(fuseki, route),
     )
     if stage_b_outcome is not None:
         return stage_b_outcome
@@ -7411,12 +7529,15 @@ def _execute_question(
     except PlanError as error:
         return PlanOutcome("unsupported_capability", diagnostic=str(error))
     if plan["referents"].get("participation", {}).get("type") == "BillParticipation":
+        _select_route(fuseki, "member_bill_sponsorship")
         return _execute_bill_sponsorship_question(
             plan, fuseki=fuseki, supported_predicates=supported_predicates,
         )
     if plan["referents"].get("holding", {}).get("type") == "OfficeHolding":
+        _select_route(fuseki, plan.get("family", "office_holding_evidence"))
         return _execute_office_question(plan, fuseki=fuseki, supported_predicates=supported_predicates)
     if plan["referents"].get("sitting", {}).get("type") == "DebateSitting":
+        _select_route(fuseki, "debate_lookup")
         try:
             query = compile_debate_answer_query(plan, supported_predicates=supported_predicates)
             raw_result = fuseki.query(query)
@@ -7437,7 +7558,9 @@ def _execute_question(
         return PlanOutcome("success", plan=plan, sparql=query, result=result,
                            diagnostic="Matched an actual DebateSitting through its produced DebateRecord and reviewed graph-route chamber identity.")
     if plan["answer"]["referent"] == "affiliation":
+        _select_route(fuseki, "member_party_history")
         return _execute_affiliation_question(plan, fuseki=fuseki, supported_predicates=supported_predicates)
+    _select_route(fuseki, "previous_constituency_representation")
     try:
         term_result = fuseki.query(previous_dail_term_query(as_of, supported_predicates=supported_predicates))
         previous_term, current_term = resolve_previous_dail(term_result, as_of)

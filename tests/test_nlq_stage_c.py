@@ -203,6 +203,7 @@ def test_q17_lists_parties_and_clearly_says_groups_are_missing_not_nonexistent()
     fixture = StageCFixture(term=34)
     outcome = run("What are the groups and parties in the 34th Dáil?", fixture)
     assert outcome.status == "success"
+    assert outcome.route_id == "dail_parties_and_groups"
     assert {row[0] for row in outcome.result.rows} == {"Example Party 1", "Example Party 2"}
     assert "ParliamentaryGroup data is missing" in outcome.diagnostic
     assert "does not mean no groups existed" in outcome.diagnostic
@@ -216,6 +217,7 @@ def test_q17_ask_shows_party_rows_and_group_data_boundary(monkeypatch):
     assert "Example Party 1" in response.text and "Example Party 2" in response.text
     assert "ParliamentaryGroup data is missing" in response.text
     assert "does not mean no groups existed" in response.text
+    assert "Query method: Dáil party query" in response.text
 
 
 def test_q17_resolves_exact_house_term_before_join_and_rejects_ambiguous_term():
