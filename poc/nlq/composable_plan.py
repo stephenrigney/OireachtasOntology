@@ -76,6 +76,7 @@ class PlanOutcome:
     clarification: dict[str, Any] | None = None
     composition_request: dict[str, Any] | None = None
     composition_report: dict[str, Any] | None = None
+    proposal_evidence: dict[str, Any] | None = None
 
     @property
     def interaction(self) -> str:
@@ -104,6 +105,53 @@ class BillSponsorshipProjection:
     incomplete_display: bool = False
     conflicting_evidence: bool = False
     diagnostics: tuple[str, ...] = ()
+
+
+def _safe_proposal_evidence(draft: Any, reason: str | None) -> dict[str, Any] | None:
+    """Keep bounded, explicitly unvalidated interpretation evidence for refusals.
+
+    This is presentation evidence only: it does not complete, resolve, validate,
+    or execute the proposal. Never expose the raw model payload here.
+    """
+    if not isinstance(draft, dict):
+        return None
+    intent = draft.get("intent")
+    intent = intent.strip()[:1000] if isinstance(intent, str) else None
+    family = draft.get("family")
+    family = family[:100] if isinstance(family, str) else None
+    referents = draft.get("referents")
+    recognized = []
+    if isinstance(referents, dict):
+        for key, value in list(referents.items())[:12]:
+            if not isinstance(value, dict):
+                continue
+            label = value.get("mention")
+            typ = value.get("type")
+            selector = value.get("selector")
+            selector_label = None
+            if isinstance(selector, dict):
+                selector_kind = selector.get("kind")
+                selector_value = selector.get("number", selector.get("house", selector.get("date")))
+                if isinstance(selector_kind, str):
+                    selector_label = selector_kind.replace("_", " ")
+                    if selector_value is not None:
+                        selector_label += f" {str(selector_value)[:80]}"
+            if typ or isinstance(label, str) or selector_label:
+                display = label.strip() if isinstance(label, str) and label.strip() else selector_label or str(typ or "entity")
+                recognized.append({"role": str(key)[:80], "type": str(typ)[:80] if typ else "entity",
+                                   "label": display[:200]})
+    selection = draft.get("capability")
+    if isinstance(selection, str):
+        recognized.append({"role": "capability", "type": "capability", "label": selection[:100]})
+    parameters = draft.get("parameters")
+    if isinstance(parameters, dict):
+        for key, value in list(parameters.items())[:12]:
+            if isinstance(value, str) and value.strip():
+                recognized.append({"role": str(key)[:80], "type": "proposed input", "label": value.strip()[:200]})
+    if not intent and not family and not recognized:
+        return None
+    return {"validated": False, "intent": intent, "family": family,
+            "recognized": recognized, "reason": str(reason or "The proposal could not be validated.")[:1000]}
 
 
 def _validate_debate_plan(plan: dict[str, Any]) -> dict[str, Any]:
@@ -6508,6 +6556,7 @@ def _execute_shared_dail_terms_question(
             "unsupported_request", diagnostic=str(error), request_family=family,
             debug_output=format_debug_payload({"draft": output, "diagnostic": str(error)}),
             debug_source="Composable semantic planner",
+            proposal_evidence=_safe_proposal_evidence(locals().get("draft"), str(error)),
         )
     except InvalidComposableOutput as error:
         return PlanOutcome(
@@ -6522,6 +6571,7 @@ def _execute_shared_dail_terms_question(
             request_family=family,
             debug_output=format_debug_payload({"draft": output, "diagnostic": str(error)}),
             debug_source="Composable plan validation",
+            proposal_evidence=_safe_proposal_evidence(locals().get("draft"), str(error)),
         )
     except Exception as error:
         return PlanOutcome(
@@ -6538,6 +6588,7 @@ def _execute_shared_dail_terms_question(
         return PlanOutcome(
             "unsupported_request", diagnostic=unsupported_reason,
             request_family=family,
+            proposal_evidence=_safe_proposal_evidence(draft, unsupported_reason),
         )
     if draft_plan.get("family") == "current_member_composition":
         from .composition_admission import execute_plan

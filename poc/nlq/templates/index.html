@@ -176,7 +176,7 @@
   </section>
   {% endif %}
 
-  {% if outcome_kind and not composition_dashboard %}<p class="query-outcome" data-outcome="{{ outcome_kind }}">Outcome: {{ outcome_kind|replace('_', ' ') }}</p>{% endif %}
+  {% if outcome_kind and not composition_dashboard %}<span class="visually-hidden query-outcome" data-outcome="{{ outcome_kind }}">Processing outcome: {{ outcome_kind|replace('_', ' ') }}</span>{% endif %}
   {% if clarification %}
   <section class="ambiguity" aria-live="polite">
     <h2>Choose a grounded Member identity</h2>
@@ -196,31 +196,27 @@
 
   {% if result %}
   <section id="query-results" aria-live="polite">
+    <h2>{{ answer_display.heading }}</h2>
+    {% if answer_display.summary %}<p><strong>{{ answer_display.summary }}</strong></p>{% endif %}
+    {% if answer_display.context %}<p>{{ answer_display.context }}</p>{% endif %}
+    {% if answer_display.error %}<p class="result-notice">{{ answer_display.error }}</p>{% endif %}
     {% if composition_dashboard and composition_answer and composition_answer.answerable %}
-    <h2>Answer</h2>
-    {% if composition_answer.count_label %}
-    <p class="composition-answer"><strong>{{ composition_answer.count_label }}</strong></p>
-    {% else %}
-    <ul class="composition-answer">{% for name in composition_answer.names %}<li>{{ name }}</li>{% endfor %}</ul>
+      {% if composition_answer.count_label %}<p class="composition-answer">{{ composition_answer.count_label }}</p>
+      {% else %}<ul class="composition-answer">{% for name in composition_answer.names %}<li>{{ name }}</li>{% endfor %}</ul>{% endif %}
+      <p>{{ composition_answer.relationship }}</p><p class="result-notice">{{ composition_answer.qualification }}</p>
+    {% elif answer_display.rows %}
+      {% if answer_display.columns|length == 1 %}<ul>{% for row in answer_display.rows %}<li>{{ row[0] }}</li>{% endfor %}</ul>
+      {% else %}<table><thead><tr>{% for column in answer_display.columns %}<th scope="col">{{ column }}</th>{% endfor %}</tr></thead><tbody>
+        {% for row in answer_display.rows %}<tr>{% for cell in row %}<td>{% if answer_display.columns[loop.index0] == "Official debate" and cell.startswith("https://data.oireachtas.ie/akn/ie/debateRecord/") %}<a href="{{ cell }}">Official debate record</a>{% elif answer_display.columns[loop.index0] == "Official Bill" and cell.startswith("https://data.oireachtas.ie/ie/oireachtas/bill/") %}<a href="{{ cell }}">Official Bill</a>{% else %}{{ cell }}{% endif %}</td>{% endfor %}</tr>{% endfor %}
+      </tbody></table>{% endif %}
+      {% if answer_display.notice %}<p class="result-notice">{{ answer_display.notice }}</p>{% endif %}
     {% endif %}
-    <p>{{ composition_answer.relationship }}</p>
-    <p class="result-notice">{{ composition_answer.qualification }}</p>
-    {% else %}
-    <h2>Results</h2>
-    {% if result.kind == "ask" %}
-      <p><strong>{{ "Yes" if result.boolean else "No" }}</strong></p>
-    {% elif result.rows %}
-      <table>
-        <thead><tr>{% for column in result.columns %}<th scope="col">{{ column }}</th>{% endfor %}</tr></thead>
-        <tbody>
-        {% for row in result.rows %}<tr>{% for cell in row %}<td>{% if result.columns[loop.index0] == "Official debate" and cell.startswith("https://data.oireachtas.ie/akn/ie/debateRecord/") %}<a href="{{ cell }}">Official debate record</a>{% elif result.columns[loop.index0] == "Official Bill" and cell.startswith("https://data.oireachtas.ie/ie/oireachtas/bill/") %}<a href="{{ cell }}">Official Bill</a>{% else %}{{ cell }}{% endif %}</td>{% endfor %}</tr>{% endfor %}
-        </tbody>
-      </table>
-    {% else %}
-      <p>No matching records were found in the local dataset. This result does not establish historical completeness.</p>
-    {% endif %}
-    {% if result_notice %}<p class="result-notice">{{ result_notice }}</p>{% endif %}
-    {% endif %}
+    {% if result.raw_json or result.columns or debug_output %}<details><summary>Raw returned evidence and RDF identifiers</summary>
+      {% if result.columns %}<table><thead><tr>{% for column in result.columns %}<th scope="col">{{ column }}</th>{% endfor %}</tr></thead><tbody>
+        {% for row in result.rows %}<tr>{% for cell in row %}<td><code>{{ cell }}</code></td>{% endfor %}</tr>{% endfor %}
+      </tbody></table>{% endif %}
+      {% if result.raw_json %}<pre><code>{{ result.raw_json }}</code></pre>{% endif %}
+      {% if debug_output %}<pre><code>{{ debug_output }}</code></pre>{% endif %}</details>{% endif %}
   </section>
   {% endif %}
 
@@ -253,6 +249,10 @@
   {% if question and ((not composition and not composition_direct) or composition_dashboard) %}
   <section id="query-processing">
     <h2>How this query was processed</h2>
+    <section class="query-method" aria-label="Query method"><h3>Query method: {{ query_method.name }}</h3>
+      <p>{{ query_method.description }}</p>
+      <details><summary>Internal route identifier</summary><code>{{ query_method.identifier or 'none — rejected before dispatch' }}</code></details>
+    </section>
     {% if performance %}
     <details class="performance" data-performance='{{ performance|tojson }}'>
       <summary>Performance</summary>
@@ -294,6 +294,11 @@
       {% if composition_request and not composition_dashboard %}<p>Reference date {{ composition_request.asOf }}. No time was specified; current relationships use this configured reference date.</p>{% endif %}
       {% for gap in explainer.gaps %}<p class="explanation-note">{{ gap }}</p>{% endfor %}
       {% elif mode == 'phase1' and interpretation %}<p>{{ interpretation }}</p><p>This is a direct-query interpretation, not a validated structured plan.</p>
+      {% elif proposal_evidence %}
+      <p>No validated interpretation was accepted. The original question was: “{{ question }}”</p>
+      <p><strong>Unvalidated AI proposal:</strong> {{ proposal_evidence.intent or 'The proposal did not provide a readable interpretation.' }}</p>
+      {% if proposal_evidence.recognized %}<h3>Entities or capability mentioned in the proposal (not validated)</h3><ul>{% for entity in proposal_evidence.recognized %}<li>{{ entity.type }}: {{ entity.label }}</li>{% endfor %}</ul>{% endif %}
+      <p><strong>Why processing stopped:</strong> {{ proposal_evidence.reason }}</p>
       {% elif error %}<p>No executable interpretation was accepted, or essential evidence is unavailable. {{ error }}</p>
       {% else %}<p>Interpretation available; no validated plan was produced.</p>{% endif %}
       {% if entity_outcomes or clarification or ambiguity %}<p>Entity resolution or clarification evidence is shown in the result above.</p>{% endif %}
@@ -315,6 +320,7 @@
       <h3>Result construction</h3><ul>{% for item in explainer.construction %}<li>{{ item }}</li>{% endfor %}</ul>
       {% if composition_request and not composition_dashboard %}<p>{{ explainer.specification }}</p>{% endif %}
       {% for gap in explainer.gaps %}<p class="explanation-note">{{ gap }}</p>{% endfor %}
+      {% elif proposal_evidence %}<p>The proposal was rejected before compilation. No validated plan or generated query was produced.</p>
       {% elif sparql %}<p>Generated SPARQL is available, but no validated structured plan is available to explain its components.</p>{% else %}<p>Compilation was not reached; no validated plan or SPARQL was produced.</p>{% endif %}
       {% if plan_json %}<details><summary>Technical query plan — JSON and identifiers</summary><p>{{ plan_heading or "Validated query plan" }}</p><pre><code>{{ plan_json }}</code></pre></details>{% endif %}
       {% if sparql %}<details><summary>Generated SPARQL</summary><p>SPARQL was generated. Its availability alone does not establish execution.</p><pre><code>{{ sparql }}</code></pre></details>{% elif plan_json %}<p>No generated SPARQL is available; a validated plan alone does not establish compilation or execution.</p>{% endif %}

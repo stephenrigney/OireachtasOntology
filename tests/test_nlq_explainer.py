@@ -157,6 +157,34 @@ def test_no_plan_does_not_claim_a_validated_interpretation(monkeypatch, status):
     assert "disabled" in tab(page, "compiled")
 
 
+def test_rejected_shared_constituency_proposal_is_explicitly_unvalidated(monkeypatch):
+    question = "Who are the other TDs in Joe Neville's constituency in the previous Dáil?"
+    outcome = PlanOutcome(
+        "validation_failure", diagnostic="The requested independent Member/shared-constituency operator is absent; no simplified plan is accepted.",
+        proposal_evidence={"validated": False, "intent": "Find other TDs sharing Joe Neville's constituency in the previous Dáil.",
+                           "family": "member_relationship_composition", "recognized": [
+                               {"role": "anchor", "type": "Member", "label": "Joe Neville"},
+                               {"role": "term", "type": "DailTerm", "label": "previous Dáil"}],
+                           "reason": "The proposal omitted the validated shared-constituency operator; the validator requires the explicit wording 'same' or 'shared'."},
+    )
+    page = render_outcome(monkeypatch, outcome, question)
+    interpreted = panel(page, "interpreted", default=True)
+    assert "Unvalidated AI proposal" in interpreted
+    assert "Joe Neville" in interpreted and "previous Dáil" in interpreted
+    assert "Why processing stopped" in interpreted
+    assert "No query method selected" in page
+    assert "Query method: Relationship composition" not in page
+    assert "Interpretation validated" not in interpreted
+
+
+def test_validated_plan_identifies_relationship_compiler_route(monkeypatch):
+    outcome = emitted_history()
+    page = render_outcome(monkeypatch, outcome)
+    assert "Query method: Relationship composition" in page
+    assert "Internal route identifier" in page
+    assert "member_relationship_composition" in page
+
+
 def test_ambiguous_identity_can_have_valid_structure_but_not_a_success_badge(monkeypatch):
     history = emitted_history()
     plan = copy.deepcopy(history.plan)
