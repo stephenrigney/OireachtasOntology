@@ -99,9 +99,10 @@ def test_varied_semantic_questions_direct_through_ask(monkeypatch, tmp_path, que
     client = TestClient(app)
     response = client.post("/ask", data={"question": question})
     assert 'id="query-results"' in response.text, response.text
-    assert 'data-outcome="answer"' in response.text
+    assert 'data-outcome="answer"' not in response.text
+    assert 'class="query-outcome"' not in response.text and "Outcome: answer" not in response.text
     assert "Confirm interpretation and execute" not in response.text
-    assert "not a certified complete roster" in response.text and "2026-05-01" in response.text
+    assert "available records may not be complete" in response.text and "2026-05-01" in response.text
     assert planner.calls == 1
     link = re.search(r'href="(/composition/evidence/[^"]+)"', response.text)[1]
     report = client.get(link).json()["report"]
@@ -110,7 +111,7 @@ def test_varied_semantic_questions_direct_through_ask(monkeypatch, tmp_path, que
     assert {w["role"] for w in report["answer"]["witnesses"][0]} == set(pair)
     if shape == "count":
         assert report["answer"]["distinctCount"] == 1
-        assert "Distinct recorded Members" in response.text
+        assert "1 matching TD" in response.text
     else:
         assert "Alice Example" in response.text
 
@@ -188,7 +189,8 @@ def test_short_name_matches_multiple_distinct_committees_as_ambiguity(monkeypatc
         def __init__(self, *args, **kwargs): self.dataset, self.calls = ds, []
     app, _ = make_app(monkeypatch, tmp_path, draft, transport=Ambiguous)
     response = TestClient(app).post("/ask", data={"question": q})
-    assert 'data-outcome="clarification_required"' in response.text
+    assert 'data-outcome="clarification_required"' not in response.text
+    assert 'class="query-outcome"' not in response.text
     assert 'id="query-results"' not in response.text and "none was selected" in response.text
 
 
@@ -216,7 +218,8 @@ def test_historical_alias_ambiguity_is_term_scoped_not_globally_chosen(monkeypat
         def __init__(self, *args, **kwargs): self.dataset, self.calls = ds, []
     app, _ = make_app(monkeypatch, tmp_path, draft, transport=Ambiguous)
     response = TestClient(app).post("/ask", data={"question": q})
-    assert 'data-outcome="clarification_required"' in response.text and 'id="query-results"' not in response.text
+    assert 'data-outcome="clarification_required"' not in response.text
+    assert 'class="query-outcome"' not in response.text and 'id="query-results"' not in response.text
 
 
 @pytest.mark.parametrize("question,pair,shape", [

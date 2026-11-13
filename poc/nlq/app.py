@@ -35,7 +35,10 @@ from .schema import build_schema_context
 from .vocabulary import supported_predicates
 from .feedback import FeedbackError, FeedbackStore
 from .performance import QueryPerformance
-from .explainer import explain_validated_plan, explain_execution, explain_validated_composition
+from .explainer import (
+    explain_validated_plan, explain_execution, explain_validated_composition,
+    explain_composition_execution,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -170,9 +173,15 @@ def create_app(
                      if composition_request is not None and composition_report is not None else
                      explain_validated_plan(explanation_plan, question=question)
                      if explanation_plan is not None else None)
-        execution_explanation = explain_execution(
-            attempted=execution_attempted, result=result, status=interaction_status,
-            error=error, plan=explanation_plan,
+        execution_explanation = (
+            explain_composition_execution(
+                attempted=execution_attempted, request=composition_request,
+                report=composition_report, result=result, status=interaction_status, error=error,
+            ) if composition_dashboard and composition_request is not None else
+            explain_execution(
+                attempted=execution_attempted, result=result, status=interaction_status,
+                error=error, plan=explanation_plan,
+            )
         )
         performance = getattr(request.state, "query_performance", None)
         if readiness is None and not (composition or composition_direct):
